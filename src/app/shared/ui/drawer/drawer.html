@@ -1,0 +1,44 @@
+@if (open()) {
+  <div class="drawer" [class]="'drawer--' + side()">
+    <button
+      type="button"
+      class="drawer__backdrop"
+      aria-label="Close panel"
+      [disabled]="!dismissible()"
+      (click)="close()"
+    ></button>
+
+    <div
+      #panel
+      class="drawer__panel"
+      [class]="'drawer__panel--' + size()"
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+      [attr.aria-label]="heading()"
+    >
+      <header class="drawer__header">
+        <div>
+          <h2 class="drawer__heading">{{ heading() }}</h2>
+          @if (description(); as text) {
+            <p class="drawer__description">{{ text }}</p>
+          }
+        </div>
+        @if (dismissible()) {
+          <button type="button" class="btn btn--subtle drawer__close" (click)="close()">
+            <span aria-hidden="true">✕</span>
+            <span class="visually-hidden">Close</span>
+          </button>
+        }
+      </header>
+
+      <div class="drawer__body">
+        <ng-content select="[drawer-body]"></ng-content>
+      </div>
+
+      <footer class="drawer__actions">
+        <ng-content select="[drawer-actions]"></ng-content>
+      </footer>
+    </div>
+  </div>
+}

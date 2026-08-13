@@ -1,0 +1,83 @@
+<app-page-header
+  title="Dashboard"
+  subtitle="Caseload and payout position for the Municipal Social Welfare and Development Office."
+>
+  <button page-actions type="button" class="btn" (click)="refresh()">Refresh</button>
+</app-page-header>
+
+<app-async-content
+  [state]="state()"
+  [content]="summaryTemplate"
+  [skeletonLines]="6"
+  errorHeading="Could not load the dashboard"
+  (retryRequested)="refresh()"
+/>
+
+<ng-template #summaryTemplate let-summary>
+  <section class="metrics" aria-label="Headline figures">
+    <article class="card metric">
+      <h2 class="metric__label">Open requests</h2>
+      <p class="metric__value">{{ summary.openRequests }}</p>
+      <p class="metric__hint">Not yet completed, rejected, cancelled or expired.</p>
+    </article>
+    <article class="card metric">
+      <h2 class="metric__label">Awaiting approval</h2>
+      <p class="metric__value">{{ summary.awaitingApproval }}</p>
+      <p class="metric__hint">Endorsed by a social worker, pending the head's decision.</p>
+    </article>
+    <article class="card metric">
+      <h2 class="metric__label">Scheduled payouts</h2>
+      <p class="metric__value">{{ summary.scheduledPayouts }}</p>
+      <p class="metric__hint">Vouchers with a confirmed release date.</p>
+    </article>
+    <article class="card metric">
+      <h2 class="metric__label">Released this month</h2>
+      <p class="metric__value">{{ summary.disbursedThisMonth | peso }}</p>
+      <p class="metric__hint">Across {{ summary.residentsServedThisMonth }} beneficiaries.</p>
+    </article>
+  </section>
+
+  <div class="panels">
+    <section class="card panel">
+      <h2 class="panel__title">Requests by status</h2>
+      <ul class="panel__list">
+        @for (entry of summary.requestsByStatus; track entry.status) {
+          <li class="panel__row">
+            <app-status-badge [catalog]="statusCatalog" [status]="entry.status" />
+            <span class="panel__count">{{ entry.count }}</span>
+          </li>
+        } @empty {
+          <li class="panel__empty">No requests on file.</li>
+        }
+      </ul>
+    </section>
+
+    <section class="card panel">
+      <h2 class="panel__title">Requests by barangay</h2>
+      <ul class="panel__list">
+        @for (entry of summary.requestsByBarangay; track entry.barangayId) {
+          <li class="panel__row">
+            <span>{{ entry.barangayId | barangayName }}</span>
+            <span class="panel__count">{{ entry.count }}</span>
+          </li>
+        } @empty {
+          <li class="panel__empty">No requests on file.</li>
+        }
+      </ul>
+    </section>
+
+    <section class="card panel">
+      <h2 class="panel__title">Released by programme type</h2>
+      <ul class="panel__list">
+        @for (entry of summary.disbursedByCategory; track entry.category) {
+          <li class="panel__row">
+            <span>{{ categoryLabel(entry.category) }}</span>
+            <span class="panel__count">{{ entry.amount | peso }}</span>
+          </li>
+        } @empty {
+          <li class="panel__empty">Nothing released yet.</li>
+        }
+      </ul>
+    </section>
+  </div>
+</ng-template>

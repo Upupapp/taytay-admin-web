@@ -1,0 +1,44 @@
+@if (open()) {
+  <div class="modal">
+    <button
+      type="button"
+      class="modal__backdrop"
+      aria-label="Close dialog"
+      [disabled]="!dismissible()"
+      (click)="close()"
+    ></button>
+
+    <div
+      #panel
+      class="modal__panel"
+      [class]="'modal__panel--' + size()"
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+      [attr.aria-label]="heading()"
+    >
+      <header class="modal__header">
+        <div>
+          <h2 class="modal__heading">{{ heading() }}</h2>
+          @if (description(); as text) {
+            <p class="modal__description">{{ text }}</p>
+          }
+        </div>
+        @if (dismissible()) {
+          <button type="button" class="btn btn--subtle modal__close" (click)="close()">
+            <span aria-hidden="true">✕</span>
+            <span class="visually-hidden">Close</span>
+          </button>
+        }
+      </header>
+
+      <div class="modal__body">
+        <ng-content select="[modal-body]"></ng-content>
+      </div>
+
+      <footer class="modal__actions">
+        <ng-content select="[modal-actions]"></ng-content>
+      </footer>
+    </div>
+  </div>
+}

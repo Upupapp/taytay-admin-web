@@ -1,0 +1,94 @@
+<div class="table-wrap">
+  <table class="table">
+    <caption class="visually-hidden">
+      {{
+        caption()
+      }}
+    </caption>
+    <thead>
+      <tr>
+        @for (column of columns(); track column.key) {
+          <th
+            scope="col"
+            [style.width]="column.width"
+            [class.table__cell--end]="column.align === 'end'"
+            [attr.aria-sort]="column.sortField ? ariaSortFor(column) : null"
+          >
+            @if (column.sortField) {
+              <button type="button" class="table__sort" (click)="toggleSort(column)">
+                <span [class.visually-hidden]="column.hideHeader">{{ column.header }}</span>
+                <span class="table__sort-arrow" aria-hidden="true">
+                  {{
+                    directionFor(column) === 'asc'
+                      ? '▲'
+                      : directionFor(column) === 'desc'
+                        ? '▼'
+                        : '↕'
+                  }}
+                </span>
+              </button>
+            } @else {
+              <span [class.visually-hidden]="column.hideHeader">{{ column.header }}</span>
+            }
+          </th>
+        }
+      </tr>
+    </thead>
+
+    @if (!loading() && rows().length > 0) {
+      <tbody>
+        @for (row of rows(); track rowKey()(row)) {
+          <tr
+            class="table__row"
+            [class.table__row--selectable]="selectable()"
+            [attr.tabindex]="selectable() ? 0 : null"
+            (click)="selectRow(row)"
+            (keydown.enter)="selectRow(row)"
+            (keydown.space)="selectRow(row)"
+          >
+            @for (column of columns(); track column.key) {
+              <td [class.table__cell--end]="column.align === 'end'">
+                @if (column.cell) {
+                  <ng-container
+                    *ngTemplateOutlet="column.cell; context: { $implicit: row }"
+                  ></ng-container>
+                } @else {
+                  {{ text(column, row) }}
+                }
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    }
+  </table>
+
+  @if (loading()) {
+    <app-skeleton [lines]="5" />
+  } @else if (isEmpty()) {
+    <app-empty-state
+      [variant]="emptyVariant()"
+      [heading]="emptyHeading()"
+      [message]="emptyMessage()"
+      [actionLabel]="emptyActionLabel()"
+      (actionSelected)="emptyActionSelected.emit()"
+    />
+  }
+</div>
+
+@if (page(); as pageInfo) {
+  @if (!loading() && pageInfo.totalItems > 0) {
+    <nav class="pager" aria-label="Pagination">
+      <span class="pager__range">{{ rangeLabel() }}</span>
+      <span class="pager__controls">
+        <button type="button" class="btn" [disabled]="!canGoBack()" (click)="goToPage(-1)">
+          Previous
+        </button>
+        <span class="pager__position">Page {{ pageInfo.page }} of {{ pageInfo.totalPages }}</span>
+        <button type="button" class="btn" [disabled]="!canGoForward()" (click)="goToPage(1)">
+          Next
+        </button>
+      </span>
+    </nav>
+  }
+}

@@ -1,0 +1,29 @@
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.page-header__title {
+  font-size: 22px;
+}
+
+.page-header__subtitle {
+  max-width: 72ch;
+  margin-top: var(--space-1);
+  color: var(--c-text-muted);
+  font-size: 14px;
+}
+
+.page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.page-header__actions:empty {
+  display: none;
+}

@@ -1,0 +1,46 @@
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-7) var(--space-5);
+  text-align: center;
+}
+
+.empty__glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--tone-neutral-bg);
+  color: var(--tone-neutral-fg);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.empty__heading {
+  font-size: 16px;
+}
+
+.empty__message {
+  max-width: 44ch;
+  color: var(--c-text-muted);
+  font-size: 14px;
+}
+
+.empty--error .empty__glyph {
+  background: var(--tone-danger-bg);
+  color: var(--tone-danger-fg);
+}
+
+.empty--forbidden .empty__glyph {
+  background: var(--tone-warning-bg);
+  color: var(--tone-warning-fg);
+}
+
+.empty--no-results .empty__glyph {
+  background: var(--tone-info-bg);
+  color: var(--tone-info-fg);
+}

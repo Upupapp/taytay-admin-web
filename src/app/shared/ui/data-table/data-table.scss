@@ -1,0 +1,85 @@
+.table-wrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--c-border);
+  background: var(--c-surface-muted);
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--c-border);
+  vertical-align: middle;
+}
+
+.table__cell--end {
+  text-align: right;
+}
+
+.table__row:last-child td {
+  border-bottom: none;
+}
+
+.table__row--selectable {
+  cursor: pointer;
+}
+
+.table__row--selectable:hover,
+.table__row--selectable:focus-visible {
+  background: var(--c-brand-soft);
+}
+
+.table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.table__sort-arrow {
+  color: var(--c-text-subtle);
+  font-size: 10px;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--c-border);
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+.pager__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.pager__position {
+  white-space: nowrap;
+}
