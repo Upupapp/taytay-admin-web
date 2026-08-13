@@ -1,0 +1,61 @@
+/* Motion primitives.
+ *
+ * Durations are banded rather than ad hoc, following the bands recorded in
+ * EPL-06: microinteraction 120–200ms, panel/card 180–280ms, overlay 200–300ms.
+ * Picking from this list keeps the shell feeling like one product.
+ *
+ * Two classes of motion, and they are suppressed differently (DL-15):
+ *
+ *   - TRANSITIONAL motion responds to an action (a panel sliding in). Under
+ *     prefers-reduced-motion it is removed, and the end state applies instantly.
+ *   - AMBIENT motion runs on its own (a shimmer loop). Under reduced motion it
+ *     must be REMOVED, not shortened — a 0.01ms loop spins furiously instead of
+ *     stopping, which is worse than the original.
+ */
+
+:root {
+  --motion-micro: 160ms;
+  --motion-panel: 220ms;
+  --motion-overlay: 260ms;
+
+  --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* Opt-in helpers for component styles. Using these rather than hand-written
+   durations is what makes the reduced-motion guarantee auditable. */
+.motion-micro {
+  transition-duration: var(--motion-micro);
+  transition-timing-function: var(--motion-ease-standard);
+}
+
+.motion-panel {
+  transition-duration: var(--motion-panel);
+  transition-timing-function: var(--motion-ease-decelerate);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Transitional motion: collapse to effectively instant. The end state is
+     still applied, so nothing becomes unreachable. */
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Ambient motion: removed outright. `animation: none` rather than a tiny
+     duration, so looping decoration actually stops. */
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+  }
+
+  /* Non-essential transforms are dropped entirely: the shell's sliding drawer
+     becomes an instant appearance rather than a fast slide. */
+  .motion-transform {
+    transform: none !important;
+  }
+}

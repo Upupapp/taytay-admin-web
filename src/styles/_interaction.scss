@@ -1,0 +1,65 @@
+/* Interaction primitives: pointer target size and focus visibility.
+ *
+ * These implement the two WCAG 2.2 AA criteria that DL-20 left open and that
+ * the shell is the natural place to close. Both are asserted by
+ * `tools/check-shell-a11y.mjs` so they cannot be quietly removed.
+ */
+
+:root {
+  /* WCAG 2.2 §2.5.8 Target Size (Minimum), Level AA — "at least 24 by 24 CSS
+     pixels". We meet it outright rather than relying on the spacing exception,
+     because spacing is fragile: it breaks the moment two controls move closer. */
+  --target-min: 24px;
+
+  /* WCAG 2.2 §2.4.11 Focus Not Obscured (Minimum), Level AA — a focused
+     component must not be *entirely* hidden by author content. The shell has a
+     sticky topbar, so anything scrolled to by keyboard must stop below it.
+     One token, so the offset can never drift from the real bar height. */
+  --focus-scroll-margin: calc(var(--shell-topbar-height) + var(--space-3));
+}
+
+/* Every focusable element keeps clear of the sticky topbar when the browser
+   scrolls it into view on focus. This is what closes 2.4.11 for the shell:
+   without it, tabbing into content near the top of a scrolled page can leave
+   the focused control underneath the header. */
+:where(a, button, input, select, textarea, summary, [tabindex]) {
+  scroll-margin-block-start: var(--focus-scroll-margin);
+}
+
+/* Sticky table headers create the same hazard inside a scrolling table. */
+:where(th) {
+  scroll-margin-block-start: var(--focus-scroll-margin);
+}
+
+/* The shared icon-button contract. Any control whose visible content is a
+   glyph must carry this class, which guarantees the 24×24 minimum regardless
+   of how small the glyph itself is. */
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--target-min);
+  min-block-size: var(--target-min);
+  padding: var(--space-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.icon-button:hover:not(:disabled) {
+  background: var(--c-surface-muted);
+}
+
+.icon-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Text buttons inherit the same floor. `.btn` already has generous padding,
+   but stating the minimum means a future compact variant cannot fall below it. */
+.btn {
+  min-inline-size: var(--target-min);
+  min-block-size: var(--target-min);
+}

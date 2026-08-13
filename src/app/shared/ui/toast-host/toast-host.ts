@@ -32,7 +32,7 @@ import type { NotificationId } from '@domain/index';
               </a>
             }
           </div>
-          <button type="button" class="toast__close" (click)="dismiss(toast.id)">
+          <button type="button" class="icon-button toast__close" (click)="dismiss(toast.id)">
             <span aria-hidden="true">✕</span>
             <span class="visually-hidden">Dismiss notification</span>
           </button>
