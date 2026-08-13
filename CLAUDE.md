@@ -255,6 +255,8 @@ persist until dismissed and always reach the inbox.
 - **Accessibility is not optional.** Visible focus, real `<button>`/`<a>`
   semantics, labelled controls, `aria-sort` on sortable headers, live regions
   for async status. Template a11y lint rules are on — do not disable them.
+  The conformance target is **WCAG 2.2 Level AA** (`docs/reference-audit/decision-log.md`,
+  DL-20).
 - **Comments** explain _why_, never _what_. Do not narrate the code.
 
 ---
@@ -266,7 +268,11 @@ When sources conflict, the higher entry wins:
 1. **The active Master Command / TAB instruction.**
 2. **This `CLAUDE.md`.**
 3. **Repository evidence** — existing code, tests, `git log`. The working tree
-   may be dirty; reconcile, never discard.
+   may be dirty; reconcile, never discard. This includes
+   [`docs/reference-audit/`](./docs/reference-audit/README.md): where each module
+   comes from (`FSM-*`), which interaction patterns are binding (`EPL-*`), and
+   every deliberate divergence (`DL-*`). Cite those ids; to overturn one, add a
+   superseding `DL-*` entry rather than changing behaviour silently.
 4. **Angular official documentation** (`angular.dev`) for framework questions.
    Assume Angular 22 idioms — signals, standalone, zoneless, built-in control
    flow.
