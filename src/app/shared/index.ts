@@ -26,5 +26,6 @@ export * from './ui/modal/modal';
 export * from './ui/overlay/overlay.behavior';
 export * from './ui/overlay/overlay.service';
 export * from './ui/page-header/page-header';
+export * from './ui/route-progress/route-progress';
 export * from './ui/status-badge/status-badge';
 export * from './ui/toast-host/toast-host';

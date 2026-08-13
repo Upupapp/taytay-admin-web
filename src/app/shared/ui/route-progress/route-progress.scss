@@ -1,0 +1,38 @@
+.route-progress {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  z-index: 90;
+  block-size: 3px;
+  overflow: hidden;
+  background: var(--c-brand-soft);
+}
+
+.route-progress__bar {
+  display: block;
+  block-size: 100%;
+  inline-size: 40%;
+  background: var(--brand-primary);
+  animation: route-progress-slide 1100ms ease-in-out infinite;
+}
+
+@keyframes route-progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+/* Ambient motion: removed outright rather than shortened (DL-15). The bar stays
+   visible as a static indicator so the "something is happening" signal
+   survives, but nothing moves. */
+@media (prefers-reduced-motion: reduce) {
+  .route-progress__bar {
+    animation: none;
+    inline-size: 100%;
+    transform: none;
+  }
+}

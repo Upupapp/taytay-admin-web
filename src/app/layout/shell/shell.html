@@ -1,63 +1,53 @@
-<div class="shell" [class.shell--nav-open]="navOpen()">
-  <a class="skip-link" href="#main-content">Skip to main content</a>
+<app-route-progress />
 
-  <aside class="shell__sidebar" aria-label="Main navigation">
+<div class="shell" [class.shell--nav-open]="navOpen()">
+  <a class="skip-link" href="#main-content">{{ copy.skipToContent }}</a>
+
+  <!-- Compact only: dismisses the drawer without needing to hit the toggle. -->
+  @if (isCompact() && navOpen()) {
+    <button
+      type="button"
+      class="shell__scrim"
+      [attr.aria-label]="copy.navToggleClose"
+      (click)="closeNav()"
+    ></button>
+  }
+
+  <aside
+    #sidebar
+    id="app-sidebar"
+    class="shell__sidebar motion-transform"
+    [class.shell__sidebar--open]="navOpen()"
+    [attr.role]="isCompact() ? 'dialog' : null"
+    [attr.aria-modal]="isCompact() && navOpen() ? 'true' : null"
+    [attr.aria-label]="copy.navLandmark"
+    [attr.tabindex]="isCompact() ? -1 : null"
+    [attr.inert]="isCompact() && !navOpen() ? '' : null"
+  >
     <div class="shell__brand">
       <app-brand-mark tone="light" sealSize="md" secondaryLine="unit" priority />
     </div>
 
-    <nav class="shell__nav">
-      @for (section of sections(); track section.title) {
-        <div class="shell__nav-section">
-          <h2 class="shell__nav-title">{{ section.title }}</h2>
-          <ul class="shell__nav-list">
-            @for (item of section.items; track item.route) {
-              <li>
-                <a
-                  class="shell__nav-link"
-                  [routerLink]="item.route"
-                  routerLinkActive="shell__nav-link--active"
-                  [title]="item.description"
-                  (click)="closeNav()"
-                >
-                  <span class="shell__nav-glyph" aria-hidden="true">{{ item.glyph }}</span>
-                  {{ item.label }}
-                </a>
-              </li>
-            }
-          </ul>
-        </div>
-      } @empty {
-        <p class="shell__nav-empty">No sections are available for this role.</p>
-      }
-    </nav>
+    <app-nav class="shell__nav" (navigated)="closeNav()" />
+
+    <!-- Identity and sign-out live here rather than in the topbar so they stay
+         reachable at every width — see the note in AppTopbar. -->
+    <footer class="shell__account">
+      <span class="shell__account-name">{{ session.displayName() }}</span>
+      <span class="shell__account-meta">{{ session.user()?.roleLabel }} · {{ scopeLabel() }}</span>
+      <button type="button" class="btn shell__sign-out" (click)="signOut()">
+        {{ copy.signOut }}
+      </button>
+    </footer>
   </aside>
 
   <div class="shell__main">
-    <header class="shell__topbar">
-      <button type="button" class="btn btn--subtle shell__nav-toggle" (click)="toggleNav()">
-        <span aria-hidden="true">☰</span>
-        <span class="visually-hidden">Toggle navigation</span>
-      </button>
-
-      <div class="shell__topbar-spacer"></div>
-
-      <button type="button" class="btn shell__inbox-button" (click)="openInbox()">
-        Notifications
-        @if (notifications.unreadCount(); as unread) {
-          <span class="shell__badge">{{ unread }}</span>
-        }
-      </button>
-
-      <div class="shell__identity">
-        <span class="shell__identity-name">{{ session.displayName() }}</span>
-        <span class="shell__identity-meta">
-          {{ session.user()?.roleLabel }} · {{ scopeLabel() }}
-        </span>
-      </div>
-
-      <button type="button" class="btn" (click)="signOut()">Sign out</button>
-    </header>
+    <app-topbar
+      [navOpen]="navOpen()"
+      (navToggled)="toggleNav()"
+      (searchActivated)="onSearchActivated()"
+      (inboxOpened)="openInbox()"
+    />
 
     <main id="main-content" class="shell__content" tabindex="-1">
       <router-outlet />
@@ -67,8 +57,8 @@
 
 <app-drawer
   [(open)]="inboxOpen"
-  heading="Notifications"
-  description="Case and payout activity for your account."
+  [heading]="copy.notificationsHeading"
+  [description]="copy.notificationsDescription"
 >
   <div drawer-body>
     @for (item of notifications.inbox(); track item.id) {
@@ -83,14 +73,14 @@
         }
         @if (item.readAt === null) {
           <button type="button" class="btn btn--subtle inbox__read" (click)="markRead(item.id)">
-            Mark as read
+            {{ copy.markRead }}
           </button>
         }
       </article>
     } @empty {
       <app-empty-state
-        heading="No notifications"
-        message="Activity on your cases and payouts will appear here."
+        [heading]="copy.notificationsEmptyHeading"
+        [message]="copy.notificationsEmptyBody"
       />
     }
   </div>
@@ -102,6 +92,14 @@
     [disabled]="notifications.unreadCount() === 0"
     (click)="notifications.markAllRead()"
   >
-    Mark all as read
+    {{ copy.markAllRead }}
   </button>
+</app-drawer>
+
+<app-drawer
+  [(open)]="searchNotice"
+  [heading]="copy.searchUnavailableTitle"
+  [description]="copy.searchPlaceholder"
+>
+  <p drawer-body>{{ copy.searchUnavailableBody }}</p>
 </app-drawer>

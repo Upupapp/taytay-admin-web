@@ -4,6 +4,8 @@
    sizing) lives in ./styles/_brand-tokens.scss. */
 
 @use './styles/brand-tokens';
+@use './styles/motion';
+@use './styles/interaction';
 
 :root {
   /* Neutral ramp */
@@ -176,12 +178,5 @@ button {
   box-shadow: var(--shadow-sm);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
+/* Reduced-motion handling lives in ./styles/_motion.scss, which draws the
+   distinction between transitional and ambient motion. */

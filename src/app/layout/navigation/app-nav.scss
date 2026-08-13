@@ -1,0 +1,73 @@
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-section);
+  /* Allows the sidebar column to shrink instead of forcing the page wider. */
+  min-inline-size: 0;
+}
+
+.nav__title {
+  margin-block-end: var(--space-compact);
+  color: var(--brand-nav-section);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nav__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav__link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-snug);
+  /* Comfortably clears the 24px minimum target (WCAG 2.5.8). */
+  min-block-size: 40px;
+  padding: var(--space-compact) var(--space-snug);
+  border-radius: var(--radius-md);
+  color: var(--brand-nav-ink);
+  font-size: 14px;
+  text-decoration: none;
+  transition: background-color var(--motion-micro) var(--motion-ease-standard);
+}
+
+.nav__link:hover {
+  background: rgb(255 255 255 / 8%);
+}
+
+.nav__link--active {
+  background: rgb(255 255 255 / 16%);
+  color: var(--brand-on-primary);
+  font-weight: 600;
+}
+
+.nav__glyph {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 24px;
+  block-size: 24px;
+  border-radius: var(--radius-sm);
+  background: rgb(255 255 255 / 10%);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.nav__label {
+  /* Long labels wrap or ellipsize rather than widening the sidebar. */
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.nav__empty {
+  color: var(--brand-nav-section);
+  font-size: 13px;
+}

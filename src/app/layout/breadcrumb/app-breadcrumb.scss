@@ -1,0 +1,43 @@
+.crumbs {
+  min-inline-size: 0;
+}
+
+.crumbs__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-compact);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.crumbs__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-compact);
+  min-inline-size: 0;
+}
+
+.crumbs__link {
+  color: var(--c-text-muted);
+  text-decoration: none;
+}
+
+.crumbs__link:hover {
+  text-decoration: underline;
+}
+
+.crumbs__current {
+  color: var(--c-text);
+  font-weight: 600;
+  /* Truncates instead of pushing the topbar wider on a narrow screen. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crumbs__sep {
+  color: var(--c-text-subtle);
+}

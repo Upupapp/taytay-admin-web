@@ -1,0 +1,74 @@
+.topbar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--space-snug);
+  /* min-block-size rather than a fixed height: the bar grows if content wraps
+     instead of clipping it. */
+  min-block-size: var(--shell-topbar-height);
+  padding: var(--space-compact) var(--space-card);
+  border-block-end: 1px solid var(--c-border);
+  background: var(--c-surface);
+  /* Critical for overflow: a flex child defaults to min-width:auto, which makes
+     long content push the row wider than the viewport. */
+  min-inline-size: 0;
+}
+
+.topbar__nav-toggle {
+  /* Shown only when the sidebar collapses into a drawer. */
+  display: none;
+  flex: none;
+}
+
+.topbar__crumbs {
+  min-inline-size: 0;
+  overflow: hidden;
+}
+
+.topbar__spacer {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.topbar__inbox {
+  position: relative;
+  flex: none;
+}
+
+.topbar__badge {
+  position: absolute;
+  inset-block-start: -2px;
+  inset-inline-end: -2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 16px;
+  block-size: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--tone-danger-fg);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+@media (width <= 900px) {
+  .topbar__nav-toggle {
+    display: inline-flex;
+  }
+}
+
+@media (width <= 640px) {
+  .topbar {
+    padding-inline: var(--space-snug);
+  }
+
+  /* The breadcrumb is redundant on a small screen where the page heading is
+     immediately below; dropping it keeps the row on one line. */
+  .topbar__crumbs {
+    display: none;
+  }
+}

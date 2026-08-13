@@ -1,0 +1,64 @@
+.search-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-compact);
+  /* Grows with the topbar but never forces it wider than the viewport. */
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  max-inline-size: 420px;
+  min-block-size: 34px;
+  padding: var(--space-1) var(--space-snug);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--c-surface-muted);
+  color: var(--c-text-muted);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--motion-micro) var(--motion-ease-standard);
+}
+
+.search-trigger:hover {
+  background: var(--c-surface);
+}
+
+.search-trigger__glyph {
+  flex: none;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.search-trigger__text {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-trigger__kbd {
+  flex: none;
+  padding: 1px var(--space-1);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+  color: var(--c-text-subtle);
+  font-family: inherit;
+  font-size: 11px;
+}
+
+/* On narrow screens the trigger collapses to its glyph, which still meets the
+   24px minimum target because of .icon-button-sized padding above. */
+@media (width <= 640px) {
+  .search-trigger__text,
+  .search-trigger__kbd {
+    display: none;
+  }
+
+  .search-trigger {
+    flex: none;
+    min-inline-size: var(--target-min);
+    justify-content: center;
+  }
+}
