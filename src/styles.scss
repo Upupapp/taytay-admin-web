@@ -1,0 +1,175 @@
+/* Global stylesheet: design tokens, reset and the few element defaults the
+   shell relies on. Component-specific styling lives in component styles. */
+
+:root {
+  /* Neutral ramp */
+  --c-bg: #f4f6f8;
+  --c-surface: #ffffff;
+  --c-surface-muted: #f8fafc;
+  --c-border: #dfe4ea;
+  --c-border-strong: #c3ccd6;
+  --c-text: #1b2733;
+  --c-text-muted: #5b6b7c;
+  --c-text-subtle: #7b8896;
+
+  /* Brand: municipal blue with a warm accent */
+  --c-brand: #10559a;
+  --c-brand-dark: #0b3f74;
+  --c-brand-soft: #e8f0f9;
+  --c-accent: #b45309;
+
+  /* Status tones — consumed by the StatusBadge primitive */
+  --tone-neutral-fg: #46525f;
+  --tone-neutral-bg: #eceff2;
+  --tone-info-fg: #0b4f8a;
+  --tone-info-bg: #e2eefb;
+  --tone-progress-fg: #6b3fa0;
+  --tone-progress-bg: #efe7fb;
+  --tone-success-fg: #1a6b3c;
+  --tone-success-bg: #e2f4e9;
+  --tone-warning-fg: #8a5a06;
+  --tone-warning-bg: #fcf1dc;
+  --tone-danger-fg: #98231d;
+  --tone-danger-bg: #fbe6e4;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --shadow-sm: 0 1px 2px rgb(16 33 51 / 8%);
+  --shadow-md: 0 4px 12px rgb(16 33 51 / 12%);
+  --shadow-lg: 0 12px 32px rgb(16 33 51 / 18%);
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', roboto, 'Helvetica Neue', arial, sans-serif;
+
+  --shell-sidebar-width: 264px;
+  --shell-topbar-height: 60px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--c-brand);
+}
+
+button {
+  font: inherit;
+}
+
+/* Visible focus everywhere: the office keyboard-navigates through long tables. */
+:focus-visible {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Shared button vocabulary, used by the shell and every feature. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--c-surface-muted);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--c-brand);
+  border-color: var(--c-brand);
+  color: #fff;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--c-brand-dark);
+  border-color: var(--c-brand-dark);
+}
+
+.btn--subtle {
+  border-color: transparent;
+  background: transparent;
+  color: var(--c-text-muted);
+}
+
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
