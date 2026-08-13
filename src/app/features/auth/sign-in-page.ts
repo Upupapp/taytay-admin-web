@@ -11,6 +11,8 @@ import {
   type StaffUser,
   type StaffUserId,
 } from '@domain/index';
+import { BRAND_COPY } from '@shared/brand/brand.copy';
+import { MunicipalSeal } from '@shared/brand/municipal-seal';
 import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import type { Page } from '@domain/index';
@@ -27,7 +29,7 @@ import type { Page } from '@domain/index';
 @Component({
   selector: 'app-sign-in-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent],
+  imports: [AsyncContent, MunicipalSeal],
   templateUrl: './sign-in-page.html',
   styleUrl: './sign-in-page.scss',
 })
@@ -43,6 +45,7 @@ export class SignInPage {
 
   protected readonly accounts = computed(() => valueOf(this.state())?.items ?? []);
   protected readonly error = this.session.error;
+  protected readonly copy = BRAND_COPY;
 
   protected describe(staff: StaffUser): string {
     const definition = ROLE_DEFINITIONS[staff.role];

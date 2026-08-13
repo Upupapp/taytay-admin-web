@@ -17,18 +17,9 @@
   text-align: center;
 }
 
-.sign-in__mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  margin-bottom: var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--c-brand-soft);
-  color: var(--c-brand-dark);
-  font-size: 15px;
-  font-weight: 700;
+.sign-in__header app-municipal-seal {
+  display: inline-block;
+  margin-bottom: var(--space-snug);
 }
 
 .sign-in__title {

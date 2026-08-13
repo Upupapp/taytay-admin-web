@@ -1,11 +1,9 @@
 <div class="sign-in">
   <div class="card sign-in__panel">
     <header class="sign-in__header">
-      <span class="sign-in__mark" aria-hidden="true">TS</span>
-      <h1 class="sign-in__title">Taytay Social Welfare</h1>
-      <p class="sign-in__subtitle">
-        Municipal Social Welfare and Development Office — staff console.
-      </p>
+      <app-municipal-seal size="lg" priority />
+      <h1 class="sign-in__title">{{ copy.organisationName }}</h1>
+      <p class="sign-in__subtitle">{{ copy.organisationUnit }} — staff console.</p>
     </header>
 
     @if (error(); as message) {

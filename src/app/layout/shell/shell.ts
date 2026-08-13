@@ -7,6 +7,7 @@ import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import { NAVIGATION, type NavSection } from '@core/navigation/navigation';
 import { NotificationStore } from '@core/notifications/notification.store';
 import { barangayName, type NotificationId } from '@domain/index';
+import { BrandMark } from '@shared/brand/brand-mark';
 import { Drawer } from '@shared/ui/drawer/drawer';
 import { RelativeTimePipe } from '@shared/pipes/relative-time.pipe';
 import { EmptyState } from '@shared/ui/empty-state/empty-state';
@@ -19,7 +20,15 @@ import { EmptyState } from '@shared/ui/empty-state/empty-state';
 @Component({
   selector: 'app-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, Drawer, EmptyState, RelativeTimePipe],
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet,
+    BrandMark,
+    Drawer,
+    EmptyState,
+    RelativeTimePipe,
+  ],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
 })

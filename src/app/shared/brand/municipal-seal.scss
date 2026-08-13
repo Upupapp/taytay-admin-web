@@ -1,0 +1,23 @@
+/* Placeholder styling is deliberately plain: a dashed square with initials.
+   No circle, no wreath, no gold, no ribbon — nothing that could be mistaken
+   for, or read as a redrawing of, an official government seal. DL-22. */
+.seal-placeholder {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--seal-placeholder-border);
+  border-radius: var(--radius-sm);
+  background: var(--seal-placeholder-bg);
+  color: var(--seal-placeholder-fg);
+  font-weight: 700;
+  /* Scales with the reserved box so the mark reads at every size. */
+  font-size: 32%;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.seal-placeholder__mark {
+  user-select: none;
+}

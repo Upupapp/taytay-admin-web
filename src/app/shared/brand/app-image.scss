@@ -1,0 +1,75 @@
+.img {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  /* The box is reserved from the first paint; nothing here depends on the
+     image having loaded, so a slow or failed load cannot move the page. */
+  flex: none;
+  vertical-align: middle;
+  background: var(--c-surface-muted);
+}
+
+.img--rounded {
+  border-radius: 50%;
+}
+
+.img__el {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Never distort: fit the reserved box without changing the artwork's own
+     proportions. Critical for the seal, which must not be stretched. */
+  object-fit: contain;
+}
+
+.img__el--pending {
+  opacity: 0;
+}
+
+.img__pending {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    var(--c-surface-muted) 25%,
+    var(--c-border) 37%,
+    var(--c-surface-muted) 63%
+  );
+  background-size: 400% 100%;
+  animation: img-shimmer 1400ms ease-in-out infinite;
+}
+
+.img__fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--c-border-strong);
+  background: var(--c-surface-muted);
+  color: var(--c-text-subtle);
+}
+
+.img__fallback-glyph {
+  font-size: 18px;
+  line-height: 1;
+}
+
+@keyframes img-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* Ambient animation is removed outright under reduced motion, not merely
+   shortened — DL-15. A 0.01ms shimmer would loop furiously instead of stopping. */
+@media (prefers-reduced-motion: reduce) {
+  .img__pending {
+    animation: none;
+    background: var(--c-surface-muted);
+  }
+}

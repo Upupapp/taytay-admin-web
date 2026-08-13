@@ -39,35 +39,7 @@
   gap: var(--space-3);
 }
 
-.shell__brand-mark {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-md);
-  background: rgb(255 255 255 / 14%);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.shell__brand-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.3;
-}
-
-.shell__brand-text strong {
-  color: #fff;
-  font-size: 14px;
-}
-
-.shell__brand-text small {
-  color: #a9c3dc;
-  font-size: 11.5px;
-}
+/* The lockup itself is owned by app-brand-mark; the shell only positions it. */
 
 .shell__nav {
   display: flex;

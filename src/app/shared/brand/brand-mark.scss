@@ -1,0 +1,38 @@
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-compact);
+}
+
+.mark__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.mark__name {
+  font-size: 14px;
+}
+
+.mark__unit {
+  font-size: 11.5px;
+}
+
+/* On a light page surface. */
+.mark--dark .mark__name {
+  color: var(--c-text);
+}
+
+.mark--dark .mark__unit {
+  color: var(--c-text-muted);
+}
+
+/* On the brand-coloured sidebar. Both values are audited against the sidebar
+   fill in brand-palette.spec.ts. */
+.mark--light .mark__name {
+  color: var(--brand-on-primary);
+}
+
+.mark--light .mark__unit {
+  color: #a9c3dc;
+}

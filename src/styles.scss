@@ -1,16 +1,27 @@
 /* Global stylesheet: design tokens, reset and the few element defaults the
-   shell relies on. Component-specific styling lives in component styles. */
+   shell relies on. Component-specific styling lives in component styles.
+   The brand identity layer (brand ramp, focus ring, semantic spacing, seal
+   sizing) lives in ./styles/_brand-tokens.scss. */
+
+@use './styles/brand-tokens';
 
 :root {
   /* Neutral ramp */
   --c-bg: #f4f6f8;
   --c-surface: #ffffff;
   --c-surface-muted: #f8fafc;
+  /* Decorative separators (table rules, card edges). Exempt from WCAG 1.4.11:
+     they do not identify a component or convey state. */
   --c-border: #dfe4ea;
-  --c-border-strong: #c3ccd6;
+  /* Boundaries of interactive controls (inputs, buttons). For a text input the
+     border IS what identifies the control, so 1.4.11 applies and 3:1 is
+     required. The previous #c3ccd6 measured 1.62:1. See DL-21. */
+  --c-border-strong: #7d8894;
   --c-text: #1b2733;
   --c-text-muted: #5b6b7c;
-  --c-text-subtle: #7b8896;
+  /* Darkened in TAB 03: the previous #7b8896 measured 3.62:1 on white and
+     failed WCAG 1.4.3 AA (4.5:1) wherever it carried real text. See DL-21. */
+  --c-text-subtle: #606b78;
 
   /* Brand: municipal blue with a warm accent */
   --c-brand: #10559a;
@@ -96,10 +107,11 @@ button {
   font: inherit;
 }
 
-/* Visible focus everywhere: the office keyboard-navigates through long tables. */
+/* Visible focus everywhere: the office keyboard-navigates through long tables.
+   Driven by the single focus-ring token so every occurrence is identical. */
 :focus-visible {
-  outline: 2px solid var(--c-brand);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .visually-hidden {

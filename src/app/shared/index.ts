@@ -4,6 +4,13 @@
  * finds it instead of re-inventing it.
  */
 export * from './state/view-state';
+export * from './brand/app-image';
+export * from './brand/asset-manifest';
+export * from './brand/brand-mark';
+export * from './brand/brand-palette';
+export * from './brand/brand.copy';
+export * from './brand/contrast';
+export * from './brand/municipal-seal';
 export * from './pipes/barangay-name.pipe';
 export * from './pipes/person-name.pipe';
 export * from './pipes/peso.pipe';

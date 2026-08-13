@@ -1,0 +1,65 @@
+/* Taytay Rizal Social Welfare — brand token layer.
+ *
+ * The digital identity of the staff console. Three things live here and
+ * nowhere else: the brand colour ramp, the semantic spacing aliases, and the
+ * brand-surface sizing used by the logo/seal components.
+ *
+ * IMPORTANT — these colours are this application's palette. They are NOT
+ * claimed to be the official colours of the Municipality of Taytay, and no
+ * Pantone, CMYK or spot-colour equivalence is asserted anywhere in this
+ * repository. See docs/brand/README.md and DL-21.
+ *
+ * Every foreground/background pair declared here is asserted against WCAG 2.2
+ * Level AA by `src/app/shared/brand/brand-palette.spec.ts`. Change a value and
+ * the test tells you whether it still conforms.
+ */
+
+:root {
+  /* ── Brand ramp ───────────────────────────────────────────────────────── */
+  --brand-primary: #10559a;
+  --brand-primary-hover: #0b3f74;
+  --brand-primary-soft: #e8f0f9;
+  /* Ink used for text placed ON the primary brand colour. */
+  --brand-on-primary: #ffffff;
+
+  /* ── Focus ring ───────────────────────────────────────────────────────── */
+  /* One token so every focus style is identical and auditable.
+     Meets WCAG 1.4.11 (3:1 non-text) against every app surface. */
+  --focus-ring-color: #10559a;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  /* ── Semantic spacing (DL-17) ─────────────────────────────────────────── */
+  /* Aliases over the numeric scale in styles.scss. `--space-card` states
+     intent at the call site and survives a change to the underlying scale;
+     `--space-4` does not. Prefer these in new code. */
+  --space-micro: var(--space-1);
+  --space-compact: var(--space-2);
+  --space-snug: var(--space-3);
+  --space-base: var(--space-4);
+  --space-card: var(--space-5);
+  --space-section: var(--space-6);
+  --space-page: var(--space-7);
+
+  /* ── Brand surface sizing ─────────────────────────────────────────────── */
+  /* Fixed box sizes for the seal and brand mark. Reserving space at every
+     size is what keeps an image swap from shifting layout. */
+  --seal-size-sm: 32px;
+  --seal-size-md: 48px;
+  --seal-size-lg: 96px;
+  --seal-size-xl: 160px;
+
+  /* Neutral treatment for the provenance-aware seal placeholder. Deliberately
+     unlike a government seal: no gold, no wreath, no circular emblem styling,
+     so a placeholder can never be mistaken for the real thing. */
+  --seal-placeholder-bg: #eceff2;
+  --seal-placeholder-fg: #46525f;
+  --seal-placeholder-border: #7d8894;
+}
+
+/* Standard focus treatment. Applied globally in styles.scss; exposed here as a
+   mixin-like class so component styles can opt a custom element in. */
+.focus-ring {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}

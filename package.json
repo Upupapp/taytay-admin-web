@@ -11,7 +11,8 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify": "npm run lint && npm run typecheck && npm test && npm run build"
+    "verify": "npm run lint && npm run typecheck && npm run check:brand && npm test && npm run build",
+    "check:brand": "node tools/check-brand-assets.mjs"
   },
   "private": true,
   "packageManager": "npm@11.12.1",
