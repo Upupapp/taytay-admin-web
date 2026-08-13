@@ -249,7 +249,8 @@ rather than distracting.
 
 ### DL-16 · Two small accessibility gaps in TAB 01 output
 
-**Status:** Open (logged, not fixed here).
+**Status:** **Superseded by `DL-25`** (both gaps closed in TAB 03). The record
+below is kept as written, because it is the evidence that they were found.
 **Evidence:** `GETHIRED_BRAND_ACCESSIBILITY_GUARDRAILS.md` checklist vs our source.
 
 1. **No `aria-busy` on loading regions.** Our `Skeleton` is correctly
@@ -343,3 +344,175 @@ Also new: 2.4.12 Focus Not Obscured (Enhanced) (AAA), 2.4.13 Focus Appearance
 which is exactly the kind of thing this audit exists to surface early. The two
 gaps in DL-16 are also WCAG-relevant (focus trapping supports 2.4.3 Focus Order
 and 2.1.2 No Keyboard Trap's intent for dialogs).
+
+---
+
+## Brand and asset system (TAB 03)
+
+### DL-21 · The palette is the application's, not the municipality's — and it is audited
+
+**Status:** Settled (implemented in TAB 03).
+**Source:** WCAG 2.2 §1.4.3 Contrast (Minimum) and §1.4.11 Non-text Contrast,
+verified at https://www.w3.org/TR/WCAG22/ on 2026-08-14.
+
+This project has no access to a Taytay brand specification. It therefore makes
+no claim about official municipal colours, and asserts **no Pantone, PMS, CMYK
+or spot-colour equivalence** for anything. `tools/check-brand-assets.mjs` fails
+the build if such a claim appears anywhere in `src/` or `docs/`.
+
+What the palette _is_: the restrained municipal-blue ramp chosen in TAB 01, now
+mirrored in `src/app/shared/brand/brand-palette.ts` so it can be checked by
+machine rather than by eye. `brand-palette.spec.ts` asserts every rendered
+foreground/background pair against its AA threshold.
+
+Auditing it caught two values shipped in TAB 01 that did not conform:
+
+| Token               | Was       | Measured | Now       | Clause                 |
+| ------------------- | --------- | -------- | --------- | ---------------------- |
+| `--c-text-subtle`   | `#7b8896` | 3.62:1   | `#606b78` | 1.4.3 AA (needs 4.5:1) |
+| `--c-border-strong` | `#c3ccd6` | 1.62:1   | `#7d8894` | 1.4.11 AA (needs 3:1)  |
+
+Both regressions are pinned by assertions, so reinstating either value fails the
+suite.
+
+Two exemptions are recorded rather than "fixed", because the standard grants
+them: status-badge tints (the label carries the meaning, not the tint) and
+decorative rules (`--c-border`, which identifies nothing). Both are listed in
+`DOCUMENTED_EXEMPTIONS` with the clause relied on.
+
+**Consequence:** adding a colour pairing to a component without adding it to
+`AUDITED_PAIRS` is how a palette silently stops conforming. The audit is only as
+good as that list.
+
+### DL-22 · The municipal seal is not vendored, and the placeholder is not a seal
+
+**Status:** Settled (implemented in TAB 03).
+
+The official seal is deliberately **not** copied into this repository. Three
+independent reasons, each checkable:
+
+1. **Only derivatives are available.** The official site
+   (https://www.taytayrizal.gov.ph/, HTTP 200 on 2026-08-14) is Wix-hosted and
+   serves imagery through `static.wixstatic.com` transform URLs such as
+   `.../v1/fill/w_225,h_150,al_c,q_85,...,enc_avif,quality_auto/taytay%20gov.png`.
+   Those are resized, re-encoded renditions. Copying one would mean shipping an
+   **altered** seal — precisely what this TAB forbids.
+2. **No permission is published.** The site carries no copyright notice, no
+   terms-of-use page, no licence and no attribution statement (checked
+   2026-08-14). There is nothing to rely on, and no attribution text that could
+   be reproduced without inventing it.
+3. **Absence of copyright is not permission.** RA 8293 §176.1 — verified at
+   https://lawphil.net/statutes/repacts/ra1997/ra_8293_1997.html — provides that
+   "No copyright shall subsist in any work of the Government of the Philippines",
+   requiring prior approval only for exploitation _for profit_. That removes a
+   copyright barrier; it does not grant the right to reproduce an official
+   emblem, and seals carry separate heraldic and local-ordinance rules about
+   which this project has **no evidence**. No Taytay ordinance is cited because
+   none was located, and inventing one would be worse than the gap.
+   (The Official Gazette copy of RA 8293 returned HTTP 403; the text was read
+   from a law repository instead. Flagged so the citation is not overstated.)
+
+Instead, `MunicipalSeal` renders a **provenance-aware placeholder**: a dashed
+square with the letters "TR" in the application typeface. No circle, no wreath,
+no gold, no ribbon — nothing that imitates or is derived from a government seal.
+Its accessible name is "Municipal seal not available", so a screen-reader user
+learns exactly what a sighted user learns.
+
+The safety property is **structural**: the component has no `src` input. Path
+and dimensions come from the manifest, gated on `provenance === 'vendored'`, so
+it cannot render an asset the manifest has not cleared. Acquisition is a data
+change (fill in the manifest, drop the file into `public/brand/`), not a code
+change — the workflow is in `public/brand/README.md`.
+
+**Consequence:** the seal is never recoloured, cropped, redrawn, rotated or
+overlaid. It is drawn into a fixed square with `object-fit: contain`, so it
+scales uniformly or not at all. WCAG exempts logotypes from contrast, and since
+we may not alter it, its contrast is not ours to adjust.
+
+### DL-23 · Copy lives in typed copy modules — supersedes the architecture half of DL-18
+
+**Status:** Settled (implemented in TAB 03). Supersedes `DL-18` in part.
+**Source:** Angular's official i18n guide (https://angular.dev/guide/i18n),
+whose workflow is "Add the localize package" (`@angular/localize`) and "Deploy
+multiple locales" — build-time, one bundle per locale.
+
+`DL-18` deferred bilingual UI while warning that it had to be decided **before**
+feature TABs wrote copy. TAB 03 is the first TAB to add material user-facing
+copy, so the decision is due now.
+
+**Decided:** every user-facing string lives in a typed `*.copy.ts` module beside
+the code it serves, never inline in a template. `brand.copy.ts` is the worked
+example.
+
+Why this and not the alternatives:
+
+- **`@angular/localize` is the destination, not the starting point.** Its
+  `$localize` tagged template works on string literals in TypeScript, so today's
+  `'Municipal seal not available'` becomes a tagged literal and no call site
+  moves. Installing it now would buy per-locale builds we have no translations
+  for.
+- **`@ngx-translate` is rejected.** It is a dependency, it is not the official
+  path, and it was already refused for feature purposes in FSM §5.
+- **Runtime language switching is deferred, not chosen.** If the LGU requires
+  switching without a reload, that requirement supersedes this entry — the
+  centralised copy modules make either path cheap, which is the point.
+
+Privacy by default: no copy string is personalised, and none is sent to a third
+party for translation at runtime. A future locale preference is a staff-profile
+setting held by the API — never a tracking vector, never in analytics.
+
+**Consequence:** a template containing a bare user-facing string literal is now
+a defect. `DL-18` remains in force for the _product_ question of whether the UI
+ships in Filipino; only the architecture half is settled here.
+
+### DL-24 · Layout shift is prevented by reserved boxes, not by NgOptimizedImage
+
+**Status:** Settled (implemented in TAB 03).
+**Source:** Angular's image guide (https://angular.dev/guide/image-optimization),
+which describes NgOptimizedImage as "Preventing layout shift by requiring width
+and height" and warning "if the image will be visually distorted when rendered".
+
+`AppImage` requires `width` and `height` and reserves that box with an explicit
+`aspect-ratio` before the network responds. A slow, failed or missing image
+therefore cannot reflow the page — the same mechanism NgOptimizedImage relies
+on, applied directly. `object-fit: contain` guarantees artwork is never
+distorted to fill the box, which matters most for the seal.
+
+NgOptimizedImage itself is **deferred, not rejected**. Its distinctive value is
+CDN loaders, `priority` hints and srcset generation; this application currently
+vendors **zero** raster assets and has no image CDN, so it would add build-time
+warnings with nothing to optimise. Adopt it when the first raster asset is
+vendored, or when an image CDN appears.
+
+**Consequence:** every image goes through `AppImage` or a component built on it.
+An `<img>` written directly in a feature template, with no reserved box, is a
+defect.
+
+### DL-25 · The DL-16 accessibility gaps are closed — supersedes DL-16
+
+**Status:** Settled (implemented in TAB 03). **Supersedes `DL-16`.**
+
+`DL-16` recorded two real gaps in TAB 01 output and left them for "the next TAB
+that touches those primitives". TAB 03 owns accessibility, so both are closed
+here.
+
+1. **`aria-busy` on loading regions.** `AsyncContent` marks its host busy while
+   the state is `loading` or `idle`, and `DataTable` marks its table region busy
+   while rows load. Assistive technology now announces "busy" instead of reading
+   a half-built section — or worse, an empty one. `AppImage` does the same for a
+   single image.
+2. **Focus trap in `Modal` and `Drawer`.** `bindOverlay` now handles `Tab` and
+   `Shift+Tab`, cycling focus between the first and last focusable descendants
+   of the panel and pulling focus back when it has escaped. A dialog that
+   declares `aria-modal="true"` while letting Tab walk into the page behind it
+   is lying to assistive technology: the content behind is inert to a mouse user
+   but not to a keyboard user.
+
+Both are covered by tests — wrap forward, wrap backward, recovery from escaped
+focus, and no interference once closed.
+
+**Consequence:** `DL-16` is closed. Two WCAG 2.2 items named in `DL-20` remain
+open and are **not** claimed as resolved: **2.4.11 Focus Not Obscured** (the
+sticky topbar and sticky table headers can still overlap a focused row) and
+**2.5.8 Target Size** (small icon buttons in `DataTable`, `Modal` and `Drawer`
+have not been measured).
