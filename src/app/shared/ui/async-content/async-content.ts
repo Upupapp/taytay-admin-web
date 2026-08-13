@@ -1,5 +1,12 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, output, TemplateRef } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  output,
+  TemplateRef,
+} from '@angular/core';
 
 import type { ViewState } from '@shared/state/view-state';
 
@@ -22,6 +29,12 @@ import { Skeleton } from '../loading/skeleton';
   selector: 'app-async-content',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgTemplateOutlet, EmptyState, LoadingIndicator, Skeleton],
+  // aria-busy marks the whole region as in-flight, so assistive technology
+  // announces "busy" rather than reading a half-built section. Resolves the
+  // first half of DL-16 (superseded by DL-25).
+  host: {
+    '[attr.aria-busy]': 'isBusy() ? "true" : null',
+  },
   template: `
     @let current = state();
 
@@ -64,4 +77,10 @@ export class AsyncContent<TValue> {
   readonly skeletonLines = input(4);
 
   readonly retryRequested = output<void>();
+
+  /** Idle counts as busy: data has been asked for and has not arrived. */
+  protected readonly isBusy = computed(() => {
+    const kind = this.state().kind;
+    return kind === 'loading' || kind === 'idle';
+  });
 }

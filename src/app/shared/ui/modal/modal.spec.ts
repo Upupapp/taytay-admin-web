@@ -124,6 +124,83 @@ describe('Modal', () => {
   });
 });
 
+describe('overlay focus trap (DL-16 -> DL-25)', () => {
+  function tab(shiftKey = false): KeyboardEvent {
+    const event = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      shiftKey,
+      bubbles: true,
+      cancelable: true,
+    });
+    document.dispatchEvent(event);
+    return event;
+  }
+
+  async function openModal() {
+    const fixture = await host();
+    fixture.componentInstance.modalOpen.set(true);
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+    const focusable = Array.from(element.querySelectorAll<HTMLElement>('.modal__panel button'));
+    return { fixture, element, focusable };
+  }
+
+  it('finds more than one focus stop to cycle between', async () => {
+    const { focusable } = await openModal();
+    // Close button + the projected action. If this ever drops to one the
+    // wrap-around assertions below stop proving anything.
+    expect(focusable.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('wraps forward from the last stop to the first', async () => {
+    const { focusable } = await openModal();
+    const first = focusable[0] as HTMLElement;
+    const last = focusable[focusable.length - 1] as HTMLElement;
+
+    last.focus();
+    const event = tab();
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(first);
+  });
+
+  it('wraps backward from the first stop to the last', async () => {
+    const { focusable } = await openModal();
+    const first = focusable[0] as HTMLElement;
+    const last = focusable[focusable.length - 1] as HTMLElement;
+
+    first.focus();
+    const event = tab(true);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(last);
+  });
+
+  it('pulls focus back when it has escaped to the page behind', async () => {
+    const { element, focusable } = await openModal();
+    const outside = document.createElement('button');
+    document.body.appendChild(outside);
+    outside.focus();
+    expect(document.activeElement).toBe(outside);
+
+    const event = tab();
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(element.querySelector('.modal__panel')?.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).toBe(focusable[0]);
+    outside.remove();
+  });
+
+  it('does not interfere with Tab once the dialog is closed', async () => {
+    const { fixture } = await openModal();
+    fixture.componentInstance.modalOpen.set(false);
+    await fixture.whenStable();
+
+    const event = tab();
+    expect(event.defaultPrevented).toBe(false);
+  });
+});
+
 describe('Drawer', () => {
   it('projects its body when opened', async () => {
     const fixture = await host();

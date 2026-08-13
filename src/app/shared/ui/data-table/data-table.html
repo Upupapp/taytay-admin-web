@@ -1,4 +1,6 @@
-<div class="table-wrap">
+<!-- aria-busy so the whole table region reads as in-flight rather than empty
+     while rows are loading — DL-16, superseded by DL-25. -->
+<div class="table-wrap" [attr.aria-busy]="loading() ? 'true' : null">
   <table class="table">
     <caption class="visually-hidden">
       {{

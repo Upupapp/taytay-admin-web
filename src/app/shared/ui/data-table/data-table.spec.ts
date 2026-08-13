@@ -59,6 +59,14 @@ describe('DataTable', () => {
     expect(element.querySelectorAll('tbody tr')).toHaveLength(0);
   });
 
+  it('marks the table region busy while loading (DL-16 -> DL-25)', async () => {
+    const loading = (await render({ loading: true })).nativeElement as HTMLElement;
+    expect(loading.querySelector('.table-wrap')?.getAttribute('aria-busy')).toBe('true');
+
+    const settled = (await render()).nativeElement as HTMLElement;
+    expect(settled.querySelector('.table-wrap')?.getAttribute('aria-busy')).toBeNull();
+  });
+
   it('shows the empty state only once loading has finished', async () => {
     const loading = (await render({ rows: [], loading: true })).nativeElement as HTMLElement;
     expect(loading.querySelector('app-empty-state')).toBeNull();
