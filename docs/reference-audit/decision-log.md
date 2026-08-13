@@ -516,3 +516,103 @@ open and are **not** claimed as resolved: **2.4.11 Focus Not Obscured** (the
 sticky topbar and sticky table headers can still overlap a focused row) and
 **2.5.8 Target Size** (small icon buttons in `DataTable`, `Modal` and `Drawer`
 have not been measured).
+
+> Both were closed in TAB 04 — see `DL-26`.
+
+---
+
+## Application shell (TAB 04)
+
+### DL-26 · Focus Not Obscured and Target Size are closed by contract, not by claim
+
+**Status:** Settled (implemented in TAB 04). Closes the two items left open by
+`DL-20` and restated in `DL-25`.
+**Source:** WCAG 2.2, verified at https://www.w3.org/TR/WCAG22/ on 2026-08-14.
+
+- **2.4.11 Focus Not Obscured (Minimum), AA** — "When a user interface
+  component receives keyboard focus, the component is not **entirely** hidden
+  due to author-created content." The shell has a sticky topbar, so a focused
+  control scrolled into view near the top of the page could end up beneath it.
+  Fixed with `scroll-margin-block-start` on every focusable element, derived
+  from `--shell-topbar-height` so the offset cannot drift from the real bar.
+  Sticky `<th>` gets the same treatment.
+- **2.5.8 Target Size (Minimum), AA** — 24×24 CSS px. Met **outright** rather
+  than through the standard's spacing exception, because spacing is fragile: it
+  breaks the moment two controls move closer together. A single `.icon-button`
+  contract carries the floor, and every icon-only control uses it. Applying it
+  found three that did not: the `Modal`, `Drawer` and toast close buttons.
+
+Neither can be asserted by a unit test, because jsdom performs no layout and
+reports no computed size. Claiming them from a jsdom test would be an
+unsupported claim. `tools/check-shell-a11y.mjs` therefore audits the **CSS
+contract that produces them** — the token value, its application to
+`.icon-button`, the scroll-margin rule and its selector coverage — and fails the
+build if any of it is removed. The check was verified against a deliberately
+introduced regression (lowering `--target-min` to 16px) before being trusted.
+
+**Consequence:** an icon-only button that does not carry `.icon-button` is now a
+build failure, not a review comment. The remaining honest gap is that no
+real-browser measurement was possible in this environment (no Playwright or
+Puppeteer is installed, and none was added for a single audit).
+
+### DL-27 · The sidebar changes semantics, not just appearance, at the breakpoint
+
+**Status:** Settled (implemented in TAB 04).
+
+Below 900px the sidebar becomes an overlay. That is not a styling change: an
+overlay that covers the page must trap focus, close on Escape, be dismissible
+by a scrim, and announce itself as a dialog — while the wide sidebar must do
+none of those things, because it is permanent navigation and Escape must not
+remove the only way to move around.
+
+CSS cannot express that difference, so `ViewportService` observes the one
+breakpoint and the shell switches semantics: `role="dialog"` + `aria-modal`
+
+- `inert` when closed on compact, plain landmark when wide. Being injectable is
+  what lets both sizes be tested; jsdom never matches a media query, so a shell
+  reading `matchMedia` inline would be untestable at the compact size.
+
+**Identity and sign-out live in the sidebar footer, not the topbar.** In the
+topbar they would have to be hidden on a narrow screen to keep the row on one
+line, which strands a mobile user with no way to sign out. In the sidebar they
+are one action away on desktop and two on mobile.
+
+**Consequence:** the "every module in at most two navigation actions" guarantee
+follows from the navigation being _flat_ — one action wide (click the link), two
+compact (open drawer, click). A future sub-menu would break it, which is why the
+test asserts there is no nested list inside a nav item.
+
+### DL-28 · Global search ships as a trigger only
+
+**Status:** Settled (implemented in TAB 04). Binding on the search TAB.
+
+The shell owns the button, its accessible name and the Ctrl/Cmd+K shortcut, and
+emits `activated`. It does **not** own results, indexing or permissions.
+
+Search spans residents, assistance requests and programmes, each with its own
+data scope and its own sensitive-record rules (`DL-19`). Implementing results
+here would mean inventing a cross-module permission story inside a layout
+component — the wrong place, and beyond what this TAB was asked to do. Least
+privilege applies to code as much as to users: the shell gets exactly the
+capability it needs to be finished and keyboard-tested.
+
+Activating it today opens an honest "not built yet" panel rather than dead-
+clicking.
+
+**Consequence:** the search TAB replaces the shell's handler. It does not need
+to touch the trigger, the shortcut or the topbar layout.
+
+### DL-29 · Route progress is indeterminate, and says so
+
+**Status:** Settled (implemented in TAB 04).
+
+Every feature route is lazy, so choosing a module fetches a chunk before
+anything renders; on the office's connection that reads as a frozen console.
+`RouteProgress` fills the gap.
+
+It is deliberately **indeterminate**. We do not know how long a chunk takes, and
+a percentage would be the "fake progress bar jumping ahead" that `EPL-03`
+forbids. The moving bar is `aria-hidden`; the announcement is a visually-hidden
+`aria-live="polite"` region, so screen-reader users are told once instead of
+hearing an animation. Under `prefers-reduced-motion` the bar stops moving but
+stays visible, so the signal survives without the motion.

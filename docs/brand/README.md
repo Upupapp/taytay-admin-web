@@ -145,9 +145,8 @@ they are about files and the repository as a whole:
 
 - **The seal itself.** Requires the LGU to supply the master file and written
   permission. Everything downstream is ready.
-- **WCAG 2.4.11 Focus Not Obscured (AA)** — the sticky topbar and sticky table
-  headers can still overlap a focused row. Open from `DL-20`.
-- **WCAG 2.5.8 Target Size (AA)** — small icon buttons in `DataTable`, `Modal`
-  and `Drawer` have not been measured against the 24×24 px minimum.
+- ~~**WCAG 2.4.11 Focus Not Obscured (AA)**~~ and ~~**WCAG 2.5.8 Target Size
+  (AA)**~~ — both closed in TAB 04, see `DL-26`. Applying the 24×24 contract
+  found three offenders: the `Modal`, `Drawer` and toast close buttons.
 - **Bilingual UI** — the architecture is settled (`DL-23`); whether the console
   ships in Filipino remains a product decision (`DL-18`).
