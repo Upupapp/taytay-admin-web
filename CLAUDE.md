@@ -214,6 +214,13 @@ practice. **These citations were written from established statute knowledge and
 were not re-verified against an online primary source in an offline run** — a
 TAB that depends on the precise text of an issuance must verify it first.
 
+**The poverty threshold is the exception, and the pattern to follow.** It is
+sourced from a named PSA publication with its geography, reference year,
+publication date and URL held in the code beside the figure, and cited on screen
+(`DL-45`, `domain/households/poverty-threshold.ts`). Any published statistic
+this application relies on gets the same treatment: never a bare constant, never
+an invented working number.
+
 ---
 
 ## 7. UI primitives — use these, do not re-invent

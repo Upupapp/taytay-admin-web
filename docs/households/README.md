@@ -5,7 +5,7 @@ with.
 
 Decisions: `DL-42` (advisory, never automated), `DL-43` (composition is
 transactional), `DL-44` (the band is disclosed, not recomputed), `DL-45` (the
-threshold is a placeholder) in
+published poverty threshold and its provenance) in
 [`../reference-audit/decision-log.md`](../reference-audit/decision-log.md).
 
 ---
@@ -31,11 +31,35 @@ This is enforced, not asserted (`DL-42`). Four things hold it up:
   household by a person and is never derived from the snapshot.
 
 _Evidence:_ `npm run check:vulnerability` fails the build on any of the above.
-The checker was validated against five deliberately planted regressions — a
+The checker was validated against nine deliberately planted regressions — a
 `score` field, an eligibility module importing the snapshot, a factor code
-dropped from each of the two copy maps, and the advisory sentence removed from
-the component — before it was trusted. `households.spec.ts` asserts the advisory
-sentence is on the list page and on the snapshot itself.
+dropped from each of the two copy maps, the advisory sentence removed from the
+component, and the four threshold regressions below — before it was trusted.
+`households.spec.ts` asserts the advisory sentence is on the list page and on
+the snapshot itself.
+
+### 1a. The income threshold is published, and cited where it is used
+
+`ACTIVE_POVERTY_THRESHOLD` is ₱39,055 per person per year: the PSA's 2023
+full-year annual per-capita poverty threshold for **Rizal province**, published
+15 August 2024. Rizal rather than CALABARZON (₱37,096) because Taytay is in
+Rizal and the province is the closest authoritative geography the PSA publishes
+for it (`DL-45`).
+
+`PovertyThreshold` carries the amount, geography, reference year, publication
+date, source and source URL as one object, and the panel cites all of it on
+screen with a followable link. The comparison is made **annually** — the income
+is multiplied by twelve rather than the published figure divided by it — so the
+decision boundary sits exactly where the PSA put it rather than at a rounded
+₱3,254.58. The monthly figure is derived for display only, and shown to the
+centavo so it reads as derived.
+
+_Evidence:_ `poverty-threshold.spec.ts` pins the figure, the geography, the
+reference year and the publication date, and asserts the boundary case is
+decided without a rounding error. The checker fails the build if a provenance
+field is dropped, if the amount changes without the rest of the citation, if the
+comparison reverts to a rounded month, or if the citation stops being rendered
+— each validated against a planted regression.
 
 ### 2. Every factor is inspectable and correctable, with an audit trace
 
@@ -91,6 +115,7 @@ membership, and that a person cannot be taken from another household.
 | ---------------------------- | ----------------------------------------------------------------------------------- |
 | Household, roles, invariants | `domain/households/household.ts`                                                    |
 | Indicators and provenance    | `domain/households/household-vulnerability.ts`                                      |
+| Published poverty threshold  | `domain/households/poverty-threshold.ts`                                            |
 | Detail aggregate             | `domain/households/household-profile.ts`                                            |
 | Adapter                      | `data/mock/mock-household.repository.ts`                                            |
 | Transactional state          | `data/mock/mock-resident.store.ts`                                                  |
@@ -109,11 +134,10 @@ keepable in step.
 
 ## Known gaps
 
-- **The per-capita threshold is a placeholder** (`DL-45`). The PSA publishes an
-  official poverty threshold per region and semester; this repository is offline
-  and has not read one. The figure must be reconciled with the PSA release and
-  the office's AICS practice before it is quoted to anyone. Nothing depends on
-  it being right, which is the point.
+- **The reference year will age** (`DL-45`). The threshold is the PSA's 2023
+  full-year figure. When the next full-year release lands, the amount,
+  `referenceYear`, `publishedOn` and `sourceUrl` change together, as does the
+  pinned figure in the checker.
 - **Households cannot be created or dissolved.** A household exists because the
   seed says so; there is no "register a household" or "split this family"
   workflow. Splitting is the harder half and needs a decision about what happens

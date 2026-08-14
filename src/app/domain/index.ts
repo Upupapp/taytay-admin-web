@@ -15,6 +15,7 @@ export * from './geography/barangay';
 export * from './households/household';
 export * from './households/household-profile';
 export * from './households/household-vulnerability';
+export * from './households/poverty-threshold';
 export * from './notifications/notification';
 export * from './ports/access-context';
 export * from './ports/repositories';
