@@ -1,0 +1,205 @@
+<app-async-content [state]="state()" [content]="body" [skeletonLines]="8">
+  <ng-template #body let-detail>
+    @if (detail === null) {
+      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <p class="household__back">
+        <a class="btn" routerLink="/households">{{ copy.back }}</a>
+      </p>
+    } @else {
+      <app-page-header
+        [title]="detail.household.referenceNumber"
+        [subtitle]="barangay(detail) + ' · ' + copy.subtitle"
+      >
+        <button
+          page-actions
+          *appHasPermission="'household.manage'"
+          type="button"
+          class="btn"
+          (click)="toggleEditing()"
+        >
+          {{ editing() ? memberCopy.stopEditing : memberCopy.edit }}
+        </button>
+      </app-page-header>
+
+      <div class="household">
+        <!-- ── The record ───────────────────────────────────────────────── -->
+        <section class="card panel" aria-labelledby="household-heading">
+          <h2 class="panel__heading" id="household-heading">{{ copy.detailsHeading }}</h2>
+          <dl class="facts">
+            <div class="facts__row">
+              <dt>{{ copy.reference }}</dt>
+              <dd>{{ detail.household.referenceNumber }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.barangay }}</dt>
+              <dd>{{ barangay(detail) }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.purok }}</dt>
+              <dd>{{ detail.household.address.purokOrSitio ?? copy.none }}</dd>
+            </div>
+            <div class="facts__row facts__row--wide">
+              <dt>{{ copy.street }}</dt>
+              <dd>{{ detail.household.address.streetAddress ?? copy.none }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.income }}</dt>
+              <dd>{{ detail.household.monthlyIncome | peso }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.size }}</dt>
+              <dd>{{ detail.members.length }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.indigent }}</dt>
+              <dd>{{ detail.household.isIndigent ? copy.yes : copy.no }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.updated }}</dt>
+              <dd>{{ detail.household.audit.updatedAt | date: 'medium' }}</dd>
+            </div>
+          </dl>
+          <p class="panel__note">{{ copy.classifiedNote }}</p>
+        </section>
+
+        <!-- ── Who lives here ───────────────────────────────────────────── -->
+        <section class="card panel panel--wide" aria-labelledby="members-heading">
+          <h2 class="panel__heading" id="members-heading">{{ copy.membersHeading }}</h2>
+
+          <ul class="members">
+            @for (member of detail.members; track member.view.resident.id) {
+              <li>
+                <app-resident-summary-card
+                  compact
+                  [view]="member.view"
+                  [relationship]="roleLabel(member)"
+                  [routerLink]="memberLink(member)"
+                />
+              </li>
+            }
+          </ul>
+
+          @if (editing()) {
+            <app-household-member-editor
+              [detail]="detail"
+              [saving]="saving()"
+              (submitted)="onMembershipSubmitted($event)"
+            />
+          }
+        </section>
+
+        <!-- ── Why it looks exposed ─────────────────────────────────────── -->
+        <section class="card panel panel--wide">
+          <app-vulnerability-snapshot
+            [snapshot]="detail.snapshot"
+            [canCorrect]="canCorrect()"
+            (correctionRequested)="askCorrect($event)"
+            (clearRequested)="askClear($event)"
+          />
+        </section>
+
+        <!-- ── What has been done to it ─────────────────────────────────── -->
+        <section class="card panel panel--wide" aria-labelledby="audit-heading">
+          <h2 class="panel__heading" id="audit-heading">{{ copy.auditHeading }}</h2>
+          @if (detail.audit.length > 0) {
+            <ol class="trail">
+              @for (entry of detail.audit; track entry.id) {
+                <li class="trail__entry">
+                  <p class="trail__summary">{{ entry.summary }}</p>
+                  <p class="trail__meta">
+                    {{ entry.actorName }} · {{ entry.occurredAt | date: 'medium' }}
+                  </p>
+                  @if (entry.reason; as reason) {
+                    <p class="trail__reason">{{ copy.auditReason }}: “{{ reason }}”</p>
+                  }
+                </li>
+              }
+            </ol>
+          } @else {
+            <p class="panel__empty">{{ copy.noAudit }}</p>
+          }
+        </section>
+      </div>
+
+      <!-- ── Correcting an indicator ────────────────────────────────────── -->
+      <app-modal
+        [open]="correctionOpen()"
+        [heading]="correctionHeading()"
+        [description]="correctionCopy.description"
+        size="small"
+        (dismissed)="cancelCorrection()"
+      >
+        <div modal-body class="dialogue">
+          <label class="dialogue__field">
+            <span class="dialogue__label">{{ correctionCopy.stateLabel }}</span>
+            <select class="dialogue__input" (change)="onCorrectionState($event)">
+              @for (option of correctableStates; track option) {
+                <option [value]="option" [selected]="correctionState() === option">
+                  {{ stateLabel(option) }}
+                </option>
+              }
+            </select>
+          </label>
+
+          <label class="dialogue__field">
+            <span class="dialogue__label">{{ correctionCopy.reason }}</span>
+            <input
+              class="dialogue__input"
+              type="text"
+              [placeholder]="correctionCopy.reasonPlaceholder"
+              [value]="correctionReason()"
+              (input)="onCorrectionReason($event)"
+            />
+            <span class="dialogue__hint">{{ correctionCopy.reasonHint }}</span>
+          </label>
+        </div>
+
+        <button modal-actions type="button" class="btn" (click)="cancelCorrection()">
+          {{ correctionCopy.cancel }}
+        </button>
+        <button
+          modal-actions
+          type="button"
+          class="btn btn--primary"
+          [disabled]="!reasonAcceptable()"
+          (click)="confirmCorrection()"
+        >
+          {{ correctionCopy.confirm }}
+        </button>
+      </app-modal>
+
+      <!-- ── Withdrawing a correction ───────────────────────────────────── -->
+      <app-modal
+        [open]="clearingOpen()"
+        [heading]="correctionCopy.clearHeading"
+        [description]="correctionCopy.clearDescription"
+        size="small"
+        (dismissed)="cancelCorrection()"
+      >
+        <label modal-body class="dialogue__field">
+          <span class="dialogue__label">{{ correctionCopy.reason }}</span>
+          <input
+            class="dialogue__input"
+            type="text"
+            [value]="correctionReason()"
+            (input)="onCorrectionReason($event)"
+          />
+          <span class="dialogue__hint">{{ correctionCopy.reasonHint }}</span>
+        </label>
+
+        <button modal-actions type="button" class="btn" (click)="cancelCorrection()">
+          {{ correctionCopy.cancel }}
+        </button>
+        <button
+          modal-actions
+          type="button"
+          class="btn btn--primary"
+          [disabled]="!reasonAcceptable()"
+          (click)="confirmClear()"
+        >
+          {{ correctionCopy.clearConfirm }}
+        </button>
+      </app-modal>
+    }
+  </ng-template>
+</app-async-content>

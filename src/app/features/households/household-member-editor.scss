@@ -1,0 +1,140 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+  padding: var(--space-base);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: var(--c-surface-muted);
+}
+
+.editor__heading {
+  font-size: 14px;
+}
+
+.editor__subheading {
+  margin-block-end: var(--space-compact);
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.editor__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-compact);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.editor__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-compact);
+  padding: var(--space-compact);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+}
+
+/* A pending row is marked by the words "Not saved yet" as well as the edge. */
+.editor__row--new {
+  border-inline-start: 4px solid var(--tone-info-fg);
+}
+
+.editor__name {
+  flex: 1 1 180px;
+  font-size: 13.5px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.editor__pending-tag {
+  margin-inline-start: var(--space-compact);
+  padding: 1px var(--space-compact);
+  border-radius: var(--radius-sm);
+  background: var(--tone-info-bg);
+  color: var(--tone-info-fg);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.editor__select,
+.editor__reason-input {
+  padding: var(--space-compact) var(--space-snug);
+  /* Above the 24px pointer-target minimum (WCAG 2.5.8). */
+  min-block-size: 32px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.editor__action {
+  min-block-size: 32px;
+  font-size: 12.5px;
+}
+
+.editor__add {
+  padding-block-start: var(--space-compact);
+  border-block-start: 1px solid var(--c-border);
+}
+
+.editor__problems {
+  padding: var(--space-snug);
+  border-inline-start: 4px solid var(--tone-danger-fg);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+}
+
+.editor__problems-heading {
+  margin-block-end: var(--space-micro);
+  color: var(--tone-danger-fg);
+  font-size: 13px;
+}
+
+.editor__problems ul,
+.editor__pending {
+  margin: 0;
+  padding-inline-start: var(--space-base);
+  font-size: 13px;
+}
+
+.editor__commit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+  padding: var(--space-snug);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+}
+
+.editor__reason {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+}
+
+.editor__reason-label {
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.editor__reason-hint,
+.editor__idle {
+  color: var(--c-text-subtle);
+  font-size: 12.5px;
+}
+
+.editor__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-compact);
+}

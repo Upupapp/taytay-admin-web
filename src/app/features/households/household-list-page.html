@@ -1,0 +1,92 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+
+<div class="card households">
+  <!-- Said before the table, not in a tooltip on it. A band read without this
+       sentence turns into a queue, and a queue turns into a rule. -->
+  <p class="households__advisory">{{ copy.advisoryBanner }}</p>
+
+  <div class="filters">
+    <label class="filters__field filters__field--wide">
+      <span class="filters__label">{{ copy.search }}</span>
+      <input
+        type="search"
+        class="filters__input"
+        [placeholder]="copy.searchPlaceholder"
+        [value]="searchText()"
+        (input)="onSearch($event)"
+      />
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.barangay }}</span>
+      <select class="filters__input" (change)="onBarangay($event)">
+        <option value="" [selected]="!filter().barangayId">{{ copy.allBarangays }}</option>
+        @for (barangay of barangays; track barangay.id) {
+          <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
+            {{ barangay.name }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.band }}</span>
+      <select class="filters__input" (change)="onBand($event)">
+        <option value="" [selected]="!filter().minimumBand">{{ copy.anyBand }}</option>
+        @for (band of bands; track band) {
+          <option [value]="band" [selected]="filter().minimumBand === band">
+            {{ bandLabel(band) }} or above
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__check">
+      <input
+        type="checkbox"
+        [checked]="filter().indigentOnly === true"
+        (change)="onIndigent($event)"
+      />
+      <span>{{ copy.indigentOnly }}</span>
+    </label>
+
+    @if (hasFilters()) {
+      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+    }
+  </div>
+
+  <app-data-table
+    [caption]="copy.caption"
+    [columns]="columns()"
+    [rows]="rows()"
+    [rowKey]="rowKey"
+    [loading]="isLoading()"
+    [page]="page()"
+    [sort]="sort()"
+    [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
+    [emptyHeading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
+    [emptyMessage]="hasFilters() ? copy.noResultsMessage : copy.emptyMessage"
+    [emptyActionLabel]="hasFilters() ? copy.clear : null"
+    (sortChanged)="onSortChanged($event)"
+    (pageChanged)="onPageChanged($event)"
+    (emptyActionSelected)="clearFilters()"
+  />
+</div>
+
+<ng-template #referenceCell let-summary>
+  <a class="households__reference" [routerLink]="detailLink(summary)">
+    {{ summary.household.referenceNumber }}
+  </a>
+</ng-template>
+
+<!-- The band is named in words. The fill only repeats what the text says. -->
+<ng-template #bandCell let-summary>
+  <span class="households__band" [class]="'households__band--' + summary.band">
+    {{ bandLabel(summary.band) }}
+  </span>
+  @if (summary.presentFactorCount > 0) {
+    <span class="households__factors">
+      {{ summary.presentFactorCount }} indicator{{ summary.presentFactorCount === 1 ? '' : 's' }}
+    </span>
+  }
+</ng-template>

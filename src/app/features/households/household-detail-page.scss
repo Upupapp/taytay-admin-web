@@ -1,0 +1,129 @@
+.household {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-base);
+  margin-block-start: var(--space-base);
+}
+
+.panel {
+  padding: var(--space-card);
+}
+
+.panel--wide {
+  grid-column: 1 / -1;
+}
+
+.panel__heading {
+  margin-block-end: var(--space-snug);
+  font-size: 15px;
+}
+
+.panel__note,
+.panel__empty {
+  margin-block-start: var(--space-snug);
+  color: var(--c-text-subtle);
+  font-size: 12.5px;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-snug) var(--space-base);
+  margin: 0;
+}
+
+.facts__row--wide {
+  grid-column: 1 / -1;
+}
+
+.facts dt {
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.facts dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.members {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-snug);
+  margin: 0 0 var(--space-base);
+  padding: 0;
+  list-style: none;
+}
+
+.trail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-compact);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trail__entry {
+  padding: var(--space-snug);
+  border-inline-start: 3px solid var(--c-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface-muted);
+}
+
+.trail__summary {
+  font-size: 13.5px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.trail__meta {
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.trail__reason {
+  margin-block-start: var(--space-micro);
+  font-size: 13px;
+}
+
+.dialogue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+}
+
+.dialogue__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+}
+
+.dialogue__label {
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.dialogue__input {
+  padding: var(--space-compact) var(--space-snug);
+  /* Above the 24px pointer-target minimum (WCAG 2.5.8). */
+  min-block-size: 36px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.dialogue__hint {
+  color: var(--c-text-subtle);
+  font-size: 12.5px;
+}
+
+.household__back {
+  margin-block-start: var(--space-base);
+}
