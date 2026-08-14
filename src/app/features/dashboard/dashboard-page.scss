@@ -1,11 +1,166 @@
+/* ── Filter ───────────────────────────────────────────────────────────────── */
+
+.filters {
+  padding: var(--space-base);
+  margin-block-end: var(--space-card);
+}
+
+.filters__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-base);
+  min-inline-size: 0;
+}
+
+.filters__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 160px;
+}
+
+.filters__label {
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.filters__input {
+  min-block-size: 36px;
+  padding: var(--space-compact) var(--space-snug);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  font: inherit;
+  font-size: 14px;
+}
+
+.filters__notice {
+  margin-block-start: var(--space-snug);
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+/* ── Attention ────────────────────────────────────────────────────────────── */
+
+.attention {
+  margin-block-end: var(--space-card);
+}
+
+.attention__heading {
+  margin-block-end: var(--space-snug);
+  font-size: 17px;
+}
+
+.attention__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-compact);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attention__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-snug);
+  padding: var(--space-snug) var(--space-base);
+  border: 1px solid var(--c-border);
+  /* A thick inline-start edge encodes urgency, but the severity word beside it
+     is what actually carries it — the stripe is never the only signal. */
+  border-inline-start-width: 4px;
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  min-inline-size: 0;
+}
+
+.attention__item--critical {
+  border-inline-start-color: var(--tone-danger-fg);
+}
+
+.attention__item--warning {
+  border-inline-start-color: var(--tone-warning-fg);
+}
+
+.attention__item--info {
+  border-inline-start-color: var(--tone-info-fg);
+}
+
+.attention__severity {
+  flex: none;
+  padding: 2px var(--space-compact);
+  border-radius: 999px;
+  background: var(--tone-neutral-bg);
+  color: var(--tone-neutral-fg);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.attention__item--critical .attention__severity {
+  background: var(--tone-danger-bg);
+  color: var(--tone-danger-fg);
+}
+
+.attention__item--warning .attention__severity {
+  background: var(--tone-warning-bg);
+  color: var(--tone-warning-fg);
+}
+
+.attention__item--info .attention__severity {
+  background: var(--tone-info-bg);
+  color: var(--tone-info-fg);
+}
+
+.attention__message {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.attention__action {
+  flex: none;
+  text-decoration: none;
+}
+
+.attention__clear {
+  padding: var(--space-base);
+}
+
+.attention__clear-heading {
+  font-size: 15px;
+}
+
+.attention__clear-body {
+  margin-block-start: var(--space-1);
+  color: var(--c-text-muted);
+  font-size: 13.5px;
+}
+
+/* ── Headline figures ─────────────────────────────────────────────────────── */
+
 .metrics {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-base);
 }
 
 .metric {
-  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-base);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color var(--motion-micro) var(--motion-ease-standard);
+}
+
+.metric:hover {
+  border-color: var(--brand-primary);
 }
 
 .metric__label {
@@ -17,60 +172,57 @@
 }
 
 .metric__value {
-  margin-top: var(--space-2);
+  margin-block-start: var(--space-compact);
   font-size: 26px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .metric__hint {
-  margin-top: var(--space-1);
+  margin-block-start: var(--space-1);
   color: var(--c-text-subtle);
   font-size: 12.5px;
 }
 
+/* ── Breakdowns ───────────────────────────────────────────────────────────── */
+
 .panels {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--space-4);
-  margin-top: var(--space-5);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-base);
+  margin-block-start: var(--space-card);
 }
 
 .panel {
-  padding: var(--space-4);
+  padding: var(--space-base);
+  min-inline-size: 0;
+  overflow-x: auto;
 }
 
-.panel__title {
-  margin-bottom: var(--space-3);
+/* ── Quick actions ────────────────────────────────────────────────────────── */
+
+.quick {
+  margin-block-start: var(--space-card);
+  padding: var(--space-base);
+}
+
+.quick__heading {
+  margin-block-end: var(--space-snug);
   font-size: 15px;
 }
 
-.panel__list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.panel__row {
+.quick__actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--c-border);
-  font-size: 14px;
+  flex-wrap: wrap;
+  gap: var(--space-snug);
 }
 
-.panel__row:last-child {
-  border-bottom: none;
+.quick__actions a {
+  text-decoration: none;
 }
 
-.panel__count {
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-}
-
-.panel__empty {
-  padding: var(--space-3) 0;
+.generated {
+  margin-block-start: var(--space-base);
   color: var(--c-text-subtle);
-  font-size: 13px;
+  font-size: 12px;
 }

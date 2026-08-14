@@ -1,83 +1,202 @@
-<app-page-header
-  title="Dashboard"
-  subtitle="Caseload and payout position for the Municipal Social Welfare and Development Office."
->
-  <button page-actions type="button" class="btn" (click)="refresh()">Refresh</button>
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <button page-actions type="button" class="btn" (click)="refresh()">{{ copy.refresh }}</button>
 </app-page-header>
+
+<!-- Filter first: it governs every figure below, so it reads before them. -->
+<section class="card filters" [attr.aria-label]="copy.filterHeading">
+  <div class="filters__controls">
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.filterBarangay }}</span>
+      <select class="filters__input" (change)="onBarangay($event)">
+        <option value="" [selected]="!filter().barangayId">{{ copy.filterAll }}</option>
+        @for (barangay of barangays; track barangay.id) {
+          <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
+            {{ barangay.name }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.filterCategory }}</span>
+      <select class="filters__input" (change)="onCategory($event)">
+        <option value="" [selected]="!filter().category">{{ copy.filterAll }}</option>
+        @for (category of categories; track category) {
+          <option [value]="category" [selected]="filter().category === category">
+            {{ categoryLabel(category) }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.filterPeriod }}</span>
+      <select class="filters__input" (change)="onPeriod($event)">
+        @for (period of periods; track period) {
+          <option [value]="period" [selected]="(filter().period ?? 'all-time') === period">
+            {{ periodLabel(period) }}
+          </option>
+        }
+      </select>
+    </label>
+
+    @if (filterActive()) {
+      <button type="button" class="btn" (click)="clearFilter()">{{ copy.clearFilter }}</button>
+    }
+  </div>
+
+  @if (filterActive()) {
+    <p class="filters__notice">{{ copy.filterAppliedNotice }}</p>
+  }
+</section>
 
 <app-async-content
   [state]="state()"
-  [content]="summaryTemplate"
-  [skeletonLines]="6"
-  errorHeading="Could not load the dashboard"
+  [content]="dashboardTemplate"
+  [skeletonLines]="8"
+  [errorHeading]="copy.errorHeading"
   (retryRequested)="refresh()"
 />
 
-<ng-template #summaryTemplate let-summary>
-  <section class="metrics" aria-label="Headline figures">
-    <article class="card metric">
-      <h2 class="metric__label">Open requests</h2>
-      <p class="metric__value">{{ summary.openRequests }}</p>
-      <p class="metric__hint">Not yet completed, rejected, cancelled or expired.</p>
-    </article>
-    <article class="card metric">
-      <h2 class="metric__label">Awaiting approval</h2>
-      <p class="metric__value">{{ summary.awaitingApproval }}</p>
-      <p class="metric__hint">Endorsed by a social worker, pending the head's decision.</p>
-    </article>
-    <article class="card metric">
-      <h2 class="metric__label">Scheduled payouts</h2>
-      <p class="metric__value">{{ summary.scheduledPayouts }}</p>
-      <p class="metric__hint">Vouchers with a confirmed release date.</p>
-    </article>
-    <article class="card metric">
-      <h2 class="metric__label">Released this month</h2>
-      <p class="metric__value">{{ summary.disbursedThisMonth | peso }}</p>
-      <p class="metric__hint">Across {{ summary.residentsServedThisMonth }} beneficiaries.</p>
-    </article>
+<ng-template #dashboardTemplate let-summary>
+  <!-- ── What needs attention now ───────────────────────────────────────── -->
+  <section class="attention" aria-labelledby="attention-heading">
+    <h2 id="attention-heading" class="attention__heading">{{ copy.attentionHeading }}</h2>
+
+    @if (attention().length > 0) {
+      <ul class="attention__list">
+        @for (card of attention(); track card.signal.kind) {
+          <li class="attention__item" [class]="'attention__item--' + card.signal.severity">
+            <!-- Severity is stated in words as well as shown by tone, so the
+                 ranking survives without colour. -->
+            <span class="attention__severity">{{ card.severityLabel }}</span>
+            <span class="attention__message">{{ card.message }}</span>
+            <a
+              class="btn attention__action"
+              [routerLink]="card.drillDown.route"
+              [queryParams]="card.drillDown.queryParams"
+            >
+              {{ copy.attentionAction }}
+              <span class="visually-hidden">— {{ card.message }}</span>
+            </a>
+          </li>
+        }
+      </ul>
+    } @else {
+      <div class="card attention__clear">
+        <h3 class="attention__clear-heading">{{ copy.attentionEmptyHeading }}</h3>
+        <p class="attention__clear-body">
+          {{ attentionHiddenByRole() ? copy.attentionNothingForRole : copy.attentionEmptyBody }}
+        </p>
+      </div>
+    }
   </section>
 
+  <!-- ── Headline figures, each a link to its own records ───────────────── -->
+  <section class="metrics" aria-label="Headline figures">
+    <a
+      class="card metric"
+      [routerLink]="openRequestsLink(summary).route"
+      [queryParams]="openRequestsLink(summary).queryParams"
+    >
+      <span class="metric__label">{{ copy.openRequests }}</span>
+      <span class="metric__value">{{ summary.openRequests }}</span>
+      <span class="metric__hint">{{ copy.openRequestsHint }}</span>
+      <span class="visually-hidden">{{ copy.viewRecords }}</span>
+    </a>
+
+    <a
+      class="card metric"
+      [routerLink]="awaitingApprovalLink(summary).route"
+      [queryParams]="awaitingApprovalLink(summary).queryParams"
+    >
+      <span class="metric__label">{{ copy.awaitingApproval }}</span>
+      <span class="metric__value">{{ summary.awaitingApproval }}</span>
+      <span class="metric__hint">{{ copy.awaitingApprovalHint }}</span>
+      <span class="visually-hidden">{{ copy.viewRecords }}</span>
+    </a>
+
+    <a
+      class="card metric"
+      [routerLink]="scheduledPayoutsLink(summary).route"
+      [queryParams]="scheduledPayoutsLink(summary).queryParams"
+    >
+      <span class="metric__label">{{ copy.scheduledPayouts }}</span>
+      <span class="metric__value">{{ summary.scheduledPayouts }}</span>
+      <span class="metric__hint">{{ copy.scheduledPayoutsHint }}</span>
+      <span class="visually-hidden">{{ copy.viewRecords }}</span>
+    </a>
+
+    <a
+      class="card metric"
+      [routerLink]="disbursedLink(summary).route"
+      [queryParams]="disbursedLink(summary).queryParams"
+    >
+      <span class="metric__label">{{ copy.disbursed }}</span>
+      <span class="metric__value">{{ summary.disbursedInPeriod | peso }}</span>
+      <span class="metric__hint">{{ copy.disbursedHint(summary.residentsServedInPeriod) }}</span>
+      <span class="visually-hidden">{{ copy.viewRecords }}</span>
+    </a>
+  </section>
+
+  <!-- ── Breakdowns. Every one is a real table with decorative bars. ────── -->
   <div class="panels">
     <section class="card panel">
-      <h2 class="panel__title">Requests by status</h2>
-      <ul class="panel__list">
-        @for (entry of summary.requestsByStatus; track entry.status) {
-          <li class="panel__row">
-            <app-status-badge [catalog]="statusCatalog" [status]="entry.status" />
-            <span class="panel__count">{{ entry.count }}</span>
-          </li>
-        } @empty {
-          <li class="panel__empty">No requests on file.</li>
-        }
-      </ul>
+      <app-chart-table
+        [caption]="copy.byStatusCaption"
+        [summary]="copy.byStatusSummary"
+        [labelHeader]="copy.statusHeader"
+        [valueHeader]="copy.requestsHeader"
+        [rows]="statusRows()"
+      />
     </section>
 
     <section class="card panel">
-      <h2 class="panel__title">Requests by barangay</h2>
-      <ul class="panel__list">
-        @for (entry of summary.requestsByBarangay; track entry.barangayId) {
-          <li class="panel__row">
-            <span>{{ entry.barangayId | barangayName }}</span>
-            <span class="panel__count">{{ entry.count }}</span>
-          </li>
-        } @empty {
-          <li class="panel__empty">No requests on file.</li>
-        }
-      </ul>
+      <app-chart-table
+        [caption]="copy.byBarangayCaption"
+        [summary]="copy.byBarangaySummary"
+        [labelHeader]="copy.barangayHeader"
+        [valueHeader]="copy.requestsHeader"
+        [rows]="barangayRows()"
+      />
     </section>
 
     <section class="card panel">
-      <h2 class="panel__title">Released by programme type</h2>
-      <ul class="panel__list">
-        @for (entry of summary.disbursedByCategory; track entry.category) {
-          <li class="panel__row">
-            <span>{{ categoryLabel(entry.category) }}</span>
-            <span class="panel__count">{{ entry.amount | peso }}</span>
-          </li>
-        } @empty {
-          <li class="panel__empty">Nothing released yet.</li>
-        }
-      </ul>
+      <app-chart-table
+        [caption]="copy.byCategoryCaption"
+        [summary]="copy.byCategorySummary"
+        [labelHeader]="copy.categoryHeader"
+        [valueHeader]="copy.amountHeader"
+        [rows]="categoryRows()"
+      />
     </section>
   </div>
+
+  <!-- ── Quick actions, gated on what the user may actually do ──────────── -->
+  <section class="card quick" aria-labelledby="quick-heading">
+    <h2 id="quick-heading" class="quick__heading">{{ copy.quickActionsHeading }}</h2>
+    <div class="quick__actions">
+      <a
+        *appHasPermission="'request.create'"
+        class="btn btn--primary"
+        routerLink="/assistance-requests"
+        [queryParams]="{ action: 'new' }"
+      >
+        {{ copy.recordRequest }}
+      </a>
+      <a
+        *appHasPermission="'disbursement.schedule'"
+        class="btn"
+        routerLink="/disbursements"
+        [queryParams]="{ status: 'pending' }"
+      >
+        {{ copy.schedulePayouts }}
+      </a>
+      <a *appHasPermission="'report.export'" class="btn" routerLink="/reports">
+        {{ copy.exportReport }}
+      </a>
+    </div>
+  </section>
+
+  <p class="generated">{{ copy.generatedAt }} {{ summary.generatedAt | date: 'medium' }}</p>
 </ng-template>
