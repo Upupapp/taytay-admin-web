@@ -20,8 +20,15 @@ import {
   type DisbursementFilter,
   type DisbursementId,
   type DisbursementRepository,
+  type FactorState,
   type Household,
+  type HouseholdDetail,
+  type HouseholdFilter,
   type HouseholdId,
+  type HouseholdRepository,
+  type HouseholdSortField,
+  type HouseholdSummary,
+  type MembershipChange,
   type NotificationId,
   type NotificationRepository,
   type NotificationRequest,
@@ -48,6 +55,7 @@ import {
   type SavedViewRepository,
   type SavedViewResource,
   type SignInCredentials,
+  type VulnerabilityFactorCode,
   type StaffFilter,
   type StaffRepository,
   type StaffUser,
@@ -105,6 +113,63 @@ export class HttpResidentRepository implements ResidentRepository {
     return this.api.patch<Resident, { isActive: boolean }>(`${API_ENDPOINTS.residents}/${id}`, {
       isActive,
     });
+  }
+}
+
+@Injectable()
+export class HttpHouseholdRepository implements HouseholdRepository {
+  private readonly api = inject(ApiClient);
+
+  list(
+    filter: HouseholdFilter,
+    page: PageRequest<HouseholdSortField>,
+  ): Observable<Page<HouseholdSummary>> {
+    return this.api.page<HouseholdSummary>(API_ENDPOINTS.households, page, { ...filter });
+  }
+
+  getById(id: HouseholdId): Observable<HouseholdDetail | null> {
+    return this.api.optionalItem<HouseholdDetail>(`${API_ENDPOINTS.households}/${id}`);
+  }
+
+  /**
+   * One request carrying every change, because the server has to apply them as
+   * a unit. Posting each change on its own would leave a household with two
+   * heads between two round trips, and a failure halfway would leave it there.
+   */
+  changeMembership(
+    id: HouseholdId,
+    changes: readonly MembershipChange[],
+    reason: string,
+  ): Observable<HouseholdDetail> {
+    return this.api.post<HouseholdDetail, { changes: readonly MembershipChange[]; reason: string }>(
+      `${API_ENDPOINTS.households}/${id}/membership`,
+      { changes, reason },
+    );
+  }
+
+  correctFactor(
+    id: HouseholdId,
+    code: VulnerabilityFactorCode,
+    state: FactorState,
+    reason: string,
+  ): Observable<HouseholdDetail> {
+    return this.api.post<HouseholdDetail, { state: FactorState; reason: string }>(
+      `${API_ENDPOINTS.households}/${id}/factors/${code}`,
+      { state, reason },
+    );
+  }
+
+  clearCorrection(
+    id: HouseholdId,
+    code: VulnerabilityFactorCode,
+    reason: string,
+  ): Observable<HouseholdDetail> {
+    // A withdrawal is still a recorded act with a reason, so it is a POST and
+    // not a DELETE: there is nothing to delete, only something to say.
+    return this.api.post<HouseholdDetail, { reason: string }>(
+      `${API_ENDPOINTS.households}/${id}/factors/${code}/clear`,
+      { reason },
+    );
   }
 }
 

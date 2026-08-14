@@ -47,6 +47,13 @@ export const NAVIGATION: readonly NavSection[] = [
         description: 'Beneficiary and household registry.',
       },
       {
+        label: 'Households',
+        route: '/households',
+        glyph: 'HH',
+        permissions: ['household.view'],
+        description: 'Families as a unit, with the indicators behind each one.',
+      },
+      {
         label: 'Referrals',
         route: '/referrals',
         glyph: 'RF',

@@ -11,7 +11,7 @@ import type {
 } from '../shared/ids';
 import type { Money } from '../shared/money';
 import type { ResidentView } from './resident-disclosure';
-import type { Household, HouseholdRole } from './resident';
+import type { Household, HouseholdRole } from '../households/household';
 
 /**
  * Everything linked to one person, assembled once.

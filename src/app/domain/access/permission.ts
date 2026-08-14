@@ -18,6 +18,14 @@ export const PERMISSIONS = [
   'resident.deactivate',
   'resident.export',
 
+  'household.view',
+  // Composition: who lives under this roof, and who heads it.
+  'household.manage',
+  // Overriding a computed vulnerability factor. Held apart from `manage`
+  // because moving a person between households is clerical, while contradicting
+  // what the records say about a family's circumstances is a judgement.
+  'household.correct-vulnerability',
+
   'program.view',
   'program.manage',
 
@@ -85,6 +93,8 @@ const INTAKE_PERMISSIONS: readonly Permission[] = [
   'resident.view-sensitive',
   'resident.create',
   'resident.update',
+  'household.view',
+  'household.manage',
   'program.view',
   'request.view',
   'request.create',
@@ -94,6 +104,8 @@ const INTAKE_PERMISSIONS: readonly Permission[] = [
 
 const SOCIAL_WORKER_PERMISSIONS: readonly Permission[] = [
   ...INTAKE_PERMISSIONS,
+  // The worker who visited the house is the authority on what is true there.
+  'household.correct-vulnerability',
   'request.assess',
   'request.endorse',
   'request.view-sensitive',
@@ -153,6 +165,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
     permissions: [
       'dashboard.view',
       'resident.view',
+      'household.view',
       'program.view',
       'request.view',
       'disbursement.view',
@@ -169,6 +182,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
     permissions: [
       'dashboard.view',
       'resident.view',
+      'household.view',
       'resident.create',
       'program.view',
       'request.view',
@@ -184,6 +198,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
     permissions: [
       'dashboard.view',
       'resident.view',
+      'household.view',
       'program.view',
       'request.view',
       'disbursement.view',

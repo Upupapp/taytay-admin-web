@@ -99,15 +99,6 @@ export const VULNERABILITY_SECTOR_LABELS: Readonly<Record<VulnerabilitySector, s
   'displaced-worker': 'Displaced worker',
 };
 
-export const HOUSEHOLD_ROLE_LABELS: Readonly<Record<HouseholdRole, string>> = {
-  head: 'Household head',
-  spouse: 'Spouse',
-  child: 'Child',
-  parent: 'Parent',
-  relative: 'Relative',
-  'non-relative': 'Other member',
-};
-
 export const RESIDENT_AGE_GROUP_LABELS: Readonly<Record<ResidentAgeGroup, string>> = {
   child: 'Children (under 18)',
   youth: 'Youth (18–30)',
@@ -159,32 +150,10 @@ export interface Resident {
   readonly audit: AuditStamp;
 }
 
-export type HouseholdRole = 'head' | 'spouse' | 'child' | 'parent' | 'relative' | 'non-relative';
-
-export const HOUSEHOLD_ROLES: readonly HouseholdRole[] = [
-  'head',
-  'spouse',
-  'child',
-  'parent',
-  'relative',
-  'non-relative',
-];
-
-export interface HouseholdMember {
-  readonly residentId: ResidentId;
-  readonly role: HouseholdRole;
-}
-
-export interface Household {
-  readonly id: HouseholdId;
-  readonly referenceNumber: string;
-  readonly headResidentId: ResidentId;
-  readonly address: ResidentAddress;
-  readonly members: readonly HouseholdMember[];
-  readonly monthlyIncome: Money | null;
-  readonly isIndigent: boolean;
-  readonly audit: AuditStamp;
-}
+// The household model moved to `../households/household.ts` in TAB 08: the
+// household is a unit of service delivery in its own right, not an attribute
+// of a person. `HouseholdId` still appears here because a resident points at
+// one, and that pointer is the only thing a resident record knows about it.
 
 /* ── Filtering ────────────────────────────────────────────────────────────── */
 

@@ -15,12 +15,19 @@ import type { AssistanceProgram, ProgramFilter } from '../programs/program';
 import type { DashboardFilter, DashboardSummary } from '../dashboard/dashboard-summary';
 import type { Disbursement, DisbursementFilter } from '../disbursements/disbursement';
 import type {
-  Household,
   Resident,
   ResidentDraft,
   ResidentFilter,
   ResidentSortField,
 } from '../residents/resident';
+import type {
+  Household,
+  HouseholdFilter,
+  HouseholdSortField,
+  MembershipChange,
+} from '../households/household';
+import type { HouseholdDetail, HouseholdSummary } from '../households/household-profile';
+import type { FactorState, VulnerabilityFactorCode } from '../households/household-vulnerability';
 import type { ResidentView } from '../residents/resident-disclosure';
 import type { ResidentProfile } from '../residents/resident-profile';
 import type { Referral, ReferralFilter } from '../referrals/referral';
@@ -75,6 +82,48 @@ export interface ResidentRepository {
 }
 
 export const RESIDENT_REPOSITORY = new InjectionToken<ResidentRepository>('ResidentRepository');
+
+/**
+ * The household as a service-delivery unit.
+ *
+ * Two things this port deliberately does **not** offer: any method that returns
+ * an eligibility, entitlement or grant decision, and any way to set a
+ * vulnerability factor without a reason. Both absences are load-bearing
+ * (`DL-42`) and `tools/check-vulnerability.mjs` fails the build if either
+ * appears.
+ */
+export interface HouseholdRepository {
+  list(
+    filter: HouseholdFilter,
+    page: PageRequest<HouseholdSortField>,
+  ): Observable<Page<HouseholdSummary>>;
+  getById(id: HouseholdId): Observable<HouseholdDetail | null>;
+  /**
+   * Applies composition changes **transactionally**: either every change lands
+   * and both sides of the household/resident link agree, or nothing moves and
+   * the caller is told which invariant would have broken.
+   */
+  changeMembership(
+    id: HouseholdId,
+    changes: readonly MembershipChange[],
+    reason: string,
+  ): Observable<HouseholdDetail>;
+  /** Overrides one computed factor. The reason is required, not decorative. */
+  correctFactor(
+    id: HouseholdId,
+    code: VulnerabilityFactorCode,
+    state: FactorState,
+    reason: string,
+  ): Observable<HouseholdDetail>;
+  /** Withdraws an override and lets the computation speak again. */
+  clearCorrection(
+    id: HouseholdId,
+    code: VulnerabilityFactorCode,
+    reason: string,
+  ): Observable<HouseholdDetail>;
+}
+
+export const HOUSEHOLD_REPOSITORY = new InjectionToken<HouseholdRepository>('HouseholdRepository');
 
 /**
  * Named list parameters. A hook rather than a product surface: the API will own
