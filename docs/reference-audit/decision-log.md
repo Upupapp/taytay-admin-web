@@ -616,3 +616,108 @@ forbids. The moving bar is `aria-hidden`; the announcement is a visually-hidden
 `aria-live="polite"` region, so screen-reader users are told once instead of
 hearing an animation. Under `prefers-reduced-motion` the bar stops moving but
 stays visible, so the signal survives without the motion.
+
+---
+
+## Authentication and permissions (TAB 05)
+
+### DL-30 · Permission is enforced in the data layer, not only in the UI
+
+**Status:** Settled (implemented in TAB 05).
+
+Hiding a control has never been protection — `CLAUDE.md` rule 4 says so, and
+until TAB 05 nothing in the repository made that true. The mock adapters now
+re-check permission **and** data scope before returning or changing anything,
+through a new `ACCESS_CONTEXT` port.
+
+Three layers, and only the last two protect:
+
+1. **Controls** — `AppNav` filters, `*appHasPermission` removes,
+   `appDisableWithoutPermission` disables. Usability.
+2. **Routes** — `permissionGuard(...)` mirrors each navigation entry.
+3. **Data** — `denyUnless(...)` in every mock repository method.
+
+`ACCESS_CONTEXT` is bound to `SessionState`, not `SessionStore`, to break a
+cycle: the store reads the adapters to resolve a session, so the adapters cannot
+read the store. Splitting "who is signed in" from "how we load it" fixes that
+and is better shape anyway.
+
+Refusals travel as **stream errors** (`throwError`), not thrown exceptions. A
+repository returns an `Observable`, so a synchronous throw escapes every
+`catchError` the callers already have — including `toViewState` — and surfaces
+as an uncaught exception instead of an error panel.
+
+**Consequence:** the enforcement tests drive repositories directly, with no
+component and no hidden button, so a pass means the refusal survives a bypassed
+UI. When the HTTP adapters take over, these checks become the API's job; the
+mock is standing in for a server that will do the same.
+
+### DL-31 · A denial discloses nothing about what was refused
+
+**Status:** Settled (implemented in TAB 05).
+
+"You may not open resident res-0005" already tells you res-0005 exists. Under
+RA 10173 that is the disclosure a refusal exists to prevent, so denial carries
+no record detail anywhere:
+
+- `PermissionDeniedError` holds the **required permission** and a fixed
+  non-technical message. No id, no name, no field value.
+- An out-of-scope record reads as **absent**, not forbidden. A barangay link
+  asking for another barangay's resident gets the same `null` as for a resident
+  that does not exist — distinguishing them would confirm the record is on file.
+- `permissionGuard` redirects to a fixed `/forbidden` with **no `returnUrl`**.
+  Echoing the refused path back into the URL would preserve, and possibly log, an
+  identifier the user was not allowed to see.
+- The transition check runs **before** the record lookup, so a refused caller
+  cannot probe which ids exist by comparing "not found" against "not permitted".
+- `/forbidden` names only the user's own identity, which they already know.
+
+### DL-32 · There is no self-registration, and nothing to call
+
+**Status:** Settled (implemented in TAB 05).
+
+Staff accounts are provisioned by an administrator. This is enforced
+structurally rather than by omission:
+
+- no `register` route, and `anonymousOnlyGuard` on `/sign-in`;
+- **no `register` method on `StaffRepository`** — there is nothing to call even
+  if a screen wanted to;
+- the sign-in screen _states_ how accounts are issued instead of leaving a user
+  hunting for a link that does not exist;
+- `tools/check-access.mjs` fails the build if a registration surface appears.
+
+`staff.manage` is administrator-only, so provisioning is also separated from
+case work — whoever grants permissions is not working cases with them.
+
+### DL-33 · Sign-in satisfies WCAG 3.3.8 through Mechanism, and stores no password
+
+**Status:** Settled (implemented in TAB 05). Closes the item `DL-20` flagged as
+binding on this TAB.
+**Source:** WCAG 2.2 §3.3.8 Accessible Authentication (Minimum), Level AA,
+verified at https://www.w3.org/TR/WCAG22/ on 2026-08-14.
+
+The criterion treats **remembering a password as a cognitive function test**,
+allowed only where the step offers an Alternative, a **Mechanism**, Object
+Recognition or Personal Content. This screen relies on Mechanism and provides it
+three ways: `autocomplete="username"` / `"current-password"` so password
+managers can fill the form; paste is never blocked; and a show-password toggle
+for a manually typed password. There is no CAPTCHA, puzzle or transcription
+step, and none may be added — each would be a cognitive function test with no
+satisfier.
+
+**No password is stored in this repository.** A front end has nothing to verify
+a password against, so a fixture password would be a committed credential for no
+benefit (`CLAUDE.md` §2 rule 5). The mock checks that the email belongs to an
+active account and that the password is well-formed, and treats that as success.
+`check:access` fails the build if a credential literal appears.
+
+What the mock _does_ model faithfully is the security-relevant shape: **one
+message for every failure**. Unknown address, wrong password and deactivated
+account are indistinguishable, so the page cannot be used to enumerate which
+municipal staff addresses exist. `returnUrl` is sanitised to same-origin
+absolute paths, so the sign-in page cannot be turned into an open redirect.
+
+**Consequence:** this is a _frontend mock_. It authenticates nobody and must not
+be mistaken for a security boundary. Its value is that the shape, the copy and
+the accessibility are right, so wiring a real API changes the adapter and
+nothing else.
