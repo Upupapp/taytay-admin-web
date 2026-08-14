@@ -1,0 +1,252 @@
+<app-async-content [state]="state()" [content]="body" [skeletonLines]="8">
+  <ng-template #body let-detail>
+    @if (detail === null) {
+      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <p class="family__back">
+        <a class="btn" routerLink="/families">{{ copy.back }}</a>
+      </p>
+    } @else {
+      <app-page-header
+        [title]="detail.family.name"
+        [subtitle]="detail.family.referenceNumber + ' · ' + copy.subtitle"
+      >
+        <button
+          page-actions
+          *appHasPermission="'family.manage'"
+          type="button"
+          class="btn"
+          (click)="openTransfer()"
+        >
+          {{ copy.transfer }}
+        </button>
+      </app-page-header>
+
+      @if (detail.family.dissolvedOn) {
+        <aside class="card notice">
+          <p class="notice__body">{{ copy.dissolvedNotice }}</p>
+        </aside>
+      }
+
+      <div class="family">
+        <section class="card panel" aria-labelledby="family-heading">
+          <h2 class="panel__heading" id="family-heading">{{ copy.factsHeading }}</h2>
+          <dl class="facts">
+            <div class="facts__row">
+              <dt>{{ copy.reference }}</dt>
+              <dd>{{ detail.family.referenceNumber }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.name }}</dt>
+              <dd>{{ detail.family.name }}</dd>
+            </div>
+            <div class="facts__row facts__row--wide">
+              <dt>{{ copy.household }}</dt>
+              <dd>
+                @if (detail.family.householdId; as householdId) {
+                  <a [routerLink]="['/households', householdId]">{{ householdId }}</a>
+                } @else {
+                  <span class="family__none">{{ copy.noHousehold }}</span>
+                  <span class="family__note">{{ copy.noHouseholdNote }}</span>
+                }
+              </dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.size }}</dt>
+              <dd>{{ memberOptions(detail).length }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.formed }}</dt>
+              <dd>{{ detail.family.formedOn ?? copy.none }}</dd>
+            </div>
+            @if (detail.family.dissolvedOn; as dissolved) {
+              <div class="facts__row">
+                <dt>{{ copy.dissolvedOn }}</dt>
+                <dd>{{ dissolved }}</dd>
+              </div>
+            }
+            <div class="facts__row">
+              <dt>{{ copy.updated }}</dt>
+              <dd>{{ detail.family.audit.updatedAt | date: 'medium' }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- The counter-example, on the page rather than in a doc: other
+             families at the same address, listed as the separate units they
+             are (DL-47). -->
+        <section class="card panel" aria-labelledby="sharing-heading">
+          <h2 class="panel__heading" id="sharing-heading">{{ copy.sharingHeading }}</h2>
+          @if (detail.othersInHousehold.length > 0) {
+            <p class="panel__note">{{ copy.sharingNote }}</p>
+            <ul class="sharing">
+              @for (other of detail.othersInHousehold; track other.family.id) {
+                <li>
+                  <a [routerLink]="['/families', other.family.id]">{{ other.family.name }}</a>
+                  <span class="sharing__meta">
+                    {{ other.family.referenceNumber }} · {{ other.memberCount }} members
+                  </span>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="panel__empty">{{ copy.noSharing }}</p>
+          }
+        </section>
+
+        <section class="card panel panel--wide">
+          <app-relationship-graph
+            [graph]="detail.graph"
+            [canManage]="canManage()"
+            (addRequested)="openRecord()"
+          />
+        </section>
+
+        <section class="card panel panel--wide" aria-labelledby="history-heading">
+          <h2 class="panel__heading" id="history-heading">{{ graphCopy.historyHeading }}</h2>
+          <p class="panel__note">{{ graphCopy.historyImmutable }}</p>
+          @if (detail.history.length > 0) {
+            <ol class="history">
+              @for (event of detail.history; track event.id) {
+                <li class="history__entry">
+                  <p class="history__what">{{ eventLabel(event) }}</p>
+                  <p class="history__meta">
+                    {{ event.actorName }} · {{ event.occurredAt | date: 'medium' }}
+                  </p>
+                  <p class="history__reason">{{ graphCopy.historyReason }}: “{{ event.reason }}”</p>
+                </li>
+              }
+            </ol>
+          } @else {
+            <p class="panel__empty">{{ graphCopy.historyEmpty }}</p>
+          }
+        </section>
+      </div>
+
+      <app-modal
+        [open]="transferring()"
+        [heading]="transferCopy.heading"
+        [description]="transferCopy.description"
+        (dismissed)="cancel()"
+      >
+        <div modal-body class="dialogue">
+          <label class="dialogue__field">
+            <span class="dialogue__label">{{ transferCopy.person }}</span>
+            <select class="dialogue__input" (change)="onTransferResident($event)">
+              <option value="">—</option>
+              @for (node of memberOptions(detail); track node.view.resident.id) {
+                <option [value]="node.view.resident.id">{{ node.view.listedName }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="dialogue__field">
+            <span class="dialogue__label">{{ transferCopy.destination }}</span>
+            <select class="dialogue__input" (change)="onTransferDestination($event)">
+              <option value="">{{ transferCopy.noDestination }}</option>
+              @for (other of detail.othersInHousehold; track other.family.id) {
+                <option [value]="other.family.id">{{ other.family.name }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="dialogue__field">
+            <span class="dialogue__label">{{ transferCopy.role }}</span>
+            <select class="dialogue__input" (change)="onTransferRole($event)">
+              @for (role of roles; track role) {
+                <option [value]="role" [selected]="transferRole() === role">
+                  {{ roleLabel(role) }}
+                </option>
+              }
+            </select>
+          </label>
+
+          <label class="dialogue__check">
+            <input
+              type="checkbox"
+              [checked]="transferMovesHousehold()"
+              (change)="onTransferHousehold($event)"
+            />
+            <span>{{ transferCopy.moveHousehold }}</span>
+          </label>
+          <p class="dialogue__hint">{{ transferCopy.moveHouseholdHint }}</p>
+
+          <label class="dialogue__field">
+            <span class="dialogue__label">{{ transferCopy.reason }}</span>
+            <input
+              class="dialogue__input"
+              type="text"
+              [placeholder]="transferCopy.reasonPlaceholder"
+              [value]="transferReason()"
+              (input)="onTransferReason($event)"
+            />
+            <span class="dialogue__hint">{{ transferCopy.reasonHint }}</span>
+          </label>
+        </div>
+
+        <button modal-actions type="button" class="btn" (click)="cancel()">
+          {{ transferCopy.cancel }}
+        </button>
+        <button
+          modal-actions
+          type="button"
+          class="btn btn--primary"
+          [disabled]="!canTransfer()"
+          (click)="confirmTransfer()"
+        >
+          {{ transferCopy.confirm }}
+        </button>
+      </app-modal>
+
+      <app-modal
+        [open]="recording()"
+        [heading]="relationshipCopy.heading"
+        [description]="relationshipCopy.description"
+        (dismissed)="cancel()"
+      >
+        <div modal-body class="dialogue">
+          <app-person-picker
+            [label]="relationshipCopy.subject"
+            [(selected)]="relationshipSubject"
+          />
+
+          <label class="dialogue__field">
+            <span class="dialogue__label">{{ relationshipCopy.kind }}</span>
+            <select class="dialogue__input" (change)="onRelationshipKind($event)">
+              @for (kind of kinds; track kind) {
+                <option [value]="kind" [selected]="relationshipKind() === kind">
+                  {{ kindLabel(kind) }}
+                </option>
+              }
+            </select>
+          </label>
+
+          <app-person-picker [label]="relationshipCopy.object" [(selected)]="relationshipObject" />
+
+          <label class="dialogue__field">
+            <span class="dialogue__label">{{ relationshipCopy.reason }}</span>
+            <input
+              class="dialogue__input"
+              type="text"
+              [placeholder]="relationshipCopy.reasonPlaceholder"
+              [value]="relationshipReason()"
+              (input)="onRelationshipReason($event)"
+            />
+          </label>
+        </div>
+
+        <button modal-actions type="button" class="btn" (click)="cancel()">
+          {{ relationshipCopy.cancel }}
+        </button>
+        <button
+          modal-actions
+          type="button"
+          class="btn btn--primary"
+          [disabled]="!canRecord()"
+          (click)="confirmRecord()"
+        >
+          {{ relationshipCopy.confirm }}
+        </button>
+      </app-modal>
+    }
+  </ng-template>
+</app-async-content>

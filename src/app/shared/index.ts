@@ -11,6 +11,8 @@ export * from './brand/brand-palette';
 export * from './brand/brand.copy';
 export * from './brand/contrast';
 export * from './brand/municipal-seal';
+export * from './families/relationship-graph';
+export * from './families/relationship.copy';
 export * from './households/vulnerability-snapshot';
 export * from './households/vulnerability.copy';
 export * from './residents/person-picker';

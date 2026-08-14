@@ -1,0 +1,195 @@
+/* The layout arranges what the text already says. Delete every rule in this
+   file and the graph still reads correctly — that is the test (`DL-50`). */
+
+.graph {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+}
+
+.graph__heading {
+  font-size: 15px;
+}
+
+.graph__summary,
+.graph__no-edges,
+.graph__empty {
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.graph__views {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-snug);
+  margin: 0;
+  padding: var(--space-compact) var(--space-snug);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+}
+
+.graph__views-legend {
+  padding-inline: var(--space-compact);
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.graph__view {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-compact);
+  min-block-size: var(--target-min);
+  font-size: 13px;
+}
+
+.graph__view input {
+  inline-size: 18px;
+  block-size: 18px;
+}
+
+.graph__row {
+  padding-block-start: var(--space-compact);
+  border-block-start: 1px solid var(--c-border);
+}
+
+.graph__row-heading {
+  margin-block-end: var(--space-compact);
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* Generation rows read left to right and wrap. No connector lines are drawn:
+   a line between two boxes says nothing a screen reader can use, and every
+   relationship it would represent is already a sentence inside the box. */
+.graph__people {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-snug);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.graph__person {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+  padding: var(--space-snug);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+}
+
+/* A former member is labelled "Former member" in the markup. The dashed edge
+   repeats that; it never carries it. */
+.graph__person--former {
+  border-style: dashed;
+  background: var(--c-surface-muted);
+}
+
+.graph__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-compact);
+}
+
+.graph__name-link {
+  display: inline-block;
+  min-block-size: var(--target-min);
+  line-height: var(--target-min);
+  color: var(--c-text);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.graph__name-link:hover {
+  text-decoration: underline;
+}
+
+.graph__role,
+.graph__former {
+  padding: 1px var(--space-compact);
+  border-radius: var(--radius-sm);
+  background: var(--tone-neutral-bg);
+  color: var(--tone-neutral-fg);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.graph__former {
+  background: var(--tone-warning-bg);
+  color: var(--tone-warning-fg);
+}
+
+.graph__edges {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding-inline-start: var(--space-base);
+  font-size: 13px;
+}
+
+.graph__edge--ended {
+  color: var(--c-text-muted);
+}
+
+.graph__edge-state {
+  margin-inline-start: var(--space-compact);
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}
+
+.graph__edge a {
+  display: inline-block;
+  min-block-size: var(--target-min);
+  line-height: var(--target-min);
+}
+
+.graph__table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.graph__caption {
+  margin-block-end: var(--space-compact);
+  color: var(--c-text);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: start;
+}
+
+.graph__table th,
+.graph__table td {
+  padding: var(--space-compact) var(--space-compact) var(--space-compact) 0;
+  border-block-end: 1px solid var(--c-border);
+  text-align: start;
+  vertical-align: middle;
+}
+
+.graph__table thead th {
+  color: var(--c-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.graph__empty-cell {
+  color: var(--c-text-subtle);
+}
+
+.graph__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-compact);
+}

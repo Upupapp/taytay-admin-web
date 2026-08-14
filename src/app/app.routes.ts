@@ -107,6 +107,26 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'families',
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            title: 'Families — Taytay Social Welfare',
+            canActivate: [permissionGuard('family.view')],
+            loadComponent: () =>
+              import('@features/families/family-list-page').then((m) => m.FamilyListPage),
+          },
+          {
+            path: ':id',
+            title: 'Family — Taytay Social Welfare',
+            canActivate: [permissionGuard('family.view')],
+            loadComponent: () =>
+              import('@features/families/family-detail-page').then((m) => m.FamilyDetailPage),
+          },
+        ],
+      },
+      {
         path: 'assistance-requests',
         title: 'Assistance requests — Taytay Social Welfare',
         canActivate: [permissionGuard('request.view')],

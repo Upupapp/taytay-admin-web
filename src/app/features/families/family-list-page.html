@@ -1,0 +1,85 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+
+<div class="card families">
+  <!-- The correction every reader needs before they read the table (DL-47). -->
+  <p class="families__banner">{{ copy.notTheSameBanner }}</p>
+
+  <div class="filters">
+    <label class="filters__field filters__field--wide">
+      <span class="filters__label">{{ copy.search }}</span>
+      <input
+        type="search"
+        class="filters__input"
+        [placeholder]="copy.searchPlaceholder"
+        [value]="searchText()"
+        (input)="onSearch($event)"
+      />
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.barangay }}</span>
+      <select class="filters__input" (change)="onBarangay($event)">
+        <option value="" [selected]="!filter().barangayId">{{ copy.allBarangays }}</option>
+        @for (barangay of barangays; track barangay.id) {
+          <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
+            {{ barangay.name }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__check">
+      <input
+        type="checkbox"
+        [checked]="filter().unhousedOnly === true"
+        (change)="onUnhoused($event)"
+      />
+      <span>{{ copy.unhousedOnly }}</span>
+    </label>
+
+    <label class="filters__check">
+      <input
+        type="checkbox"
+        [checked]="filter().includeDissolved === true"
+        (change)="onDissolved($event)"
+      />
+      <span>{{ copy.includeDissolved }}</span>
+    </label>
+
+    @if (hasFilters()) {
+      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+    }
+  </div>
+
+  <app-data-table
+    [caption]="copy.caption"
+    [columns]="columns()"
+    [rows]="rows()"
+    [rowKey]="rowKey"
+    [loading]="isLoading()"
+    [page]="page()"
+    [sort]="sort()"
+    [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
+    [emptyHeading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
+    [emptyMessage]="hasFilters() ? copy.noResultsMessage : copy.emptyMessage"
+    [emptyActionLabel]="hasFilters() ? copy.clear : null"
+    (sortChanged)="onSortChanged($event)"
+    (pageChanged)="onPageChanged($event)"
+    (emptyActionSelected)="clearFilters()"
+  />
+</div>
+
+<ng-template #referenceCell let-summary>
+  <a class="families__reference" [routerLink]="detailLink(summary)">
+    {{ summary.family.referenceNumber }}
+  </a>
+  @if (summary.family.dissolvedOn) {
+    <span class="families__dissolved">{{ copy.dissolved }}</span>
+  }
+</ng-template>
+
+<!-- "None recorded" in words, never an empty cell: a blank reads as an
+     oversight, and a family between addresses is not an oversight. -->
+<ng-template #householdCell let-summary>
+  <span [class.families__none]="!summary.householdReference">{{ householdLabel(summary) }}</span>
+</ng-template>

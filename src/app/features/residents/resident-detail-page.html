@@ -150,9 +150,9 @@
           }
 
           <h3 class="panel__subheading">{{ copy.familyHeading }}</h3>
-          @if (profile.family.length > 0) {
+          @if (profile.householdMembers.length > 0) {
             <ul class="family">
-              @for (member of profile.family; track member.view.resident.id) {
+              @for (member of profile.householdMembers; track member.view.resident.id) {
                 <li>
                   <app-resident-summary-card
                     compact

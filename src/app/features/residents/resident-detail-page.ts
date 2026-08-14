@@ -19,7 +19,7 @@ import {
   RESIDENT_REPOSITORY,
   SEX_LABELS,
   VULNERABILITY_SECTOR_LABELS,
-  type FamilyMember,
+  type HouseholdMemberView,
   type ResidentField,
   type ResidentId,
   type ResidentProfile,
@@ -127,7 +127,7 @@ export class ResidentDetailPage {
     return `/residents/${residentId}`;
   }
 
-  protected relationshipLabel(member: FamilyMember): string {
+  protected relationshipLabel(member: HouseholdMemberView): string {
     return HOUSEHOLD_ROLE_LABELS[member.role];
   }
 
