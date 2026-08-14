@@ -29,7 +29,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-34 permissions × 7 roles. `X` means the role holds the permission.
+36 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -43,6 +43,8 @@ self-registration), `DL-33` (accessible authentication).
 | `household.view`                  | X     | X    | X   | X      | X    | X    | X     |
 | `household.manage`                | X     | X    | X   | X      |      |      |       |
 | `household.correct-vulnerability` | X     | X    | X   |        |      |      |       |
+| `family.view`                     | X     | X    | X   | X      | X    | X    | X     |
+| `family.manage`                   | X     | X    | X   | X      |      |      |       |
 | `program.view`                    | X     | X    | X   | X      | X    | X    | X     |
 | `program.manage`                  | X     | X    |     |        |      |      |       |
 | `request.view`                    | X     | X    | X   | X      | X    | X    | X     |
@@ -100,6 +102,12 @@ that the records are wrong about a family's circumstances is a judgement, and it
 reaches the head, social workers and the administrator only. A correction always
 carries a reason and is attributed; an indicator nobody can be named for is an
 indicator nobody is answerable for.
+
+**`family.manage` is separate from `household.manage`** (`DL-47`). A household
+is an address and a family is a claim about who belongs to whom; the two are
+edited by the same roles today but they are not the same authority, and one
+address routinely holds several families. Keeping the permissions apart means a
+later decision to narrow one does not silently narrow the other.
 
 `barangay-link` is deliberately excluded from `resident.view-sensitive` even
 though it may `resident.create`. A barangay encoder captures an identity number;

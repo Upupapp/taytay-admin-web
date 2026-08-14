@@ -167,6 +167,19 @@ No single non-administrator role may both approve a request and release its
 money. This is asserted by a test in `domain/access/permission.spec.ts`; if a
 role change breaks it, the role change is wrong, not the test.
 
+### A household is not a family
+
+A household is an address; a family is a claim about who belongs to whom
+(`DL-47`). One household may hold **many** families, and a family may have
+**no** household while it is between addresses. Relationships are recorded
+resident-to-resident, so they survive either person moving. Never add a field or
+a query that assumes one household is one family — `ResidentProfile` lists
+`householdMembers`, not "family", for exactly this reason.
+
+Relationship and family history is **append-only** (`DL-48`): ending a
+relationship or moving a person records an event with actor, time and reason,
+and never deletes what was true before.
+
 ### Vulnerability indicators are advisory, always
 
 A household vulnerability factor is evidence a caseworker reads, never a
@@ -229,24 +242,25 @@ All but the last two rows live in `src/app/shared/` and are exported from
 `@shared/index`. `HasPermissionDirective` is in `@core/access/` because it
 depends on the session.
 
-| Primitive                                                            | Use for                                                       |
-| -------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `StatusBadge`                                                        | Any workflow status. Pass the domain catalog + value.         |
-| `DataTable`                                                          | Any list. Presentational only: rows in, intent out.           |
-| `Modal`                                                              | Focused decisions — confirmations, short forms.               |
-| `Drawer`                                                             | Context beside a list, when the user must keep their place.   |
-| `LoadingIndicator` / `Skeleton`                                      | Busy states. Prefer skeletons for tables.                     |
-| `EmptyState`                                                         | Nothing to show. Distinguish `empty` from `no-results`.       |
-| `AsyncContent`                                                       | Wraps a `ViewState<T>`: skeleton, error panel, or content.    |
-| `PageHeader`                                                         | Page title block + primary actions.                           |
-| `ChartTable`                                                         | A breakdown. It **is** a real table; never add a second one.  |
-| `SavedViewsBar`                                                      | Named filters above any list whose filters live in the URL.   |
-| `ResidentSummaryCard`                                                | One resident, said the same way on every screen.              |
-| `PersonPicker`                                                       | "Who is this for?" — the only sanctioned resident search.     |
-| `VulnerabilitySnapshotPanel`                                         | Household indicators. Advisory only — see `DL-42`.            |
-| `ToastHost`                                                          | Mounted once by `App`. Never place toast markup in a feature. |
-| `PesoPipe`, `BarangayNamePipe`, `PersonNamePipe`, `RelativeTimePipe` | Formatting.                                                   |
-| `HasPermissionDirective` (`@core/access/`)                           | `*appHasPermission="'request.approve'"`.                      |
+| Primitive                                                            | Use for                                                        |
+| -------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `StatusBadge`                                                        | Any workflow status. Pass the domain catalog + value.          |
+| `DataTable`                                                          | Any list. Presentational only: rows in, intent out.            |
+| `Modal`                                                              | Focused decisions — confirmations, short forms.                |
+| `Drawer`                                                             | Context beside a list, when the user must keep their place.    |
+| `LoadingIndicator` / `Skeleton`                                      | Busy states. Prefer skeletons for tables.                      |
+| `EmptyState`                                                         | Nothing to show. Distinguish `empty` from `no-results`.        |
+| `AsyncContent`                                                       | Wraps a `ViewState<T>`: skeleton, error panel, or content.     |
+| `PageHeader`                                                         | Page title block + primary actions.                            |
+| `ChartTable`                                                         | A breakdown. It **is** a real table; never add a second one.   |
+| `SavedViewsBar`                                                      | Named filters above any list whose filters live in the URL.    |
+| `ResidentSummaryCard`                                                | One resident, said the same way on every screen.               |
+| `PersonPicker`                                                       | "Who is this for?" — the only sanctioned resident search.      |
+| `VulnerabilitySnapshotPanel`                                         | Household indicators. Advisory only — see `DL-42`.             |
+| `RelationshipGraph`                                                  | Family relationships. The graph **is** the list — see `DL-50`. |
+| `ToastHost`                                                          | Mounted once by `App`. Never place toast markup in a feature.  |
+| `PesoPipe`, `BarangayNamePipe`, `PersonNamePipe`, `RelativeTimePipe` | Formatting.                                                    |
+| `HasPermissionDirective` (`@core/access/`)                           | `*appHasPermission="'request.approve'"`.                       |
 
 ### Async screens
 

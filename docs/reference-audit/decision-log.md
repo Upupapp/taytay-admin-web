@@ -1114,3 +1114,144 @@ superseding entry here rather than editing this one. If the office adopts a
 different authoritative basis (a PSA semestral figure, or a DSWD AICS means
 test), that is also a new entry: this decision is about _which published
 statistic_, and changing the answer changes the decision.
+
+---
+
+## Family registry and relationship graph (TAB 09)
+
+### DL-47 · A household is an address; a family is a claim about people
+
+**Status:** Settled (implemented in TAB 09).
+
+Everything before this TAB treated the household as the unit of everything: of
+service delivery (`DL-42`), of composition (`DL-43`), and — in the name of one
+field — of family. `ResidentProfile.family` listed the people at the same
+address. That is the assumption this decision removes.
+
+They are different questions with different cardinalities:
+
+- **one household may hold many families.** A widowed mother, her married son's
+  family and a boarder cousin share a roof and are three units of care. The seed
+  carries this case (`hh-0001`) so the falsity of "one household, one family" is
+  visible on the first screen a user opens, not buried in a doc;
+- **a family may have no household at all.** Between addresses, or split across
+  two while work or care divides it. `Family.householdId` is nullable and the
+  screen says "Not linked to a household — between addresses, or split across
+  two. This is a recordable state, not missing data";
+- **a relationship belongs to neither.** It is a fact about two people that
+  survives both of them moving out, so relationships are recorded resident-to-
+  resident and one of the seeded links deliberately crosses two families.
+
+**What changed in existing code.** `ResidentProfile.family` is now
+`householdMembers`, typed `HouseholdMemberView`. The rename is the point: a
+field called `family` holding a list of housemates is the assumption stated in
+the type system, and it would have been copied by everything built on top of it.
+
+**Consequence:** `family.view` / `family.manage` exist alongside
+`household.view` / `household.manage` rather than reusing them. The same roles
+hold both today; keeping them apart means narrowing one later does not silently
+narrow the other.
+
+### DL-48 · Relationship history is appended to, never rewritten
+
+**Status:** Settled (implemented in TAB 09). Extends `DL-43`'s audit trail to
+relationships.
+
+Ending a relationship sets `until` and appends an event. Leaving a family sets
+`leftOn` and appends an event. **Neither deletes a row**, and there is no update
+or delete counterpart anywhere in the store or the port.
+
+The reason is not tidiness. A case study written in 2024 refers to a guardian
+who is no longer the guardian, and a payout justified by a family composition
+that has since changed. If the record only holds the present, every document the
+office has already produced becomes unverifiable. A former member therefore
+stays in the graph, marked "Former member"; an ended relationship stays in the
+edge list, marked "Ended" with its date.
+
+Every event carries four things, because a change nobody can be named for is a
+change nobody is answerable for: what happened as a typed kind, who it happened
+to as ids, who did it and when, and **why in their own words**. The reason is
+required by the port, not merely by a form.
+
+**Consequence:** `RelationshipEvent.subject` holds ids and enum values rather
+than a rendered sentence. Wording is built at display time from the copy module,
+so an event recorded today still reads correctly after the copy is rewritten.
+
+### DL-49 · The relationship validator refuses almost nothing
+
+**Status:** Settled (implemented in TAB 09).
+
+Two hard refusals: a relationship from a person to themselves, and a parent link
+that reverses one already on file. Everything else is permitted — two guardians,
+a step-parent alongside a parent, a grandparent raising a grandchild, a family
+with a child at its head.
+
+Real families are stranger than a validator expects, and the failure mode of a
+strict one is not that staff record nothing. It is that they record something
+false — whatever the form will accept — and the registry becomes confidently
+wrong instead of honestly incomplete. An unusual arrangement recorded accurately
+is worth more than a tidy one recorded falsely.
+
+**Consequence:** correctness for the unusual cases rests on the audit trail and
+on a person being able to read the graph and disagree with it, rather than on
+the software refusing to store them.
+
+### DL-50 · The graph is the list
+
+**Status:** Settled (implemented in TAB 09). Applies `DL-35`'s reasoning to a
+relationship diagram.
+
+There is no canvas, no SVG and no text alternative bolted beside a picture. The
+primary artifact is a structured list of people, each stating in words who they
+are to everyone else; CSS arranges those same list items into generation rows.
+`relationship-graph.spec.ts` asserts that no `<canvas>` and no `<svg>` exists.
+
+A diagram with an accessible summary beside it is two artifacts, and the one
+that stops being maintained is always the summary. One artifact cannot drift
+from itself.
+
+What the layout is not allowed to carry:
+
+- **generation is named in words** — "Older generation", "Younger generation" —
+  so vertical position is reinforcement, never the only cue;
+- **no connector lines are drawn.** A line between two boxes says nothing a
+  screen reader can use, and every relationship it would represent is already a
+  sentence inside the box;
+- **current versus ended is stated in words with its date**, not by a colour or
+  a dash pattern; a former member is labelled "Former member".
+
+A second view lists every link exactly once as a real table. The per-person view
+answers "who is this person to everyone else"; the edge view answers "what links
+exist at all", which is the question somebody proof-reading the record is
+actually asking. Both render from the same data.
+
+**Consequence:** deleting the stylesheet leaves the graph fully readable. That
+is the only test of "not conveyed by colour or lines alone" worth anything, and
+it is the one the component is built to pass.
+
+### DL-51 · Already done is a success, not a validation failure
+
+**Status:** Settled (implemented in TAB 09).
+
+Recording a relationship that already exists returns the existing record.
+Repeating a transfer that has already landed returns the current state and
+appends no second event. Both are checked **before** validation, not after.
+
+This came out of a test. Validation reported "already recorded" and "that person
+is not in this family" — both true, both useless as answers to a retried
+request. A dropped response is the ordinary case on a municipal connection, and
+a retry that fails with a true-but-unhelpful error trains staff to force the
+change through another way.
+
+The distinction that makes it safe: idempotency is keyed on the **link and the
+outcome**, not on a request id. "A is the spouse of B" resolves to the existing
+marriage even when stated as "B is the spouse of A", because `isSameLink`
+understands symmetry. A transfer is "already applied" only when the person is
+out of the named source _and_ in the named destination.
+
+`already-recorded` remains in the domain problem vocabulary, because a _form_
+should still warn before submitting. The adapter filters it out: warning a user
+and refusing a request are different jobs.
+
+**Consequence:** every mutation on `FamilyRepository` can be retried safely, and
+the history contains one event per real change rather than one per attempt.
