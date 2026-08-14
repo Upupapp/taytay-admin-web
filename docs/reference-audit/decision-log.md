@@ -810,3 +810,109 @@ Two honesty fixes found while building on TAB 05's foundation:
 **Consequence:** the rule in `DL-30` now genuinely holds for every mock
 repository, and a test pins it. A metric label that describes a window must be
 computed under that window, or renamed.
+
+---
+
+## Constituent registry (TAB 07)
+
+### DL-38 · Redaction happens in the data layer, not in the template
+
+**Status:** Settled (implemented in TAB 07). **Supersedes** the presentation-only
+reading of `CLAUDE.md` §6 ("masking is a presentation decision"), which TAB 01
+wrote before there was a registry to protect.
+
+Resident reads return a `ResidentView` — the record with its withheld attributes
+already removed, plus the list of what was removed and a flag saying the record
+is protected. `discloseResident` is a pure domain function; the adapter calls it
+on the way out.
+
+The reason is not theoretical. Template masking is correct only while every
+binding remembers to mask, and a resident's details are rendered on a list, a
+detail page, a summary card, a picker result and an export. One forgotten
+binding in any of them is a disclosure, and the one most likely to be forgotten
+is the one added last, by someone who never read this file.
+
+Two tiers, because the two kinds of sensitivity are not the same grant:
+
+| Tier                                          | Permission                | Reaches                 |
+| --------------------------------------------- | ------------------------- | ----------------------- |
+| PhilSys reference, monthly income             | `resident.view-sensitive` | Admin, Head, SW, Intake |
+| Protected-sector membership, address, contact | `request.view-sensitive`  | Admin, Head, SW         |
+
+`resident.view-sensitive` is new in this TAB. The protected tier reuses the
+existing `request.view-sensitive` rather than inventing a parallel permission:
+it gates the same statutory categories (RA 9262, RA 9344) and splitting it would
+create two sources of truth for one question.
+
+**What is deliberately still disclosed.** The masked name keeps a surname and a
+given initial ("Manalo, C."), and `isProtected` is stated even when the sector
+is not. Zero disclosure would be worse: an intake officer who cannot tell that a
+record already exists registers a duplicate, and a survivor is put through the
+whole intake conversation twice. Barangay is kept for the same reason — scope
+and listing depend on it, and it is not the field that endangers anyone.
+
+**Consequence:** `ResidentRepository` reads are typed `ResidentView`. The HTTP
+adapter is typed the same way, which states the contract the API owes: the
+server redacts, the client does not.
+
+### DL-39 · A record you cannot fully see, you cannot edit
+
+**Status:** Settled (implemented in TAB 07).
+
+A `ResidentDraft` replaces the record. Building one from a redacted copy and
+saving it would silently delete exactly the attributes that were withheld — a
+protection case losing its contact details because an intake officer corrected a
+spelling. So `update` is refused whenever the caller's own view of the record has
+anything withheld, in the adapter as well as on the screen.
+
+The alternative — merging a partial draft over the stored record — was rejected.
+It makes "what did I just save?" unanswerable from the form, and it is the shape
+that produces the bug where a cleared field silently keeps its old value.
+
+**Consequence:** in practice only Admin, Head and Social Worker can edit a
+protected record, which is the same set that may open one. Roles which hold
+`resident.update` but not the sensitive tiers are told why, not left with a form
+that fails on submit.
+
+### DL-40 · A saved view is a name attached to query parameters
+
+**Status:** Settled (implemented in TAB 07). Builds on `DL-36`.
+
+Because filter state already lives in the URL, a saved view needs no filter model
+of its own: it stores the query parameters verbatim. Applying one is a
+navigation, sharing one is a link, and a list that grows a new filter tomorrow
+gains it in saved views for free.
+
+Page and sort are excluded. "Seniors in San Juan" is a population, not a scroll
+position, and storing page 3 would hand the next person an arbitrary offset into
+a list that has since changed.
+
+Reading the views for a resource costs the same permission as reading the
+resource. A view holds no records, but its _name_ can describe a population
+("VAWC survivors, Santa Ana"), which is disclosive in the same way the list is.
+Shared views belong to the office and cannot be deleted from a list screen;
+personal views belong to their owner and are not listed to anyone else.
+
+**Consequence:** `SavedViewsBar` is a shared primitive, usable above any list
+whose filters are URL-driven. Persistence is the API's; the mock holds them for
+the lifetime of the tab and says so.
+
+### DL-41 · The registry seed is large, generated and deterministic
+
+**Status:** Settled (implemented in TAB 07).
+
+Eight hand-written residents cannot demonstrate that large result sets stay
+usable — paging, sort stability, filter combinations and the cost of the
+disclosure policy only show up at volume. The seed now carries ten named records
+(each exercising a specific path, and referenced by id from the other seed
+files) plus 240 generated ones.
+
+Generation is modular arithmetic over fixed name pools, not a random seed, so
+the same registry appears on every run. A fixture that differs between runs
+turns a real failure into "try it again", which is worse than having no fixture.
+All names are fictional combinations of common Philippine given names and
+surnames; no field carries real personal data.
+
+**Consequence:** the list is paged by the adapter, so only one page is ever
+sorted and disclosed, and `mock-resident.repository.spec.ts` can assert that
+paging is stable rather than assuming it.

@@ -29,6 +29,24 @@ scope before returning or changing anything.
 `src/app/data/mock/access-enforcement.spec.ts` is the evidence. Every case
 there drives the repository directly — no component, no template, no hidden
 button — so a pass means the refusal survives a bypassed UI.
+`src/app/data/mock/mock-resident.repository.spec.ts` extends it to the registry,
+including writes.
+
+### Layer 3 also decides what a record _contains_ (`DL-38`, TAB 07)
+
+Permission does not only answer "may I open this?". For residents it answers
+"how much of it do I get?": `discloseResident` runs in the adapter, so a read
+returns a `ResidentView` whose sensitive attributes have already been removed.
+A screen cannot leak a field it never received, which is the difference between
+this and masking in a template — where one forgotten binding is a disclosure.
+
+Two consequences worth stating:
+
+- A **write** must be refused when the writer cannot see the whole record. A
+  draft replaces the record, so saving one built from a redacted copy would
+  delete the withheld attributes (`DL-39`).
+- The view is told **that** something was withheld, so it can say "3 details
+  hidden by your role" rather than showing blanks that read as "not recorded".
 
 ### Hide or disable?
 

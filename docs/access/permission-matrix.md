@@ -29,40 +29,41 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-30 permissions × 7 roles. `X` means the role holds the permission.
+31 permissions × 7 roles. `X` means the role holds the permission.
 
-| Permission               | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
-| ------------------------ | ----- | ---- | --- | ------ | ---- | ---- | ----- |
-| `dashboard.view`         | X     | X    | X   | X      | X    | X    | X     |
-| `resident.view`          | X     | X    | X   | X      | X    | X    | X     |
-| `resident.create`        | X     | X    | X   | X      |      | X    |       |
-| `resident.update`        | X     | X    | X   | X      |      |      |       |
-| `resident.deactivate`    | X     | X    |     |        |      |      |       |
-| `resident.export`        | X     | X    |     |        |      |      |       |
-| `program.view`           | X     | X    | X   | X      | X    | X    | X     |
-| `program.manage`         | X     | X    |     |        |      |      |       |
-| `request.view`           | X     | X    | X   | X      | X    | X    | X     |
-| `request.create`         | X     | X    | X   | X      |      | X    |       |
-| `request.intake`         | X     | X    | X   | X      |      |      |       |
-| `request.assess`         | X     | X    | X   |        |      |      |       |
-| `request.endorse`        | X     | X    | X   |        |      |      |       |
-| `request.approve`        | X     | X    |     |        |      |      |       |
-| `request.reject`         | X     | X    |     |        |      |      |       |
-| `request.schedule`       | X     | X    |     |        |      |      |       |
-| `request.close`          | X     | X    |     |        |      |      |       |
-| `request.view-sensitive` | X     | X    | X   |        |      |      |       |
-| `disbursement.view`      | X     | X    |     |        | X    |      | X     |
-| `disbursement.schedule`  | X     | X    |     |        | X    |      |       |
-| `disbursement.release`   | X     |      |     |        | X    |      |       |
-| `disbursement.void`      | X     | X    |     |        |      |      |       |
-| `referral.view`          | X     | X    | X   | X      |      | X    | X     |
-| `referral.manage`        | X     | X    | X   |        |      |      |       |
-| `report.view`            | X     | X    | X   |        | X    |      | X     |
-| `report.export`          | X     | X    |     |        |      |      | X     |
-| `audit.view`             | X     | X    |     |        |      |      | X     |
-| `staff.view`             | X     | X    |     |        |      |      | X     |
-| `staff.manage`           | X     |      |     |        |      |      |       |
-| `settings.manage`        | X     |      |     |        |      |      |       |
+| Permission                | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
+| ------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
+| `dashboard.view`          | X     | X    | X   | X      | X    | X    | X     |
+| `resident.view`           | X     | X    | X   | X      | X    | X    | X     |
+| `resident.view-sensitive` | X     | X    | X   | X      |      |      |       |
+| `resident.create`         | X     | X    | X   | X      |      | X    |       |
+| `resident.update`         | X     | X    | X   | X      |      |      |       |
+| `resident.deactivate`     | X     | X    |     |        |      |      |       |
+| `resident.export`         | X     | X    |     |        |      |      |       |
+| `program.view`            | X     | X    | X   | X      | X    | X    | X     |
+| `program.manage`          | X     | X    |     |        |      |      |       |
+| `request.view`            | X     | X    | X   | X      | X    | X    | X     |
+| `request.create`          | X     | X    | X   | X      |      | X    |       |
+| `request.intake`          | X     | X    | X   | X      |      |      |       |
+| `request.assess`          | X     | X    | X   |        |      |      |       |
+| `request.endorse`         | X     | X    | X   |        |      |      |       |
+| `request.approve`         | X     | X    |     |        |      |      |       |
+| `request.reject`          | X     | X    |     |        |      |      |       |
+| `request.schedule`        | X     | X    |     |        |      |      |       |
+| `request.close`           | X     | X    |     |        |      |      |       |
+| `request.view-sensitive`  | X     | X    | X   |        |      |      |       |
+| `disbursement.view`       | X     | X    |     |        | X    |      | X     |
+| `disbursement.schedule`   | X     | X    |     |        | X    |      |       |
+| `disbursement.release`    | X     |      |     |        | X    |      |       |
+| `disbursement.void`       | X     | X    |     |        |      |      |       |
+| `referral.view`           | X     | X    | X   | X      |      | X    | X     |
+| `referral.manage`         | X     | X    | X   |        |      |      |       |
+| `report.view`             | X     | X    | X   |        | X    |      | X     |
+| `report.export`           | X     | X    |     |        |      |      | X     |
+| `audit.view`              | X     | X    |     |        |      |      | X     |
+| `staff.view`              | X     | X    |     |        |      |      | X     |
+| `staff.manage`            | X     |      |     |        |      |      |       |
+| `settings.manage`         | X     |      |     |        |      |      |       |
 
 ---
 
@@ -81,6 +82,20 @@ should not also be working cases with them.
 **`request.view-sensitive` is limited to Admin, Head and SW.** It gates records
 flagged `vawc-survivor` (RA 9262) or `cicl` (RA 9344). An intake officer can
 process an ordinary request without ever seeing a protection case.
+
+**The two sensitive tiers are not the same grant** (`DL-38`).
+`resident.view-sensitive` covers identity and means — the PhilSys reference
+(RA 11055) and monthly income — and reaches Intake, who verify a presented card
+and run the means test. `request.view-sensitive` is narrower and covers the
+protected-sector tier, which is what unlocks a survivor's address and contact
+details. A disbursing officer and an auditor hold neither: they need to know a
+person exists and what was paid, not who they are.
+
+`barangay-link` is deliberately excluded from `resident.view-sensitive` even
+though it may `resident.create`. A barangay encoder captures an identity number;
+it does not need it read back, and the registry minimises by default. The
+consequence — a barangay encoder cannot check their own typing after saving — is
+accepted, and is the sort of thing a first office pilot should re-examine.
 
 ---
 

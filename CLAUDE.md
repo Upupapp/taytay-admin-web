@@ -184,8 +184,13 @@ residents. The Philippine **Data Privacy Act of 2012 (RA 10173)** applies.
 2. **PhilSys (RA 11055).** Only the **last four digits** of a PSN are ever held
    or displayed. Never introduce a field for the full PSN.
 3. **Sensitive sectors.** Records flagged `vawc-survivor` (RA 9262) or `cicl`
-   (RA 9344) are masked in list views and require `request.view-sensitive`.
-   Masking is a presentation decision — the API enforces its own copy.
+   (RA 9344) require `request.view-sensitive`. **Redaction happens in the data
+   layer, not in the template** (`DL-38`, superseding the presentation-only rule
+   this section carried before TAB 07): resident reads return a `ResidentView`
+   whose withheld attributes have already been removed, so a screen cannot leak
+   a field it never received. Identity and means (`philsysLastFour`,
+   `monthlyIncome`) are a second, wider tier behind `resident.view-sensitive`.
+   The API enforces its own copy of all of it.
 4. **No personal data in logs, telemetry, analytics or error messages.** The
    global error handler shows a non-technical message; detail goes to the
    console in development only.
@@ -217,6 +222,10 @@ depends on the session.
 | `EmptyState`                                                         | Nothing to show. Distinguish `empty` from `no-results`.       |
 | `AsyncContent`                                                       | Wraps a `ViewState<T>`: skeleton, error panel, or content.    |
 | `PageHeader`                                                         | Page title block + primary actions.                           |
+| `ChartTable`                                                         | A breakdown. It **is** a real table; never add a second one.  |
+| `SavedViewsBar`                                                      | Named filters above any list whose filters live in the URL.   |
+| `ResidentSummaryCard`                                                | One resident, said the same way on every screen.              |
+| `PersonPicker`                                                       | "Who is this for?" — the only sanctioned resident search.     |
 | `ToastHost`                                                          | Mounted once by `App`. Never place toast markup in a feature. |
 | `PesoPipe`, `BarangayNamePipe`, `PersonNamePipe`, `RelativeTimePipe` | Formatting.                                                   |
 | `HasPermissionDirective` (`@core/access/`)                           | `*appHasPermission="'request.approve'"`.                      |
