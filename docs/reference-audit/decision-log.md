@@ -916,3 +916,126 @@ surnames; no field carries real personal data.
 **Consequence:** the list is paged by the adapter, so only one page is ever
 sorted and disclosed, and `mock-resident.repository.spec.ts` can assert that
 paging is stable rather than assuming it.
+
+---
+
+## Household registry (TAB 08)
+
+### DL-42 · A vulnerability indicator is advisory evidence, and that is enforced
+
+**Status:** Settled (implemented in TAB 08).
+
+The household snapshot describes what the records say about a family. It does
+not decide eligibility, entitlement or an amount, and the acceptance criterion
+for this TAB is that it _cannot_.
+
+A comment saying so would not survive the third TAB that needs a number in a
+hurry, so four structural things hold it up, and `tools/check-vulnerability.mjs`
+fails the build on any of them:
+
+1. **No decision-shaped field** on the advisory types — `eligible`, `entitled`,
+   `qualifies`, `approved`, `grantAmount`, `score`, `points`. A field named like
+   a decision becomes one, whatever the doc comment above it says.
+2. **The two modules cannot see each other.** `domain/programs/`, which owns
+   eligibility rules, never imports the vulnerability module; the vulnerability
+   module never learns what a programme grants. Checked in both directions.
+3. **No score, only a band.** Four values, from a rule a caseworker can restate
+   from memory and check against the list on the screen: two primary indicators
+   is `high`, one is `elevated`, two contributing alone is `watch`. A weighted
+   sum would be summable, and a summable indicator is a threshold waiting to be
+   applied.
+4. **The advisory sentence exists and is rendered.** A disclaimer held in copy
+   and never shown is worse than none.
+
+**The correction authority is deliberately narrower than the edit authority.**
+`household.manage` (moving people between households) reaches intake;
+`household.correct-vulnerability` (contradicting what the records say about a
+family) reaches the head, social workers and the administrator only. Every
+correction carries a reason, an actor and a time, keeps the computed value it
+replaced, and can be withdrawn by a further recorded act.
+
+**Consequence:** the screen can be trusted to be evidence. A caseworker who is
+asked "why was this family helped?" answers with a case study, and can point at
+the working; they never answer "the system said so".
+
+The checker was validated against five planted regressions before being trusted:
+a `score` field on the snapshot, an eligibility module importing it, a factor
+code dropped from `factorLabel`, the same dropped from `factorRule`, and the
+advisory statement removed from the component. The third regression was **missed
+on the first attempt** — the check searched the whole copy file, so a code
+deleted from one map still passed because it survived in the other — and the
+checker was tightened to slice each map out and search it alone.
+
+### DL-43 · Household composition is edited as intents, and committed as a unit
+
+**Status:** Settled (implemented in TAB 08).
+
+The editor collects `MembershipChange` intents — add, remove, change role, set
+head — rather than submitting a replacement member list. Two reasons, both
+practical:
+
+- **The audit trail can say what a person did.** "Made Marilou the head" is a
+  sentence somebody can check a year later; "members changed from A to B" is
+  not.
+- **A stale screen cannot delete somebody quietly.** A replacement list built
+  before a colleague added a member would drop that member on save. An intent
+  that no longer applies can be refused instead.
+
+The adapter computes the whole next state — the household, every resident whose
+`householdId` moves, the audit line — validates it, and only then assigns, with
+no suspension point in the commit. A batch is a unit: an illegal change anywhere
+in it rolls back the legal ones too. Changing the head demotes the outgoing head
+in the same act, because two heads for even one render is a household two
+screens would read differently.
+
+Referential rules live in the adapter rather than the pure validator, because
+only the adapter can answer them: does this person exist, and are they already
+under another roof. One person, one household — silently moving somebody would
+empty a family on a screen nobody happened to be looking at.
+
+**Consequence:** `household → family → person` is consistent by construction,
+not by convention, and the tests can assert it by attempting a mixed batch and
+checking that nothing at all moved.
+
+### DL-44 · The band is disclosed, never recomputed per viewer
+
+**Status:** Settled (implemented in TAB 08). Extends `DL-38` to households.
+
+The snapshot is computed from **unredacted** member records inside the adapter,
+and the _result_ is then disclosed: an uncleared viewer sees the
+`protected-member` factor as `withheld`, with no basis and no correction.
+
+The band is not recalculated after that. Two roles looking at the same family
+agree on how exposed it is; only the reason is withheld. Recomputing per viewer
+would mean an intake officer and a social worker reading different bands off the
+same records, and the one with less access would be the one told the family is
+fine.
+
+`withheld` is a fourth state precisely so it need not be lied about as `absent`.
+The cost is that an uncleared viewer sees a band their visible reasons do not
+fully explain, and the screen says so in as many words. That is the same
+disclosure `ResidentView.isProtected` already makes: something here needs
+careful handling, and you are not the one to handle it.
+
+Correcting a factor you cannot see is refused for the same reason a redacted
+record cannot be edited (`DL-39`): overriding a judgement you were never shown
+is not a correction.
+
+### DL-45 · The poverty threshold in the code is a placeholder, and says so
+
+**Status:** Settled (implemented in TAB 08). **Open** as a data question.
+
+`MONTHLY_PER_CAPITA_THRESHOLD` is ₱3,000 per person per month. The Philippine
+Statistics Authority publishes an official per-capita poverty threshold by
+region and semester; this repository is offline and has not read one, so the
+figure is a plausible working number and nothing else.
+
+It is stated as a named constant, carried through to the screen as part of the
+working, and captioned in the UI as a placeholder that must be reconciled with
+the PSA release and the office's own AICS practice before anyone quotes it.
+
+**Consequence:** the wrongness is visible rather than buried, and nothing
+depends on the figure being right — which is only tolerable because `DL-42`
+holds. An indicator that decided eligibility on an invented threshold would be
+indefensible; an indicator that explains its arithmetic and decides nothing can
+carry a placeholder honestly until the real number arrives.

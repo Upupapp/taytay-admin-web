@@ -90,7 +90,7 @@ npm run build      # ng build (production configuration)
 npm test           # ng test  (Vitest)
 npm run lint       # ng lint
 npm run typecheck  # tsc --noEmit against the app tsconfig
-npm run verify     # lint + typecheck + test + build
+npm run verify     # lint + typecheck + repository checks + test + build
 ```
 
 ---
@@ -167,6 +167,16 @@ No single non-administrator role may both approve a request and release its
 money. This is asserted by a test in `domain/access/permission.spec.ts`; if a
 role change breaks it, the role change is wrong, not the test.
 
+### Vulnerability indicators are advisory, always
+
+A household vulnerability factor is evidence a caseworker reads, never a
+decision the software makes (`DL-42`). Nothing may derive eligibility,
+entitlement or an amount from `VulnerabilitySnapshot`, and
+`npm run check:vulnerability` fails the build if anything tries — including a
+decision-shaped field name on the advisory types. Every factor states its rule,
+its arithmetic and the records it read, and can be overridden by a person with a
+reason that is recorded against their name.
+
 ### Data scope
 
 `all-barangays` | `own-barangay` | `assigned-cases`. A `barangay-link` account is
@@ -226,6 +236,7 @@ depends on the session.
 | `SavedViewsBar`                                                      | Named filters above any list whose filters live in the URL.   |
 | `ResidentSummaryCard`                                                | One resident, said the same way on every screen.              |
 | `PersonPicker`                                                       | "Who is this for?" — the only sanctioned resident search.     |
+| `VulnerabilitySnapshotPanel`                                         | Household indicators. Advisory only — see `DL-42`.            |
 | `ToastHost`                                                          | Mounted once by `App`. Never place toast markup in a feature. |
 | `PesoPipe`, `BarangayNamePipe`, `PersonNamePipe`, `RelativeTimePipe` | Formatting.                                                   |
 | `HasPermissionDirective` (`@core/access/`)                           | `*appHasPermission="'request.approve'"`.                      |
