@@ -9,8 +9,10 @@ import {
 import { firstValueFrom } from 'rxjs';
 
 import { provideDataAccess } from '@data/data-access.providers';
+import { ACCESS_CONTEXT } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
 
+import { SessionState } from './auth/session-state';
 import { SessionStore } from './auth/session.store';
 import { APP_ENVIRONMENT } from './config/app-environment.token';
 import { GlobalErrorHandler } from './errors/global-error-handler';
@@ -27,6 +29,10 @@ import { NotificationStore } from './notifications/notification.store';
 export function provideCore(environment: AppEnvironment): EnvironmentProviders {
   return makeEnvironmentProviders([
     { provide: APP_ENVIRONMENT, useValue: environment },
+    // The data adapters read the signed-in identity through this token so they
+    // can re-check permission and data scope. Bound to SessionState rather than
+    // SessionStore to avoid a cycle: the store reads the adapters.
+    { provide: ACCESS_CONTEXT, useExisting: SessionState },
     provideHttpClient(withInterceptors([apiHeadersInterceptor, httpErrorInterceptor])),
     provideDataAccess(environment),
     { provide: ErrorHandler, useClass: GlobalErrorHandler },

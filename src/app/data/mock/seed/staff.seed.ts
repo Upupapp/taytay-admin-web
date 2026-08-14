@@ -101,5 +101,8 @@ export const MOCK_STAFF: readonly StaffUser[] = [
   },
 ];
 
-/** The account the mock session starts as. Swap freely while developing. */
-export const DEFAULT_MOCK_USER_ID = asId<StaffUserId>('staff-head');
+/*
+ * There is deliberately no default signed-in account. TAB 05 made the mock
+ * session start anonymous, so the application exercises its real sign-in path
+ * rather than booting straight into an authenticated shell.
+ */

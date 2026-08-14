@@ -9,6 +9,7 @@ import type {
   CaseNote,
 } from '../assistance/assistance-request';
 import type { AuthenticatedUser, StaffFilter, StaffUser } from '../access/staff-user';
+import type { SignInCredentials } from '../access/credentials';
 import type { AppNotification, NotificationRequest } from '../notifications/notification';
 import type { AssistanceProgram, ProgramFilter } from '../programs/program';
 import type { DashboardSummary } from '../dashboard/dashboard-summary';
@@ -91,7 +92,15 @@ export interface StaffRepository {
   getById(id: StaffUserId): Observable<StaffUser | null>;
   /** Resolves the signed-in identity, or `null` when there is no session. */
   currentUser(): Observable<AuthenticatedUser | null>;
-  signInAs(id: StaffUserId): Observable<AuthenticatedUser>;
+  /**
+   * Credential sign-in. Fails with `SignInError('invalid-credentials')` for an
+   * unknown email, a wrong password and a deactivated account alike — telling
+   * them apart would let anyone enumerate staff addresses.
+   *
+   * There is deliberately no `register` counterpart: staff accounts are
+   * provisioned by an administrator, never self-created (`DL-32`).
+   */
+  signIn(credentials: SignInCredentials): Observable<AuthenticatedUser>;
   signOut(): Observable<void>;
 }
 

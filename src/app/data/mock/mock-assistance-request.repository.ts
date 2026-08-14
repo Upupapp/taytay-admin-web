@@ -2,12 +2,16 @@ import { inject, Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 
 import {
+  ACCESS_CONTEXT,
+  canReadRecord,
   ASSISTANCE_STATUS_CATALOG,
   ASSISTANCE_STATUS_TRANSITIONS,
   asIsoDateTime,
   canTransition,
   isTerminalAssistanceStatus,
   paginate,
+  isWithinBarangayScope,
+  permissionForTransition,
   type AssistanceRequest,
   type AssistanceRequestFilter,
   type AssistanceRequestId,
@@ -21,6 +25,7 @@ import {
 } from '@domain/index';
 
 import { MOCK_ASSISTANCE_REQUESTS, MOCK_CASE_NOTES } from './seed/assistance-requests.seed';
+import { denyUnless } from './mock-access';
 import { MockLatency } from './mock-latency';
 import { matchesSearch, sortItems } from './mock-query';
 
@@ -35,13 +40,23 @@ import { matchesSearch, sortItems } from './mock-query';
 @Injectable()
 export class MockAssistanceRequestRepository implements AssistanceRequestRepository {
   private readonly latency = inject(MockLatency);
+  private readonly access = inject(ACCESS_CONTEXT);
   private requests: AssistanceRequest[] = [...MOCK_ASSISTANCE_REQUESTS];
 
   list(
     filter: AssistanceRequestFilter,
     page: PageRequest<AssistanceRequestSortField>,
   ): Observable<Page<AssistanceRequest>> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<Page<AssistanceRequest>>(user, 'request.view');
+    if (denied) {
+      return denied;
+    }
+
     const filtered = this.requests.filter((request) => {
+      if (!isWithinBarangayScope(user, request.barangayId)) {
+        return false;
+      }
       if (filter.status && request.status !== filter.status) {
         return false;
       }
@@ -74,7 +89,11 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
   }
 
   getById(id: AssistanceRequestId): Observable<AssistanceRequest | null> {
-    return this.latency.respond(this.requests.find((request) => request.id === id) ?? null);
+    const request = this.requests.find((candidate) => candidate.id === id);
+    if (!request || !canReadRecord(this.access.currentUser(), 'request.view', request.barangayId)) {
+      return this.latency.respond(null);
+    }
+    return this.latency.respond(request);
   }
 
   listNotes(id: AssistanceRequestId): Observable<readonly CaseNote[]> {
@@ -87,6 +106,17 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     to: AssistanceRequestStatus,
     reason: string | null,
   ): Observable<AssistanceRequest> {
+    // The action is refused here as well as hidden in the UI. Approving is
+    // gated on `request.approve` and releasing on `disbursement.release`, which
+    // is what keeps DL-08 true even if a button is somehow reachable.
+    const denied = denyUnless<AssistanceRequest>(
+      this.access.currentUser(),
+      permissionForTransition(to),
+    );
+    if (denied) {
+      return denied;
+    }
+
     const index = this.requests.findIndex((request) => request.id === id);
     const current = this.requests[index];
 

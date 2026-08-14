@@ -3,10 +3,16 @@ import { firstValueFrom } from 'rxjs';
 
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import {
+  ACCESS_CONTEXT,
   asId,
+  ROLE_DEFINITIONS,
   DEFAULT_PAGE_REQUEST,
   isTerminalAssistanceStatus,
+  type AccessContext,
   type AssistanceRequestId,
+  type AuthenticatedUser,
+  type Permission,
+  type StaffUserId,
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
 
@@ -21,10 +27,30 @@ const TEST_ENVIRONMENT: AppEnvironment = {
   enableDevTools: false,
 };
 
+/*
+ * These tests exercise lifecycle mechanics, so they run as an administrator —
+ * the one role that holds every permission. Who *may* make each transition is
+ * covered separately in access-enforcement.spec.ts.
+ */
+const ADMIN: AuthenticatedUser = {
+  id: asId<StaffUserId>('staff-admin'),
+  displayName: 'Admin',
+  email: 'admin@example.gov.ph',
+  role: 'system-administrator',
+  roleLabel: ROLE_DEFINITIONS['system-administrator'].label,
+  position: 'Tester',
+  barangayId: null,
+  scope: ROLE_DEFINITIONS['system-administrator'].scope,
+  permissions: new Set<Permission>(ROLE_DEFINITIONS['system-administrator'].permissions),
+};
+
 function repository(): MockAssistanceRequestRepository {
+  const context: AccessContext = { currentUser: () => ADMIN };
+  TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
       { provide: APP_ENVIRONMENT, useValue: TEST_ENVIRONMENT },
+      { provide: ACCESS_CONTEXT, useValue: context },
       MockAssistanceRequestRepository,
     ],
   });

@@ -38,6 +38,7 @@ import {
   type ResidentId,
   type ResidentRepository,
   type ResidentSortField,
+  type SignInCredentials,
   type StaffFilter,
   type StaffRepository,
   type StaffUser,
@@ -169,9 +170,11 @@ export class HttpStaffRepository implements StaffRepository {
       .pipe(map((staff) => (staff ? toAuthenticatedUser(staff) : null)));
   }
 
-  signInAs(id: StaffUserId): Observable<AuthenticatedUser> {
+  signIn(credentials: SignInCredentials): Observable<AuthenticatedUser> {
+    // Credentials travel in the request body over the session endpoint; the
+    // API sets an HTTP-only cookie. Nothing is stored client-side.
     return this.api
-      .post<StaffUser>(API_ENDPOINTS.session, { staffUserId: id })
+      .post<StaffUser>(API_ENDPOINTS.session, credentials)
       .pipe(map(toAuthenticatedUser));
   }
 

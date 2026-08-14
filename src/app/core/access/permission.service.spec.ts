@@ -44,7 +44,7 @@ function stubRepository(user: StaffUser | null): StaffRepository {
     list: (): Observable<Page<StaffUser>> => of(emptyPage<StaffUser>()),
     getById: (): Observable<StaffUser | null> => of(user),
     currentUser: (): Observable<AuthenticatedUser | null> => of(authenticated),
-    signInAs: (): Observable<AuthenticatedUser> => {
+    signIn: (): Observable<AuthenticatedUser> => {
       if (!authenticated) {
         throw new Error('No user');
       }
