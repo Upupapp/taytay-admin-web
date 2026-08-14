@@ -9,6 +9,10 @@ export const PERMISSIONS = [
   'dashboard.view',
 
   'resident.view',
+  // Identity and means: the PhilSys reference (RA 11055) and monthly income.
+  // Held apart from `resident.view` so seeing that a person exists does not
+  // also hand over their identity number.
+  'resident.view-sensitive',
   'resident.create',
   'resident.update',
   'resident.deactivate',
@@ -76,6 +80,9 @@ export interface RoleDefinition {
 const INTAKE_PERMISSIONS: readonly Permission[] = [
   'dashboard.view',
   'resident.view',
+  // Intake verifies identity against a presented PhilSys card and runs the
+  // means test, so this tier starts here and is inherited upward.
+  'resident.view-sensitive',
   'resident.create',
   'resident.update',
   'program.view',

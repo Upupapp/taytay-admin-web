@@ -9,6 +9,7 @@ import {
   PROGRAM_REPOSITORY,
   REFERRAL_REPOSITORY,
   RESIDENT_REPOSITORY,
+  SAVED_VIEW_REPOSITORY,
   STAFF_REPOSITORY,
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
@@ -21,6 +22,7 @@ import {
   HttpProgramRepository,
   HttpReferralRepository,
   HttpResidentRepository,
+  HttpSavedViewRepository,
   HttpStaffRepository,
 } from './http/http-repositories';
 import { MockAssistanceRequestRepository } from './mock/mock-assistance-request.repository';
@@ -30,6 +32,7 @@ import { MockNotificationRepository } from './mock/mock-notification.repository'
 import { MockProgramRepository } from './mock/mock-program.repository';
 import { MockReferralRepository } from './mock/mock-referral.repository';
 import { MockResidentRepository } from './mock/mock-resident.repository';
+import { MockSavedViewRepository } from './mock/mock-saved-view.repository';
 import { MockStaffRepository } from './mock/mock-staff.repository';
 
 /**
@@ -56,6 +59,7 @@ function mockProviders(): Provider[] {
     { provide: STAFF_REPOSITORY, useClass: MockStaffRepository },
     { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
     { provide: DASHBOARD_REPOSITORY, useClass: MockDashboardRepository },
+    { provide: SAVED_VIEW_REPOSITORY, useClass: MockSavedViewRepository },
   ];
 }
 
@@ -69,5 +73,6 @@ function httpProviders(): Provider[] {
     { provide: STAFF_REPOSITORY, useClass: HttpStaffRepository },
     { provide: NOTIFICATION_REPOSITORY, useClass: HttpNotificationRepository },
     { provide: DASHBOARD_REPOSITORY, useClass: HttpDashboardRepository },
+    { provide: SAVED_VIEW_REPOSITORY, useClass: HttpSavedViewRepository },
   ];
 }

@@ -35,10 +35,18 @@ import {
   type ReferralId,
   type ReferralRepository,
   type Resident,
+  type ResidentDraft,
   type ResidentFilter,
   type ResidentId,
+  type ResidentProfile,
   type ResidentRepository,
   type ResidentSortField,
+  type ResidentView,
+  type SavedView,
+  type SavedViewDraft,
+  type SavedViewId,
+  type SavedViewRepository,
+  type SavedViewResource,
   type SignInCredentials,
   type StaffFilter,
   type StaffRepository,
@@ -60,16 +68,60 @@ import { API_ENDPOINTS } from './api.contract';
 export class HttpResidentRepository implements ResidentRepository {
   private readonly api = inject(ApiClient);
 
-  list(filter: ResidentFilter, page: PageRequest<ResidentSortField>): Observable<Page<Resident>> {
-    return this.api.page<Resident>(API_ENDPOINTS.residents, page, { ...filter });
+  /**
+   * Reads are typed as `ResidentView`, which is the contract the API owes: the
+   * server applies the disclosure policy and reports what it withheld. The
+   * client re-deriving redaction from a full record would defeat the point —
+   * the attribute would already have crossed the wire (`DL-38`).
+   */
+  list(
+    filter: ResidentFilter,
+    page: PageRequest<ResidentSortField>,
+  ): Observable<Page<ResidentView>> {
+    return this.api.page<ResidentView>(API_ENDPOINTS.residents, page, { ...filter });
   }
 
-  getById(id: ResidentId): Observable<Resident | null> {
-    return this.api.optionalItem<Resident>(`${API_ENDPOINTS.residents}/${id}`);
+  getById(id: ResidentId): Observable<ResidentView | null> {
+    return this.api.optionalItem<ResidentView>(`${API_ENDPOINTS.residents}/${id}`);
   }
 
   getHousehold(id: HouseholdId): Observable<Household | null> {
     return this.api.optionalItem<Household>(`${API_ENDPOINTS.households}/${id}`);
+  }
+
+  getProfile(id: ResidentId): Observable<ResidentProfile | null> {
+    return this.api.optionalItem<ResidentProfile>(`${API_ENDPOINTS.residents}/${id}/profile`);
+  }
+
+  create(draft: ResidentDraft): Observable<Resident> {
+    return this.api.post<Resident, ResidentDraft>(API_ENDPOINTS.residents, draft);
+  }
+
+  update(id: ResidentId, draft: ResidentDraft): Observable<Resident> {
+    return this.api.patch<Resident, ResidentDraft>(`${API_ENDPOINTS.residents}/${id}`, draft);
+  }
+
+  setActive(id: ResidentId, isActive: boolean): Observable<Resident> {
+    return this.api.patch<Resident, { isActive: boolean }>(`${API_ENDPOINTS.residents}/${id}`, {
+      isActive,
+    });
+  }
+}
+
+@Injectable()
+export class HttpSavedViewRepository implements SavedViewRepository {
+  private readonly api = inject(ApiClient);
+
+  listFor(resource: SavedViewResource): Observable<readonly SavedView[]> {
+    return this.api.collection<SavedView>(API_ENDPOINTS.savedViews, { resource });
+  }
+
+  create(draft: SavedViewDraft): Observable<SavedView> {
+    return this.api.post<SavedView, SavedViewDraft>(API_ENDPOINTS.savedViews, draft);
+  }
+
+  remove(id: SavedViewId): Observable<void> {
+    return this.api.deleteVoid(`${API_ENDPOINTS.savedViews}/${id}`);
   }
 }
 

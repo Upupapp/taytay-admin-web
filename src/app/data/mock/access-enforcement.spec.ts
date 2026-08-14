@@ -78,7 +78,7 @@ describe('data-scope enforcement', () => {
     const page = await firstValueFrom(
       TestBed.inject(MockResidentRepository).list({}, DEFAULT_PAGE_REQUEST),
     );
-    const barangays = new Set(page.items.map((r) => r.address.barangayId));
+    const barangays = new Set(page.items.map((r) => r.resident.address.barangayId));
     expect(barangays.size).toBeGreaterThan(1);
   });
 
@@ -88,8 +88,8 @@ describe('data-scope enforcement', () => {
       TestBed.inject(MockResidentRepository).list({}, DEFAULT_PAGE_REQUEST),
     );
     expect(page.items.length).toBeGreaterThan(0);
-    for (const resident of page.items) {
-      expect(resident.address.barangayId).toBe(SAN_JUAN);
+    for (const view of page.items) {
+      expect(view.resident.address.barangayId).toBe(SAN_JUAN);
     }
   });
 
@@ -129,7 +129,7 @@ describe('data-scope enforcement', () => {
     const found = await firstValueFrom(
       TestBed.inject(MockResidentRepository).getById(asId<ResidentId>('res-0001')),
     );
-    expect(found?.address.barangayId).toBe(SAN_JUAN);
+    expect(found?.resident.address.barangayId).toBe(SAN_JUAN);
   });
 });
 

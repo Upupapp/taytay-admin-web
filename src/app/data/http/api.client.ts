@@ -54,6 +54,10 @@ export class ApiClient {
     return this.http.post<void>(this.url(path), body).pipe(map(() => undefined));
   }
 
+  deleteVoid(path: string): Observable<void> {
+    return this.http.delete<void>(this.url(path)).pipe(map(() => undefined));
+  }
+
   patch<TItem, TBody = unknown>(path: string, body: TBody): Observable<TItem> {
     return this.http.patch<ApiItemResponse<TItem>>(this.url(path), body).pipe(map((r) => r.data));
   }

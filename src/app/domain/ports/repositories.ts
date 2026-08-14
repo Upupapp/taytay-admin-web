@@ -14,8 +14,17 @@ import type { AppNotification, NotificationRequest } from '../notifications/noti
 import type { AssistanceProgram, ProgramFilter } from '../programs/program';
 import type { DashboardFilter, DashboardSummary } from '../dashboard/dashboard-summary';
 import type { Disbursement, DisbursementFilter } from '../disbursements/disbursement';
-import type { Household, Resident, ResidentFilter, ResidentSortField } from '../residents/resident';
+import type {
+  Household,
+  Resident,
+  ResidentDraft,
+  ResidentFilter,
+  ResidentSortField,
+} from '../residents/resident';
+import type { ResidentView } from '../residents/resident-disclosure';
+import type { ResidentProfile } from '../residents/resident-profile';
 import type { Referral, ReferralFilter } from '../referrals/referral';
+import type { SavedView, SavedViewDraft, SavedViewResource } from '../views/saved-view';
 import type { Page, PageRequest } from '../shared/pagination';
 import type {
   AssistanceRequestId,
@@ -25,6 +34,7 @@ import type {
   ProgramId,
   ReferralId,
   ResidentId,
+  SavedViewId,
   StaffUserId,
 } from '../shared/ids';
 
@@ -36,13 +46,47 @@ import type {
  * swapping one for the other must never require touching a component.
  */
 
+/**
+ * The resident registry — the canonical record every other workflow links to.
+ *
+ * Reads return `ResidentView`, never a bare `Resident`: the adapter applies the
+ * disclosure policy on the way out, so a caller physically cannot render an
+ * attribute its user is not cleared for (`DL-38`). Writes take a `ResidentDraft`
+ * and return the stored `Resident`, because the writer necessarily saw what they
+ * typed.
+ */
 export interface ResidentRepository {
-  list(filter: ResidentFilter, page: PageRequest<ResidentSortField>): Observable<Page<Resident>>;
-  getById(id: ResidentId): Observable<Resident | null>;
+  list(
+    filter: ResidentFilter,
+    page: PageRequest<ResidentSortField>,
+  ): Observable<Page<ResidentView>>;
+  getById(id: ResidentId): Observable<ResidentView | null>;
   getHousehold(id: HouseholdId): Observable<Household | null>;
+  /**
+   * Resident, household, family and assistance history in one call — the
+   * traceability guarantee of the registry. `null` for "not found *or* not
+   * yours", which are deliberately indistinguishable (`DL-31`).
+   */
+  getProfile(id: ResidentId): Observable<ResidentProfile | null>;
+  create(draft: ResidentDraft): Observable<Resident>;
+  update(id: ResidentId, draft: ResidentDraft): Observable<Resident>;
+  /** Registry records are retired, never deleted: history must stay attributable. */
+  setActive(id: ResidentId, isActive: boolean): Observable<Resident>;
 }
 
 export const RESIDENT_REPOSITORY = new InjectionToken<ResidentRepository>('ResidentRepository');
+
+/**
+ * Named list parameters. A hook rather than a product surface: the API will own
+ * persistence and sharing, and this port is the shape it has to honour.
+ */
+export interface SavedViewRepository {
+  listFor(resource: SavedViewResource): Observable<readonly SavedView[]>;
+  create(draft: SavedViewDraft): Observable<SavedView>;
+  remove(id: SavedViewId): Observable<void>;
+}
+
+export const SAVED_VIEW_REPOSITORY = new InjectionToken<SavedViewRepository>('SavedViewRepository');
 
 export interface ProgramRepository {
   list(filter: ProgramFilter, page: PageRequest): Observable<Page<AssistanceProgram>>;

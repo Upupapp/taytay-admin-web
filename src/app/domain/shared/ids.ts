@@ -23,6 +23,7 @@ export type ReferralId = Branded<string, 'ReferralId'>;
 export type StaffUserId = Branded<string, 'StaffUserId'>;
 export type NotificationId = Branded<string, 'NotificationId'>;
 export type AuditEntryId = Branded<string, 'AuditEntryId'>;
+export type SavedViewId = Branded<string, 'SavedViewId'>;
 
 /**
  * The single sanctioned way to turn an untyped string (route param, API payload)
