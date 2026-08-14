@@ -721,3 +721,92 @@ absolute paths, so the sign-in page cannot be turned into an open redirect.
 be mistaken for a security boundary. Its value is that the shape, the copy and
 the accessibility are right, so wiring a real API changes the adapter and
 nothing else.
+
+---
+
+## Executive dashboard (TAB 06)
+
+### DL-34 · Attention comes before analytics, and is filtered by the permission to _act_
+
+**Status:** Settled (implemented in TAB 06).
+
+The dashboard opens with a ranked list of things a person can do something
+about, above every chart. The order is severity first, then size, computed in
+the domain (`sortAttention`) so it cannot depend on object-key iteration — the
+whole claim of the screen is that the top of the list is what to do next.
+
+Each signal names an **action**, not a status code: "3 requests waiting for
+approval", not "3 endorsed". Statuses are the system's vocabulary; the office's
+vocabulary is what needs doing.
+
+**The permission on a signal is the one needed to act, not to see.** The first
+cut used `disbursement.view` for unclaimed payouts and `referral.view` for
+unanswered referrals, which put items on the read-only auditor's to-do list that
+they could do nothing about. They are now `disbursement.schedule` and
+`referral.manage`. A test asserting the auditor sees an explicitly role-related
+empty state is what caught it.
+
+Zero-count signals are dropped rather than rendered as "0". An empty list is a
+real answer — and it is worded differently depending on whether nothing needs
+doing or nothing is _this user's_ to do.
+
+### DL-35 · The chart is the table
+
+**Status:** Settled (implemented in TAB 06).
+
+`ChartTable` renders a real `<table>` with a `<caption>`, scoped headers and one
+row per category. The bar is an `aria-hidden` span inside the row header, sized
+against the largest value.
+
+The alternative — a canvas or SVG chart plus a separate "accessible data table"
+— is two artifacts that drift. The table stops being updated and quietly starts
+lying to the people who depend on it most. One artifact cannot drift from
+itself.
+
+Consequences that fall out of it: nothing is conveyed by colour alone, because
+every row states its label and value as text and the bar only repeats the
+number; keyboard users tab through real links when rows drill down; and a
+non-zero row always keeps a visible sliver of bar, so "small but present" never
+looks identical to "none".
+
+### DL-36 · Filter state lives in the URL, and travels into every drill-down
+
+**Status:** Settled (implemented in TAB 06).
+
+The dashboard filter (barangay, programme type, period) is read from query
+params and written back on change. It is therefore shareable, survives the back
+button, and is never held privately where it could disagree with what is shown.
+
+The same filter is passed to `DashboardRepository.summary(filter)` **and**
+merged into every metric's drill-down link. That is what makes "all metrics
+trace back to underlying filtered records" true rather than asserted: the list a
+number opens is constrained exactly as the number was.
+
+Malformed params degrade to _no filter_ rather than throwing or guessing —
+`readFilter` validates against the real barangay, category and period
+vocabularies. A wrong figure is worse than an unfiltered one.
+
+Routes live in the feature (`dashboard-drill-down.ts`), not the domain. The
+domain knows the _situation_; it has no business knowing this application's URLs.
+
+### DL-37 · The dashboard repository was unprotected, and two numbers were misnamed
+
+**Status:** Settled (implemented in TAB 06).
+
+Two honesty fixes found while building on TAB 05's foundation:
+
+1. **`MockDashboardRepository` had no access check at all**, despite
+   `docs/access/README.md` claiming `denyUnless(...)` was in "every mock
+   repository". An anonymous or unprivileged caller could read municipality-wide
+   counts, and aggregate figures are still information about residents. It now
+   requires `dashboard.view` and respects barangay scope, so a `barangay-link`
+   sees their own barangay's numbers rather than the municipality's.
+2. **`disbursedThisMonth` never respected a month.** It summed every released
+   disbursement regardless of date, so the label claimed a window the number did
+   not honour. It is now `disbursedInPeriod`, governed by the explicit `period`
+   filter, and `residentsServedThisMonth` became `residentsServedInPeriod` for
+   the same reason.
+
+**Consequence:** the rule in `DL-30` now genuinely holds for every mock
+repository, and a test pins it. A metric label that describes a window must be
+computed under that window, or renamed.
