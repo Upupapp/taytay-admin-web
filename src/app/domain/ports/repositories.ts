@@ -12,7 +12,7 @@ import type { AuthenticatedUser, StaffFilter, StaffUser } from '../access/staff-
 import type { SignInCredentials } from '../access/credentials';
 import type { AppNotification, NotificationRequest } from '../notifications/notification';
 import type { AssistanceProgram, ProgramFilter } from '../programs/program';
-import type { DashboardSummary } from '../dashboard/dashboard-summary';
+import type { DashboardFilter, DashboardSummary } from '../dashboard/dashboard-summary';
 import type { Disbursement, DisbursementFilter } from '../disbursements/disbursement';
 import type { Household, Resident, ResidentFilter, ResidentSortField } from '../residents/resident';
 import type { Referral, ReferralFilter } from '../referrals/referral';
@@ -118,7 +118,12 @@ export const NOTIFICATION_REPOSITORY = new InjectionToken<NotificationRepository
 );
 
 export interface DashboardRepository {
-  summary(): Observable<DashboardSummary>;
+  /**
+   * Every figure is computed under `filter`, and the summary echoes the filter
+   * back. That is what lets the view hand the *same* filter to the list a
+   * metric links to, so a number and the records behind it cannot disagree.
+   */
+  summary(filter: DashboardFilter): Observable<DashboardSummary>;
 }
 
 export const DASHBOARD_REPOSITORY = new InjectionToken<DashboardRepository>('DashboardRepository');

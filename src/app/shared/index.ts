@@ -16,6 +16,7 @@ export * from './pipes/person-name.pipe';
 export * from './pipes/peso.pipe';
 export * from './pipes/relative-time.pipe';
 export * from './ui/async-content/async-content';
+export * from './ui/chart-table/chart-table';
 export * from './ui/data-table/data-table';
 export * from './ui/data-table/table-column';
 export * from './ui/drawer/drawer';

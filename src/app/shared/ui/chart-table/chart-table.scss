@@ -1,0 +1,102 @@
+.chart {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  /* Lets the surrounding card shrink rather than widening the page. */
+  min-inline-size: 0;
+}
+
+.chart__caption {
+  margin-block-end: var(--space-snug);
+  color: var(--c-text);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: start;
+}
+
+.chart__summary {
+  display: block;
+  margin-block-start: 2px;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.chart th,
+.chart td {
+  padding: var(--space-compact) 0;
+  border-block-end: 1px solid var(--c-border);
+  text-align: start;
+  vertical-align: middle;
+}
+
+.chart thead th {
+  color: var(--c-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.chart__value-header,
+.chart__value {
+  text-align: end;
+  /* Aligned digits make magnitudes comparable without reading every number. */
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.chart__value {
+  padding-inline-start: var(--space-snug);
+  font-weight: 600;
+}
+
+.chart__label-cell {
+  position: relative;
+  inline-size: 100%;
+  min-inline-size: 0;
+  font-weight: 400;
+}
+
+/* The bar sits behind the label rather than beside it, so a long barangay name
+   never squeezes the chart into an unreadable column on a narrow screen. */
+.chart__bar {
+  position: absolute;
+  inset-block: 4px;
+  inset-inline-start: 0;
+  z-index: 0;
+  border-radius: var(--radius-sm);
+  background: var(--brand-primary-soft);
+}
+
+.chart__label,
+.chart__link {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  padding-inline: var(--space-compact);
+  /* Comfortably above the 24px pointer-target minimum (WCAG 2.5.8). */
+  min-block-size: 28px;
+  line-height: 28px;
+  overflow-wrap: anywhere;
+}
+
+.chart__link {
+  color: var(--c-text);
+  text-decoration: none;
+}
+
+.chart__link:hover {
+  text-decoration: underline;
+}
+
+.chart__row:last-child th,
+.chart__row:last-child td {
+  border-block-end: none;
+}
+
+.chart__empty {
+  padding-block: var(--space-base);
+  color: var(--c-text-subtle);
+  font-size: 13px;
+}

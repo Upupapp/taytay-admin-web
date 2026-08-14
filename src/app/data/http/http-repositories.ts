@@ -14,6 +14,7 @@ import {
   type AuthenticatedUser,
   type CaseNote,
   type DashboardRepository,
+  type DashboardFilter,
   type DashboardSummary,
   type Disbursement,
   type DisbursementFilter,
@@ -210,7 +211,11 @@ export class HttpNotificationRepository implements NotificationRepository {
 export class HttpDashboardRepository implements DashboardRepository {
   private readonly api = inject(ApiClient);
 
-  summary(): Observable<DashboardSummary> {
-    return this.api.item<DashboardSummary>(API_ENDPOINTS.dashboardSummary);
+  summary(filter: DashboardFilter): Observable<DashboardSummary> {
+    // The filter goes to the API so the server computes the figures under the
+    // same constraints the view will use to drill into them.
+    return this.api.item<DashboardSummary>(
+      `${API_ENDPOINTS.dashboardSummary}?${new URLSearchParams({ ...filter }).toString()}`,
+    );
   }
 }
