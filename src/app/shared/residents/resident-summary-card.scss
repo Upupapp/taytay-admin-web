@@ -1,0 +1,113 @@
+.rsc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-compact);
+  padding: var(--space-base);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+}
+
+.rsc--compact {
+  padding: var(--space-snug);
+  gap: var(--space-micro);
+}
+
+.rsc__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-compact);
+}
+
+.rsc__name {
+  color: var(--c-text);
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+a.rsc__name {
+  /* Comfortably past the 24px pointer-target floor (WCAG 2.5.8). */
+  display: inline-block;
+  min-block-size: var(--target-min);
+  line-height: var(--target-min);
+  text-decoration: none;
+}
+
+a.rsc__name:hover {
+  text-decoration: underline;
+}
+
+.rsc__relationship {
+  padding: 2px var(--space-compact);
+  border-radius: var(--radius-sm);
+  background: var(--tone-neutral-bg);
+  color: var(--tone-neutral-fg);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.rsc__meta {
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+/* Colour is never the signal here: the tag says "Protected record" in words,
+   because a status conveyed only by a red edge is invisible to a colour-blind
+   worker and to a screen reader alike (WCAG 1.4.1). */
+.rsc__protected {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-compact);
+}
+
+.rsc__protected-tag {
+  padding: 2px var(--space-compact);
+  border-radius: var(--radius-sm);
+  background: var(--tone-warning-bg);
+  color: var(--tone-warning-fg);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rsc__protected-note {
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.rsc__sectors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-micro);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rsc__sector {
+  padding: 2px var(--space-compact);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface-muted);
+  color: var(--c-text-muted);
+  font-size: 12px;
+}
+
+.rsc__inactive,
+.rsc__withheld {
+  color: var(--c-text-subtle);
+  font-size: 12.5px;
+}
+
+.rsc__actions:empty {
+  display: none;
+}
+
+.rsc__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-compact);
+  margin-block-start: var(--space-micro);
+}

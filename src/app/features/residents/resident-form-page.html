@@ -1,0 +1,233 @@
+<app-page-header [title]="title()" [subtitle]="subtitle()" />
+
+<app-async-content [state]="existing()" [content]="body" [skeletonLines]="6">
+  <ng-template #body>
+    @if (notFound()) {
+      <div class="card form__blocked">
+        <h2 class="form__blocked-heading">That resident is not available</h2>
+        <p class="form__blocked-body">
+          The record does not exist, or it is outside the part of the municipality you cover.
+        </p>
+        <a class="btn" routerLink="/residents">Back to residents</a>
+      </div>
+    } @else if (blockedByDisclosure()) {
+      <!-- Refusing here is the honest outcome: a saved draft replaces the whole
+           record, so editing from a redacted copy would delete what was hidden. -->
+      <div class="card form__blocked">
+        <h2 class="form__blocked-heading">This record cannot be edited by your role</h2>
+        <p class="form__blocked-body">
+          Some details on it are not disclosed to you. Saving from here would erase them, so the
+          form is not offered. Ask the MSWDO head or the assigned social worker to make the change.
+        </p>
+        <a class="btn" routerLink="/residents">Back to residents</a>
+      </div>
+    } @else {
+      <form class="form" novalidate (submit)="submit($event)">
+        @if (problems().length > 0) {
+          <div class="card form__problems" role="alert">
+            <h2 class="form__problems-heading">{{ copy.problemsHeading }}</h2>
+            <ul>
+              @for (problem of problems(); track problem.field + problem.rule) {
+                <li>{{ problemText(problem) }}</li>
+              }
+            </ul>
+          </div>
+        }
+
+        <fieldset class="card form__section">
+          <legend class="form__legend">{{ copy.nameHeading }}</legend>
+          <div class="form__grid">
+            <label class="field">
+              <span class="field__label">{{ copy.first }}</span>
+              <input
+                class="field__input"
+                type="text"
+                autocomplete="given-name"
+                [value]="model().first"
+                (input)="onText('first', $event)"
+              />
+            </label>
+            <label class="field">
+              <span class="field__label">{{ copy.middle }}</span>
+              <input
+                class="field__input"
+                type="text"
+                autocomplete="additional-name"
+                [value]="model().middle"
+                (input)="onText('middle', $event)"
+              />
+            </label>
+            <label class="field">
+              <span class="field__label">{{ copy.last }}</span>
+              <input
+                class="field__input"
+                type="text"
+                autocomplete="family-name"
+                [value]="model().last"
+                (input)="onText('last', $event)"
+              />
+            </label>
+            <label class="field">
+              <span class="field__label">{{ copy.suffix }}</span>
+              <input
+                class="field__input"
+                type="text"
+                autocomplete="honorific-suffix"
+                [value]="model().suffix"
+                (input)="onText('suffix', $event)"
+              />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="card form__section">
+          <legend class="form__legend">{{ copy.personalHeading }}</legend>
+          <div class="form__grid">
+            <label class="field">
+              <span class="field__label">{{ copy.birthDate }}</span>
+              <input
+                class="field__input"
+                type="date"
+                autocomplete="bday"
+                [value]="model().birthDate"
+                (input)="onText('birthDate', $event)"
+              />
+            </label>
+            <label class="field">
+              <span class="field__label">{{ copy.sex }}</span>
+              <select class="field__input" (change)="onText('sex', $event)">
+                @for (option of sexes; track option) {
+                  <option [value]="option" [selected]="model().sex === option">
+                    {{ sexLabel(option) }}
+                  </option>
+                }
+              </select>
+            </label>
+            <label class="field">
+              <span class="field__label">{{ copy.civilStatus }}</span>
+              <select class="field__input" (change)="onText('civilStatus', $event)">
+                @for (option of civilStatuses; track option) {
+                  <option [value]="option" [selected]="model().civilStatus === option">
+                    {{ civilStatusLabel(option) }}
+                  </option>
+                }
+              </select>
+            </label>
+            <label class="field">
+              <span class="field__label">{{ copy.philsys }}</span>
+              <input
+                class="field__input"
+                type="text"
+                inputmode="numeric"
+                maxlength="4"
+                [value]="model().philsysLastFour"
+                (input)="onText('philsysLastFour', $event)"
+              />
+              <span class="field__hint">{{ copy.philsysHint }}</span>
+            </label>
+            <label class="field">
+              <span class="field__label">{{ copy.monthlyIncome }}</span>
+              <input
+                class="field__input"
+                type="number"
+                min="0"
+                step="1"
+                [value]="model().monthlyIncome"
+                (input)="onText('monthlyIncome', $event)"
+              />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="card form__section">
+          <legend class="form__legend">{{ copy.addressHeading }}</legend>
+          <div class="form__grid">
+            <label class="field">
+              <span class="field__label">{{ copy.barangay }}</span>
+              <select class="field__input" (change)="onText('barangayId', $event)">
+                <option value="" [selected]="model().barangayId === ''">—</option>
+                @for (barangay of barangays; track barangay.id) {
+                  <option [value]="barangay.id" [selected]="model().barangayId === barangay.id">
+                    {{ barangay.name }}
+                  </option>
+                }
+              </select>
+            </label>
+            <label class="field">
+              <span class="field__label">{{ copy.purok }}</span>
+              <input
+                class="field__input"
+                type="text"
+                [value]="model().purokOrSitio"
+                (input)="onText('purokOrSitio', $event)"
+              />
+            </label>
+            <label class="field field--wide">
+              <span class="field__label">{{ copy.street }}</span>
+              <input
+                class="field__input"
+                type="text"
+                autocomplete="street-address"
+                [value]="model().streetAddress"
+                (input)="onText('streetAddress', $event)"
+              />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="card form__section">
+          <legend class="form__legend">{{ copy.contactHeading }}</legend>
+          <div class="form__grid">
+            <label class="field">
+              <span class="field__label">{{ copy.mobile }}</span>
+              <input
+                class="field__input"
+                type="tel"
+                autocomplete="tel"
+                [value]="model().mobile"
+                (input)="onText('mobile', $event)"
+              />
+            </label>
+            <label class="field">
+              <span class="field__label">{{ copy.email }}</span>
+              <input
+                class="field__input"
+                type="email"
+                autocomplete="email"
+                [value]="model().email"
+                (input)="onText('email', $event)"
+              />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="card form__section">
+          <legend class="form__legend">{{ copy.sectorsHeading }}</legend>
+          <p class="form__hint">{{ copy.sectorsHint }}</p>
+          <div class="form__sectors">
+            @for (sector of offeredSectors(); track sector) {
+              <label class="check">
+                <input
+                  type="checkbox"
+                  [checked]="isChecked(sector)"
+                  (change)="toggleSector(sector, $event)"
+                />
+                <span>{{ sectorLabel(sector) }}</span>
+              </label>
+            }
+          </div>
+          @if (hasRestrictedSectors()) {
+            <p class="form__hint">{{ copy.sectorsRestricted }}</p>
+          }
+        </fieldset>
+
+        <div class="form__actions">
+          <a class="btn" routerLink="/residents">{{ copy.cancel }}</a>
+          <button type="submit" class="btn btn--primary" [disabled]="submitting()">
+            {{ submitting() ? copy.saving : copy.save }}
+          </button>
+        </div>
+      </form>
+    }
+  </ng-template>
+</app-async-content>

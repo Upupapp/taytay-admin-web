@@ -1,0 +1,88 @@
+.views {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-compact);
+}
+
+.views__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-compact);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.views__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.views__chip {
+  display: inline-flex;
+  align-items: center;
+  /* Meets the 24px pointer-target minimum outright (WCAG 2.5.8). */
+  min-block-size: var(--target-min);
+  padding: var(--space-micro) var(--space-snug);
+  border: 1px solid var(--c-border-strong);
+  border-radius: 999px;
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.views__chip:hover {
+  background: var(--c-surface-muted);
+}
+
+/* The applied view is marked by fill *and* by aria-current, so which one is in
+   force does not depend on seeing the difference between two greys. */
+.views__chip--active {
+  border-color: var(--c-brand);
+  background: var(--brand-primary-soft);
+  color: var(--c-brand-dark);
+  font-weight: 600;
+}
+
+.views__remove {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.views__save {
+  margin-inline-start: auto;
+  font-size: 13px;
+}
+
+.views__error {
+  flex-basis: 100%;
+  color: var(--tone-danger-fg);
+  font-size: 13px;
+}
+
+.views__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+}
+
+.views__field-label {
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.views__field-input {
+  padding: var(--space-compact) var(--space-snug);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 14px;
+  min-block-size: 36px;
+}

@@ -1,37 +1,88 @@
-<app-page-header
-  title="Residents"
-  subtitle="Beneficiary and household registry for Taytay, Rizal."
-/>
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a
+    page-actions
+    *appHasPermission="'resident.create'"
+    class="btn btn--primary"
+    routerLink="/residents/new"
+  >
+    {{ copy.create }}
+  </a>
+</app-page-header>
 
-<div class="card">
+<div class="card residents">
+  <app-saved-views-bar
+    resource="residents"
+    [currentParams]="filterParams()"
+    [currentUserId]="currentUserId()"
+  />
+
   <div class="filters">
-    <label class="filters__field">
-      <span class="filters__label">Search</span>
+    <label class="filters__field filters__field--wide">
+      <span class="filters__label">{{ copy.search }}</span>
       <input
         type="search"
         class="filters__input"
-        placeholder="Name, address or mobile number"
+        [placeholder]="copy.searchPlaceholder"
+        [value]="searchText()"
+        [attr.aria-describedby]="'resident-search-hint'"
         (input)="onSearch($event)"
       />
     </label>
 
     <label class="filters__field">
-      <span class="filters__label">Barangay</span>
-      <select class="filters__input" (change)="onBarangayChange($event)">
-        <option value="">All barangays</option>
+      <span class="filters__label">{{ copy.barangay }}</span>
+      <select class="filters__input" (change)="onBarangay($event)">
+        <option value="" [selected]="!filter().barangayId">{{ copy.allBarangays }}</option>
         @for (barangay of barangays; track barangay.id) {
-          <option [value]="barangay.id">{{ barangay.name }}</option>
+          <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
+            {{ barangay.name }}
+          </option>
         }
       </select>
     </label>
 
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.sector }}</span>
+      <select class="filters__input" (change)="onSector($event)">
+        <option value="" [selected]="!filter().sector">{{ copy.allSectors }}</option>
+        @for (sector of sectors; track sector) {
+          <option [value]="sector" [selected]="filter().sector === sector">
+            {{ sectorLabel(sector) }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.ageGroup }}</span>
+      <select class="filters__input" (change)="onAgeGroup($event)">
+        <option value="" [selected]="!filter().ageGroup">{{ copy.allAges }}</option>
+        @for (group of ageGroups; track group) {
+          <option [value]="group" [selected]="filter().ageGroup === group">
+            {{ ageGroupLabel(group) }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__check">
+      <input
+        type="checkbox"
+        [checked]="filter().includeInactive === true"
+        (change)="onIncludeInactive($event)"
+      />
+      <span>{{ copy.includeInactive }}</span>
+    </label>
+
     @if (hasFilters()) {
-      <button type="button" class="btn" (click)="clearFilters()">Clear filters</button>
+      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
     }
   </div>
 
+  <p class="filters__hint" id="resident-search-hint">{{ copy.searchHint }}</p>
+
   <app-data-table
-    caption="Residents registered with the MSWDO"
+    [caption]="copy.caption"
     [columns]="columns()"
     [rows]="rows()"
     [rowKey]="rowKey"
@@ -39,25 +90,30 @@
     [page]="page()"
     [sort]="sort()"
     [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
-    [emptyHeading]="hasFilters() ? 'No residents match those filters' : 'No residents yet'"
-    [emptyMessage]="
-      hasFilters()
-        ? 'Try a different spelling, or clear the filters to see every record.'
-        : 'Residents appear here once they have been registered at intake.'
-    "
-    [emptyActionLabel]="hasFilters() ? 'Clear filters' : null"
+    [emptyHeading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
+    [emptyMessage]="hasFilters() ? copy.noResultsMessage : copy.emptyMessage"
+    [emptyActionLabel]="hasFilters() ? copy.clear : null"
     (sortChanged)="onSortChanged($event)"
     (pageChanged)="onPageChanged($event)"
     (emptyActionSelected)="clearFilters()"
   />
 </div>
 
-<ng-template #sectorsCell let-resident>
+<!-- The name is the way into the record. Making it the link — rather than the
+     whole row — keeps a keyboard user's tab stop on the thing they meant. -->
+<ng-template #nameCell let-view>
+  <a class="residents__name" [routerLink]="detailLink(view)">{{ view.listedName }}</a>
+  @if (view.isProtected) {
+    <span class="residents__protected">{{ copy.restricted }}</span>
+  }
+</ng-template>
+
+<ng-template #sectorsCell let-view>
   <span class="sectors">
-    @for (sector of sectorsOf(resident); track sector) {
-      <span class="sectors__chip">{{ sector }}</span>
+    @for (sector of view.resident.sectors; track sector) {
+      <span class="sectors__chip">{{ sectorLabel(sector) }}</span>
     } @empty {
-      <span class="sectors__none">—</span>
+      <span class="sectors__none">{{ copy.none }}</span>
     }
   </span>
 </ng-template>

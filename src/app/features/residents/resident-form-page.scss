@@ -1,0 +1,125 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+  margin-block-start: var(--space-base);
+  max-inline-size: 900px;
+}
+
+.form__section {
+  padding: var(--space-card);
+  border: 1px solid var(--c-border);
+}
+
+.form__legend {
+  padding-inline: var(--space-compact);
+  color: var(--c-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-base);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+}
+
+.field--wide {
+  grid-column: 1 / -1;
+}
+
+.field__label {
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.field__input {
+  padding: var(--space-compact) var(--space-snug);
+  /* Well past the 24px pointer-target minimum (WCAG 2.5.8). */
+  min-block-size: 36px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.field__hint,
+.form__hint {
+  color: var(--c-text-subtle);
+  font-size: 12.5px;
+}
+
+.form__hint {
+  margin-block-end: var(--space-snug);
+}
+
+.form__sectors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-compact);
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-compact);
+  min-block-size: var(--target-min);
+  font-size: 13.5px;
+}
+
+.check input {
+  inline-size: 18px;
+  block-size: 18px;
+}
+
+.form__problems {
+  padding: var(--space-base) var(--space-card);
+  border-inline-start: 4px solid var(--tone-danger-fg);
+}
+
+.form__problems-heading {
+  margin-block-end: var(--space-compact);
+  color: var(--tone-danger-fg);
+  font-size: 14px;
+}
+
+.form__problems ul {
+  margin: 0;
+  padding-inline-start: var(--space-base);
+  font-size: 13.5px;
+}
+
+.form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-compact);
+}
+
+.form__blocked {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-snug);
+  margin-block-start: var(--space-base);
+  padding: var(--space-card);
+  max-inline-size: 640px;
+}
+
+.form__blocked-heading {
+  font-size: 15px;
+}
+
+.form__blocked-body {
+  color: var(--c-text-muted);
+  font-size: 13.5px;
+}

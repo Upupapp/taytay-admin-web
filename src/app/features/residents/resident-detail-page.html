@@ -1,0 +1,377 @@
+<app-async-content [state]="state()" [content]="body" [skeletonLines]="8">
+  <ng-template #body let-profile>
+    @if (profile === null) {
+      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <p class="detail__back">
+        <a class="btn" routerLink="/residents">{{ copy.backToList }}</a>
+      </p>
+    } @else {
+      <app-page-header
+        [title]="profile.view.listedName"
+        [subtitle]="barangay(profile) + ' · ' + copy.subtitleFallback"
+      >
+        <a page-actions *appHasPermission="'resident.update'" class="btn" [routerLink]="editLink()">
+          {{ copy.edit }}
+        </a>
+        @if (profile.view.resident.isActive) {
+          <button
+            page-actions
+            *appHasPermission="'resident.deactivate'"
+            type="button"
+            class="btn"
+            (click)="askRetire()"
+          >
+            {{ copy.retire }}
+          </button>
+        } @else {
+          <button
+            page-actions
+            *appHasPermission="'resident.deactivate'"
+            type="button"
+            class="btn"
+            (click)="askRestore()"
+          >
+            {{ copy.restore }}
+          </button>
+        }
+      </app-page-header>
+
+      @if (profile.view.isProtected) {
+        <aside class="card notice notice--protected">
+          <h2 class="notice__heading">{{ copy.protectedHeading }}</h2>
+          <p class="notice__body">{{ copy.protectedBody }}</p>
+        </aside>
+      }
+
+      @if (profile.view.withheld.length > 0) {
+        <aside class="card notice">
+          <h2 class="notice__heading">{{ copy.withheldHeading }}</h2>
+          <p class="notice__body">{{ copy.withheldBody }}</p>
+          <ul class="notice__list">
+            @for (field of profile.view.withheld; track field) {
+              <li>{{ withheldLabel(field) }}</li>
+            }
+          </ul>
+        </aside>
+      }
+
+      <div class="detail">
+        <!-- ── Identity ─────────────────────────────────────────────────── -->
+        <section class="card panel" aria-labelledby="identity-heading">
+          <h2 class="panel__heading" id="identity-heading">{{ copy.identityHeading }}</h2>
+          <dl class="facts">
+            <div class="facts__row">
+              <dt>{{ copy.born }}</dt>
+              <dd>{{ profile.view.resident.birthDate | date: 'longDate' }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.age }}</dt>
+              <dd>{{ age(profile) }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.sex }}</dt>
+              <dd>{{ sexLabel(profile) }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.civilStatus }}</dt>
+              <dd>{{ civilStatusLabel(profile) }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.philsys }}</dt>
+              <dd>{{ profile.view.resident.philsysLastFour ?? '—' }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.monthlyIncome }}</dt>
+              <dd>{{ profile.view.resident.monthlyIncome | peso }}</dd>
+            </div>
+            <div class="facts__row facts__row--wide">
+              <dt>{{ copy.sectors }}</dt>
+              <dd>
+                <span class="sectors">
+                  @for (sector of profile.view.resident.sectors; track sector) {
+                    <span class="sectors__chip">{{ sectorLabel(sector) }}</span>
+                  } @empty {
+                    <span class="sectors__none">—</span>
+                  }
+                </span>
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- ── Address and contact ──────────────────────────────────────── -->
+        <section class="card panel" aria-labelledby="address-heading">
+          <h2 class="panel__heading" id="address-heading">{{ copy.addressHeading }}</h2>
+          <dl class="facts">
+            <div class="facts__row">
+              <dt>{{ copy.barangay }}</dt>
+              <dd>{{ barangay(profile) }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.purok }}</dt>
+              <dd>{{ profile.view.resident.address.purokOrSitio ?? '—' }}</dd>
+            </div>
+            <div class="facts__row facts__row--wide">
+              <dt>{{ copy.street }}</dt>
+              <dd>{{ profile.view.resident.address.streetAddress ?? '—' }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.mobile }}</dt>
+              <dd>{{ profile.view.resident.contact.mobile ?? '—' }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.email }}</dt>
+              <dd>{{ profile.view.resident.contact.email ?? '—' }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- ── Household and family ─────────────────────────────────────── -->
+        <section class="card panel panel--wide" aria-labelledby="household-heading">
+          <h2 class="panel__heading" id="household-heading">{{ copy.householdHeading }}</h2>
+
+          @if (profile.household; as household) {
+            <dl class="facts">
+              <div class="facts__row">
+                <dt>{{ copy.householdReference }}</dt>
+                <dd>{{ household.referenceNumber }}</dd>
+              </div>
+              <div class="facts__row">
+                <dt>{{ copy.householdIncome }}</dt>
+                <dd>{{ household.monthlyIncome | peso }}</dd>
+              </div>
+              <div class="facts__row">
+                <dt>{{ copy.indigent }}</dt>
+                <dd>{{ household.isIndigent ? copy.yes : copy.no }}</dd>
+              </div>
+            </dl>
+          } @else {
+            <p class="panel__empty">{{ copy.noHousehold }}</p>
+          }
+
+          <h3 class="panel__subheading">{{ copy.familyHeading }}</h3>
+          @if (profile.family.length > 0) {
+            <ul class="family">
+              @for (member of profile.family; track member.view.resident.id) {
+                <li>
+                  <app-resident-summary-card
+                    compact
+                    [view]="member.view"
+                    [relationship]="relationshipLabel(member)"
+                    [routerLink]="memberLink(member.view.resident.id)"
+                  />
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="panel__empty">{{ copy.noFamily }}</p>
+          }
+        </section>
+
+        <!-- ── Assistance history ───────────────────────────────────────── -->
+        <section class="card panel panel--wide" aria-labelledby="cases-heading">
+          <h2 class="panel__heading" id="cases-heading">{{ copy.casesHeading }}</h2>
+
+          <dl class="totals">
+            <div>
+              <dt>{{ copy.caseCount }}</dt>
+              <dd>{{ profile.history.cases.length }}</dd>
+            </div>
+            <div>
+              <dt>{{ copy.openCases }}</dt>
+              <dd>{{ profile.history.openCaseCount }}</dd>
+            </div>
+            <div>
+              <dt>{{ copy.totalReleased }}</dt>
+              <dd>{{ profile.history.totalReleased | peso }}</dd>
+            </div>
+            <div>
+              <dt>{{ copy.lastActivity }}</dt>
+              <dd>
+                {{
+                  profile.history.lastActivityAt
+                    ? (profile.history.lastActivityAt | date: 'mediumDate')
+                    : '—'
+                }}
+              </dd>
+            </div>
+          </dl>
+
+          @if (profile.history.cases.length > 0) {
+            <table class="history">
+              <caption class="visually-hidden">
+                {{
+                  copy.casesHeading
+                }}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Reference</th>
+                  <th scope="col">Programme</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="history__amount">Approved</th>
+                  <th scope="col">Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (entry of profile.history.cases; track entry.id) {
+                  <tr>
+                    <th scope="row">
+                      <a
+                        [routerLink]="['/assistance-requests']"
+                        [queryParams]="{ q: entry.referenceNumber }"
+                      >
+                        {{ entry.referenceNumber }}
+                      </a>
+                    </th>
+                    <td>{{ entry.programName }}</td>
+                    <td>
+                      <app-status-badge [catalog]="requestStatuses" [status]="entry.status" />
+                    </td>
+                    <td class="history__amount">{{ entry.approvedAmount | peso }}</td>
+                    <td>{{ entry.updatedAt | date: 'mediumDate' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <p class="panel__empty">{{ copy.noCases }}</p>
+          }
+        </section>
+
+        <!-- ── Payouts ──────────────────────────────────────────────────── -->
+        <section class="card panel panel--wide" aria-labelledby="payouts-heading">
+          <h2 class="panel__heading" id="payouts-heading">{{ copy.payoutsHeading }}</h2>
+          @if (profile.history.payouts.length > 0) {
+            <table class="history">
+              <caption class="visually-hidden">
+                {{
+                  copy.payoutsHeading
+                }}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Reference</th>
+                  <th scope="col">Method</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="history__amount">Amount</th>
+                  <th scope="col">Released</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (payout of profile.history.payouts; track payout.id) {
+                  <tr>
+                    <th scope="row">
+                      <a
+                        [routerLink]="['/disbursements']"
+                        [queryParams]="{ q: payout.referenceNumber }"
+                      >
+                        {{ payout.referenceNumber }}
+                      </a>
+                    </th>
+                    <td>{{ methodLabel(payout.method) }}</td>
+                    <td>
+                      <app-status-badge [catalog]="payoutStatuses" [status]="payout.status" />
+                    </td>
+                    <td class="history__amount">{{ payout.amount | peso }}</td>
+                    <td>
+                      {{ payout.releasedAt ? (payout.releasedAt | date: 'mediumDate') : '—' }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <p class="panel__empty">{{ copy.noPayouts }}</p>
+          }
+        </section>
+
+        <!-- ── Referrals ────────────────────────────────────────────────── -->
+        <section class="card panel panel--wide" aria-labelledby="referrals-heading">
+          <h2 class="panel__heading" id="referrals-heading">{{ copy.referralsHeading }}</h2>
+          @if (profile.history.referrals.length > 0) {
+            <table class="history">
+              <caption class="visually-hidden">
+                {{
+                  copy.referralsHeading
+                }}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Reference</th>
+                  <th scope="col">Sent to</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Referred</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (referral of profile.history.referrals; track referral.id) {
+                  <tr>
+                    <th scope="row">
+                      <a
+                        [routerLink]="['/referrals']"
+                        [queryParams]="{ q: referral.referenceNumber }"
+                      >
+                        {{ referral.referenceNumber }}
+                      </a>
+                    </th>
+                    <td>{{ referral.destinationName }}</td>
+                    <td>
+                      <app-status-badge [catalog]="referralStatuses" [status]="referral.status" />
+                    </td>
+                    <td>{{ referral.referredAt | date: 'mediumDate' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <p class="panel__empty">{{ copy.noReferrals }}</p>
+          }
+        </section>
+
+        <!-- ── Record provenance ────────────────────────────────────────── -->
+        <section class="card panel" aria-labelledby="record-heading">
+          <h2 class="panel__heading" id="record-heading">{{ copy.recordHeading }}</h2>
+          <dl class="facts">
+            <div class="facts__row">
+              <dt>{{ copy.created }}</dt>
+              <dd>{{ profile.view.resident.audit.createdAt | date: 'medium' }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.updated }}</dt>
+              <dd>{{ profile.view.resident.audit.updatedAt | date: 'medium' }}</dd>
+            </div>
+          </dl>
+        </section>
+      </div>
+
+      <app-modal
+        [(open)]="retiring"
+        [heading]="copy.retireConfirmHeading"
+        [description]="copy.retireConfirmBody"
+        size="small"
+      >
+        <button modal-actions type="button" class="btn" (click)="retiring.set(false)">
+          {{ copy.cancel }}
+        </button>
+        <button modal-actions type="button" class="btn btn--primary" (click)="confirmRetire()">
+          {{ copy.retireConfirm }}
+        </button>
+      </app-modal>
+
+      <app-modal
+        [(open)]="restoring"
+        [heading]="copy.restoreConfirmHeading"
+        [description]="copy.restoreConfirmBody"
+        size="small"
+      >
+        <button modal-actions type="button" class="btn" (click)="restoring.set(false)">
+          {{ copy.cancel }}
+        </button>
+        <button modal-actions type="button" class="btn btn--primary" (click)="confirmRestore()">
+          {{ copy.restoreConfirm }}
+        </button>
+      </app-modal>
+    }
+  </ng-template>
+</app-async-content>

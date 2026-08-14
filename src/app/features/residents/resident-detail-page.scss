@@ -1,0 +1,175 @@
+.detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-base);
+  margin-block-start: var(--space-base);
+}
+
+.panel {
+  padding: var(--space-card);
+}
+
+.panel--wide {
+  grid-column: 1 / -1;
+}
+
+.panel__heading {
+  margin-block-end: var(--space-snug);
+  font-size: 15px;
+}
+
+.panel__subheading {
+  margin-block: var(--space-base) var(--space-compact);
+  color: var(--c-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.panel__empty {
+  color: var(--c-text-subtle);
+  font-size: 13.5px;
+}
+
+.notice {
+  margin-block-start: var(--space-base);
+  padding: var(--space-base) var(--space-card);
+  border-inline-start: 4px solid var(--c-border-strong);
+}
+
+/* The left edge is reinforcement only. The heading says "Protected record" in
+   words, so nothing here depends on seeing the colour (WCAG 1.4.1). */
+.notice--protected {
+  border-inline-start-color: var(--tone-warning-fg);
+}
+
+.notice__heading {
+  font-size: 14px;
+}
+
+.notice__body {
+  margin-block-start: var(--space-micro);
+  color: var(--c-text-muted);
+  font-size: 13.5px;
+}
+
+.notice__list {
+  margin-block-start: var(--space-compact);
+  margin-inline-start: var(--space-base);
+  color: var(--c-text);
+  font-size: 13.5px;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-snug) var(--space-base);
+  margin: 0;
+}
+
+.facts__row--wide {
+  grid-column: 1 / -1;
+}
+
+.facts dt {
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.facts dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-base);
+  margin: 0 0 var(--space-base);
+  padding-block-end: var(--space-base);
+  border-block-end: 1px solid var(--c-border);
+}
+
+.totals dt {
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.totals dd {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.family {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-snug);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.history th,
+.history td {
+  padding: var(--space-compact) var(--space-compact) var(--space-compact) 0;
+  border-block-end: 1px solid var(--c-border);
+  text-align: start;
+  vertical-align: middle;
+}
+
+.history thead th {
+  color: var(--c-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.history tbody th {
+  font-weight: 600;
+}
+
+.history tbody th a {
+  display: inline-block;
+  min-block-size: var(--target-min);
+  line-height: var(--target-min);
+}
+
+.history__amount {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sectors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-micro);
+}
+
+.sectors__chip {
+  padding: 1px var(--space-compact);
+  border-radius: var(--radius-sm);
+  background: var(--tone-neutral-bg);
+  color: var(--tone-neutral-fg);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.sectors__none {
+  color: var(--c-text-subtle);
+}
+
+.detail__back {
+  margin-block-start: var(--space-base);
+}

@@ -50,10 +50,39 @@ export const routes: Routes = [
       },
       {
         path: 'residents',
-        title: 'Residents — Taytay Social Welfare',
-        canActivate: [permissionGuard('resident.view')],
-        loadComponent: () =>
-          import('@features/residents/resident-list-page').then((m) => m.ResidentListPage),
+        // `new` must precede `:id`, or "new" is read as a resident id and the
+        // create screen becomes unreachable.
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            title: 'Residents — Taytay Social Welfare',
+            canActivate: [permissionGuard('resident.view')],
+            loadComponent: () =>
+              import('@features/residents/resident-list-page').then((m) => m.ResidentListPage),
+          },
+          {
+            path: 'new',
+            title: 'Register a resident — Taytay Social Welfare',
+            canActivate: [permissionGuard('resident.create')],
+            loadComponent: () =>
+              import('@features/residents/resident-form-page').then((m) => m.ResidentFormPage),
+          },
+          {
+            path: ':id/edit',
+            title: 'Edit resident — Taytay Social Welfare',
+            canActivate: [permissionGuard('resident.update')],
+            loadComponent: () =>
+              import('@features/residents/resident-form-page').then((m) => m.ResidentFormPage),
+          },
+          {
+            path: ':id',
+            title: 'Resident — Taytay Social Welfare',
+            canActivate: [permissionGuard('resident.view')],
+            loadComponent: () =>
+              import('@features/residents/resident-detail-page').then((m) => m.ResidentDetailPage),
+          },
+        ],
       },
       {
         path: 'assistance-requests',
