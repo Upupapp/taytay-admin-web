@@ -4,8 +4,9 @@ The family as a unit of service delivery, and an indicator that can be argued
 with.
 
 Decisions: `DL-42` (advisory, never automated), `DL-43` (composition is
-transactional), `DL-44` (the band is disclosed, not recomputed), `DL-45` (the
-published poverty threshold and its provenance) in
+transactional), `DL-44` (the band is disclosed, not recomputed), `DL-46` (the
+published poverty threshold and its provenance, superseding the `DL-45`
+placeholder) in
 [`../reference-audit/decision-log.md`](../reference-audit/decision-log.md).
 
 ---
@@ -44,7 +45,7 @@ the snapshot itself.
 full-year annual per-capita poverty threshold for **Rizal province**, published
 15 August 2024. Rizal rather than CALABARZON (₱37,096) because Taytay is in
 Rizal and the province is the closest authoritative geography the PSA publishes
-for it (`DL-45`).
+for it (`DL-46`, which supersedes the `DL-45` placeholder).
 
 `PovertyThreshold` carries the amount, geography, reference year, publication
 date, source and source URL as one object, and the panel cites all of it on
@@ -134,7 +135,7 @@ keepable in step.
 
 ## Known gaps
 
-- **The reference year will age** (`DL-45`). The threshold is the PSA's 2023
+- **The reference year will age** (`DL-46`). The threshold is the PSA's 2023
   full-year figure. When the next full-year release lands, the amount,
   `referenceYear`, `publishedOn` and `sourceUrl` change together, as does the
   pinned figure in the checker.

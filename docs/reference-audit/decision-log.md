@@ -1021,11 +1021,36 @@ Correcting a factor you cannot see is refused for the same reason a redacted
 record cannot be edited (`DL-39`): overriding a judgement you were never shown
 is not a correction.
 
-### DL-45 · The poverty threshold is the PSA's published figure for Rizal, cited on screen
+### DL-45 · The poverty threshold in the code is a placeholder, and says so
 
-**Status:** Settled (implemented in TAB 08).
+**Status:** Settled (implemented in TAB 08). **Open** as a data question.
 
-`ACTIVE_POVERTY_THRESHOLD` is **₱39,055 per person per year** — the annual
+`MONTHLY_PER_CAPITA_THRESHOLD` is ₱3,000 per person per month. The Philippine
+Statistics Authority publishes an official per-capita poverty threshold by
+region and semester; this repository is offline and has not read one, so the
+figure is a plausible working number and nothing else.
+
+It is stated as a named constant, carried through to the screen as part of the
+working, and captioned in the UI as a placeholder that must be reconciled with
+the PSA release and the office's own AICS practice before anyone quotes it.
+
+**Consequence:** the wrongness is visible rather than buried, and nothing
+depends on the figure being right — which is only tolerable because `DL-42`
+holds. An indicator that decided eligibility on an invented threshold would be
+indefensible; an indicator that explains its arithmetic and decides nothing can
+carry a placeholder honestly until the real number arrives.
+
+**Superseded by `DL-46`** (same TAB, before certification). The reasoning above
+is left exactly as it was written. It was wrong — not in its logic, which holds,
+but in its premise that no published figure was reachable — and a log that
+quietly deletes the wrong turn teaches nobody anything about how the wrong turn
+was taken.
+
+### DL-46 · The poverty threshold is the PSA's published figure for Rizal, cited on screen
+
+**Status:** Settled (implemented in TAB 08). **Supersedes `DL-45`.**
+
+`ACTIVE_POVERTY_THRESHOLD` is **PHP 39,055 per person per year** — the annual
 per-capita poverty threshold for **Rizal province, 2023**, from the Philippine
 Statistics Authority's _2023 Full Year Official Poverty Statistics_, Table 1,
 published 15 August 2024.
@@ -1035,35 +1060,34 @@ Sources:
 ·
 [PSA RSSO IV-A, CALABARZON](https://rsso04a.psa.gov.ph/content/2023-full-year-poverty-statistics-calabarzon)
 
-**Corrected before certification.** This entry previously recorded a ₱3,000
-per-capita monthly placeholder, on the grounds that the run was offline and had
-not read a PSA release. The supervisor obtained the primary source and rejected
-both the placeholder and the idea of asking the product owner for a published
-statistic. The earlier reasoning is recorded here rather than deleted, because
-"we invented a number and labelled it" is exactly the kind of decision that
-should stay visible after it is reversed.
+**Why this supersedes `DL-45`.** That decision reasoned correctly from a false
+premise: that the figure could not be obtained, so a labelled placeholder was
+the honest option. The primary source was in fact available and was retrieved.
+Labelling an invented number is not the same as sourcing one — a caption saying
+"placeholder" is read by whoever builds the next screen, not by the family whose
+income is being compared against it.
 
 **Which geography.** Three options were compared:
 
 | Option                     | Annual per capita | Why not / why                                                     |
 | -------------------------- | ----------------- | ----------------------------------------------------------------- |
-| CALABARZON (Region IV-A)   | ₱37,096           | Correct region, but ~5% below the province Taytay is actually in. |
-| **Rizal province**         | **₱39,055**       | **Chosen.** Closest authoritative published geography for Taytay. |
+| CALABARZON (Region IV-A)   | PHP 37,096        | Correct region, but ~5% below the province Taytay is actually in. |
+| **Rizal province**         | **PHP 39,055**    | **Chosen.** Closest authoritative published geography for Taytay. |
 | No income threshold at all | —                 | Drops a real indicator to avoid a hard question. Rejected.        |
 
 Rizal, because Taytay is in Rizal and the province is the finest geography the
-PSA publishes for it. Using the regional figure would understate the local
-threshold and quietly decline to flag families the province's own statistics
-count as poor — an error that is invisible on screen and always in the same
-direction.
+PSA publishes for it. The regional figure would understate the local threshold
+and quietly decline to flag families the province's own statistics count as
+poor — an error invisible on screen and always in the same direction.
 
-**Why the comparison is annual.** ₱39,055 ÷ 12 is ₱3,254.583…, which does not
-divide evenly. Storing a rounded ₱3,254.58 as the boundary would move it by a
-fraction of a centavo per person per month, in a direction nobody chose and
-nobody would ever notice. So the published figure is kept exactly as published
-and the _income_ is annualised instead: the comparison is two integer
-multiplications and no division at all. The monthly figure is derived only for
-display, shown to the centavo so it reads as derived rather than published.
+**Why the comparison is annual.** PHP 39,055 divided by 12 is PHP 3,254.583...,
+which does not divide evenly. Storing a rounded PHP 3,254.58 as the boundary
+would move it by a fraction of a centavo per person per month, in a direction
+nobody chose and nobody would ever notice. So the published figure is kept
+exactly as published and the _income_ is annualised instead: the comparison is
+two integer multiplications and no division at all. The monthly figure is
+derived for display only, shown to the centavo so it reads as derived rather
+than published.
 
 **Provenance is structural.** `PovertyThreshold` carries the amount, the
 geography, the reference year, the publication date, the source and the source
@@ -1075,13 +1099,18 @@ field is dropped, if the amount changes without the rest of the citation, if the
 comparison reverts to a rounded monthly boundary, or if the citation stops being
 rendered. All four checks were validated against planted regressions.
 
-**Consequence:** the indicator now rests on a published statistic that a
-caseworker can quote and an auditor can check. It still decides nothing —
-`DL-42` is unchanged and remains the reason this is an indicator rather than a
-means test. What changed is that it is no longer defensible only because it is
-harmless; it is defensible because it is right.
+**The advisory boundary is unchanged.** `DL-42` still holds and is still the
+reason this is an indicator rather than a means test: nothing derives
+eligibility, entitlement or an amount from it. What changed is _why_ it is
+defensible. Under `DL-45` it was defensible because it was harmless; it is now
+defensible because it is right, and the harmlessness is a separate guarantee
+rather than an excuse.
 
-**Still owed:** the reference year advances. When the PSA publishes its next
-full-year release, update the amount, `referenceYear`, `publishedOn` and
-`sourceUrl` in one change — they are one fact, not four — and adjust the pinned
-figure in the checker.
+**Retirement and update rule.** The reference year ages. When the PSA publishes
+its next full-year release: update `annualPerCapita`, `referenceYear`,
+`publishedOn` and `sourceUrl` in the **same change** — they are one fact, not
+four — adjust the pinned figure in `tools/check-vulnerability.mjs`, and add a
+superseding entry here rather than editing this one. If the office adopts a
+different authoritative basis (a PSA semestral figure, or a DSWD AICS means
+test), that is also a new entry: this decision is about _which published
+statistic_, and changing the answer changes the decision.

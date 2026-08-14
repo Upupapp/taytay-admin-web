@@ -8,7 +8,8 @@ import type { Money } from '../shared/money';
  * A bare number in the code would be unciteable: nobody reading it later could
  * tell which geography it describes, which year it belongs to, or whether it
  * had ever been checked. So the figure travels with the answers to all three,
- * and the screen shows them beside the arithmetic (`DL-45`).
+ * and the screen shows them beside the arithmetic (`DL-46`, superseding the
+ * placeholder this file replaced in `DL-45`).
  *
  * The annual figure is the authoritative one, because that is the unit the PSA
  * publishes in. The monthly value is derived for display only and **never used
