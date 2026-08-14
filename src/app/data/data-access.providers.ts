@@ -5,6 +5,7 @@ import {
   ASSISTANCE_REQUEST_REPOSITORY,
   DASHBOARD_REPOSITORY,
   DISBURSEMENT_REPOSITORY,
+  FAMILY_REPOSITORY,
   HOUSEHOLD_REPOSITORY,
   NOTIFICATION_REPOSITORY,
   PROGRAM_REPOSITORY,
@@ -19,6 +20,7 @@ import {
   HttpAssistanceRequestRepository,
   HttpDashboardRepository,
   HttpDisbursementRepository,
+  HttpFamilyRepository,
   HttpHouseholdRepository,
   HttpNotificationRepository,
   HttpProgramRepository,
@@ -30,6 +32,7 @@ import {
 import { MockAssistanceRequestRepository } from './mock/mock-assistance-request.repository';
 import { MockDashboardRepository } from './mock/mock-dashboard.repository';
 import { MockDisbursementRepository } from './mock/mock-disbursement.repository';
+import { MockFamilyRepository } from './mock/mock-family.repository';
 import { MockHouseholdRepository } from './mock/mock-household.repository';
 import { MockNotificationRepository } from './mock/mock-notification.repository';
 import { MockProgramRepository } from './mock/mock-program.repository';
@@ -64,6 +67,7 @@ function mockProviders(): Provider[] {
     { provide: DASHBOARD_REPOSITORY, useClass: MockDashboardRepository },
     { provide: SAVED_VIEW_REPOSITORY, useClass: MockSavedViewRepository },
     { provide: HOUSEHOLD_REPOSITORY, useClass: MockHouseholdRepository },
+    { provide: FAMILY_REPOSITORY, useClass: MockFamilyRepository },
   ];
 }
 
@@ -79,5 +83,6 @@ function httpProviders(): Provider[] {
     { provide: DASHBOARD_REPOSITORY, useClass: HttpDashboardRepository },
     { provide: SAVED_VIEW_REPOSITORY, useClass: HttpSavedViewRepository },
     { provide: HOUSEHOLD_REPOSITORY, useClass: HttpHouseholdRepository },
+    { provide: FAMILY_REPOSITORY, useClass: HttpFamilyRepository },
   ];
 }

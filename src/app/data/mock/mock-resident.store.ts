@@ -251,6 +251,21 @@ export class MockResidentStore {
     return this.write({ ...existing, isActive }, actorId);
   }
 
+  /**
+   * Repoints a resident at a household, for a family transfer that moves the
+   * address too (TAB 09). Kept here rather than in the family store so the
+   * resident record still has exactly one owner — the canonical source of
+   * truth does not fork because a second feature needed to write to it.
+   */
+  setHousehold(
+    residentId: ResidentId,
+    householdId: HouseholdId | null,
+    actorId: StaffUserId | null,
+  ): Resident | undefined {
+    const existing = this.find(residentId);
+    return existing === undefined ? undefined : this.write({ ...existing, householdId }, actorId);
+  }
+
   private write(next: Resident, actorId: StaffUserId | null): Resident {
     const stamped: Resident = {
       ...next,

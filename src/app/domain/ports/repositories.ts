@@ -27,6 +27,16 @@ import type {
   MembershipChange,
 } from '../households/household';
 import type { HouseholdDetail, HouseholdSummary } from '../households/household-profile';
+import type {
+  Family,
+  FamilyFilter,
+  FamilyRole,
+  FamilySortField,
+  ResidentTransfer,
+} from '../families/family';
+import type { FamilyDetail, FamilySummary } from '../families/family-graph';
+import type { Relationship, RelationshipKind } from '../families/relationship';
+import type { RelationshipEvent } from '../families/relationship-event';
 import type { FactorState, VulnerabilityFactorCode } from '../households/household-vulnerability';
 import type { ResidentView } from '../residents/resident-disclosure';
 import type { ResidentProfile } from '../residents/resident-profile';
@@ -39,7 +49,9 @@ import type {
   HouseholdId,
   NotificationId,
   ProgramId,
+  FamilyId,
   ReferralId,
+  RelationshipId,
   ResidentId,
   SavedViewId,
   StaffUserId,
@@ -124,6 +136,50 @@ export interface HouseholdRepository {
 }
 
 export const HOUSEHOLD_REPOSITORY = new InjectionToken<HouseholdRepository>('HouseholdRepository');
+
+/**
+ * Families and the relationships between people.
+ *
+ * Separate from `HouseholdRepository` because the two answer different
+ * questions: a household is an address and a family is a claim about people,
+ * and one address routinely holds several families (`DL-47`).
+ *
+ * Every mutation takes a **reason** and appends an immutable event rather than
+ * replacing what was there. Nothing in this port deletes history (`DL-48`).
+ */
+export interface FamilyRepository {
+  list(filter: FamilyFilter, page: PageRequest<FamilySortField>): Observable<Page<FamilySummary>>;
+  getById(id: FamilyId): Observable<FamilyDetail | null>;
+  /** Every family a resident currently belongs to. Plural: people overlap. */
+  familiesOf(residentId: ResidentId): Observable<readonly FamilySummary[]>;
+
+  recordRelationship(
+    fromResidentId: ResidentId,
+    toResidentId: ResidentId,
+    kind: RelationshipKind,
+    reason: string,
+  ): Observable<Relationship>;
+  /** Ends a relationship without deleting it: a former guardian still was one. */
+  endRelationship(id: RelationshipId, reason: string): Observable<Relationship>;
+
+  /**
+   * Moves a resident between families, and optionally the household with them.
+   * Transactional and idempotent: re-submitting a transfer that already landed
+   * returns the same state rather than recording it twice.
+   */
+  transferResident(transfer: ResidentTransfer): Observable<FamilyDetail>;
+  changeMemberRole(
+    familyId: FamilyId,
+    residentId: ResidentId,
+    role: FamilyRole,
+    reason: string,
+  ): Observable<Family>;
+
+  /** The append-only history for one resident, newest first. */
+  historyForResident(residentId: ResidentId): Observable<readonly RelationshipEvent[]>;
+}
+
+export const FAMILY_REPOSITORY = new InjectionToken<FamilyRepository>('FamilyRepository');
 
 /**
  * Named list parameters. A hook rather than a product surface: the API will own

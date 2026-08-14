@@ -21,6 +21,14 @@ import {
   type DisbursementId,
   type DisbursementRepository,
   type FactorState,
+  type Family,
+  type FamilyDetail,
+  type FamilyFilter,
+  type FamilyId,
+  type FamilyRepository,
+  type FamilyRole,
+  type FamilySortField,
+  type FamilySummary,
   type Household,
   type HouseholdDetail,
   type HouseholdFilter,
@@ -55,6 +63,11 @@ import {
   type SavedViewRepository,
   type SavedViewResource,
   type SignInCredentials,
+  type Relationship,
+  type RelationshipEvent,
+  type RelationshipId,
+  type RelationshipKind,
+  type ResidentTransfer,
   type VulnerabilityFactorCode,
   type StaffFilter,
   type StaffRepository,
@@ -169,6 +182,74 @@ export class HttpHouseholdRepository implements HouseholdRepository {
     return this.api.post<HouseholdDetail, { reason: string }>(
       `${API_ENDPOINTS.households}/${id}/factors/${code}/clear`,
       { reason },
+    );
+  }
+}
+
+@Injectable()
+export class HttpFamilyRepository implements FamilyRepository {
+  private readonly api = inject(ApiClient);
+
+  list(filter: FamilyFilter, page: PageRequest<FamilySortField>): Observable<Page<FamilySummary>> {
+    return this.api.page<FamilySummary>(API_ENDPOINTS.families, page, { ...filter });
+  }
+
+  getById(id: FamilyId): Observable<FamilyDetail | null> {
+    return this.api.optionalItem<FamilyDetail>(`${API_ENDPOINTS.families}/${id}`);
+  }
+
+  familiesOf(residentId: ResidentId): Observable<readonly FamilySummary[]> {
+    return this.api.collection<FamilySummary>(API_ENDPOINTS.families, { residentId });
+  }
+
+  recordRelationship(
+    fromResidentId: ResidentId,
+    toResidentId: ResidentId,
+    kind: RelationshipKind,
+    reason: string,
+  ): Observable<Relationship> {
+    return this.api.post<Relationship, Record<string, unknown>>(API_ENDPOINTS.relationships, {
+      fromResidentId,
+      toResidentId,
+      kind,
+      reason,
+    });
+  }
+
+  /**
+   * A POST, not a DELETE. Ending a relationship records that it ended; there is
+   * nothing to delete, and the server must keep the row (`DL-48`).
+   */
+  endRelationship(id: RelationshipId, reason: string): Observable<Relationship> {
+    return this.api.post<Relationship, { reason: string }>(
+      `${API_ENDPOINTS.relationships}/${id}/end`,
+      { reason },
+    );
+  }
+
+  /** One request, because the move must be one transaction on the server too. */
+  transferResident(transfer: ResidentTransfer): Observable<FamilyDetail> {
+    return this.api.post<FamilyDetail, ResidentTransfer>(
+      `${API_ENDPOINTS.families}/transfers`,
+      transfer,
+    );
+  }
+
+  changeMemberRole(
+    familyId: FamilyId,
+    residentId: ResidentId,
+    role: FamilyRole,
+    reason: string,
+  ): Observable<Family> {
+    return this.api.patch<Family, { role: FamilyRole; reason: string }>(
+      `${API_ENDPOINTS.families}/${familyId}/members/${residentId}`,
+      { role, reason },
+    );
+  }
+
+  historyForResident(residentId: ResidentId): Observable<readonly RelationshipEvent[]> {
+    return this.api.collection<RelationshipEvent>(
+      `${API_ENDPOINTS.residents}/${residentId}/relationship-history`,
     );
   }
 }

@@ -185,20 +185,22 @@ describe('one call answers "who is this, and what have we done for them?"', () =
     const profile = await firstValueFrom(repo().getProfile(FAMILY_HEAD));
     expect(profile).not.toBeNull();
     expect(profile?.household?.referenceNumber).toBe('HH-DL-2024-0088');
-    expect(profile?.family.map((member) => member.role)).toEqual(['spouse', 'child']);
+    expect(profile?.householdMembers.map((member) => member.role)).toEqual(['spouse', 'child']);
     expect(profile?.history.cases.length).toBeGreaterThan(0);
   });
 
   it('leaves the subject out of their own family list', async () => {
     signedInAs(authenticated('mswdo-head'));
     const profile = await firstValueFrom(repo().getProfile(FAMILY_HEAD));
-    expect(profile?.family.some((member) => member.view.resident.id === FAMILY_HEAD)).toBe(false);
+    expect(
+      profile?.householdMembers.some((member) => member.view.resident.id === FAMILY_HEAD),
+    ).toBe(false);
   });
 
   it('discloses family members under the same policy as the subject', async () => {
     signedInAs(authenticated('disbursement-officer'));
     const profile = await firstValueFrom(repo().getProfile(FAMILY_HEAD));
-    for (const member of profile?.family ?? []) {
+    for (const member of profile?.householdMembers ?? []) {
       expect(member.view.resident.monthlyIncome).toBeNull();
     }
   });

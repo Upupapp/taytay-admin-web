@@ -26,6 +26,12 @@ export const PERMISSIONS = [
   // what the records say about a family's circumstances is a judgement.
   'household.correct-vulnerability',
 
+  'family.view',
+  // Recording who belongs to whom, and moving a person between families. Held
+  // apart from `household.manage` because a household is an address and a
+  // family is a claim about people.
+  'family.manage',
+
   'program.view',
   'program.manage',
 
@@ -95,6 +101,8 @@ const INTAKE_PERMISSIONS: readonly Permission[] = [
   'resident.update',
   'household.view',
   'household.manage',
+  'family.view',
+  'family.manage',
   'program.view',
   'request.view',
   'request.create',
@@ -166,6 +174,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'dashboard.view',
       'resident.view',
       'household.view',
+      'family.view',
       'program.view',
       'request.view',
       'disbursement.view',
@@ -183,6 +192,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'dashboard.view',
       'resident.view',
       'household.view',
+      'family.view',
       'resident.create',
       'program.view',
       'request.view',
@@ -199,6 +209,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'dashboard.view',
       'resident.view',
       'household.view',
+      'family.view',
       'program.view',
       'request.view',
       'disbursement.view',

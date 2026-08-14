@@ -24,6 +24,9 @@ export type StaffUserId = Branded<string, 'StaffUserId'>;
 export type NotificationId = Branded<string, 'NotificationId'>;
 export type AuditEntryId = Branded<string, 'AuditEntryId'>;
 export type SavedViewId = Branded<string, 'SavedViewId'>;
+export type FamilyId = Branded<string, 'FamilyId'>;
+export type RelationshipId = Branded<string, 'RelationshipId'>;
+export type RelationshipEventId = Branded<string, 'RelationshipEventId'>;
 
 /**
  * The single sanctioned way to turn an untyped string (route param, API payload)

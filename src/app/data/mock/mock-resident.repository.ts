@@ -19,7 +19,7 @@ import {
   validateResidentDraft,
   ZERO_PESOS,
   type AuthenticatedUser,
-  type FamilyMember,
+  type HouseholdMemberView,
   type Household,
   type HouseholdId,
   type Page,
@@ -143,7 +143,7 @@ export class MockResidentRepository implements ResidentRepository {
     return this.latency.respond({
       view: this.disclose(resident, user),
       household,
-      family: this.familyOf(resident, household, user),
+      householdMembers: this.householdMembersOf(resident, household, user),
       history: historyOf(resident.id),
     });
   }
@@ -220,11 +220,11 @@ export class MockResidentRepository implements ResidentRepository {
   }
 
   /** Household members other than the subject, head first, each disclosed in turn. */
-  private familyOf(
+  private householdMembersOf(
     subject: Resident,
     household: Household | null,
     user: AuthenticatedUser | null,
-  ): readonly FamilyMember[] {
+  ): readonly HouseholdMemberView[] {
     if (household === null) {
       return [];
     }
@@ -240,7 +240,7 @@ export class MockResidentRepository implements ResidentRepository {
               isHead: household.headResidentId === resident.id,
             };
       })
-      .filter((member): member is FamilyMember => member !== null)
+      .filter((member): member is HouseholdMemberView => member !== null)
       .sort((a, b) => Number(b.isHead) - Number(a.isHead));
   }
 }

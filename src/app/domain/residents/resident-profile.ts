@@ -11,7 +11,8 @@ import type {
 } from '../shared/ids';
 import type { Money } from '../shared/money';
 import type { ResidentView } from './resident-disclosure';
-import type { Household, HouseholdRole } from '../households/household';
+import type { Household } from '../households/household';
+import type { HouseholdMemberView } from '../households/household-profile';
 
 /**
  * Everything linked to one person, assembled once.
@@ -23,11 +24,6 @@ import type { Household, HouseholdRole } from '../households/household';
  * to ask four times, so does every other screen that needs the same picture,
  * and they will each get it slightly wrong.
  */
-export interface FamilyMember {
-  readonly view: ResidentView;
-  readonly role: HouseholdRole;
-  readonly isHead: boolean;
-}
 
 export interface ResidentCaseSummary {
   readonly id: AssistanceRequestId;
@@ -75,8 +71,15 @@ export interface ResidentAssistanceHistory {
 export interface ResidentProfile {
   readonly view: ResidentView;
   readonly household: Household | null;
-  /** Household members other than the subject, head first. */
-  readonly family: readonly FamilyMember[];
+  /**
+   * Household members other than the subject, head first.
+   *
+   * Renamed from `family` in TAB 09. Sharing an address is not the same as
+   * belonging to a family, and a field called `family` on a household list was
+   * the assumption `DL-47` exists to remove. Which families a person belongs to
+   * is `FamilyRepository.familiesOf`, and the answer can be more than one.
+   */
+  readonly householdMembers: readonly HouseholdMemberView[];
   readonly history: ResidentAssistanceHistory;
 }
 

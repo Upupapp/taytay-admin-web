@@ -32,6 +32,8 @@ export interface ApiItemResponse<TItem> {
 export const API_ENDPOINTS = {
   residents: 'residents',
   households: 'households',
+  families: 'families',
+  relationships: 'relationships',
   savedViews: 'saved-views',
   programs: 'programs',
   assistanceRequests: 'assistance-requests',
