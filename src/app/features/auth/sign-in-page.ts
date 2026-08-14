@@ -1,68 +1,127 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { map } from 'rxjs';
 
+import { RETURN_URL_PARAM, safeReturnUrl } from '@core/access/access.guards';
 import { SessionStore } from '@core/auth/session.store';
-import {
-  DEFAULT_PAGE_REQUEST,
-  formatPersonName,
-  ROLE_DEFINITIONS,
-  STAFF_REPOSITORY,
-  type StaffUser,
-  type StaffUserId,
-} from '@domain/index';
+import { isPlausibleEmail, isPlausiblePassword } from '@domain/index';
 import { BRAND_COPY } from '@shared/brand/brand.copy';
 import { MunicipalSeal } from '@shared/brand/municipal-seal';
-import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
-import { AsyncContent } from '@shared/ui/async-content/async-content';
-import type { Page } from '@domain/index';
+
+import { AUTH_COPY } from './auth.copy';
 
 /**
- * Account selection stand-in.
+ * Credential sign-in.
  *
- * Credential-based sign-in belongs to the authentication TAB; until then this
- * screen exercises the real `STAFF_REPOSITORY.signInAs` port so the session,
- * guards and permission-gated navigation can be verified across every role.
- * It reads no mock module directly and will not need rewriting when the API
- * adapter takes over — only replacing.
+ * **WCAG 2.2 §3.3.8 Accessible Authentication (Minimum), Level AA** treats
+ * remembering a password as a cognitive function test, permitted only when the
+ * step offers an Alternative, a Mechanism, Object Recognition or Personal
+ * Content. This screen relies on **Mechanism**, and provides it in three ways:
+ *
+ *  - `autocomplete="username"` / `"current-password"`, so browsers and password
+ *    managers can fill the form;
+ *  - paste is never blocked — no `onpaste` handler exists anywhere here;
+ *  - a show-password toggle, so a manually typed password can be checked.
+ *
+ * There is no CAPTCHA, puzzle, or transcription step, and none may be added:
+ * each would be a cognitive function test with no satisfier.
+ *
+ * There is also **no registration form**. Accounts are provisioned by an
+ * administrator (`DL-32`); the screen says so rather than leaving a user
+ * hunting for a link that does not exist.
  */
 @Component({
   selector: 'app-sign-in-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, MunicipalSeal],
+  imports: [MunicipalSeal],
   templateUrl: './sign-in-page.html',
   styleUrl: './sign-in-page.scss',
 })
 export class SignInPage {
-  private readonly repository = inject(STAFF_REPOSITORY);
   private readonly session = inject(SessionStore);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
-  protected readonly state = toSignal(
-    toViewState(this.repository.list({}, { ...DEFAULT_PAGE_REQUEST, pageSize: 50 })),
-    { initialValue: LOADING as ViewState<Page<StaffUser>> },
+  protected readonly copy = AUTH_COPY;
+  protected readonly brand = BRAND_COPY;
+
+  protected readonly email = signal('');
+  protected readonly password = signal('');
+  protected readonly passwordVisible = signal(false);
+  protected readonly submitting = signal(false);
+  /** Client-side messages only. Server refusals live on `session.error`. */
+  protected readonly clientErrors = signal<readonly string[]>([]);
+
+  protected readonly serverError = this.session.error;
+
+  protected readonly errors = computed<readonly string[]>(() => {
+    const server = this.serverError();
+    return server ? [...this.clientErrors(), server] : this.clientErrors();
+  });
+
+  private readonly returnUrl = toSignal(
+    this.route.queryParamMap.pipe(map((params) => safeReturnUrl(params.get(RETURN_URL_PARAM)))),
+    { initialValue: null },
   );
 
-  protected readonly accounts = computed(() => valueOf(this.state())?.items ?? []);
-  protected readonly error = this.session.error;
-  protected readonly copy = BRAND_COPY;
-
-  protected describe(staff: StaffUser): string {
-    const definition = ROLE_DEFINITIONS[staff.role];
-    return `${definition.label} · ${definition.description}`;
+  protected onEmail(event: Event): void {
+    this.email.set((event.target as HTMLInputElement).value);
+    this.clearMessages();
   }
 
-  protected label(staff: StaffUser): string {
-    return formatPersonName(staff.name);
+  protected onPassword(event: Event): void {
+    this.password.set((event.target as HTMLInputElement).value);
+    this.clearMessages();
   }
 
-  protected signIn(id: StaffUserId): void {
-    this.session.signInAs(id).subscribe({
-      next: (user) => {
-        if (user) {
-          void this.router.navigate(['/dashboard']);
+  protected togglePasswordVisible(): void {
+    this.passwordVisible.update((visible) => !visible);
+  }
+
+  protected submit(event: Event): void {
+    event.preventDefault();
+    if (this.submitting()) {
+      return;
+    }
+
+    const email = this.email().trim();
+    const password = this.password();
+
+    // Shape errors are named specifically, because they are about what the
+    // user typed. Credential errors never are.
+    const problems: string[] = [];
+    if (!isPlausibleEmail(email)) {
+      problems.push(this.copy.emailRequired);
+    }
+    if (!isPlausiblePassword(password)) {
+      problems.push(this.copy.passwordRequired);
+    }
+    if (problems.length > 0) {
+      this.clientErrors.set(problems);
+      return;
+    }
+
+    this.submitting.set(true);
+    this.session.signIn({ email, password }).subscribe({
+      next: (ok) => {
+        this.submitting.set(false);
+        if (ok) {
+          // Cleared so a password never lingers in memory longer than needed.
+          this.password.set('');
+          void this.router.navigateByUrl(this.returnUrl() ?? '/dashboard');
         }
       },
+      error: () => this.submitting.set(false),
     });
+  }
+
+  private clearMessages(): void {
+    if (this.clientErrors().length > 0) {
+      this.clientErrors.set([]);
+    }
+    if (this.serverError()) {
+      this.session.clearError();
+    }
   }
 }

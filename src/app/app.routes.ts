@@ -1,6 +1,10 @@
 import type { Routes } from '@angular/router';
 
-import { authenticatedGuard, permissionGuard } from '@core/access/access.guards';
+import {
+  anonymousOnlyGuard,
+  authenticatedGuard,
+  permissionGuard,
+} from '@core/access/access.guards';
 import type { PlaceholderRouteData } from '@features/placeholder/feature-placeholder-page';
 
 /**
@@ -26,6 +30,9 @@ export const routes: Routes = [
   {
     path: 'sign-in',
     title: 'Sign in — Taytay Social Welfare',
+    // Keeps an already-authenticated officer off a form asking them to prove
+    // who they are. There is deliberately no 'register' route (DL-32).
+    canActivate: [anonymousOnlyGuard],
     loadComponent: () => import('@features/auth/sign-in-page').then((m) => m.SignInPage),
   },
   {

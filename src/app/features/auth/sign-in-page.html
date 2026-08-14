@@ -1,40 +1,83 @@
 <div class="sign-in">
-  <div class="card sign-in__panel">
+  <main class="card sign-in__panel">
     <header class="sign-in__header">
       <app-municipal-seal size="lg" priority />
-      <h1 class="sign-in__title">{{ copy.organisationName }}</h1>
-      <p class="sign-in__subtitle">{{ copy.organisationUnit }} — staff console.</p>
+      <h1 class="sign-in__title">{{ brand.organisationName }}</h1>
+      <p class="sign-in__subtitle">{{ copy.subtitle }}</p>
     </header>
 
-    @if (error(); as message) {
-      <p class="sign-in__error" role="alert">{{ message }}</p>
+    @if (errors().length > 0) {
+      <div class="sign-in__errors" role="alert" tabindex="-1">
+        <h2 class="sign-in__errors-heading">{{ copy.errorSummaryHeading }}</h2>
+        <ul class="sign-in__errors-list">
+          @for (message of errors(); track message) {
+            <li>{{ message }}</li>
+          }
+        </ul>
+      </div>
     }
 
-    <p class="sign-in__note">
-      Credential sign-in is not built yet. Choose a staff account to continue; each one carries a
-      different role and data scope.
-    </p>
+    <!-- No onpaste handler anywhere in this form: blocking paste would defeat
+         password managers, which is the Mechanism this screen relies on to
+         satisfy WCAG 3.3.8. -->
+    <form class="sign-in__form" novalidate (submit)="submit($event)">
+      <div class="field">
+        <label class="field__label" for="sign-in-email">{{ copy.emailLabel }}</label>
+        <input
+          id="sign-in-email"
+          class="field__input"
+          type="email"
+          name="email"
+          autocomplete="username"
+          inputmode="email"
+          autocapitalize="none"
+          spellcheck="false"
+          required
+          aria-describedby="sign-in-email-hint"
+          [value]="email()"
+          (input)="onEmail($event)"
+        />
+        <p id="sign-in-email-hint" class="field__hint">{{ copy.emailHint }}</p>
+      </div>
 
-    <app-async-content
-      [state]="state()"
-      [content]="accountsTemplate"
-      [skeletonLines]="5"
-      errorHeading="Could not load staff accounts"
-    />
+      <div class="field">
+        <label class="field__label" for="sign-in-password">{{ copy.passwordLabel }}</label>
+        <div class="field__control">
+          <input
+            id="sign-in-password"
+            class="field__input"
+            [type]="passwordVisible() ? 'text' : 'password'"
+            name="password"
+            autocomplete="current-password"
+            spellcheck="false"
+            required
+            [value]="password()"
+            (input)="onPassword($event)"
+          />
+          <button
+            type="button"
+            class="btn btn--subtle field__toggle"
+            [attr.aria-pressed]="passwordVisible()"
+            (click)="togglePasswordVisible()"
+          >
+            {{ passwordVisible() ? copy.hidePassword : copy.showPassword }}
+          </button>
+        </div>
+      </div>
 
-    <ng-template #accountsTemplate>
-      <ul class="sign-in__accounts">
-        @for (account of accounts(); track account.id) {
-          <li>
-            <button type="button" class="sign-in__account" (click)="signIn(account.id)">
-              <span class="sign-in__account-name">{{ label(account) }}</span>
-              <span class="sign-in__account-role">{{ describe(account) }}</span>
-            </button>
-          </li>
-        } @empty {
-          <li class="sign-in__note">No staff accounts are available.</li>
-        }
-      </ul>
-    </ng-template>
-  </div>
+      <button type="submit" class="btn btn--primary sign-in__submit" [disabled]="submitting()">
+        {{ submitting() ? copy.submitting : copy.submit }}
+      </button>
+    </form>
+
+    <footer class="sign-in__footer">
+      <details class="sign-in__help">
+        <summary>{{ copy.forgotPassword }}</summary>
+        <p class="sign-in__help-body">{{ copy.forgotPasswordHelp }}</p>
+      </details>
+
+      <!-- Stated, not linked. There is no registration route to link to. -->
+      <p class="sign-in__provisioning">{{ copy.noSelfRegistration }}</p>
+    </footer>
+  </main>
 </div>

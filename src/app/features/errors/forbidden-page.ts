@@ -4,6 +4,8 @@ import { Router } from '@angular/router';
 import { SessionStore } from '@core/auth/session.store';
 import { EmptyState } from '@shared/ui/empty-state/empty-state';
 
+import { ERRORS_COPY } from './errors.copy';
+
 @Component({
   selector: 'app-forbidden-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -12,13 +14,9 @@ import { EmptyState } from '@shared/ui/empty-state/empty-state';
     <div class="card">
       <app-empty-state
         variant="forbidden"
-        heading="You do not have access to that section"
-        [message]="
-          'Your account is signed in as ' +
-          session.displayName() +
-          '. If you need this access, ask the MSWDO head or a system administrator to adjust your role.'
-        "
-        actionLabel="Back to dashboard"
+        [heading]="copy.forbiddenHeading"
+        [message]="copy.forbiddenBody(session.displayName())"
+        [actionLabel]="copy.forbiddenAction"
         (actionSelected)="goHome()"
       />
     </div>
@@ -27,6 +25,7 @@ import { EmptyState } from '@shared/ui/empty-state/empty-state';
 export class ForbiddenPage {
   private readonly router = inject(Router);
   protected readonly session = inject(SessionStore);
+  protected readonly copy = ERRORS_COPY;
 
   protected goHome(): void {
     void this.router.navigate(['/dashboard']);

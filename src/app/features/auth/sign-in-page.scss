@@ -2,15 +2,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  padding: var(--space-5);
-  background: linear-gradient(160deg, var(--c-brand-dark), #123a63 60%, var(--c-bg));
+  min-block-size: 100vh;
+  padding: var(--space-card);
+  background: linear-gradient(160deg, var(--brand-primary-hover), #123a63 60%, var(--c-bg));
 }
 
 .sign-in__panel {
-  width: 100%;
-  max-width: 520px;
-  padding: var(--space-6);
+  inline-size: 100%;
+  max-inline-size: 460px;
+  padding: var(--space-section);
 }
 
 .sign-in__header {
@@ -19,7 +19,7 @@
 
 .sign-in__header app-municipal-seal {
   display: inline-block;
-  margin-bottom: var(--space-snug);
+  margin-block-end: var(--space-snug);
 }
 
 .sign-in__title {
@@ -27,59 +27,106 @@
 }
 
 .sign-in__subtitle {
-  margin-top: var(--space-1);
+  margin-block-start: var(--space-1);
   color: var(--c-text-muted);
   font-size: 13.5px;
 }
 
-.sign-in__error {
-  margin-top: var(--space-4);
-  padding: var(--space-3);
+.sign-in__errors {
+  margin-block-start: var(--space-base);
+  padding: var(--space-snug) var(--space-base);
+  border: 1px solid var(--tone-danger-fg);
   border-radius: var(--radius-md);
   background: var(--tone-danger-bg);
   color: var(--tone-danger-fg);
+}
+
+.sign-in__errors:focus {
+  outline: none;
+}
+
+.sign-in__errors-heading {
+  font-size: 14px;
+}
+
+.sign-in__errors-list {
+  margin: var(--space-1) 0 0;
+  padding-inline-start: var(--space-base);
   font-size: 13.5px;
 }
 
-.sign-in__note {
-  margin-top: var(--space-4);
+.sign-in__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+  margin-block-start: var(--space-card);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+
+.field__label {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.field__control {
+  display: flex;
+  gap: var(--space-compact);
+  min-inline-size: 0;
+}
+
+.field__input {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  /* Comfortably clears the 24px pointer-target minimum (WCAG 2.5.8). */
+  min-block-size: 40px;
+  padding: var(--space-compact) var(--space-snug);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  font: inherit;
+  font-size: 14px;
+}
+
+.field__toggle {
+  flex: none;
+  white-space: nowrap;
+}
+
+.field__hint {
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.sign-in__submit {
+  justify-content: center;
+  min-block-size: 44px;
+}
+
+.sign-in__footer {
+  margin-block-start: var(--space-card);
+  padding-block-start: var(--space-base);
+  border-block-start: 1px solid var(--c-border);
+}
+
+.sign-in__help summary {
+  cursor: pointer;
+  font-size: 13.5px;
+}
+
+.sign-in__help-body {
+  margin-block-start: var(--space-compact);
   color: var(--c-text-muted);
   font-size: 13px;
 }
 
-.sign-in__accounts {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: var(--space-4) 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.sign-in__account {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
-  text-align: left;
-  cursor: pointer;
-}
-
-.sign-in__account:hover {
-  border-color: var(--c-brand);
-  background: var(--c-brand-soft);
-}
-
-.sign-in__account-name {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.sign-in__account-role {
+.sign-in__provisioning {
+  margin-block-start: var(--space-snug);
   color: var(--c-text-muted);
   font-size: 12.5px;
 }
