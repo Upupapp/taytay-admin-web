@@ -1,0 +1,78 @@
+/* Layout only. Every claim this panel makes is text read from the record;
+   removing this file changes the shape, not the sense (`DL-65`). */
+
+.responsibility {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-compact);
+  padding: var(--space-base);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+}
+
+.responsibility__heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.responsibility__badges {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-compact);
+}
+
+.responsibility__badge {
+  padding: 1px var(--space-compact);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface-muted);
+  color: var(--c-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.responsibility__statement {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* Reinforcement: the sentence inside already says the office does not decide. */
+.responsibility__elsewhere {
+  margin: 0;
+  padding: var(--space-compact);
+  border: 1px solid var(--tone-warning-fg);
+  border-radius: var(--radius-sm);
+  background: var(--tone-warning-bg);
+  font-size: 12.5px;
+}
+
+.responsibility__sources-heading {
+  margin: var(--space-compact) 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.responsibility__sources {
+  margin: 0;
+  padding-inline-start: var(--space-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+
+.responsibility__verified,
+.responsibility__missing {
+  color: var(--c-text-muted);
+  font-size: 12px;
+}
+
+.responsibility__verified {
+  display: block;
+}
+
+.responsibility__missing {
+  margin: 0;
+}

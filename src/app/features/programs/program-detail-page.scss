@@ -1,0 +1,168 @@
+/* Layout only. Every statement on this page is read from the programme record. */
+
+.program__missing {
+  padding: var(--space-base);
+}
+
+.program {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--space-base);
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .program {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.program__main,
+.program__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+  min-inline-size: 0;
+}
+
+.program__block {
+  padding: var(--space-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+}
+
+.program__edit {
+  margin-block-start: var(--space-base);
+}
+
+.program__heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.program__subheading {
+  margin: var(--space-compact) 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.program__note,
+.program__advisory,
+.program__none {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+/* Reinforcement: the paragraph inside says the window is unconfirmed. */
+.program__pending {
+  margin: 0;
+  padding: var(--space-compact);
+  border: 1px solid var(--tone-warning-fg);
+  border-radius: var(--radius-sm);
+  background: var(--tone-warning-bg);
+  font-size: 12.5px;
+}
+
+.program__problem {
+  color: var(--tone-danger-fg);
+  font-size: 12.5px;
+}
+
+.program__problems {
+  margin: 0;
+  padding-inline-start: var(--space-base);
+  color: var(--tone-danger-fg);
+  font-size: 12.5px;
+}
+
+.program__facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-compact) var(--space-snug);
+  font-size: 13px;
+}
+
+.program__facts dt {
+  color: var(--c-text-muted);
+  font-weight: 600;
+}
+
+.program__facts dd {
+  margin: 0;
+}
+
+.program__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-compact);
+}
+
+.guidance,
+.documents {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-compact);
+}
+
+.guidance__item,
+.documents__item {
+  padding: var(--space-snug);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+}
+
+.guidance__head,
+.documents__label {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-compact);
+  align-items: baseline;
+  font-size: 13px;
+}
+
+.guidance__code,
+.documents__label {
+  font-weight: 600;
+}
+
+.guidance__weight,
+.documents__tag,
+.documents__origin {
+  padding: 1px var(--space-compact);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface-muted);
+  color: var(--c-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.guidance__statement {
+  margin: 0;
+  font-size: 13px;
+}
+
+.guidance__basis {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.guidance__label {
+  font-weight: 600;
+}
+
+.guidance__unverified {
+  display: block;
+  font-style: italic;
+}

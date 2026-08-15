@@ -1,0 +1,86 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+
+<div class="card catalog">
+  <!-- Said before the table, because "everything the office hands out is the
+       office's to decide" is the assumption every reader arrives with (DL-65). -->
+  <p class="catalog__banner">{{ copy.banner }}</p>
+
+  <div class="filters">
+    <label class="filters__field filters__field--wide">
+      <span class="filters__label">{{ copy.search }}</span>
+      <input
+        type="search"
+        class="filters__input"
+        [placeholder]="copy.searchPlaceholder"
+        [value]="searchText()"
+        (input)="onSearch($event)"
+      />
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.category }}</span>
+      <select class="filters__input" (change)="onCategory($event)">
+        <option value="" [selected]="!filter().category">{{ copy.allCategories }}</option>
+        @for (category of categories; track category) {
+          <option [value]="category" [selected]="filter().category === category">
+            {{ categoryLabel(category) }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.status }}</span>
+      <select class="filters__input" (change)="onStatus($event)">
+        <option value="" [selected]="!filter().status">{{ copy.allStatuses }}</option>
+        @for (status of statuses; track status) {
+          <option [value]="status" [selected]="filter().status === status">
+            {{ statusCatalog[status].label }}
+          </option>
+        }
+      </select>
+    </label>
+
+    @if (hasFilters()) {
+      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+    }
+  </div>
+
+  <app-data-table
+    [caption]="copy.caption"
+    [columns]="columns()"
+    [rows]="rows()"
+    [rowKey]="rowKey"
+    [loading]="isLoading()"
+    [page]="page()"
+    [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
+    [emptyHeading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
+    [emptyMessage]="hasFilters() ? copy.noResultsMessage : copy.emptyMessage"
+    [emptyActionLabel]="hasFilters() ? copy.clear : null"
+    (pageChanged)="onPageChanged($event)"
+    (emptyActionSelected)="clearFilters()"
+  />
+</div>
+
+<ng-template #nameCell let-row>
+  <a class="catalog__name" [routerLink]="detailLink(row)">{{ row.program.name }}</a>
+  <span class="catalog__code">{{ row.program.code }}</span>
+</ng-template>
+
+<!-- Read from the responsibility record, never composed from a condition here. -->
+<ng-template #runCell let-row>
+  <span class="catalog__agency">{{ runByLabel(row) }}</span>
+  <span class="catalog__role">{{ roleLabel(row) }}</span>
+</ng-template>
+
+<ng-template #statusCell let-row>
+  <app-status-badge [catalog]="statusCatalog" [status]="row.program.status" />
+</ng-template>
+
+<ng-template #releasedCell let-row>
+  @if (row.utilization) {
+    {{ row.utilization.releasedTotal | peso }}
+  } @else {
+    —
+  }
+</ng-template>

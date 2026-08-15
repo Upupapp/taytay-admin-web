@@ -1,0 +1,313 @@
+<app-async-content [state]="state()" [content]="body" [skeletonLines]="8" />
+
+<ng-template #body let-view>
+  @if (!view) {
+    <div class="card program__missing">
+      <h1>{{ copy.notFoundHeading }}</h1>
+      <p>{{ copy.notFoundMessage }}</p>
+      <a class="btn" routerLink="/programs">{{ copy.back }}</a>
+    </div>
+  } @else {
+    <app-page-header [title]="view.program.name" [subtitle]="copy.subtitle" />
+
+    <div class="program">
+      <div class="program__main">
+        <section class="card program__block" aria-labelledby="facts-heading">
+          <h2 class="program__heading" id="facts-heading">{{ copy.factsHeading }}</h2>
+          <dl class="program__facts">
+            <dt>{{ copy.code }}</dt>
+            <dd>{{ view.program.code }}</dd>
+            <dt>{{ copy.category }}</dt>
+            <dd>{{ categoryLabel(view) }}</dd>
+            <dt>{{ copy.status }}</dt>
+            <dd><app-status-badge [catalog]="statusCatalog" [status]="view.program.status" /></dd>
+            <dt>{{ copy.fundingSource }}</dt>
+            <dd>{{ view.program.fundingSource }}</dd>
+            <dt>{{ copy.legalBasis }}</dt>
+            <dd>{{ view.program.legalBasis ?? copy.none }}</dd>
+            <dt>{{ copy.maximumGrant }}</dt>
+            <dd>
+              @if (view.program.maximumGrant; as amount) {
+                {{ amount | peso }}
+              } @else {
+                {{ copy.none }}
+              }
+            </dd>
+            <dt>{{ copy.effectiveFrom }}</dt>
+            <dd>
+              <time [attr.datetime]="view.program.effectiveFrom">
+                {{ view.program.effectiveFrom | date: 'd MMM y' }}
+              </time>
+            </dd>
+            <dt>{{ copy.description }}</dt>
+            <dd>{{ view.program.description }}</dd>
+          </dl>
+
+          @if (canManage() && !editing()) {
+            <div class="program__actions">
+              <button type="button" class="btn" (click)="startEditing()">{{ copy.edit }}</button>
+            </div>
+          }
+        </section>
+
+        <!-- Guidance is a list of records. Adding, retiring or rewording one is
+             an edit to data; this markup does not move (DL-66). -->
+        <section class="card program__block" aria-labelledby="guidance-heading">
+          <h2 class="program__heading" id="guidance-heading">{{ shared.guidance.heading }}</h2>
+          <p class="program__advisory">{{ shared.guidance.advisory }}</p>
+
+          @if (view.program.guidance.length === 0) {
+            <p class="program__none">{{ shared.guidance.empty }}</p>
+          } @else {
+            <ul class="guidance">
+              @for (guideline of view.program.guidance; track guideline.statement) {
+                <li class="guidance__item">
+                  <p class="guidance__head">
+                    <span class="guidance__code">{{ guidanceCodeLabel(guideline) }}</span>
+                    <span class="guidance__weight">{{ weightLabel(guideline) }}</span>
+                  </p>
+                  <p class="guidance__statement">{{ guideline.statement }}</p>
+                  <p class="guidance__basis">
+                    <span class="guidance__label">{{ shared.guidance.basisLabel }}</span>
+                    {{ provenanceLabel(guideline) }} — {{ guideline.basis }}
+                    @if (guideline.sourceUrl) {
+                      <a [href]="guideline.sourceUrl" rel="noopener noreferrer" target="_blank">
+                        source
+                      </a>
+                    }
+                    @if (guideline.verifiedOn === null) {
+                      <span class="guidance__unverified">{{ shared.guidance.unverifiedNote }}</span>
+                    }
+                  </p>
+                </li>
+              }
+            </ul>
+          }
+
+          <h3 class="program__subheading">{{ shared.guidance.parametersHeading }}</h3>
+          <dl class="program__facts">
+            <dt>{{ shared.guidance.minAge }}</dt>
+            <dd>{{ view.program.eligibility.minAge ?? shared.guidance.none }}</dd>
+            <dt>{{ shared.guidance.maxAge }}</dt>
+            <dd>{{ view.program.eligibility.maxAge ?? shared.guidance.none }}</dd>
+            <dt>{{ shared.guidance.income }}</dt>
+            <dd>
+              @if (view.program.eligibility.maxMonthlyHouseholdIncome; as ceiling) {
+                {{ ceiling | peso }}
+              } @else {
+                {{ shared.guidance.none }}
+              }
+            </dd>
+            <dt>{{ shared.guidance.residency }}</dt>
+            <dd>{{ view.program.eligibility.residencyMonthsRequired ?? shared.guidance.none }}</dd>
+          </dl>
+        </section>
+
+        <section class="card program__block" aria-labelledby="documents-heading">
+          <h2 class="program__heading" id="documents-heading">{{ copy.documentsHeading }}</h2>
+          <p class="program__note">{{ copy.documentsNote }}</p>
+          <p class="program__note">
+            {{ copy.templateLabel }}: {{ template(view)?.name ?? copy.noTemplate }}
+          </p>
+
+          <ul class="documents">
+            @for (document of documents(view); track document.code) {
+              <li class="documents__item">
+                <p class="documents__label">
+                  {{ document.label }}
+                  <span class="documents__tag">
+                    {{ document.isMandatory ? copy.mandatory : copy.optional }}
+                  </span>
+                  <span class="documents__origin">
+                    {{ fromTemplate(view, document.code) ? copy.fromTemplate : copy.programmeOwn }}
+                  </span>
+                </p>
+                @if (document.notes) {
+                  <p class="program__note">{{ document.notes }}</p>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      </div>
+
+      <aside class="program__side">
+        <app-responsibility-notice [responsibility]="view.program.responsibility" />
+
+        <section class="card program__block" aria-labelledby="window-heading">
+          <h2 class="program__heading" id="window-heading">{{ shared.window.heading }}</h2>
+          <p class="program__note">{{ shared.window.description }}</p>
+          <dl class="program__facts">
+            <dt>{{ shared.window.lookback }}</dt>
+            <dd>{{ window(view).lookbackMonths }} {{ shared.window.months }}</dd>
+            <dt>{{ shared.window.sameProgramme }}</dt>
+            <dd>{{ window(view).sameProgrammeDays }} {{ shared.window.days }}</dd>
+          </dl>
+          @if (windowIsDefault(view)) {
+            <p class="program__note">{{ shared.window.usingDefault }}</p>
+          }
+          <p class="program__note">{{ windowProvenanceLabel(view) }}</p>
+          <!-- The retirement condition, said out loud until somebody checks it. -->
+          @if (windowPending(view)) {
+            <p class="program__pending">{{ shared.window.pending }}</p>
+          }
+        </section>
+
+        <section class="card program__block" aria-labelledby="usage-heading">
+          <h2 class="program__heading" id="usage-heading">{{ shared.utilization.heading }}</h2>
+          <p class="program__note">{{ shared.utilization.description }}</p>
+          <dl class="program__facts">
+            <dt>{{ shared.utilization.filed }}</dt>
+            <dd>{{ view.utilization.filedCount }}</dd>
+            <dt>{{ shared.utilization.open }}</dt>
+            <dd>{{ view.utilization.openCount }}</dd>
+            <dt>{{ shared.utilization.completed }}</dt>
+            <dd>{{ view.utilization.completedCount }}</dd>
+            <dt>{{ shared.utilization.approvedTotal }}</dt>
+            <dd>{{ view.utilization.approvedTotal | peso }}</dd>
+            <dt>{{ shared.utilization.releasedTotal }}</dt>
+            <dd>{{ view.utilization.releasedTotal | peso }}</dd>
+          </dl>
+          @if (view.utilization.filedCount === 0) {
+            <p class="program__note">{{ shared.utilization.unused }}</p>
+          }
+        </section>
+      </aside>
+    </div>
+
+    @if (editing() && draft(); as current) {
+      <section class="card program__block program__edit" aria-labelledby="edit-heading">
+        <h2 class="program__heading" id="edit-heading">{{ copy.editHeading }}</h2>
+
+        <label class="field">
+          <span class="field__label">{{ copy.editName }}</span>
+          <input type="text" class="field__input" [value]="current.name" (input)="onName($event)" />
+        </label>
+
+        <label class="field">
+          <span class="field__label">{{ copy.editDescription }}</span>
+          <textarea
+            class="field__input"
+            rows="3"
+            [value]="current.description"
+            (input)="onDescription($event)"
+          ></textarea>
+        </label>
+
+        <label class="field">
+          <span class="field__label">{{ copy.editStatus }}</span>
+          <select class="field__input" (change)="onStatus($event)">
+            @for (status of statuses; track status) {
+              <option [value]="status" [selected]="current.status === status">
+                {{ statusCatalog[status].label }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field__label">{{ copy.editFunding }}</span>
+          <input
+            type="text"
+            class="field__input"
+            [value]="current.fundingSource"
+            (input)="onFunding($event)"
+          />
+        </label>
+
+        <label class="field">
+          <span class="field__label">{{ copy.editLegalBasis }}</span>
+          <input
+            type="text"
+            class="field__input"
+            [value]="current.legalBasis ?? ''"
+            (input)="onLegalBasis($event)"
+          />
+        </label>
+
+        <label class="field field--narrow">
+          <span class="field__label">{{ copy.editMaximum }}</span>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            class="field__input"
+            [value]="maximumValue()"
+            (input)="onMaximum($event)"
+          />
+        </label>
+
+        <h3 class="program__subheading">{{ copy.responsibilityHeading }}</h3>
+
+        <label class="field">
+          <span class="field__label">{{ copy.administeredBy }}</span>
+          <select class="field__input" (change)="onAdministeredBy($event)">
+            @for (agency of agencies; track agency) {
+              <option
+                [value]="agency"
+                [selected]="current.responsibility.administeredBy === agency"
+              >
+                {{ agencyLabel(agency) }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field__label">{{ copy.fundsHeldBy }}</span>
+          <select class="field__input" (change)="onFundsHeldBy($event)">
+            @for (agency of agencies; track agency) {
+              <option [value]="agency" [selected]="current.responsibility.fundsHeldBy === agency">
+                {{ agencyLabel(agency) }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field__label">{{ copy.lguRole }}</span>
+          <select class="field__input" (change)="onLguRole($event)">
+            <!-- The impossible combination is not offered. It is also refused by
+                 the domain and by the adapter, so hiding it is a courtesy
+                 rather than the protection (DL-65). -->
+            @for (role of roles; track role) {
+              @if (roleAvailable(role)) {
+                <option [value]="role" [selected]="current.responsibility.lguRole === role">
+                  {{ roleLabel(role) }}
+                </option>
+              }
+            }
+          </select>
+          @if (wouldMisrepresent()) {
+            <span class="program__problem" role="alert">{{ copy.ownerWarning }}</span>
+          }
+        </label>
+
+        <label class="field">
+          <span class="field__label">{{ copy.statement }}</span>
+          <textarea
+            class="field__input"
+            rows="3"
+            [value]="current.responsibility.statement"
+            (input)="onStatement($event)"
+          ></textarea>
+        </label>
+
+        @if (responsibilityIssues().length > 0) {
+          <ul class="program__problems">
+            @for (problem of responsibilityIssues(); track problem.code) {
+              <li>{{ problemText(problem.code) }}</li>
+            }
+          </ul>
+        }
+
+        <div class="program__actions">
+          <button type="button" class="btn" (click)="cancelEditing()">{{ copy.cancel }}</button>
+          <button type="button" class="btn btn--primary" [disabled]="!canSave()" (click)="save()">
+            {{ copy.save }}
+          </button>
+        </div>
+      </section>
+    }
+  }
+</ng-template>

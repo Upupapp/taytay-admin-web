@@ -181,13 +181,23 @@ export const routes: Routes = [
       },
       {
         path: 'programs',
-        title: 'Programs — Taytay Social Welfare',
-        canActivate: [permissionGuard('program.view')],
-        ...placeholder({
-          title: 'Programs',
-          subtitle: 'Assistance programmes, eligibility rules and required documents.',
-          plannedIn: 'the programme-management TAB',
-        }),
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            title: 'Programmes — Taytay Social Welfare',
+            canActivate: [permissionGuard('program.view')],
+            loadComponent: () =>
+              import('@features/programs/program-list-page').then((m) => m.ProgramListPage),
+          },
+          {
+            path: ':id',
+            title: 'Programme — Taytay Social Welfare',
+            canActivate: [permissionGuard('program.view')],
+            loadComponent: () =>
+              import('@features/programs/program-detail-page').then((m) => m.ProgramDetailPage),
+          },
+        ],
       },
       {
         path: 'disbursements',

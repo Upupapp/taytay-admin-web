@@ -1,0 +1,70 @@
+.catalog__banner {
+  padding: var(--space-snug) var(--space-base);
+  border-block-end: 1px solid var(--c-border);
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-base);
+  padding: var(--space-base);
+  border-block-end: 1px solid var(--c-border);
+}
+
+.filters__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+  min-inline-size: 180px;
+}
+
+.filters__field--wide {
+  flex: 1 1 260px;
+}
+
+.filters__label {
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.filters__input {
+  padding: var(--space-compact) var(--space-snug);
+  /* Comfortably over the 24px pointer-target minimum (WCAG 2.5.8). */
+  min-block-size: 36px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.catalog__name {
+  display: inline-block;
+  min-block-size: var(--target-min);
+  line-height: var(--target-min);
+  color: var(--c-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.catalog__name:hover {
+  text-decoration: underline;
+}
+
+.catalog__code,
+.catalog__role {
+  display: block;
+  color: var(--c-text-muted);
+  font-size: 12px;
+}
+
+.catalog__agency {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
