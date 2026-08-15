@@ -18,13 +18,13 @@ import {
   type AssistanceRequestRepository,
   type AssistanceRequestSortField,
   type AssistanceRequestStatus,
-  type CaseNote,
+  type RequestNote,
   type Page,
   type PageRequest,
   type StatusChange,
 } from '@domain/index';
 
-import { MOCK_ASSISTANCE_REQUESTS, MOCK_CASE_NOTES } from './seed/assistance-requests.seed';
+import { MOCK_ASSISTANCE_REQUESTS, MOCK_REQUEST_NOTES } from './seed/assistance-requests.seed';
 import { denyUnless } from './mock-access';
 import { MockLatency } from './mock-latency';
 import { matchesSearch, sortItems } from './mock-query';
@@ -96,8 +96,8 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     return this.latency.respond(request);
   }
 
-  listNotes(id: AssistanceRequestId): Observable<readonly CaseNote[]> {
-    const notes = MOCK_CASE_NOTES.filter((note) => note.requestId === id);
+  listNotes(id: AssistanceRequestId): Observable<readonly RequestNote[]> {
+    const notes = MOCK_REQUEST_NOTES.filter((note) => note.requestId === id);
     return this.latency.respond(sortItems(notes, (note) => note.createdAt, 'desc'));
   }
 

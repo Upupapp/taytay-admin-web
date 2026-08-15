@@ -4,8 +4,8 @@ import {
   type AssistanceRequest,
   type AssistanceRequestId,
   type BarangayId,
-  type CaseNote,
-  type CaseNoteId,
+  type RequestNote,
+  type RequestNoteId,
   type ProgramId,
   type RequirementId,
   type ResidentId,
@@ -582,9 +582,9 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
   },
 ];
 
-export const MOCK_CASE_NOTES: readonly CaseNote[] = [
+export const MOCK_REQUEST_NOTES: readonly RequestNote[] = [
   {
-    id: asId<CaseNoteId>('note-0001'),
+    id: asId<RequestNoteId>('note-0001'),
     requestId: asId<AssistanceRequestId>('req-0001'),
     authorId: staff('sw-1'),
     authorName: 'Grace Ocampo',
@@ -593,7 +593,7 @@ export const MOCK_CASE_NOTES: readonly CaseNote[] = [
     createdAt: daysBeforeAnchor(8, 14),
   },
   {
-    id: asId<CaseNoteId>('note-0002'),
+    id: asId<RequestNoteId>('note-0002'),
     requestId: asId<AssistanceRequestId>('req-0001'),
     authorId: staff('intake'),
     authorName: 'Liezl Padilla',
@@ -602,7 +602,7 @@ export const MOCK_CASE_NOTES: readonly CaseNote[] = [
     createdAt: daysBeforeAnchor(7, 10),
   },
   {
-    id: asId<CaseNoteId>('note-0003'),
+    id: asId<RequestNoteId>('note-0003'),
     requestId: asId<AssistanceRequestId>('req-0004'),
     authorId: staff('sw-2'),
     authorName: 'Jomar Villanueva',

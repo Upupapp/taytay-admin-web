@@ -34,6 +34,7 @@ export const API_ENDPOINTS = {
   households: 'households',
   families: 'families',
   relationships: 'relationships',
+  cases: 'cases',
   savedViews: 'saved-views',
   programs: 'programs',
   assistanceRequests: 'assistance-requests',

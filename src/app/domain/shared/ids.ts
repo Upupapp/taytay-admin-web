@@ -16,7 +16,12 @@ export type HouseholdId = Branded<string, 'HouseholdId'>;
 export type BarangayId = Branded<string, 'BarangayId'>;
 export type ProgramId = Branded<string, 'ProgramId'>;
 export type AssistanceRequestId = Branded<string, 'AssistanceRequestId'>;
+/** A note written on one assistance request. Not a note on a case — see `CaseNoteId`. */
+export type RequestNoteId = Branded<string, 'RequestNoteId'>;
+export type CaseId = Branded<string, 'CaseId'>;
 export type CaseNoteId = Branded<string, 'CaseNoteId'>;
+export type CaseTaskId = Branded<string, 'CaseTaskId'>;
+export type CaseEventId = Branded<string, 'CaseEventId'>;
 export type RequirementId = Branded<string, 'RequirementId'>;
 export type DisbursementId = Branded<string, 'DisbursementId'>;
 export type ReferralId = Branded<string, 'ReferralId'>;

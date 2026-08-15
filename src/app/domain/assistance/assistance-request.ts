@@ -2,7 +2,7 @@ import type { AuditStamp } from '../shared/audit';
 import type {
   AssistanceRequestId,
   BarangayId,
-  CaseNoteId,
+  RequestNoteId,
   IsoDateTime,
   ProgramId,
   RequirementId,
@@ -193,15 +193,15 @@ export interface SubmittedRequirement {
   readonly remarks: string | null;
 }
 
-export type CaseNoteVisibility = 'internal' | 'shared-with-applicant';
+export type RequestNoteVisibility = 'internal' | 'shared-with-applicant';
 
-export interface CaseNote {
-  readonly id: CaseNoteId;
+export interface RequestNote {
+  readonly id: RequestNoteId;
   readonly requestId: AssistanceRequestId;
   readonly authorId: StaffUserId;
   readonly authorName: string;
   readonly body: string;
-  readonly visibility: CaseNoteVisibility;
+  readonly visibility: RequestNoteVisibility;
   readonly createdAt: IsoDateTime;
 }
 

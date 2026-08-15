@@ -32,6 +32,20 @@ export const PERMISSIONS = [
   // family is a claim about people.
   'family.manage',
 
+  'case.view',
+  // Advancing a case, assigning it, and recording tasks against it.
+  'case.manage',
+  // Writing on the running record. Held apart from `case.manage` because a
+  // clerk may move a file along without adding to the social worker's notes.
+  'case.note',
+  // Reading a note written under the protected tier: safety planning (RA 9262),
+  // anything identifying a child in conflict with the law (RA 9344), a third
+  // party's confidence. The narrow grant, and never implied by `case.view`.
+  'case.view-protected-note',
+  // Ending the office's involvement with a family. A decision, not a step, and
+  // so held apart from `case.manage`.
+  'case.close',
+
   'program.view',
   'program.manage',
 
@@ -103,6 +117,9 @@ const INTAKE_PERMISSIONS: readonly Permission[] = [
   'household.manage',
   'family.view',
   'family.manage',
+  'case.view',
+  'case.manage',
+  'case.note',
   'program.view',
   'request.view',
   'request.create',
@@ -114,6 +131,9 @@ const SOCIAL_WORKER_PERMISSIONS: readonly Permission[] = [
   ...INTAKE_PERMISSIONS,
   // The worker who visited the house is the authority on what is true there.
   'household.correct-vulnerability',
+  // The case manager writes and reads the protected tier. Nobody else routinely
+  // needs the content of a safety plan to do their job.
+  'case.view-protected-note',
   'request.assess',
   'request.endorse',
   'request.view-sensitive',
@@ -138,6 +158,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       ...SOCIAL_WORKER_PERMISSIONS,
       'resident.deactivate',
       'resident.export',
+      'case.close',
       'program.manage',
       'request.approve',
       'request.reject',
@@ -170,6 +191,8 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
     label: 'Disbursement officer',
     description: 'Schedules payouts and releases approved assistance.',
     scope: 'all-barangays',
+    // No case access at all. A payout is authorised by the approved request in
+    // front of them; the family's case file is not part of paying it out.
     permissions: [
       'dashboard.view',
       'resident.view',
@@ -188,6 +211,9 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
     label: 'Barangay link',
     description: 'Barangay-based encoder. Sees only their own barangay.',
     scope: 'own-barangay',
+    // Deliberately no case access. A barangay encoder files requests and keeps
+    // the registry current; the casework record of their neighbours is not
+    // theirs to read, and proximity is the reason to be stricter, not looser.
     permissions: [
       'dashboard.view',
       'resident.view',
@@ -205,11 +231,15 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
     label: 'Auditor',
     description: 'Read-only oversight across the whole municipality.',
     scope: 'all-barangays',
+    // `case.view` and not `case.view-protected-note`: oversight is checking that
+    // the office recorded a reason, assigned an owner and acted in time. None of
+    // that requires reading a survivor's safety plan.
     permissions: [
       'dashboard.view',
       'resident.view',
       'household.view',
       'family.view',
+      'case.view',
       'program.view',
       'request.view',
       'disbursement.view',

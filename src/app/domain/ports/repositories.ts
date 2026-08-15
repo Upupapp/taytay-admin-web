@@ -6,7 +6,7 @@ import type {
   AssistanceRequestFilter,
   AssistanceRequestSortField,
   AssistanceRequestStatus,
-  CaseNote,
+  RequestNote,
 } from '../assistance/assistance-request';
 import type { AuthenticatedUser, StaffFilter, StaffUser } from '../access/staff-user';
 import type { SignInCredentials } from '../access/credentials';
@@ -35,6 +35,10 @@ import type {
   ResidentTransfer,
 } from '../families/family';
 import type { FamilyDetail, FamilySummary } from '../families/family-graph';
+import type { CaseNoteSensitivity } from '../cases/case-note';
+import type { CaseTaskDraft } from '../cases/case-task';
+import type { CaseSummary, CaseWorkspace } from '../cases/case-workspace';
+import type { CaseFilter, CaseQueueCount, CaseSortField, CaseStatus } from '../cases/social-case';
 import type { Relationship, RelationshipKind } from '../families/relationship';
 import type { RelationshipEvent } from '../families/relationship-event';
 import type { FactorState, VulnerabilityFactorCode } from '../households/household-vulnerability';
@@ -45,6 +49,8 @@ import type { SavedView, SavedViewDraft, SavedViewResource } from '../views/save
 import type { Page, PageRequest } from '../shared/pagination';
 import type {
   AssistanceRequestId,
+  CaseId,
+  CaseTaskId,
   DisbursementId,
   HouseholdId,
   NotificationId,
@@ -182,6 +188,49 @@ export interface FamilyRepository {
 export const FAMILY_REPOSITORY = new InjectionToken<FamilyRepository>('FamilyRepository');
 
 /**
+ * The case workspace — the office's continuing file on a person.
+ *
+ * Three properties this port is shaped to guarantee:
+ *
+ *  - **Every mutation takes a `reason`.** Not one of them is optional, and
+ *    `tools/check-case-audit.mjs` fails the build if a method appears without
+ *    one. A change nobody had to justify is a change nobody can review.
+ *  - **Every mutation appends an event** and returns the whole workspace, so a
+ *    screen cannot show a status that its timeline does not explain (`DL-54`).
+ *  - **Nothing here deletes or edits history.** There is no `deleteNote`, no
+ *    `editNote` and no `reopen`; there must not be.
+ *
+ * Reads return `CaseWorkspace`/`CaseSummary`, whose notes are already
+ * `CaseNoteView` — redacted by the data layer, so a screen cannot leak a
+ * protected note it never received (`DL-38`).
+ */
+export interface CaseRepository {
+  list(filter: CaseFilter, page: PageRequest<CaseSortField>): Observable<Page<CaseSummary>>;
+  /** Counts for every queue, computed under the same scope as the list itself. */
+  queueCounts(filter: CaseFilter): Observable<readonly CaseQueueCount[]>;
+  getById(id: CaseId): Observable<CaseWorkspace | null>;
+  /** Every case opened about one resident, newest first. */
+  casesForResident(residentId: ResidentId): Observable<readonly CaseSummary[]>;
+
+  changeStatus(id: CaseId, to: CaseStatus, reason: string): Observable<CaseWorkspace>;
+  /** `null` returns the case to the unassigned pool, which is also a recorded act. */
+  assign(id: CaseId, staffUserId: StaffUserId | null, reason: string): Observable<CaseWorkspace>;
+
+  addNote(
+    id: CaseId,
+    body: string,
+    sensitivity: CaseNoteSensitivity,
+    reason: string,
+  ): Observable<CaseWorkspace>;
+
+  addTask(id: CaseId, draft: CaseTaskDraft, reason: string): Observable<CaseWorkspace>;
+  /** The reason is the outcome: what actually happened when the task was done. */
+  completeTask(id: CaseId, taskId: CaseTaskId, reason: string): Observable<CaseWorkspace>;
+}
+
+export const CASE_REPOSITORY = new InjectionToken<CaseRepository>('CaseRepository');
+
+/**
  * Named list parameters. A hook rather than a product surface: the API will own
  * persistence and sharing, and this port is the shape it has to honour.
  */
@@ -207,7 +256,7 @@ export interface AssistanceRequestRepository {
     page: PageRequest<AssistanceRequestSortField>,
   ): Observable<Page<AssistanceRequest>>;
   getById(id: AssistanceRequestId): Observable<AssistanceRequest | null>;
-  listNotes(id: AssistanceRequestId): Observable<readonly CaseNote[]>;
+  listNotes(id: AssistanceRequestId): Observable<readonly RequestNote[]>;
   changeStatus(
     id: AssistanceRequestId,
     to: AssistanceRequestStatus,

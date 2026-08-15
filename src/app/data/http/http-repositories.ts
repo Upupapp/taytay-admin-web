@@ -12,7 +12,18 @@ import {
   type AssistanceRequestSortField,
   type AssistanceRequestStatus,
   type AuthenticatedUser,
-  type CaseNote,
+  type CaseFilter,
+  type CaseId,
+  type CaseNoteSensitivity,
+  type CaseQueueCount,
+  type CaseRepository,
+  type CaseSortField,
+  type CaseStatus,
+  type CaseSummary,
+  type CaseTaskDraft,
+  type CaseTaskId,
+  type CaseWorkspace,
+  type RequestNote,
   type DashboardRepository,
   type DashboardFilter,
   type DashboardSummary,
@@ -254,6 +265,77 @@ export class HttpFamilyRepository implements FamilyRepository {
   }
 }
 
+/**
+ * The case workspace over HTTP.
+ *
+ * Every mutation is a POST carrying its reason, and every one of them answers
+ * with the whole workspace. Both are contract terms, not conveniences: the
+ * reason is what the audit event is written from, and returning the workspace
+ * is what stops a screen showing a status its timeline has not caught up with.
+ * Nothing here is a DELETE, because nothing about a case is ever deleted
+ * (`DL-54`).
+ */
+@Injectable()
+export class HttpCaseRepository implements CaseRepository {
+  private readonly api = inject(ApiClient);
+
+  list(filter: CaseFilter, page: PageRequest<CaseSortField>): Observable<Page<CaseSummary>> {
+    return this.api.page<CaseSummary>(API_ENDPOINTS.cases, page, { ...filter });
+  }
+
+  queueCounts(filter: CaseFilter): Observable<readonly CaseQueueCount[]> {
+    return this.api.collection<CaseQueueCount>(`${API_ENDPOINTS.cases}/queues`, { ...filter });
+  }
+
+  getById(id: CaseId): Observable<CaseWorkspace | null> {
+    return this.api.optionalItem<CaseWorkspace>(`${API_ENDPOINTS.cases}/${id}`);
+  }
+
+  casesForResident(residentId: ResidentId): Observable<readonly CaseSummary[]> {
+    return this.api.collection<CaseSummary>(API_ENDPOINTS.cases, { residentId });
+  }
+
+  changeStatus(id: CaseId, to: CaseStatus, reason: string): Observable<CaseWorkspace> {
+    return this.api.post<CaseWorkspace, { to: CaseStatus; reason: string }>(
+      `${API_ENDPOINTS.cases}/${id}/status`,
+      { to, reason },
+    );
+  }
+
+  assign(id: CaseId, staffUserId: StaffUserId | null, reason: string): Observable<CaseWorkspace> {
+    return this.api.post<CaseWorkspace, { staffUserId: StaffUserId | null; reason: string }>(
+      `${API_ENDPOINTS.cases}/${id}/assignment`,
+      { staffUserId, reason },
+    );
+  }
+
+  addNote(
+    id: CaseId,
+    body: string,
+    sensitivity: CaseNoteSensitivity,
+    reason: string,
+  ): Observable<CaseWorkspace> {
+    return this.api.post<CaseWorkspace, Record<string, unknown>>(
+      `${API_ENDPOINTS.cases}/${id}/notes`,
+      { body, sensitivity, reason },
+    );
+  }
+
+  addTask(id: CaseId, draft: CaseTaskDraft, reason: string): Observable<CaseWorkspace> {
+    return this.api.post<CaseWorkspace, { draft: CaseTaskDraft; reason: string }>(
+      `${API_ENDPOINTS.cases}/${id}/tasks`,
+      { draft, reason },
+    );
+  }
+
+  completeTask(id: CaseId, taskId: CaseTaskId, reason: string): Observable<CaseWorkspace> {
+    return this.api.post<CaseWorkspace, { reason: string }>(
+      `${API_ENDPOINTS.cases}/${id}/tasks/${taskId}/complete`,
+      { reason },
+    );
+  }
+}
+
 @Injectable()
 export class HttpSavedViewRepository implements SavedViewRepository {
   private readonly api = inject(ApiClient);
@@ -303,8 +385,8 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
     return this.api.optionalItem<AssistanceRequest>(`${API_ENDPOINTS.assistanceRequests}/${id}`);
   }
 
-  listNotes(id: AssistanceRequestId): Observable<readonly CaseNote[]> {
-    return this.api.collection<CaseNote>(`${API_ENDPOINTS.assistanceRequests}/${id}/notes`);
+  listNotes(id: AssistanceRequestId): Observable<readonly RequestNote[]> {
+    return this.api.collection<RequestNote>(`${API_ENDPOINTS.assistanceRequests}/${id}/notes`);
   }
 
   changeStatus(
