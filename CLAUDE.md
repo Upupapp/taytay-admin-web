@@ -94,7 +94,7 @@ npm run verify     # lint + typecheck + repository checks + test + build
 ```
 
 The repository checks are `check:brand`, `check:shell`, `check:access`,
-`check:vulnerability` and `check:case-audit`. Each enforces a rule a comment
+`check:vulnerability`, `check:case-audit` and `check:intake`. Each enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 
@@ -193,6 +193,26 @@ undertook to do, by when, and who owes it.
 Case notes have two tiers. A `protected` note is withheld **in the data layer**:
 reads return `CaseNoteView` whose `body` is `null`, and the entry is still
 listed so nobody reads a partial file as a complete one (`DL-58`).
+
+### Intake advises; it never decides
+
+The duplicate and previous-assistance check is **evidence** (`DL-60`).
+`IntakeAdvisory` carries no score, no total, no `eligible` and no
+`recommendation`; each signal states the rule it applied, its finding and the
+records it read, and all three are rendered. There are two tones — `note` and
+`caution` — and neither blocks: a caution asks the encoder for a sentence before
+filing, and the sentence is kept. `assessmentReadiness` behaves the same way, and
+gates nothing.
+
+`npm run check:intake` fails the build on a decision-shaped field, a blocking
+tone, an exported scoring or auto-approving function, a signal that stops
+stating its rule, or a request template binding `[disabled]` to the advisory or
+the readiness list.
+
+The intake flow is **four sections of one route** (`DL-62`), with the step in the
+URL and the applicant's context panel outside the step switch — fetched once
+through `ResidentRepository.getProfile` and never retyped. A saved intake is a
+`draft` with **no control number** (`DL-63`); the number is issued at filing.
 
 ### Separation of duties
 

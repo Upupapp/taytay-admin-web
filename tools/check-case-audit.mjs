@@ -104,7 +104,10 @@ for (const [index, line] of storeText.split(/\r?\n/).entries()) {
   if (!/this\.events\s*=/.test(line)) continue;
   // The only sanctioned assignment is an append; the array literal opens on
   // this line or the next, so both are inspected.
-  const window = storeText.split(/\r?\n/).slice(index, index + 3).join(' ');
+  const window = storeText
+    .split(/\r?\n/)
+    .slice(index, index + 3)
+    .join(' ');
   if (!/this\.events\s*=\s*\[\s*(\.\.\.this\.events|\.\.\.MOCK_CASE_EVENTS)/.test(window)) {
     problems.push(
       `mock-case.store.ts:${index + 1} assigns \`this.events\` without appending to it. The only ` +
@@ -113,7 +116,8 @@ for (const [index, line] of storeText.split(/\r?\n/).entries()) {
   }
 }
 
-const FORBIDDEN_STORE = /\b(deleteEvent|removeEvent|clearEvents|editEvent|deleteNote|removeNote|editNote|deleteTask|removeTask)\s*\(/;
+const FORBIDDEN_STORE =
+  /\b(deleteEvent|removeEvent|clearEvents|editEvent|deleteNote|removeNote|editNote|deleteTask|removeTask)\s*\(/;
 if (FORBIDDEN_STORE.test(storeText)) {
   problems.push(
     'mock-case.store.ts declares a method that deletes or edits history. There is deliberately ' +
@@ -227,7 +231,10 @@ if (!/discloseCaseNote\(/.test(adapterText)) {
 // `CaseNoteSensitivity` are all fine; a bare `CaseNote` is not.
 const BARE_CASE_NOTE = /\bCaseNote\b(?!View|Id|Sensitivity)/;
 let scanned = 0;
-for (const file of [...walk('src/app/features', new Set(['.ts', '.html'])), ...walk('src/app/shared', new Set(['.ts', '.html']))]) {
+for (const file of [
+  ...walk('src/app/features', new Set(['.ts', '.html'])),
+  ...walk('src/app/shared', new Set(['.ts', '.html'])),
+]) {
   if (file.includes('.spec.')) continue;
   scanned += 1;
   const text = readFileSync(join(root, file), 'utf8');

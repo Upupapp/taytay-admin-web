@@ -1423,3 +1423,165 @@ the queues are built around.
 **Consequence:** a supervisor reassigning work between two named workers cannot
 yet do it from this screen. Recorded as a gap; the fix is a scoped "assignable
 colleagues" read, not a broader `staff.view`.
+
+### DL-60 · The duplicate check is evidence, never a decision
+
+**Status:** Settled (implemented in TAB 11).
+
+TAB 11's third acceptance criterion is that **no client is automatically
+approved or denied by a simplistic frontend score**. That is not a promise the
+code makes; it is a shape the code has.
+
+`IntakeAdvisory` has no total, no score, no rating, no `eligible` and no
+`recommendation`. Each signal carries three things — the **rule** it applied,
+the **finding**, and the **records it read** — and then stops. All three are
+rendered, because evidence held in a model and never shown is indistinguishable
+from a verdict.
+
+There are two tones and neither of them blocks. `note` is context. `caution`
+asks the encoder to write a sentence before filing, and the sentence is kept
+against their name. A third tone that stopped the submission would be an
+automatic denial wearing a different word.
+
+The same rule governs the assessment workspace: `assessmentReadiness` lists what
+the office would normally have — a home visit, verified documents — and gates
+nothing. A home visit is impossible for a household that has been relocated and
+a requirement can legitimately be waived; software that refused the endorsement
+there would be denying an applicant on a checklist.
+
+`tools/check-intake.mjs` fails the build if a decision-shaped field appears, if
+a blocking tone is added, if a scoring or auto-approving function is exported,
+if a signal stops stating its rule or its records, or if any control in the
+request templates binds `[disabled]` to the advisory or the readiness list. It
+was validated against **seven planted regressions** and caught all seven.
+
+**A note on the two review windows.** `ASSISTANCE_LOOKBACK_MONTHS` (12) and
+`SAME_PROGRAMME_WINDOW_DAYS` (90) decide **how much history is shown**, and
+nothing else — no grant, refusal, cap or score depends on either. They are
+recorded as office review conventions rather than sourced statistics, because
+no DSWD issuance fixing a numeric AICS re-application interval was verified in
+this offline run. That is a deliberate contrast with `POVERTY_THRESHOLD`, which
+carries a full PSA citation precisely because a decision boundary rests on it
+(`DL-46`). The office should confirm both figures against its own AICS
+guidelines before the first pilot, and if either ever begins to gate an outcome
+it needs the threshold's treatment rather than this one.
+
+**Consequence:** the office can be shown a duplicate and still say yes. That is
+the point — a second admission for the same condition is a real thing, and the
+software's job is to make sure somebody looked and said why.
+
+### DL-61 · The online channel is modelled and withheld
+
+**Status:** Settled (implemented in TAB 11).
+
+`IntakeChannel` includes `online`. `OFFERED_INTAKE_CHANNELS` does not.
+
+A channel a member of staff can select by hand is not an online submission — it
+is an encoded one mislabelled, and the distinction is exactly what the field
+exists to record. Modelling the value now and withholding it from the picker is
+the additive half of expand–migrate–contract: when the resident app in
+`Taytay_Rizal_LGUIDS_Resident_Mobile_Flutter` posts its first request, the
+domain, the adapters and the reporting already understand it, and nothing has to
+be migrated.
+
+The intake screen says the option is unavailable and why, rather than leaving a
+gap a reader has to guess at.
+
+**Consequence:** `isOfferedChannel` is the retirement seam. The day the API
+accepts resident-filed requests, the fallback is removed by moving one value
+between two arrays.
+
+### DL-62 · Four steps, one route
+
+**Status:** Settled (implemented in TAB 11).
+
+The intake flow is a **single route** with four sections, not four navigations.
+
+The acceptance criterion is that a trained encoder completes a common intake
+without excessive page changes. Four routes would refetch the applicant's
+context on each one, lose an unsaved field on a mistimed Back, and put three
+avoidable network round trips between the counter and the applicant standing in
+front of it. Sections of one page cost nothing to move between.
+
+The step is held in the URL as a query parameter, on the same argument as
+`DL-36`: a refresh, a browser Back and a link sent to a colleague all land where
+the encoder was.
+
+The applicant's context panel sits **outside** the step switch, so it is fetched
+once when the person is chosen and stays on screen for every later step. That is
+what "previous resident and household context visible without retyping" means in
+practice, and it is served by reusing `ResidentRepository.getProfile` — the
+aggregate TAB 07 already built for this — rather than by a new query.
+
+**Consequence:** the stepper marks which steps still have something outstanding,
+because with no page change to interrupt them an encoder can otherwise reach the
+end without noticing a gap.
+
+### DL-63 · A draft is not a request
+
+**Status:** Settled (implemented in TAB 11).
+
+A saved intake is a `draft` request with **no control number**. It is listed in
+its own section above the request table, never as another row in it.
+
+Two things follow, and both matter. Nothing has been filed, so nobody is waiting
+on an answer and the office's reported workload does not include it — mixing the
+two would inflate every count the office publishes. And no reference number has
+been issued, because handing an applicant a number for a record that may never
+be filed is how an office ends up honouring one. The control number is issued at
+filing, which is the moment the office takes responsibility.
+
+`saveDraft(draft, id)` is **idempotent on the identifier the caller holds**:
+`null` creates, an id updates. Two taps on a slow municipal connection produce
+one draft. `submitIntake` is idempotent too — a retried submit returns the filed
+request rather than a refusal the encoder cannot act on (`DL-51`, carried
+forward).
+
+**Consequence:** the acknowledgement is re-derived on the server at submission
+and compared with what the client sent. A client that decided for itself whether
+a caution applied could be told not to need one.
+
+### DL-64 · Case closure remains terminal — recorded with its sources
+
+**Status:** Settled (affirmed in TAB 11; does not alter `DL-53`).
+
+The supervisor confirmed the TAB 10 lifecycle decision after review: **a case
+that is closed stays closed, and a later welfare need opens a linked successor
+case rather than rewriting the closed outcome.** `DL-53` is unchanged and this
+entry adds nothing to the code; it records the reasoning and the sources so the
+next reader does not have to reconstruct them.
+
+Why it holds:
+
+- **The historical finding is preserved.** The closure states what the office
+  concluded and when. Reopening would put that conclusion back within reach of
+  anyone who meets the family again, and would make "when did this case end?" a
+  question with several defensible answers — fatal to any report on how long the
+  office takes to close a case.
+- **Audit integrity.** Every case change is an appended event with a reason
+  (`DL-54`). A reopening is the one operation that would ask the record to mean
+  something different than it did, rather than to say something further.
+- **Purpose limitation and retention.** A closed file is retained as a record of
+  what was done, not kept open as a live working surface. Reopening quietly
+  re-enlarges the purpose the data is being processed for.
+- **Explicit continuity.** `continuesCaseId` makes the link between episodes a
+  stated fact rather than an inference from a status history.
+
+Sources, **supplied by the supervisor** and recorded here as given:
+
+| What it supports                                              | Source                                                                                                                                                               |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Closure occurs when the client's needs are met                | DSWD Field Office 1, PWD services process — <https://fo1.dswd.gov.ph/pwds/>                                                                                          |
+| Aftercare / turnover once an intervention plan is completed   | DSWD, Social Case Management Service rollout — <https://www.dswd.gov.ph/dswd-rolls-out-case-management-system-for-former-rebels-conflict-hit-families-in-zambopen/>  |
+| Purpose limitation, minimisation, retention only as necessary | NPC, IRR of the Data Privacy Act of 2012 — <https://privacy.gov.ph/implementing-rules-regulations-data-privacy-act-2012/>                                            |
+| Controlled access, auditability, archival obligations         | NPC Circular 16-01, Security of Personal Data in Government Agencies — <https://privacy.gov.ph/npc-circular-16-01-security-of-personal-data-in-government-agencies/> |
+
+**These four URLs were not fetched in this offline run.** They are recorded as
+the supervisor's researched citations, on the same honesty rule that governs
+`CLAUDE.md` §6: a citation nobody verified is labelled as such rather than
+presented as checked. A TAB that turns on the precise wording of any of them
+should retrieve the primary text first.
+
+**Consequence:** the known gap stands — opening the successor case is not yet
+buildable from the UI, and that screen is the natural next piece of case work.
+The gap is the price of the guarantee, and it was accepted deliberately.
