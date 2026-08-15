@@ -1255,3 +1255,171 @@ and refusing a request are different jobs.
 
 **Consequence:** every mutation on `FamilyRepository` can be retried safely, and
 the history contains one event per real change rather than one per attempt.
+
+### DL-52 · A case is not an assistance request
+
+**Status:** Settled (implemented in TAB 10).
+
+A **case** is the office's continuing involvement with a household. An
+**assistance request** is one intervention inside it. They are separate records,
+and a case names the requests attached to it explicitly rather than gathering
+every request the subject ever made.
+
+The alternative — one record for both — fails in two directions. Close the
+request and the history of the family goes with it; keep the request open for
+three years so the history survives, and every figure the office reports about
+processing time becomes fiction. A case that outlives several interventions is
+the ordinary shape of social work, not an edge case.
+
+The consequence worth naming: a person may be the subject of two open cases at
+once — an older-persons file and a crisis intervention after a fire — and a
+request belongs to one of them. `SocialCase.linkedRequestIds` is explicit for
+exactly that reason.
+
+**Consequence:** the vocabulary has to be taught. The case list says the
+distinction in words above the table, on the same argument as `DL-47`.
+
+### DL-53 · Closure is terminal; a recurrence is a new case
+
+**Status:** Settled (implemented in TAB 10).
+
+`closed` has no outward transitions, and there is no `reopen` on the port. A
+household whose situation recurs gets a new case that names the old one through
+`continuesCaseId`.
+
+Reopening is the obvious alternative and it is worse. It makes "when did this
+case end?" a question with several answers, none of them wrong, which is fatal
+to any report on how long the office takes to close a case. It also makes the
+closure — an outcome recorded by the head, with a reason and a date — editable
+by anyone who happens to meet the family again.
+
+`case.close` is held apart from `case.manage` for the same reason: ending the
+office's involvement with a family is a decision, not a step.
+
+**Consequence:** opening the continuing case is not yet buildable from the UI,
+which is a real gap and is recorded as one. The alternative was a reversible
+convenience that would have been very hard to take back.
+
+### DL-54 · The audit-event seam is structural, not procedural
+
+**Status:** Settled (implemented in TAB 10).
+
+Every material change to a case appends a `CaseEvent` in the same act as the
+change. Not afterwards, not by a caller who remembers to, and not by an
+interceptor that a later refactor can unhook.
+
+Three things hold it in place:
+
+- **Every mutation on `CaseRepository` takes a `reason: string`.** None of them
+  is optional. A change nobody had to justify is a change nobody can review.
+- **`MockCaseStore` has no update or delete counterpart to `append`.** The only
+  assignment to `this.events` is an append.
+- **`tools/check-case-audit.mjs` fails the build** if a mutator stops appending,
+  if a mutation loses its reason, or if a delete path appears. It was validated
+  against six planted regressions, each of which it caught.
+
+The reason this is enforced rather than documented: TAB 08 proved that a checker
+which reads the whole file instead of each map separately misses a real
+regression, and a comment saying "always write an event" survives exactly until
+the third hurried change.
+
+**Consequence:** the API inherits the same obligation. The HTTP adapter carries
+the reason on every POST and has no DELETE at all.
+
+### DL-55 · The next action is a record, not an inference
+
+**Status:** Settled (implemented in TAB 10).
+
+"What happens next on this case?" is answered by an open `CaseTask` with a due
+date and an owner, never derived from the status.
+
+A status can only say what the _process_ expects next. A task says what _this
+office_ undertook to do, by when, and who owes it — which is the thing a
+supervisor is actually asking about and the thing a caseworker can be held to.
+It is also what makes the work queues meaningful: `overdue` and `due-soon`
+count deadlines somebody set, not states somebody has been sitting in.
+
+**Consequence:** a case with no open task shows "nothing is scheduled" rather
+than a guess. That is a prompt to record one, and it is honest.
+
+### DL-56 · The timeline merges the case with its interventions
+
+**Status:** Settled (implemented in TAB 10).
+
+`CaseWorkspace.timeline` is assembled at read time from four sources: the case's
+own events, its notes, its completed tasks, and the status history of every
+assistance request attached to it.
+
+The first acceptance criterion of TAB 10 is that a caseworker can understand the
+context and the next action **without opening multiple modules**. Merging on the
+screen would have meant four calls read at four moments, and a page that can
+show a household that has since moved beside a plan that assumed it had not.
+Merging in the adapter means one read, one moment.
+
+Timeline entries are derived, never stored. The stored events hold ids and enum
+values only, so an event written today still reads correctly after the copy is
+rewritten (`DL-48`, carried forward).
+
+**Consequence:** the timeline is where the case and the money meet. "Endorsed on
+the 4th, home visit on the 6th" is one column, in one order.
+
+### DL-57 · `assigned-cases` means mine and nobody's, not mine alone
+
+**Status:** Settled (implemented in TAB 10; narrows the gap left by `DL-30`).
+
+The `assigned-cases` data scope now narrows something. A social worker sees the
+cases assigned to them **and the cases assigned to nobody**; a colleague's
+caseload is withheld.
+
+Strict "assigned to me only" is the obvious reading and it makes the
+`unassigned` queue useless to the only role that would work from it — which
+means work gets picked up by asking a supervisor, or not at all. An unassigned
+case is not somebody else's file; it is the office's. The thing the scope exists
+to withhold is a colleague's caseload, and that stays withheld.
+
+**Consequence:** the scope still does not narrow residents, households, families
+or requests. Cases are where it bites first because cases are where personal
+casework detail concentrates.
+
+### DL-58 · A withheld note is shown as withheld, never removed
+
+**Status:** Settled (implemented in TAB 10; applies `DL-38` to case notes).
+
+A note the reader may not open still appears — its author, its time and the fact
+that it is restricted — with no body. The body is removed **in the data layer**:
+`CaseWorkspace.notes` holds `CaseNoteView`, whose `body` is `null` when
+withheld, so a screen cannot leak a paragraph it never received.
+
+Dropping the entry entirely was the alternative, and it is the more dangerous
+one. A caseworker who cannot see that three entries are restricted reads the
+file as complete and acts as though nothing happened. Knowing that a record
+exists and is not yours to read is what makes it possible to ask the right
+person.
+
+The tier is narrow on purpose: safety planning under RA 9262, anything
+identifying a child in conflict with the law under RA 9344, a confidence given
+in a session. Writing into it requires the clearance to read it — a note its own
+author cannot re-open is a note that gets written somewhere else.
+
+**Consequence:** `case.view-protected-note` reaches the head, social workers and
+the administrator. The auditor holds `case.view` and never this: oversight is
+checking that a reason was recorded and the work done in time, which does not
+require reading a survivor's safety plan.
+
+### DL-59 · Assignment offers two choices, not a staff directory
+
+**Status:** Settled (implemented in TAB 10).
+
+The workspace lets a user take a case or return it to the unassigned pool. It
+does not offer a list of colleagues.
+
+Handing a case to a named person needs a staff directory, and the roles that
+assign cases day to day — intake officers and social workers — do not hold
+`staff.view`. Widening that permission to fill a select box would have granted
+the whole staff register in order to fill in one field, which is the wrong trade
+by a wide margin. The two moves offered need no directory, and they are the two
+the queues are built around.
+
+**Consequence:** a supervisor reassigning work between two named workers cannot
+yet do it from this screen. Recorded as a gap; the fix is a scoped "assignable
+colleagues" read, not a broader `staff.view`.

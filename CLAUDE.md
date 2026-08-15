@@ -93,6 +93,11 @@ npm run typecheck  # tsc --noEmit against the app tsconfig
 npm run verify     # lint + typecheck + repository checks + test + build
 ```
 
+The repository checks are `check:brand`, `check:shell`, `check:access`,
+`check:vulnerability` and `check:case-audit`. Each enforces a rule a comment
+could not, and each was validated against planted regressions. Do not weaken one
+to make a change pass.
+
 ---
 
 ## 4. Architecture
@@ -160,6 +165,34 @@ draft → submitted → intake-review → assessment → endorsed → approved
 - `rejected`, `completed`, `cancelled`, `expired` are terminal.
 - Transitions are enforced by `ASSISTANCE_STATUS_TRANSITIONS`. Never move a
   request by assigning `status` directly.
+
+### A case is not an assistance request
+
+A **case** is the office's continuing involvement with a household; an
+**assistance request** is one intervention inside it, and a case usually
+outlives several (`DL-52`). A case names its interventions explicitly through
+`linkedRequestIds` — never "every request this person ever filed", because one
+person may be the subject of two open cases at once.
+
+`closed` is **terminal** (`DL-53`). A situation that recurs is a new case naming
+the old one through `continuesCaseId`; there is no `reopen`, and there must not
+be. `case.close` is held apart from `case.manage` because ending the office's
+involvement with a family is a decision, not a step.
+
+Every material change to a case appends a `CaseEvent` **in the same act as the
+change**, and every mutation on `CaseRepository` takes a required `reason`
+(`DL-54`). There is no update or delete anywhere in `MockCaseStore` or the port.
+`npm run check:case-audit` fails the build if a mutator stops appending, a
+mutation loses its reason, a status falls out of one of its four maps, or
+closure stops being terminal.
+
+The **next action** is an open `CaseTask`, never derived from the status
+(`DL-55`). A status says what the process expects; a task says what this office
+undertook to do, by when, and who owes it.
+
+Case notes have two tiers. A `protected` note is withheld **in the data layer**:
+reads return `CaseNoteView` whose `body` is `null`, and the entry is still
+listed so nobody reads a partial file as a complete one (`DL-58`).
 
 ### Separation of duties
 
@@ -242,25 +275,27 @@ All but the last two rows live in `src/app/shared/` and are exported from
 `@shared/index`. `HasPermissionDirective` is in `@core/access/` because it
 depends on the session.
 
-| Primitive                                                            | Use for                                                        |
-| -------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `StatusBadge`                                                        | Any workflow status. Pass the domain catalog + value.          |
-| `DataTable`                                                          | Any list. Presentational only: rows in, intent out.            |
-| `Modal`                                                              | Focused decisions — confirmations, short forms.                |
-| `Drawer`                                                             | Context beside a list, when the user must keep their place.    |
-| `LoadingIndicator` / `Skeleton`                                      | Busy states. Prefer skeletons for tables.                      |
-| `EmptyState`                                                         | Nothing to show. Distinguish `empty` from `no-results`.        |
-| `AsyncContent`                                                       | Wraps a `ViewState<T>`: skeleton, error panel, or content.     |
-| `PageHeader`                                                         | Page title block + primary actions.                            |
-| `ChartTable`                                                         | A breakdown. It **is** a real table; never add a second one.   |
-| `SavedViewsBar`                                                      | Named filters above any list whose filters live in the URL.    |
-| `ResidentSummaryCard`                                                | One resident, said the same way on every screen.               |
-| `PersonPicker`                                                       | "Who is this for?" — the only sanctioned resident search.      |
-| `VulnerabilitySnapshotPanel`                                         | Household indicators. Advisory only — see `DL-42`.             |
-| `RelationshipGraph`                                                  | Family relationships. The graph **is** the list — see `DL-50`. |
-| `ToastHost`                                                          | Mounted once by `App`. Never place toast markup in a feature.  |
-| `PesoPipe`, `BarangayNamePipe`, `PersonNamePipe`, `RelativeTimePipe` | Formatting.                                                    |
-| `HasPermissionDirective` (`@core/access/`)                           | `*appHasPermission="'request.approve'"`.                       |
+| Primitive                                                            | Use for                                                                  |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `StatusBadge`                                                        | Any workflow status. Pass the domain catalog + value.                    |
+| `DataTable`                                                          | Any list. Presentational only: rows in, intent out.                      |
+| `Modal`                                                              | Focused decisions — confirmations, short forms.                          |
+| `Drawer`                                                             | Context beside a list, when the user must keep their place.              |
+| `LoadingIndicator` / `Skeleton`                                      | Busy states. Prefer skeletons for tables.                                |
+| `EmptyState`                                                         | Nothing to show. Distinguish `empty` from `no-results`.                  |
+| `AsyncContent`                                                       | Wraps a `ViewState<T>`: skeleton, error panel, or content.               |
+| `PageHeader`                                                         | Page title block + primary actions.                                      |
+| `ChartTable`                                                         | A breakdown. It **is** a real table; never add a second one.             |
+| `SavedViewsBar`                                                      | Named filters above any list whose filters live in the URL.              |
+| `ResidentSummaryCard`                                                | One resident, said the same way on every screen.                         |
+| `PersonPicker`                                                       | "Who is this for?" — the only sanctioned resident search.                |
+| `VulnerabilitySnapshotPanel`                                         | Household indicators. Advisory only — see `DL-42`.                       |
+| `RelationshipGraph`                                                  | Family relationships. The graph **is** the list — see `DL-50`.           |
+| `StatusTransition`                                                   | Any lifecycle move. Generic; captures the reason and refuses without it. |
+| `CaseTimeline`                                                       | A record's history. An ordered list, no connectors — see `DL-56`.        |
+| `ToastHost`                                                          | Mounted once by `App`. Never place toast markup in a feature.            |
+| `PesoPipe`, `BarangayNamePipe`, `PersonNamePipe`, `RelativeTimePipe` | Formatting.                                                              |
+| `HasPermissionDirective` (`@core/access/`)                           | `*appHasPermission="'request.approve'"`.                                 |
 
 ### Async screens
 

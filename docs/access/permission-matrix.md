@@ -29,7 +29,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-36 permissions × 7 roles. `X` means the role holds the permission.
+41 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -45,6 +45,11 @@ self-registration), `DL-33` (accessible authentication).
 | `household.correct-vulnerability` | X     | X    | X   |        |      |      |       |
 | `family.view`                     | X     | X    | X   | X      | X    | X    | X     |
 | `family.manage`                   | X     | X    | X   | X      |      |      |       |
+| `case.view`                       | X     | X    | X   | X      |      |      | X     |
+| `case.manage`                     | X     | X    | X   | X      |      |      |       |
+| `case.note`                       | X     | X    | X   | X      |      |      |       |
+| `case.view-protected-note`        | X     | X    | X   |        |      |      |       |
+| `case.close`                      | X     | X    |     |        |      |      |       |
 | `program.view`                    | X     | X    | X   | X      | X    | X    | X     |
 | `program.manage`                  | X     | X    |     |        |      |      |       |
 | `request.view`                    | X     | X    | X   | X      | X    | X    | X     |
@@ -102,6 +107,25 @@ that the records are wrong about a family's circumstances is a judgement, and it
 reaches the head, social workers and the administrator only. A correction always
 carries a reason and is attributed; an indicator nobody can be named for is an
 indicator nobody is answerable for.
+
+**The case permissions are five, not one** (`DL-52`, `DL-58`). `case.view` opens
+the file. `case.manage` moves it along, assigns it and records tasks.
+`case.note` writes on the running record — a clerk may move a file without
+adding to the social worker's notes. `case.view-protected-note` is the narrow
+tier: safety planning under RA 9262, anything identifying a child in conflict
+with the law under RA 9344, a confidence given in a session. `case.close` ends
+the office's involvement, which is a decision rather than a step, and reaches
+the head and the administrator only.
+
+Three exclusions are deliberate rather than oversights. **`barangay-link` holds
+no case permission at all** — a barangay encoder files requests and keeps the
+registry current, and the casework record of their own neighbours is not theirs
+to read; proximity is a reason to be stricter, not looser. **`disbursement-officer`
+holds none either**: a payout is authorised by the approved request in front of
+them, and the family's case file is not part of paying it out. **`auditor` holds
+`case.view` and never `case.view-protected-note`** — oversight is checking that
+a reason was recorded, an owner assigned and the work done in time, none of
+which requires reading a survivor's safety plan.
 
 **`family.manage` is separate from `household.manage`** (`DL-47`). A household
 is an address and a family is a claim about who belongs to whom; the two are
