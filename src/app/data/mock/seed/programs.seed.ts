@@ -1,5 +1,7 @@
 import { asId, asIsoDate, pesos, type AssistanceProgram, type ProgramId } from '@domain/index';
 
+import { AICS_RESPONSIBILITY, MUNICIPAL_RESPONSIBILITY, guidance } from './program-policy.seed';
+
 import { stamp } from './seed-utils';
 
 export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
@@ -12,7 +14,9 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
     description:
       'Financial assistance for hospital bills, laboratory procedures and maintenance medicines of indigent residents.',
     legalBasis: 'DSWD AICS guidelines',
-    fundingSource: 'Municipal social welfare fund',
+    // Corrected in TAB 12: AICS funds are disbursed by DSWD, not by the
+    // municipality. The old wording claimed a national programme as ours.
+    fundingSource: 'DSWD (AICS), with municipal referral and augmentation',
     maximumGrant: pesos(10000),
     eligibility: {
       minAge: null,
@@ -23,13 +27,6 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
       notes: 'Requires a hospital billing statement or prescription dated within 90 days.',
     },
     requirements: [
-      { code: 'valid-id', label: 'Valid government ID', isMandatory: true, notes: null },
-      {
-        code: 'brgy-indigency',
-        label: 'Barangay certificate of indigency',
-        isMandatory: true,
-        notes: 'Issued within the last three months.',
-      },
       {
         code: 'medical-abstract',
         label: 'Medical abstract or prescription',
@@ -38,6 +35,10 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
       },
       { code: 'billing', label: 'Hospital billing statement', isMandatory: false, notes: null },
     ],
+    responsibility: AICS_RESPONSIBILITY,
+    guidance: guidance.aicsMedical,
+    requirementTemplateCode: 'aics-standard',
+    reviewWindow: null,
     effectiveFrom: asIsoDate('2026-01-01'),
     effectiveTo: null,
     audit: stamp(220, 40),
@@ -50,7 +51,9 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
     status: 'active',
     description: 'Assistance for funeral and interment costs of a deceased household member.',
     legalBasis: 'DSWD AICS guidelines',
-    fundingSource: 'Municipal social welfare fund',
+    // Corrected in TAB 12: AICS funds are disbursed by DSWD, not by the
+    // municipality. The old wording claimed a national programme as ours.
+    fundingSource: 'DSWD (AICS), with municipal referral and augmentation',
     maximumGrant: pesos(8000),
     eligibility: {
       minAge: 18,
@@ -61,7 +64,6 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
       notes: 'Claimant must be a relative within the fourth civil degree.',
     },
     requirements: [
-      { code: 'valid-id', label: 'Valid government ID', isMandatory: true, notes: null },
       { code: 'death-cert', label: 'Death certificate', isMandatory: true, notes: null },
       {
         code: 'funeral-contract',
@@ -70,6 +72,10 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
         notes: null,
       },
     ],
+    responsibility: AICS_RESPONSIBILITY,
+    guidance: guidance.aicsBurial,
+    requirementTemplateCode: 'aics-standard',
+    reviewWindow: null,
     effectiveFrom: asIsoDate('2026-01-01'),
     effectiveTo: null,
     audit: stamp(220, 40),
@@ -106,6 +112,10 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
         notes: null,
       },
     ],
+    responsibility: MUNICIPAL_RESPONSIBILITY,
+    guidance: guidance.educational,
+    requirementTemplateCode: 'municipal-standard',
+    reviewWindow: null,
     effectiveFrom: asIsoDate('2026-04-01'),
     effectiveTo: asIsoDate('2026-10-31'),
     audit: stamp(140, 25),
@@ -137,6 +147,10 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
         notes: null,
       },
     ],
+    responsibility: MUNICIPAL_RESPONSIBILITY,
+    guidance: guidance.soloParent,
+    requirementTemplateCode: 'municipal-standard',
+    reviewWindow: null,
     effectiveFrom: asIsoDate('2026-01-01'),
     effectiveTo: null,
     audit: stamp(210, 30),
@@ -161,8 +175,11 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
     },
     requirements: [
       { code: 'business-plan', label: 'Simple business plan', isMandatory: true, notes: null },
-      { code: 'valid-id', label: 'Valid government ID', isMandatory: true, notes: null },
     ],
+    responsibility: MUNICIPAL_RESPONSIBILITY,
+    guidance: guidance.livelihood,
+    requirementTemplateCode: 'municipal-standard',
+    reviewWindow: null,
     effectiveFrom: asIsoDate('2026-02-01'),
     effectiveTo: null,
     audit: stamp(180, 10),
@@ -188,6 +205,10 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
     requirements: [
       { code: 'valid-id', label: 'Valid government ID', isMandatory: false, notes: null },
     ],
+    responsibility: MUNICIPAL_RESPONSIBILITY,
+    guidance: guidance.foodRelief,
+    requirementTemplateCode: 'municipal-standard',
+    reviewWindow: null,
     effectiveFrom: asIsoDate('2026-01-01'),
     effectiveTo: null,
     audit: stamp(230, 2),
@@ -213,6 +234,10 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
     requirements: [
       { code: 'osca-id', label: 'OSCA senior citizen ID', isMandatory: true, notes: null },
     ],
+    responsibility: MUNICIPAL_RESPONSIBILITY,
+    guidance: guidance.seniorCash,
+    requirementTemplateCode: 'municipal-standard',
+    reviewWindow: null,
     effectiveFrom: asIsoDate('2026-09-01'),
     effectiveTo: null,
     audit: stamp(45, 4),

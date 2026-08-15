@@ -3,6 +3,9 @@ import type { IsoDate, ProgramId } from '../shared/ids';
 import type { Money } from '../shared/money';
 import type { StatusCatalog } from '../shared/status';
 import type { VulnerabilitySector } from '../residents/resident';
+import type { EligibilityGuideline } from './eligibility-guidance';
+import type { ProgramResponsibility } from './program-responsibility';
+import type { ReviewWindowPolicy } from './review-window';
 
 /**
  * Programme families administered by the Municipal Social Welfare and
@@ -81,10 +84,63 @@ export interface AssistanceProgram {
   readonly fundingSource: string;
   readonly maximumGrant: Money | null;
   readonly eligibility: ProgramEligibility;
+  /**
+   * Whose programme this is and what this office's part in it is (`DL-65`).
+   *
+   * Not optional. A programme in the catalog without a stated responsibility is
+   * a programme the office is implicitly claiming, and `tools/check-programs.mjs`
+   * fails the build if one appears.
+   */
+  readonly responsibility: ProgramResponsibility;
+  /**
+   * What the office looks for, as records rather than as code (`DL-66`).
+   * Guidance a worker reads; never a gate the software closes.
+   */
+  readonly guidance: readonly EligibilityGuideline[];
+  /** The shared document set this programme starts from, by code (`DL-67`). */
+  readonly requirementTemplateCode: string | null;
+  /** Documents this programme adds on top of its template. */
   readonly requirements: readonly ProgramRequirement[];
+  /** Overrides the office default where this programme needs its own (`DL-68`). */
+  readonly reviewWindow: ReviewWindowPolicy | null;
   readonly effectiveFrom: IsoDate;
   readonly effectiveTo: IsoDate | null;
   readonly audit: AuditStamp;
+}
+
+/** The editable half of a programme. Identity and audit are the store's. */
+export interface ProgramDraft {
+  readonly name: string;
+  readonly category: ProgramCategory;
+  readonly status: ProgramStatus;
+  readonly description: string;
+  readonly legalBasis: string | null;
+  readonly fundingSource: string;
+  readonly maximumGrant: Money | null;
+  readonly eligibility: ProgramEligibility;
+  readonly responsibility: ProgramResponsibility;
+  readonly guidance: readonly EligibilityGuideline[];
+  readonly requirementTemplateCode: string | null;
+  readonly requirements: readonly ProgramRequirement[];
+  readonly reviewWindow: ReviewWindowPolicy | null;
+}
+
+export function toProgramDraft(program: AssistanceProgram): ProgramDraft {
+  return {
+    name: program.name,
+    category: program.category,
+    status: program.status,
+    description: program.description,
+    legalBasis: program.legalBasis,
+    fundingSource: program.fundingSource,
+    maximumGrant: program.maximumGrant,
+    eligibility: program.eligibility,
+    responsibility: program.responsibility,
+    guidance: program.guidance,
+    requirementTemplateCode: program.requirementTemplateCode,
+    requirements: program.requirements,
+    reviewWindow: program.reviewWindow,
+  };
 }
 
 export interface ProgramFilter {

@@ -15,7 +15,9 @@ import type { IntakeDraft } from '../intake/intake-draft';
 import type { AuthenticatedUser, StaffFilter, StaffUser } from '../access/staff-user';
 import type { SignInCredentials } from '../access/credentials';
 import type { AppNotification, NotificationRequest } from '../notifications/notification';
-import type { AssistanceProgram, ProgramFilter } from '../programs/program';
+import type { AssistanceProgram, ProgramDraft, ProgramFilter } from '../programs/program';
+import type { ProgramUtilization } from '../programs/program-utilization';
+import type { RequirementTemplate } from '../programs/requirement-template';
 import type { DashboardFilter, DashboardSummary } from '../dashboard/dashboard-summary';
 import type { Disbursement, DisbursementFilter } from '../disbursements/disbursement';
 import type {
@@ -247,10 +249,36 @@ export interface SavedViewRepository {
 
 export const SAVED_VIEW_REPOSITORY = new InjectionToken<SavedViewRepository>('SavedViewRepository');
 
+/**
+ * The programme catalog — the office's policy, held as data.
+ *
+ * Two absences are load-bearing. There is no method that takes a resident and a
+ * programme and answers whether they qualify: eligibility guidance is read by a
+ * person, and a port that returned a verdict would be the decision engine
+ * `DL-66` exists to prevent. And there is no `delete`: a programme that is over
+ * is `closed`, because requests filed under it still have to make sense.
+ *
+ * `save` refuses a draft whose responsibility record would misrepresent the
+ * office (`DL-65`) — enforced here as well as on the screen, so a reachable form
+ * cannot record a national programme as municipally owned.
+ */
 export interface ProgramRepository {
   list(filter: ProgramFilter, page: PageRequest): Observable<Page<AssistanceProgram>>;
   getById(id: ProgramId): Observable<AssistanceProgram | null>;
   listActive(): Observable<readonly AssistanceProgram[]>;
+
+  /** The shared document sets a programme may start from. */
+  listRequirementTemplates(): Observable<readonly RequirementTemplate[]>;
+
+  /**
+   * Creates a programme, or updates the one at `id`. Idempotent on the
+   * identifier the caller holds, like every other write in this application.
+   */
+  save(draft: ProgramDraft, id: ProgramId | null): Observable<AssistanceProgram>;
+
+  /** How much a programme has been used. A description of the past (`DL-69`). */
+  utilizationFor(id: ProgramId): Observable<ProgramUtilization>;
+  utilizationSummary(): Observable<readonly ProgramUtilization[]>;
 }
 
 export const PROGRAM_REPOSITORY = new InjectionToken<ProgramRepository>('ProgramRepository');

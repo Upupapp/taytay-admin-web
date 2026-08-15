@@ -47,6 +47,10 @@ export const PERMISSIONS = [
   'case.close',
 
   'program.view',
+  // Editing the catalog: guidance, documents, review windows, and the
+  // responsibility record that says whose programme it is. Held apart from
+  // `program.view` because a wrong entry here misdescribes the office to every
+  // applicant at once.
   'program.manage',
 
   'request.view',

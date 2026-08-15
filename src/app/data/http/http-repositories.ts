@@ -61,7 +61,10 @@ import {
   type PageRequest,
   type ProgramFilter,
   type ProgramId,
+  type ProgramDraft,
   type ProgramRepository,
+  type ProgramUtilization,
+  type RequirementTemplate,
   type Referral,
   type ReferralFilter,
   type ReferralId,
@@ -369,6 +372,31 @@ export class HttpProgramRepository implements ProgramRepository {
 
   getById(id: ProgramId): Observable<AssistanceProgram | null> {
     return this.api.optionalItem<AssistanceProgram>(`${API_ENDPOINTS.programs}/${id}`);
+  }
+
+  listRequirementTemplates(): Observable<readonly RequirementTemplate[]> {
+    return this.api.collection<RequirementTemplate>(
+      `${API_ENDPOINTS.programs}/requirement-templates`,
+    );
+  }
+
+  /**
+   * POST to create, PATCH to update. The server applies the same responsibility
+   * rule (`DL-65`): a client that let a national programme be recorded as
+   * municipally owned must still be refused.
+   */
+  save(draft: ProgramDraft, id: ProgramId | null): Observable<AssistanceProgram> {
+    return id === null
+      ? this.api.post<AssistanceProgram, ProgramDraft>(API_ENDPOINTS.programs, draft)
+      : this.api.patch<AssistanceProgram, ProgramDraft>(`${API_ENDPOINTS.programs}/${id}`, draft);
+  }
+
+  utilizationFor(id: ProgramId): Observable<ProgramUtilization> {
+    return this.api.item<ProgramUtilization>(`${API_ENDPOINTS.programs}/${id}/utilization`);
+  }
+
+  utilizationSummary(): Observable<readonly ProgramUtilization[]> {
+    return this.api.collection<ProgramUtilization>(`${API_ENDPOINTS.programs}/utilization`);
   }
 
   listActive(): Observable<readonly AssistanceProgram[]> {
