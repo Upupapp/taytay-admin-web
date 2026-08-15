@@ -2,7 +2,7 @@
 
 Compact state for resuming this build. Not a transcript. The authoritative
 records are `CLAUDE.md` (the constitution), `docs/reference-audit/decision-log.md`
-(DL-01..DL-70) and the git history.
+(DL-01..DL-75) and the git history.
 
 ## Master Command
 
@@ -17,10 +17,10 @@ intent through the audit in `docs/reference-audit/`.
 
 ## Where the build is
 
-- **Completed and certified:** TABs 01–12.
-- **Current:** TAB 13 — Beneficiary Registry & Assistance History.
-- **Remaining:** 14–23 (documents, referrals, field visits, releases, tasks,
-  reports, search, users/audit, hardening, QA), then 24–26 (Newsfeed, Events).
+- **Completed and certified:** TABs 01–13.
+- **Current:** TAB 14 — Requirements, Documents & Verification.
+- **Remaining:** 15–23 (referrals, field visits, releases, tasks, reports,
+  search, users/audit, hardening, QA), then 24–26 (Newsfeed, Events).
 
 ## Architecture
 
@@ -46,7 +46,7 @@ are handed.
 
 ## Non-negotiables carried by build checkers
 
-`npm run verify` = lint + typecheck + 8 checkers + 829 tests + build. Each
+`npm run verify` = lint + typecheck + 9 checkers + 904 tests + build. Each
 checker was validated against planted regressions. Do not weaken one to pass.
 
 | Checker | Refuses |
@@ -58,6 +58,7 @@ checker was validated against planted regressions. Do not weaken one to pass.
 | `check:case-audit` | a case mutation with no appended event and reason |
 | `check:intake` | an advisory rendered as a verdict |
 | `check:programs` | a component branching on a programme code; a national programme recorded as one the municipality runs |
+| `check:beneficiary` | a `BeneficiaryId`; any merge or delete of a person; a match signal carrying a value; a stored standing flag |
 
 ## Doctrines that constrain every later TAB
 
@@ -76,26 +77,41 @@ checker was validated against planted regressions. Do not weaken one to pass.
    (`CLAUDE.md` §6)
 7. **Separation of duties.** No single non-administrator role both approves a
    request and releases its assistance.
+8. **One person, one record.** No entity duplicates a person. A beneficiary is a
+   *standing* derived from records, keyed on `ResidentId`; identity findings
+   supersede without deleting. (`DL-71`, `DL-74`)
+9. **Assemble a fact once.** `historySummaryFor` is the single history
+   assembly, shared by the resident profile and the beneficiary record. Two
+   assemblies of the same fact eventually disagree in front of a family.
 
 ## Known gaps (deliberate, carried forward)
 
 - **Linking a request to a case is not buildable from the UI.** When built it
   takes a reason and appends an event — never auto-attachment. (`DL-70`)
 - **Opening a successor case** has no screen yet. (`DL-64`)
-- Both are natural TAB 13–17 work.
+- **Enrollment is read-only.** States exist and are validated; no screen records
+  an enrollment or an exit. (`DL-75`)
+- **An identity finding cannot be corrected.** The opposite verdict is refused
+  rather than silently applied; the correction screen is missing. (`DL-74`)
+- **`beneficiary.export` has no export yet** — it exists for the reporting TAB.
 
 ## Next action
 
-Begin TAB 13. Read the master command's TAB 13 section, inspect
-`domain/assistance`, `domain/programs`, `domain/residents` and the existing
-resident/household detail pages for the timeline and history patterns already
-built, then implement the beneficiary registry against a new port rather than a
-new copy of person data. The tab's own acceptance criterion is that **one person
-keeps one canonical resident identity** — resident, applicant, beneficiary and
-enrollee are states of that person, not separate records.
+Begin TAB 14 — Requirements, Documents & Verification. Read the master command's
+TAB 14 section, then inspect what already exists: `AssistanceRequest` already
+carries requirements and `reviewRequirement` on its port (TAB 11), and
+`RequirementTemplate` plus `resolveRequirements` already merge a programme's
+documents with a shared template (TAB 12, `DL-67`). **Extend those rather than
+building a parallel document model.**
+
+The tab's own load-bearing constraints: replacing a file must not erase history
+(version metadata, like every other append-only record here); document
+completeness must never imply eligibility (`DL-42`/`DL-66` again); and sensitive
+document numbers are masked by default in list contexts, with a warning before
+download or export.
 
 ## Git
 
 - Branch `main`, no remote configured. **Never push.**
-- HEAD at TAB 12 certification: `50dd3e6`.
+- HEAD at TAB 13 certification: `1ab6c0d`.
 - Working tree clean.
