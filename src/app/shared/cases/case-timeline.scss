@@ -1,0 +1,109 @@
+/* No connectors, no dots, no colour-coded kinds. Delete this file and every
+   entry still says what happened, who did it, when and why (`DL-50` applied to
+   the timeline). */
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+}
+
+.timeline__heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.timeline__summary,
+.timeline__empty {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.timeline__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-compact);
+}
+
+.timeline__entry {
+  padding: var(--space-snug);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+}
+
+.timeline__what {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-compact);
+  align-items: baseline;
+  font-size: 13px;
+}
+
+.timeline__source {
+  padding: 1px var(--space-compact);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface-muted);
+  color: var(--c-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.timeline__kind {
+  font-weight: 600;
+}
+
+.timeline__who {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-compact);
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.timeline__detail,
+.timeline__reason {
+  margin: 0;
+  font-size: 13px;
+}
+
+.timeline__reason-label {
+  font-weight: 600;
+}
+
+.timeline__reason--absent {
+  color: var(--c-text-muted);
+  font-style: italic;
+}
+
+.timeline__withheld {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+  padding: var(--space-compact);
+  border: 1px dashed var(--c-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface-muted);
+}
+
+.timeline__withheld-tag {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.timeline__withheld-hint {
+  color: var(--c-text-muted);
+  font-size: 12px;
+}

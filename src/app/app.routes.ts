@@ -127,6 +127,26 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'cases',
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            title: 'Cases — Taytay Social Welfare',
+            canActivate: [permissionGuard('case.view')],
+            loadComponent: () =>
+              import('@features/cases/case-list-page').then((m) => m.CaseListPage),
+          },
+          {
+            path: ':id',
+            title: 'Case — Taytay Social Welfare',
+            canActivate: [permissionGuard('case.view')],
+            loadComponent: () =>
+              import('@features/cases/case-workspace-page').then((m) => m.CaseWorkspacePage),
+          },
+        ],
+      },
+      {
         path: 'assistance-requests',
         title: 'Assistance requests — Taytay Social Welfare',
         canActivate: [permissionGuard('request.view')],

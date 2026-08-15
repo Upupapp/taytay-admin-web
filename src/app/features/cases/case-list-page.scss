@@ -1,0 +1,134 @@
+.cases__banner {
+  padding: var(--space-snug) var(--space-base);
+  border-block-end: 1px solid var(--c-border);
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+.queues {
+  padding: var(--space-base);
+  border-block-end: 1px solid var(--c-border);
+}
+
+.queues__heading {
+  margin: 0;
+  font-size: 14px;
+}
+
+.queues__note,
+.queues__description {
+  margin: var(--space-micro) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.queues__list {
+  margin: var(--space-snug) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-compact);
+}
+
+.queues__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-compact);
+  min-block-size: 36px;
+  padding: var(--space-compact) var(--space-snug);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* The active queue is also `aria-current`, so the state is announced and not
+   only shaded. */
+.queues__item--active {
+  border-color: var(--c-brand);
+  background: var(--c-brand-soft);
+  font-weight: 600;
+}
+
+.queues__count {
+  padding: 0 var(--space-compact);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.queues__count--zero {
+  color: var(--c-text-subtle);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-base);
+  padding: var(--space-base);
+  border-block-end: 1px solid var(--c-border);
+}
+
+.filters__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+  min-inline-size: 180px;
+}
+
+.filters__field--wide {
+  flex: 1 1 260px;
+}
+
+.filters__label {
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.filters__input {
+  padding: var(--space-compact) var(--space-snug);
+  /* Comfortably over the 24px pointer-target minimum (WCAG 2.5.8). */
+  min-block-size: 36px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.cases__reference {
+  display: inline-block;
+  min-block-size: var(--target-min);
+  line-height: var(--target-min);
+  color: var(--c-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cases__reference:hover {
+  text-decoration: underline;
+}
+
+.cases__next {
+  display: block;
+  font-size: 13px;
+}
+
+/* Reinforcement only: the cell already reads "9 days overdue". */
+.cases__next--late {
+  color: var(--tone-danger-fg);
+  font-weight: 600;
+}
+
+.cases__next-title {
+  display: block;
+  color: var(--c-text-muted);
+  font-size: 12px;
+}

@@ -1,0 +1,76 @@
+/* Layout only. Every label, hint and refusal this control shows is text in the
+   DOM; removing this file changes how it looks and not what it says. */
+
+.transition {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+  padding: var(--space-base);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+}
+
+.transition__heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.transition__current {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+  font-size: 13px;
+}
+
+.transition__describes,
+.transition__hint,
+.transition__none {
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.transition__none {
+  margin: 0;
+}
+
+.transition__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+}
+
+.transition__label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.transition__select,
+.transition__reason {
+  min-block-size: var(--target-min);
+  padding: var(--space-compact) var(--space-snug);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.transition__reason {
+  resize: vertical;
+}
+
+/* Stated in words by the `role="alert"` paragraph as well; the colour is
+   reinforcement, never the message. */
+.transition__problem {
+  margin: 0;
+  color: var(--tone-danger-fg);
+  font-size: 12.5px;
+}
+
+.transition__actions {
+  display: flex;
+  gap: var(--space-compact);
+}

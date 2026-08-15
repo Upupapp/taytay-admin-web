@@ -33,6 +33,13 @@ export const NAVIGATION: readonly NavSection[] = [
         description: 'Office-wide caseload and payout position.',
       },
       {
+        label: 'Cases',
+        route: '/cases',
+        glyph: 'CS',
+        permissions: ['case.view'],
+        description: 'The continuing file on a household, and what is owed next.',
+      },
+      {
         label: 'Assistance requests',
         route: '/assistance-requests',
         glyph: 'AR',

@@ -1,0 +1,124 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+
+<div class="card cases">
+  <!-- A case is not a request. Said before the table, because these are the two
+       words most easily used for each other (DL-52). -->
+  <p class="cases__banner">{{ copy.banner }}</p>
+
+  <nav class="queues" [attr.aria-label]="copy.queuesHeading">
+    <h2 class="queues__heading">{{ copy.queuesHeading }}</h2>
+    <p class="queues__note">{{ copy.queuesNote }}</p>
+    <ul class="queues__list">
+      @for (queue of queues; track queue) {
+        <li>
+          <button
+            type="button"
+            class="queues__item"
+            [class.queues__item--active]="activeQueue() === queue"
+            [attr.aria-current]="activeQueue() === queue ? 'true' : null"
+            [title]="queueDescription(queue)"
+            (click)="onQueue(queue)"
+          >
+            <span class="queues__label">{{ queueLabel(queue) }}</span>
+            @if (countFor(queue); as count) {
+              <span class="queues__count">{{ count }}</span>
+            } @else {
+              <span class="queues__count queues__count--zero">0</span>
+            }
+          </button>
+        </li>
+      }
+    </ul>
+    <p class="queues__description">{{ queueDescription(activeQueue()) }}</p>
+  </nav>
+
+  <div class="filters">
+    <label class="filters__field filters__field--wide">
+      <span class="filters__label">{{ copy.search }}</span>
+      <input
+        type="search"
+        class="filters__input"
+        [placeholder]="copy.searchPlaceholder"
+        [value]="searchText()"
+        (input)="onSearch($event)"
+      />
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.status }}</span>
+      <select class="filters__input" (change)="onStatus($event)">
+        <option value="" [selected]="!filter().status">{{ copy.allStatuses }}</option>
+        @for (status of statuses; track status) {
+          <option [value]="status" [selected]="filter().status === status">
+            {{ statusCatalog[status].label }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.category }}</span>
+      <select class="filters__input" (change)="onCategory($event)">
+        <option value="" [selected]="!filter().category">{{ copy.allCategories }}</option>
+        @for (category of categories; track category) {
+          <option [value]="category" [selected]="filter().category === category">
+            {{ categoryLabel(category) }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.barangay }}</span>
+      <select class="filters__input" (change)="onBarangay($event)">
+        <option value="" [selected]="!filter().barangayId">{{ copy.allBarangays }}</option>
+        @for (barangay of barangays; track barangay.id) {
+          <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
+            {{ barangay.name }}
+          </option>
+        }
+      </select>
+    </label>
+
+    @if (hasFilters()) {
+      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+    }
+  </div>
+
+  <app-data-table
+    [caption]="copy.caption"
+    [columns]="columns()"
+    [rows]="rows()"
+    [rowKey]="rowKey"
+    [loading]="isLoading()"
+    [page]="page()"
+    [sort]="sort()"
+    [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
+    [emptyHeading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
+    [emptyMessage]="hasFilters() ? copy.noResultsMessage : copy.emptyMessage"
+    [emptyActionLabel]="hasFilters() ? copy.clear : null"
+    (sortChanged)="onSortChanged($event)"
+    (pageChanged)="onPageChanged($event)"
+    (emptyActionSelected)="clearFilters()"
+  />
+</div>
+
+<ng-template #referenceCell let-summary>
+  <a class="cases__reference" [routerLink]="detailLink(summary)">
+    {{ summary.record.referenceNumber }}
+  </a>
+</ng-template>
+
+<ng-template #statusCell let-summary>
+  <app-status-badge [catalog]="statusCatalog" [status]="summary.record.status" />
+</ng-template>
+
+<!-- "9 days overdue" in words. Nothing here is carried by a colour. -->
+<ng-template #nextActionCell let-summary>
+  <span class="cases__next" [class.cases__next--late]="isOverdue(summary)">
+    {{ nextActionLabel(summary) }}
+  </span>
+  @if (summary.nextAction) {
+    <span class="cases__next-title">{{ summary.nextAction.title }}</span>
+  }
+</ng-template>

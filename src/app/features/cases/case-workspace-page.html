@@ -1,0 +1,497 @@
+<app-async-content [state]="state()" [content]="body" [skeletonLines]="8" />
+
+<ng-template #body let-workspace>
+  @if (!workspace) {
+    <div class="card workspace__missing">
+      <h1>{{ copy.notFoundHeading }}</h1>
+      <p>{{ copy.notFoundMessage }}</p>
+      <a class="btn" routerLink="/cases">{{ copy.back }}</a>
+    </div>
+  } @else {
+    <app-page-header
+      [title]="workspace.record.referenceNumber"
+      [subtitle]="copy.subtitle + ' · ' + categoryLabel(workspace)"
+    />
+
+    @if (workspace.record.status === 'closed') {
+      <p class="card workspace__closed">{{ copy.closedNotice }}</p>
+    }
+
+    <!-- What happens next, first on the page. A caseworker opening a file is
+         asking that before anything else. -->
+    <section class="card workspace__next" aria-labelledby="next-heading">
+      <h2 class="workspace__heading" id="next-heading">{{ copy.nextActionHeading }}</h2>
+      @if (workspace.nextAction; as action) {
+        <p class="workspace__next-title">{{ action.title }}</p>
+        <p class="workspace__next-meta">
+          <span class="workspace__due" [class.workspace__due--late]="isLate(action)">
+            {{ dueLabel(action) }}
+          </span>
+          <span>
+            {{ copy.nextActionDue }}
+            <time [attr.datetime]="action.dueOn">{{ action.dueOn | date: 'd MMM y' }}</time>
+          </span>
+          <span>{{ taskKindLabel(action.kind) }}</span>
+        </p>
+      } @else {
+        <p class="workspace__none">{{ copy.nextActionNone }}</p>
+      }
+
+      <p class="workspace__assigned">
+        {{ copy.assigned }}:
+        <strong>{{ workspace.assignedToName ?? 'Nobody assigned' }}</strong>
+      </p>
+
+      <div class="workspace__actions">
+        <button
+          type="button"
+          class="btn"
+          *appHasPermission="'case.manage'"
+          (click)="openAssign(workspace)"
+        >
+          {{ copy.assignHeading }}
+        </button>
+        <button type="button" class="btn" *appHasPermission="'case.manage'" (click)="openTask()">
+          {{ copy.addTask }}
+        </button>
+        <button type="button" class="btn" *appHasPermission="'case.note'" (click)="openNote()">
+          {{ copy.addNote }}
+        </button>
+      </div>
+    </section>
+
+    <div class="workspace__columns">
+      <div class="workspace__main">
+        <!-- Who this is about: person, address, family — read from one call. -->
+        <section class="card workspace__block" aria-labelledby="context-heading">
+          <h2 class="workspace__heading" id="context-heading">{{ copy.contextHeading }}</h2>
+          <p class="workspace__note">{{ copy.contextNote }}</p>
+
+          <app-resident-summary-card
+            [view]="workspace.subject"
+            [routerLink]="'/residents/' + workspace.subject.resident.id"
+          />
+
+          <h3 class="workspace__subheading">{{ copy.householdHeading }}</h3>
+          @if (workspace.household; as household) {
+            <p class="workspace__fact">
+              <a [routerLink]="'/households/' + household.household.id">
+                {{ household.household.referenceNumber }}
+              </a>
+              <span
+                >{{ household.memberCount }} recorded member{{
+                  household.memberCount === 1 ? '' : 's'
+                }}</span
+              >
+            </p>
+            @if (workspace.householdMembers.length > 0) {
+              <h4 class="workspace__subheading">{{ copy.membersHeading }}</h4>
+              <ul class="workspace__members">
+                @for (member of workspace.householdMembers; track member.resident.id) {
+                  <li>
+                    <app-resident-summary-card
+                      compact
+                      [view]="member"
+                      [routerLink]="'/residents/' + member.resident.id"
+                    />
+                  </li>
+                }
+              </ul>
+            }
+          } @else {
+            <p class="workspace__none">{{ copy.noHousehold }}</p>
+            <p class="workspace__note">{{ copy.noHouseholdNote }}</p>
+          }
+
+          <h3 class="workspace__subheading">{{ copy.familyHeading }}</h3>
+          @if (workspace.family; as family) {
+            <p class="workspace__fact">
+              <a [routerLink]="'/families/' + family.family.id">{{ family.family.name }}</a>
+              <span
+                >{{ family.memberCount }} current member{{
+                  family.memberCount === 1 ? '' : 's'
+                }}</span
+              >
+            </p>
+          } @else {
+            <p class="workspace__none">{{ copy.noFamily }}</p>
+            <p class="workspace__note">{{ copy.noFamilyNote }}</p>
+          }
+        </section>
+
+        <!-- Advisory only. Nothing on this page derives an entitlement from it. -->
+        @if (workspace.vulnerability; as snapshot) {
+          <section class="card workspace__block">
+            <app-vulnerability-snapshot [snapshot]="snapshot" />
+          </section>
+        }
+
+        <section class="card workspace__block" aria-labelledby="requests-heading">
+          <h2 class="workspace__heading" id="requests-heading">{{ copy.requestsHeading }}</h2>
+          <p class="workspace__note">{{ copy.requestsNote }}</p>
+
+          @if (workspace.requests.length === 0) {
+            <p class="workspace__none">{{ copy.noRequests }}</p>
+          } @else {
+            <table class="workspace__table">
+              <caption class="workspace__caption">
+                {{
+                  copy.requestsHeading
+                }}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">{{ copy.requestReference }}</th>
+                  <th scope="col">{{ copy.requestStatus }}</th>
+                  <th scope="col">{{ copy.requestRequested }}</th>
+                  <th scope="col">{{ copy.requestApproved }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (request of workspace.requests; track request.id) {
+                  <tr>
+                    <th scope="row">{{ request.referenceNumber }}</th>
+                    <td>
+                      <app-status-badge [catalog]="requestCatalog" [status]="request.status" />
+                    </td>
+                    <td>
+                      {{ request.requestedAmount ? (request.requestedAmount | peso) : copy.notSet }}
+                    </td>
+                    <td>
+                      {{ request.approvedAmount ? (request.approvedAmount | peso) : copy.notSet }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </section>
+
+        <section class="card workspace__block">
+          <app-case-timeline [entries]="workspace.timeline" />
+        </section>
+      </div>
+
+      <div class="workspace__side">
+        <section class="card workspace__block" aria-labelledby="facts-heading">
+          <h2 class="workspace__heading" id="facts-heading">{{ copy.factsHeading }}</h2>
+          <dl class="workspace__facts">
+            <dt>{{ copy.status }}</dt>
+            <dd>
+              <app-status-badge [catalog]="statusCatalog" [status]="workspace.record.status" />
+            </dd>
+            <dt>{{ copy.category }}</dt>
+            <dd>{{ categoryLabel(workspace) }}</dd>
+            <dt>{{ copy.opened }}</dt>
+            <dd>
+              <time [attr.datetime]="workspace.record.openedOn">
+                {{ workspace.record.openedOn | date: 'd MMM y' }}
+              </time>
+            </dd>
+            @if (workspace.record.closedOn) {
+              <dt>{{ copy.closed }}</dt>
+              <dd>
+                <time [attr.datetime]="workspace.record.closedOn">
+                  {{ workspace.record.closedOn | date: 'd MMM y' }}
+                </time>
+              </dd>
+            }
+            <dt>{{ copy.summary }}</dt>
+            <dd>{{ workspace.record.summary }}</dd>
+          </dl>
+        </section>
+
+        @if (canManage()) {
+          <div class="workspace__block">
+            <app-status-transition
+              idPrefix="case-status"
+              [catalog]="statusCatalog"
+              [transitions]="transitions"
+              [current]="workspace.record.status"
+              [permitted]="permittedMoves(workspace.record.status)"
+              [busy]="submitting()"
+              (confirmed)="onTransition($event)"
+            />
+          </div>
+        }
+
+        <section class="card workspace__block" aria-labelledby="tasks-heading">
+          <h2 class="workspace__heading" id="tasks-heading">{{ copy.tasksHeading }}</h2>
+          <p class="workspace__note">{{ copy.tasksNote }}</p>
+
+          @if (workspace.tasks.length === 0) {
+            <p class="workspace__none">{{ copy.noTasks }}</p>
+          } @else {
+            <ul class="workspace__tasks">
+              @for (task of workspace.tasks; track task.id) {
+                <li class="workspace__task">
+                  <p class="workspace__task-title">{{ task.title }}</p>
+                  <p class="workspace__task-meta">
+                    <app-status-badge [catalog]="taskStatusCatalog" [status]="task.status" />
+                    <span>{{ taskKindLabel(task.kind) }}</span>
+                    <span [class.workspace__due--late]="isLate(task)">{{ dueLabel(task) }}</span>
+                  </p>
+                  @if (task.outcome) {
+                    <p class="workspace__task-outcome">
+                      {{ copy.taskOutcome }}: {{ task.outcome }}
+                    </p>
+                  }
+                  @if (task.status === 'open' && canManage()) {
+                    <button type="button" class="btn btn--subtle" (click)="openComplete(task)">
+                      {{ copy.completeTask }}
+                    </button>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </section>
+
+        <section class="card workspace__block" aria-labelledby="notes-heading">
+          <h2 class="workspace__heading" id="notes-heading">{{ copy.notesHeading }}</h2>
+          <p class="workspace__note">{{ copy.notesNote }}</p>
+
+          @if (withheldNotes(workspace) > 0) {
+            <p class="workspace__withheld">{{ copy.withheldSummary(withheldNotes(workspace)) }}</p>
+          }
+
+          @if (workspace.notes.length === 0) {
+            <p class="workspace__none">{{ copy.noNotes }}</p>
+          } @else {
+            <ul class="workspace__notes">
+              @for (note of workspace.notes; track note.id) {
+                <li class="workspace__note-entry">
+                  <p class="workspace__note-meta">
+                    <span class="workspace__note-tier">{{
+                      sensitivityLabel(note.sensitivity)
+                    }}</span>
+                    <span>{{ note.authorName }}</span>
+                    <time [attr.datetime]="note.createdAt">
+                      {{ note.createdAt | date: 'd MMM y, HH:mm' }}
+                    </time>
+                  </p>
+                  <!-- The body is absent, not hidden: the data layer never sent
+                       it (DL-38). -->
+                  @if (note.isWithheld) {
+                    <p class="workspace__note-withheld">{{ shared.timeline.withheld }}</p>
+                  } @else {
+                    <p class="workspace__note-body">{{ note.body }}</p>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      </div>
+    </div>
+
+    <!-- ── Assignment ────────────────────────────────────────────────────── -->
+    <app-modal
+      [(open)]="assigning"
+      [heading]="copy.assignHeading"
+      [description]="copy.assignNote"
+      (dismissed)="cancel()"
+    >
+      <div modal-body class="form">
+        <label class="form__field">
+          <span class="form__label">{{ copy.assignWorker }}</span>
+          <select class="form__input" (change)="onAssignee($event)">
+            <option value="" [selected]="assignee() === null">{{ copy.assignNobody }}</option>
+            @if (me(); as mine) {
+              <option [value]="mine" [selected]="assignee() === mine">{{ myName() }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="form__field">
+          <span class="form__label">{{ shared.transition.reason }}</span>
+          <textarea
+            class="form__input"
+            rows="3"
+            [placeholder]="shared.transition.reasonPlaceholder"
+            [value]="assignReason()"
+            (input)="onAssignReason($event)"
+          ></textarea>
+          <span class="form__hint">{{ shared.transition.reasonHint }}</span>
+        </label>
+      </div>
+
+      <button modal-actions type="button" class="btn" (click)="cancel()">
+        {{ noteCopy.cancel }}
+      </button>
+      <button
+        modal-actions
+        type="button"
+        class="btn btn--primary"
+        [disabled]="!canAssign()"
+        (click)="confirmAssign()"
+      >
+        {{ copy.assign }}
+      </button>
+    </app-modal>
+
+    <!-- ── A note ────────────────────────────────────────────────────────── -->
+    <app-modal
+      [(open)]="noting"
+      [heading]="noteCopy.heading"
+      [description]="noteCopy.description"
+      (dismissed)="cancel()"
+    >
+      <div modal-body class="form">
+        <label class="form__field">
+          <span class="form__label">{{ noteCopy.body }}</span>
+          <textarea
+            class="form__input"
+            rows="4"
+            [placeholder]="noteCopy.bodyPlaceholder"
+            [value]="noteBody()"
+            (input)="onNoteBody($event)"
+          ></textarea>
+        </label>
+
+        <label class="form__field">
+          <span class="form__label">{{ noteCopy.sensitivity }}</span>
+          <select class="form__input" (change)="onNoteSensitivity($event)">
+            @for (option of sensitivities; track option) {
+              <!-- Writing into the protected tier needs the clearance to read
+                   it; the repository refuses either way. -->
+              @if (option === 'routine' || canWriteProtected()) {
+                <option [value]="option" [selected]="noteSensitivity() === option">
+                  {{ sensitivityLabel(option) }}
+                </option>
+              }
+            }
+          </select>
+          <span class="form__hint">{{ sensitivityHint(noteSensitivity()) }}</span>
+        </label>
+
+        <label class="form__field">
+          <span class="form__label">{{ noteCopy.reason }}</span>
+          <input
+            type="text"
+            class="form__input"
+            [placeholder]="noteCopy.reasonPlaceholder"
+            [value]="noteReason()"
+            (input)="onNoteReason($event)"
+          />
+          <span class="form__hint">{{ shared.transition.reasonHint }}</span>
+        </label>
+      </div>
+
+      <button modal-actions type="button" class="btn" (click)="cancel()">
+        {{ noteCopy.cancel }}
+      </button>
+      <button
+        modal-actions
+        type="button"
+        class="btn btn--primary"
+        [disabled]="!canSaveNote()"
+        (click)="confirmNote()"
+      >
+        {{ noteCopy.confirm }}
+      </button>
+    </app-modal>
+
+    <!-- ── A task ────────────────────────────────────────────────────────── -->
+    <app-modal
+      [(open)]="tasking"
+      [heading]="taskCopy.heading"
+      [description]="taskCopy.description"
+      (dismissed)="cancel()"
+    >
+      <div modal-body class="form">
+        <label class="form__field">
+          <span class="form__label">{{ taskCopy.title }}</span>
+          <input
+            type="text"
+            class="form__input"
+            [placeholder]="taskCopy.titlePlaceholder"
+            [value]="taskTitle()"
+            (input)="onTaskTitle($event)"
+          />
+        </label>
+
+        <label class="form__field">
+          <span class="form__label">{{ taskCopy.kind }}</span>
+          <select class="form__input" (change)="onTaskKind($event)">
+            @for (kind of taskKinds; track kind) {
+              <option [value]="kind" [selected]="taskKind() === kind">
+                {{ taskKindLabel(kind) }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <label class="form__field">
+          <span class="form__label">{{ taskCopy.dueOn }}</span>
+          <input
+            type="date"
+            class="form__input"
+            [value]="taskDueOn()"
+            (change)="onTaskDueOn($event)"
+          />
+        </label>
+
+        <label class="form__field">
+          <span class="form__label">{{ taskCopy.reason }}</span>
+          <input
+            type="text"
+            class="form__input"
+            [placeholder]="taskCopy.reasonPlaceholder"
+            [value]="taskReason()"
+            (input)="onTaskReason($event)"
+          />
+        </label>
+      </div>
+
+      <button modal-actions type="button" class="btn" (click)="cancel()">
+        {{ taskCopy.cancel }}
+      </button>
+      <button
+        modal-actions
+        type="button"
+        class="btn btn--primary"
+        [disabled]="!canSaveTask()"
+        (click)="confirmTask(workspace)"
+      >
+        {{ taskCopy.confirm }}
+      </button>
+    </app-modal>
+
+    <!-- ── Completing a task ─────────────────────────────────────────────── -->
+    <app-modal
+      [open]="completing() !== null"
+      (openChange)="completing.set(null)"
+      [heading]="completeCopy.heading"
+      [description]="completeCopy.description"
+      (dismissed)="cancel()"
+    >
+      <div modal-body class="form">
+        <label class="form__field">
+          <span class="form__label">{{ completeCopy.outcome }}</span>
+          <textarea
+            class="form__input"
+            rows="3"
+            [placeholder]="completeCopy.outcomePlaceholder"
+            [value]="outcome()"
+            (input)="onOutcome($event)"
+          ></textarea>
+          <span class="form__hint">{{ shared.transition.reasonHint }}</span>
+        </label>
+      </div>
+
+      <button modal-actions type="button" class="btn" (click)="cancel()">
+        {{ completeCopy.cancel }}
+      </button>
+      <button
+        modal-actions
+        type="button"
+        class="btn btn--primary"
+        [disabled]="!canComplete()"
+        (click)="confirmComplete()"
+      >
+        {{ completeCopy.confirm }}
+      </button>
+    </app-modal>
+  }
+</ng-template>

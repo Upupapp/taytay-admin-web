@@ -1,0 +1,220 @@
+.workspace__missing,
+.workspace__closed {
+  padding: var(--space-base);
+}
+
+.workspace__closed {
+  margin-block-end: var(--space-base);
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+.workspace__next {
+  margin-block-end: var(--space-base);
+  padding: var(--space-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-compact);
+}
+
+.workspace__next-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.workspace__next-meta,
+.workspace__assigned,
+.workspace__fact {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-snug);
+  font-size: 13px;
+}
+
+/* Reinforcement: the label beside it already reads "9 days overdue". */
+.workspace__due--late {
+  color: var(--tone-danger-fg);
+  font-weight: 600;
+}
+
+.workspace__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-compact);
+}
+
+.workspace__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-base);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .workspace__columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.workspace__main,
+.workspace__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+  min-inline-size: 0;
+}
+
+.workspace__block {
+  padding: var(--space-base);
+}
+
+.workspace__heading {
+  margin: 0 0 var(--space-compact);
+  font-size: 15px;
+}
+
+.workspace__subheading {
+  margin: var(--space-snug) 0 var(--space-compact);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.workspace__note,
+.workspace__none,
+.workspace__withheld {
+  margin: 0 0 var(--space-compact);
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.workspace__members,
+.workspace__tasks,
+.workspace__notes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-compact);
+}
+
+.workspace__task,
+.workspace__note-entry {
+  padding: var(--space-snug);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+}
+
+.workspace__task-title,
+.workspace__note-body {
+  margin: 0;
+  font-size: 13px;
+}
+
+.workspace__task-meta,
+.workspace__note-meta {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-compact);
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.workspace__task-outcome {
+  margin: 0;
+  font-size: 12.5px;
+}
+
+.workspace__note-tier {
+  font-weight: 600;
+}
+
+.workspace__note-withheld {
+  margin: 0;
+  padding: var(--space-compact);
+  border: 1px dashed var(--c-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface-muted);
+  font-size: 12.5px;
+}
+
+.workspace__facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-compact) var(--space-snug);
+  font-size: 13px;
+}
+
+.workspace__facts dt {
+  color: var(--c-text-muted);
+  font-weight: 600;
+}
+
+.workspace__facts dd {
+  margin: 0;
+}
+
+.workspace__table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.workspace__caption {
+  text-align: start;
+  padding-block-end: var(--space-compact);
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.workspace__table th,
+.workspace__table td {
+  padding: var(--space-compact);
+  border-block-end: 1px solid var(--c-border);
+  text-align: start;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+}
+
+.form__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+}
+
+.form__label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.form__hint {
+  color: var(--c-text-muted);
+  font-size: 12px;
+}
+
+.form__input {
+  min-block-size: 36px;
+  padding: var(--space-compact) var(--space-snug);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+textarea.form__input {
+  resize: vertical;
+}
