@@ -23,7 +23,13 @@ import {
   type CaseTaskDraft,
   type CaseTaskId,
   type CaseWorkspace,
+  type AdvisoryAcknowledgement,
+  type AssessmentDraft,
+  type IntakeAdvisory,
+  type IntakeDraft,
   type RequestNote,
+  type RequirementStatus,
+  type RequirementId,
   type DashboardRepository,
   type DashboardFilter,
   type DashboardSummary,
@@ -398,6 +404,66 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
       status: to,
       reason,
     });
+  }
+
+  /**
+   * A GET, and read-only on the server too. The advisory reports what the
+   * records say; it must never be the call that also creates or reserves
+   * anything, or a screen refresh starts having consequences (`DL-60`).
+   */
+  advisoryFor(residentId: ResidentId, programId: ProgramId | null): Observable<IntakeAdvisory> {
+    return this.api.item<IntakeAdvisory>(`${API_ENDPOINTS.assistanceRequests}/advisory`, {
+      residentId,
+      ...(programId === null ? {} : { programId }),
+    });
+  }
+
+  /**
+   * POST to create, PATCH to update — so a retried create cannot become a
+   * second draft once the caller holds an id (`DL-63`).
+   */
+  saveDraft(draft: IntakeDraft, id: AssistanceRequestId | null): Observable<AssistanceRequest> {
+    return id === null
+      ? this.api.post<AssistanceRequest, IntakeDraft>(
+          `${API_ENDPOINTS.assistanceRequests}/drafts`,
+          draft,
+        )
+      : this.api.patch<AssistanceRequest, IntakeDraft>(
+          `${API_ENDPOINTS.assistanceRequests}/drafts/${id}`,
+          draft,
+        );
+  }
+
+  submitIntake(
+    id: AssistanceRequestId,
+    acknowledgement: AdvisoryAcknowledgement | null,
+  ): Observable<AssistanceRequest> {
+    return this.api.post<AssistanceRequest, { acknowledgement: AdvisoryAcknowledgement | null }>(
+      `${API_ENDPOINTS.assistanceRequests}/${id}/submission`,
+      { acknowledgement },
+    );
+  }
+
+  recordAssessment(
+    id: AssistanceRequestId,
+    assessment: AssessmentDraft,
+  ): Observable<AssistanceRequest> {
+    return this.api.post<AssistanceRequest, AssessmentDraft>(
+      `${API_ENDPOINTS.assistanceRequests}/${id}/assessment`,
+      assessment,
+    );
+  }
+
+  reviewRequirement(
+    id: AssistanceRequestId,
+    requirementId: RequirementId,
+    status: RequirementStatus,
+    remarks: string | null,
+  ): Observable<AssistanceRequest> {
+    return this.api.post<AssistanceRequest, { status: RequirementStatus; remarks: string | null }>(
+      `${API_ENDPOINTS.assistanceRequests}/${id}/requirements/${requirementId}`,
+      { status, remarks },
+    );
   }
 }
 

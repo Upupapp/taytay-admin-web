@@ -7,7 +7,11 @@ import type {
   AssistanceRequestSortField,
   AssistanceRequestStatus,
   RequestNote,
+  RequirementStatus,
 } from '../assistance/assistance-request';
+import type { AssessmentDraft } from '../intake/assessment';
+import type { AdvisoryAcknowledgement, IntakeAdvisory } from '../intake/intake-advisory';
+import type { IntakeDraft } from '../intake/intake-draft';
 import type { AuthenticatedUser, StaffFilter, StaffUser } from '../access/staff-user';
 import type { SignInCredentials } from '../access/credentials';
 import type { AppNotification, NotificationRequest } from '../notifications/notification';
@@ -58,6 +62,7 @@ import type {
   FamilyId,
   ReferralId,
   RelationshipId,
+  RequirementId,
   ResidentId,
   SavedViewId,
   StaffUserId,
@@ -250,6 +255,22 @@ export interface ProgramRepository {
 
 export const PROGRAM_REPOSITORY = new InjectionToken<ProgramRepository>('ProgramRepository');
 
+/**
+ * Intake, assessment and the lifecycle of one intervention.
+ *
+ * Two shapes worth reading before changing anything here.
+ *
+ * `advisoryFor` returns **evidence, not a verdict** (`DL-60`). It has no
+ * counterpart that approves, refuses, scores or ranks, and there must not be
+ * one: TAB 11's third acceptance criterion is that no client is automatically
+ * approved or denied by a simplistic frontend score, and the absence of that
+ * method is where the criterion lives. `tools/check-intake.mjs` fails the build
+ * if one appears.
+ *
+ * `saveDraft` is idempotent on the identifier it is given: passing `null`
+ * creates a draft, passing an id updates that one. An encoder who taps save
+ * twice on a slow connection gets one request, not two (`DL-63`).
+ */
 export interface AssistanceRequestRepository {
   list(
     filter: AssistanceRequestFilter,
@@ -261,6 +282,41 @@ export interface AssistanceRequestRepository {
     id: AssistanceRequestId,
     to: AssistanceRequestStatus,
     reason: string | null,
+  ): Observable<AssistanceRequest>;
+
+  /**
+   * Duplicate and previous-assistance context for one applicant.
+   *
+   * `programId` may be `null`: the encoder has usually named the person before
+   * the programme, and the household history is worth showing straight away.
+   */
+  advisoryFor(residentId: ResidentId, programId: ProgramId | null): Observable<IntakeAdvisory>;
+
+  /** Creates a `draft` request, or updates the draft already at `id`. */
+  saveDraft(draft: IntakeDraft, id: AssistanceRequestId | null): Observable<AssistanceRequest>;
+
+  /**
+   * Files the draft. The acknowledgement is required exactly when the advisory
+   * raised a caution, and it is stored — the office has to be able to say who
+   * went ahead and why.
+   */
+  submitIntake(
+    id: AssistanceRequestId,
+    acknowledgement: AdvisoryAcknowledgement | null,
+  ): Observable<AssistanceRequest>;
+
+  /** Records or replaces the social worker's case study. */
+  recordAssessment(
+    id: AssistanceRequestId,
+    assessment: AssessmentDraft,
+  ): Observable<AssistanceRequest>;
+
+  /** Marks one presented document verified, rejected or waived. */
+  reviewRequirement(
+    id: AssistanceRequestId,
+    requirementId: RequirementId,
+    status: RequirementStatus,
+    remarks: string | null,
   ): Observable<AssistanceRequest>;
 }
 

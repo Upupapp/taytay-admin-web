@@ -35,8 +35,11 @@ export class ApiClient {
       .pipe(map((response) => response.data));
   }
 
-  item<TItem>(path: string): Observable<TItem> {
-    return this.http.get<ApiItemResponse<TItem>>(this.url(path)).pipe(map((r) => r.data));
+  /** `params` for the reads that are a query rather than a record by id. */
+  item<TItem>(path: string, params: Record<string, string> = {}): Observable<TItem> {
+    return this.http
+      .get<ApiItemResponse<TItem>>(this.url(path), { params })
+      .pipe(map((r) => r.data));
   }
 
   /** `GET` for a resource that legitimately may not exist. */
