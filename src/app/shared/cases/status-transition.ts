@@ -107,7 +107,8 @@ export class StatusTransition<TStatus extends string> {
    * lifecycle allows so neither list alone can offer something wrong.
    */
   readonly permitted = input<readonly TStatus[] | null>(null);
-  readonly heading = input(CASE_COPY.transition.heading);
+  /** Widened past the default's literal type: other lifecycles word this differently. */
+  readonly heading = input<string>(CASE_COPY.transition.heading);
   readonly minimumReasonLength = input(8);
   readonly busy = input(false);
   /** Unique per instance so two controls on one page keep distinct labels. */

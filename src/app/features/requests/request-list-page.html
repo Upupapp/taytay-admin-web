@@ -1,0 +1,97 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions class="btn btn--primary" routerLink="/assistance-requests/new">
+    {{ copy.startIntake }}
+  </a>
+</app-page-header>
+
+<!-- Drafts sit apart from the table on purpose: nothing here has been filed,
+     and counting them as requests would inflate the office's workload. -->
+<section class="card drafts" aria-labelledby="drafts-heading">
+  <h2 class="drafts__heading" id="drafts-heading">{{ copy.draftsHeading }}</h2>
+  <p class="drafts__note">{{ copy.draftsNote }}</p>
+
+  @if (drafts().length === 0) {
+    <p class="drafts__empty">{{ copy.noDrafts }}</p>
+  } @else {
+    <ul class="drafts__list">
+      @for (draft of drafts(); track draft.id) {
+        <li class="drafts__item">
+          <span class="drafts__label">{{ copy.unnamedDraft }}</span>
+          <span class="drafts__reason">{{ draft.reasonForRequest || '—' }}</span>
+          <a class="btn btn--subtle" [routerLink]="resumeLink(draft)">{{ copy.resume }}</a>
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+<div class="card requests">
+  <div class="filters">
+    <label class="filters__field filters__field--wide">
+      <span class="filters__label">{{ copy.search }}</span>
+      <input
+        type="search"
+        class="filters__input"
+        [placeholder]="copy.searchPlaceholder"
+        [value]="searchText()"
+        (input)="onSearch($event)"
+      />
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.status }}</span>
+      <select class="filters__input" (change)="onStatus($event)">
+        <option value="" [selected]="!filter().status">{{ copy.allStatuses }}</option>
+        @for (status of statuses; track status) {
+          <option [value]="status" [selected]="filter().status === status">
+            {{ statusCatalog[status].label }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__check">
+      <input type="checkbox" [checked]="filter().openOnly === true" (change)="onOpenOnly($event)" />
+      <span>{{ copy.openOnly }}</span>
+    </label>
+
+    @if (hasFilters()) {
+      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+    }
+  </div>
+
+  <app-data-table
+    [caption]="copy.caption"
+    [columns]="columns()"
+    [rows]="rows()"
+    [rowKey]="rowKey"
+    [loading]="isLoading()"
+    [page]="page()"
+    [sort]="sort()"
+    [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
+    [emptyHeading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
+    [emptyMessage]="hasFilters() ? copy.noResultsMessage : copy.emptyMessage"
+    [emptyActionLabel]="hasFilters() ? copy.clear : null"
+    (sortChanged)="onSortChanged($event)"
+    (pageChanged)="onPageChanged($event)"
+    (emptyActionSelected)="clearFilters()"
+  />
+</div>
+
+<ng-template #referenceCell let-request>
+  <a class="requests__reference" [routerLink]="detailLink(request)">
+    {{ request.referenceNumber || copy.unnamedDraft }}
+  </a>
+</ng-template>
+
+<ng-template #statusCell let-request>
+  <app-status-badge [catalog]="statusCatalog" [status]="request.status" />
+</ng-template>
+
+<ng-template #amountCell let-request>
+  @if (request.requestedAmount; as amount) {
+    {{ amount | peso }}
+  } @else {
+    —
+  }
+</ng-template>

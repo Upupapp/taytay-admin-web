@@ -171,6 +171,58 @@ button {
   color: var(--c-text-muted);
 }
 
+/* Shared form-field vocabulary. Three features now render the same labelled
+   control, and a fourth would have copied it again; a field that looks and
+   behaves differently on each screen is how an encoder learns to distrust one. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.field--narrow {
+  max-inline-size: 240px;
+}
+
+.field__label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.field__hint {
+  color: var(--c-text-muted);
+  font-size: 12px;
+}
+
+.field__input {
+  /* Comfortably over the 24px pointer-target minimum (WCAG 2.5.8). */
+  min-block-size: 36px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+textarea.field__input {
+  resize: vertical;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--target-min);
+  font-size: 13px;
+}
+
+.check input {
+  inline-size: 18px;
+  block-size: 18px;
+}
+
 .card {
   background: var(--c-surface);
   border: 1px solid var(--c-border);

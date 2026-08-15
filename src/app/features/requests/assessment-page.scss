@@ -1,0 +1,122 @@
+/* Layout only. The readiness list, the advisory and the transition control all
+   state their meaning in words. */
+
+.assessment__missing {
+  padding: var(--space-base);
+}
+
+.assessment {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--space-base);
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .assessment {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.assessment__main,
+.assessment__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+  min-inline-size: 0;
+}
+
+.assessment__block {
+  padding: var(--space-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+}
+
+.assessment__heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.assessment__note {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.assessment__ready {
+  margin: 0;
+  color: var(--tone-success-fg);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.assessment__readiness {
+  margin: 0;
+  padding-inline-start: var(--space-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+  font-size: 13px;
+}
+
+.assessment__facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-compact) var(--space-snug);
+  font-size: 13px;
+}
+
+.assessment__facts dt {
+  color: var(--c-text-muted);
+  font-weight: 600;
+}
+
+.assessment__facts dd {
+  margin: 0;
+}
+
+.assessment__fact {
+  margin: 0;
+  font-size: 13px;
+}
+
+.assessment__actions {
+  display: flex;
+  gap: var(--space-compact);
+}
+
+.documents {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-compact);
+}
+
+.documents__item {
+  padding: var(--space-snug);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-compact);
+}
+
+.documents__label {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-compact);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.documents__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-compact);
+}

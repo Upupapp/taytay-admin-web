@@ -15,6 +15,8 @@ export * from './cases/case-timeline';
 export * from './cases/case.copy';
 export * from './cases/status-transition';
 export * from './families/relationship-graph';
+export * from './intake/advisory-panel';
+export * from './intake/intake.copy';
 export * from './families/relationship.copy';
 export * from './households/vulnerability-snapshot';
 export * from './households/vulnerability.copy';

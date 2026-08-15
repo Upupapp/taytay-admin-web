@@ -1,0 +1,341 @@
+<app-page-header [title]="draftId() ? copy.resumeTitle : copy.title" [subtitle]="copy.subtitle" />
+
+<!-- The stepper moves between sections of this page. It is a list of buttons,
+     not links: nothing is fetched again and nothing is lost (DL-62). -->
+<nav class="stepper" [attr.aria-label]="copy.stepperLabel">
+  <p class="stepper__position">{{ copy.stepOf(stepNumber(), totalSteps) }}</p>
+  <ol class="stepper__list">
+    @for (item of steps; track item) {
+      <li class="stepper__item">
+        <button
+          type="button"
+          class="stepper__button"
+          [class.stepper__button--active]="step() === item"
+          [attr.aria-current]="step() === item ? 'step' : null"
+          (click)="goTo(item)"
+        >
+          <span class="stepper__name">{{ stepShort(item) }}</span>
+          @if (problemsIn(item).length > 0) {
+            <span class="stepper__todo">{{ problemsIn(item).length }} to do</span>
+          }
+        </button>
+      </li>
+    }
+  </ol>
+</nav>
+
+<div class="intake">
+  <div class="intake__main">
+    @switch (step()) {
+      @case ('person') {
+        <section class="card intake__block" aria-labelledby="person-heading">
+          <h2 class="intake__heading" id="person-heading">{{ copy.personHeading }}</h2>
+          <p class="intake__note">{{ copy.personNote }}</p>
+
+          <app-person-picker
+            [selected]="chosen()"
+            (selectedChange)="onPersonChosen($event)"
+            label="Applicant"
+          />
+
+          <p class="intake__aside">
+            {{ copy.personMissing }}
+            <a routerLink="/residents/new">{{ copy.personMissingLink }}</a>
+          </p>
+        </section>
+      }
+
+      @case ('request') {
+        <section class="card intake__block" aria-labelledby="request-heading">
+          <h2 class="intake__heading" id="request-heading">{{ copy.requestHeading }}</h2>
+
+          <label class="field">
+            <span class="field__label">{{ copy.channel }}</span>
+            <select class="field__input" (change)="onChannel($event)">
+              @for (channel of channels; track channel) {
+                <option [value]="channel" [selected]="draft().channel === channel">
+                  {{ channelLabel(channel) }}
+                </option>
+              }
+            </select>
+            <span class="field__hint">{{ channelHint(draft().channel) }}</span>
+          </label>
+          <!-- Said in words, so the absence of the online option is a decision
+               the reader can see rather than a gap they wonder about. -->
+          <p class="intake__aside">{{ copy.channelOnlineNote }}</p>
+
+          @if (draft().channel === 'barangay-referral') {
+            <label class="field">
+              <span class="field__label">{{ copy.referredBy }}</span>
+              <input
+                type="text"
+                class="field__input"
+                [placeholder]="copy.referredByPlaceholder"
+                [value]="draft().referredBy ?? ''"
+                (input)="onReferredBy($event)"
+              />
+            </label>
+          }
+
+          <label class="field">
+            <span class="field__label">{{ copy.programme }}</span>
+            <select class="field__input" (change)="onProgramme($event)">
+              <option value="" [selected]="draft().programId === null">
+                {{ copy.programmePlaceholder }}
+              </option>
+              @for (program of programList(); track program.id) {
+                <option [value]="program.id" [selected]="draft().programId === program.id">
+                  {{ program.name }}
+                </option>
+              }
+            </select>
+            @if (programme(); as chosenProgram) {
+              @if (chosenProgram.maximumGrant) {
+                <span class="field__hint">
+                  {{ copy.maximumGrant }}: {{ chosenProgram.maximumGrant | peso }}
+                </span>
+              }
+            }
+          </label>
+
+          <label class="field">
+            <span class="field__label">{{ copy.reason }}</span>
+            <textarea
+              class="field__input"
+              rows="4"
+              [placeholder]="copy.reasonPlaceholder"
+              [value]="draft().reasonForRequest"
+              (input)="onReason($event)"
+            ></textarea>
+          </label>
+
+          <label class="field field--narrow">
+            <span class="field__label">{{ copy.requestedAmount }}</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              class="field__input"
+              [value]="amountInputValue()"
+              (input)="onAmount($event)"
+            />
+            <span class="field__hint">{{ copy.requestedAmountHint }}</span>
+          </label>
+        </section>
+      }
+
+      @case ('checks') {
+        <section class="card intake__block" aria-labelledby="checks-heading">
+          <h2 class="intake__heading" id="checks-heading">{{ copy.checksHeading }}</h2>
+          <app-advisory-panel [advisory]="advisory()" />
+
+          @if (mustAcknowledge()) {
+            <div class="acknowledge">
+              <h3 class="acknowledge__heading">{{ shared.acknowledgement.heading }}</h3>
+              <p class="acknowledge__note">{{ shared.acknowledgement.description }}</p>
+              <label class="field">
+                <span class="field__label">{{ shared.acknowledgement.reason }}</span>
+                <textarea
+                  class="field__input"
+                  rows="3"
+                  [placeholder]="shared.acknowledgement.reasonPlaceholder"
+                  [value]="acknowledgementReason()"
+                  (input)="onAcknowledgement($event)"
+                ></textarea>
+                <span class="field__hint">{{ shared.acknowledgement.reasonHint }}</span>
+              </label>
+              @if (acknowledgementReason().length > 0 && !acknowledgementOk()) {
+                <p class="intake__problem" role="alert">{{ shared.acknowledgement.tooShort }}</p>
+              }
+            </div>
+          }
+        </section>
+
+        <section class="card intake__block" aria-labelledby="documents-heading">
+          <h3 class="intake__heading" id="documents-heading">{{ copy.requirementsHeading }}</h3>
+          <p class="intake__note">{{ copy.requirementsNote }}</p>
+
+          @if (draft().requirements.length === 0) {
+            <p class="intake__none">{{ copy.noRequirements }}</p>
+          } @else {
+            <ul class="documents">
+              @for (entry of draft().requirements; track entry.code) {
+                <li class="documents__item">
+                  <p class="documents__label">
+                    {{ entry.label }}
+                    <span class="documents__tag">
+                      {{ entry.isMandatory ? copy.mandatory : copy.optional }}
+                    </span>
+                  </p>
+                  <div class="documents__controls">
+                    <label class="check">
+                      <input
+                        type="checkbox"
+                        [checked]="entry.presented"
+                        (change)="onPresented(entry.code, $event)"
+                      />
+                      <span>{{ copy.presented }}</span>
+                    </label>
+                    <label class="check">
+                      <input
+                        type="checkbox"
+                        [checked]="entry.waivedReason !== null"
+                        (change)="onWaive(entry.code, $event)"
+                      />
+                      <span>{{ copy.waive }}</span>
+                    </label>
+                  </div>
+                  @if (entry.waivedReason !== null) {
+                    <label class="field">
+                      <span class="field__label">{{ copy.waiveReason }}</span>
+                      <input
+                        type="text"
+                        class="field__input"
+                        [value]="entry.waivedReason"
+                        (input)="onWaiveReason(entry.code, $event)"
+                      />
+                    </label>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
+
+      @case ('review') {
+        <section class="card intake__block" aria-labelledby="review-heading">
+          <h2 class="intake__heading" id="review-heading">{{ copy.reviewHeading }}</h2>
+          <p class="intake__note">{{ copy.reviewNote }}</p>
+
+          <dl class="review">
+            <dt>{{ copy.personHeading }}</dt>
+            <dd>{{ chosen()?.listedName ?? '—' }}</dd>
+            <dt>{{ copy.programme }}</dt>
+            <dd>{{ programme()?.name ?? '—' }}</dd>
+            <dt>{{ copy.channel }}</dt>
+            <dd>{{ channelLabel(draft().channel) }}</dd>
+            @if (draft().referredBy) {
+              <dt>{{ copy.referredBy }}</dt>
+              <dd>{{ draft().referredBy }}</dd>
+            }
+            <dt>{{ copy.requestedAmount }}</dt>
+            <dd>
+              @if (draft().requestedAmount; as amount) {
+                {{ amount | peso }}
+              } @else {
+                —
+              }
+            </dd>
+            <dt>{{ copy.reason }}</dt>
+            <dd>{{ draft().reasonForRequest || '—' }}</dd>
+          </dl>
+
+          <app-advisory-panel [advisory]="advisory()" />
+
+          @if (problems().length === 0) {
+            <p class="intake__ready">{{ copy.readyToFile }}</p>
+          } @else {
+            <div class="intake__outstanding">
+              <h3 class="intake__subheading">{{ copy.outstandingHeading }}</h3>
+              <ul class="intake__problems">
+                @for (problem of problems(); track problem.code) {
+                  <li>
+                    <button type="button" class="intake__problem-link" (click)="goTo(problem.step)">
+                      {{ stepShort(problem.step) }}
+                    </button>
+                    {{ problemText(problem) }}
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+        </section>
+      }
+    }
+
+    <div class="intake__actions">
+      @if (stepNumber() > 1) {
+        <button type="button" class="btn" (click)="onBack()">{{ copy.back }}</button>
+      }
+      @if (stepNumber() < totalSteps) {
+        <button type="button" class="btn btn--primary" (click)="onNext()">{{ copy.next }}</button>
+      } @else {
+        <button type="button" class="btn btn--primary" [disabled]="!canFile()" (click)="file()">
+          {{ copy.submit }}
+        </button>
+      }
+      <button type="button" class="btn" [disabled]="!canSave()" (click)="saveDraft()">
+        {{ copy.saveDraft }}
+      </button>
+    </div>
+  </div>
+
+  <!-- The context panel is outside the step switch on purpose: it is fetched
+       once when the person is chosen and stays visible for every later step,
+       which is what "without retyping" means in practice. -->
+  <aside class="intake__side">
+    <section class="card intake__block" aria-labelledby="context-heading">
+      <h2 class="intake__heading" id="context-heading">{{ copy.contextHeading }}</h2>
+
+      @if (context(); as profile) {
+        <app-resident-summary-card
+          [view]="profile.view"
+          [routerLink]="residentLink(profile.view.resident.id)"
+        />
+
+        <h3 class="intake__subheading">{{ copy.householdLabel }}</h3>
+        @if (profile.household; as household) {
+          <p class="intake__fact">
+            <a [routerLink]="'/households/' + household.id">{{ household.referenceNumber }}</a>
+          </p>
+          @if (profile.householdMembers.length > 0) {
+            <h4 class="intake__subheading">{{ copy.membersLabel }}</h4>
+            <ul class="intake__members">
+              @for (member of profile.householdMembers; track member.view.resident.id) {
+                <li>
+                  <app-resident-summary-card
+                    compact
+                    [view]="member.view"
+                    [routerLink]="residentLink(member.view.resident.id)"
+                  />
+                </li>
+              }
+            </ul>
+          }
+        } @else {
+          <p class="intake__none">{{ copy.noHousehold }}</p>
+        }
+
+        <h3 class="intake__subheading">{{ copy.historyLabel }}</h3>
+        @if (profile.history.cases.length === 0) {
+          <p class="intake__none">{{ copy.noHistory }}</p>
+        } @else {
+          <dl class="intake__figures">
+            <dt>{{ copy.totalReleased }}</dt>
+            <dd>{{ profile.history.totalReleased | peso }}</dd>
+            <dt>{{ copy.openCases }}</dt>
+            <dd>{{ profile.history.openCaseCount }}</dd>
+            @if (profile.history.lastActivityAt; as last) {
+              <dt>{{ copy.lastActivity }}</dt>
+              <dd>
+                <time [attr.datetime]="last">{{ last | date: 'd MMM y' }}</time>
+              </dd>
+            }
+          </dl>
+          <ul class="intake__history">
+            @for (record of profile.history.cases; track record.id) {
+              <li class="intake__history-item">
+                <span class="intake__history-ref">{{ record.referenceNumber }}</span>
+                <span>{{ record.programName }}</span>
+                <span class="intake__history-status">{{ statusLabel(record.status) }}</span>
+              </li>
+            }
+          </ul>
+        }
+      } @else {
+        <p class="intake__none">{{ shared.advisory.notCheckedYet }}</p>
+      }
+    </section>
+  </aside>
+</div>

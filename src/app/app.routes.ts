@@ -148,13 +148,36 @@ export const routes: Routes = [
       },
       {
         path: 'assistance-requests',
-        title: 'Assistance requests — Taytay Social Welfare',
-        canActivate: [permissionGuard('request.view')],
-        ...placeholder({
-          title: 'Assistance requests',
-          subtitle: 'Intake, assessment, endorsement, approval and closure of requests.',
-          plannedIn: 'the assistance-request TAB',
-        }),
+        // `new` must precede `:id`, or "new" is read as a request id.
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            title: 'Assistance requests — Taytay Social Welfare',
+            canActivate: [permissionGuard('request.view')],
+            loadComponent: () =>
+              import('@features/requests/request-list-page').then((m) => m.RequestListPage),
+          },
+          {
+            path: 'new',
+            title: 'New assistance request — Taytay Social Welfare',
+            canActivate: [permissionGuard('request.create')],
+            loadComponent: () => import('@features/requests/intake-page').then((m) => m.IntakePage),
+          },
+          {
+            path: ':id/edit',
+            title: 'Unfinished intake — Taytay Social Welfare',
+            canActivate: [permissionGuard('request.create')],
+            loadComponent: () => import('@features/requests/intake-page').then((m) => m.IntakePage),
+          },
+          {
+            path: ':id',
+            title: 'Assistance request — Taytay Social Welfare',
+            canActivate: [permissionGuard('request.view')],
+            loadComponent: () =>
+              import('@features/requests/assessment-page').then((m) => m.AssessmentPage),
+          },
+        ],
       },
       {
         path: 'programs',

@@ -1,0 +1,204 @@
+<app-async-content [state]="state()" [content]="body" [skeletonLines]="8" />
+
+<ng-template #body let-request>
+  @if (!request) {
+    <div class="card assessment__missing">
+      <h1>{{ copy.notFoundHeading }}</h1>
+      <p>{{ copy.notFoundMessage }}</p>
+      <a class="btn" routerLink="/assistance-requests">{{ copy.back }}</a>
+    </div>
+  } @else {
+    <app-page-header
+      [title]="request.referenceNumber || copy.subtitle"
+      [subtitle]="copy.subtitle"
+    />
+
+    <div class="assessment">
+      <div class="assessment__main">
+        <section class="card assessment__block" aria-labelledby="request-heading">
+          <h2 class="assessment__heading" id="request-heading">{{ copy.requestHeading }}</h2>
+          <dl class="assessment__facts">
+            <dt>{{ copy.programme }}</dt>
+            <dd>{{ programmeName(request) }}</dd>
+            <dt>Status</dt>
+            <dd><app-status-badge [catalog]="statusCatalog" [status]="request.status" /></dd>
+            <dt>{{ copy.requested }}</dt>
+            <dd>
+              @if (request.requestedAmount; as amount) {
+                {{ amount | peso }}
+              } @else {
+                {{ copy.notSet }}
+              }
+            </dd>
+            <dt>{{ copy.approved }}</dt>
+            <dd>
+              @if (request.approvedAmount; as amount) {
+                {{ amount | peso }}
+              } @else {
+                {{ copy.notSet }}
+              }
+            </dd>
+            @if (request.submittedAt; as filed) {
+              <dt>{{ copy.filedOn }}</dt>
+              <dd>
+                <time [attr.datetime]="filed">{{ filed | date: 'd MMM y, HH:mm' }}</time>
+              </dd>
+            }
+            <dt>{{ copy.reason }}</dt>
+            <dd>{{ request.reasonForRequest }}</dd>
+          </dl>
+        </section>
+
+        <section class="card assessment__block" aria-labelledby="documents-heading">
+          <h2 class="assessment__heading" id="documents-heading">{{ copy.documentsHeading }}</h2>
+          <p class="assessment__note">{{ copy.documentsNote }}</p>
+
+          <ul class="documents">
+            @for (requirement of request.requirements; track requirement.id) {
+              <li class="documents__item">
+                <p class="documents__label">
+                  {{ requirement.label }}
+                  <app-status-badge [catalog]="requirementCatalog" [status]="requirement.status" />
+                </p>
+                @if (requirement.remarks) {
+                  <p class="assessment__note">{{ requirement.remarks }}</p>
+                }
+                @if (canReviewDocuments()) {
+                  <label class="field">
+                    <span class="field__label">{{ copy.remarks }}</span>
+                    <input
+                      type="text"
+                      class="field__input"
+                      [value]="remarksValue(requirement.id)"
+                      (input)="onRemarks(requirement.id, $event)"
+                    />
+                  </label>
+                  <div class="documents__controls">
+                    <button
+                      type="button"
+                      class="btn btn--subtle"
+                      (click)="review(requirement.id, 'verified')"
+                    >
+                      {{ copy.verify }}
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn--subtle"
+                      (click)="review(requirement.id, 'rejected')"
+                    >
+                      {{ copy.reject }}
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn--subtle"
+                      (click)="review(requirement.id, 'waived')"
+                    >
+                      {{ copy.waive }}
+                    </button>
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+
+        @if (canAssess()) {
+          <section class="card assessment__block" aria-labelledby="study-heading">
+            <h2 class="assessment__heading" id="study-heading">{{ copy.studyHeading }}</h2>
+            <p class="assessment__note">{{ copy.studyNote }}</p>
+
+            <label class="field">
+              <span class="field__label">{{ copy.findings }}</span>
+              <textarea
+                class="field__input"
+                rows="6"
+                [placeholder]="copy.findingsPlaceholder"
+                [value]="findings()"
+                (input)="onFindings($event)"
+              ></textarea>
+            </label>
+
+            <label class="check">
+              <input type="checkbox" [checked]="homeVisit()" (change)="onHomeVisit($event)" />
+              <span>{{ copy.homeVisit }}</span>
+            </label>
+
+            <label class="field field--narrow">
+              <span class="field__label">{{ copy.recommendedAmount }}</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                class="field__input"
+                [value]="recommendedValue()"
+                (input)="onRecommended($event)"
+              />
+            </label>
+
+            <div class="assessment__actions">
+              <button
+                type="button"
+                class="btn btn--primary"
+                [disabled]="!canSaveStudy()"
+                (click)="saveStudy()"
+              >
+                {{ copy.saveStudy }}
+              </button>
+            </div>
+          </section>
+        }
+      </div>
+
+      <aside class="assessment__side">
+        <section class="card assessment__block" aria-labelledby="applicant-heading">
+          <h2 class="assessment__heading" id="applicant-heading">{{ copy.applicantHeading }}</h2>
+          <p class="assessment__note">{{ copy.applicantNote }}</p>
+
+          @if (profile(); as context) {
+            <app-resident-summary-card
+              [view]="context.view"
+              [routerLink]="'/residents/' + context.view.resident.id"
+            />
+            @if (context.household; as household) {
+              <p class="assessment__fact">
+                <a [routerLink]="'/households/' + household.id">{{ household.referenceNumber }}</a>
+              </p>
+            }
+          }
+        </section>
+
+        <section class="card assessment__block">
+          <app-advisory-panel [advisory]="advisory()" />
+        </section>
+
+        <section class="card assessment__block" aria-labelledby="readiness-heading">
+          <h2 class="assessment__heading" id="readiness-heading">{{ copy.readinessHeading }}</h2>
+          <!-- Stated, never enforced: none of this withholds the move (DL-60). -->
+          <p class="assessment__note">{{ copy.readinessNote }}</p>
+          @if (readiness(request).length === 0) {
+            <p class="assessment__ready">{{ copy.readinessClear }}</p>
+          } @else {
+            <ul class="assessment__readiness">
+              @for (code of readiness(request); track code) {
+                <li>{{ readinessText(code) }}</li>
+              }
+            </ul>
+          }
+        </section>
+
+        <div class="assessment__block">
+          <app-status-transition
+            idPrefix="request-status"
+            [heading]="copy.moveHeading"
+            [catalog]="statusCatalog"
+            [transitions]="transitions"
+            [current]="request.status"
+            [permitted]="permittedMoves(request.status)"
+            [busy]="submitting()"
+            (confirmed)="onTransition($event)"
+          />
+        </div>
+      </aside>
+    </div>
+  }
+</ng-template>

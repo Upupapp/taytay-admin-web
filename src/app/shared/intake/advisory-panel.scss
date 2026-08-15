@@ -1,0 +1,84 @@
+/* Every signal states its rule, its finding and the records it read as text.
+   Delete this file and the panel still says exactly the same things — the tone
+   is a word before it is a colour (`DL-60`). */
+
+.advisory {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+  padding: var(--space-base);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+}
+
+.advisory__heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.advisory__statement,
+.advisory__clear,
+.advisory__count,
+.advisory__read {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.advisory__read {
+  display: block;
+}
+
+.advisory__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-compact);
+}
+
+.advisory__signal {
+  padding: var(--space-snug);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+}
+
+/* Reinforcement only. "Worth a second look" is already the first words in the
+   entry, so a user who cannot see the border loses nothing. */
+.advisory__signal--caution {
+  border-color: var(--tone-warning-fg);
+  background: var(--tone-warning-bg);
+}
+
+.advisory__signal-head {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-compact);
+  align-items: baseline;
+  font-size: 13px;
+}
+
+.advisory__tone {
+  font-weight: 600;
+}
+
+.advisory__rule,
+.advisory__references {
+  margin: 0;
+  font-size: 12.5px;
+}
+
+.advisory__label {
+  color: var(--c-text-muted);
+  font-weight: 600;
+}
+
+.advisory__references {
+  overflow-wrap: anywhere;
+}
