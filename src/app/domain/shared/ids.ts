@@ -33,6 +33,14 @@ export type FamilyId = Branded<string, 'FamilyId'>;
 export type RelationshipId = Branded<string, 'RelationshipId'>;
 export type RelationshipEventId = Branded<string, 'RelationshipEventId'>;
 export type ProgramEnrollmentId = Branded<string, 'ProgramEnrollmentId'>;
+export type RequirementDocumentId = Branded<string, 'RequirementDocumentId'>;
+/**
+ * One version of a presented document. Versions are never reused and never
+ * removed: replacing a file appends, so the record of what the office actually
+ * saw when it decided survives (`DL-77`).
+ */
+export type DocumentVersionId = Branded<string, 'DocumentVersionId'>;
+export type DocumentRequestId = Branded<string, 'DocumentRequestId'>;
 /**
  * One recorded judgement about whether two registry records are the same person.
  *

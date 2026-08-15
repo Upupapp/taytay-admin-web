@@ -30,10 +30,10 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
       {
         code: 'medical-abstract',
         label: 'Medical abstract or prescription',
-        isMandatory: true,
+        obligation: 'required', appliesWhen: null,
         notes: null,
       },
-      { code: 'billing', label: 'Hospital billing statement', isMandatory: false, notes: null },
+      { code: 'billing', label: 'Hospital billing statement', obligation: 'optional', appliesWhen: null, notes: null },
     ],
     responsibility: AICS_RESPONSIBILITY,
     guidance: guidance.aicsMedical,
@@ -64,11 +64,11 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
       notes: 'Claimant must be a relative within the fourth civil degree.',
     },
     requirements: [
-      { code: 'death-cert', label: 'Death certificate', isMandatory: true, notes: null },
+      { code: 'death-cert', label: 'Death certificate', obligation: 'required', appliesWhen: null, notes: null },
       {
         code: 'funeral-contract',
         label: 'Funeral contract or official receipt',
-        isMandatory: true,
+        obligation: 'required', appliesWhen: null,
         notes: null,
       },
     ],
@@ -102,13 +102,13 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
       {
         code: 'enrolment',
         label: 'Certificate of enrolment or registration',
-        isMandatory: true,
+        obligation: 'required', appliesWhen: null,
         notes: null,
       },
       {
         code: 'brgy-indigency',
         label: 'Barangay certificate of indigency',
-        isMandatory: true,
+        obligation: 'required', appliesWhen: null,
         notes: null,
       },
     ],
@@ -139,11 +139,11 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
       notes: 'Requires a valid Solo Parent Identification Card.',
     },
     requirements: [
-      { code: 'solo-parent-id', label: 'Solo Parent ID', isMandatory: true, notes: null },
+      { code: 'solo-parent-id', label: 'Solo Parent ID', obligation: 'required', appliesWhen: null, notes: null },
       {
         code: 'psa-birth-cert',
         label: "Child's PSA birth certificate",
-        isMandatory: true,
+        obligation: 'required', appliesWhen: null,
         notes: null,
       },
     ],
@@ -174,7 +174,7 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
       notes: 'Suspended pending the next tranche of funds.',
     },
     requirements: [
-      { code: 'business-plan', label: 'Simple business plan', isMandatory: true, notes: null },
+      { code: 'business-plan', label: 'Simple business plan', obligation: 'required', appliesWhen: null, notes: null },
     ],
     responsibility: MUNICIPAL_RESPONSIBILITY,
     guidance: guidance.livelihood,
@@ -203,7 +203,7 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
       notes: 'Released per affected household on the validated evacuation roster.',
     },
     requirements: [
-      { code: 'valid-id', label: 'Valid government ID', isMandatory: false, notes: null },
+      { code: 'valid-id', label: 'Valid government ID', obligation: 'optional', appliesWhen: null, notes: null },
     ],
     responsibility: MUNICIPAL_RESPONSIBILITY,
     guidance: guidance.foodRelief,
@@ -232,7 +232,7 @@ export const MOCK_PROGRAMS: readonly AssistanceProgram[] = [
       notes: 'Programme design still under review by the Sangguniang Bayan.',
     },
     requirements: [
-      { code: 'osca-id', label: 'OSCA senior citizen ID', isMandatory: true, notes: null },
+      { code: 'osca-id', label: 'OSCA senior citizen ID', obligation: 'required', appliesWhen: null, notes: null },
     ],
     responsibility: MUNICIPAL_RESPONSIBILITY,
     guidance: guidance.seniorCash,

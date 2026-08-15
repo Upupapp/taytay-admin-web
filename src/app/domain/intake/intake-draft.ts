@@ -1,4 +1,9 @@
 import type { ProgramRequirement } from '../programs/program';
+import type {
+  ConditionalApplicability,
+  RequirementObligation,
+} from '../requirements/requirement-obligation';
+import { isOutstandingObligation } from '../requirements/requirement-obligation';
 import type { ProgramId, ResidentId } from '../shared/ids';
 import type { Money } from '../shared/money';
 import type { AdvisoryAcknowledgement, IntakeAdvisory } from './intake-advisory';
@@ -46,7 +51,15 @@ export function isOfferedChannel(channel: IntakeChannel): boolean {
 export interface IntakeRequirementEntry {
   readonly code: string;
   readonly label: string;
-  readonly isMandatory: boolean;
+  readonly obligation: RequirementObligation;
+  /** Stated for a `conditional` document so the encoder can judge it (`DL-76`). */
+  readonly appliesWhen: string | null;
+  /**
+   * Whether a conditional document applies to this applicant. Starts
+   * `undecided` and stays there until somebody at the counter says otherwise —
+   * intake never assumes, in either direction.
+   */
+  readonly applicability: ConditionalApplicability;
   readonly presented: boolean;
   /** Excused, with the reason recorded. Never silently skipped. */
   readonly waivedReason: string | null;
@@ -58,7 +71,9 @@ export function requirementEntriesFor(
   return requirements.map((requirement) => ({
     code: requirement.code,
     label: requirement.label,
-    isMandatory: requirement.isMandatory,
+    obligation: requirement.obligation,
+    appliesWhen: requirement.appliesWhen,
+    applicability: 'undecided',
     presented: false,
     waivedReason: null,
   }));
@@ -193,7 +208,11 @@ export function intakeProblems(
 }
 
 export function isOutstanding(entry: IntakeRequirementEntry): boolean {
-  return entry.isMandatory && !entry.presented && entry.waivedReason === null;
+  return (
+    isOutstandingObligation(entry.obligation, entry.applicability) &&
+    !entry.presented &&
+    entry.waivedReason === null
+  );
 }
 
 export function problemsForStep(

@@ -1,3 +1,4 @@
+import type { RequirementObligation } from '../requirements/requirement-obligation';
 import type { AuditStamp } from '../shared/audit';
 import type { IsoDate, ProgramId } from '../shared/ids';
 import type { Money } from '../shared/money';
@@ -59,7 +60,17 @@ export const PROGRAM_STATUS_CATALOG: StatusCatalog<ProgramStatus> = {
 export interface ProgramRequirement {
   readonly code: string;
   readonly label: string;
-  readonly isMandatory: boolean;
+  /**
+   * How firmly it is asked for. Replaced `isMandatory` in TAB 14 so the catalog
+   * can express "only in these circumstances" (`DL-76`).
+   */
+  readonly obligation: RequirementObligation;
+  /**
+   * The circumstances a `conditional` document is needed in, written for a
+   * person to read. Required for `conditional`, `null` otherwise — the office
+   * states the condition; the software never evaluates it.
+   */
+  readonly appliesWhen: string | null;
   readonly notes: string | null;
 }
 

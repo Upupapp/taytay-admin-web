@@ -163,9 +163,7 @@
                 <li class="documents__item">
                   <p class="documents__label">
                     {{ entry.label }}
-                    <span class="documents__tag">
-                      {{ entry.isMandatory ? copy.mandatory : copy.optional }}
-                    </span>
+                    <span class="documents__tag">{{ obligationLabel(entry) }}</span>
                   </p>
                   <div class="documents__controls">
                     <label class="check">

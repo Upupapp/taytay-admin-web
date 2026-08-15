@@ -58,6 +58,7 @@ export const PROGRAMS_COPY = {
     programmeOwn: 'This programme',
     mandatory: 'Required',
     optional: 'Optional',
+    appliesWhen: 'Needed when:',
     templateLabel: 'Document template',
     noTemplate: 'No template — this programme lists its own',
 

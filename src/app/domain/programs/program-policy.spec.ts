@@ -151,8 +151,8 @@ describe('requirement templates', () => {
     name: 'AICS standard set',
     description: 'The usual AICS documents.',
     requirements: [
-      { code: 'valid-id', label: 'Valid government ID', isMandatory: true, notes: null },
-      { code: 'brgy-indigency', label: 'Indigency certificate', isMandatory: true, notes: null },
+      { code: 'valid-id', label: 'Valid government ID', obligation: 'required', appliesWhen: null, notes: null },
+      { code: 'brgy-indigency', label: 'Indigency certificate', obligation: 'required', appliesWhen: null, notes: null },
     ],
     audit: {
       createdAt: NOW,
@@ -164,7 +164,7 @@ describe('requirement templates', () => {
 
   it('gives a programme the template’s documents plus its own', () => {
     const resolved = resolveRequirements(template, [
-      { code: 'medical-abstract', label: 'Medical abstract', isMandatory: true, notes: null },
+      { code: 'medical-abstract', label: 'Medical abstract', obligation: 'required', appliesWhen: null, notes: null },
     ]);
     expect(resolved.map((requirement) => requirement.code)).toEqual([
       'valid-id',
@@ -175,10 +175,10 @@ describe('requirement templates', () => {
 
   it('lets a programme override a shared document without forking the template', () => {
     const resolved = resolveRequirements(template, [
-      { code: 'valid-id', label: 'Valid ID or PhilSys card', isMandatory: false, notes: null },
+      { code: 'valid-id', label: 'Valid ID or PhilSys card', obligation: 'optional', appliesWhen: null, notes: null },
     ]);
     expect(resolved).toHaveLength(2);
-    expect(resolved.find((r) => r.code === 'valid-id')?.isMandatory).toBe(false);
+    expect(resolved.find((r) => r.code === 'valid-id')?.obligation).toBe('optional');
   });
 
   it('works for a programme with no template at all', () => {

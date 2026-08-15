@@ -10,6 +10,12 @@ import type {
   StaffUserId,
 } from '../shared/ids';
 import type { Money } from '../shared/money';
+import type { RequirementDocument } from '../requirements/requirement-document';
+import type {
+  ConditionalApplicability,
+  RequirementObligation,
+} from '../requirements/requirement-obligation';
+import { isOutstandingObligation } from '../requirements/requirement-obligation';
 import type { StatusCatalog, StatusTransitions } from '../shared/status';
 
 /**
@@ -147,7 +153,14 @@ export function isTerminalAssistanceStatus(status: AssistanceRequestStatus): boo
   return TERMINAL_ASSISTANCE_STATUSES.includes(status);
 }
 
-export type RequirementStatus = 'pending' | 'submitted' | 'verified' | 'rejected' | 'waived';
+export type RequirementStatus =
+  | 'pending'
+  | 'submitted'
+  | 'verified'
+  | 'rejected'
+  | 'waived'
+  | 'expired'
+  | 'needs-replacement';
 
 export const REQUIREMENT_STATUS_CATALOG: StatusCatalog<RequirementStatus> = {
   pending: {
@@ -180,6 +193,21 @@ export const REQUIREMENT_STATUS_CATALOG: StatusCatalog<RequirementStatus> = {
     tone: 'warning',
     description: 'Excused for a documented reason.',
   },
+  // Held apart from `rejected`: the applicant did nothing wrong, and telling
+  // somebody their certificate was "rejected" when it simply lapsed is both
+  // inaccurate and needlessly bruising at a counter.
+  expired: {
+    value: 'expired',
+    label: 'Expired',
+    tone: 'warning',
+    description: 'Was valid when presented. Now past its expiry date.',
+  },
+  'needs-replacement': {
+    value: 'needs-replacement',
+    label: 'Needs replacement',
+    tone: 'warning',
+    description: 'A fresh copy is needed — damaged, illegible or superseded.',
+  },
 };
 
 export interface SubmittedRequirement {
@@ -187,10 +215,26 @@ export interface SubmittedRequirement {
   readonly code: string;
   readonly label: string;
   readonly status: RequirementStatus;
-  readonly isMandatory: boolean;
+  /**
+   * Replaced the `isMandatory` boolean in TAB 14 (`DL-76`). A boolean cannot
+   * express "only if you are claiming for a child", so a conditional document
+   * had to be recorded as required — making every applicant who did not need it
+   * look incomplete.
+   */
+  readonly obligation: RequirementObligation;
+  /** Whether a conditional document applies here. A person decides (`DL-76`). */
+  readonly applicability: ConditionalApplicability;
+  /** The circumstances a conditional document is needed in, in words. */
+  readonly appliesWhen: string | null;
+  /** Who ruled on applicability, and why. Both `null` while undecided. */
+  readonly applicabilityDecidedBy: StaffUserId | null;
+  readonly applicabilityReason: string | null;
   readonly submittedAt: IsoDateTime | null;
   readonly reviewedBy: StaffUserId | null;
+  readonly reviewedAt: IsoDateTime | null;
   readonly remarks: string | null;
+  /** What was presented against it, with every version ever presented (`DL-77`). */
+  readonly document: RequirementDocument | null;
 }
 
 export type RequestNoteVisibility = 'internal' | 'shared-with-applicant';
@@ -254,12 +298,19 @@ export interface AssistanceRequestFilter {
 
 export type AssistanceRequestSortField = 'referenceNumber' | 'status' | 'submittedAt' | 'updatedAt';
 
+/**
+ * Documents this applicant still owes.
+ *
+ * Reads `isOutstandingObligation` rather than a boolean, so a conditional
+ * document nobody has ruled on is not counted against the applicant, and one
+ * ruled applicable is counted exactly like a required one (`DL-76`).
+ */
 export function outstandingRequirements(
   request: AssistanceRequest,
 ): readonly SubmittedRequirement[] {
   return request.requirements.filter(
     (requirement) =>
-      requirement.isMandatory &&
+      isOutstandingObligation(requirement.obligation, requirement.applicability) &&
       requirement.status !== 'verified' &&
       requirement.status !== 'waived',
   );

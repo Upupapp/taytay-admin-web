@@ -338,7 +338,7 @@ describe('what still has to happen before filing', () => {
 
   it('treats a waiver as a valid answer to a missing document', () => {
     const requirements = requirementEntriesFor([
-      { code: 'valid-id', label: 'Valid ID', isMandatory: true, notes: null },
+      { code: 'valid-id', label: 'Valid ID', obligation: 'required', appliesWhen: null, notes: null },
     ]);
     const missing = { ...complete, requirements };
     expect(intakeProblems(missing, EMPTY_ADVISORY, null).map((p) => p.code)).toContain(
@@ -354,7 +354,7 @@ describe('what still has to happen before filing', () => {
 
   it('refuses a waiver nobody signed', () => {
     const requirements = requirementEntriesFor([
-      { code: 'valid-id', label: 'Valid ID', isMandatory: true, notes: null },
+      { code: 'valid-id', label: 'Valid ID', obligation: 'required', appliesWhen: null, notes: null },
     ]).map((entry) => ({ ...entry, waivedReason: '  ' }));
     expect(
       intakeProblems({ ...complete, requirements }, EMPTY_ADVISORY, null).map((p) => p.code),
@@ -363,7 +363,7 @@ describe('what still has to happen before filing', () => {
 
   it('ignores an optional document that was never presented', () => {
     const requirements = requirementEntriesFor([
-      { code: 'photo', label: 'Photograph', isMandatory: false, notes: null },
+      { code: 'photo', label: 'Photograph', obligation: 'optional', appliesWhen: null, notes: null },
     ]);
     expect(canSubmitIntake({ ...complete, requirements }, EMPTY_ADVISORY, null)).toBe(true);
   });
@@ -452,10 +452,16 @@ describe('the case study', () => {
           code: 'valid-id',
           label: 'Valid ID',
           status: 'pending',
-          isMandatory: true,
+          obligation: 'required',
+          applicability: 'undecided',
+          appliesWhen: null,
+          applicabilityDecidedBy: null,
+          applicabilityReason: null,
           submittedAt: null,
           reviewedBy: null,
+          reviewedAt: null,
           remarks: null,
+          document: null,
         },
       ],
     };

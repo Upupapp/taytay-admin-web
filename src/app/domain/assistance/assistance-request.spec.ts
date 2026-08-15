@@ -80,10 +80,16 @@ describe('outstandingRequirements', () => {
       code: 'valid-id',
       label: 'Valid government ID',
       status: 'pending',
-      isMandatory: true,
+      obligation: 'required',
+      applicability: 'undecided',
+      appliesWhen: null,
+      applicabilityDecidedBy: null,
+      applicabilityReason: null,
       submittedAt: null,
       reviewedBy: null,
+      reviewedAt: null,
       remarks: null,
+      document: null,
       ...overrides,
     };
   }
@@ -93,7 +99,30 @@ describe('outstandingRequirements', () => {
   }
 
   it('ignores optional requirements', () => {
-    const request = requestWith([requirement({ isMandatory: false })]);
+    const request = requestWith([requirement({ obligation: 'optional' })]);
+    expect(outstandingRequirements(request)).toHaveLength(0);
+  });
+
+  it('does not hold an undecided conditional document against the applicant', () => {
+    // Nobody has said it applies, so nothing is missing yet. Counting it would
+    // tell an applicant they owe a paper the office has not asked them for.
+    const request = requestWith([
+      requirement({ obligation: 'conditional', applicability: 'undecided' }),
+    ]);
+    expect(outstandingRequirements(request)).toHaveLength(0);
+  });
+
+  it('counts a conditional document once somebody rules that it applies', () => {
+    const request = requestWith([
+      requirement({ obligation: 'conditional', applicability: 'applies' }),
+    ]);
+    expect(outstandingRequirements(request)).toHaveLength(1);
+  });
+
+  it('drops a conditional document ruled not to apply', () => {
+    const request = requestWith([
+      requirement({ obligation: 'conditional', applicability: 'does-not-apply' }),
+    ]);
     expect(outstandingRequirements(request)).toHaveLength(0);
   });
 

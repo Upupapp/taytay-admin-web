@@ -557,10 +557,18 @@ function requirementsFrom(
       code: entry.code,
       label: entry.label,
       status: statusOf(entry),
-      isMandatory: entry.isMandatory,
+      obligation: entry.obligation,
+      applicability: entry.applicability,
+      appliesWhen: entry.appliesWhen,
+      applicabilityDecidedBy: null,
+      applicabilityReason: null,
       submittedAt: entry.presented ? asIsoDateTime(new Date()) : null,
       reviewedBy: null,
+      reviewedAt: null,
       remarks: entry.waivedReason,
+      // Intake records that a document was *presented*; capturing the file
+      // itself is the assessment workspace's job (`DL-77`).
+      document: null,
     };
   });
 }
@@ -582,7 +590,12 @@ function mergeRequirements(
     }
     return {
       ...previous,
-      isMandatory: entry.isMandatory,
+      obligation: entry.obligation,
+      appliesWhen: entry.appliesWhen,
+      // The counter's ruling wins only while nobody has ruled already: a
+      // re-save must not quietly undo an applicability decision somebody made.
+      applicability:
+        previous.applicability === 'undecided' ? entry.applicability : previous.applicability,
       label: entry.label,
       status: previous.status === 'verified' ? previous.status : statusOf(entry),
       submittedAt: entry.presented ? (previous.submittedAt ?? asIsoDateTime(new Date())) : null,

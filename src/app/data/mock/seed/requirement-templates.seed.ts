@@ -17,17 +17,17 @@ export const MOCK_REQUIREMENT_TEMPLATES: readonly RequirementTemplate[] = [
     description:
       'The documents DSWD field practice expects for assistance to individuals in crisis situation. Programmes add their own evidence of the crisis on top.',
     requirements: [
-      { code: 'valid-id', label: 'Valid government ID', isMandatory: true, notes: null },
+      { code: 'valid-id', label: 'Valid government ID', obligation: 'required', appliesWhen: null, notes: null },
       {
         code: 'brgy-indigency',
         label: 'Barangay certificate of indigency',
-        isMandatory: true,
+        obligation: 'required', appliesWhen: null,
         notes: 'Issued within the last three months.',
       },
       {
         code: 'social-case-study',
         label: 'Social case study report',
-        isMandatory: false,
+        obligation: 'optional', appliesWhen: null,
         notes: 'Prepared by the assigned social worker; required above the counter ceiling.',
       },
     ],
@@ -39,11 +39,11 @@ export const MOCK_REQUIREMENT_TEMPLATES: readonly RequirementTemplate[] = [
     description:
       'What the municipality asks for on programmes it runs and funds itself. Lighter than the AICS set: residency is verified from the registry rather than re-documented.',
     requirements: [
-      { code: 'valid-id', label: 'Valid government ID', isMandatory: true, notes: null },
+      { code: 'valid-id', label: 'Valid government ID', obligation: 'required', appliesWhen: null, notes: null },
       {
         code: 'brgy-residency',
         label: 'Barangay certificate of residency',
-        isMandatory: true,
+        obligation: 'required', appliesWhen: null,
         notes: 'Waived where the registry already records six months at the address.',
       },
     ],

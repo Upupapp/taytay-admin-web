@@ -7,6 +7,8 @@ import { map, of, switchMap } from 'rxjs';
 import { SessionStore } from '@core/auth/session.store';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
+  REQUIREMENT_OBLIGATION_LABELS,
+  type IntakeRequirementEntry,
   ASSISTANCE_REQUEST_REPOSITORY,
   ASSISTANCE_STATUS_CATALOG,
   EMPTY_ADVISORY,
@@ -221,7 +223,9 @@ export class IntakePage {
           requirements: request.requirements.map((requirement) => ({
             code: requirement.code,
             label: requirement.label,
-            isMandatory: requirement.isMandatory,
+            obligation: requirement.obligation,
+            appliesWhen: requirement.appliesWhen,
+            applicability: requirement.applicability,
             presented: requirement.status !== 'pending',
             waivedReason: requirement.status === 'waived' ? requirement.remarks : null,
           })),
@@ -292,6 +296,10 @@ export class IntakePage {
     this.patch({
       requestedAmount: raw === '' || !Number.isFinite(amount) || amount < 0 ? null : pesos(amount),
     });
+  }
+
+  protected obligationLabel(entry: IntakeRequirementEntry): string {
+    return REQUIREMENT_OBLIGATION_LABELS[entry.obligation];
   }
 
   protected onPresented(code: string, event: Event): void {

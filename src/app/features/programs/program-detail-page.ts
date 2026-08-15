@@ -15,6 +15,7 @@ import { combineLatest, of, switchMap } from 'rxjs';
 import { PermissionService } from '@core/access/permission.service';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
+  REQUIREMENT_OBLIGATION_LABELS,
   ADMINISTERING_AGENCIES,
   DEFAULT_REVIEW_WINDOW,
   LGU_ROLES,
@@ -150,6 +151,10 @@ export class ProgramDetailPage {
   /** The template's documents plus the programme's own, resolved by the domain. */
   protected documents(view: ProgramView): readonly ProgramRequirement[] {
     return resolveRequirements(this.template(view), view.program.requirements);
+  }
+
+  protected obligationLabel(requirement: ProgramRequirement): string {
+    return REQUIREMENT_OBLIGATION_LABELS[requirement.obligation];
   }
 
   protected fromTemplate(view: ProgramView, code: string): boolean {

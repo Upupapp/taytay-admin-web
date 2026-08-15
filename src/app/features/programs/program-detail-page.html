@@ -115,13 +115,17 @@
               <li class="documents__item">
                 <p class="documents__label">
                   {{ document.label }}
-                  <span class="documents__tag">
-                    {{ document.isMandatory ? copy.mandatory : copy.optional }}
-                  </span>
+                  <span class="documents__tag">{{ obligationLabel(document) }}</span>
                   <span class="documents__origin">
                     {{ fromTemplate(view, document.code) ? copy.fromTemplate : copy.programmeOwn }}
                   </span>
                 </p>
+                @if (document.appliesWhen) {
+                  <p class="documents__applies">
+                    <span class="documents__applies-label">{{ copy.appliesWhen }}</span>
+                    {{ document.appliesWhen }}
+                  </p>
+                }
                 @if (document.notes) {
                   <p class="program__note">{{ document.notes }}</p>
                 }
