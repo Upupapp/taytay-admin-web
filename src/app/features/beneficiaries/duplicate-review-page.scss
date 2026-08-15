@@ -1,0 +1,194 @@
+.review {
+  padding: var(--space-base);
+}
+
+.review__hint {
+  margin: 0 0 var(--space-base);
+  color: var(--c-text-subtle);
+  font-size: 12.5px;
+}
+
+.review__table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.review__caption {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.review__table th,
+.review__table td {
+  padding: var(--space-compact) var(--space-snug);
+  border-block-end: 1px solid var(--c-border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.review__table thead th {
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.review__pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-micro);
+  font-weight: 600;
+}
+
+.review__versus {
+  color: var(--c-text-subtle);
+  font-weight: 400;
+}
+
+.review__agreement {
+  color: var(--c-text-muted);
+}
+
+.review__action {
+  text-align: end;
+}
+
+.review__empty {
+  padding-block: var(--space-loose);
+  text-align: center;
+}
+
+.review__empty-heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.review__empty-message {
+  margin: var(--space-compact) 0 0;
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+/* ── the finding form ─────────────────────────────────────────────────────── */
+
+.finding {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+}
+
+.finding__group {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.finding__legend {
+  display: block;
+  margin-block-end: var(--space-compact);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.finding__hint {
+  display: block;
+  margin-block-start: var(--space-micro);
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}
+
+.finding__option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-compact);
+  padding-block: var(--space-compact);
+  min-block-size: var(--target-min);
+  cursor: pointer;
+}
+
+.finding__option input {
+  margin-block-start: 2px;
+  inline-size: 18px;
+  block-size: 18px;
+}
+
+.finding__option-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.finding__option-hint {
+  display: block;
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}
+
+.finding__field {
+  display: block;
+}
+
+.finding__textarea {
+  inline-size: 100%;
+  padding: var(--space-compact) var(--space-snug);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.preview {
+  padding: var(--space-snug);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: var(--c-surface-sunken, var(--c-surface));
+}
+
+.preview__heading {
+  margin: 0 0 var(--space-compact);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.preview__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-base);
+  margin: 0;
+}
+
+.preview__item dt {
+  color: var(--c-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.preview__item dd {
+  margin: 0;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.preview__overlap {
+  margin: var(--space-snug) 0 0;
+  font-size: 12.5px;
+}
+
+.preview__overlap-label {
+  font-weight: 600;
+}
+
+.preview__overlap-hint {
+  margin: var(--space-micro) 0 0;
+  color: var(--tone-warning-fg);
+  font-size: 12px;
+}

@@ -85,6 +85,41 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'beneficiaries',
+        // `duplicates` must precede `:id`, or it is read as a resident id and
+        // the review queue becomes unreachable.
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            title: 'Beneficiaries — Taytay Social Welfare',
+            canActivate: [permissionGuard('beneficiary.view')],
+            loadComponent: () =>
+              import('@features/beneficiaries/beneficiary-list-page').then(
+                (m) => m.BeneficiaryListPage,
+              ),
+          },
+          {
+            path: 'duplicates',
+            title: 'Possible duplicates — Taytay Social Welfare',
+            canActivate: [permissionGuard('beneficiary.review-duplicates')],
+            loadComponent: () =>
+              import('@features/beneficiaries/duplicate-review-page').then(
+                (m) => m.DuplicateReviewPage,
+              ),
+          },
+          {
+            path: ':id',
+            title: 'Beneficiary — Taytay Social Welfare',
+            canActivate: [permissionGuard('beneficiary.view')],
+            loadComponent: () =>
+              import('@features/beneficiaries/beneficiary-detail-page').then(
+                (m) => m.BeneficiaryDetailPage,
+              ),
+          },
+        ],
+      },
+      {
         path: 'households',
         children: [
           {

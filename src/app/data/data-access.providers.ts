@@ -3,6 +3,7 @@ import { makeEnvironmentProviders } from '@angular/core';
 
 import {
   ASSISTANCE_REQUEST_REPOSITORY,
+  BENEFICIARY_REPOSITORY,
   CASE_REPOSITORY,
   DASHBOARD_REPOSITORY,
   DISBURSEMENT_REPOSITORY,
@@ -19,6 +20,7 @@ import type { AppEnvironment } from '@env/environment.model';
 
 import {
   HttpAssistanceRequestRepository,
+  HttpBeneficiaryRepository,
   HttpCaseRepository,
   HttpDashboardRepository,
   HttpDisbursementRepository,
@@ -32,6 +34,7 @@ import {
   HttpStaffRepository,
 } from './http/http-repositories';
 import { MockAssistanceRequestRepository } from './mock/mock-assistance-request.repository';
+import { MockBeneficiaryRepository } from './mock/mock-beneficiary.repository';
 import { MockCaseRepository } from './mock/mock-case.repository';
 import { MockDashboardRepository } from './mock/mock-dashboard.repository';
 import { MockDisbursementRepository } from './mock/mock-disbursement.repository';
@@ -72,6 +75,7 @@ function mockProviders(): Provider[] {
     { provide: HOUSEHOLD_REPOSITORY, useClass: MockHouseholdRepository },
     { provide: FAMILY_REPOSITORY, useClass: MockFamilyRepository },
     { provide: CASE_REPOSITORY, useClass: MockCaseRepository },
+    { provide: BENEFICIARY_REPOSITORY, useClass: MockBeneficiaryRepository },
   ];
 }
 
@@ -89,5 +93,6 @@ function httpProviders(): Provider[] {
     { provide: HOUSEHOLD_REPOSITORY, useClass: HttpHouseholdRepository },
     { provide: FAMILY_REPOSITORY, useClass: HttpFamilyRepository },
     { provide: CASE_REPOSITORY, useClass: HttpCaseRepository },
+    { provide: BENEFICIARY_REPOSITORY, useClass: HttpBeneficiaryRepository },
   ];
 }

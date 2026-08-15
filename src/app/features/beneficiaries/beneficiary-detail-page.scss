@@ -1,0 +1,180 @@
+.beneficiary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-base);
+  align-items: start;
+}
+
+.beneficiary__panel {
+  padding: var(--space-base);
+}
+
+/* The history is the substance of this screen, so it spans the grid rather than
+   sitting in a column beside the summary panels. */
+.beneficiary__panel--wide {
+  grid-column: 1 / -1;
+}
+
+.beneficiary__heading {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.beneficiary__hint {
+  margin: var(--space-micro) 0 var(--space-snug);
+  color: var(--c-text-subtle);
+  font-size: 12.5px;
+}
+
+.beneficiary__empty {
+  margin: var(--space-snug) 0 0;
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+.beneficiary__line {
+  margin: var(--space-compact) 0 0;
+  font-size: 13px;
+}
+
+.beneficiary__term {
+  color: var(--c-text-muted);
+  font-weight: 600;
+}
+
+.beneficiary__back {
+  margin-block-start: var(--space-base);
+}
+
+.standing-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.standing-list__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-compact);
+  padding-block: var(--space-compact);
+  border-block-end: 1px solid var(--c-border);
+}
+
+.standing-list__label {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.standing-list__why {
+  color: var(--c-text-subtle);
+  font-size: 12.5px;
+}
+
+.totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-loose);
+  margin: var(--space-base) 0 0;
+}
+
+.totals__item dt {
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.totals__item dd {
+  margin: 0;
+}
+
+.totals__amount {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.totals__hint {
+  max-inline-size: 32ch;
+  color: var(--c-text-subtle);
+  font-size: 11.5px;
+}
+
+.family-list {
+  margin: var(--space-snug) 0 0;
+  padding-inline-start: var(--space-base);
+  font-size: 13px;
+}
+
+.enrollments {
+  margin: var(--space-snug) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.enrollments__item {
+  padding-block: var(--space-snug);
+  border-block-start: 1px solid var(--c-border);
+}
+
+.enrollments__item:first-child {
+  border-block-start: none;
+}
+
+.enrollments__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-compact);
+  margin: 0;
+}
+
+.enrollments__name {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.enrollments__dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-snug);
+  margin: var(--space-micro) 0 0;
+  color: var(--c-text-subtle);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.enrollments__exit,
+.enrollments__continues {
+  margin: var(--space-micro) 0 0;
+  font-size: 12.5px;
+}
+
+.enrollments__continues {
+  color: var(--c-text-subtle);
+}
+
+.duplicates {
+  margin: var(--space-snug) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.duplicates__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-snug);
+  padding-block: var(--space-compact);
+  border-block-start: 1px solid var(--c-border);
+}
+
+.duplicates__item:first-child {
+  border-block-start: none;
+}
+
+.duplicates__label {
+  font-size: 13px;
+  font-weight: 600;
+}

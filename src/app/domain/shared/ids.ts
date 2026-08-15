@@ -32,6 +32,15 @@ export type SavedViewId = Branded<string, 'SavedViewId'>;
 export type FamilyId = Branded<string, 'FamilyId'>;
 export type RelationshipId = Branded<string, 'RelationshipId'>;
 export type RelationshipEventId = Branded<string, 'RelationshipEventId'>;
+export type ProgramEnrollmentId = Branded<string, 'ProgramEnrollmentId'>;
+/**
+ * One recorded judgement about whether two registry records are the same person.
+ *
+ * Note what is *not* here: there is no `BeneficiaryId`. A beneficiary is a
+ * standing a resident holds, not a second record about them (`DL-71`), so the
+ * registry keys on `ResidentId` throughout.
+ */
+export type IdentityResolutionId = Branded<string, 'IdentityResolutionId'>;
 
 /**
  * The single sanctioned way to turn an untyped string (route param, API payload)

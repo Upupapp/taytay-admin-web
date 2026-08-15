@@ -1,0 +1,104 @@
+.comparison__heading {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.comparison__hint {
+  margin: var(--space-micro) 0 var(--space-snug);
+  color: var(--c-text-subtle);
+  font-size: 12.5px;
+}
+
+.comparison__strength {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-compact);
+  margin: 0 0 var(--space-snug);
+}
+
+.comparison__strength-label {
+  padding: 2px var(--space-compact);
+  border-radius: var(--radius-sm);
+  background: var(--tone-info-bg);
+  color: var(--tone-info-fg);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.comparison__strength-note {
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}
+
+.comparison__sensitive {
+  margin: 0 0 var(--space-snug);
+  padding: var(--space-compact) var(--space-snug);
+  border-inline-start: 3px solid var(--tone-warning-fg);
+  border-radius: var(--radius-sm);
+  background: var(--tone-warning-bg);
+  color: var(--tone-warning-fg);
+  font-size: 12.5px;
+}
+
+.comparison__table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+/* Present for screen readers; the visible heading above already names it. */
+.comparison__caption {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.comparison__table th,
+.comparison__table td {
+  padding: var(--space-compact) var(--space-snug);
+  border-block-end: 1px solid var(--c-border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.comparison__table thead th {
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.comparison__attribute {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.comparison__outcome {
+  font-weight: 600;
+}
+
+.comparison__outcome[data-outcome='same'] {
+  color: var(--tone-success-fg);
+}
+
+.comparison__outcome[data-outcome='similar'] {
+  color: var(--tone-info-fg);
+}
+
+.comparison__outcome[data-outcome='differs'] {
+  color: var(--tone-danger-fg);
+}
+
+.comparison__outcome[data-outcome='not-comparable'] {
+  color: var(--c-text-subtle);
+}
+
+.comparison__rule {
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}

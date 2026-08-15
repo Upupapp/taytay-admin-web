@@ -1749,3 +1749,185 @@ Sources, **supplied by the supervisor and not retrieved in this offline run**:
 **Consequence:** linking a request to a case remains a known gap with a
 deliberate shape — when it is built, it takes a reason and appends an event,
 like every other case mutation (`DL-54`).
+
+### DL-71 · A beneficiary is a standing, not a record
+
+**Status:** Settled (implemented in TAB 13).
+
+There is no `Beneficiary` entity, no `BeneficiaryId` and no beneficiary store.
+The registry is a **projection over the resident registry**, keyed on
+`ResidentId` from the port down to the route parameter.
+
+The master command asks that a resident, an applicant, a beneficiary and a
+programme enrollee be *roles a person holds, not separate person records*, and
+that one person retain one canonical identity across every programme. Those are
+the same requirement stated twice, and the only way to satisfy it reliably is to
+leave no second record for a person to drift into. `deriveStanding` computes the
+four roles from what the office actually did — a live request, a released
+payout, a standing enrollment — and returns the counts it used, which the detail
+screen renders beside each role.
+
+The roles are **not exclusive**. A senior may be on the pension list, have
+received a burial grant last year and have a medical request open this morning.
+A model that made these mutually exclusive would force the office to pick one
+and lose the other two, and the one it lost would be the one somebody needed.
+
+Standing is derived rather than stored for the same reason a vulnerability
+factor states its arithmetic: a stored flag can be wrong while the records say
+otherwise, and nobody would know which to believe. `check:beneficiary` fails the
+build on a `BeneficiaryId`, on a `beneficiaryId` field, and on a stored
+`isBeneficiary`-style flag.
+
+**Consequence:** `ResidentProfile` and `BeneficiaryDetail` both assemble history
+through **one** function, `historySummaryFor`, extracted from the resident
+adapter in this TAB. Two screens that assembled the same history separately
+would eventually disagree about what a family received, in front of the family.
+
+### DL-72 · The history is one sequence, and every line cites a record
+
+**Status:** Settled (implemented in TAB 13).
+
+`buildAssistanceTimeline` merges four record types — requests, payouts,
+referrals and enrollments — into one ordered sequence, newest first. Read as
+four lists side by side, the question a caseworker actually asks ("what has this
+office done for these people, and when?") cannot be answered without mentally
+interleaving them.
+
+Two rules are enforced by `check:beneficiary`:
+
+- **Every entry names its source.** `sourceKind`, `sourceId` and `reference` are
+  required and non-nullable, so any row on screen can be opened and checked. A
+  timeline that summarises without citing is a story.
+- **Nothing is invented.** No derived milestones, no expected next step, no
+  filled-in gaps.
+
+Two omissions are deliberate. An **unfiled draft** has no `submittedAt`, and
+dating it to now would assert something that did not happen (`DL-63`). A
+**scheduled payout** is a plan, not a receipt, and counting it as history would
+tell a family they had received money that is still in the drawer.
+
+The four status vocabularies stay four: `TimelineEntryStatus` is a discriminated
+union and each entry renders through the catalog that already owns its wording
+and tone. A fifth source type is a compile error rather than an unlabelled row.
+
+Entries sharing a timestamp are broken by `key`, giving a total order. Without
+it the same history renders differently on each read, which makes a screenshot
+useless as evidence and a test flaky for reasons nobody can reproduce.
+
+**Consequence:** the timeline component is `shared/`, not feature-local — the
+household and case screens will want the same list.
+
+### DL-73 · The duplicate queue compares without disclosing
+
+**Status:** Settled (implemented in TAB 13).
+
+A duplicate queue is, structurally, a machine for showing one person's details
+to somebody who came to look at another person's record. So the comparison
+reports **agreement, not values**: "both records carry the same date of birth",
+never the date.
+
+`MatchSignal` carries an attribute, an outcome and the rule that produced it.
+The matcher reads values and emits none. The panel that renders a comparison
+cannot leak a birth date or a PhilSys fragment because it is never handed one —
+defence in depth, since a reviewer clearing a queue is looking at somebody who
+is not their client, and a template with the values in scope is one careless
+binding away from disclosing them.
+
+Three details of the shape are load-bearing:
+
+- **`not-comparable` is not `differs`.** One record lacking a mobile number is
+  no evidence that two people are different, and scoring absence as
+  disagreement would hide real duplicates behind incomplete profiles.
+- **Each signal states its rule**, so a reviewer can disagree with the machine
+  on its own terms (`DL-60`, carried into identity review).
+- **Three bands, no score.** `strong`, `moderate`, `weak` order the queue and
+  resolve nothing. Merging two people's welfare histories on a percentage is
+  precisely what this shape prevents, and a fourth band would be a disposition
+  in disguise. `check:beneficiary` fails on a numeric score, on a threshold, and
+  on a fourth band.
+
+The one disclosure made by default is a masked name on both sides
+(`Mercado, A.`), on the reasoning already settled for `formatProtectedName`: a
+reviewer who can see nothing can review nothing.
+
+Enforced in the data layer as well as the view: a caller without
+`beneficiary.review-duplicates` receives **no candidates at all**, rather than
+candidates it is trusted to hide.
+
+**Consequence:** the beneficiary list carries a boolean
+`hasOpenDuplicateReview` and not the candidate. A list everybody scrolls past is
+the wrong place to name the other person.
+
+### DL-74 · Resolving an identity is a finding, never a merge
+
+**Status:** Settled (implemented in TAB 13).
+
+The master command says never auto-merge without an explicit reviewed action.
+This goes further: **there is no merge at all**, reviewed or otherwise.
+
+Resolving a pair records a judgement with a required reason and the reviewer's
+identity:
+
+- **`same-person`** names the record the office keeps using and supersedes the
+  other. Both records survive, and so does every request, payout, case and
+  enrollment attached to either. The superseded record stops appearing as its
+  own entry in the list and stays readable by id.
+- **`distinct-people`** is recorded just as deliberately. Without it the same
+  pair resurfaces in the queue forever, and a reviewer who has already answered
+  is asked again until they answer wrong.
+
+Why not merge, when merging is what a duplicate ordinarily means: welfare
+history is the evidence that an office did or did not help a family, and a merge
+rewrites it irreversibly on the strength of a clerk's judgement about two names.
+A finding is reversible by a later finding; a merge is not reversible by
+anything. The append-only doctrine that governs cases (`DL-54`) and relationships
+(`DL-48`) applies here with more force, not less.
+
+`resolveIdentity` is **idempotent on the pair** — a double tap on a municipal
+connection records one finding — and refuses the *opposite* verdict for an
+already-answered pair rather than silently overwriting it. A correction is a new
+act with its own reason, and there is no screen for it yet: a stated gap.
+
+`previewResolution` describes what would be **carried across**, never what would
+be deleted, because nothing is. It names programmes appearing under both records
+without resolving them: which of two payouts was the real episode is an office
+judgement, and guessing would quietly rewrite what a family was given.
+
+Permissions follow the same logic. `beneficiary.review-duplicates` is **not**
+held by the intake officer, whose counter usually created the second record, and
+**not** by the auditor, whose oversight would otherwise be able to alter the
+identities it is checking.
+
+**Consequence:** `check:beneficiary` fails the build on any merge or delete of a
+person across the domain, the adapters and the screens, and on any
+auto-resolution. Validated against **twelve planted regressions**, all twelve
+caught — one of which exposed a real defect in the checker itself, where a
+required reason on the draft was masking an optional one on the finding.
+
+### DL-75 · An enrollment ends, and the ending is kept
+
+**Status:** Settled (implemented in TAB 13).
+
+Standing programme membership is a `ProgramEnrollment`, distinct from an
+assistance request: a request is one intervention with an end, an enrollment is
+a continuing relationship that produces interventions over years. Not every
+programme has one — one-off crisis assistance does not, because there the
+request *is* the whole relationship.
+
+`exited` is terminal, on the same reasoning as case closure (`DL-53`). Somebody
+who returns is enrolled afresh and the new record names the old one through
+`continuesEnrollmentId`, so "how long were they on it?" keeps a single answer.
+
+Every exit carries a reason from a fixed vocabulary and a **required note**,
+because the reasons are not interchangeable: ageing out of a youth programme and
+being removed for cause are different facts about a person, and only one of them
+should ever colour how the next application is read.
+
+`enrollmentProblems` refuses the combinations that would let a screen and a
+report disagree about whether somebody is on a programme — an exited record with
+no exit, an exit on a standing one, an unexplained exit, an exit dated before the
+enrollment, and an enrollment that continues itself.
+
+**Consequence:** enrollment is read-only in the UI for now. The states exist and
+are validated; the screen that records them is a known gap, listed in
+`docs/beneficiaries/README.md`.

@@ -11,10 +11,15 @@ import type { SavedViewId, StaffUserId } from '../shared/ids';
  * San Juan", and nothing to keep in step when a list grows a new filter. Applying
  * a view is a navigation; sharing one is a link.
  */
-export type SavedViewResource = 'residents' | 'assistance-requests' | 'disbursements';
+export type SavedViewResource =
+  | 'residents'
+  | 'beneficiaries'
+  | 'assistance-requests'
+  | 'disbursements';
 
 export const SAVED_VIEW_RESOURCES: readonly SavedViewResource[] = [
   'residents',
+  'beneficiaries',
   'assistance-requests',
   'disbursements',
 ];
@@ -26,6 +31,7 @@ export const SAVED_VIEW_RESOURCES: readonly SavedViewResource[] = [
  */
 export const SAVED_VIEW_PERMISSIONS: Readonly<Record<SavedViewResource, Permission>> = {
   residents: 'resident.view',
+  beneficiaries: 'beneficiary.view',
   'assistance-requests': 'request.view',
   disbursements: 'disbursement.view',
 };

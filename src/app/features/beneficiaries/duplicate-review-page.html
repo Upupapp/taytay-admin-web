@@ -1,0 +1,188 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions class="btn" routerLink="/beneficiaries">{{ copy.back }}</a>
+</app-page-header>
+
+<div class="card review">
+  <p class="review__hint">{{ copy.strengthHint }}</p>
+
+  <app-async-content [state]="state()" [content]="queueBody" [skeletonLines]="5">
+    <ng-template #queueBody>
+      @if (rows().length === 0) {
+        <div class="review__empty">
+          <h2 class="review__empty-heading">{{ copy.emptyHeading }}</h2>
+          <p class="review__empty-message">{{ copy.emptyMessage }}</p>
+        </div>
+      } @else {
+        <table class="review__table">
+          <caption class="review__caption">
+            {{ copy.caption }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">{{ copy.columnRecords }}</th>
+              <th scope="col">{{ copy.columnStrength }}</th>
+              <th scope="col">{{ copy.columnAgreement }}</th>
+              <th scope="col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (candidate of rows(); track candidate.residentId + candidate.otherResidentId) {
+              <tr>
+                <!-- Masked names on both sides. This queue never shows a value
+                     that was compared (DL-73). -->
+                <th scope="row" class="review__pair">
+                  <span>{{ candidate.residentLabel }}</span>
+                  <span class="review__versus">and</span>
+                  <span>{{ candidate.otherLabel }}</span>
+                </th>
+                <td>{{ strengthLabels[candidate.strength] }}</td>
+                <td class="review__agreement">{{ agreementSummary(candidate) }}</td>
+                <td class="review__action">
+                  <button type="button" class="btn btn--small" (click)="open(candidate)">
+                    {{ copy.open }}
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </ng-template>
+  </app-async-content>
+</div>
+
+@if (openCandidate(); as candidate) {
+  <app-drawer
+    [open]="true"
+    size="wide"
+    [heading]="copy.comparisonHeading"
+    [description]="copy.comparisonHint"
+    (dismissed)="close()"
+  >
+    <div drawer-body class="finding">
+      <app-identity-comparison
+        [candidate]="candidate"
+        [heading]="copy.comparisonHeading"
+        [hint]="copy.comparisonHint"
+        [strengthHint]="copy.strengthHint"
+        [sensitiveNotice]="copy.sensitiveNotice"
+      />
+
+      <fieldset class="finding__group">
+        <legend class="finding__legend">{{ copy.verdictHeading }}</legend>
+
+        <label class="finding__option">
+          <input
+            type="radio"
+            name="verdict"
+            value="same-person"
+            [checked]="verdict() === 'same-person'"
+            (change)="onVerdict('same-person')"
+          />
+          <span>
+            <span class="finding__option-label">{{ copy.verdictSame }}</span>
+            <span class="finding__option-hint">{{ copy.verdictSameHint }}</span>
+          </span>
+        </label>
+
+        <label class="finding__option">
+          <input
+            type="radio"
+            name="verdict"
+            value="distinct-people"
+            [checked]="verdict() === 'distinct-people'"
+            (change)="onVerdict('distinct-people')"
+          />
+          <span>
+            <span class="finding__option-label">{{ copy.verdictDistinct }}</span>
+            <span class="finding__option-hint">{{ copy.verdictDistinctHint }}</span>
+          </span>
+        </label>
+      </fieldset>
+
+      @if (verdict() === 'same-person') {
+        <fieldset class="finding__group">
+          <legend class="finding__legend">{{ copy.canonicalHeading }}</legend>
+          <p class="finding__hint">{{ copy.canonicalHint }}</p>
+
+          <label class="finding__option">
+            <input
+              type="radio"
+              name="canonical"
+              [checked]="canonicalId() === candidate.residentId"
+              (change)="onCanonical(candidate.residentId)"
+            />
+            <span class="finding__option-label">{{ candidate.residentLabel }}</span>
+          </label>
+
+          <label class="finding__option">
+            <input
+              type="radio"
+              name="canonical"
+              [checked]="canonicalId() === candidate.otherResidentId"
+              (change)="onCanonical(candidate.otherResidentId)"
+            />
+            <span class="finding__option-label">{{ candidate.otherLabel }}</span>
+          </label>
+        </fieldset>
+
+        <!-- What is carried across, never what is deleted: nothing is. -->
+        @if (preview(); as summary) {
+          <section class="preview" aria-labelledby="preview-heading">
+            <h3 class="preview__heading" id="preview-heading">{{ copy.previewHeading }}</h3>
+            <dl class="preview__list">
+              <div class="preview__item">
+                <dt>{{ copy.previewRequests }}</dt>
+                <dd>{{ summary.movingRequestCount }}</dd>
+              </div>
+              <div class="preview__item">
+                <dt>{{ copy.previewDisbursements }}</dt>
+                <dd>{{ summary.movingDisbursementCount }}</dd>
+              </div>
+              <div class="preview__item">
+                <dt>{{ copy.previewCases }}</dt>
+                <dd>{{ summary.movingCaseCount }}</dd>
+              </div>
+              <div class="preview__item">
+                <dt>{{ copy.previewEnrollments }}</dt>
+                <dd>{{ summary.movingEnrollmentCount }}</dd>
+              </div>
+            </dl>
+
+            @if (summary.overlappingProgramNames.length > 0) {
+              <p class="preview__overlap">
+                <span class="preview__overlap-label">{{ copy.previewOverlap }}:</span>
+                {{ summary.overlappingProgramNames.join(', ') }}
+              </p>
+              <p class="preview__overlap-hint">{{ copy.previewOverlapHint }}</p>
+            }
+          </section>
+        }
+      }
+
+      <label class="finding__field">
+        <span class="finding__legend">{{ copy.reasonLabel }}</span>
+        <textarea
+          class="finding__textarea"
+          rows="3"
+          [value]="reason()"
+          [placeholder]="copy.reasonPlaceholder"
+          aria-describedby="finding-reason-hint"
+          (input)="onReason($event)"
+        ></textarea>
+        <span class="finding__hint" id="finding-reason-hint">{{ copy.reasonHint }}</span>
+      </label>
+    </div>
+
+    <button type="button" drawer-actions class="btn" (click)="close()">{{ copy.cancel }}</button>
+    <button
+      type="button"
+      drawer-actions
+      class="btn btn--primary"
+      [disabled]="!canSubmit()"
+      (click)="submit()"
+    >
+      {{ submitting() ? copy.submitting : copy.submit }}
+    </button>
+  </app-drawer>
+}

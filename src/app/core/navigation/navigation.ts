@@ -51,7 +51,17 @@ export const NAVIGATION: readonly NavSection[] = [
         route: '/residents',
         glyph: 'RS',
         permissions: ['resident.view'],
-        description: 'Beneficiary and household registry.',
+        // Was "Beneficiary and household registry" before TAB 13. The two are
+        // now distinct screens answering different questions, and one label
+        // covering both is how a caseworker ends up on the wrong one.
+        description: 'The registry: who is on file, and their details.',
+      },
+      {
+        label: 'Beneficiaries',
+        route: '/beneficiaries',
+        glyph: 'BN',
+        permissions: ['beneficiary.view'],
+        description: 'Who the office has served, and what they have received.',
       },
       {
         label: 'Households',

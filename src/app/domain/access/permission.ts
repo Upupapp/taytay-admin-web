@@ -18,6 +18,19 @@ export const PERMISSIONS = [
   'resident.deactivate',
   'resident.export',
 
+  // The longitudinal view: everything this office has done for one person,
+  // across every programme and every year. Held apart from `resident.view`
+  // because seeing that somebody is on the registry is a different disclosure
+  // from reading their whole assistance history on one screen.
+  'beneficiary.view',
+  // Judging whether two registry records are the same person. A finding about
+  // somebody's identity, recorded against the reviewer's name (`DL-74`), and so
+  // never implied by being able to read the registry.
+  'beneficiary.review-duplicates',
+  // Taking a beneficiary list out of the system. Named as a sensitive operation
+  // by TAB 05, and held apart from `report.export`, which produces aggregates.
+  'beneficiary.export',
+
   'household.view',
   // Composition: who lives under this roof, and who heads it.
   'household.manage',
@@ -117,6 +130,9 @@ const INTAKE_PERMISSIONS: readonly Permission[] = [
   'resident.view-sensitive',
   'resident.create',
   'resident.update',
+  // Intake asks "has this office helped them before?" at the counter, and the
+  // answer changes the conversation. Reading the history is intake work.
+  'beneficiary.view',
   'household.view',
   'household.manage',
   'family.view',
@@ -138,6 +154,10 @@ const SOCIAL_WORKER_PERMISSIONS: readonly Permission[] = [
   // The case manager writes and reads the protected tier. Nobody else routinely
   // needs the content of a safety plan to do their job.
   'case.view-protected-note',
+  // Deliberately not held by the intake officer, who is usually the person
+  // whose counter created the duplicate. Whether two records are one person is
+  // then adjudicated by somebody other than whoever typed the second one.
+  'beneficiary.review-duplicates',
   'request.assess',
   'request.endorse',
   'request.view-sensitive',
@@ -162,6 +182,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       ...SOCIAL_WORKER_PERMISSIONS,
       'resident.deactivate',
       'resident.export',
+      'beneficiary.export',
       'case.close',
       'program.manage',
       'request.approve',
@@ -246,6 +267,9 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'case.view',
       'program.view',
       'request.view',
+      // Reading the history, never adjudicating it: `beneficiary.review-duplicates`
+      // would let oversight alter the very identities it is checking.
+      'beneficiary.view',
       'disbursement.view',
       'referral.view',
       'report.view',

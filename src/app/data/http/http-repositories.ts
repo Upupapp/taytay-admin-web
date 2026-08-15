@@ -12,6 +12,16 @@ import {
   type AssistanceRequestSortField,
   type AssistanceRequestStatus,
   type AuthenticatedUser,
+  type BeneficiaryDetail,
+  type BeneficiaryFilter,
+  type BeneficiaryRepository,
+  type BeneficiarySortField,
+  type BeneficiarySummary,
+  type DuplicateCandidate,
+  type IdentityResolution,
+  type IdentityResolutionDraft,
+  type MergePreview,
+  type ProgramEnrollment,
   type CaseFilter,
   type CaseId,
   type CaseNoteSensitivity,
@@ -524,6 +534,69 @@ export class HttpReferralRepository implements ReferralRepository {
 
   getById(id: ReferralId): Observable<Referral | null> {
     return this.api.optionalItem<Referral>(`${API_ENDPOINTS.referrals}/${id}`);
+  }
+}
+
+/**
+ * The beneficiary registry over HTTP.
+ *
+ * The rules this port carries are enforced by the API, not here: the server
+ * decides what a caller may read, redacts what it may not, and returns match
+ * *signals* rather than the other person's record (`DL-73`). This adapter must
+ * never reconstruct a comparison client-side to fill a gap in a response.
+ */
+@Injectable()
+export class HttpBeneficiaryRepository implements BeneficiaryRepository {
+  private readonly api = inject(ApiClient);
+
+  list(
+    filter: BeneficiaryFilter,
+    page: PageRequest<BeneficiarySortField>,
+  ): Observable<Page<BeneficiarySummary>> {
+    return this.api.page<BeneficiarySummary>(API_ENDPOINTS.beneficiaries, page, { ...filter });
+  }
+
+  getByResidentId(id: ResidentId): Observable<BeneficiaryDetail | null> {
+    return this.api.optionalItem<BeneficiaryDetail>(`${API_ENDPOINTS.beneficiaries}/${id}`);
+  }
+
+  enrollmentsFor(id: ResidentId): Observable<readonly ProgramEnrollment[]> {
+    return this.api.collection<ProgramEnrollment>(
+      `${API_ENDPOINTS.beneficiaries}/${id}/enrollments`,
+    );
+  }
+
+  duplicateQueue(page: PageRequest): Observable<Page<DuplicateCandidate>> {
+    return this.api.page<DuplicateCandidate>(API_ENDPOINTS.identityReview, page);
+  }
+
+  duplicatesFor(id: ResidentId): Observable<readonly DuplicateCandidate[]> {
+    return this.api.collection<DuplicateCandidate>(
+      `${API_ENDPOINTS.beneficiaries}/${id}/duplicates`,
+    );
+  }
+
+  previewResolution(
+    canonicalResidentId: ResidentId,
+    supersededResidentId: ResidentId,
+  ): Observable<MergePreview> {
+    return this.api.item<MergePreview>(`${API_ENDPOINTS.identityReview}/preview`, {
+      canonicalResidentId,
+      supersededResidentId,
+    });
+  }
+
+  resolveIdentity(draft: IdentityResolutionDraft): Observable<IdentityResolution> {
+    return this.api.post<IdentityResolution, IdentityResolutionDraft>(
+      API_ENDPOINTS.identityReview,
+      draft,
+    );
+  }
+
+  resolutionsFor(id: ResidentId): Observable<readonly IdentityResolution[]> {
+    return this.api.collection<IdentityResolution>(
+      `${API_ENDPOINTS.beneficiaries}/${id}/identity-findings`,
+    );
   }
 }
 

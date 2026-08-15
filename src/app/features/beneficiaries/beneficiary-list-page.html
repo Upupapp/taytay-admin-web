@@ -1,0 +1,170 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a
+    page-actions
+    *appHasPermission="'beneficiary.review-duplicates'"
+    class="btn"
+    routerLink="/beneficiaries/duplicates"
+  >
+    {{ copy.reviewDuplicates }}
+  </a>
+</app-page-header>
+
+<div class="card beneficiaries">
+  <app-saved-views-bar
+    resource="beneficiaries"
+    [currentParams]="filterParams()"
+    [currentUserId]="currentUserId()"
+  />
+
+  <div class="filters">
+    <label class="filters__field filters__field--wide">
+      <span class="filters__label">{{ copy.search }}</span>
+      <input
+        type="search"
+        class="filters__input"
+        [placeholder]="copy.searchPlaceholder"
+        [value]="searchText()"
+        aria-describedby="beneficiary-search-hint"
+        (input)="onSearch($event)"
+      />
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.barangay }}</span>
+      <select class="filters__input" (change)="onBarangay($event)">
+        <option value="" [selected]="!filter().barangayId">{{ copy.allBarangays }}</option>
+        @for (barangay of barangays; track barangay.id) {
+          <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
+            {{ barangay.name }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.programme }}</span>
+      <select class="filters__input" (change)="onProgramme($event)">
+        <option value="" [selected]="!filter().programId">{{ copy.allProgrammes }}</option>
+        @for (programme of programList(); track programme.id) {
+          <option [value]="programme.id" [selected]="filter().programId === programme.id">
+            {{ programme.name }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.standing }}</span>
+      <select class="filters__input" (change)="onStanding($event)">
+        <option value="" [selected]="!filter().role">{{ copy.allStandings }}</option>
+        @for (standing of standings; track standing) {
+          <option [value]="standing" [selected]="filter().role === standing">
+            {{ standingLabel(standing) }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.receivedFrom }}</span>
+      <input
+        type="date"
+        class="filters__input"
+        [value]="filter().receivedFrom ?? ''"
+        (change)="onFrom($event)"
+      />
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.receivedTo }}</span>
+      <input
+        type="date"
+        class="filters__input"
+        [value]="filter().receivedTo ?? ''"
+        (change)="onTo($event)"
+      />
+    </label>
+
+    <label class="filters__check">
+      <input
+        type="checkbox"
+        [checked]="filter().withOpenDuplicateReview === true"
+        (change)="onOnlyDuplicates($event)"
+      />
+      <span>{{ copy.onlyDuplicates }}</span>
+    </label>
+
+    @if (hasFilters()) {
+      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+    }
+  </div>
+
+  <p class="filters__hint" id="beneficiary-search-hint">{{ copy.searchHint }}</p>
+
+  <!-- A reversed period matches nothing, which reads on screen as "this office
+       has never helped anybody". Said out loud rather than left to be inferred. -->
+  @if (periodReversed()) {
+    <p class="beneficiaries__warning" role="status">{{ copy.periodReversed }}</p>
+  }
+
+  <app-data-table
+    [caption]="copy.caption"
+    [columns]="columns()"
+    [rows]="rows()"
+    [rowKey]="rowKey"
+    [loading]="isLoading()"
+    [page]="page()"
+    [sort]="sort()"
+    [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
+    [emptyHeading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
+    [emptyMessage]="hasFilters() ? copy.noResultsMessage : copy.emptyMessage"
+    [emptyActionLabel]="hasFilters() ? copy.clear : null"
+    (sortChanged)="onSortChanged($event)"
+    (pageChanged)="onPageChanged($event)"
+    (emptyActionSelected)="clearFilters()"
+  />
+</div>
+
+<ng-template #personCell let-row>
+  <a class="beneficiaries__name" [routerLink]="detailLink(row)">{{ row.resident.listedName }}</a>
+  @if (row.resident.isProtected) {
+    <span class="beneficiaries__protected">{{ copy.restricted }}</span>
+  }
+  <!-- A flag, never the other record. Which record it resembles is on the
+       review screen, behind its own permission. -->
+  @if (row.hasOpenDuplicateReview) {
+    <span class="beneficiaries__duplicate" [title]="copy.duplicateFlagHint">
+      {{ copy.duplicateFlag }}
+    </span>
+  }
+</ng-template>
+
+<ng-template #standingCell let-row>
+  <span class="standing">{{ standingOf(row) }}</span>
+</ng-template>
+
+<ng-template #programmesCell let-row>
+  <span class="programmes">
+    @for (name of row.currentProgramNames; track name) {
+      <span class="programmes__chip">{{ name }}</span>
+    } @empty {
+      <span class="programmes__none">{{ copy.noProgrammes }}</span>
+    }
+  </span>
+</ng-template>
+
+<ng-template #receivedCell let-row>
+  @if (row.totalReleased.centavos > 0) {
+    <span class="beneficiaries__amount">{{ row.totalReleased | peso }}</span>
+  } @else {
+    <span class="beneficiaries__none">{{ copy.none }}</span>
+  }
+</ng-template>
+
+<ng-template #lastCell let-row>
+  @if (row.lastAssistanceAt) {
+    <time [attr.datetime]="row.lastAssistanceAt">{{ row.lastAssistanceAt | relativeTime }}</time>
+  } @else {
+    <span class="beneficiaries__none">{{ copy.neverAssisted }}</span>
+  }
+</ng-template>

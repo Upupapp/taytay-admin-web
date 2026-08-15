@@ -4,20 +4,16 @@ import { throwError, type Observable } from 'rxjs';
 import {
   ACCESS_CONTEXT,
   barangayName,
-  byMostRecent,
   canReadRecord,
   discloseResident,
   isInAgeGroup,
-  isTerminalAssistanceStatus,
   isWithinBarangayScope,
   formatPersonName,
   paginate,
   PermissionDeniedError,
   ResidentDraftInvalidError,
-  sumMoney,
   userHasPermission,
   validateResidentDraft,
-  ZERO_PESOS,
   type AuthenticatedUser,
   type HouseholdMemberView,
   type Household,
@@ -26,23 +22,16 @@ import {
   type PageRequest,
   type Permission,
   type Resident,
-  type ResidentAssistanceHistory,
-  type ResidentCaseSummary,
   type ResidentDraft,
   type ResidentFilter,
   type ResidentId,
-  type ResidentPayoutSummary,
   type ResidentProfile,
-  type ResidentReferralSummary,
   type ResidentRepository,
   type ResidentSortField,
   type ResidentView,
 } from '@domain/index';
 
-import { MOCK_ASSISTANCE_REQUESTS } from './seed/assistance-requests.seed';
-import { MOCK_DISBURSEMENTS } from './seed/disbursements.seed';
-import { MOCK_PROGRAMS } from './seed/programs.seed';
-import { MOCK_REFERRALS } from './seed/referrals.seed';
+import { historySummaryFor } from './mock-assistance-history';
 import { denyUnless } from './mock-access';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
@@ -144,7 +133,7 @@ export class MockResidentRepository implements ResidentRepository {
       view: this.disclose(resident, user),
       household,
       householdMembers: this.householdMembersOf(resident, household, user),
-      history: historyOf(resident.id),
+      history: historySummaryFor(resident.id),
     });
   }
 
@@ -293,79 +282,4 @@ function residentSortKey(resident: Resident, field: ResidentSortField): string {
     case 'updatedAt':
       return resident.audit.updatedAt;
   }
-}
-
-/**
- * Everything linked to the person, gathered in one pass.
- *
- * Note what is *not* gated separately here: the history is a fact about the
- * subject, and the caller has already been cleared to read the subject. Gating
- * it again on `request.view` would give a disbursing officer a resident page
- * that silently omits the cases their payouts belong to.
- */
-function historyOf(residentId: ResidentId): ResidentAssistanceHistory {
-  const requests = MOCK_ASSISTANCE_REQUESTS.filter((request) => request.residentId === residentId);
-  const requestIds = new Set(requests.map((request) => request.id));
-
-  const cases: readonly ResidentCaseSummary[] = requests
-    .map((request) => ({
-      id: request.id,
-      referenceNumber: request.referenceNumber,
-      programId: request.programId,
-      programName: programName(request.programId),
-      status: request.status,
-      requestedAmount: request.requestedAmount,
-      approvedAmount: request.approvedAmount,
-      submittedAt: request.submittedAt,
-      updatedAt: request.audit.updatedAt,
-    }))
-    .sort((a, b) => byMostRecent(a.updatedAt, b.updatedAt));
-
-  const payouts: readonly ResidentPayoutSummary[] = MOCK_DISBURSEMENTS.filter(
-    (disbursement) =>
-      disbursement.residentId === residentId || requestIds.has(disbursement.requestId),
-  )
-    .map((disbursement) => ({
-      id: disbursement.id,
-      requestId: disbursement.requestId,
-      referenceNumber: disbursement.referenceNumber,
-      status: disbursement.status,
-      method: disbursement.method,
-      amount: disbursement.amount,
-      scheduledFor: disbursement.scheduledFor,
-      releasedAt: disbursement.releasedAt,
-    }))
-    .sort((a, b) => byMostRecent(a.releasedAt, b.releasedAt));
-
-  const referrals: readonly ResidentReferralSummary[] = MOCK_REFERRALS.filter(
-    (referral) => referral.residentId === residentId,
-  )
-    .map((referral) => ({
-      id: referral.id,
-      referenceNumber: referral.referenceNumber,
-      destination: referral.destination,
-      destinationName: referral.destinationName,
-      status: referral.status,
-      referredAt: referral.referredAt,
-      respondedAt: referral.respondedAt,
-    }))
-    .sort((a, b) => byMostRecent(a.referredAt, b.referredAt));
-
-  const handedOver = payouts.filter(
-    (payout) => payout.status === 'released' || payout.status === 'claimed',
-  );
-
-  return {
-    cases,
-    payouts,
-    referrals,
-    totalReleased:
-      handedOver.length > 0 ? sumMoney(handedOver.map((payout) => payout.amount)) : ZERO_PESOS,
-    openCaseCount: cases.filter((entry) => !isTerminalAssistanceStatus(entry.status)).length,
-    lastActivityAt: cases[0]?.updatedAt ?? null,
-  };
-}
-
-function programName(programId: ResidentCaseSummary['programId']): string {
-  return MOCK_PROGRAMS.find((program) => program.id === programId)?.name ?? 'Unknown programme';
 }

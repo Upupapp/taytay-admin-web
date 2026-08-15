@@ -9,6 +9,19 @@ import type {
   RequestNote,
   RequirementStatus,
 } from '../assistance/assistance-request';
+import type {
+  BeneficiaryDetail,
+  BeneficiaryFilter,
+  BeneficiarySortField,
+  BeneficiarySummary,
+} from '../beneficiaries/beneficiary';
+import type {
+  DuplicateCandidate,
+  IdentityResolution,
+  IdentityResolutionDraft,
+  MergePreview,
+} from '../beneficiaries/duplicate-review';
+import type { ProgramEnrollment } from '../beneficiaries/program-enrollment';
 import type { AssessmentDraft } from '../intake/assessment';
 import type { AdvisoryAcknowledgement, IntakeAdvisory } from '../intake/intake-advisory';
 import type { IntakeDraft } from '../intake/intake-draft';
@@ -350,6 +363,73 @@ export interface AssistanceRequestRepository {
 
 export const ASSISTANCE_REQUEST_REPOSITORY = new InjectionToken<AssistanceRequestRepository>(
   'AssistanceRequestRepository',
+);
+
+/**
+ * The beneficiary registry — one person's whole assistance history.
+ *
+ * A **projection over the resident registry**, not a second one. Every method
+ * here is keyed on `ResidentId`; there is no beneficiary identifier, and the
+ * absence is what makes "one person keeps one canonical identity across
+ * programmes" true by construction rather than by care (`DL-71`).
+ *
+ * Two absences to preserve:
+ *
+ *  - **No merge.** `resolveIdentity` records a finding — the same person, or
+ *    two different people — and never destroys a record. `same-person`
+ *    designates a canonical id and supersedes the other; both survive, and so
+ *    does everything attached to either (`DL-74`). There is no `merge`, no
+ *    `deleteResident` and no automatic resolution above any threshold.
+ *  - **No score.** `duplicatesFor` returns graded candidates whose signals each
+ *    state their rule, on the same doctrine as the intake advisory (`DL-60`).
+ *    Nothing in this port ranks people or resolves a pair on its own.
+ *
+ * Reads carry `ResidentView`, already redacted for the caller (`DL-38`), and a
+ * caller without `beneficiary.review-duplicates` receives no candidates at all
+ * rather than candidates it is expected to hide.
+ */
+export interface BeneficiaryRepository {
+  list(
+    filter: BeneficiaryFilter,
+    page: PageRequest<BeneficiarySortField>,
+  ): Observable<Page<BeneficiarySummary>>;
+  /** `null` for "not found *or* not yours", deliberately indistinguishable (`DL-31`). */
+  getByResidentId(id: ResidentId): Observable<BeneficiaryDetail | null>;
+
+  /** Every enrollment, standing and past. Exits are history, not deletions. */
+  enrollmentsFor(id: ResidentId): Observable<readonly ProgramEnrollment[]>;
+
+  /**
+   * The duplicate-review queue. Candidates report *agreement between fields*,
+   * never the field values, so a queue can be worked without disclosing one
+   * person's details to somebody who came to look at another's (`DL-73`).
+   */
+  duplicateQueue(page: PageRequest): Observable<Page<DuplicateCandidate>>;
+  duplicatesFor(id: ResidentId): Observable<readonly DuplicateCandidate[]>;
+
+  /**
+   * What a `same-person` finding would carry across, shown before it is
+   * recorded. A preview only: calling it changes nothing.
+   */
+  previewResolution(
+    canonicalResidentId: ResidentId,
+    supersededResidentId: ResidentId,
+  ): Observable<MergePreview>;
+
+  /**
+   * Records the reviewer's finding. Idempotent on the pair: re-submitting the
+   * same verdict returns the existing resolution rather than appending a second
+   * one, so a double tap on a municipal connection cannot produce two findings
+   * about one pair.
+   */
+  resolveIdentity(draft: IdentityResolutionDraft): Observable<IdentityResolution>;
+
+  /** Findings already recorded about one record, newest first. */
+  resolutionsFor(id: ResidentId): Observable<readonly IdentityResolution[]>;
+}
+
+export const BENEFICIARY_REPOSITORY = new InjectionToken<BeneficiaryRepository>(
+  'BeneficiaryRepository',
 );
 
 export interface DisbursementRepository {

@@ -94,7 +94,8 @@ npm run verify     # lint + typecheck + repository checks + test + build
 ```
 
 The repository checks are `check:brand`, `check:shell`, `check:access`,
-`check:vulnerability`, `check:case-audit`, `check:intake` and `check:programs`. Each enforces a rule a comment
+`check:vulnerability`, `check:case-audit`, `check:intake`, `check:programs` and
+`check:beneficiary`. Each enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 
@@ -236,6 +237,32 @@ The intake review windows live in `ReviewWindowPolicy` (`DL-68`), built from the
 TAB 11 constants so the two cannot drift, and a window still marked
 `convention-pending-confirmation` says so on screen until somebody records the
 check.
+
+### A beneficiary is a standing, not a record
+
+There is no `Beneficiary` entity and no `BeneficiaryId` (`DL-71`). The
+beneficiary registry is a **projection over the resident registry**, keyed on
+`ResidentId` throughout, and the four roles — resident, applicant, recipient,
+programme member — are **derived** from live requests, released payouts and
+standing enrollments. They are not exclusive, and none of them is ever stored as
+a flag. `npm run check:beneficiary` fails the build on a beneficiary identifier
+or a stored standing.
+
+Both the resident profile and the beneficiary record assemble history through
+**one** function, `historySummaryFor`. Two assemblies of the same history
+eventually disagree, in front of the family.
+
+**Duplicate review compares without disclosing** (`DL-73`). A `MatchSignal`
+carries an attribute, an outcome and the rule applied — never a value — so the
+review panel cannot leak a birth date it was never handed. Three resemblance
+bands order the queue and decide nothing.
+
+**There is no merge** (`DL-74`). Resolving a pair records a finding with a
+required reason and the reviewer's name; `same-person` supersedes a record
+without deleting it, and `distinct-people` is recorded so the pair stops
+resurfacing. `beneficiary.review-duplicates` is deliberately withheld from
+intake, who usually created the second record, and from the auditor, whose
+oversight must not be able to alter the identities it checks.
 
 ### Separation of duties
 

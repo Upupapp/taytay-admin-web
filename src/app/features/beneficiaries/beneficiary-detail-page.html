@@ -1,0 +1,162 @@
+<app-async-content [state]="state()" [content]="body" [skeletonLines]="8">
+  <ng-template #body let-record>
+    @if (record === null) {
+      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <p class="beneficiary__back">
+        <a class="btn" routerLink="/beneficiaries">{{ copy.back }}</a>
+      </p>
+    } @else {
+      <app-page-header
+        [title]="record.resident.fullName"
+        [subtitle]="barangayLabel(record)"
+      >
+        <a page-actions class="btn" [routerLink]="'/residents/' + record.residentId">
+          Open registry record
+        </a>
+      </app-page-header>
+
+      <div class="beneficiary">
+        <section class="card beneficiary__panel" aria-labelledby="standing-heading">
+          <h2 class="beneficiary__heading" id="standing-heading">{{ copy.standingHeading }}</h2>
+          <p class="beneficiary__hint">{{ copy.standingHint }}</p>
+
+          <!-- Each standing is listed with what it was derived from. A badge a
+               caseworker cannot check is a claim, not a fact. -->
+          <ul class="standing-list">
+            @for (role of record.standing.roles; track role) {
+              <li class="standing-list__item">
+                <span class="standing-list__label">{{ roleLabel(role) }}</span>
+                <span class="standing-list__why">{{ roleDescription(role) }}</span>
+              </li>
+            }
+          </ul>
+
+          <dl class="totals">
+            <div class="totals__item">
+              <dt>{{ copy.totalReceived }}</dt>
+              <dd class="totals__amount">{{ record.totalReleased | peso }}</dd>
+              <dd class="totals__hint">{{ copy.totalReceivedHint }}</dd>
+            </div>
+            <div class="totals__item">
+              <dt>{{ copy.eventCount }}</dt>
+              <dd class="totals__amount">{{ record.timeline.length }}</dd>
+            </div>
+            <div class="totals__item">
+              <dt>{{ copy.openCases }}</dt>
+              <dd class="totals__amount">{{ record.standing.evidence.openRequestCount }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="card beneficiary__panel" aria-labelledby="household-heading">
+          <h2 class="beneficiary__heading" id="household-heading">{{ copy.householdHeading }}</h2>
+
+          @if (record.household === null) {
+            <p class="beneficiary__empty">{{ copy.householdNone }}</p>
+          } @else {
+            <p class="beneficiary__line">
+              <a [routerLink]="'/households/' + record.household.id">{{ copy.openHousehold }}</a>
+            </p>
+            @if (record.householdHeadName) {
+              <p class="beneficiary__line">
+                <span class="beneficiary__term">{{ copy.householdHead }}:</span>
+                {{ record.householdHeadName }}
+              </p>
+            }
+          }
+
+          <!-- Plural, and separate from the household: one address routinely
+               holds several families (DL-47). -->
+          @if (record.families.length === 0) {
+            <p class="beneficiary__empty">{{ copy.familiesNone }}</p>
+          } @else {
+            <ul class="family-list">
+              @for (family of record.families; track family.id) {
+                <li>
+                  <a [routerLink]="'/families/' + family.id">{{ family.name }}</a>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+
+        <section class="card beneficiary__panel" aria-labelledby="programmes-heading">
+          <h2 class="beneficiary__heading" id="programmes-heading">
+            {{ copy.enrollmentsHeading }}
+          </h2>
+
+          @if (enrollments().length === 0) {
+            <p class="beneficiary__empty">{{ copy.enrollmentsNone }}</p>
+          } @else {
+            <ul class="enrollments">
+              @for (enrollment of enrollments(); track enrollment.id) {
+                <li class="enrollments__item">
+                  <p class="enrollments__head">
+                    <span class="enrollments__name">{{ enrollment.programName }}</span>
+                    <app-status-badge
+                      [catalog]="enrollmentStatuses"
+                      [status]="enrollment.status"
+                    />
+                  </p>
+                  <p class="enrollments__dates">
+                    <span>{{ copy.enrolledOn }} {{ enrollment.enrolledOn }}</span>
+                    @if (enrollment.exit) {
+                      <span>{{ copy.exitedOn }} {{ enrollment.exit.exitedOn }}</span>
+                    }
+                  </p>
+                  <!-- An exit keeps its reason and its note. Leaving a programme
+                       having completed it and being removed for cause are not
+                       the same fact about a person. -->
+                  @if (enrollment.exit) {
+                    <p class="enrollments__exit">
+                      <span class="beneficiary__term">{{ copy.exitReason }}:</span>
+                      {{ exitReasonLabel(enrollment) }} — {{ enrollment.exit.note }}
+                    </p>
+                  }
+                  @if (enrollment.continuesEnrollmentId) {
+                    <p class="enrollments__continues">{{ copy.continues }}</p>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </section>
+
+        @if (record.duplicateCandidates.length > 0) {
+          <section class="card beneficiary__panel" aria-labelledby="duplicates-heading">
+            <h2 class="beneficiary__heading" id="duplicates-heading">
+              {{ copy.duplicatesHeading }}
+            </h2>
+            <p class="beneficiary__hint">{{ copy.duplicatesHint }}</p>
+
+            <!-- The other record is named only as a masked label here; the
+                 comparison itself lives on the review screen (DL-73). -->
+            <ul class="duplicates">
+              @for (candidate of record.duplicateCandidates; track candidate.otherResidentId) {
+                <li class="duplicates__item">
+                  <span class="duplicates__label">{{ candidate.otherLabel }}</span>
+                  <a
+                    class="btn btn--small"
+                    [routerLink]="'/beneficiaries/duplicates'"
+                    [queryParams]="{ a: candidate.residentId, b: candidate.otherResidentId }"
+                  >
+                    {{ copy.review }}
+                  </a>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        <section class="card beneficiary__panel beneficiary__panel--wide">
+          <app-assistance-history-timeline
+            [entries]="record.timeline"
+            [heading]="copy.timelineHeading"
+            [hint]="copy.timelineHint"
+            emptyMessage="Nothing has been recorded for this person yet."
+          />
+        </section>
+      </div>
+    }
+  </ng-template>
+</app-async-content>

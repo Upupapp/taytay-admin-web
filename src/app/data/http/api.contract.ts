@@ -37,6 +37,13 @@ export const API_ENDPOINTS = {
   cases: 'cases',
   savedViews: 'saved-views',
   programs: 'programs',
+  beneficiaries: 'beneficiaries',
+  /**
+   * The duplicate-review queue and its findings. A sibling of `beneficiaries`
+   * rather than a nested path: the queue is worked across the whole registry,
+   * not from inside one person's record.
+   */
+  identityReview: 'beneficiaries/identity-review',
   assistanceRequests: 'assistance-requests',
   disbursements: 'disbursements',
   referrals: 'referrals',

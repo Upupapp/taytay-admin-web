@@ -216,6 +216,38 @@ const NAMED_RESIDENTS: readonly Resident[] = [
     isActive: true,
     audit: stamp(310, 40),
   },
+  /**
+   * Aurora Mercado, on file a second time.
+   *
+   * A deliberate duplicate, and the shape a real one takes: registered at a
+   * barangay outreach with the name written the way she says it, then again at
+   * the office from her PhilSys card. Same person, same birth date, same four
+   * digits, one household — and a street number transposed, which is why the
+   * two records never collided on address.
+   *
+   * It exists so the duplicate queue has something true to find. Nothing
+   * resolves it automatically; a reviewer has to say so and give a reason
+   * (`DL-74`).
+   */
+  {
+    id: asId<ResidentId>('res-0011'),
+    householdId: null,
+    name: { first: 'Aurora', middle: null, last: 'Mercado', suffix: null },
+    sex: 'female',
+    birthDate: asIsoDate('1956-03-14'),
+    civilStatus: 'widowed',
+    address: {
+      barangayId: brgy('san-juan'),
+      purokOrSitio: 'Purok 3',
+      streetAddress: '81 Rizal Street',
+    },
+    contact: { mobile: '0917-555-0101', email: null },
+    sectors: ['senior-citizen'],
+    philsysLastFour: '4471',
+    monthlyIncome: pesos(4000),
+    isActive: true,
+    audit: stamp(96, 96),
+  },
 ];
 
 /* ── Bulk registry ────────────────────────────────────────────────────────── */

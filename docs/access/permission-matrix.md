@@ -29,7 +29,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-41 permissions × 7 roles. `X` means the role holds the permission.
+44 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -40,6 +40,9 @@ self-registration), `DL-33` (accessible authentication).
 | `resident.update`                 | X     | X    | X   | X      |      |      |       |
 | `resident.deactivate`             | X     | X    |     |        |      |      |       |
 | `resident.export`                 | X     | X    |     |        |      |      |       |
+| `beneficiary.view`                | X     | X    | X   | X      |      |      | X     |
+| `beneficiary.review-duplicates`   | X     | X    | X   |        |      |      |       |
+| `beneficiary.export`              | X     | X    |     |        |      |      |       |
 | `household.view`                  | X     | X    | X   | X      | X    | X    | X     |
 | `household.manage`                | X     | X    | X   | X      |      |      |       |
 | `household.correct-vulnerability` | X     | X    | X   |        |      |      |       |
@@ -148,6 +151,24 @@ seeded social worker Jomar Villanueva holds `report.export` this way. It can
 only ever **add**: nothing takes a role permission away, so the effective set is
 always a superset of the role and stays easy to reason about
 (`toAuthenticatedUser`). That is why this table describes roles, not people.
+
+**The beneficiary permissions separate reading from ruling** (`DL-71`, `DL-74`).
+`beneficiary.view` opens the longitudinal record — everything the office has
+done for one person, across every programme and year — and reaches intake,
+because "have we helped them before?" is a counter question that changes the
+conversation.
+
+`beneficiary.review-duplicates` is the narrower grant, and it is withheld from
+two roles on purpose. **Intake does not hold it:** the counter that created the
+second record should not be the one that rules on whether it is a duplicate.
+**The auditor does not hold it either:** oversight that can alter the identities
+it is checking is not oversight. A caller without it receives no candidates at
+all — the data layer withholds them rather than trusting a template to hide
+them.
+
+`beneficiary.export` is held apart from `report.export`, which produces
+aggregates. Taking a named beneficiary list out of the system is the operation
+TAB 05 called sensitive, and it reaches the head and the administrator only.
 
 ---
 
