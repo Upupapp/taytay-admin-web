@@ -1585,3 +1585,167 @@ should retrieve the primary text first.
 **Consequence:** the known gap stands — opening the successor case is not yet
 buildable from the UI, and that screen is the natural next piece of case work.
 The gap is the price of the guarantee, and it was accepted deliberately.
+
+### DL-65 · Whose programme it is, is a field
+
+**Status:** Settled (implemented in TAB 12).
+
+Every programme carries a `ProgramResponsibility`: who administers it, who holds
+the funds, what the municipality's part is, the sentence staff may repeat, and
+the sources it rests on. The screens render that record; they do not compose a
+description from conditions.
+
+**This corrected a live defect.** The seed described AICS — Medical and Burial —
+as funded by the "Municipal social welfare fund". AICS is a DSWD programme with
+DSWD-disbursed funds; the LGU refers into it and may augment. An applicant told
+the municipality funds it expects a decision the office cannot make, and the
+office quietly claims national work as its own.
+
+`responsibilityProblems` refuses the combinations that misrepresent:
+
+- a **national programme recorded as one the municipality runs**;
+- an **augmenter that does not hold the funds** — the same error from the other
+  side;
+- a claim about another agency's programme with **no source**;
+- a role with **no statement** a member of staff could actually say.
+
+Enforced three times over, because one is not enough: the form does not offer
+the impossible role, the adapter refuses the write, and
+`tools/check-programs.mjs` fails the build. It was validated against **six
+planted regressions** and caught all six.
+
+Sources, **supplied by the supervisor and not retrieved in this offline run** —
+which is why every `verifiedOn` is `null` and the screen says so:
+
+| What it supports | Source |
+| --- | --- |
+| AICS is a DSWD service | <https://aics.dswd.gov.ph/aics-program/> |
+| AICS/AKAP funds are agency-disbursed; LGU and legislator referrals remain subject to DSWD assessment | <https://aics.dswd.gov.ph/2024/11/akap-aics-are-dswd-programs-with-agency-disbursed-funds-dswd-chief/> |
+| AICS serves cases especially where LGUs cannot accommodate them | <https://caraga.dswd.gov.ph/programs-and-projects/assistance-to-individuals-in-crisis-situation-aics/> |
+| LGU systems with automated decision-making require DPA compliance | <https://privacy.gov.ph/npc-commends-new-dilg-issuance-enhancing-data-privacy-compliance-among-lgus/> |
+
+**Consequence:** where the office does not decide, the screen says so in as many
+words. "We referred it" and "we approved it" are the two sentences an applicant
+most needs told apart.
+
+### DL-66 · Programme rules are records, not code
+
+**Status:** Settled (implemented in TAB 12).
+
+Eligibility is a list of `EligibilityGuideline`s. Each states what the office
+looks for, how firmly (`expected`, `usual`, `context`), on whose authority
+(`statute`, `issuance`, `office-convention`), and whether anybody has read the
+source. The catalog screens render whatever they are handed.
+
+No component may branch on a programme code or id, and the checker fails the
+build if one does. That is what makes the second criterion true: a policy change
+is an edit to a record, and the UI does not move.
+
+**None of the three weights refuses anybody.** A fourth meaning "disqualify"
+would turn the catalog into the decision engine that `DL-42` and `DL-60` exist
+to prevent, and DSWD describes AICS the same way — a screening and database
+cross-match followed by a licensed social worker's interview and assessment,
+not an automatic disposition
+(<https://dswd.gov.ph/request-for-assistance-under-aics-now-easier-for-clients-dswd/>,
+<https://www.dswd.gov.ph/aics-and-akap-benefitted-countless-poor-pinoys-dswd-chief-dismisses-claims-the-2-programs-are-being-used-for-political-ends/>;
+neither retrieved in this run). The NPC's right-to-be-informed guidance points
+the same way: automated decision-making carries disclosure duties this
+application avoids incurring by not making decisions
+(<https://privacy.gov.ph/the-right-to-be-informed/>).
+
+There is deliberately **no port method** that takes a person and a programme and
+answers whether they qualify.
+
+**Consequence:** `ProgramRepository` grew `save`, and nothing that evaluates.
+
+### DL-67 · One template, one wording
+
+**Status:** Settled (implemented in TAB 12).
+
+Shared documents live in a `RequirementTemplate`. A programme names one and adds
+its own on top; `resolveRequirements` merges them, with the programme's entry
+winning on a shared code.
+
+Before this, every AICS programme retyped the same three documents — which is
+how one certificate ends up spelled three ways and waived under two names in a
+report. Resolving at read time rather than storing a flattened copy means
+correcting the template corrects every programme using it.
+
+**Consequence:** the detail screen labels each document "From template" or "This
+programme", so an editor can see what is shared before changing it.
+
+### DL-68 · The review windows get a home without moving
+
+**Status:** Settled (implemented in TAB 12; carries `DL-60` forward).
+
+`ASSISTANCE_LOOKBACK_MONTHS` (12) and `SAME_PROGRAMME_WINDOW_DAYS` (90) stay
+exactly where TAB 11 put them, with their values unchanged, so every TAB 11 call
+site and test is untouched. `DEFAULT_REVIEW_WINDOW` is **built from them**, so
+there is one number rather than two that can disagree, and a programme may carry
+its own `ReviewWindowPolicy` where it needs one.
+
+The point of the exercise is the `provenance` field. A window still marked
+`convention-pending-confirmation` says so on the programme screen, in a box that
+does not go away, until somebody records that they checked it against Taytay's
+own AICS guidelines. **That is the measurable retirement condition** the
+supervisor asked for: the fallback is retired when `provenance` moves off that
+value, and a confirmed window must name what settled it and when.
+
+The windows remain non-blocking. They change how much history an encoder is
+shown and nothing else — no request is approved, refused, ranked or suppressed
+by them.
+
+**Consequence:** expand-only. Nothing was migrated, nothing broke, and the
+office can now set a window per programme without touching code.
+
+### DL-69 · Utilization describes the past; it is not a budget
+
+**Status:** Settled (implemented in TAB 12).
+
+`ProgramUtilization` counts what was filed, what was approved and what was
+actually handed over. It has no "remaining", no "balance" and no ceiling.
+
+This front end does not hold the appropriation. A remaining balance computed
+from grants alone would be a number the office would be asked to honour, and it
+would be wrong the first time a supplemental budget landed. Drafts are excluded
+from the count, because a draft is not a request (`DL-63`).
+
+**Consequence:** the screen states in words that it is not a budget position,
+and a programme nobody has used returns zeros rather than being absent — an
+unused programme is a thing a supervisor should be able to see.
+
+### DL-70 · A filed request never attaches itself to a case
+
+**Status:** Settled (affirmed in TAB 12; no code change).
+
+The supervisor confirmed the rule: cross-matching may **surface** a candidate
+case, but an authorised worker must link it explicitly, with a reason and an
+audit event. Retries are idempotent and history is append-only.
+
+Nothing in TAB 12 introduced auto-attachment, and nothing in the catalog is
+permitted to. The intake advisory already raises an open case as a `note`
+saying the request *may* belong inside it (`DL-60`), and `SocialCase.linkedRequestIds`
+names its interventions explicitly (`DL-52`) rather than gathering them by
+inference. This entry records the reasoning so the next TAB does not "helpfully"
+close the loop.
+
+Why it holds: an automatic link is an automatic disposition in miniature — it
+decides that this need belongs to that ongoing involvement, which is a
+caseworker's judgement about a family, and it would do so without a reason
+anybody could later read. DSWD's own description places a licensed social
+worker's assessment between the cross-match and any consequence, and the NPC
+requires that automated decision-making and profiling logic be disclosed with
+its consequences. Not deciding is cheaper than disclosing a decision nobody
+wanted.
+
+Sources, **supplied by the supervisor and not retrieved in this offline run**:
+
+| What it supports | Source |
+| --- | --- |
+| Screening and database cross-match, then interview and assessment | <https://dswd.gov.ph/request-for-assistance-under-aics-now-easier-for-clients-dswd/> |
+| Referrals remain subject to licensed social-worker assessment and validation | <https://www.dswd.gov.ph/aics-and-akap-benefitted-countless-poor-pinoys-dswd-chief-dismisses-claims-the-2-programs-are-being-used-for-political-ends/> |
+| Notice of automated decision-making and profiling logic and consequences | <https://privacy.gov.ph/the-right-to-be-informed/> |
+
+**Consequence:** linking a request to a case remains a known gap with a
+deliberate shape — when it is built, it takes a reason and appends an event,
+like every other case mutation (`DL-54`).

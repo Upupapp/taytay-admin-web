@@ -94,7 +94,7 @@ npm run verify     # lint + typecheck + repository checks + test + build
 ```
 
 The repository checks are `check:brand`, `check:shell`, `check:access`,
-`check:vulnerability`, `check:case-audit` and `check:intake`. Each enforces a rule a comment
+`check:vulnerability`, `check:case-audit`, `check:intake` and `check:programs`. Each enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 
@@ -213,6 +213,29 @@ The intake flow is **four sections of one route** (`DL-62`), with the step in th
 URL and the applicant's context panel outside the step switch — fetched once
 through `ResidentRepository.getProfile` and never retyped. A saved intake is a
 `draft` with **no control number** (`DL-63`); the number is issued at filing.
+
+### The catalog holds the policy, and says whose it is
+
+Programme rules are **records, not code** (`DL-66`). Eligibility is a list of
+`EligibilityGuideline`s — each with a weight, a basis and whether anybody has
+actually read the source — and the screens render whatever they are given. No
+component may branch on a programme code or id; `npm run check:programs` fails
+the build if one does.
+
+Every programme carries a `ProgramResponsibility` saying who administers it, who
+holds the funds and what the municipality's part is (`DL-65`). A national
+programme recorded as one the municipality runs is refused by the domain, by the
+adapter and by the checker. **AICS is a DSWD programme with DSWD-disbursed
+funds**; the office refers into it and may augment. The seed said otherwise
+before TAB 12 and that was a defect, not a wording preference.
+
+Guidance never gates. Three weights — `expected`, `usual`, `context` — and none
+of them refuses anybody, on the same doctrine as `DL-42` and `DL-60`.
+
+The intake review windows live in `ReviewWindowPolicy` (`DL-68`), built from the
+TAB 11 constants so the two cannot drift, and a window still marked
+`convention-pending-confirmation` says so on screen until somebody records the
+check.
 
 ### Separation of duties
 
