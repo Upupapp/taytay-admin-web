@@ -3211,3 +3211,40 @@ declares a selector that `styles.scss` already owns. The component-style budget
 is **not** re-measured there: `ng build` already enforces it against the
 compiled CSS, and a second budget with a different number is the same drift in
 another costume — so the checker asserts the build's guard still exists instead.
+
+### DL-121 · An acceptance test uses the real adapters, or it is a unit test
+
+**Status:** Settled (implemented in TAB 23).
+
+Every feature spec in this project wires its own repository doubles, which is
+correct: a screen test should not depend on seed data it did not choose.
+
+But that means **no test in the project checked whether the seed was coherent**.
+A double that returns a plausible `Disbursement` proves the release screen
+renders one; it cannot prove the release names a request that exists, belonging
+to the resident the release pays. TAB 17 found exactly that defect by hand — a
+release citing `req-0007` while naming a resident who belonged to a different
+request — and nothing would have caught it.
+
+So `acceptance.spec.ts` wires the **real mock adapter set** through
+`provideDataAccess`, exactly as the application does, and walks whole paths
+across modules:
+
+- every assistance request resolves to a resident who is on file;
+- every release resolves to both a request and a resident;
+- money and goods stay apart on every seeded record;
+- an overdue referral exists *and* surfaces as work somebody owes;
+- a restricted account is refused an export at the adapter, three different ways.
+
+The suite is allowed to override exactly one token: `STAFF_REPOSITORY`, because
+that is how it chooses which role is signed in. Overriding any other is how a
+suite stops testing the thing it was written for, and `check:hardening` fails
+the build if one appears.
+
+**Consequence:** the suite also found a defect in itself. A scope assertion read
+`expect(barangays.size).toBeLessThanOrEqual(1)`, which is true of an empty
+result — and the result *was* empty, because the fixture built a barangay-link
+account with no barangay. Asserting non-emptiness first turned a vacuous pass
+into a real check, and into a second test worth having: **an account scoped to
+its own barangay with no barangay set sees nothing**, which is the fail-closed
+reading of a misconfiguration.

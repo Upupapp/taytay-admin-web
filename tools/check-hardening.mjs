@@ -18,6 +18,7 @@
  *   5. **Live regions stay rare and polite.**
  *   6. **Overlays trap focus**, so keyboard users cannot tab behind a dialog.
  *   7. **Reduced motion removes ambient animation**, rather than speeding it up.
+ *   9. **The acceptance suite runs against the real adapters** (`DL-121`).
  *   8. **The build's component-style budget still exists** — not re-measured
  *      here, because two budgets with different numbers is its own drift.
  *
@@ -294,6 +295,33 @@ notes.push(
   `style budget: enforced by ng build at ${componentBudget?.maximumWarning ?? 'no threshold'} ` +
     `across ${styleFiles.length} stylesheets`,
 );
+
+/* ── 9. The acceptance suite runs against the real adapters ──────────────── */
+
+const acceptance = 'src/app/acceptance/acceptance.spec.ts';
+if (!existsSync(join(root, acceptance))) {
+  problems.push(
+    'The acceptance suite has gone. It is the only thing that checks a whole path holds together ' +
+      'across modules rather than one rule inside it.',
+  );
+} else {
+  const text = read(acceptance);
+  if (!/provideDataAccess\(/.test(text)) {
+    problems.push(
+      'The acceptance suite no longer wires the real adapter set. A test double that matches the ' +
+        'shape of a call proves the call was shaped correctly; it cannot prove the seed is ' +
+        'coherent, which is the entire point of this suite (DL-121).',
+    );
+  }
+  // Every repository token but the identity one must come from the real set.
+  if (/provide: (RESIDENT|CASE|DISBURSEMENT|REFERRAL|REPORT|SEARCH|WORK|GOVERNANCE)_REPOSITORY/.test(text)) {
+    problems.push(
+      'The acceptance suite overrides a repository with a double. Overriding one is how a suite ' +
+        'stops testing the thing it was written for (DL-121).',
+    );
+  }
+}
+notes.push('acceptance: whole paths, real adapters, seeded data');
 
 /* ── Report ──────────────────────────────────────────────────────────────── */
 
