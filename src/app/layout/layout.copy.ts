@@ -18,13 +18,10 @@ export const LAYOUT_COPY = {
   breadcrumbLandmark: 'Breadcrumb',
   breadcrumbHome: 'Dashboard',
 
-  // Global search — trigger only. The search experience itself is a later TAB.
+  // Global search. The trigger navigates; the search screen owns the rest.
   searchLabel: 'Search',
   searchPlaceholder: 'Search residents, requests, programmes…',
   searchShortcutHint: 'Ctrl K',
-  searchUnavailableTitle: 'Search is not built yet',
-  searchUnavailableBody:
-    'The search experience arrives in a later TAB. The shortcut and trigger are in place so the shell can be finished around them.',
 
   // Notifications
   notificationsLabel: 'Notifications',

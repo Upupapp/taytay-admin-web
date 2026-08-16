@@ -2874,3 +2874,112 @@ report template, on a chart rendered without its summary bound, and on any
 charting dependency appearing in `package.json`. A chart plus a separate
 accessible table is two things that drift apart, and the table is what stops
 being updated.
+### DL-109 · Search reads only what it may show
+
+**Status:** Settled (implemented in TAB 20).
+
+The obvious rule is that a search result must not display a case note. The rule
+that matters as much, and is easy to miss, is that it must not **match** on one
+either.
+
+Suppose search matched note bodies but rendered no snippet. Typing a condition,
+a shelter's name, or a surname and getting back exactly one resident tells you
+that word appears in that person's file. The office has disclosed the contents
+of a protected note without ever rendering it, and the audit trail records a
+search rather than a disclosure.
+
+So the searchable fields and the displayable fields are the **same closed set**:
+names, reference numbers, barangay, status. `NEVER_SEARCHED` names the fields
+that are refused on both sides — note bodies, assessment findings, remarks,
+outcomes, service needs, declined reasons, PhilSys digits, income, sectors,
+birth dates — and `check:search` fails the build if the adapter reads one.
+
+`SearchHit` has no `snippet`, no `context`, no `matchedText` and no `excerpt`.
+There is nowhere for a sentence somebody wrote about a family to live.
+
+`DL-58` already withholds a protected note's body in the data layer, and
+`DL-38` withholds a protection case's name. Search is the surface most likely to
+reintroduce both, because it is reached from every screen and crosses six record
+types at once.
+
+**Consequence:** `SearchRepository.search` takes a term and nothing else. There
+is no `fields`, no `includeNotes` and no `deep` — a caller cannot ask search to
+read something a result may not show.
+
+### DL-110 · A recent search is not written down
+
+**Status:** Settled (implemented in TAB 20).
+
+The master command says recent searches "may be local-only and must avoid
+persisting sensitive query content if unsafe". That is permission, not
+instruction, and the safe reading is the narrow one.
+
+A caseworker searching a resident by name leaves that name in the box.
+Persisting it puts a resident's name on the device, outside every disclosure
+rule the application otherwise applies — and on a shared office machine it is
+readable by whoever sits down next.
+
+There is **no way to tell a safe query from an unsafe one**. "Dela Cruz" is a
+surname and also a street. "Purok 4" is an address and also a place. A filter
+that tried to decide would be wrong in both directions, and wrong quietly.
+
+So nothing is persisted at all. Recent searches live in a signal for the
+lifetime of the tab and go when it closes, and the screen **says so** — on a
+shared machine there is no other way for an officer to know.
+
+`CLAUDE.md` §2.5 already forbids this application putting session credentials in
+`localStorage`. This is the same caution, applied to the same storage, for the
+same reason.
+
+**Consequence:** `check:search` fails the build on `localStorage`,
+`sessionStorage`, `indexedDB` or `document.cookie` anywhere in the search
+domain, its adapter or its screens.
+
+### DL-111 · Saving a view for the office is a separate grant from saving one for yourself
+
+**Status:** Settled (implemented in TAB 20).
+
+The master command asks for personal saved views first, with shared team views
+behind an appropriate permission. Before TAB 20 the model had `isShared` and
+nothing checked it: any account that could read a list could publish a named
+view of it to every colleague.
+
+A personal view is a preference. A **shared view is a small piece of office
+configuration**: it appears for everyone who opens that screen, it outlives
+whoever wrote it, and — the reason this matters — its *name* describes a
+population. "VAWC survivors, Santa Ana" discloses who the office is looking at
+to every colleague on that screen, and it holds no records at all.
+
+So creating or removing a shared view costs `view.share`. Everyone keeps their
+own views for free, and removing your own still costs nothing beyond owning it.
+
+The grant is held by the administrator **and the MSWDO head**, not the
+administrator alone: a supervisor standardising the team's queues is exactly the
+person this feature is for, and `settings.manage` would have been too narrow.
+
+**Consequence:** the earlier rule that *nobody* could remove a shared view is
+superseded. It was a stand-in for a permission that did not exist yet, and it
+left the office unable to correct its own mistakes.
+
+### DL-112 · A record type that was not searched is named, not hidden
+
+**Status:** Settled (implemented in TAB 20).
+
+Search crosses six record types, each gated by its own permission — a
+disbursement officer finds the resident and the request behind a payout and no
+case file, because they hold no case access (`DL-08`).
+
+The question is what the screen says about the types it skipped. Silently
+omitting them produces a result that reads as complete: an officer searches a
+family's name, sees no case, and concludes the office has never opened one. That
+is a wrong answer delivered with confidence, and it is worse than no answer.
+
+So `SearchResults.withheldTypes` reports what was not searched, and the screen
+names them: *"Your account does not cover cases and families, so those were not
+searched."* Naming the types rather than saying "some results are hidden" is
+deliberate — a user who cannot tell **which** record type they are missing
+cannot ask the right person for access.
+
+**Consequence:** the `/search` route itself is guarded only by being signed in.
+A narrower guard would hide the very screen that explains which types an account
+cannot search.

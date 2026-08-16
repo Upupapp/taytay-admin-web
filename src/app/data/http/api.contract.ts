@@ -67,6 +67,11 @@ export const API_ENDPOINTS = {
    * conditions (`DL-104`, `DL-105`, `DL-106`).
    */
   reports: 'reports',
+  /**
+   * One search endpoint with one parameter. No field list and no note flag: the
+   * server applies the same closed set of searchable fields (`DL-109`).
+   */
+  search: 'search',
 } as const;
 
 export function toPage<TItem>(response: ApiListResponse<TItem>): Page<TItem> {

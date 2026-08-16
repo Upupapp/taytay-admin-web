@@ -11,6 +11,7 @@ import type {
   ReportFilter,
   ReportResult,
 } from '../reports/report-result';
+import type { SearchResults } from '../search/search-result';
 import type { OfficeAlert } from '../work/office-alert';
 import type { TeamQueue, WorkQueue } from '../work/work-queue';
 import type {
@@ -880,6 +881,28 @@ export interface ReportRepository {
 }
 
 export const REPORT_REPOSITORY = new InjectionToken<ReportRepository>('ReportRepository');
+
+/**
+ * Global search.
+ *
+ * One method, and no way to widen it. There is no `includeNotes`, no
+ * `fields` parameter and no raw-text search: the searchable fields and the
+ * displayable fields are the **same closed set** (`DL-109`), so a caller
+ * cannot ask search to read something a result may not show.
+ *
+ * Matching on a note body while showing no snippet would still disclose it —
+ * typing a condition and getting back one resident says that word is in that
+ * person's file. `DL-58` withholds a protected note in the data layer, and
+ * search must not be the surface that reintroduces it.
+ *
+ * Results are grouped per record type and gated per record type, so a
+ * disbursement officer finds the resident behind a payout and no case file.
+ */
+export interface SearchRepository {
+  search(term: string): Observable<SearchResults>;
+}
+
+export const SEARCH_REPOSITORY = new InjectionToken<SearchRepository>('SearchRepository');
 
 export interface DashboardRepository {
   /**

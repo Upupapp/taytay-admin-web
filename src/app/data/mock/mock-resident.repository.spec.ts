@@ -364,6 +364,38 @@ describe('saved views cost the same permission as the list they describe', () =>
     );
   });
 
+  it('refuses to save a view for the whole office without the share grant', async () => {
+    signedInAs(authenticated('intake-officer'));
+
+    // A personal view is a preference; an office-wide one appears for every
+    // colleague and outlives whoever wrote it (`DL-111`).
+    await expect(
+      firstValueFrom(
+        views().create({
+          resource: 'residents',
+          name: 'Everyone should see this',
+          params: {},
+          isShared: true,
+        }),
+      ),
+    ).rejects.toThrow(PermissionDeniedError);
+  });
+
+  it('lets the head save and remove a view for the office', async () => {
+    signedInAs(authenticated('mswdo-head'));
+    const created = await firstValueFrom(
+      views().create({
+        resource: 'residents',
+        name: 'Waiting on requirements',
+        params: { status: 'returned' },
+        isShared: true,
+      }),
+    );
+
+    expect(created.isShared).toBe(true);
+    await expect(firstValueFrom(views().remove(created.id))).resolves.toBeUndefined();
+  });
+
   it('keeps a personal view out of everyone else’s list', async () => {
     signedInAs(authenticated('intake-officer'));
     await firstValueFrom(
@@ -378,8 +410,11 @@ describe('saved views cost the same permission as the list they describe', () =>
     expect(mine.some((view) => view.name === 'My follow-ups')).toBe(true);
   });
 
-  it('will not let anyone remove a view the office shares', async () => {
-    signedInAs(authenticated('mswdo-head'));
+  it('will not let somebody without the share grant remove the office’s view', async () => {
+    // Changed in TAB 20: a shared view is office configuration, so removing one
+    // costs the same grant as creating one (`DL-111`). An intake officer holds
+    // neither.
+    signedInAs(authenticated('intake-officer'));
     const saved = await firstValueFrom(views().listFor('residents'));
     const shared = saved.find((view) => view.isShared);
     expect(shared).toBeDefined();

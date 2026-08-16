@@ -15,13 +15,17 @@ export type SavedViewResource =
   | 'residents'
   | 'beneficiaries'
   | 'assistance-requests'
-  | 'disbursements';
+  | 'disbursements'
+  | 'cases'
+  | 'households';
 
 export const SAVED_VIEW_RESOURCES: readonly SavedViewResource[] = [
   'residents',
   'beneficiaries',
   'assistance-requests',
   'disbursements',
+  'cases',
+  'households',
 ];
 
 /**
@@ -34,7 +38,20 @@ export const SAVED_VIEW_PERMISSIONS: Readonly<Record<SavedViewResource, Permissi
   beneficiaries: 'beneficiary.view',
   'assistance-requests': 'request.view',
   disbursements: 'disbursement.view',
+  cases: 'case.view',
+  households: 'household.view',
 };
+
+/**
+ * Saving a view **for the office** is a separate grant from saving one for
+ * yourself (`DL-111`).
+ *
+ * A personal view is a preference. A shared one is a small piece of office
+ * configuration: it appears for every colleague who opens that screen, its name
+ * describes a population, and it outlives whoever wrote it. So creating or
+ * removing one costs `view.share`, and everyone can still keep their own.
+ */
+export const SHARE_VIEW_PERMISSION: Permission = 'view.share';
 
 export interface SavedView {
   readonly id: SavedViewId;

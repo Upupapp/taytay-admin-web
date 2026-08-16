@@ -9,6 +9,8 @@ import {
   PermissionDeniedError,
   SAVED_VIEW_PERMISSIONS,
   SAVED_VIEW_NAME_MAX_LENGTH,
+  SHARE_VIEW_PERMISSION,
+  userHasPermission,
   type SavedView,
   type SavedViewDraft,
   type SavedViewId,
@@ -59,6 +61,15 @@ export class MockSavedViewRepository implements SavedViewRepository {
     if (denied) {
       return denied;
     }
+    // Saving a view for the whole office is a separate grant from saving one
+    // for yourself: it appears for every colleague on that screen, its name
+    // describes a population, and it outlives whoever wrote it (`DL-111`).
+    if (draft.isShared) {
+      const cannotShare = denyUnless<SavedView>(user, SHARE_VIEW_PERMISSION);
+      if (cannotShare) {
+        return cannotShare;
+      }
+    }
     if (!isValidSavedViewName(draft.name)) {
       return throwError(
         () =>
@@ -90,14 +101,18 @@ export class MockSavedViewRepository implements SavedViewRepository {
     const user = this.access.currentUser();
     const existing = this.views.find((view) => view.id === id);
 
-    // A shared view is the office's, not the last person to look at it. Removing
-    // one is a settings change, not a list preference.
-    if (
-      existing === undefined ||
-      existing.isShared ||
-      existing.ownerId === null ||
-      existing.ownerId !== user?.id
-    ) {
+    if (existing === undefined) {
+      return throwError(() => new PermissionDeniedError(null));
+    }
+
+    // A shared view is the office's, not the last person to look at it.
+    // Removing one costs the same grant as creating one; removing your own
+    // personal view costs nothing beyond owning it.
+    const mayRemove = existing.isShared
+      ? userHasPermission(user, SHARE_VIEW_PERMISSION)
+      : existing.ownerId !== null && existing.ownerId === user?.id;
+
+    if (!mayRemove) {
       return throwError(() => new PermissionDeniedError(null));
     }
 

@@ -66,7 +66,6 @@ export class Shell {
 
   protected readonly navOpen = signal(false);
   protected readonly inboxOpen = signal(false);
-  protected readonly searchNotice = signal(false);
 
   /** True while the viewport is narrow enough for the sidebar to be a drawer. */
   protected readonly isCompact = inject(ViewportService).isCompact;
@@ -143,7 +142,7 @@ export class Shell {
    * honest notice rather than a dead click.
    */
   protected onSearchActivated(): void {
-    this.searchNotice.set(true);
+    void this.router.navigate(['/search']);
   }
 
   protected signOut(): void {

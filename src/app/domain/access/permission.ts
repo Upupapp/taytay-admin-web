@@ -106,6 +106,16 @@ export const PERMISSIONS = [
   'staff.view',
   'staff.manage',
 
+  /**
+   * Saving a named filter for the whole office rather than for yourself.
+   *
+   * Held apart from the permission to read the list, because a shared view's
+   * *name* describes a population to everybody who opens that screen ("VAWC
+   * survivors, Santa Ana"), and it persists after whoever wrote it has moved
+   * on. A personal view needs no grant; an office-wide one does (`DL-111`).
+   */
+  'view.share',
+
   'settings.manage',
 ] as const;
 
@@ -210,6 +220,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'report.export',
       'audit.view',
       'staff.view',
+      'view.share',
     ],
   },
   'social-worker': {

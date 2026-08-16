@@ -55,6 +55,8 @@ export * from './residents/resident';
 export * from './reports/report-definition';
 export * from './reports/report-disclosure';
 export * from './reports/report-result';
+export * from './search/search-result';
+export * from './search/search-safety';
 export * from './residents/resident-disclosure';
 export * from './residents/resident-profile';
 export * from './visits/field-visit';

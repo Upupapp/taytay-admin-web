@@ -142,6 +142,8 @@ import {
   type ReportId,
   type ReportRepository,
   type ReportResult,
+  type SearchRepository,
+  type SearchResults,
   type TeamQueue,
   type WorkQueue,
   type WorkRepository,
@@ -418,6 +420,22 @@ export class HttpCaseRepository implements CaseRepository {
       `${API_ENDPOINTS.cases}/${id}/tasks/${taskId}/schedule`,
       { dueOn, reason },
     );
+  }
+}
+
+/**
+ * Global search over HTTP.
+ *
+ * One term, nothing else. There is deliberately no way to ask the server to
+ * search wider: the searchable and displayable fields are the same closed set,
+ * enforced on both sides (`DL-109`).
+ */
+@Injectable()
+export class HttpSearchRepository implements SearchRepository {
+  private readonly api = inject(ApiClient);
+
+  search(term: string): Observable<SearchResults> {
+    return this.api.item<SearchResults>(API_ENDPOINTS.search, { term });
   }
 }
 

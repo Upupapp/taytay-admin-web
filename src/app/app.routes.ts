@@ -66,6 +66,14 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'search',
+        title: 'Search — Taytay Social Welfare',
+        // Nothing beyond being signed in: every group inside is gated by its
+        // own record type, so a narrower guard here would only hide the screen
+        // that explains which types an account cannot search (`DL-112`).
+        loadComponent: () => import('@features/search/search-page').then((m) => m.SearchPage),
+      },
+      {
         path: 'notifications',
         title: 'Notifications — Taytay Social Welfare',
         canActivate: [permissionGuard('dashboard.view')],

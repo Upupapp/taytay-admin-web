@@ -95,11 +95,3 @@
     {{ copy.markAllRead }}
   </button>
 </app-drawer>
-
-<app-drawer
-  [(open)]="searchNotice"
-  [heading]="copy.searchUnavailableTitle"
-  [description]="copy.searchPlaceholder"
->
-  <p drawer-body>{{ copy.searchUnavailableBody }}</p>
-</app-drawer>

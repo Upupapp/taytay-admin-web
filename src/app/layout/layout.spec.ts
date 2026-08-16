@@ -382,10 +382,13 @@ describe('Shell', () => {
     expect(element.querySelector('#app-sidebar')?.getAttribute('aria-modal')).toBeNull();
   });
 
-  it('answers the search trigger honestly instead of dead-clicking', async () => {
+  it('takes the search trigger to the search screen', async () => {
+    // Was a "not built yet" drawer until TAB 20. The trigger now navigates,
+    // which is what the drawer existed to be honest about not doing.
     const { fixture, element } = await render();
     element.querySelector<HTMLElement>('.search-trigger')?.click();
     await fixture.whenStable();
-    expect(element.textContent).toContain(LAYOUT_COPY.searchUnavailableTitle);
+
+    expect(TestBed.inject(Router).url).toContain('/search');
   });
 });

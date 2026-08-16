@@ -29,7 +29,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-47 permissions × 7 roles. `X` means the role holds the permission.
+48 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -79,6 +79,7 @@ self-registration), `DL-33` (accessible authentication).
 | `audit.view`                      | X     | X    |     |        |      |      | X     |
 | `staff.view`                      | X     | X    |     |        |      |      | X     |
 | `staff.manage`                    | X     |      |     |        |      |      |       |
+| `view.share`                      | X     | X    |     |        |      |      |       |
 | `settings.manage`                 | X     |      |     |        |      |      |       |
 
 ---
@@ -94,6 +95,13 @@ test asserts it is empty, so this cannot regress quietly.
 **`staff.manage` and `settings.manage` are administrator-only.** The head can
 _see_ staff (`staff.view`) but cannot change roles. Whoever can grant permissions
 should not also be working cases with them.
+
+**`view.share` separates a preference from office configuration.** Anyone may
+save a named filter for themselves; publishing one to the whole office needs the
+grant (`DL-111`). A shared view's *name* describes a population ("VAWC
+survivors, Santa Ana") to every colleague who opens that screen, and it outlives
+whoever wrote it. Held by the head as well as the administrator, because a
+supervisor is exactly who should be able to standardise a team's queues.
 
 **`request.view-sensitive` is limited to Admin, Head and SW.** It gates records
 flagged `vawc-survivor` (RA 9262) or `cicl` (RA 9344). An intake officer can

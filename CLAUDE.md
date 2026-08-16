@@ -96,7 +96,8 @@ npm run verify     # lint + typecheck + repository checks + test + build
 The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:vulnerability`, `check:case-audit`, `check:intake`, `check:programs`,
 `check:beneficiary`, `check:documents`, `check:referrals`, `check:visits`,
-`check:releases`, `check:work` and `check:reports`. Each enforces a rule a comment
+`check:releases`, `check:work`, `check:reports` and `check:search`. Each
+enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 
@@ -338,6 +339,32 @@ those are easy to refuse as features and easy to acquire as an innocuous field.
 state means the office record has it, and a failed send says plainly that
 nothing was queued in the background. A worker who believes a visit was filed
 and returns to find it was not has been failed twice.
+
+### Search reads only what it may show
+
+The searchable fields and the displayable fields are the **same closed set**
+(`DL-109`): names, reference numbers, barangay, status. `NEVER_SEARCHED` names
+what is refused on both sides — note bodies, findings, remarks, outcomes,
+PhilSys digits, income, sectors, birth dates.
+
+Matching on free text discloses it even with no snippet rendered: type a
+condition, get back one resident, and the office has said what is in that
+person's file. `SearchHit` therefore has no `snippet`, `context`, `matchedText`
+or `excerpt`, and `SearchRepository.search` takes a term and nothing else.
+
+**A recent search is not written down** (`DL-110`). No `localStorage`, no
+`sessionStorage`, no cookie. There is no way to tell a safe query from an unsafe
+one — "Dela Cruz" is a surname and also a street — so nothing is persisted, the
+list lives in a signal for the tab, and the screen says so.
+
+**A record type that was not searched is named** (`DL-112`), never silently
+omitted: an officer who sees no case concludes none was ever opened, which is a
+wrong answer delivered with confidence.
+
+**Saving a view for the office is a separate grant** (`DL-111`). A personal view
+is a preference; a shared one is office configuration whose *name* describes a
+population to every colleague and outlives whoever wrote it. `view.share` is
+held by the head as well as the administrator.
 
 ### Reporting exposes as little as it can get away with
 
