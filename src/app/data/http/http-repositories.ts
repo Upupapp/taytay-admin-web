@@ -22,6 +22,15 @@ import {
   type IdentityResolutionDraft,
   type MergePreview,
   type ProgramEnrollment,
+  type DisclosurePlan,
+  type IsoDate,
+  type ReferralDraft,
+  type ReferralSortField,
+  type ReferralStatus,
+  type ReferralSummarySheet,
+  type ServiceProvider,
+  type ServiceProviderFilter,
+  type ServiceProviderId,
   type ConditionalApplicability,
   type DocumentAccessGrant,
   type DocumentRequest,
@@ -588,16 +597,91 @@ export class HttpDisbursementRepository implements DisbursementRepository {
   }
 }
 
+/**
+ * Referrals over HTTP.
+ *
+ * `send` posts the disclosure plan with the send itself, which is the contract
+ * the API owes: a referral must not be transmittable in one call and
+ * authorised in another, or there is a window in which it can go without a
+ * lawful basis (`DL-81`). `summaryFor` is a server-composed sheet — this
+ * adapter must never assemble one client-side from a fuller record.
+ */
 @Injectable()
 export class HttpReferralRepository implements ReferralRepository {
   private readonly api = inject(ApiClient);
 
-  list(filter: ReferralFilter, page: PageRequest): Observable<Page<Referral>> {
+  list(
+    filter: ReferralFilter,
+    page: PageRequest<ReferralSortField>,
+  ): Observable<Page<Referral>> {
     return this.api.page<Referral>(API_ENDPOINTS.referrals, page, { ...filter });
   }
 
   getById(id: ReferralId): Observable<Referral | null> {
     return this.api.optionalItem<Referral>(`${API_ENDPOINTS.referrals}/${id}`);
+  }
+
+  forResident(id: ResidentId): Observable<readonly Referral[]> {
+    return this.api.collection<Referral>(API_ENDPOINTS.referrals, { residentId: id });
+  }
+
+  queue(filter: ReferralFilter): Observable<readonly Referral[]> {
+    // The ordering is the server's: overdue-first depends on today's date, and
+    // two clients in different time zones must not disagree about the queue.
+    return this.api.collection<Referral>(`${API_ENDPOINTS.referrals}/queue`, toParams(filter));
+  }
+
+  createDraft(draft: ReferralDraft): Observable<Referral> {
+    return this.api.post<Referral, ReferralDraft>(API_ENDPOINTS.referrals, draft);
+  }
+
+  send(id: ReferralId, plan: DisclosurePlan): Observable<Referral> {
+    return this.api.post<Referral, DisclosurePlan>(
+      `${API_ENDPOINTS.referrals}/${id}/send`,
+      plan,
+    );
+  }
+
+  summaryFor(id: ReferralId): Observable<ReferralSummarySheet | null> {
+    return this.api.optionalItem<ReferralSummarySheet>(
+      `${API_ENDPOINTS.referrals}/${id}/summary`,
+    );
+  }
+
+  changeStatus(id: ReferralId, to: ReferralStatus, reason: string): Observable<Referral> {
+    return this.api.post<Referral, { to: ReferralStatus; reason: string }>(
+      `${API_ENDPOINTS.referrals}/${id}/status`,
+      { to, reason },
+    );
+  }
+
+  recordOutcome(id: ReferralId, outcome: string, status: ReferralStatus): Observable<Referral> {
+    return this.api.post<Referral, { outcome: string; status: ReferralStatus }>(
+      `${API_ENDPOINTS.referrals}/${id}/outcome`,
+      { outcome, status },
+    );
+  }
+
+  reschedule(id: ReferralId, followUpOn: IsoDate, reason: string): Observable<Referral> {
+    return this.api.post<Referral, { followUpOn: IsoDate; reason: string }>(
+      `${API_ENDPOINTS.referrals}/${id}/follow-up`,
+      { followUpOn, reason },
+    );
+  }
+
+  addNote(id: ReferralId, body: string): Observable<Referral> {
+    return this.api.post<Referral, { body: string }>(
+      `${API_ENDPOINTS.referrals}/${id}/notes`,
+      { body },
+    );
+  }
+
+  listProviders(filter: ServiceProviderFilter): Observable<readonly ServiceProvider[]> {
+    return this.api.collection<ServiceProvider>(API_ENDPOINTS.serviceProviders, { ...filter });
+  }
+
+  getProvider(id: ServiceProviderId): Observable<ServiceProvider | null> {
+    return this.api.optionalItem<ServiceProvider>(`${API_ENDPOINTS.serviceProviders}/${id}`);
   }
 }
 
@@ -729,4 +813,20 @@ export class HttpDashboardRepository implements DashboardRepository {
       `${API_ENDPOINTS.dashboardSummary}?${new URLSearchParams({ ...filter }).toString()}`,
     );
   }
+}
+
+/**
+ * Query parameters are strings on the wire. Booleans and ids are stringified
+ * here rather than at each call site, and `undefined` is dropped so an absent
+ * filter does not arrive as the literal "undefined".
+ */
+function toParams(filter: object): Record<string, string> {
+  const params: Record<string, string> = {};
+  for (const [key, value] of Object.entries(filter)) {
+    if (value === undefined || value === null) {
+      continue;
+    }
+    params[key] = String(value);
+  }
+  return params;
 }

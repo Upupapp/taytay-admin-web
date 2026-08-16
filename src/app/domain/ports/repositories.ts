@@ -69,7 +69,18 @@ import type { RelationshipEvent } from '../families/relationship-event';
 import type { FactorState, VulnerabilityFactorCode } from '../households/household-vulnerability';
 import type { ResidentView } from '../residents/resident-disclosure';
 import type { ResidentProfile } from '../residents/resident-profile';
-import type { Referral, ReferralFilter } from '../referrals/referral';
+import type {
+  Referral,
+  ReferralDraft,
+  ReferralFilter,
+  ReferralSortField,
+  ReferralStatus,
+} from '../referrals/referral';
+import type { DisclosurePlan, ReferralSummarySheet } from '../referrals/referral-disclosure';
+import type {
+  ServiceProvider,
+  ServiceProviderFilter,
+} from '../referrals/service-provider';
 import type { SavedView, SavedViewDraft, SavedViewResource } from '../views/saved-view';
 import type { Page, PageRequest } from '../shared/pagination';
 import type {
@@ -79,6 +90,7 @@ import type {
   DisbursementId,
   DocumentVersionId,
   HouseholdId,
+  IsoDate,
   IsoDateTime,
   NotificationId,
   ProgramId,
@@ -88,6 +100,7 @@ import type {
   RequirementId,
   ResidentId,
   SavedViewId,
+  ServiceProviderId,
   StaffUserId,
 } from '../shared/ids';
 
@@ -521,9 +534,61 @@ export const DISBURSEMENT_REPOSITORY = new InjectionToken<DisbursementRepository
   'DisbursementRepository',
 );
 
+/**
+ * Referrals out of the office, and the directory they go to.
+ *
+ * The shape here is governed by one fact that no other port has to deal with:
+ * **a referral summary leaves the building.** Once it is printed or sent, the
+ * MSWDO no longer controls who reads it.
+ *
+ * So `send` takes a `DisclosurePlan` and refuses without one (`DL-81`): a
+ * lawful basis, and every field beyond the minimum chosen individually with a
+ * stated need. `summaryFor` composes the sheet from that plan rather than from
+ * the whole record, so a screen cannot print a field nobody authorised.
+ *
+ * There is deliberately **no method that returns a client's full profile for a
+ * referral**. The temptation would be to fetch it and let the template pick;
+ * that is the failure this port is shaped to prevent.
+ */
 export interface ReferralRepository {
-  list(filter: ReferralFilter, page: PageRequest): Observable<Page<Referral>>;
+  list(
+    filter: ReferralFilter,
+    page: PageRequest<ReferralSortField>,
+  ): Observable<Page<Referral>>;
   getById(id: ReferralId): Observable<Referral | null>;
+  /** Every referral for one person, newest first. */
+  forResident(id: ResidentId): Observable<readonly Referral[]>;
+  /** The work queue: overdue first, then most urgent (`DL-83`). */
+  queue(filter: ReferralFilter): Observable<readonly Referral[]>;
+
+  /** Creates a `draft`. Nothing is disclosed until it is sent. */
+  createDraft(draft: ReferralDraft): Observable<Referral>;
+
+  /**
+   * Sends it. **The only method that discloses anything**, and the reason the
+   * disclosure plan is a parameter rather than a field set earlier: the basis
+   * and the chosen fields are recorded in the same act as the sending, so there
+   * is no window in which a referral is sendable without them.
+   */
+  send(id: ReferralId, plan: DisclosurePlan): Observable<Referral>;
+
+  /** The sheet that will be printed or transmitted, composed from the plan. */
+  summaryFor(id: ReferralId): Observable<ReferralSummarySheet | null>;
+
+  /** Moves the referral along. Every move takes a reason, as everywhere else. */
+  changeStatus(id: ReferralId, to: ReferralStatus, reason: string): Observable<Referral>;
+
+  /** Records what the receiving office actually did. */
+  recordOutcome(id: ReferralId, outcome: string, status: ReferralStatus): Observable<Referral>;
+
+  /** Moves the date this office intends to chase, with a reason. */
+  reschedule(id: ReferralId, followUpOn: IsoDate, reason: string): Observable<Referral>;
+
+  /** Appends an inter-office note. Never edits or removes one. */
+  addNote(id: ReferralId, body: string): Observable<Referral>;
+
+  listProviders(filter: ServiceProviderFilter): Observable<readonly ServiceProvider[]>;
+  getProvider(id: ServiceProviderId): Observable<ServiceProvider | null>;
 }
 
 export const REFERRAL_REPOSITORY = new InjectionToken<ReferralRepository>('ReferralRepository');

@@ -41,6 +41,8 @@ export type RequirementDocumentId = Branded<string, 'RequirementDocumentId'>;
  */
 export type DocumentVersionId = Branded<string, 'DocumentVersionId'>;
 export type DocumentRequestId = Branded<string, 'DocumentRequestId'>;
+export type ServiceProviderId = Branded<string, 'ServiceProviderId'>;
+export type ReferralNoteId = Branded<string, 'ReferralNoteId'>;
 /**
  * One recorded judgement about whether two registry records are the same person.
  *

@@ -47,6 +47,7 @@ export const API_ENDPOINTS = {
   assistanceRequests: 'assistance-requests',
   disbursements: 'disbursements',
   referrals: 'referrals',
+  serviceProviders: 'service-providers',
   staff: 'staff',
   session: 'session',
   notifications: 'notifications',

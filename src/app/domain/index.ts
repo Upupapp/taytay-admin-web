@@ -47,6 +47,8 @@ export * from './requirements/requirement-document';
 export * from './requirements/requirement-obligation';
 export * from './programs/review-window';
 export * from './referrals/referral';
+export * from './referrals/referral-disclosure';
+export * from './referrals/service-provider';
 export * from './residents/resident';
 export * from './residents/resident-disclosure';
 export * from './residents/resident-profile';
