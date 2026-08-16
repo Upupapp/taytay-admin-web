@@ -17,9 +17,9 @@ intent through the audit in `docs/reference-audit/`.
 
 ## Where the build is
 
-- **Completed and certified:** TABs 01–16.
-- **Current:** TAB 17 — Release / Distribution / Disbursement Tracking.
-- **Remaining:** 18–23 (tasks, reports, search, users/audit, hardening, QA),
+- **Completed and certified:** TABs 01–17.
+- **Current:** TAB 18 — Notifications, Tasks, Alerts & Work Queues.
+- **Remaining:** 19–23 (reports, search, users/audit, hardening, QA),
   then 24–26 (Newsfeed, Events).
 
 ## Architecture
@@ -46,7 +46,7 @@ are handed.
 
 ## Non-negotiables carried by build checkers
 
-`npm run verify` = lint + typecheck + 12 checkers + 1026 tests + build. Each
+`npm run verify` = lint + typecheck + 12 checkers + 1074 tests + build. Each
 checker was validated against planted regressions. Do not weaken one to pass.
 
 | Checker | Refuses |
@@ -62,6 +62,7 @@ checker was validated against planted regressions. Do not weaken one to pass.
 | `check:documents` | removing a document version; an unexplained replacement; a raw document number in a template; a decision-shaped completion field |
 | `check:referrals` | sending without a lawful basis; a bulk share; a resident field on a referral screen; a stored overdue flag; an ungated adapter read |
 | `check:visits` | any location capture; an observation without its kind; an unattributed third-party account; an edited observation; a non-terminal outcome |
+| `check:releases` | a ledger, account code, bank account or posting date; a status on a payout session; a session summarised as one verdict; a deferral reason blaming the beneficiary; an amount forced onto goods; an unmasked or over-full manifest; a screen composing its own manifest; self-release blocking; an ungated adapter method |
 
 ## Doctrines that constrain every later TAB
 
@@ -109,14 +110,22 @@ checker was validated against planted regressions. Do not weaken one to pass.
 - **No visit scheduling form**, and the follow-up `CaseTask` is not yet created
   from the visit screen. When it is, it goes through `CaseRepository`. (`DL-88`)
 - **`VisitCapture` is modelled and tested but not wired to a screen.**
+- **No screen creates a payout session.** `createBatch` is built, gated and
+  tested; the scheduling form is not. (`DL-90`)
+- **Voiding a release has no screen** — `changeStatus` and `disbursement.void`
+  exist and are gated.
+- **The remaining placeholder routes are `reports` and `administration`.**
+  Assume their adapters are ungated until read: two for two so far (`DL-84`,
+  `DL-95`).
 
 ## A recurring defect worth naming
 
 **A file-wide string search in a checker passes when the string survives
-elsewhere in the same file.** This has now bitten four times — a problem code
+elsewhere in the same file.** This has now bitten five times — a problem code
 still present in a type union, a state still present in a comparison, a statute
 still present in a doc comment, a short label matching before the long
-description — each time letting a deleted rule report clean.
+description, and a scope helper still named in an **import statement** — each
+time letting a deleted rule report clean.
 **Scope every checker assertion to the declaration it is about** (the interface
 block, the function body, the constant), not to the file.
 
@@ -126,39 +135,50 @@ detector that has only ever reported clean has not been tested, so plant
 regressions before trusting one.
 
 Applying this while *writing* `check:visits` produced the first checker to catch
-14/14 on the first run. It is cheaper to scope up front than to debug a false
-clean.
+14/14 on the first run, and `check:releases` ran clean first time too. But the
+fifth instance was found **only by a planted regression** — the checker looked
+right and was wrong. Scope up front, and still plant. The plants are not a
+formality.
 
 ## Next action
 
-Begin TAB 17 — Release / Distribution / Disbursement Tracking. Inspect what
-exists first: `domain/disbursements/disbursement.ts` already holds
-`Disbursement`, `DisbursementStatus` with a catalog and transitions, and
-`PayoutMethod`; `DisbursementRepository` offers `list`/`getById`/`listForRequest`;
-seeds exist; and `/disbursements` is still a **placeholder route**. Extend that
-model — do not start a second one.
+Begin TAB 18 — Notifications, Tasks, Alerts & Work Queues.
 
-**Audit the adapter first.** `MockReferralRepository` shipped with no permission
-checks at all because its route was a placeholder and nothing exercised it
-(`DL-84`). `MockDisbursementRepository` is in exactly that position now.
+**Inspect what exists first, and extend it.** Three mechanisms are already
+built and must not be duplicated:
+
+1. `core/notifications/notification.store.ts` + `NotificationRepository` —
+   `info` / `success` / `warning` / `error` / `notify()`, deciding toast versus
+   inbox. Errors persist until dismissed and always reach the inbox. `ToastHost`
+   is mounted once by `App`.
+2. **`CaseTask` is already the next-action model** (`DL-55`): what this office
+   undertook to do, by when, and who owes it — deliberately *not* derived from a
+   status. A work queue is a view over these, not a second task entity.
+3. `FieldVisit` follow-ups (`DL-88`) and `Referral` follow-up dates (`DL-83`)
+   already produce work that is owed. Overdue is **derived**, never stored.
 
 The tab's load-bearing constraints:
 
-1. **This is not the treasury system.** The master command is explicit: do not
-   fabricate accounting entries, banking integrations or financial posting
-   rules the LGU did not supply. Expect the checker to enforce that absence, as
-   `check:visits` enforces the absence of location.
-2. **Separation of duties is already asserted** by `permission.spec.ts` — no
-   non-administrator role both approves a request and releases its money
-   (`DL-08`). The release screens must show that cue, not just obey it.
-3. **Batch tools never hide individual status.** Each beneficiary stays
-   individually traceable through a batch.
-4. **Manifests are printed and leave the building** — reuse the disclosure
-   thinking from `DL-82` rather than inventing a second approach to masking.
-5. Money stays integer centavos (`CLAUDE.md` §2.6). No floating point, ever.
+1. **No channel the LGU did not supply.** No push service, no email sending, no
+   SMS gateway, no webhook. Same doctrine as `DL-89` refusing accounting: a
+   notification the office believes was sent, and was not, is worse than none.
+   Expect the checker to enforce the absence.
+2. **A work queue says who owes what, by when.** Roles differ — a disbursing
+   officer's queue is not a social worker's. Derive from permission and scope,
+   never a hard-coded role branch.
+3. **An alert must not become a decision.** Same line as `DL-42`, `DL-60` and
+   `DL-78`: it surfaces evidence and gates nothing.
+4. **Nothing personal in a notification body** that a toast would render to
+   somebody outside the record's scope. Redaction happens in the data layer
+   (`DL-38`).
+5. **Deriving overdue** stays derived. A stored flag is wrong every morning
+   until a job runs.
+
+Then: `npm run verify`, commit locally, write
+`tab-reports/TAB-18-notifications.md`, advance state to TAB 19.
 
 ## Git
 
 - Branch `main`, no remote configured. **Never push.**
-- HEAD at TAB 16 certification: `0ab610c`.
+- HEAD at TAB 17 certification: `fb65486`.
 - Working tree clean.
