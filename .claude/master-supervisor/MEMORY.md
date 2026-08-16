@@ -17,9 +17,11 @@ intent through the audit in `docs/reference-audit/`.
 
 ## Where the build is
 
-- **Completed and certified:** TABs 01–22.
-- **Current:** TAB 23 — QA, Test Data, Acceptance Testing & Final Polish.
-- **Remaining:** 24–26 (Newsfeed, Events).
+- **Completed and certified:** TABs 01–23 — **the whole original command**.
+- **Current:** TAB 24 — Late-Phase Admin Scope & Permissions Guardrail.
+- **Remaining:** 25–26 (Newsfeed management, Events management).
+- The late-phase TABs are **additive**: integrate into the existing code, never
+  re-scaffold or redesign a completed module.
 - **There are no placeholder routes left.** Every route loads a real screen.
 
 **The master command PDF is on disk** at
@@ -54,7 +56,7 @@ are handed.
 
 ## Non-negotiables carried by build checkers
 
-`npm run verify` = lint + typecheck + 17 checkers + 1272 tests + build. Each
+`npm run verify` = lint + typecheck + 17 checkers + 1292 tests + build. Each
 checker was validated against planted regressions. Do not weaken one to pass.
 
 | Checker | Refuses |
@@ -170,6 +172,11 @@ shapes:
 needed checking individually** — four sibling classification entries kept their
 statutory citation while one lost it, and a block-wide `/RA 10173/` passed.
 
+**The test-side twin of this lesson**, seen three times now: **an assertion
+that is also true of an empty set**. `expect(size).toBeLessThanOrEqual(1)` on an
+empty result, `if (rows.length > 0)` guards, `some()` over an empty list.
+**Assert the precondition before asserting the property.**
+
 **And a counter-trap on the validation side:** a plant that edits the *wrong
 occurrence* looks exactly like a checker weakness. Two of TAB 19's four misses
 were that. Diagnose a miss by grepping for the surviving string **before**
@@ -208,42 +215,41 @@ formality.
 
 ## Next action
 
-Begin TAB 23 — QA, Test Data, Acceptance Testing & Final Polish. **Read its text
-in the PDF first** (page ~50). This is the last of the original 23.
+Begin TAB 24 — Late-Phase Admin Scope & Permissions Guardrail. **Read its text
+in the PDF first** (page ~53). This is the first of three late-phase TABs adding
+Newsfeed and Events.
 
-Four deliverables: a realistic linked mock dataset, a QA/scenario document,
-automated tests for the highest-risk workflows, and a polish log.
+**The governing rule is in the command itself:** *integrate into the Angular
+code already built; do not restart, re-scaffold, or redesign completed modules
+unless a small non-breaking integration change is required.*
+
+TAB 24 is the **guardrail** TAB — scope, permissions and seams, not screens.
+TABs 25 and 26 build the modules themselves.
 
 Load-bearing constraints:
 
-1. **Do not redesign for novelty.** The master command says this explicitly for
-   this TAB. Prioritise consistency and clarity; a change at this stage needs a
-   defect behind it.
-2. **The seed must stay internally consistent.** It already spans five
-   barangays and is heavily interlinked — residents, households, families,
-   cases, requests, documents, referrals, visits, releases, audit. Adding data
-   means adding it *coherently*: TAB 17 already had to fix a release naming a
-   request that belonged to a different resident. Check the joins.
-3. **Never real residents.** Every name is fictional, and `check:brand` plus the
-   access checker already guard against real PII and stray branding.
-4. **17 named scenarios** — several are already covered by existing specs
-   (restricted export, duplicate warning, overdue referral, network failure).
-   **Audit which are genuinely untested before writing anything**, and say which
-   were already covered rather than padding the count.
-5. **No Esperanza or Get Hired branding** — `check:brand` covers the seal; grep
-   for the names too.
-6. **Console errors**: check for any warning emitted during tests or build.
+1. **No duplicate permission architecture.** `PERMISSIONS`, `ROLE_DEFINITIONS`
+   and `permission-matrix.md` already exist and are guarded by `check:access`,
+   which has twice caught a new permission missing from the office reference.
+   Extend that array; do not start a second one.
+2. **`newsfeed.*` and `events.*` keys** as listed in the PDF. Map them to
+   existing roles **only where compatible** — the command says so explicitly.
+   A role may hold Newsfeed without Events. Do not invent new roles unless the
+   existing seven genuinely cannot express it, and say so if they cannot.
+3. **Audit seams** for publishing, moderation, registration export and status
+   changes. `AuditAction` already exists; `DL-114` already settled that a row
+   says what changed and never what it changed to. Extend, do not duplicate.
+4. **Resident contracts are TYPES ONLY.** The command is explicit: no resident
+   Angular portal, no mobile interface. Residents may view, react, comment,
+   share and register — never publish or create. Expect the checker to enforce
+   the absence of any resident-facing component.
+5. **TABs 01–23 must continue to work** — 1292 tests stay green.
 
-The honest risk here is inventing work. Much of this TAB is *verification*, and
-the report should say plainly which scenarios were already covered, which were
-added, and which cannot be exercised in this environment (visual zoom, real
-devices).
-
-Then: `npm run verify`, commit locally, write `tab-reports/TAB-23-qa.md`,
-advance state to TAB 24.
+Then: `npm run verify`, commit locally, write `tab-reports/TAB-24-guardrail.md`,
+advance state to TAB 25.
 
 ## Git
 
 - Branch `main`, no remote configured. **Never push.**
-- HEAD at TAB 22 certification: `cebc676`.
+- HEAD at TAB 23 certification: `274efb6`.
 - Working tree clean.
