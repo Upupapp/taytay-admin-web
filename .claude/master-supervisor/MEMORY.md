@@ -17,9 +17,10 @@ intent through the audit in `docs/reference-audit/`.
 
 ## Where the build is
 
-- **Completed and certified:** TABs 01–20.
-- **Current:** TAB 21 — User Management, Audit Trail & Data Governance.
-- **Remaining:** 22–23 (hardening, QA), then 24–26 (Newsfeed, Events).
+- **Completed and certified:** TABs 01–21.
+- **Current:** TAB 22 — Responsive, Offline/Degraded, Accessibility & Performance.
+- **Remaining:** 23 (QA), then 24–26 (Newsfeed, Events).
+- **There are no placeholder routes left.** Every route loads a real screen.
 
 **The master command PDF is on disk** at
 `C:\Users\paulg\Downloads\Taytay_Rizal_LGUIDS_Admin_Portal_Master_Command_LATEST.pdf`
@@ -53,7 +54,7 @@ are handed.
 
 ## Non-negotiables carried by build checkers
 
-`npm run verify` = lint + typecheck + 15 checkers + 1204 tests + build. Each
+`npm run verify` = lint + typecheck + 16 checkers + 1261 tests + build. Each
 checker was validated against planted regressions. Do not weaken one to pass.
 
 | Checker | Refuses |
@@ -71,6 +72,7 @@ checker was validated against planted regressions. Do not weaken one to pass.
 | `check:visits` | any location capture; an observation without its kind; an unattributed third-party account; an edited observation; a non-terminal outcome |
 | `check:releases` | a ledger, account code, bank account or posting date; a status on a payout session; a session summarised as one verdict; a deferral reason blaming the beneficiary; an amount forced onto goods; an unmasked or over-full manifest; a screen composing its own manifest; self-release blocking; an ungated adapter method |
 | `check:work` | an email/SMS/push/webhook channel; an alert with a due date, assignee or done state; a mutator on the work port; a stored urgency flag; lateness not said in words; a queue summarised as a verdict; duplicate review as work; an unfiltered notification read |
+| `check:governance` | a recorded value on an audit row or field-change; a port that inlines values; `audit.view-detail` gone or misclassified; a deactivated account keeping its session; an invite/reset method or a form on an admin screen; an invented retention period; a correction answerable with no reason or reopenable; a matrix cell conveyed by mark alone; an ungated governance read |
 | `check:search` | a free-text field on a search hit; the adapter reading a refused field; a port parameter that widens the read; `localStorage`/`sessionStorage`/cookie in the search path; a record type dropped instead of named; scope missing from a producer; a shared saved view creatable without `view.share` |
 | `check:reports` | a second person-level report; a person-level report with no stated reason or only `report.view`; suppression dropped, rounded, applied to zero, or bypassable; a total taken after suppression; an optional series summary; a canvas or charting dependency; an export missing its filter/author/handling notice; a screen composing an export; a productivity or completion-rate field; staff workload sorted by volume |
 
@@ -127,9 +129,10 @@ checker was validated against planted regressions. Do not weaken one to pass.
   only. The staff picker belongs with the administration TAB. (`DL-99`)
 - **Voiding a release has no screen** — `changeStatus` and `disbursement.void`
   exist and are gated.
-- **`administration` is the last placeholder route**, and TAB 21 fills it.
-  Assume its adapters are ungated until read: **four for four** so far
-  (`DL-84`, `DL-95`, `DL-100`, and the saved-view sharing gap in `DL-111`).
+- **Role and scope assignment is displayed, not editable.** Changing a role is
+  the most consequential write in the application and needs the confirmation and
+  audit design `setAccountActive` got, plus a staff picker. (`DL-115`)
+- **The correction capture screen is not built** (`DL-117`); the page says so.
 - **Filter chips and a per-list filtered count are not built.** Saved views, URL
   sync and clear-all exist; the chip row is a shared primitive that belongs with
   the list screens, and no list renders one yet.
@@ -157,10 +160,20 @@ shapes:
 8. the checker flags the **prose that satisfies the rule** as violating it — a
    caution warning against ranking necessarily contains the word "productivity".
 
+**A fifth shape appeared in TAB 21:** a block-scoped search where **every entry
+needed checking individually** — four sibling classification entries kept their
+statutory citation while one lost it, and a block-wide `/RA 10173/` passed.
+
 **And a counter-trap on the validation side:** a plant that edits the *wrong
 occurrence* looks exactly like a checker weakness. Two of TAB 19's four misses
 were that. Diagnose a miss by grepping for the surviving string **before**
 rewriting the rule.
+
+**A rule enforced on one path and not its parallel** is this project's other
+recurring defect, now five instances: four ungated adapters (`DL-84`, `DL-95`,
+`DL-100`, `DL-111`) and deactivation checked at sign-in but not on the live
+session (`DL-116`). When a rule exists, ask **which other path could reach the
+same state**.
 
 `check:search` (TAB 20) is the first checker where **both halves passed first
 time** — 21/21 caught, nothing to fix. The difference was applying the scoping
@@ -189,42 +202,42 @@ formality.
 
 ## Next action
 
-Begin TAB 21 — User Management, Audit Trail & Data Governance. **Read its text
-in the PDF first** (page ~46). This fills the last placeholder route.
+Begin TAB 22 — Responsive, Offline/Degraded, Accessibility & Performance.
+**Read its text in the PDF first** (page ~48).
 
-**Inspect what exists first.** `StaffRepository`, `staff.seed.ts`,
-`ROLE_DEFINITIONS`, `PERMISSIONS`, `AuditStamp`, `AuditEntry` and
-`docs/access/permission-matrix.md` are all built. `CaseEvent` is already a
-per-record audit trail with actor, reason and timestamp (`DL-54`). Extend those;
-do not start a second audit system — the same trap `DL-97` avoided for tasks.
+This is a **hardening pass over completed modules**, not a new feature. The
+deliverables are cross-module fixes, an accessibility checklist,
+network/degraded-state components, and a performance findings log.
 
-The tab's load-bearing constraints:
+Load-bearing constraints:
 
-1. **No public admin registration.** Invite/provision is a **placeholder only**,
-   and `DL-32` already established there is no self-registration route. Expect
-   the checker to enforce the absence of a signup or invite-accept flow.
-2. **The audit list must not dump sensitive values.** Rows carry actor, action,
-   entity and a **before/after summary**; the full values are scoped detail
-   behind authorisation. This is the same shape as `DL-92` (a manifest carries
-   the minimum) and `DL-105` (an aggregate is not automatically anonymous) —
-   an audit row that quotes what changed is a disclosure with a timestamp on it.
-3. **Sensitive actions have distinct permissions**, which the matrix already
-   asserts (`DL-08`, separation of duties, tested in `permission.spec.ts`).
-4. **A deactivated user loses navigation and action affordances** in mock state.
-   `StaffUser.isActive` exists and nothing currently reads it for gating — check
-   whether an inactive account can still act, and expect that it should not.
-5. **Data governance is placeholders with honest labels.** Retention and purge
-   are backend concerns the LGU supplied no policy for; say so rather than
-   inventing a schedule, exactly as `DL-89` refused accounting and `DL-101`
-   refused a service standard.
-6. **A record-correction request is a placeholder workflow**, not a silent edit.
-   Whatever is built must keep the append-only doctrine (`DL-48`, `DL-77`).
+1. **Do not promise offline transactional integrity.** The master command is
+   explicit: this is an admin system with no backend strategy for it. Banners,
+   retry, a read-only cached shell where safe, and clear unsynced warnings —
+   and **never silently queue a sensitive submission**. `DL-87` already settled
+   the honest-capture doctrine for field visits; extend it, do not invent a
+   second one.
+2. **200% zoom must not hide critical controls**, and long Filipino names and
+   purok addresses must not break layouts. Both are testable.
+3. **Core workflows usable keyboard-only**, with a focus trap in dialogs and
+   drawers. `Modal` and `Drawer` already exist — audit them rather than
+   rebuilding.
+4. **`aria-live` only for meaningful async updates.** Over-announcing is its own
+   accessibility failure.
+5. **No misleading "saved" state during network failure** — the same rule as
+   `DL-87`, applied application-wide.
+6. Charts already have table alternatives (`DL-108`); confirm rather than
+   rebuild.
 
-Then: `npm run verify`, commit locally, write `tab-reports/TAB-21-governance.md`,
-advance state to TAB 22.
+Start by **measuring**: run the existing checkers, look at the bundle, and find
+the real gaps rather than assuming them. `visit-detail-page.scss` is 79 bytes
+over its budget and has been for six TABs — clear it here.
+
+Then: `npm run verify`, commit locally, write `tab-reports/TAB-22-hardening.md`,
+advance state to TAB 23.
 
 ## Git
 
 - Branch `main`, no remote configured. **Never push.**
-- HEAD at TAB 20 certification: `44de9f6`.
+- HEAD at TAB 21 certification: `a9cbca4`.
 - Working tree clean.
