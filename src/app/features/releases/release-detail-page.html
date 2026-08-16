@@ -1,0 +1,206 @@
+<app-async-content [state]="state()" [content]="releaseContent" [skeletonLines]="8">
+  <ng-template #releaseContent let-release>
+    @if (release === null) {
+      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <p class="release__back"><a class="btn" routerLink="/releases">{{ copy.back }}</a></p>
+    } @else {
+      <app-page-header [title]="release.referenceNumber" [subtitle]="kindLabel(release)">
+        <a page-actions class="btn" routerLink="/releases">{{ copy.back }}</a>
+      </app-page-header>
+
+      <div class="release">
+        <section class="card release__panel" aria-labelledby="about-heading">
+          <h2 class="release__heading" id="about-heading">{{ copy.aboutHeading }}</h2>
+          <p class="release__status">
+            <app-status-badge [catalog]="statusCatalog" [status]="release.status" />
+          </p>
+
+          <dl class="facts">
+            <div class="facts__item">
+              <dt>{{ copy.what }}</dt>
+              <!-- Money or goods, never both. -->
+              <dd>
+                @if (release.amount) {
+                  <span class="release__amount">{{ release.amount | peso }}</span>
+                } @else {
+                  {{ release.inKindDescription }}
+                }
+              </dd>
+            </div>
+            <div class="facts__item">
+              <dt>{{ copy.method }}</dt>
+              <dd>{{ release.method }}</dd>
+            </div>
+            @if (release.fundingSourceLabel) {
+              <div class="facts__item">
+                <dt>{{ copy.fundingSource }}</dt>
+                <dd>
+                  {{ release.fundingSourceLabel }}
+                  <span class="release__hint">{{ copy.fundingSourceHint }}</span>
+                </dd>
+              </div>
+            }
+            @if (release.approvingReference) {
+              <div class="facts__item">
+                <dt>{{ copy.approvingReference }}</dt>
+                <dd>{{ release.approvingReference }}</dd>
+              </div>
+            }
+            <div class="facts__item">
+              <dt>{{ copy.scheduled }}</dt>
+              <dd>{{ release.scheduledFor ?? '—' }}</dd>
+            </div>
+            @if (release.releasedAt) {
+              <div class="facts__item">
+                <dt>{{ copy.releasedAt }}</dt>
+                <dd>{{ release.releasedAt | date: 'd MMM y' }}</dd>
+              </div>
+            }
+          </dl>
+
+          @if (release.remarks) {
+            <p class="release__remarks">{{ release.remarks }}</p>
+          }
+
+          <!-- Stated on the screen, not only in a decision log: an office that
+               believes this is the book of record will reconcile against the
+               treasury system and find out the hard way. -->
+          <p class="release__boundary">{{ copy.boundaryNotice }}</p>
+        </section>
+
+        @if (canRelease()) {
+          <section class="card release__panel" aria-labelledby="record-heading">
+            <h2 class="release__heading" id="record-heading">{{ copy.releaseHeading }}</h2>
+
+            <!-- Computed against who actually approved, not against a role. -->
+            @if (wouldSelfRelease()) {
+              <p class="release__warning" role="status">
+                <span class="release__warning-title">{{ copy.selfReleaseHeading }}</span>
+                {{ selfReleaseWarning }}
+              </p>
+            }
+
+            @if (canRecordRelease()) {
+              <label class="field">
+                <span class="field__label">{{ copy.instrument }}</span>
+                <input
+                  type="text"
+                  class="field__input"
+                  [value]="instrument()"
+                  (input)="onInstrument($event)"
+                />
+              </label>
+
+              <label class="field">
+                <span class="field__label">{{ copy.releaseRemarks }}</span>
+                <textarea
+                  class="field__input"
+                  rows="2"
+                  [value]="releaseRemarks()"
+                  (input)="onReleaseRemarks($event)"
+                ></textarea>
+              </label>
+
+              <button
+                type="button"
+                class="btn btn--primary"
+                [disabled]="saving()"
+                (click)="recordRelease()"
+              >
+                {{ copy.release }}
+              </button>
+            }
+
+            @if (canAcknowledge()) {
+              <h3 class="release__subheading">{{ copy.acknowledgeHeading }}</h3>
+
+              <label class="field">
+                <span class="field__label">{{ copy.acknowledgeKind }}</span>
+                <select class="field__input" (change)="onAckKind($event)">
+                  @for (value of acknowledgementKinds; track value) {
+                    <option [value]="value" [selected]="ackKind() === value">
+                      {{ acknowledgementLabel(value) }}
+                    </option>
+                  }
+                </select>
+              </label>
+
+              @if (needsAuthority()) {
+                <label class="field">
+                  <span class="field__label">{{ copy.collectedBy }}</span>
+                  <input
+                    type="text"
+                    class="field__input"
+                    [value]="collectedBy()"
+                    (input)="onCollectedBy($event)"
+                  />
+                </label>
+
+                <label class="field">
+                  <span class="field__label">{{ copy.authority }}</span>
+                  <input
+                    type="text"
+                    class="field__input"
+                    [value]="authority()"
+                    aria-describedby="authority-hint"
+                    (input)="onAuthority($event)"
+                  />
+                  <span class="field__hint" id="authority-hint">{{ copy.authorityHint }}</span>
+                </label>
+              }
+
+              <button
+                type="button"
+                class="btn btn--primary"
+                [disabled]="!canSaveAcknowledgement()"
+                (click)="acknowledge()"
+              >
+                {{ copy.acknowledge }}
+              </button>
+            }
+          </section>
+
+          @if (canDefer()) {
+            <section class="card release__panel" aria-labelledby="defer-heading">
+              <h2 class="release__heading" id="defer-heading">{{ copy.deferHeading }}</h2>
+              <!-- Every reason is the office's. If they did not come, that is
+                   unclaimed, and blaming them for our missing signature is the
+                   failure this separation exists to prevent. -->
+              <p class="release__hint">{{ copy.deferHint }}</p>
+
+              <label class="field">
+                <span class="field__label">{{ copy.deferReason }}</span>
+                <select class="field__input" (change)="onDeferReason($event)">
+                  @for (value of deferralReasons; track value) {
+                    <option [value]="value" [selected]="deferReason() === value">
+                      {{ deferralLabel(value) }}
+                    </option>
+                  }
+                </select>
+              </label>
+
+              <label class="field">
+                <span class="field__label">{{ copy.deferRemarks }}</span>
+                <textarea
+                  class="field__input"
+                  rows="2"
+                  [value]="deferRemarks()"
+                  (input)="onDeferRemarks($event)"
+                ></textarea>
+              </label>
+
+              <button
+                type="button"
+                class="btn"
+                [disabled]="!canSaveDeferral()"
+                (click)="defer()"
+              >
+                {{ copy.defer }}
+              </button>
+            </section>
+          }
+        }
+      </div>
+    }
+  </ng-template>
+</app-async-content>

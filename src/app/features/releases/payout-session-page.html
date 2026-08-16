@@ -1,0 +1,107 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions class="btn" routerLink="/releases">{{ copy.back }}</a>
+</app-page-header>
+
+<div class="sessions">
+  <app-async-content [state]="state()" [content]="sessionContent" [skeletonLines]="5">
+    <ng-template #sessionContent>
+      @if (batches().length === 0) {
+        <div class="card sessions__empty">
+          <h2 class="sessions__empty-heading">{{ copy.emptyHeading }}</h2>
+          <p class="sessions__empty-message">{{ copy.emptyMessage }}</p>
+        </div>
+      } @else {
+        <ul class="sessions__list">
+          @for (batch of batches(); track batch.id) {
+            <li class="card sessions__item">
+              <h2 class="sessions__title">{{ batch.title }}</h2>
+              <p class="sessions__reference">{{ batch.referenceNumber }}</p>
+
+              <dl class="facts">
+                <div class="facts__item">
+                  <dt>{{ copy.scheduledFor }}</dt>
+                  <dd>{{ batch.scheduledFor }}</dd>
+                </div>
+                <div class="facts__item">
+                  <dt>{{ copy.venue }}</dt>
+                  <dd>{{ batch.venue }}</dd>
+                </div>
+                <div class="facts__item">
+                  <dt>{{ copy.progress }}</dt>
+                  <!-- Counts, never a single state: a session cannot read as
+                       complete while somebody in it is still waiting. -->
+                  <dd>{{ progressFor(batch) }}</dd>
+                </div>
+              </dl>
+
+              @if (batch.notes) {
+                <p class="sessions__notes">{{ batch.notes }}</p>
+              }
+
+              <button type="button" class="btn" (click)="openManifest(batch)">
+                {{ copy.manifest }}
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </ng-template>
+  </app-async-content>
+
+  <!-- The list carried to the table. Composed by the data layer. -->
+  @if (manifest(); as sheet) {
+    <section class="card manifest" aria-labelledby="manifest-heading">
+      <div class="manifest__header">
+        <div>
+          <h2 class="manifest__heading" id="manifest-heading">{{ copy.manifestHeading }}</h2>
+          <p class="manifest__hint">{{ copy.manifestHint }}</p>
+        </div>
+        <button type="button" class="btn" (click)="print()">{{ copy.print }}</button>
+      </div>
+
+      <p class="manifest__meta">
+        {{ sheet.title }} · {{ sheet.scheduledFor }} · {{ sheet.venue }}
+      </p>
+
+      <table class="manifest__table">
+        <caption class="manifest__caption">{{ sheet.title }}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{{ copy.columnRow }}</th>
+            <th scope="col">{{ copy.columnName }}</th>
+            <th scope="col">{{ copy.columnVoucher }}</th>
+            <th scope="col">{{ copy.columnWhat }}</th>
+            <th scope="col">{{ copy.columnSignature }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (line of sheet.lines; track line.position) {
+            <tr>
+              <td class="manifest__row">{{ line.position }}</td>
+              <th scope="row" class="manifest__name">{{ line.beneficiaryName }}</th>
+              <td class="manifest__voucher">{{ line.maskedReference }}</td>
+              <td>
+                @if (line.amount) {
+                  <span class="manifest__amount">{{ line.amount | peso }}</span>
+                } @else {
+                  {{ line.goods }}
+                }
+              </td>
+              <!-- Left blank on purpose. Pre-filling how somebody will
+                   acknowledge is how a sheet comes back signed for a person
+                   who was never there. -->
+              <td class="manifest__signature"></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <p class="manifest__totals">
+        <span>{{ copy.totalMoney }}: {{ sheet.moneyTotal | peso }}</span>
+        <span>{{ copy.goodsCount }}: {{ sheet.inKindLineCount }}</span>
+      </p>
+
+      <p class="manifest__notice">{{ sheet.handlingNotice }}</p>
+    </section>
+  }
+</div>

@@ -104,8 +104,8 @@ export const NAVIGATION: readonly NavSection[] = [
         description: 'Assistance programmes, eligibility and requirements.',
       },
       {
-        label: 'Disbursements',
-        route: '/disbursements',
+        label: 'Releases',
+        route: '/releases',
         glyph: 'DS',
         permissions: ['disbursement.view'],
         description: 'Payout scheduling, release and acknowledgement.',

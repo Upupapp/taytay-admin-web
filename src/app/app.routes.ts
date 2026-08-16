@@ -235,14 +235,39 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'releases',
+        // `sessions` must precede `:id`, or it is read as a release id.
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            title: 'Releases — Taytay Social Welfare',
+            canActivate: [permissionGuard('disbursement.view')],
+            loadComponent: () =>
+              import('@features/releases/release-list-page').then((m) => m.ReleaseListPage),
+          },
+          {
+            path: 'sessions',
+            title: 'Payout sessions — Taytay Social Welfare',
+            canActivate: [permissionGuard('disbursement.view')],
+            loadComponent: () =>
+              import('@features/releases/payout-session-page').then((m) => m.PayoutSessionPage),
+          },
+          {
+            path: ':id',
+            title: 'Release — Taytay Social Welfare',
+            canActivate: [permissionGuard('disbursement.view')],
+            loadComponent: () =>
+              import('@features/releases/release-detail-page').then((m) => m.ReleaseDetailPage),
+          },
+        ],
+      },
+      {
+        // The old path kept as a redirect: a bookmark or a note from before
+        // TAB 17 should still land somewhere, not on the not-found page.
         path: 'disbursements',
-        title: 'Disbursements — Taytay Social Welfare',
-        canActivate: [permissionGuard('disbursement.view')],
-        ...placeholder({
-          title: 'Disbursements',
-          subtitle: 'Payout scheduling, release and acknowledgement of assistance.',
-          plannedIn: 'the disbursement TAB',
-        }),
+        pathMatch: 'full',
+        redirectTo: 'releases',
       },
       {
         path: 'referrals',

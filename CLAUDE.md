@@ -95,8 +95,8 @@ npm run verify     # lint + typecheck + repository checks + test + build
 
 The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:vulnerability`, `check:case-audit`, `check:intake`, `check:programs`,
-`check:beneficiary`, `check:documents`, `check:referrals` and `check:visits`.
-Each enforces a rule a comment
+`check:beneficiary`, `check:documents`, `check:referrals`, `check:visits` and
+`check:releases`. Each enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 
@@ -339,11 +339,57 @@ state means the office record has it, and a failed send says plainly that
 nothing was queued in the background. A worker who believes a visit was filed
 and returns to find it was not has been failed twice.
 
+### A release is tracked; it is not posted
+
+The master command asks for release tracking, and supplies no chart of accounts,
+no fund codes, no bank integration and no posting rules. So none are invented
+(`DL-89`). `fundingSourceLabel` is a **label the office was given**, held as
+text and posting to nothing; `approvingReference` is a document reference.
+There is no ledger, journal entry, account code, bank account or posting date
+anywhere in the release domain, its adapters or its screens, and
+`npm run check:releases` fails the build if one appears. The boundary is stated
+**on the screen**, because a rule an office never sees is one it discovers by
+being wrong about it.
+
+**A payout session has no status of its own** (`DL-90`). `ReleaseBatch` is a
+plan — a date, a venue, an officer, a list — and what it amounts to is derived
+by counting its members. Screens show **counts, not a state**: "38 of 41
+released, 2 deferred" names the problem, where "partially complete" hides the
+two people still waiting. Each beneficiary keeps their own status through the
+batch, start to finish.
+
+**Deferred is the office's failing; unclaimed is nobody's** (`DL-94`). Every
+`DeferralReason` is the office's own — funds not yet arrived, a missing
+signature, a voucher error. Unclaimed means nobody came, and the screen does not
+guess why. Collapsing the two blames a household for the office's missing
+countersignature, and the record reads that way to every worker afterwards.
+
+**Goods are counted, never valued** (`DL-93`). `Disbursement.amount` is
+`Money | null`: an in-kind release carries a description and no amount, because
+nobody at the MSWDO priced that sack of rice and an invented figure appears in
+reports as though somebody did. `sumReleased` filters goods out rather than
+coercing them to zero; a manifest reports a money total **and** a separate count
+of goods.
+
+**The payout list leaves the building** (`DL-92`), so it is composed by the data
+layer like a referral summary (`DL-82`) — a name, a masked voucher, what is
+handed over, and blank space for a signature. No birth date, no address, no
+sector, no reason for assistance. The acknowledgement column is left empty on
+purpose: pre-filling it is how a sheet comes back signed for somebody who was
+never there.
+
 ### Separation of duties
 
 No single non-administrator role may both approve a request and release its
 money. This is asserted by a test in `domain/access/permission.spec.ts`; if a
 role change breaks it, the role change is wrong, not the test.
+
+Separated permissions do not guarantee separated **people** — an administrator
+holds both by definition. `isSelfRelease` compares the release against who
+actually approved, read from the data layer rather than inferred from a role,
+and the screen warns before the money moves (`DL-91`). It **warns rather than
+blocks**: a small office on a bad day may have one person available, and
+refusing the payout punishes the family for the office's staffing.
 
 ### A household is not a family
 

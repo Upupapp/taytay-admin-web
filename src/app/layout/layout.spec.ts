@@ -139,7 +139,7 @@ describe('navigation reachability', () => {
       (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLAnchorElement>('a.nav__link'),
     ).map((a) => a.getAttribute('href'));
 
-    expect(hrefs).toContain('/disbursements');
+    expect(hrefs).toContain('/releases');
     expect(hrefs).not.toContain('/administration/settings');
   });
 

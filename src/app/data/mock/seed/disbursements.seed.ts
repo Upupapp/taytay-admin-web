@@ -238,7 +238,7 @@ export const MOCK_DISBURSEMENTS: readonly Disbursement[] = [
   {
     id: asId<DisbursementId>('dsb-0008'),
     requestId: asId<AssistanceRequestId>('req-0007'),
-    residentId: asId<ResidentId>('res-0009'),
+    residentId: asId<ResidentId>('res-0008'),
     referenceNumber: 'DV-2026-00395',
     status: 'needs-correction',
     method: 'cash',
@@ -258,6 +258,33 @@ export const MOCK_DISBURSEMENTS: readonly Disbursement[] = [
     remarks: 'Name on the voucher does not match the registry spelling. Held for correction.',
     audit: stamp(5, 3),
   },
+  {
+    id: asId<DisbursementId>('dsb-0009'),
+    requestId: asId<AssistanceRequestId>('req-0004'),
+    residentId: asId<ResidentId>('res-0004'),
+    referenceNumber: 'DV-2026-00402',
+    // Handed over, receipt not yet recorded. A real gap in an office day, and
+    // the only state from which acknowledgement can be recorded at all.
+    status: 'released',
+    method: 'cash',
+    kind: 'money',
+    amount: pesos(6000),
+    inKindDescription: null,
+    fundingSourceLabel: 'Municipal social welfare fund',
+    approvingReference: 'MSWDO-APR-2026-0402',
+    batchId: null,
+    scheduledFor: asIsoDate('2026-08-04'),
+    releasedAt: daysBeforeAnchor(1, 11),
+    releasedBy: disbursingOfficer,
+    acknowledgedAt: null,
+    acknowledgement: null,
+    deferralReason: null,
+    instrumentReference: 'AR-2026-00402',
+    remarks:
+      'Cash grant following the food pack. Handed over at the window; the acknowledgement ' +
+      'sheet is still with the officer.',
+    audit: stamp(4, 1),
+  },
 ];
 
 /** Who approved each release, for the segregation-of-duties cue (`DL-91`). */
@@ -268,4 +295,5 @@ export const MOCK_RELEASE_APPROVERS: Readonly<Record<string, StaffUserId>> = {
   'dsb-0005': head,
   'dsb-0006': head,
   'dsb-0007': head,
+  'dsb-0009': head,
 };

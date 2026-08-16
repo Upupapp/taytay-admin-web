@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify": "npm run lint && npm run typecheck && npm run check:brand && npm run check:shell && npm run check:access && npm run check:vulnerability && npm run check:case-audit && npm run check:intake && npm run check:programs && npm run check:beneficiary && npm run check:documents && npm run check:referrals && npm run check:visits && npm test && npm run build",
+    "verify": "npm run lint && npm run typecheck && npm run check:brand && npm run check:shell && npm run check:access && npm run check:vulnerability && npm run check:case-audit && npm run check:intake && npm run check:programs && npm run check:beneficiary && npm run check:documents && npm run check:referrals && npm run check:visits && npm run check:releases && npm test && npm run build",
     "check:brand": "node tools/check-brand-assets.mjs",
     "check:shell": "node tools/check-shell-a11y.mjs",
     "check:access": "node tools/check-access.mjs",
@@ -22,7 +22,8 @@
     "check:beneficiary": "node tools/check-beneficiary.mjs",
     "check:documents": "node tools/check-documents.mjs",
     "check:referrals": "node tools/check-referrals.mjs",
-    "check:visits": "node tools/check-visits.mjs"
+    "check:visits": "node tools/check-visits.mjs",
+    "check:releases": "node tools/check-releases.mjs"
   },
   "private": true,
   "packageManager": "npm@11.12.1",

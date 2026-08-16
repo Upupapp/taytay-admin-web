@@ -2344,3 +2344,194 @@ be a label the office then acts on; "nobody home" is what happened.
 
 **Consequence:** the screens carry the same distinction — the list heading for a
 missed visit says the office owes it, not the family.
+### DL-89 · This module tracks releases; it is not the treasury system
+
+**Status:** Settled (implemented in TAB 17).
+
+The master command asks for release, distribution and disbursement **tracking**.
+It supplies no chart of accounts, no fund codes, no bank integration, no posting
+rules and no reconciliation process — because those live in the municipality's
+accounting and treasury systems, which this application does not replace and was
+never given the rules for.
+
+So no accounting concept is invented here. `fundingSourceLabel` is exactly what
+its name says: a **label the office was given**, held as text beside the record,
+posting to nothing. `approvingReference` is a document reference, not a link into
+an approval engine. There is no ledger, no journal entry, no account code, no
+debit or credit, no bank account and no posting date anywhere in the domain, the
+adapters, the ports or the screens, and `npm run check:releases` fails the build
+if one appears.
+
+The failure this prevents is specific and expensive. A field called
+`accountCode` looks harmless for a month. Then somebody exports it, an accounting
+clerk reconciles the municipal books against it, and the two systems disagree —
+at which point the question is which one is right, and this one has no answer,
+because nothing here was ever a posting.
+
+The boundary is stated **on the screen**, not only here: a disbursing officer
+reading the release detail is told that this records what the office handed over
+and posts nothing to the books. A rule an office never sees is one it will
+discover by being wrong about it.
+
+**Consequence:** if the LGU later supplies real accounting rules, they arrive as
+a backend integration with its own contract — not as fields quietly added to
+`Disbursement`.
+
+### DL-90 · A payout session has no status of its own
+
+**Status:** Settled (implemented in TAB 17).
+
+The master command is explicit that batch tools must never hide individual
+status. The concrete failure is a batch marked "released" while three people in
+it went home with nothing, and nobody able to say which three.
+
+`ReleaseBatch` therefore carries **no status field**. It is a plan — a date, a
+venue, an officer and a list of releases — and what it amounts to is derived by
+counting its members through `batchProgress`. Each beneficiary keeps their own
+status through the batch, start to finish.
+
+What a screen shows is **counts, not a state**: "38 of 41 released, 2 deferred, 1
+needing correction" is a sentence a supervisor can act on. "Partially complete"
+is not — it names no one, and the two people still waiting are invisible in it.
+`describeBatch` builds that sentence in the domain, so no template can collapse
+it back into a verdict, and the checker fails the build if it starts returning
+one.
+
+Scheduling into a batch sets each member individually to `scheduled`. The batch
+never becomes the thing that has been released.
+
+**Consequence:** closing a session (`closedAt`) records that the office stopped
+for the day. It says nothing about whether anybody was paid, which is what the
+counts are for.
+
+### DL-91 · Self-release warns; it does not block
+
+**Status:** Settled (implemented in TAB 17).
+
+`DL-08` separates approval from release at the permission level, and
+`permission.spec.ts` asserts no non-administrator role holds both. That is the
+first half.
+
+The second half is that separated *permissions* do not guarantee separated
+*people*. A system administrator holds everything by definition, and a
+misconfigured account can hold both grants. `isSelfRelease` compares the release
+against **who actually approved the request behind it** — read from the data
+layer via `DisbursementRepository.approverFor`, never inferred from the current
+user's role — and the screen says so before the money moves.
+
+It **warns rather than refuses**. A small municipal office on a bad day may
+genuinely have one person available, and blocking the payout punishes the family
+for the office's staffing. Naming it puts the fact where an auditor will see it,
+which is what the separation was for.
+
+**Consequence:** `canRecordRelease` must not consult `wouldSelfRelease`, and no
+template may disable the release control on it. The checker enforces both.
+
+### DL-92 · The payout list is composed, and carries the minimum, masked
+
+**Status:** Settled (implemented in TAB 17).
+
+A manifest is printed, taken out of the office, and handled at a venue that may
+be a barangay hall with no lockable drawer. It is the second artefact in this
+system that leaves the building, after the referral summary, and it gets the same
+treatment (`DL-81`, `DL-82`): **composed by the data layer**, never laid out by a
+screen holding fuller records.
+
+A `ManifestLine` carries a name, a masked voucher reference, what is being handed
+over, and blank space for a signature. It carries no birth date, no address, no
+sector membership, no PhilSys digits and no reason for the assistance. None of
+those help anybody at a payout table, and a sheet listing which of your
+neighbours is a VAWC survivor is a disclosure the office cannot recall once it is
+on a clipboard.
+
+The reference is masked to its last four characters, for the reason a document
+number is (`DL-77`): enough to match the voucher in somebody's hand, not enough
+to reconstruct the series and guess at other people's.
+
+The acknowledgement column is **left blank on purpose**. Pre-filling how somebody
+will acknowledge is how a sheet comes back signed for a person who was never
+there.
+
+The name on the line comes from `ResidentView` — already disclosed for the
+composing user (`DL-38`) — so an officer whose scope excludes a barangay cannot
+print a name they could not read on screen.
+
+**Consequence:** the print stylesheet hides the office's own session cards and
+controls. Only the payout list prints.
+
+### DL-93 · Goods are counted; they are never valued
+
+**Status:** Settled (implemented in TAB 17).
+
+A cash grant and a family food pack are not the same record. `ReleaseKind`
+distinguishes them, and the invariant runs both ways: a `money` release carries
+an amount and no description, an `in-kind` release carries a description and
+**no amount at all**. `Disbursement.amount` is `Money | null` for exactly this
+reason, and `disbursementProblems` rejects either half being wrong.
+
+The temptation is to put a peso figure on the rice so totals are easy. That
+figure is invented — nobody at the MSWDO priced that sack — and once it is in the
+column it appears in reports as though somebody counted it. A municipal
+assistance total that silently includes estimated goods is wrong in a way no
+reader can see.
+
+So `sumReleased` filters in-kind releases out rather than coercing them to zero,
+and a manifest reports a money total **and** a separate count of goods to hand
+out. Two numbers that each mean something, rather than one that means neither.
+
+**Consequence:** every consumer of a release amount handles `null`. That is the
+cost, and it is the point: the type makes "what did this family actually get?"
+impossible to answer carelessly.
+
+### DL-94 · Deferred is the office's failing; unclaimed is nobody's
+
+**Status:** Settled (implemented in TAB 17).
+
+Two things the office must never record the same way:
+
+- **Deferred** — the beneficiary came, and the office could not release. Every
+  member of `DeferralReason` is the office's own: funds not yet with the office,
+  a missing approving signature, an identification mismatch, a voucher error, a
+  closed office. A deferral without a stated reason is refused by the domain.
+- **Unclaimed** — nobody came within the payout window. The office was ready.
+  Why they did not come is **not known**, and the screen does not guess.
+
+Collapsing these into one "not released" state blames a household for the
+office's missing countersignature, and the record then reads that way to every
+worker who opens it afterwards. The queue carries the distinction where it
+matters: deferrals sit in the bucket headed "the office must act on these", and
+unclaimed payouts do not.
+
+Both are recoverable — each transitions back to `scheduled` — because both
+describe a payout that has not happened yet, not a payout that will not.
+
+**Consequence:** the deferral form's reason list is fixed and office-owned. The
+checker fails the build if a reason or its label starts describing the
+beneficiary.
+
+### DL-95 · The release adapter had no permission checks either
+
+**Status:** Settled (fixed in TAB 17).
+
+`MockDisbursementRepository` returned seeded payouts to any caller —
+unauthenticated included — with no permission check and no barangay scoping.
+`list`, `getById` and `listForRequest` were all open.
+
+This is the **second** adapter found in that state, after `MockReferralRepository`
+(`DL-84`), and the cause is identical: both sat behind placeholder routes, so
+nothing reachable exercised them and the access detector had no rendered surface
+to inspect. A route that does not exist yet is a route whose adapter nobody has
+read.
+
+Payout records are not low-value. Each names a person, an amount, and a date and
+place at which they can be found collecting money.
+
+Every method now checks its permission — `disbursement.view` to read,
+`.schedule` to batch, `.release` to hand over, `.void` to cancel — and applies
+barangay scope through the beneficiary, because a release is reachable only if
+the person it is for is. Not-found and not-yours read identically (`DL-31`).
+
+**Consequence:** the standing lesson is that a feature's adapter must be audited
+when it is **written**, not when its screens are. Two for two says the pattern is
+the norm, not an accident. The remaining placeholder routes — reports and
+administration — should be assumed to have the same defect until read.

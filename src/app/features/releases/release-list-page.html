@@ -1,0 +1,136 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions class="btn" routerLink="/releases/sessions">{{ copy.batches }}</a>
+</app-page-header>
+
+<div class="card releases">
+  <div class="filters">
+    <label class="filters__field filters__field--wide">
+      <span class="filters__label">{{ copy.search }}</span>
+      <input
+        type="search"
+        class="filters__input"
+        [placeholder]="copy.searchPlaceholder"
+        (input)="onSearch($event)"
+      />
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.status }}</span>
+      <select class="filters__input" (change)="onStatus($event)">
+        <option value="">{{ copy.allStatuses }}</option>
+        @for (value of statuses; track value) {
+          <option [value]="value">{{ statusLabel(value) }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.kind }}</span>
+      <select class="filters__input" (change)="onKind($event)">
+        <option value="">{{ copy.allKinds }}</option>
+        @for (value of kinds; track value) {
+          <option [value]="value">{{ kindLabel(value) }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__check">
+      <input type="checkbox" [checked]="openOnly()" (change)="onOpenOnly($event)" />
+      <span>{{ copy.openOnly }}</span>
+    </label>
+
+    @if (hasFilters()) {
+      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+    }
+  </div>
+
+  <app-async-content [state]="state()" [content]="queueContent" [skeletonLines]="6">
+    <ng-template #queueContent>
+      @if (!hasAny()) {
+        <div class="releases__empty">
+          <h2 class="releases__empty-heading">
+            {{ hasFilters() ? copy.noResultsHeading : copy.emptyHeading }}
+          </h2>
+          <p class="releases__empty-message">
+            {{ hasFilters() ? copy.noResultsMessage : copy.emptyMessage }}
+          </p>
+        </div>
+      } @else {
+        <!-- What the office got wrong comes first. A queue sorted by status
+             hides these among everything else. -->
+        @if (needsOffice().length > 0) {
+          <section class="bucket bucket--office" aria-labelledby="office-heading">
+            <h2 class="bucket__heading" id="office-heading">
+              {{ copy.needsOffice }}
+              <span class="bucket__count">{{ needsOffice().length }}</span>
+            </h2>
+            <p class="bucket__hint">{{ copy.needsOfficeHint }}</p>
+            <ng-container
+              [ngTemplateOutlet]="rows"
+              [ngTemplateOutletContext]="{ $implicit: needsOffice() }"
+            />
+          </section>
+        }
+
+        @if (waiting().length > 0) {
+          <section class="bucket" aria-labelledby="waiting-heading">
+            <h2 class="bucket__heading" id="waiting-heading">
+              {{ copy.waiting }}
+              <span class="bucket__count">{{ waiting().length }}</span>
+            </h2>
+            <ng-container
+              [ngTemplateOutlet]="rows"
+              [ngTemplateOutletContext]="{ $implicit: waiting() }"
+            />
+          </section>
+        }
+
+        @if (settled().length > 0) {
+          <section class="bucket" aria-labelledby="settled-heading">
+            <h2 class="bucket__heading" id="settled-heading">
+              {{ copy.settled }}
+              <span class="bucket__count">{{ settled().length }}</span>
+            </h2>
+            <ng-container
+              [ngTemplateOutlet]="rows"
+              [ngTemplateOutletContext]="{ $implicit: settled() }"
+            />
+          </section>
+        }
+      }
+    </ng-template>
+  </app-async-content>
+</div>
+
+<ng-template #rows let-releases>
+  <ul class="release-rows">
+    @for (release of releases; track release.id) {
+      <li class="release-rows__item">
+        <p class="release-rows__head">
+          <a class="release-rows__reference" [routerLink]="detailLink(release)">
+            {{ release.referenceNumber }}
+          </a>
+          <app-status-badge [catalog]="statusCatalog" [status]="release.status" />
+        </p>
+        <p class="release-rows__meta">
+          <!-- Goods are named, never valued. -->
+          @if (release.amount) {
+            <span class="release-rows__amount">{{ release.amount | peso }}</span>
+          } @else {
+            <span class="release-rows__goods">
+              {{ copy.goods }}: {{ release.inKindDescription }}
+            </span>
+          }
+          @if (release.scheduledFor) {
+            <span class="release-rows__date">{{ release.scheduledFor }}</span>
+          } @else {
+            <span class="release-rows__muted">{{ copy.notScheduled }}</span>
+          }
+        </p>
+        @if (release.remarks) {
+          <p class="release-rows__remarks">{{ release.remarks }}</p>
+        }
+      </li>
+    }
+  </ul>
+</ng-template>
