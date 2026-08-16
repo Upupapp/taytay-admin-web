@@ -1,0 +1,69 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions class="btn" routerLink="/work">{{ copy.work }}</a>
+  @if (unreadCount() > 0) {
+    <button page-actions type="button" class="btn" (click)="markAllRead()">
+      {{ copy.markAllRead }}
+    </button>
+  }
+</app-page-header>
+
+<div class="centre">
+  <!-- Said as a sentence, not implied by styling. A user who has learnt to
+       ignore a colour has not learnt to ignore this. -->
+  <p class="centre__notice">{{ copy.fyiNotice }}</p>
+
+  @if (!hasAny()) {
+    <div class="card centre__empty">
+      <h2 class="centre__empty-heading">{{ copy.emptyHeading }}</h2>
+      <p class="centre__empty-message">{{ copy.emptyMessage }}</p>
+    </div>
+  } @else {
+    @for (group of groups(); track group.kind) {
+      <section class="card group" [attr.aria-label]="group.label">
+        <div class="group__head">
+          <h2 class="group__heading">{{ group.label }}</h2>
+          @if (group.unread > 0) {
+            <span class="group__unread">{{ group.unread }} {{ copy.unread }}</span>
+          }
+        </div>
+
+        <ul class="group__items">
+          @for (item of group.items; track item.id) {
+            <li class="group__item" [class.group__item--unread]="item.readAt === null">
+              <p class="group__item-head">
+                <span class="group__severity" [class]="'group__severity--' + item.severity"></span>
+                <span class="group__title">{{ item.title }}</span>
+                @if (item.readAt === null) {
+                  <!-- Unread said in words as well as by weight and marker. -->
+                  <span class="group__badge">{{ copy.unreadBadge }}</span>
+                }
+                <time class="group__time">{{ item.createdAt | relativeTime }}</time>
+              </p>
+
+              @if (item.body) {
+                <p class="group__body">{{ item.body }}</p>
+              }
+
+              <p class="group__actions">
+                @if (item.action) {
+                  <a
+                    class="group__link"
+                    [routerLink]="item.action.routerLink"
+                    (click)="markRead(item)"
+                  >
+                    {{ item.action.label }}
+                  </a>
+                }
+                @if (item.readAt === null) {
+                  <button type="button" class="group__mark" (click)="markRead(item)">
+                    Mark as read
+                  </button>
+                }
+              </p>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  }
+</div>

@@ -95,8 +95,8 @@ npm run verify     # lint + typecheck + repository checks + test + build
 
 The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:vulnerability`, `check:case-audit`, `check:intake`, `check:programs`,
-`check:beneficiary`, `check:documents`, `check:referrals`, `check:visits` and
-`check:releases`. Each enforces a rule a comment
+`check:beneficiary`, `check:documents`, `check:referrals`, `check:visits`,
+`check:releases` and `check:work`. Each enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 
@@ -338,6 +338,48 @@ those are easy to refuse as features and easy to acquire as an innocuous field.
 state means the office record has it, and a failed send says plainly that
 nothing was queued in the background. A worker who believes a visit was filed
 and returns to find it was not has been failed twice.
+
+### Three surfaces: what is owed, what happened, what is wrong
+
+A user must be able to tell "FYI" from "action required" at a glance, so the
+application keeps three concepts apart and never lets a screen blur them
+(`DL-96`):
+
+- **A work item** (`domain/work`) is something a named person must *do*. It has
+  an owner, usually a date, and a completion.
+- **A notification** (`domain/notifications`) is something that *happened*. Read
+  or unread. No owner, no date, no completion.
+- **An office alert** (`domain/work/office-alert.ts`) is a *condition of the
+  data*. Nobody completes it; somebody fixes the record and it goes.
+
+**Nothing is sent anywhere.** `NotificationChannel` is `toast | inbox | both`
+and must never gain email, SMS, push or a webhook: the LGU supplied no mail
+relay, gateway or credentials, and a channel that silently no-ops leaves an
+office believing a family was told to come on Tuesday.
+
+**A work queue is a view, and `WorkRepository` is read-only** (`DL-97`). There
+is no second task system: acting on an item goes to the repository that owns the
+record. Only a `case-task` is manageable, and the screen says so on every other
+row rather than offering a snooze that would do nothing. Task acts go through
+`CaseRepository.addTask` / `completeTask` / `assignTask` / `rescheduleTask`,
+each taking a reason and appending an event (`DL-54`, `DL-99`). "Snooze" is a
+recorded change of date, never a hidden timer.
+
+**An alert gates nothing** (`DL-98`) — the fifth surface where a signal could
+become a decision engine, after `DL-42`, `DL-60`, `DL-66` and `DL-78`. It states
+its basis, because an alert nobody can check is one an office learns to dismiss.
+
+**Overdue is obvious without red-only signalling** (`DL-102`). Lateness is
+carried by a sentence on every row (`describeLateness`), a worded bucket
+heading, and position — colour is the fourth carrier and the only optional one.
+
+**No service standard was supplied, so undated work reports waiting, not
+lateness** (`DL-101`). An assistance request in assessment has no deadline;
+inventing one would be fabricating policy. It carries `waitingSince` and the
+screen says "Waiting 9 days", never "3 days overdue".
+
+**A queue holds only what a named person owes.** A possible duplicate has no
+assignee and no date, so it is an alert with a count, not 182 rows (`DL-103`).
 
 ### A release is tracked; it is not posted
 

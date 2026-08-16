@@ -54,6 +54,12 @@ export const API_ENDPOINTS = {
   session: 'session',
   notifications: 'notifications',
   dashboardSummary: 'dashboard/summary',
+  /**
+   * Work queues are **read-only** and derived server-side, for the same reason
+   * they are derived here: an item is a view of a record, and acting on it goes
+   * to that record's own endpoint (`DL-97`).
+   */
+  work: 'work',
 } as const;
 
 export function toPage<TItem>(response: ApiListResponse<TItem>): Page<TItem> {

@@ -17,6 +17,7 @@ import {
   type CaseTask,
   type CaseTaskDraft,
   type CaseTaskId,
+  type IsoDate,
   type ResidentId,
   type SocialCase,
   type StaffUserId,
@@ -204,6 +205,55 @@ export class MockCaseStore {
       taskId: task.id,
     });
     return completed;
+  }
+
+  /**
+   * Hands a task to somebody, or back to the unassigned pool.
+   *
+   * Appends like every other mutation here (`DL-54`). A task that changes hands
+   * silently is one nobody can be asked about later, and "who was supposed to
+   * do this?" is the first question after a family is missed.
+   */
+  assignTask(
+    task: CaseTask,
+    staffUserId: StaffUserId | null,
+    reason: string,
+    actor: CaseActor,
+  ): CaseTask {
+    const now = asIsoDateTime(new Date());
+    const updated: CaseTask = {
+      ...task,
+      assignedTo: staffUserId,
+      audit: { ...task.audit, updatedAt: now, updatedBy: actor.id },
+    };
+    this.tasks = this.tasks.map((candidate) => (candidate.id === task.id ? updated : candidate));
+    this.append('task-reassigned', task.caseId, reason, actor, {
+      ...EMPTY_CASE_SUBJECT,
+      taskId: task.id,
+    });
+    return updated;
+  }
+
+  /**
+   * Moves a task's due date, with the reason recorded.
+   *
+   * This is what "snooze" is here. A hidden timer that quietly pushes a task a
+   * week leaves a file showing nothing while a household waits a month
+   * (`DL-99`).
+   */
+  rescheduleTask(task: CaseTask, dueOn: IsoDate, reason: string, actor: CaseActor): CaseTask {
+    const now = asIsoDateTime(new Date());
+    const updated: CaseTask = {
+      ...task,
+      dueOn,
+      audit: { ...task.audit, updatedAt: now, updatedBy: actor.id },
+    };
+    this.tasks = this.tasks.map((candidate) => (candidate.id === task.id ? updated : candidate));
+    this.append('task-rescheduled', task.caseId, reason, actor, {
+      ...EMPTY_CASE_SUBJECT,
+      taskId: task.id,
+    });
+    return updated;
   }
 
   /* ── History ────────────────────────────────────────────────────────────── */

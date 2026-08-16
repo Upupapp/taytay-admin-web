@@ -42,6 +42,7 @@ import {
   type CaseStatus,
   type CaseSummary,
   type CaseTaskDraft,
+  type CaseTask,
   type CaseTaskId,
   type CaseTimelineEntry,
   type CaseWorkspace,
@@ -289,6 +290,69 @@ export class MockCaseRepository implements CaseRepository {
 
     this.cases.completeTask(task, reason, actorOf(user));
     return this.respondWith(record, user);
+  }
+
+  assignTask(
+    id: CaseId,
+    taskId: CaseTaskId,
+    staffUserId: StaffUserId | null,
+    reason: string,
+  ): Observable<CaseWorkspace> {
+    const outcome = this.taskFor(id, taskId, reason);
+    if ('error' in outcome) {
+      return outcome.error;
+    }
+    this.cases.assignTask(outcome.task, staffUserId, reason, actorOf(outcome.user));
+    return this.respondWith(outcome.record, outcome.user);
+  }
+
+  rescheduleTask(
+    id: CaseId,
+    taskId: CaseTaskId,
+    dueOn: IsoDate,
+    reason: string,
+  ): Observable<CaseWorkspace> {
+    const outcome = this.taskFor(id, taskId, reason);
+    if ('error' in outcome) {
+      return outcome.error;
+    }
+    this.cases.rescheduleTask(outcome.task, dueOn, reason, actorOf(outcome.user));
+    return this.respondWith(outcome.record, outcome.user);
+  }
+
+  /**
+   * The permission, reason and scope checks the three task mutations share.
+   *
+   * Written once because three copies of a guard is how the third one comes to
+   * be missing a clause nobody notices (`DL-30`).
+   */
+  private taskFor(
+    id: CaseId,
+    taskId: CaseTaskId,
+    reason: string,
+  ):
+    | {
+        readonly record: SocialCase;
+        readonly task: CaseTask;
+        readonly user: AuthenticatedUser | null;
+      }
+    | { readonly error: Observable<CaseWorkspace> } {
+    const user = this.access.currentUser();
+    const denied = denyUnless<CaseWorkspace>(user, 'case.manage');
+    if (denied) {
+      return { error: denied };
+    }
+    const badReason = this.reasonProblem<CaseWorkspace>(reason);
+    if (badReason) {
+      return { error: badReason };
+    }
+
+    const record = this.mutable(id, user);
+    const task = this.cases.findTask(taskId);
+    if (record === null || task === undefined || task.caseId !== id) {
+      return { error: throwError(() => new PermissionDeniedError('case.manage')) };
+    }
+    return { record, task, user };
   }
 
   /* ── Scope ──────────────────────────────────────────────────────────────── */

@@ -1,0 +1,130 @@
+.team {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+}
+
+.team__empty {
+  padding: var(--space-loose);
+  text-align: center;
+}
+
+.team__empty-heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.team__empty-message {
+  margin: var(--space-compact) 0 0;
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+.member {
+  padding: var(--space-base);
+}
+
+/* Work nobody picked up reads as a gap, not as a caseload. */
+.member--unassigned {
+  border-style: dashed;
+}
+
+.member__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-snug);
+}
+
+.member__name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.member__counts {
+  display: flex;
+  gap: var(--space-snug);
+  margin: 0;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.member__late {
+  font-weight: 700;
+}
+
+.member__total {
+  color: var(--c-text-muted);
+}
+
+.member__hint {
+  margin: var(--space-compact) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  max-inline-size: 68ch;
+}
+
+.member__items {
+  margin: var(--space-base) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+}
+
+.member__item {
+  padding-block-start: var(--space-snug);
+  border-block-start: 1px solid var(--c-border);
+}
+
+.member__item:first-child {
+  padding-block-start: 0;
+  border-block-start: none;
+}
+
+.member__item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-snug);
+  margin: 0;
+}
+
+.member__source {
+  padding: 1px 8px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-tight, 4px);
+  color: var(--c-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.member__timing {
+  margin-inline-start: auto;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.member__timing--waiting {
+  color: var(--c-text-muted);
+  font-weight: 600;
+}
+
+.member__title {
+  display: inline-block;
+  margin-block-start: var(--space-micro);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.member__subject {
+  margin: var(--space-micro) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}

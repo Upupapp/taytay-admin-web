@@ -1,0 +1,263 @@
+.work {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+}
+
+.work__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-snug);
+  margin: 0;
+  font-size: 14px;
+}
+
+.work__summary-label {
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.work__as-of {
+  margin-inline-start: auto;
+  color: var(--c-text-subtle);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.work__empty {
+  padding: var(--space-loose);
+  text-align: center;
+}
+
+.work__empty-heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.work__empty-message {
+  margin: var(--space-compact) 0 0;
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+/* ── Buckets ──────────────────────────────────────────────────────────────── */
+
+.bucket {
+  padding-block-start: var(--space-base);
+  border-block-start: 1px solid var(--c-border);
+}
+
+.bucket:first-of-type {
+  border-block-start: none;
+  padding-block-start: 0;
+}
+
+.bucket__heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-snug);
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/*
+ * The late bucket gets a left rule as well as its heading and its per-row
+ * "Late by N days" text. Three carriers, only one of which is colour: the
+ * heading survives a screen reader, the rule survives a monochrome printout.
+ */
+.bucket--late {
+  padding-inline-start: var(--space-base);
+  border-inline-start: 3px solid var(--c-danger, #a4262c);
+}
+
+.bucket__count {
+  padding: 1px 8px;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bucket__hint {
+  margin: var(--space-micro) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  max-inline-size: 68ch;
+}
+
+/* ── Rows ─────────────────────────────────────────────────────────────────── */
+
+.work-rows {
+  margin: var(--space-snug) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+}
+
+.work-rows__item {
+  padding: var(--space-base);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-base);
+  background: var(--c-surface);
+}
+
+.work-rows__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-snug);
+  margin: 0;
+}
+
+.work-rows__source {
+  padding: 1px 8px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-tight, 4px);
+  color: var(--c-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.work-rows__timing {
+  margin-inline-start: auto;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.work-rows__timing--waiting {
+  color: var(--c-text-muted);
+  font-weight: 600;
+}
+
+.work-rows__title {
+  margin: var(--space-compact) 0 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.work-rows__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-snug);
+  margin: var(--space-micro) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.work-rows__subject {
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.work-rows__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-snug);
+  margin: var(--space-snug) 0 0;
+}
+
+.work-rows__note {
+  color: var(--c-text-subtle);
+  font-size: 12px;
+  max-inline-size: 52ch;
+}
+
+/* ── Acting on a task ─────────────────────────────────────────────────────── */
+
+.task-panel {
+  margin-block-start: var(--space-base);
+  padding-block-start: var(--space-base);
+  border-block-start: 1px solid var(--c-border);
+}
+
+.task-panel__subheading {
+  margin: var(--space-base) 0 var(--space-compact);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ── Alerts ───────────────────────────────────────────────────────────────── */
+
+.alerts {
+  padding: var(--space-base);
+}
+
+.alerts__heading {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.alerts__hint {
+  margin: var(--space-micro) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  max-inline-size: 68ch;
+}
+
+.alerts__summary {
+  margin: var(--space-snug) 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.alerts__list {
+  margin: var(--space-base) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+}
+
+.alerts__item {
+  padding-block-start: var(--space-base);
+  border-block-start: 1px solid var(--c-border);
+}
+
+.alerts__item:first-child {
+  padding-block-start: 0;
+  border-block-start: none;
+}
+
+.alerts__item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-snug);
+  margin: 0;
+}
+
+.alerts__summary-text {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.alerts__basis {
+  margin: var(--space-compact) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  max-inline-size: 72ch;
+}
+
+.alerts__basis-label {
+  font-weight: 600;
+}
+
+.alerts__link {
+  display: inline-block;
+  margin-block-start: var(--space-compact);
+  font-size: 12.5px;
+}

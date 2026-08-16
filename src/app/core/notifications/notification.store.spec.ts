@@ -30,6 +30,7 @@ class FakeNotificationRepository implements NotificationRepository {
   create(request: NotificationRequest): Observable<AppNotification> {
     this.sequence += 1;
     const notification: AppNotification = {
+      kind: 'general',
       id: asId<NotificationId>(`ntf-${this.sequence}`),
       recipientId: request.recipientId ?? null,
       severity: request.severity,
@@ -122,6 +123,7 @@ describe('NotificationStore', () => {
     const { store, repository } = setUp();
     repository.seed([
       {
+        kind: 'general',
         id: asId<NotificationId>('seeded'),
         recipientId: null,
         severity: 'info',

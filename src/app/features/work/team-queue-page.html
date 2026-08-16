@@ -1,0 +1,62 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions class="btn" routerLink="/work">{{ copy.back }}</a>
+</app-page-header>
+
+<div class="team">
+  <app-async-content [state]="state()" [content]="teamContent" [skeletonLines]="6">
+    <ng-template #teamContent>
+      @if (!hasAny()) {
+        <div class="card team__empty">
+          <h2 class="team__empty-heading">{{ copy.emptyHeading }}</h2>
+          <p class="team__empty-message">{{ copy.emptyMessage }}</p>
+        </div>
+      } @else {
+        @for (member of members(); track member.staffId ?? 'unassigned') {
+          <section
+            class="card member"
+            [class.member--unassigned]="member.staffId === null"
+            [attr.aria-label]="member.name"
+          >
+            <div class="member__head">
+              <h2 class="member__name">
+                {{ member.staffId === null ? copy.unassignedHeading : member.name }}
+              </h2>
+              <p class="member__counts">
+                <!-- Counts in words as well as position: "2 late" reads the
+                     same to a screen reader as it does on the page. -->
+                @if (member.overdueCount > 0) {
+                  <span class="member__late">{{ member.overdueCount }} {{ copy.lateCount }}</span>
+                }
+                <span class="member__total">{{ member.total }} {{ copy.totalCount }}</span>
+              </p>
+            </div>
+
+            @if (member.staffId === null) {
+              <p class="member__hint">{{ copy.unassignedHint }}</p>
+            }
+
+            <ul class="member__items">
+              @for (item of member.items; track item.id) {
+                <li class="member__item">
+                  <p class="member__item-head">
+                    <span class="member__source">{{ sourceLabel(item) }}</span>
+                    <app-status-badge [catalog]="priorityCatalog" [status]="item.priority" />
+                    @if (lateness(item); as late) {
+                      <span class="member__timing">{{ late }}</span>
+                    } @else if (waiting(item); as waited) {
+                      <span class="member__timing member__timing--waiting">{{ waited }}</span>
+                    }
+                  </p>
+                  <a class="member__title" [routerLink]="item.link.routerLink">{{ item.title }}</a>
+                  @if (item.subject) {
+                    <p class="member__subject">{{ item.subject }}</p>
+                  }
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      }
+    </ng-template>
+  </app-async-content>
+</div>

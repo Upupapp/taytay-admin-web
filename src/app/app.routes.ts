@@ -42,6 +42,39 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       {
+        path: 'work',
+        // `team` must precede nothing here, but the order is kept explicit so a
+        // later `:id` route cannot swallow it.
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            title: 'My work — Taytay Social Welfare',
+            canActivate: [permissionGuard('dashboard.view')],
+            loadComponent: () =>
+              import('@features/work/work-queue-page').then((m) => m.WorkQueuePage),
+          },
+          {
+            path: 'team',
+            title: 'The team’s work — Taytay Social Welfare',
+            // Seeing a colleague's caseload is supervision, not a default. The
+            // adapter re-checks this; hiding the link is not protection.
+            canActivate: [permissionGuard('staff.view')],
+            loadComponent: () =>
+              import('@features/work/team-queue-page').then((m) => m.TeamQueuePage),
+          },
+        ],
+      },
+      {
+        path: 'notifications',
+        title: 'Notifications — Taytay Social Welfare',
+        canActivate: [permissionGuard('dashboard.view')],
+        loadComponent: () =>
+          import('@features/work/notification-centre-page').then(
+            (m) => m.NotificationCentrePage,
+          ),
+      },
+      {
         path: 'dashboard',
         title: 'Dashboard — Taytay Social Welfare',
         canActivate: [permissionGuard('dashboard.view')],

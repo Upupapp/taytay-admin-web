@@ -82,6 +82,8 @@ export const CASE_COPY = {
     unassigned: 'Returned to the unassigned pool',
     'note-added': 'Note added',
     'task-added': 'Task added',
+    'task-reassigned': 'Task handed over',
+    'task-rescheduled': 'Task date moved',
     'task-completed': 'Task completed',
     'request-status-changed': 'Assistance request moved',
   } satisfies Record<CaseEventKind, string>,

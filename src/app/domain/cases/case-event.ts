@@ -26,6 +26,8 @@ export type CaseEventKind =
   | 'note-added'
   | 'task-added'
   | 'task-completed'
+  | 'task-reassigned'
+  | 'task-rescheduled'
   | 'request-status-changed';
 
 /**

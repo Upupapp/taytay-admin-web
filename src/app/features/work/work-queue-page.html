@@ -1,0 +1,227 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions class="btn" routerLink="/notifications">{{ copy.centre }}</a>
+  @if (canSeeTeam()) {
+    <a page-actions class="btn" routerLink="/work/team">{{ copy.team }}</a>
+  }
+</app-page-header>
+
+<div class="work">
+  <app-async-content [state]="state()" [content]="queueContent" [skeletonLines]="6">
+    <ng-template #queueContent>
+      <!-- Counts, never a verdict: "3 late, 2 due today" is actionable where
+           "behind schedule" names nothing. -->
+      <p class="work__summary">
+        <span class="work__summary-label">{{ copy.summaryLabel }}:</span>
+        {{ summary() }}
+        <span class="work__as-of">{{ copy.asOf }} {{ today }}</span>
+      </p>
+
+      @if (total() === 0) {
+        <div class="card work__empty">
+          <h2 class="work__empty-heading">{{ copy.emptyHeading }}</h2>
+          <p class="work__empty-message">{{ copy.emptyMessage }}</p>
+        </div>
+      } @else {
+        @if (buckets().overdue.length > 0) {
+          <section class="bucket bucket--late" aria-labelledby="late-heading">
+            <h2 class="bucket__heading" id="late-heading">
+              {{ copy.overdue }}
+              <span class="bucket__count">{{ buckets().overdue.length }}</span>
+            </h2>
+            <p class="bucket__hint">{{ copy.overdueHint }}</p>
+            <ng-container
+              [ngTemplateOutlet]="rows"
+              [ngTemplateOutletContext]="{ $implicit: buckets().overdue }"
+            />
+          </section>
+        }
+
+        @if (buckets().dueToday.length > 0) {
+          <section class="bucket" aria-labelledby="today-heading">
+            <h2 class="bucket__heading" id="today-heading">
+              {{ copy.dueToday }}
+              <span class="bucket__count">{{ buckets().dueToday.length }}</span>
+            </h2>
+            <ng-container
+              [ngTemplateOutlet]="rows"
+              [ngTemplateOutletContext]="{ $implicit: buckets().dueToday }"
+            />
+          </section>
+        }
+
+        @if (buckets().dueSoon.length > 0) {
+          <section class="bucket" aria-labelledby="soon-heading">
+            <h2 class="bucket__heading" id="soon-heading">
+              {{ copy.dueSoon }}
+              <span class="bucket__count">{{ buckets().dueSoon.length }}</span>
+            </h2>
+            <ng-container
+              [ngTemplateOutlet]="rows"
+              [ngTemplateOutletContext]="{ $implicit: buckets().dueSoon }"
+            />
+          </section>
+        }
+
+        @if (buckets().later.length > 0) {
+          <section class="bucket" aria-labelledby="later-heading">
+            <h2 class="bucket__heading" id="later-heading">
+              {{ copy.later }}
+              <span class="bucket__count">{{ buckets().later.length }}</span>
+            </h2>
+            <ng-container
+              [ngTemplateOutlet]="rows"
+              [ngTemplateOutletContext]="{ $implicit: buckets().later }"
+            />
+          </section>
+        }
+
+        @if (buckets().undated.length > 0) {
+          <section class="bucket" aria-labelledby="undated-heading">
+            <h2 class="bucket__heading" id="undated-heading">
+              {{ copy.undated }}
+              <span class="bucket__count">{{ buckets().undated.length }}</span>
+            </h2>
+            <!-- Says plainly why these have no date, rather than leaving an
+                 officer to assume the system lost one. -->
+            <p class="bucket__hint">{{ copy.undatedHint }}</p>
+            <ng-container
+              [ngTemplateOutlet]="rows"
+              [ngTemplateOutletContext]="{ $implicit: buckets().undated }"
+            />
+          </section>
+        }
+      }
+    </ng-template>
+  </app-async-content>
+
+  <!-- Conditions of the data. Nobody completes one. -->
+  <app-async-content [state]="alertState()" [content]="alertContent" [skeletonLines]="3">
+    <ng-template #alertContent>
+      @if (alerts().length > 0) {
+        <section class="card alerts" aria-labelledby="alerts-heading">
+          <h2 class="alerts__heading" id="alerts-heading">{{ alertCopy.heading }}</h2>
+          <p class="alerts__hint">{{ alertCopy.hint }}</p>
+          <p class="alerts__summary">{{ alertSummary() }}</p>
+
+          <ul class="alerts__list">
+            @for (alert of alerts(); track alert.id) {
+              <li class="alerts__item">
+                <p class="alerts__item-head">
+                  <app-status-badge [catalog]="severityCatalog" [status]="alert.severity" />
+                  <span class="alerts__summary-text">{{ alert.summary }}</span>
+                </p>
+                <!-- The rule it applied. An alert nobody can check is one an
+                     office learns to dismiss. -->
+                <p class="alerts__basis">
+                  <span class="alerts__basis-label">{{ alertCopy.basis }}:</span>
+                  {{ alert.basis }}
+                </p>
+                <a class="alerts__link" [routerLink]="alert.link.routerLink">
+                  {{ alert.link.label }}
+                </a>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    </ng-template>
+  </app-async-content>
+</div>
+
+<ng-template #rows let-items>
+  <ul class="work-rows">
+    @for (item of items; track item.id) {
+      <li class="work-rows__item">
+        <p class="work-rows__head">
+          <span class="work-rows__source">{{ sourceLabel(item) }}</span>
+          <app-status-badge [catalog]="priorityCatalog" [status]="item.priority" />
+          <!-- Lateness in words, always. Colour reinforces; it never carries. -->
+          @if (lateness(item); as late) {
+            <span class="work-rows__timing">{{ late }}</span>
+          } @else if (waiting(item); as waited) {
+            <span class="work-rows__timing work-rows__timing--waiting">{{ waited }}</span>
+          }
+        </p>
+
+        <h3 class="work-rows__title">{{ item.title }}</h3>
+
+        <p class="work-rows__meta">
+          @if (item.subject) {
+            <span class="work-rows__subject">{{ item.subject }}</span>
+          }
+          @if (item.preview) {
+            <span class="work-rows__preview">{{ item.preview }}</span>
+          }
+          <span class="work-rows__assignee">
+            {{ copy.assignedTo }}: {{ item.assignedToName ?? copy.unassigned }}
+          </span>
+        </p>
+
+        <p class="work-rows__actions">
+          <a class="btn" [routerLink]="item.link.routerLink">{{ item.link.label }}</a>
+          @if (item.isManageable) {
+            <button type="button" class="btn" (click)="toggle(item)">
+              {{ isOpen(item) ? copy.cancel : copy.complete }}
+            </button>
+          } @else {
+            <!-- Honest about what this item is. Offering a snooze on the state
+                 of a record would be offering a control that does nothing. -->
+            <span class="work-rows__note">{{ copy.taskOnly }}</span>
+          }
+        </p>
+
+        @if (item.isManageable && isOpen(item)) {
+          <div class="task-panel">
+            <label class="field">
+              <span class="field__label">{{ copy.outcome }}</span>
+              <textarea
+                class="field__input"
+                rows="2"
+                aria-describedby="outcome-hint"
+                [value]="outcome()"
+                (input)="onOutcome($event)"
+              ></textarea>
+              <span class="field__hint" id="outcome-hint">{{ copy.outcomeHint }}</span>
+            </label>
+            <button
+              type="button"
+              class="btn btn--primary"
+              [disabled]="!canComplete()"
+              (click)="complete(item)"
+            >
+              {{ copy.complete }}
+            </button>
+
+            <h4 class="task-panel__subheading">{{ copy.reschedule }}</h4>
+            <label class="field">
+              <span class="field__label">{{ copy.newDate }}</span>
+              <input
+                type="date"
+                class="field__input"
+                [value]="newDate()"
+                (input)="onNewDate($event)"
+              />
+            </label>
+            <label class="field">
+              <span class="field__label">{{ copy.reason }}</span>
+              <input
+                type="text"
+                class="field__input"
+                [value]="reason()"
+                (input)="onReason($event)"
+              />
+            </label>
+            <button
+              type="button"
+              class="btn"
+              [disabled]="!canReschedule()"
+              (click)="reschedule(item)"
+            >
+              {{ copy.reschedule }}
+            </button>
+          </div>
+        }
+      </li>
+    }
+  </ul>
+</ng-template>

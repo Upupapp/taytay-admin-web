@@ -1,6 +1,8 @@
 import { InjectionToken } from '@angular/core';
 import type { Observable } from 'rxjs';
 
+import type { OfficeAlert } from '../work/office-alert';
+import type { TeamQueue, WorkQueue } from '../work/work-queue';
 import type {
   AssistanceRequest,
   AssistanceRequestFilter,
@@ -289,6 +291,32 @@ export interface CaseRepository {
   addTask(id: CaseId, draft: CaseTaskDraft, reason: string): Observable<CaseWorkspace>;
   /** The reason is the outcome: what actually happened when the task was done. */
   completeTask(id: CaseId, taskId: CaseTaskId, reason: string): Observable<CaseWorkspace>;
+  /**
+   * Hands a task to somebody, or back to the unassigned pool with `null`.
+   *
+   * Added in TAB 18 so a work queue can reassign without inventing a second
+   * task store (`DL-55`). Like every other mutation here it takes a reason and
+   * appends a case event in the same act (`DL-54`).
+   */
+  assignTask(
+    id: CaseId,
+    taskId: CaseTaskId,
+    staffUserId: StaffUserId | null,
+    reason: string,
+  ): Observable<CaseWorkspace>;
+  /**
+   * Moves a task's due date.
+   *
+   * This is what "snooze" is here: a recorded change of date with a stated
+   * reason, not a hidden timer. A task quietly pushed a week with nothing said
+   * is how a household waits a month and the file shows nothing (`DL-99`).
+   */
+  rescheduleTask(
+    id: CaseId,
+    taskId: CaseTaskId,
+    dueOn: IsoDate,
+    reason: string,
+  ): Observable<CaseWorkspace>;
 }
 
 export const CASE_REPOSITORY = new InjectionToken<CaseRepository>('CaseRepository');
@@ -772,6 +800,46 @@ export interface NotificationRepository {
 export const NOTIFICATION_REPOSITORY = new InjectionToken<NotificationRepository>(
   'NotificationRepository',
 );
+
+/**
+ * Work queues.
+ *
+ * **This port is read-only, and that is the design.** A work queue is a *view*
+ * assembled from case tasks and the live state of requests, visits, referrals,
+ * releases and duplicate pairs. It owns nothing, so it must not offer a way to
+ * change anything: a `WorkRepository.complete()` would be a second task system
+ * with a different audit trail from the first, and "what does this office owe
+ * this family?" would have two answers again (`DL-55`, `DL-97`).
+ *
+ * Acting on an item goes to the repository that owns the record — a case task
+ * through `CaseRepository`, a referral through `ReferralRepository`, and so on.
+ * `WorkItem.isManageable` tells a screen which items have a task record behind
+ * them and which are simply the state of something.
+ *
+ * Everything is computed against an explicit `asOf` date rather than an
+ * ambient clock, so a queue can be tested and cannot disagree with the heading
+ * above it.
+ */
+export interface WorkRepository {
+  /** What the signed-in user owes. */
+  myQueue(asOf: IsoDate): Observable<WorkQueue>;
+  /**
+   * What the office owes, grouped by who is carrying it.
+   *
+   * Requires `staff.view`: seeing another officer's caseload is supervision,
+   * not a default. Unassigned work is its own group rather than an omission.
+   */
+  teamQueue(asOf: IsoDate): Observable<TeamQueue>;
+  /**
+   * Conditions of the data worth somebody's attention.
+   *
+   * Derived on every read and never stored, so an alert cannot outlive the
+   * problem that produced it.
+   */
+  alerts(): Observable<readonly OfficeAlert[]>;
+}
+
+export const WORK_REPOSITORY = new InjectionToken<WorkRepository>('WorkRepository');
 
 export interface DashboardRepository {
   /**

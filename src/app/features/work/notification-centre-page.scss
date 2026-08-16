@@ -1,0 +1,156 @@
+.centre {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+}
+
+.centre__notice {
+  margin: 0;
+  padding: var(--space-snug) var(--space-base);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-base);
+  background: var(--c-surface-muted, transparent);
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  max-inline-size: 78ch;
+}
+
+.centre__empty {
+  padding: var(--space-loose);
+  text-align: center;
+}
+
+.centre__empty-heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.centre__empty-message {
+  margin: var(--space-compact) 0 0;
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+.group {
+  padding: var(--space-base);
+}
+
+.group__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-snug);
+}
+
+.group__heading {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.group__unread {
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.group__items {
+  margin: var(--space-snug) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.group__item {
+  padding-block: var(--space-snug);
+  border-block-start: 1px solid var(--c-border);
+}
+
+.group__item:first-child {
+  border-block-start: none;
+}
+
+.group__item--unread .group__title {
+  font-weight: 700;
+}
+
+.group__item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-snug);
+  margin: 0;
+}
+
+.group__severity {
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 50%;
+  background: var(--c-text-subtle);
+}
+
+.group__severity--warning {
+  background: var(--c-warning, #b26b00);
+}
+
+.group__severity--error {
+  background: var(--c-danger, #a4262c);
+}
+
+.group__severity--success {
+  background: var(--c-success, #1c7a4d);
+}
+
+.group__title {
+  font-size: 13.5px;
+}
+
+/*
+ * Unread is carried by a word, a weight and a marker — never by colour alone.
+ * The dot repeats the severity that the text already states.
+ */
+.group__badge {
+  padding: 1px 7px;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.group__time {
+  margin-inline-start: auto;
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}
+
+.group__body {
+  margin: var(--space-micro) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  max-inline-size: 78ch;
+}
+
+.group__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-base);
+  margin: var(--space-compact) 0 0;
+}
+
+.group__link,
+.group__mark {
+  font-size: 12.5px;
+}
+
+.group__mark {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--c-link, inherit);
+  font: inherit;
+  font-size: 12.5px;
+  text-decoration: underline;
+  cursor: pointer;
+}

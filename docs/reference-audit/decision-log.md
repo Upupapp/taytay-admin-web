@@ -2535,3 +2535,202 @@ the person it is for is. Not-found and not-yours read identically (`DL-31`).
 when it is **written**, not when its screens are. Two for two says the pattern is
 the norm, not an accident. The remaining placeholder routes — reports and
 administration — should be assumed to have the same defect until read.
+### DL-96 · Three surfaces, and no channel the LGU did not supply
+
+**Status:** Settled (implemented in TAB 18).
+
+The master command's first acceptance criterion is that a user can tell "FYI"
+from "action required". That is a modelling problem before it is a styling one,
+so this application keeps **three** concepts and never lets a screen blur them:
+
+| | Has an owner | Has a due date | Is completed | Goes away when |
+| --- | --- | --- | --- | --- |
+| **Work item** | yes | usually | yes | somebody does it |
+| **Notification** | no | no | no — only read | never; it is history |
+| **Office alert** | no | no | no | the record is fixed |
+
+Collapsing them is how a notification centre becomes noise. An office that has
+to read every line to find out whether it is owed anything stops reading any of
+them, and the two lines that mattered go with the rest.
+
+The distinction is said **in words on the screen**, not implied by styling: the
+notification centre opens with a sentence saying that nothing on it is a job and
+that what is owed is on the work list. A user who has learnt to ignore a colour
+has not learnt to ignore a sentence.
+
+**And nothing is sent anywhere.** `NotificationChannel` is `toast | inbox |
+both`, and it must never gain `email`, `sms`, `push` or a webhook. The LGU
+supplied no mail relay, no SMS gateway and no push credentials, so this
+application has no way to deliver anything and must not appear to. The failure
+is concrete: a `channel: 'sms'` that silently no-ops leaves an office believing
+a beneficiary was told to come on Tuesday. Nobody finds out until the family
+does not arrive, and by then the record says they were notified.
+
+**Consequence:** when a channel is genuinely provisioned it arrives as a backend
+concern with its own delivery receipts, not as a value added to this union.
+
+### DL-97 · A work queue is a view, and the port is read-only
+
+**Status:** Settled (implemented in TAB 18).
+
+`DL-55` established that the next action is a **record** — a `CaseTask` — rather
+than something inferred from a status. TAB 18 could easily have broken that by
+giving the queue its own task table.
+
+It does not. `WorkRepository` has three methods, all reads: `myQueue`,
+`teamQueue`, `alerts`. There is no `complete`, no `assign`, no `snooze`. A
+`WorkItem` is a normalised view of something that already exists — a case task,
+an assistance request in a particular state, a scheduled visit, an unanswered
+referral, a release waiting to go out — and acting on one goes to the repository
+that owns that record, which already has the permission checks, the reason
+requirement and the audit trail.
+
+A `WorkRepository.complete()` would be a second task system with a second audit
+trail, and "what does this office owe this family?" would have two answers
+again.
+
+`WorkItem.isManageable` is true only for a `case-task`, and the screen says so
+on every other row: an unanswered referral is not something you snooze, it is
+something you chase. Offering a control that quietly does nothing is worse than
+offering none.
+
+**Consequence:** `CaseRepository` gained `assignTask` and `rescheduleTask`, each
+taking a required reason and appending a case event, because that is where task
+mutations belong.
+
+### DL-98 · An office alert describes the data; it decides nothing
+
+**Status:** Settled (implemented in TAB 18).
+
+An `OfficeAlert` says something about the records is wrong or risky *right now*:
+two people who may be the same person, a voucher that does not match the
+registry, an approved request nobody has scheduled.
+
+Nobody completes one. Somebody fixes the record and it stops being true. That is
+why it has no due date, no assignee and no done state — giving it any of those
+turns "the data is wrong" into "somebody ticked a box", which is how a
+data-quality problem gets closed without being fixed. Alerts are derived on
+every read and never stored, so one cannot outlive the problem that produced it.
+
+Every alert states its **basis** — the rule it applied and what it read —
+because an alert nobody can check is one an office learns to dismiss.
+
+**This is the fifth surface where a signal could quietly become a decision
+engine**, after vulnerability indicators (`DL-42`), intake advisories (`DL-60`),
+requirement completion (`DL-78`) and programme guidance (`DL-66`). The checker
+refuses a decision-shaped field on the type and refuses a template that disables
+a control on an alert.
+
+### DL-99 · Snooze is a recorded change of date, not a hidden timer
+
+**Status:** Settled (implemented in TAB 18).
+
+The master command asks for "snooze / remind-later where appropriate". The
+appropriate form here is `CaseRepository.rescheduleTask`: a new due date with a
+**required reason**, appended to the case history as a `task-rescheduled` event.
+
+A snooze implemented as a hidden timer leaves a file showing nothing while a
+household waits another month. The question afterwards is always "why did this
+take so long?", and a record that cannot answer it is a record that blames
+whoever is holding it now.
+
+Reassignment works the same way (`task-reassigned`). A task that changes hands
+silently is one nobody can be asked about, and "who was supposed to do this?" is
+the first question after a family is missed.
+
+**Consequence:** there is no snooze on derived work, because there is no record
+to write the reason to. `isManageable` says which is which.
+
+### DL-100 · The notification adapter did not know who the current user was
+
+**Status:** Settled (fixed in TAB 18).
+
+`MockNotificationRepository.listForCurrentUser()` returned **every** seeded
+notification to **every** caller. The `recipientId` field existed on the model
+and nothing read it, so a barangay-link account signing in saw the MSWDO head's
+inbox: case assignments, suspended programmes, payout preparations, all of it.
+
+This is the third ungated adapter (`DL-84`, `DL-95`), and the cause here is
+different from the first two and worth naming separately. The others were behind
+placeholder routes, so nothing exercised them. This one was **wired, reachable
+and in daily use** — it was simply *named* for behaviour it did not have. A name
+is not an implementation, and a name that describes the intended behaviour is
+the easiest possible place to stop looking.
+
+A notification with `recipientId: null` is an office-wide announcement, which is
+a deliberate case and not the absence of a recipient. The rule lives in
+`isForRecipient` so the two adapters cannot drift, and `markRead` now refuses a
+notification that is not yours with the same message as one that does not exist
+(`DL-31`).
+
+**Consequence:** audit every adapter method whose name makes a claim —
+`forCurrentUser`, `mine`, `visibleTo` — against what it actually filters on.
+
+### DL-101 · No service standard was supplied, so the queue reports waiting, not lateness
+
+**Status:** Settled (implemented in TAB 18).
+
+A case task and a scheduled visit have real due dates because a person set one.
+An assistance request sitting in assessment has **none**: the LGU supplied no
+service standards, and no issuance in the reference material fixes a turnaround
+time for AICS intake at this office.
+
+Inventing "five working days" would be fabricating policy the municipality never
+adopted — the same refusal as `DL-89` declining to invent accounting rules. So
+`WorkItem.dueOn` is `null` for those items, and they carry `waitingSince`
+instead: the day the request was filed, which is a fact the office has.
+
+The queue reports "Waiting 9 days". It never reports "3 days overdue", because
+nothing can miss a target that was never set. Undated work is ordered by who has
+waited longest, and the screen says plainly why there is no date rather than
+leaving an officer to assume the system lost one.
+
+**Consequence:** when the office adopts service standards they become a policy
+record with a provenance, like the review windows (`DL-68`) and the poverty
+threshold (`DL-46`) — not a constant somebody typed into a queue.
+
+### DL-102 · Overdue is obvious without red-only signalling
+
+**Status:** Settled (implemented in TAB 18).
+
+The master command asks for this explicitly, and it is an accessibility
+requirement rather than a preference. Colour is not information: it fails a
+colour-blind officer, it fails a monochrome printout, and it fails a screen
+reader completely.
+
+So lateness is carried three ways, only one of which is colour:
+
+1. **A sentence on every row** — `describeLateness` returns "Late by 3 days",
+   from the domain, so no template can drop it into a class name.
+2. **A worded bucket heading** — "Late", with a sentence saying somebody set a
+   date and it has passed.
+3. **Position and a border rule** — the late bucket comes first and carries a
+   left border, which survives printing.
+
+The colour is the fourth carrier and the only optional one.
+
+**Consequence:** `check:work` fails the build if a template that lists work
+stops rendering the lateness sentence, checked **per template** rather than
+across the set.
+
+### DL-103 · A possible duplicate is a condition of the data, not somebody's job
+
+**Status:** Settled (corrected during TAB 18).
+
+The first build of the work queue emitted one work item per duplicate candidate
+pair. On this registry that produced **189 items for a social worker, 182 of
+them duplicate pairs**, with seven genuinely late things buried underneath.
+
+That is precisely the notification overload the master command warns against,
+and it happened by blurring the distinction the module exists to keep. A
+duplicate pair has no assignee and no due date. Nobody completes it. It is a
+**condition of the data** — which is what `OfficeAlert` is for — and it now
+appears there as one line with a count and a stated basis.
+
+`resolve-data-quality` survives as a `WorkKind`, because a person can still
+raise a case task to deal with one. What is refused is the software manufacturing
+180 jobs nobody asked for.
+
+**Consequence:** a source belongs on a queue only if a named person owes it. The
+checker refuses `duplicate-review` as a `WorkSource`, and a feature test asserts
+the personal queue stays under thirty items.

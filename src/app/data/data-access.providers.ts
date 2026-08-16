@@ -6,6 +6,7 @@ import {
   BENEFICIARY_REPOSITORY,
   CASE_REPOSITORY,
   DASHBOARD_REPOSITORY,
+  WORK_REPOSITORY,
   DISBURSEMENT_REPOSITORY,
   FIELD_VISIT_REPOSITORY,
   FAMILY_REPOSITORY,
@@ -24,6 +25,7 @@ import {
   HttpBeneficiaryRepository,
   HttpCaseRepository,
   HttpDashboardRepository,
+  HttpWorkRepository,
   HttpDisbursementRepository,
   HttpFieldVisitRepository,
   HttpFamilyRepository,
@@ -39,6 +41,7 @@ import { MockAssistanceRequestRepository } from './mock/mock-assistance-request.
 import { MockBeneficiaryRepository } from './mock/mock-beneficiary.repository';
 import { MockCaseRepository } from './mock/mock-case.repository';
 import { MockDashboardRepository } from './mock/mock-dashboard.repository';
+import { MockWorkRepository } from './mock/mock-work.repository';
 import { MockDisbursementRepository } from './mock/mock-disbursement.repository';
 import { MockFieldVisitRepository } from './mock/mock-field-visit.repository';
 import { MockFamilyRepository } from './mock/mock-family.repository';
@@ -74,6 +77,7 @@ function mockProviders(): Provider[] {
     { provide: STAFF_REPOSITORY, useClass: MockStaffRepository },
     { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
     { provide: DASHBOARD_REPOSITORY, useClass: MockDashboardRepository },
+    { provide: WORK_REPOSITORY, useClass: MockWorkRepository },
     { provide: SAVED_VIEW_REPOSITORY, useClass: MockSavedViewRepository },
     { provide: HOUSEHOLD_REPOSITORY, useClass: MockHouseholdRepository },
     { provide: FAMILY_REPOSITORY, useClass: MockFamilyRepository },
@@ -93,6 +97,7 @@ function httpProviders(): Provider[] {
     { provide: STAFF_REPOSITORY, useClass: HttpStaffRepository },
     { provide: NOTIFICATION_REPOSITORY, useClass: HttpNotificationRepository },
     { provide: DASHBOARD_REPOSITORY, useClass: HttpDashboardRepository },
+    { provide: WORK_REPOSITORY, useClass: HttpWorkRepository },
     { provide: SAVED_VIEW_REPOSITORY, useClass: HttpSavedViewRepository },
     { provide: HOUSEHOLD_REPOSITORY, useClass: HttpHouseholdRepository },
     { provide: FAMILY_REPOSITORY, useClass: HttpFamilyRepository },

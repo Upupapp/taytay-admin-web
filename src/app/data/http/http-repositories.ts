@@ -134,6 +134,10 @@ import {
   type StaffRepository,
   type StaffUser,
   type StaffUserId,
+  type OfficeAlert,
+  type TeamQueue,
+  type WorkQueue,
+  type WorkRepository,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -383,6 +387,55 @@ export class HttpCaseRepository implements CaseRepository {
       `${API_ENDPOINTS.cases}/${id}/tasks/${taskId}/complete`,
       { reason },
     );
+  }
+
+  assignTask(
+    id: CaseId,
+    taskId: CaseTaskId,
+    staffUserId: StaffUserId | null,
+    reason: string,
+  ): Observable<CaseWorkspace> {
+    return this.api.post<CaseWorkspace, { staffUserId: StaffUserId | null; reason: string }>(
+      `${API_ENDPOINTS.cases}/${id}/tasks/${taskId}/assignment`,
+      { staffUserId, reason },
+    );
+  }
+
+  rescheduleTask(
+    id: CaseId,
+    taskId: CaseTaskId,
+    dueOn: IsoDate,
+    reason: string,
+  ): Observable<CaseWorkspace> {
+    return this.api.post<CaseWorkspace, { dueOn: IsoDate; reason: string }>(
+      `${API_ENDPOINTS.cases}/${id}/tasks/${taskId}/schedule`,
+      { dueOn, reason },
+    );
+  }
+}
+
+/**
+ * Work queues over HTTP.
+ *
+ * Three reads and nothing else — the port has no mutator and neither does this
+ * (`DL-97`). `asOf` travels as a parameter rather than being taken from the
+ * server's clock so the heading a user reads and the urgencies underneath it
+ * cannot disagree.
+ */
+@Injectable()
+export class HttpWorkRepository implements WorkRepository {
+  private readonly api = inject(ApiClient);
+
+  myQueue(asOf: IsoDate): Observable<WorkQueue> {
+    return this.api.item<WorkQueue>(`${API_ENDPOINTS.work}/mine`, { asOf });
+  }
+
+  teamQueue(asOf: IsoDate): Observable<TeamQueue> {
+    return this.api.item<TeamQueue>(`${API_ENDPOINTS.work}/team`, { asOf });
+  }
+
+  alerts(): Observable<readonly OfficeAlert[]> {
+    return this.api.collection<OfficeAlert>(`${API_ENDPOINTS.work}/alerts`);
   }
 }
 
