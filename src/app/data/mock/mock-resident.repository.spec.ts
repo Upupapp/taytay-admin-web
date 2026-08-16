@@ -208,12 +208,18 @@ describe('one call answers "who is this, and what have we done for them?"', () =
   it('counts only money actually handed over, not money approved', async () => {
     signedInAs(authenticated('mswdo-head'));
     const profile = await firstValueFrom(repo().getProfile(asId<ResidentId>('res-0007')));
+    // `completed` counts too: it is a claimed payout the office has closed out.
+    // Goods carry no amount and contribute nothing to a peso total (`DL-93`).
     const handedOver = (profile?.history.payouts ?? []).filter(
-      (payout) => payout.status === 'released' || payout.status === 'claimed',
+      (payout) =>
+        (payout.status === 'released' ||
+          payout.status === 'claimed' ||
+          payout.status === 'completed') &&
+        payout.amount !== null,
     );
     expect(handedOver.length).toBeGreaterThan(0);
     expect(profile?.history.totalReleased.centavos).toBe(
-      handedOver.reduce((total, payout) => total + payout.amount.centavos, 0),
+      handedOver.reduce((total, payout) => total + (payout.amount?.centavos ?? 0), 0),
     );
   });
 

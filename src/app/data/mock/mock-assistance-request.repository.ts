@@ -45,6 +45,7 @@ import {
   type IntakeAdvisory,
   type IntakeDraft,
   type IntakeRequirementEntry,
+  type Money,
   type Page,
   type PageRequest,
   type PriorRelease,
@@ -242,13 +243,14 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
         programId,
         requests: this.requests.map(toPriorRequest),
         releases: MOCK_DISBURSEMENTS.filter(
-          (payout) => payout.releasedAt !== null && payout.status !== 'voided',
+          (payout) =>
+            payout.releasedAt !== null && payout.status !== 'voided' && payout.amount !== null,
         ).map((payout): PriorRelease => ({
           requestId: payout.requestId,
           residentId: payout.residentId,
-          amount: payout.amount,
-          // Narrowed above; the filter is the guarantee, the fallback is the
-          // type system's price for not being able to see that.
+          // Narrowed by the filter above; the assertion is the type system's
+          // price for not being able to see that.
+          amount: payout.amount as Money,
           releasedAt: payout.releasedAt ?? payout.audit.updatedAt,
         })),
         cases: this.cases.casesForResident(residentId).map((record) => ({
@@ -762,11 +764,12 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       programId: request.programId,
       requests: this.requests.filter((other) => other.id !== request.id).map(toPriorRequest),
       releases: MOCK_DISBURSEMENTS.filter(
-        (payout) => payout.releasedAt !== null && payout.status !== 'voided',
+        (payout) =>
+          payout.releasedAt !== null && payout.status !== 'voided' && payout.amount !== null,
       ).map((payout) => ({
         requestId: payout.requestId,
         residentId: payout.residentId,
-        amount: payout.amount,
+        amount: payout.amount as Money,
         releasedAt: payout.releasedAt ?? payout.audit.updatedAt,
       })),
       cases: this.cases.casesForResident(request.residentId).map((record) => ({

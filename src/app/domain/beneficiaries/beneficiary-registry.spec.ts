@@ -144,8 +144,14 @@ describe('beneficiary standing', () => {
   });
 
   it('counts somebody a recipient only once something actually reached them', () => {
-    const planned: readonly DisbursementStatus[] = ['pending', 'scheduled', 'unclaimed', 'voided'];
-    const arrived: readonly DisbursementStatus[] = ['released', 'claimed'];
+    const planned: readonly DisbursementStatus[] = [
+      'for-release',
+      'scheduled',
+      'unclaimed',
+      'deferred',
+      'voided',
+    ];
+    const arrived: readonly DisbursementStatus[] = ['released', 'claimed', 'completed'];
 
     for (const status of planned) {
       expect(isReceivedDisbursementStatus(status)).toBe(false);

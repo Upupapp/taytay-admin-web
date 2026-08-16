@@ -323,7 +323,7 @@ describe('MockBeneficiaryRepository — the record it assembles', () => {
     const handedOver = (detail?.payouts ?? []).filter(
       (payout) => payout.status === 'released' || payout.status === 'claimed',
     );
-    const expected = handedOver.reduce((total, payout) => total + payout.amount.centavos, 0);
+    const expected = handedOver.reduce((total, payout) => total + (payout.amount?.centavos ?? 0), 0);
 
     expect(detail?.totalReleased.centavos).toBe(expected);
   });

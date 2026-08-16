@@ -38,7 +38,19 @@ import type { AssistanceProgram, ProgramDraft, ProgramFilter } from '../programs
 import type { ProgramUtilization } from '../programs/program-utilization';
 import type { RequirementTemplate } from '../programs/requirement-template';
 import type { DashboardFilter, DashboardSummary } from '../dashboard/dashboard-summary';
-import type { Disbursement, DisbursementFilter } from '../disbursements/disbursement';
+import type {
+  AcknowledgementKind,
+  DeferralReason,
+  Disbursement,
+  DisbursementFilter,
+  DisbursementSortField,
+  DisbursementStatus,
+} from '../disbursements/disbursement';
+import type {
+  ReleaseBatch,
+  ReleaseBatchDraft,
+} from '../disbursements/release-batch';
+import type { ReleaseManifest } from '../disbursements/release-manifest';
 import type {
   Resident,
   ResidentDraft,
@@ -104,6 +116,7 @@ import type {
   ProgramId,
   FamilyId,
   ReferralId,
+  ReleaseBatchId,
   RelationshipId,
   RequirementId,
   ResidentId,
@@ -583,10 +596,88 @@ export const FIELD_VISIT_REPOSITORY = new InjectionToken<FieldVisitRepository>(
   'FieldVisitRepository',
 );
 
+/**
+ * Release and distribution tracking.
+ *
+ * **This is not the treasury system**, and the port is shaped so it cannot
+ * quietly become one. There is no ledger entry, no journal posting, no account
+ * code, no bank instruction and no method that moves money — only records of
+ * what the office scheduled, handed over and got acknowledged (`DL-89`).
+ * `tools/check-releases.mjs` fails the build if any of that appears.
+ *
+ * The distinction matters beyond tidiness: a front end that appears to post
+ * accounting entries invites an office to treat it as the book of record, and
+ * the first reconciliation against the actual treasury system is where that
+ * belief fails — publicly, and with somebody's grant in the middle of it.
+ *
+ * `markReleased` takes the releasing officer so the segregation-of-duties cue
+ * can be computed against whoever approved (`DL-91`), and `deferRelease`
+ * requires a reason from a fixed list of things the *office* got wrong — which
+ * is what keeps "we could not pay you" from being recorded as "you did not
+ * come".
+ */
 export interface DisbursementRepository {
-  list(filter: DisbursementFilter, page: PageRequest): Observable<Page<Disbursement>>;
+  list(
+    filter: DisbursementFilter,
+    page: PageRequest<DisbursementSortField>,
+  ): Observable<Page<Disbursement>>;
   getById(id: DisbursementId): Observable<Disbursement | null>;
   listForRequest(id: AssistanceRequestId): Observable<readonly Disbursement[]>;
+  /** The release queue, ordered by what the office must act on first. */
+  queue(filter: DisbursementFilter): Observable<readonly Disbursement[]>;
+
+  /** Who approved the request behind a release, for the self-release cue. */
+  approverFor(id: DisbursementId): Observable<StaffUserId | null>;
+
+  listBatches(): Observable<readonly ReleaseBatch[]>;
+  getBatch(id: ReleaseBatchId): Observable<ReleaseBatch | null>;
+  /** Schedules releases into a payout session. Each stays individually tracked. */
+  createBatch(draft: ReleaseBatchDraft): Observable<ReleaseBatch>;
+
+  /**
+   * The printable payout list. Composed by the data layer from the batch, so a
+   * screen cannot assemble one from fuller records it happens to hold — the
+   * same rule as the referral summary (`DL-82`, `DL-92`).
+   */
+  manifestFor(id: ReleaseBatchId): Observable<ReleaseManifest | null>;
+
+  /** Records that something was handed over, by a named officer. */
+  markReleased(
+    id: DisbursementId,
+    instrumentReference: string | null,
+    remarks: string | null,
+  ): Observable<Disbursement>;
+
+  /** Records the beneficiary's receipt, and how it was evidenced. */
+  acknowledge(
+    id: DisbursementId,
+    acknowledgement: ReleaseAcknowledgementDraft,
+  ): Observable<Disbursement>;
+
+  /**
+   * The beneficiary attended and the office could not release. The reason comes
+   * from a fixed list, every entry of which is the office's own failing
+   * (`DL-94`).
+   */
+  deferRelease(
+    id: DisbursementId,
+    reason: DeferralReason,
+    remarks: string,
+  ): Observable<Disbursement>;
+
+  /** Moves the release along. Every move takes a reason, as everywhere else. */
+  changeStatus(
+    id: DisbursementId,
+    to: DisbursementStatus,
+    reason: string,
+  ): Observable<Disbursement>;
+}
+
+/** What the acknowledgement form submits. Time and actor are the store's. */
+export interface ReleaseAcknowledgementDraft {
+  readonly kind: AcknowledgementKind;
+  readonly collectedBy: string | null;
+  readonly authority: string | null;
 }
 
 export const DISBURSEMENT_REPOSITORY = new InjectionToken<DisbursementRepository>(

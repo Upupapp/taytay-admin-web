@@ -20,6 +20,7 @@ import {
   type DashboardRepository,
   type DashboardSummary,
   type Disbursement,
+  type Money,
   type ProgramCategory,
   type StatusCount,
 } from '@domain/index';
@@ -87,7 +88,11 @@ export class MockDashboardRepository implements DashboardRepository {
       awaitingApproval: countByStatus(requests, 'endorsed'),
       scheduledPayouts: disbursements.filter((d) => d.status === 'scheduled').length,
       residentsServedInPeriod: new Set(released.map((d) => d.residentId)).size,
-      disbursedInPeriod: sumMoney(released.map((d) => d.amount)),
+      // Goods reached families too, but carry no peso figure. Left out of the
+      // money total rather than counted as zero (`DL-93`).
+      disbursedInPeriod: sumMoney(
+        released.filter((d) => d.amount !== null).map((d) => d.amount as Money),
+      ),
 
       requestsByStatus: byStatus(requests),
       requestsByBarangay: byBarangay(requests),
@@ -251,7 +256,7 @@ function byCategory(
     const existing = totals.get(category);
     totals.set(category, {
       category,
-      amount: sumMoney([existing?.amount ?? ZERO_PESOS, disbursement.amount]),
+      amount: sumMoney([existing?.amount ?? ZERO_PESOS, disbursement.amount ?? ZERO_PESOS]),
       count: (existing?.count ?? 0) + 1,
     });
   }

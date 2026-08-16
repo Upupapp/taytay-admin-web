@@ -43,7 +43,8 @@ export interface ResidentPayoutSummary {
   readonly referenceNumber: string;
   readonly status: DisbursementStatus;
   readonly method: PayoutMethod;
-  readonly amount: Money;
+  /** `null` for an in-kind release: goods are counted, never valued (`DL-93`). */
+  readonly amount: Money | null;
   readonly scheduledFor: IsoDate | null;
   readonly releasedAt: IsoDateTime | null;
 }

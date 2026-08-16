@@ -13,6 +13,7 @@ import {
   reviewWindowProblems,
   summariseUtilization,
   type AssistanceProgram,
+  type Money,
   type Page,
   type PageRequest,
   type ProgramDraft,
@@ -170,12 +171,13 @@ export class MockProgramRepository implements ProgramRepository {
         submittedAt: request.submittedAt,
       })),
       releases: MOCK_DISBURSEMENTS.filter(
-        (payout) => payout.releasedAt !== null && payout.status !== 'voided',
+        (payout) =>
+          payout.releasedAt !== null && payout.status !== 'voided' && payout.amount !== null,
       ).map((payout) => ({
         requestId: payout.requestId,
         // The payout does not carry a programme; the request it belongs to does.
         programId: byRequest.get(payout.requestId)?.programId ?? asId<ProgramId>(''),
-        amount: payout.amount,
+        amount: payout.amount as Money,
         releasedAt: payout.releasedAt ?? payout.audit.updatedAt,
       })),
       now: asIsoDateTime(new Date()),

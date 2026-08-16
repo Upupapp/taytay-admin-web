@@ -46,6 +46,7 @@ export const API_ENDPOINTS = {
   identityReview: 'beneficiaries/identity-review',
   assistanceRequests: 'assistance-requests',
   disbursements: 'disbursements',
+  releaseBatches: 'release-batches',
   referrals: 'referrals',
   serviceProviders: 'service-providers',
   fieldVisits: 'field-visits',

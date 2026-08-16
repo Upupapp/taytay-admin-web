@@ -21,6 +21,8 @@ export * from './cases/case-workspace';
 export * from './cases/social-case';
 export * from './dashboard/dashboard-summary';
 export * from './disbursements/disbursement';
+export * from './disbursements/release-batch';
+export * from './disbursements/release-manifest';
 export * from './families/family';
 export * from './families/family-graph';
 export * from './families/relationship';

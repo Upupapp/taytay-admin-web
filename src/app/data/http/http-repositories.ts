@@ -31,6 +31,14 @@ import {
   type ServiceProvider,
   type ServiceProviderFilter,
   type ServiceProviderId,
+  type DeferralReason,
+  type DisbursementSortField,
+  type DisbursementStatus,
+  type ReleaseAcknowledgementDraft,
+  type ReleaseBatch,
+  type ReleaseBatchDraft,
+  type ReleaseBatchId,
+  type ReleaseManifest,
   type FieldVisit,
   type FieldVisitDraft,
   type FieldVisitFilter,
@@ -590,8 +598,11 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
 export class HttpDisbursementRepository implements DisbursementRepository {
   private readonly api = inject(ApiClient);
 
-  list(filter: DisbursementFilter, page: PageRequest): Observable<Page<Disbursement>> {
-    return this.api.page<Disbursement>(API_ENDPOINTS.disbursements, page, { ...filter });
+  list(
+    filter: DisbursementFilter,
+    page: PageRequest<DisbursementSortField>,
+  ): Observable<Page<Disbursement>> {
+    return this.api.page<Disbursement>(API_ENDPOINTS.disbursements, page, toParams(filter));
   }
 
   getById(id: DisbursementId): Observable<Disbursement | null> {
@@ -599,8 +610,80 @@ export class HttpDisbursementRepository implements DisbursementRepository {
   }
 
   listForRequest(id: AssistanceRequestId): Observable<readonly Disbursement[]> {
+    return this.api.collection<Disbursement>(API_ENDPOINTS.disbursements, { requestId: id });
+  }
+
+  queue(filter: DisbursementFilter): Observable<readonly Disbursement[]> {
     return this.api.collection<Disbursement>(
-      `${API_ENDPOINTS.assistanceRequests}/${id}/disbursements`,
+      `${API_ENDPOINTS.disbursements}/queue`,
+      toParams(filter),
+    );
+  }
+
+  approverFor(id: DisbursementId): Observable<StaffUserId | null> {
+    return this.api.optionalItem<StaffUserId>(`${API_ENDPOINTS.disbursements}/${id}/approver`);
+  }
+
+  listBatches(): Observable<readonly ReleaseBatch[]> {
+    return this.api.collection<ReleaseBatch>(API_ENDPOINTS.releaseBatches);
+  }
+
+  getBatch(id: ReleaseBatchId): Observable<ReleaseBatch | null> {
+    return this.api.optionalItem<ReleaseBatch>(`${API_ENDPOINTS.releaseBatches}/${id}`);
+  }
+
+  createBatch(draft: ReleaseBatchDraft): Observable<ReleaseBatch> {
+    return this.api.post<ReleaseBatch, ReleaseBatchDraft>(API_ENDPOINTS.releaseBatches, draft);
+  }
+
+  manifestFor(id: ReleaseBatchId): Observable<ReleaseManifest | null> {
+    // Server-composed, like the referral summary. This adapter must never
+    // assemble a manifest client-side from fuller records (`DL-92`).
+    return this.api.optionalItem<ReleaseManifest>(
+      `${API_ENDPOINTS.releaseBatches}/${id}/manifest`,
+    );
+  }
+
+  markReleased(
+    id: DisbursementId,
+    instrumentReference: string | null,
+    remarks: string | null,
+  ): Observable<Disbursement> {
+    return this.api.post<
+      Disbursement,
+      { instrumentReference: string | null; remarks: string | null }
+    >(`${API_ENDPOINTS.disbursements}/${id}/release`, { instrumentReference, remarks });
+  }
+
+  acknowledge(
+    id: DisbursementId,
+    acknowledgement: ReleaseAcknowledgementDraft,
+  ): Observable<Disbursement> {
+    return this.api.post<Disbursement, ReleaseAcknowledgementDraft>(
+      `${API_ENDPOINTS.disbursements}/${id}/acknowledgement`,
+      acknowledgement,
+    );
+  }
+
+  deferRelease(
+    id: DisbursementId,
+    reason: DeferralReason,
+    remarks: string,
+  ): Observable<Disbursement> {
+    return this.api.post<Disbursement, { reason: DeferralReason; remarks: string }>(
+      `${API_ENDPOINTS.disbursements}/${id}/defer`,
+      { reason, remarks },
+    );
+  }
+
+  changeStatus(
+    id: DisbursementId,
+    to: DisbursementStatus,
+    reason: string,
+  ): Observable<Disbursement> {
+    return this.api.post<Disbursement, { to: DisbursementStatus; reason: string }>(
+      `${API_ENDPOINTS.disbursements}/${id}/status`,
+      { to, reason },
     );
   }
 }

@@ -3,6 +3,7 @@ import {
   isTerminalAssistanceStatus,
   sumMoney,
   ZERO_PESOS,
+  type Money,
   type ProgramId,
   type ResidentAssistanceHistory,
   type ResidentCaseSummary,
@@ -78,11 +79,16 @@ export function historySummaryFor(residentId: ResidentId): ResidentAssistanceHis
     }))
     .sort((a, b) => byMostRecent(a.referredAt, b.referredAt));
 
-  // Released or claimed only. What was scheduled, went unclaimed or was voided
-  // never reached the family, and a total that counted it would overstate what
-  // this office has actually given.
+  // Released or claimed, *and* carrying an amount. What was scheduled, went
+  // unclaimed or was voided never reached the family. An in-kind release reached
+  // the family but contributes no peso figure — inventing one would put a
+  // number nobody counted into every total downstream (`DL-93`).
   const handedOver = payouts.filter(
-    (payout) => payout.status === 'released' || payout.status === 'claimed',
+    (payout) =>
+      (payout.status === 'released' ||
+        payout.status === 'claimed' ||
+        payout.status === 'completed') &&
+      payout.amount !== null,
   );
 
   return {
@@ -90,7 +96,9 @@ export function historySummaryFor(residentId: ResidentId): ResidentAssistanceHis
     payouts,
     referrals,
     totalReleased:
-      handedOver.length > 0 ? sumMoney(handedOver.map((payout) => payout.amount)) : ZERO_PESOS,
+      handedOver.length > 0
+        ? sumMoney(handedOver.map((payout) => payout.amount as Money))
+        : ZERO_PESOS,
     openCaseCount: cases.filter((entry) => !isTerminalAssistanceStatus(entry.status)).length,
     lastActivityAt: cases[0]?.updatedAt ?? null,
   };

@@ -43,6 +43,7 @@ export type DocumentVersionId = Branded<string, 'DocumentVersionId'>;
 export type DocumentRequestId = Branded<string, 'DocumentRequestId'>;
 export type ServiceProviderId = Branded<string, 'ServiceProviderId'>;
 export type FieldVisitId = Branded<string, 'FieldVisitId'>;
+export type ReleaseBatchId = Branded<string, 'ReleaseBatchId'>;
 /**
  * One recorded observation from a visit. Carries its own id because each states
  * *whose claim it is* and is rendered separately (`DL-85`) — a paragraph of

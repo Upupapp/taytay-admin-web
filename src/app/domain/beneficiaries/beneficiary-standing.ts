@@ -64,12 +64,17 @@ const OPEN_REQUEST_STATUSES: readonly AssistanceRequestStatus[] = [
 /**
  * Payout states that mean something actually reached the person.
  *
- * `released` and `claimed` only. Not `scheduled` — a payout on a calendar is a
- * plan, and calling somebody a recipient before they have received anything
- * overstates what the office has done. Not `unclaimed` either: the money went
- * back in the drawer.
+ * `released`, `claimed` and `completed` only. Not `scheduled` — a payout on a
+ * calendar is a plan, and calling somebody a recipient before they have
+ * received anything overstates what the office has done. Not `unclaimed`, where
+ * the money went back in the drawer, and not `deferred`, where the family came
+ * and the office could not pay.
  */
-const RECEIVED_DISBURSEMENT_STATUSES: readonly DisbursementStatus[] = ['released', 'claimed'];
+const RECEIVED_DISBURSEMENT_STATUSES: readonly DisbursementStatus[] = [
+  'released',
+  'claimed',
+  'completed',
+];
 
 export function isOpenRequestStatus(status: AssistanceRequestStatus): boolean {
   return OPEN_REQUEST_STATUSES.includes(status);
