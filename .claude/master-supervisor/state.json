@@ -1,7 +1,7 @@
 {
   "masterCommand": "Taytay_Rizal_LGUIDS_Admin_Portal_Master_Command_LATEST.pdf — LGU IDS Taytay Rizal Social Welfare Admin (Angular). TABs 01-23 plus late-phase TABs 24-26.",
-  "currentTab": "TAB 20 — Global Search, Saved Filters & Record Discovery",
-  "currentTabIndex": 20,
+  "currentTab": "TAB 21 — User Management, Audit Trail & Data Governance",
+  "currentTabIndex": 21,
   "totalTabs": 26,
   "completedTabs": [
     "TAB 01 — Project Constitution & Angular Foundation",
@@ -22,27 +22,28 @@
     "TAB 16 — Field Visits, Case Notes & Follow-Up",
     "TAB 17 — Release / Distribution / Disbursement Tracking",
     "TAB 18 — Notifications, Tasks, Alerts & Work Queues",
-    "TAB 19 — Reports, Analytics, Exports & LGU Decision Support"
+    "TAB 19 — Reports, Analytics, Exports & LGU Decision Support",
+    "TAB 20 — Global Search, Saved Filters & Record Discovery"
   ],
-  "currentObjective": "Build global search and saved discovery tools. Search across residents, households, families, cases, assistance requests and programmes, GROUPED BY ENTITY TYPE, using SAFE SNIPPETS ONLY — name/ID/barangay/status and limited context; never case-note text in global results. Recent searches may be local-only and must not persist sensitive query content. Saved views: personal first, shared team views behind a permission. Filter UX: chips for active filters, clear-all, a count of filtered records, URL/query-state sync where safe, and a responsive filter drawer on small screens.",
+  "currentObjective": "Build Users, Roles, Audit Trail and Data Governance UI. User list/detail (name, employee ID, office/unit, barangay scope, roles, status, last-login metadata, internal contact). Invite/provision is a PLACEHOLDER ONLY — no public admin registration. Activate/deactivate, reset-access placeholder, role and scope assignment. A permission matrix by module/action. A searchable, filterable audit stream: actor, action, entity, before/after SUMMARY, timestamp, source — and NO full sensitive values in generic list rows; scoped detail only when authorised. Data governance: classification labels, retention/purge placeholders, consent/authority metadata, export warnings, access rationale, and a record-correction request placeholder.",
   "status": "RUNNING",
-  "supervisorCycleCount": 8,
+  "supervisorCycleCount": 9,
   "lastHourlyReportAt": null,
-  "lastCheckpointAt": "2026-08-16T15:20:00+08:00",
-  "lastLocalCommit": "70d7976",
-  "workingTreeState": "clean at TAB 19 certification",
+  "lastCheckpointAt": "2026-08-16T16:30:00+08:00",
+  "lastLocalCommit": "44de9f6",
+  "workingTreeState": "clean at TAB 20 certification",
   "activeBlockers": [],
   "pendingQuestions": [],
   "researchDecisions": [
-    "DL-01..DL-108 recorded in docs/reference-audit/decision-log.md"
+    "DL-01..DL-112 recorded in docs/reference-audit/decision-log.md"
   ],
   "contextPressure": "NORMAL",
   "notes": {
     "supervisorAreaBootstrappedAt": "2026-08-15T16:00:00+08:00",
     "priorTabsPredateThisArea": "TABs 01-12 were executed before .claude/master-supervisor existed. Their durable record is docs/reference-audit/decision-log.md (DL-01..DL-70), the per-module docs/ READMEs, CLAUDE.md and the git history. This file starts tracking from TAB 12 certification forward.",
     "verifyCommand": "npm run verify",
-    "verifyGate": "lint + typecheck + 14 checkers (brand, shell, access, vulnerability, case-audit, intake, programs, beneficiary, documents, referrals, visits, releases, work, reports) + test + build",
-    "lastVerifyResult": "PASS — 61 test files, 1180 tests",
+    "verifyGate": "lint + typecheck + 15 checkers (brand, shell, access, vulnerability, case-audit, intake, programs, beneficiary, documents, referrals, visits, releases, work, reports, search) + test + build",
+    "lastVerifyResult": "PASS — 62 test files, 1204 tests",
     "offlineRun": "No network retrieval available in this run. Supervisor-supplied citations are recorded with verifiedOn=null and labelled as unverified per CLAUDE.md §6.",
     "masterCommandOnDisk": "C:\\Users\\paulg\\Downloads\\Taytay_Rizal_LGUIDS_Admin_Portal_Master_Command_LATEST.pdf — 65 pages, readable with pypdf. READ THE TAB TEXT DIRECTLY before starting a TAB; the recorded objectives are summaries, and TAB 18 turned out materially richer than its summary."
   }

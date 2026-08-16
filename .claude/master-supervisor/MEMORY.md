@@ -17,10 +17,9 @@ intent through the audit in `docs/reference-audit/`.
 
 ## Where the build is
 
-- **Completed and certified:** TABs 01–19.
-- **Current:** TAB 20 — Global Search, Saved Filters & Record Discovery.
-- **Remaining:** 21–23 (users/audit, hardening, QA), then 24–26 (Newsfeed,
-  Events).
+- **Completed and certified:** TABs 01–20.
+- **Current:** TAB 21 — User Management, Audit Trail & Data Governance.
+- **Remaining:** 22–23 (hardening, QA), then 24–26 (Newsfeed, Events).
 
 **The master command PDF is on disk** at
 `C:\Users\paulg\Downloads\Taytay_Rizal_LGUIDS_Admin_Portal_Master_Command_LATEST.pdf`
@@ -54,7 +53,7 @@ are handed.
 
 ## Non-negotiables carried by build checkers
 
-`npm run verify` = lint + typecheck + 14 checkers + 1180 tests + build. Each
+`npm run verify` = lint + typecheck + 15 checkers + 1204 tests + build. Each
 checker was validated against planted regressions. Do not weaken one to pass.
 
 | Checker | Refuses |
@@ -72,6 +71,7 @@ checker was validated against planted regressions. Do not weaken one to pass.
 | `check:visits` | any location capture; an observation without its kind; an unattributed third-party account; an edited observation; a non-terminal outcome |
 | `check:releases` | a ledger, account code, bank account or posting date; a status on a payout session; a session summarised as one verdict; a deferral reason blaming the beneficiary; an amount forced onto goods; an unmasked or over-full manifest; a screen composing its own manifest; self-release blocking; an ungated adapter method |
 | `check:work` | an email/SMS/push/webhook channel; an alert with a due date, assignee or done state; a mutator on the work port; a stored urgency flag; lateness not said in words; a queue summarised as a verdict; duplicate review as work; an unfiltered notification read |
+| `check:search` | a free-text field on a search hit; the adapter reading a refused field; a port parameter that widens the read; `localStorage`/`sessionStorage`/cookie in the search path; a record type dropped instead of named; scope missing from a producer; a shared saved view creatable without `view.share` |
 | `check:reports` | a second person-level report; a person-level report with no stated reason or only `report.view`; suppression dropped, rounded, applied to zero, or bypassable; a total taken after suppression; an optional series summary; a canvas or charting dependency; an export missing its filter/author/handling notice; a screen composing an export; a productivity or completion-rate field; staff workload sorted by volume |
 
 ## Doctrines that constrain every later TAB
@@ -127,8 +127,12 @@ checker was validated against planted regressions. Do not weaken one to pass.
   only. The staff picker belongs with the administration TAB. (`DL-99`)
 - **Voiding a release has no screen** — `changeStatus` and `disbursement.void`
   exist and are gated.
-- **`administration` is the last placeholder route.** Assume its adapters are
-  ungated until read: **three for three** so far (`DL-84`, `DL-95`, `DL-100`).
+- **`administration` is the last placeholder route**, and TAB 21 fills it.
+  Assume its adapters are ungated until read: **four for four** so far
+  (`DL-84`, `DL-95`, `DL-100`, and the saved-view sharing gap in `DL-111`).
+- **Filter chips and a per-list filtered count are not built.** Saved views, URL
+  sync and clear-all exist; the chip row is a shared primitive that belongs with
+  the list screens, and no list renders one yet.
 - **The report filter bar renders 2 of 5 declared filters.** Programme, status
   and caseworker are honoured by the adapter and declared per report; their
   pickers need the programme and staff lists (TABs 20–21). Offering a control a
@@ -157,6 +161,12 @@ shapes:
 occurrence* looks exactly like a checker weakness. Two of TAB 19's four misses
 were that. Diagnose a miss by grepping for the surviving string **before**
 rewriting the rule.
+
+`check:search` (TAB 20) is the first checker where **both halves passed first
+time** — 21/21 caught, nothing to fix. The difference was applying the scoping
+rule *per assertion while writing each one* (per-producer bodies, declaration
+blocks, the `prose()` helper carried over from TAB 19), rather than holding it
+as an intention at the top of the file.
 **Scope every checker assertion to the declaration it is about** (the interface
 block, the function body, the constant), not to the file.
 
@@ -179,44 +189,42 @@ formality.
 
 ## Next action
 
-Begin TAB 20 — Global Search, Saved Filters & Record Discovery. **Read its text
-in the PDF first** (page ~44).
+Begin TAB 21 — User Management, Audit Trail & Data Governance. **Read its text
+in the PDF first** (page ~46). This fills the last placeholder route.
 
-The objective is making large municipal datasets navigable in seconds **without
-exposing too much sensitive information in search results**.
-
-**Inspect what exists first.** `SavedViewRepository` and `SAVED_VIEW_REPOSITORY`
-were built in an early TAB as a hook, with `saved-views.seed.ts` and a
-`SavedViewsBar` primitive already in `@shared`. Extend them; do not start a
-second system.
+**Inspect what exists first.** `StaffRepository`, `staff.seed.ts`,
+`ROLE_DEFINITIONS`, `PERMISSIONS`, `AuditStamp`, `AuditEntry` and
+`docs/access/permission-matrix.md` are all built. `CaseEvent` is already a
+per-record audit trail with actor, reason and timestamp (`DL-54`). Extend those;
+do not start a second audit system — the same trap `DL-97` avoided for tasks.
 
 The tab's load-bearing constraints:
 
-1. **Safe snippets only.** Name, ID, barangay, status and limited context.
-   **Never case-note text in global results** — and `DL-58` already withholds a
-   protected note's body in the data layer, so search must not become the
-   surface that reintroduces it. Expect the checker to enforce the absence.
-2. **Results reveal only role-appropriate data.** Search crosses six entity
-   types, each with its own permission and scope. This is the widest surface in
-   the application for an access mistake, and the disclosure rules already exist
-   (`DL-38` for residents, `DL-58` for notes, `DL-73` for duplicates) — reuse
-   them rather than writing a seventh.
-3. **Recent searches may be local-only and must not persist sensitive query
-   content.** A resident's name typed into a search box and kept in
-   `localStorage` is a disclosure the office never decided to make. Note that
-   `CLAUDE.md` §2.5 already forbids this app putting tokens in `localStorage`;
-   apply the same caution here and prefer in-memory.
-4. **Personal saved views first; shared team views need a permission.**
-5. **Filters stay understandable and removable** — chips, clear-all, a count of
-   filtered records, and URL sync **where safe**. "Where safe" is the
-   interesting part: a query string containing a resident's name ends up in
-   browser history and in any screenshot of the address bar.
+1. **No public admin registration.** Invite/provision is a **placeholder only**,
+   and `DL-32` already established there is no self-registration route. Expect
+   the checker to enforce the absence of a signup or invite-accept flow.
+2. **The audit list must not dump sensitive values.** Rows carry actor, action,
+   entity and a **before/after summary**; the full values are scoped detail
+   behind authorisation. This is the same shape as `DL-92` (a manifest carries
+   the minimum) and `DL-105` (an aggregate is not automatically anonymous) —
+   an audit row that quotes what changed is a disclosure with a timestamp on it.
+3. **Sensitive actions have distinct permissions**, which the matrix already
+   asserts (`DL-08`, separation of duties, tested in `permission.spec.ts`).
+4. **A deactivated user loses navigation and action affordances** in mock state.
+   `StaffUser.isActive` exists and nothing currently reads it for gating — check
+   whether an inactive account can still act, and expect that it should not.
+5. **Data governance is placeholders with honest labels.** Retention and purge
+   are backend concerns the LGU supplied no policy for; say so rather than
+   inventing a schedule, exactly as `DL-89` refused accounting and `DL-101`
+   refused a service standard.
+6. **A record-correction request is a placeholder workflow**, not a silent edit.
+   Whatever is built must keep the append-only doctrine (`DL-48`, `DL-77`).
 
-Then: `npm run verify`, commit locally, write `tab-reports/TAB-20-search.md`,
-advance state to TAB 21.
+Then: `npm run verify`, commit locally, write `tab-reports/TAB-21-governance.md`,
+advance state to TAB 22.
 
 ## Git
 
 - Branch `main`, no remote configured. **Never push.**
-- HEAD at TAB 19 certification: `70d7976`.
+- HEAD at TAB 20 certification: `44de9f6`.
 - Working tree clean.
