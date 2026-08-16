@@ -1,7 +1,7 @@
 {
   "masterCommand": "Taytay_Rizal_LGUIDS_Admin_Portal_Master_Command_LATEST.pdf — LGU IDS Taytay Rizal Social Welfare Admin (Angular). TABs 01-23 plus late-phase TABs 24-26.",
-  "currentTab": "TAB 16 — Field Visits, Case Notes & Follow-Up",
-  "currentTabIndex": 16,
+  "currentTab": "TAB 17 — Release / Distribution / Disbursement Tracking",
+  "currentTabIndex": 17,
   "totalTabs": 26,
   "completedTabs": [
     "TAB 01 — Project Constitution & Angular Foundation",
@@ -18,27 +18,28 @@
     "TAB 12 — Programs, Services & Eligibility Configuration",
     "TAB 13 — Beneficiary Registry & Assistance History",
     "TAB 14 — Requirements, Documents & Verification",
-    "TAB 15 — Referrals, Service Providers & Inter-Office Coordination"
+    "TAB 15 — Referrals, Service Providers & Inter-Office Coordination",
+    "TAB 16 — Field Visits, Case Notes & Follow-Up"
   ],
-  "currentObjective": "Build Field Visits and Follow-Up: visit list/calendar, visit detail with a degraded-friendly draft, checklist plus narrative, follow-up task integration, case timeline integration. No continuous location tracking, geofencing or covert surveillance.",
+  "currentObjective": "Build Release/Distribution tracking: release queue (For Release, Scheduled, Released, Failed/Deferred, Needs Correction, Completed, Cancelled), release record detail, batch schedule and printable manifest with masked data, acknowledgement status, segregation-of-duties cues, audit seams. Must not fabricate accounting entries or banking integrations.",
   "status": "RUNNING",
-  "supervisorCycleCount": 4,
+  "supervisorCycleCount": 5,
   "lastHourlyReportAt": null,
-  "lastCheckpointAt": "2026-08-16T03:40:00+08:00",
-  "lastLocalCommit": "b4e1a15",
-  "workingTreeState": "clean at TAB 15 certification",
+  "lastCheckpointAt": "2026-08-16T04:40:00+08:00",
+  "lastLocalCommit": "0ab610c",
+  "workingTreeState": "clean at TAB 16 certification",
   "activeBlockers": [],
   "pendingQuestions": [],
   "researchDecisions": [
-    "DL-01..DL-84 recorded in docs/reference-audit/decision-log.md"
+    "DL-01..DL-88 recorded in docs/reference-audit/decision-log.md"
   ],
   "contextPressure": "NORMAL",
   "notes": {
     "supervisorAreaBootstrappedAt": "2026-08-15T16:00:00+08:00",
     "priorTabsPredateThisArea": "TABs 01-12 were executed before .claude/master-supervisor existed. Their durable record is docs/reference-audit/decision-log.md (DL-01..DL-70), the per-module docs/ READMEs, CLAUDE.md and the git history. This file starts tracking from TAB 12 certification forward.",
     "verifyCommand": "npm run verify",
-    "verifyGate": "lint + typecheck + 11 checkers (brand, shell, access, vulnerability, case-audit, intake, programs, beneficiary, documents, referrals) + test + build",
-    "lastVerifyResult": "PASS — 53 test files, 991 tests",
+    "verifyGate": "lint + typecheck + 12 checkers (brand, shell, access, vulnerability, case-audit, intake, programs, beneficiary, documents, referrals, visits) + test + build",
+    "lastVerifyResult": "PASS — 55 test files, 1026 tests",
     "offlineRun": "No network retrieval available in this run. Supervisor-supplied citations are recorded with verifiedOn=null and labelled as unverified per CLAUDE.md §6."
   }
 }

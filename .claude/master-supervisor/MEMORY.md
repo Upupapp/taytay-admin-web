@@ -2,7 +2,7 @@
 
 Compact state for resuming this build. Not a transcript. The authoritative
 records are `CLAUDE.md` (the constitution), `docs/reference-audit/decision-log.md`
-(DL-01..DL-84) and the git history.
+(DL-01..DL-88) and the git history.
 
 ## Master Command
 
@@ -17,10 +17,10 @@ intent through the audit in `docs/reference-audit/`.
 
 ## Where the build is
 
-- **Completed and certified:** TABs 01–15.
-- **Current:** TAB 16 — Field Visits, Case Notes & Follow-Up.
-- **Remaining:** 17–23 (releases, tasks, reports, search, users/audit,
-  hardening, QA), then 24–26 (Newsfeed, Events).
+- **Completed and certified:** TABs 01–16.
+- **Current:** TAB 17 — Release / Distribution / Disbursement Tracking.
+- **Remaining:** 18–23 (tasks, reports, search, users/audit, hardening, QA),
+  then 24–26 (Newsfeed, Events).
 
 ## Architecture
 
@@ -46,7 +46,7 @@ are handed.
 
 ## Non-negotiables carried by build checkers
 
-`npm run verify` = lint + typecheck + 11 checkers + 991 tests + build. Each
+`npm run verify` = lint + typecheck + 12 checkers + 1026 tests + build. Each
 checker was validated against planted regressions. Do not weaken one to pass.
 
 | Checker | Refuses |
@@ -61,6 +61,7 @@ checker was validated against planted regressions. Do not weaken one to pass.
 | `check:beneficiary` | a `BeneficiaryId`; any merge or delete of a person; a match signal carrying a value; a stored standing flag |
 | `check:documents` | removing a document version; an unexplained replacement; a raw document number in a template; a decision-shaped completion field |
 | `check:referrals` | sending without a lawful basis; a bulk share; a resident field on a referral screen; a stored overdue flag; an ungated adapter read |
+| `check:visits` | any location capture; an observation without its kind; an unattributed third-party account; an edited observation; a non-terminal outcome |
 
 ## Doctrines that constrain every later TAB
 
@@ -105,13 +106,17 @@ checker was validated against planted regressions. Do not weaken one to pass.
   form that composes a referral and its disclosure plan is not. (`DL-81`)
 - **Referral attachments are modelled but not attachable** to the TAB 14
   document store. (`DL-82`)
+- **No visit scheduling form**, and the follow-up `CaseTask` is not yet created
+  from the visit screen. When it is, it goes through `CaseRepository`. (`DL-88`)
+- **`VisitCapture` is modelled and tested but not wired to a screen.**
 
 ## A recurring defect worth naming
 
 **A file-wide string search in a checker passes when the string survives
-elsewhere in the same file.** This has now bitten three times — a problem code
+elsewhere in the same file.** This has now bitten four times — a problem code
 still present in a type union, a state still present in a comparison, a statute
-still present in a doc comment — each time letting a deleted rule report clean.
+still present in a doc comment, a short label matching before the long
+description — each time letting a deleted rule report clean.
 **Scope every checker assertion to the declaration it is about** (the interface
 block, the function body, the constant), not to the file.
 
@@ -120,32 +125,40 @@ a literal `\n` matches nothing and reports "stale" rather than failing; and a
 detector that has only ever reported clean has not been tested, so plant
 regressions before trusting one.
 
+Applying this while *writing* `check:visits` produced the first checker to catch
+14/14 on the first run. It is cheaper to scope up front than to debug a false
+clean.
+
 ## Next action
 
-Begin TAB 16 — Field Visits, Case Notes & Follow-Up. Inspect what exists first:
-`domain/cases/case-note.ts` already holds the two-tier note model with the
-protected tier withheld in the data layer (`DL-58`), `case-task.ts` holds the
-next-action model (`DL-55`), and `CaseRepository` already offers `addNote`,
-`addTask` and `completeTask`. **Field visits attach to that; they do not start a
-second task or note system.**
+Begin TAB 17 — Release / Distribution / Disbursement Tracking. Inspect what
+exists first: `domain/disbursements/disbursement.ts` already holds
+`Disbursement`, `DisbursementStatus` with a catalog and transitions, and
+`PayoutMethod`; `DisbursementRepository` offers `list`/`getById`/`listForRequest`;
+seeds exist; and `/disbursements` is still a **placeholder route**. Extend that
+model — do not start a second one.
+
+**Audit the adapter first.** `MockReferralRepository` shipped with no permission
+checks at all because its route was a placeholder and nothing exercised it
+(`DL-84`). `MockDisbursementRepository` is in exactly that position now.
 
 The tab's load-bearing constraints:
 
-1. **This must not become a surveillance product.** The master command is
-   explicit: no continuous location tracking, no covert tracking, no geofencing
-   of clients, no background surveillance. If visit coordinates are ever
-   captured, it is explicit, purpose-limited and permission-aware. Expect the
-   checker to enforce the absence.
-2. **Distinguish factual observation, client statement and caseworker
-   assessment.** Three different kinds of claim, and collapsing them is how an
-   inference ends up read as something the family said.
-3. **Offline/degraded-friendly drafts** without promising transactional
-   integrity there is no backend for (`DL-22` on false success).
-4. Photos and attachments only when necessary and consented — reuse the TAB 14
-   document grant rather than inventing a second path.
+1. **This is not the treasury system.** The master command is explicit: do not
+   fabricate accounting entries, banking integrations or financial posting
+   rules the LGU did not supply. Expect the checker to enforce that absence, as
+   `check:visits` enforces the absence of location.
+2. **Separation of duties is already asserted** by `permission.spec.ts` — no
+   non-administrator role both approves a request and releases its money
+   (`DL-08`). The release screens must show that cue, not just obey it.
+3. **Batch tools never hide individual status.** Each beneficiary stays
+   individually traceable through a batch.
+4. **Manifests are printed and leave the building** — reuse the disclosure
+   thinking from `DL-82` rather than inventing a second approach to masking.
+5. Money stays integer centavos (`CLAUDE.md` §2.6). No floating point, ever.
 
 ## Git
 
 - Branch `main`, no remote configured. **Never push.**
-- HEAD at TAB 15 certification: `b4e1a15`.
+- HEAD at TAB 16 certification: `0ab610c`.
 - Working tree clean.
