@@ -24,6 +24,7 @@ import {
   type ProgramEnrollment,
   type DisclosurePlan,
   type IsoDate,
+  type IsoDateTime,
   type ReferralDraft,
   type ReferralSortField,
   type ReferralStatus,
@@ -146,6 +147,16 @@ import {
   type AuditEntryId,
   type AuditFilter,
   type AuditRow,
+  type Comment,
+  type CommentFilter,
+  type CommentId,
+  type ModerationAction,
+  type NewsfeedRepository,
+  type Post,
+  type PostDraft,
+  type PostFilter,
+  type PostId,
+  type PostView,
   type ClassifiedRecordType,
   type CorrectionRequest,
   type GovernanceRepository,
@@ -429,6 +440,91 @@ export class HttpCaseRepository implements CaseRepository {
       `${API_ENDPOINTS.cases}/${id}/tasks/${taskId}/schedule`,
       { dueOn, reason },
     );
+  }
+}
+
+/**
+ * The newsfeed over HTTP.
+ *
+ * One `moderate` endpoint rather than four, matching the port: hiding,
+ * restoring, removing and replying are the same act with different outcomes,
+ * and four endpoints would be four places for the reason to become optional
+ * (`DL-127`).
+ */
+@Injectable()
+export class HttpNewsfeedRepository implements NewsfeedRepository {
+  private readonly api = inject(ApiClient);
+
+  list(view: PostView, filter: PostFilter): Observable<readonly Post[]> {
+    return this.api.collection<Post>(API_ENDPOINTS.newsfeed, { view, ...toParams(filter) });
+  }
+
+  getById(id: PostId): Observable<Post | null> {
+    return this.api.optionalItem<Post>(`${API_ENDPOINTS.newsfeed}/${id}`);
+  }
+
+  saveDraft(draft: PostDraft, id: PostId | null): Observable<Post> {
+    return this.api.post<Post, { draft: PostDraft; id: PostId | null }>(
+      `${API_ENDPOINTS.newsfeed}/drafts`,
+      { draft, id },
+    );
+  }
+
+  publish(id: PostId, reason: string): Observable<Post> {
+    return this.api.post<Post, { reason: string }>(
+      `${API_ENDPOINTS.newsfeed}/${id}/publish`,
+      { reason },
+    );
+  }
+
+  schedule(id: PostId, at: IsoDateTime, reason: string): Observable<Post> {
+    return this.api.post<Post, { at: IsoDateTime; reason: string }>(
+      `${API_ENDPOINTS.newsfeed}/${id}/schedule`,
+      { at, reason },
+    );
+  }
+
+  archive(id: PostId, reason: string): Observable<Post> {
+    return this.api.post<Post, { reason: string }>(
+      `${API_ENDPOINTS.newsfeed}/${id}/archive`,
+      { reason },
+    );
+  }
+
+  setPinned(id: PostId, isPinned: boolean, reason: string): Observable<Post> {
+    return this.api.post<Post, { isPinned: boolean; reason: string }>(
+      `${API_ENDPOINTS.newsfeed}/${id}/pin`,
+      { isPinned, reason },
+    );
+  }
+
+  setCommentsEnabled(id: PostId, enabled: boolean, reason: string): Observable<Post> {
+    return this.api.post<Post, { enabled: boolean; reason: string }>(
+      `${API_ENDPOINTS.newsfeed}/${id}/comments-enabled`,
+      { enabled, reason },
+    );
+  }
+
+  comments(postId: PostId, filter: CommentFilter): Observable<readonly Comment[]> {
+    return this.api.collection<Comment>(
+      `${API_ENDPOINTS.newsfeed}/${postId}/comments`,
+      toParams(filter),
+    );
+  }
+
+  moderate(
+    commentId: CommentId,
+    action: ModerationAction,
+    text: string,
+  ): Observable<Comment> {
+    return this.api.post<Comment, { action: ModerationAction; text: string }>(
+      `${API_ENDPOINTS.newsfeed}/comments/${commentId}/moderate`,
+      { action, text },
+    );
+  }
+
+  history(id: PostId): Observable<readonly AuditRow[]> {
+    return this.api.collection<AuditRow>(`${API_ENDPOINTS.newsfeed}/${id}/history`);
   }
 }
 

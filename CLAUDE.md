@@ -97,8 +97,8 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:vulnerability`, `check:case-audit`, `check:intake`, `check:programs`,
 `check:beneficiary`, `check:documents`, `check:referrals`, `check:visits`,
 `check:releases`, `check:work`, `check:reports`, `check:search` and
-`check:governance`, `check:hardening` and `check:community`. Each enforces a
-rule a comment
+`check:governance`, `check:hardening`, `check:community` and `check:newsfeed`.
+Each enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 
@@ -362,6 +362,40 @@ a registration list or mark attendance: the municipality speaks in its own name
 and residents answer. `ResidentPostView` names the office rather than the member
 of staff; `ResidentEventView` reports places left rather than how many
 neighbours signed up.
+
+### A post goes outward, and nothing brings it back
+
+`published → archived` and nothing else (`DL-124`). No unpublish, no retract, no
+unsend: archiving removes a post from the feed **going forward** and reaches
+nobody who already read it, and the badge says so. The warning is shown **before
+the publish button**, not as a confirmation after — somebody deciding reads it,
+somebody who has decided dismisses it. `archived → published` is allowed,
+because taking a post down can itself be a mistake.
+
+**An image is described before it is published** (`DL-125`). `PostImage.altText`
+is a required `string`; `postProblems` refuses to publish without it and
+deliberately lets a **draft** save without it, because a half-written post is
+somebody working, not an accessibility failure. The field sits beside the image
+— a description behind an "advanced" disclosure is one that stays empty — and
+the message names the resident it fails rather than the rule it broke.
+
+**Reach is counts** (`DL-126`). `reactionCount` and `commentCount`, and no
+method anywhere that could answer *which* residents reacted, read or shared. A
+field held "for later" is a field somebody displays; the question is left
+unanswerable at the port, as with `SearchRepository.search` (`DL-109`).
+
+**Hiding keeps the words; removal deletes them** (`DL-127`). `Comment.body` is
+nullable for exactly that reason. This is the one place where the append-only
+doctrine is not followed for a record's *content*: keeping a comment that named
+a child, forever, so an append-only rule reads cleanly preserves the harm the
+removal was for. The **act** is append-only; the **words** are not. Removal is
+the only act on the screen behind a modal and its confirmation offers hiding as
+the alternative; hiding takes its reason inline. Nothing offers to restore what
+was removed.
+
+Scheduling is **derived from the clock**, never from a job having run, and there
+is no timer anywhere in the module. `npm run check:newsfeed` fails the build on
+any of the above.
 
 ### Degraded connection: warn, never queue
 

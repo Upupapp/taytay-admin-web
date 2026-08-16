@@ -1,0 +1,107 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  @if (canCompose()) {
+    <a page-actions class="btn btn--primary" routerLink="/newsfeed/new">{{ copy.compose }}</a>
+  }
+</app-page-header>
+
+<div class="posts">
+  <!-- Views, not a status dropdown: "what have I got in drafts" is how an
+       editor thinks about their own queue. -->
+  <nav class="views" [attr.aria-label]="copy.title">
+    <ul class="views__list">
+      @for (value of views; track value) {
+        <li>
+          <button
+            type="button"
+            class="views__tab"
+            [class.views__tab--current]="view() === value"
+            [attr.aria-current]="view() === value ? 'true' : null"
+            (click)="onView(value)"
+          >
+            {{ viewLabel(value) }}
+            <span class="views__count">{{ counts()[value] }}</span>
+          </button>
+        </li>
+      }
+    </ul>
+  </nav>
+
+  <div class="card filters">
+    <label class="filters__field filters__field--wide">
+      <span class="filters__label">{{ copy.search }}</span>
+      <input
+        type="search"
+        class="filters__input"
+        [placeholder]="copy.searchPlaceholder"
+        (input)="onSearch($event)"
+      />
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.category }}</span>
+      <select class="filters__input" (change)="onCategory($event)">
+        <option value="">{{ copy.allCategories }}</option>
+        @for (value of categories; track value) {
+          <option [value]="value">{{ categoryLabel(value) }}</option>
+        }
+      </select>
+    </label>
+
+    @if (hasFilters()) {
+      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+    }
+  </div>
+
+  <app-async-content [state]="state()" [content]="postContent" [skeletonLines]="5">
+    <ng-template #postContent>
+      @if (!hasAny()) {
+        <div class="card posts__empty">
+          <h2 class="posts__empty-heading">
+            {{ hasFilters() ? copy.noResultsHeading : copy.emptyHeading }}
+          </h2>
+          <p class="posts__empty-message">
+            {{ hasFilters() ? copy.noResultsMessage : copy.emptyMessage }}
+          </p>
+        </div>
+      } @else {
+        <ul class="post-rows">
+          @for (post of posts(); track post.id) {
+            <li class="card post-row">
+              <p class="post-row__head">
+                <app-status-badge [catalog]="statusCatalog" [status]="post.status" />
+                <span class="post-row__category">{{ categoryLabel(post.category) }}</span>
+                @if (post.isPinned) {
+                  <!-- Said in a word, not only by position or colour. -->
+                  <span class="post-row__pinned">{{ copy.pinned }}</span>
+                }
+                @if (!post.commentsEnabled) {
+                  <span class="post-row__comments-off">{{ copy.commentsOff }}</span>
+                }
+              </p>
+
+              <h2 class="post-row__title">
+                <a [routerLink]="['/newsfeed', post.id]">
+                  {{ post.headline ?? copy.noHeadline }}
+                </a>
+              </h2>
+
+              <p class="post-row__meta">
+                @if (post.status === 'scheduled' && post.scheduledFor) {
+                  <span>{{ copy.scheduledFor }} {{ post.scheduledFor | date: 'd MMM y, HH:mm' }}</span>
+                } @else if (post.publishedAt) {
+                  <span>{{ copy.publishedOn }} {{ post.publishedAt | date: 'd MMM y' }}</span>
+                }
+                @if (post.status === 'published' || post.status === 'archived') {
+                  <span class="post-row__counts">
+                    {{ post.reactionCount }} {{ copy.reactions }} ·
+                    {{ post.commentCount }} {{ copy.comments }}
+                  </span>
+                }
+              </p>
+            </li>
+          }
+        </ul>
+      }
+    </ng-template>
+  </app-async-content>
+</div>

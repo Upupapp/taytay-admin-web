@@ -1,0 +1,163 @@
+<app-page-header [title]="copy.title">
+  <a page-actions class="btn" routerLink="/newsfeed">{{ copy.back }}</a>
+</app-page-header>
+
+<div class="composer">
+  <section class="card composer__panel" aria-labelledby="write-heading">
+    <h2 class="composer__heading" id="write-heading">{{ copy.title }}</h2>
+
+    <label class="field">
+      <span class="field__label">{{ copy.headline }}</span>
+      <input
+        type="text"
+        class="field__input"
+        aria-describedby="headline-hint"
+        [value]="headline()"
+        (input)="onHeadline($event)"
+      />
+      <span class="field__hint" id="headline-hint">{{ copy.headlineHint }}</span>
+    </label>
+
+    <label class="field">
+      <span class="field__label">{{ copy.body }}</span>
+      <textarea
+        class="field__input"
+        rows="8"
+        aria-describedby="body-hint"
+        [value]="body()"
+        (input)="onBody($event)"
+      ></textarea>
+      <span class="field__hint" id="body-hint">{{ copy.bodyHint }}</span>
+    </label>
+
+    <label class="field">
+      <span class="field__label">{{ copy.category }}</span>
+      <select class="field__input" (change)="onCategory($event)">
+        @for (value of categories; track value) {
+          <option [value]="value" [selected]="category() === value">
+            {{ categoryLabel(value) }}
+          </option>
+        }
+      </select>
+    </label>
+  </section>
+
+  <section class="card composer__panel" aria-labelledby="image-heading">
+    <h2 class="composer__heading" id="image-heading">{{ copy.imageHeading }}</h2>
+
+    <label class="field">
+      <span class="field__label">{{ copy.imageUrl }}</span>
+      <input
+        type="text"
+        class="field__input"
+        [value]="imageUrl()"
+        (input)="onImageUrl($event)"
+      />
+    </label>
+
+    <!-- Beside the image, never behind a toggle. A description field hidden
+         under "advanced" is a field that stays empty. -->
+    <label class="field">
+      <span class="field__label">{{ copy.altText }}</span>
+      <input
+        type="text"
+        class="field__input"
+        aria-describedby="alt-hint"
+        [value]="altText()"
+        (input)="onAltText($event)"
+      />
+      <span class="field__hint" id="alt-hint">{{ copy.altTextHint }}</span>
+    </label>
+
+    <label class="field">
+      <span class="field__label">{{ copy.link }}</span>
+      <input
+        type="url"
+        class="field__input"
+        aria-describedby="link-hint"
+        [value]="linkUrl()"
+        (input)="onLink($event)"
+      />
+      <span class="field__hint" id="link-hint">{{ copy.linkHint }}</span>
+    </label>
+  </section>
+
+  <section class="card composer__panel" aria-labelledby="audience-heading">
+    <h2 class="composer__heading" id="audience-heading">{{ copy.audienceHeading }}</h2>
+
+    <div class="audience">
+      <label class="audience__option">
+        <input
+          type="radio"
+          name="audience"
+          [checked]="audienceAll()"
+          (change)="onAudience(true)"
+        />
+        <span>{{ copy.audienceAll }}</span>
+      </label>
+      <label class="audience__option">
+        <input
+          type="radio"
+          name="audience"
+          [checked]="!audienceAll()"
+          (change)="onAudience(false)"
+        />
+        <span>{{ copy.audienceBarangays }}</span>
+      </label>
+    </div>
+
+    @if (!audienceAll()) {
+      <ul class="barangays">
+        @for (barangay of barangays; track barangay.id) {
+          <li>
+            <label class="barangays__option">
+              <input
+                type="checkbox"
+                [checked]="isSelected(barangay.id)"
+                (change)="toggleBarangay(barangay.id)"
+              />
+              <span>{{ barangay.name }}</span>
+            </label>
+          </li>
+        }
+      </ul>
+    }
+
+    <!-- Said plainly: targeting is relevance, not confidentiality. -->
+    <p class="composer__hint">{{ copy.audienceHint }}</p>
+
+    <h3 class="composer__subheading">{{ copy.commentsHeading }}</h3>
+    <label class="check">
+      <input
+        type="checkbox"
+        [checked]="commentsEnabled()"
+        (change)="onCommentsEnabled($event)"
+      />
+      <span>{{ copy.commentsEnabled }}</span>
+    </label>
+  </section>
+
+  @if (publishProblems().length > 0) {
+    <!-- Shown while writing, but never blocking a save: a draft in progress is
+         somebody working, not a failure. -->
+    <section class="card problems" aria-labelledby="problems-heading">
+      <h2 class="problems__heading" id="problems-heading">{{ copy.problemsHeading }}</h2>
+      <ul class="problems__list">
+        @for (problem of publishProblems(); track problem) {
+          <li>{{ problem }}</li>
+        }
+      </ul>
+    </section>
+  }
+
+  <p class="composer__actions">
+    <button
+      type="button"
+      class="btn btn--primary"
+      [disabled]="!canSave()"
+      (click)="save()"
+    >
+      {{ copy.saveDraft }}
+    </button>
+  </p>
+</div>

@@ -3331,3 +3331,125 @@ Two shapes carry the same reasoning further:
   count. A resident deciding whether to attend does not need to know how many
   neighbours already have, and in a municipality this size a low count on a
   sensitive service is disclosive.
+
+### DL-124 · Publishing is one-way, and the screen says so before the act
+
+**Status:** Settled (implemented in TAB 25).
+
+`POST_STATUS_TRANSITIONS.published` is `['archived']`. There is no path from
+`published` back to `draft` or `scheduled`, and no screen offers an "unpublish",
+a "retract" or an "unsend".
+
+Every other lifecycle in this application is internal. A case moves through
+review inside the office; an assistance request is decided by staff. A post is
+different in kind: it goes to residents, and once somebody has read it, no
+status change reaches them. A `published → draft` transition would let the
+office return a post to a state the world already saw it leave, and the record
+would then read as though it had never gone out.
+
+Archiving is the only exit, and it is not an undo. The badge says so —
+"removed from the feed going forward; it does not reach anybody who already read
+it" — because the office reads the badge, not the transition map.
+
+**The warning is shown before the button, not as a confirmation after it.** The
+publish control on the detail screen sits below a sentence saying the post
+cannot be unsent. A modal that appears *after* somebody has decided is a speed
+bump; a sentence read while deciding is information. This is the opposite
+treatment from removing a comment (`DL-127`), and deliberately so: publishing is
+the ordinary act of this module and warning-by-modal on every post would train
+the office to dismiss it.
+
+Archiving is reversible — `archived → published` is allowed — because taking a
+post down can itself be a mistake, and an office that cannot put back a
+mistakenly archived flood advisory is worse off than one that can.
+
+### DL-125 · An image is described before it is published, and not before
+
+**Status:** Settled (implemented in TAB 25).
+
+`PostImage.altText` is a **required** `string`, not optional and not nullable,
+and `postProblems` refuses to publish a post whose image has none.
+
+An optional field is one that is usually empty. The failure this prevents is
+specific: a municipal advisory whose entire content is a poster image — the
+evacuation centre, the payout schedule, the cut-off date — is *unreachable* to a
+resident using a screen reader, and those are exactly the advisories that most
+need reading aloud. WCAG 2.2 AA is the stated conformance target (`DL-20`), and
+this is the one place in the application where a failure reaches the public
+rather than a member of staff.
+
+**The rule bites at publication, not at every keystroke.** `postProblems` takes
+an intent, and `save` skips the alt-text check: a half-written draft with an
+image and no description yet is somebody working, not an accessibility failure.
+Refusing to save would teach people to write the post somewhere else and paste
+it in.
+
+**The field sits beside the image, not behind a disclosure.** `check:newsfeed`
+fails the build on a `<details>` element in the composer. A description
+reachable only through "advanced options" is a description that is written when
+somebody is already being careful — which is not when it is needed.
+
+The message names who is affected rather than the rule that was broken: "a
+resident using a screen reader gets nothing from a poster with no description"
+is acted on; "alt text required" is worked around.
+
+### DL-126 · Reach is counts, and there is no method that could say more
+
+**Status:** Settled (implemented in TAB 25).
+
+`Post` carries `reactionCount` and `commentCount`. Nothing in the newsfeed
+domain, the port, either adapter or any screen can answer *which* residents
+reacted, read or shared, and `check:newsfeed` fails the build on `reactedBy`,
+`likedBy`, `viewedBy`, `seenBy` or a port method returning `ResidentId`s.
+
+The office's legitimate question is whether an advisory travelled. That is
+answered by a number. The question the data would also answer, if it were held,
+is which named residents engaged with a post about — for instance — a VAWC
+service or a cash grant, and there is no operational need for that at all
+(`RA 10173` data minimisation, and section 6 of `CLAUDE.md`).
+
+The safest way to stop a screen rendering something is to leave the question
+unanswerable at the port. A field held "for later" is a field somebody displays;
+a method that exists is a method somebody calls. This is the same reasoning as
+`SearchRepository.search` taking a term and nothing else (`DL-109`).
+
+The screen states the boundary — "Counts only. The office does not see which
+residents reacted, and does not need to." — for the reason given in `DL-89`: a
+limit an office never sees is one it discovers by being wrong about it.
+
+### DL-127 · Hiding keeps the words; removal deletes them
+
+**Status:** Settled (implemented in TAB 25).
+
+`CommentState` is `visible | hidden | removed`, and the two moderation outcomes
+are different promises:
+
+- **Hidden** — the words are kept, `body` is unchanged, and the comment can be
+  put back. Used for something drawing replies away from an advisory, or a
+  dispute that may not survive review. Criticism of the office is explicitly not
+  a reason to remove anything, and the seeded example says so.
+- **Removed** — `body` becomes `null`. The words are gone and cannot be
+  restored. Who removed it, when and why stays on file.
+
+`Comment.body` is nullable for exactly this reason, and `check:newsfeed` fails
+the build if it stops being.
+
+This is the one place in the application where the append-only doctrine
+(`DL-48`, `DL-54`, `DL-77`) is deliberately not followed for the *content* of a
+record. Everywhere else, the earlier value is evidence of what the office read
+when it decided. Here the earlier value is a resident naming a child and the
+school they attend in a public thread — and keeping that forever, so an
+append-only rule reads cleanly, preserves the harm the removal was for. The
+**act** is append-only; the **words** are not.
+
+Because removal cannot be undone, it is the only act on the post screen behind a
+modal, and the confirmation offers hiding as the alternative rather than only
+warning. Hiding takes its reason inline, one click, no dialogue: making the
+reversible act as heavy as the permanent one is how an office learns to treat
+both as routine.
+
+`moderationProblems` requires a reason for every moderation and refuses every
+action on an already-removed comment — including `restore`, which would promise
+to bring back words the data no longer holds. An official reply is attributed to
+the office rather than to the officer who typed it (`DL-123`); the trail records
+who acted.

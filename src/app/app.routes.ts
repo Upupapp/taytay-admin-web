@@ -367,18 +367,35 @@ export const routes: Routes = [
         ],
       },
       {
-        // Newsfeed and Events arrive with the late-phase command. TAB 24 wires
-        // the scope, the permissions and the audit seams; TABs 25 and 26 build
-        // the screens. A placeholder rather than a dead link, which is the rule
-        // this routing file has followed since TAB 04.
         path: 'newsfeed',
-        title: 'Newsfeed — Taytay Social Welfare',
-        canActivate: [permissionGuard('newsfeed.view')],
-        ...placeholder({
-          title: 'Newsfeed',
-          subtitle: 'Publishing, scheduling and comment moderation.',
-          plannedIn: 'the newsfeed management TAB',
-        }),
+        // `new` must precede `:id`, or the composer is read as a post id.
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            title: 'Newsfeed — Taytay Social Welfare',
+            canActivate: [permissionGuard('newsfeed.view')],
+            loadComponent: () =>
+              import('@features/newsfeed/post-list-page').then((m) => m.PostListPage),
+          },
+          {
+            path: 'new',
+            title: 'Write a post — Taytay Social Welfare',
+            // Writing costs `create`; putting it out costs `publish`, on the
+            // detail screen. A post reaches every resident and cannot be
+            // unsent (`DL-124`).
+            canActivate: [permissionGuard('newsfeed.create')],
+            loadComponent: () =>
+              import('@features/newsfeed/post-composer-page').then((m) => m.PostComposerPage),
+          },
+          {
+            path: ':id',
+            title: 'Post — Taytay Social Welfare',
+            canActivate: [permissionGuard('newsfeed.view')],
+            loadComponent: () =>
+              import('@features/newsfeed/post-detail-page').then((m) => m.PostDetailPage),
+          },
+        ],
       },
       {
         path: 'events',

@@ -17,6 +17,12 @@ import type {
   AuditRow,
 } from '../governance/audit-view';
 import type { CorrectionRequest } from '../governance/correction-request';
+import type {
+  Comment,
+  CommentFilter,
+  ModerationAction,
+} from '../newsfeed/comment';
+import type { Post, PostDraft, PostFilter, PostView } from '../newsfeed/post';
 import type { ClassifiedRecordType } from '../governance/data-classification';
 import type { RetentionRule } from '../governance/retention';
 import type { StaffAccount } from '../governance/staff-profile';
@@ -128,8 +134,10 @@ import type { Page, PageRequest } from '../shared/pagination';
 import type {
   AssistanceRequestId,
   AuditEntryId,
+  PostId,
   CaseId,
   CaseTaskId,
+  CommentId,
   DisbursementId,
   DocumentVersionId,
   HouseholdId,
@@ -960,6 +968,57 @@ export interface GovernanceRepository {
 export const GOVERNANCE_REPOSITORY = new InjectionToken<GovernanceRepository>(
   'GovernanceRepository',
 );
+
+/**
+ * The newsfeed console.
+ *
+ * Two absences are load-bearing.
+ *
+ * **Nothing here reads who reacted.** `Post` carries counts, and this port has
+ * no method that returns the residents behind them. An officer needs to know a
+ * post reached people; they do not need to know which residents reacted to an
+ * advisory about food assistance (`DL-126`).
+ *
+ * **Nothing here scores, ranks or classifies a comment.** The command is
+ * explicit that no AI moderation and no sentiment analysis is to be built, and
+ * the absence is enforced by `check:newsfeed` rather than merely intended — a
+ * "toxicity" field is a decision about a resident dressed as a measurement.
+ *
+ * Every moderation act takes a **reason** and appends to the trail (`DL-127`),
+ * on the same rule every other mutation in this application follows.
+ */
+export interface NewsfeedRepository {
+  list(view: PostView, filter: PostFilter): Observable<readonly Post[]>;
+  getById(id: PostId): Observable<Post | null>;
+
+  /** Saves a draft. Refuses a draft the domain would refuse (`postProblems`). */
+  saveDraft(draft: PostDraft, id: PostId | null): Observable<Post>;
+  /** Publishes now. Separate permission from editing, and irreversible. */
+  publish(id: PostId, reason: string): Observable<Post>;
+  schedule(id: PostId, at: IsoDateTime, reason: string): Observable<Post>;
+  archive(id: PostId, reason: string): Observable<Post>;
+  setPinned(id: PostId, isPinned: boolean, reason: string): Observable<Post>;
+  setCommentsEnabled(id: PostId, enabled: boolean, reason: string): Observable<Post>;
+
+  comments(postId: PostId, filter: CommentFilter): Observable<readonly Comment[]>;
+  /**
+   * Hides, restores or removes a comment, or replies as the office.
+   *
+   * One method rather than four, because every one of them is the same act — a
+   * decision about a resident's words, taken with a reason, recorded against a
+   * name. Four methods would be four places for the reason to become optional.
+   */
+  moderate(
+    commentId: CommentId,
+    action: ModerationAction,
+    text: string,
+  ): Observable<Comment>;
+
+  /** What the office did to this post, from the one audit trail. */
+  history(id: PostId): Observable<readonly AuditRow[]>;
+}
+
+export const NEWSFEED_REPOSITORY = new InjectionToken<NewsfeedRepository>('NewsfeedRepository');
 
 export interface DashboardRepository {
   /**

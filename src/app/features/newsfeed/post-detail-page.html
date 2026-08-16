@@ -1,0 +1,303 @@
+<app-async-content [state]="state()" [content]="postContent" [skeletonLines]="8">
+  <ng-template #postContent let-post>
+    @if (post === null) {
+      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <p class="post__back"><a class="btn" routerLink="/newsfeed">{{ copy.back }}</a></p>
+    } @else {
+      <app-page-header [title]="post.headline ?? 'Untitled post'">
+        <a page-actions class="btn" routerLink="/newsfeed">{{ copy.back }}</a>
+      </app-page-header>
+
+      <div class="post">
+        <section class="card post__panel" aria-labelledby="preview-heading">
+          <h2 class="post__heading" id="preview-heading">{{ copy.previewHeading }}</h2>
+          <p class="post__status">
+            <app-status-badge [catalog]="statusCatalog" [status]="post.status" />
+            <span class="post__category">{{ categoryLabel(post) }}</span>
+          </p>
+
+          @if (post.image) {
+            <figure class="post__figure">
+              <!-- The description is required before publishing, so it is always
+                   here to render (`DL-125`). -->
+              <img class="post__image" [src]="post.image.url" [alt]="post.image.altText" />
+              <figcaption class="post__caption">{{ post.image.altText }}</figcaption>
+            </figure>
+          }
+
+          <p class="post__body">{{ post.body }}</p>
+
+          @if (post.linkUrl) {
+            <p class="post__link"><a [href]="post.linkUrl" rel="noopener">{{ post.linkUrl }}</a></p>
+          }
+        </section>
+
+        <section class="card post__panel" aria-labelledby="meta-heading">
+          <h2 class="post__heading" id="meta-heading">{{ copy.metaHeading }}</h2>
+          <dl class="facts">
+            <div class="facts__item">
+              <dt>{{ copy.audience }}</dt>
+              <dd>{{ audienceLabel(post) }}</dd>
+            </div>
+            @if (post.publishedAt) {
+              <div class="facts__item">
+                <dt>{{ copy.publishedBy }}</dt>
+                <dd>{{ post.publishedAt | date: 'd MMM y, HH:mm' }}</dd>
+              </div>
+            }
+            <div class="facts__item">
+              <dt>{{ copy.lastUpdated }}</dt>
+              <dd>{{ post.audit.updatedAt | date: 'd MMM y, HH:mm' }}</dd>
+            </div>
+          </dl>
+
+          @if (post.status === 'published' || post.status === 'archived') {
+            <h3 class="post__subheading">{{ copy.engagementHeading }}</h3>
+            <p class="post__counts">
+              <span>{{ post.reactionCount }} reactions</span>
+              <span>{{ post.commentCount }} comments</span>
+            </p>
+            <!-- Counts only, and the screen says why (`DL-126`). -->
+            <p class="post__hint">{{ copy.engagementHint }}</p>
+          }
+        </section>
+
+        <section class="card post__panel" aria-labelledby="actions-heading">
+          <h2 class="post__heading" id="actions-heading">{{ copy.actionsHeading }}</h2>
+
+          <label class="field">
+            <span class="field__label">{{ copy.reason }}</span>
+            <input
+              type="text"
+              class="field__input"
+              aria-describedby="reason-hint"
+              [value]="reason()"
+              (input)="onReason($event)"
+            />
+            <span class="field__hint" id="reason-hint">{{ copy.reasonHint }}</span>
+          </label>
+
+          @if (canPublish() && can(post, 'published')) {
+            <!-- Read while deciding, not discovered afterwards. -->
+            <p class="post__warning">{{ copy.publishWarning }}</p>
+            <button
+              type="button"
+              class="btn btn--primary"
+              [disabled]="!canAct()"
+              (click)="publish(post)"
+            >
+              {{ copy.publish }}
+            </button>
+          }
+
+          @if (canSchedule() && can(post, 'scheduled')) {
+            <label class="field">
+              <span class="field__label">{{ copy.scheduleAt }}</span>
+              <input
+                type="datetime-local"
+                class="field__input"
+                [value]="scheduleAt()"
+                (input)="onScheduleAt($event)"
+              />
+            </label>
+            <button type="button" class="btn" [disabled]="!canAct()" (click)="schedule(post)">
+              {{ copy.schedule }}
+            </button>
+          }
+
+          <p class="post__actions">
+            @if (canArchive() && can(post, 'archived')) {
+              <button type="button" class="btn" [disabled]="!canAct()" (click)="archive(post)">
+                {{ copy.archive }}
+              </button>
+            }
+            @if (canPin() && post.status === 'published') {
+              <button type="button" class="btn" [disabled]="!canAct()" (click)="togglePin(post)">
+                {{ post.isPinned ? copy.unpin : copy.pin }}
+              </button>
+            }
+            @if (canModerate()) {
+              <button
+                type="button"
+                class="btn"
+                [disabled]="!canAct()"
+                (click)="toggleComments(post)"
+              >
+                {{ post.commentsEnabled ? copy.disableComments : copy.enableComments }}
+              </button>
+            }
+          </p>
+        </section>
+
+        <section class="card post__panel" aria-labelledby="comments-heading">
+          <div class="comments__head">
+            <h2 class="post__heading" id="comments-heading">{{ copy.commentsHeading }}</h2>
+            <label class="comments__order">
+              <span class="visually-hidden">{{ copy.order }}</span>
+              <select class="field__input" (change)="onOrder($event)">
+                <option value="newest">{{ copy.newest }}</option>
+                <option value="oldest">{{ copy.oldest }}</option>
+              </select>
+            </label>
+          </div>
+
+          @if (!post.commentsEnabled) {
+            <p class="post__hint">{{ copy.commentsDisabled }}</p>
+          }
+
+          <p class="comments__summary">{{ moderationSummary() }}</p>
+
+          <app-async-content
+            [state]="commentState()"
+            [content]="commentContent"
+            [skeletonLines]="4"
+          >
+            <ng-template #commentContent>
+              @if (comments().length === 0) {
+                <p class="post__hint">{{ copy.noComments }}</p>
+              } @else {
+                <ul class="comments">
+                  @for (comment of comments(); track comment.id) {
+                    <li class="comment" [class.comment--moderated]="comment.state !== 'visible'">
+                      <p class="comment__head">
+                        <span class="comment__author">{{ comment.authorName }}</span>
+                        <app-status-badge
+                          [catalog]="commentCatalog"
+                          [status]="comment.state"
+                        />
+                        <time class="comment__time">
+                          {{ comment.postedAt | date: 'd MMM y, HH:mm' }}
+                        </time>
+                      </p>
+
+                      @if (comment.body) {
+                        <p class="comment__body">{{ comment.body }}</p>
+                      } @else {
+                        <!-- Removal means the words are gone, not flagged. -->
+                        <p class="comment__removed">{{ copy.removedBody }}</p>
+                      }
+
+                      @if (comment.moderationReason) {
+                        <p class="comment__reason">
+                          <span class="comment__reason-label">{{ copy.moderationReason }}:</span>
+                          {{ comment.moderationReason }}
+                        </p>
+                      }
+
+                      @if (comment.officialReply) {
+                        <p class="comment__reply">
+                          <span class="comment__reply-label">{{ copy.officialReply }}</span>
+                          {{ comment.officialReply.body }}
+                        </p>
+                      }
+
+                      @if (canModerate() && comment.state !== 'removed') {
+                        <p class="comment__actions">
+                          <button type="button" class="btn" (click)="toggleComment(comment)">
+                            {{ isOpen(comment) ? copy.cancel : 'Moderate' }}
+                          </button>
+                        </p>
+                      }
+
+                      @if (isOpen(comment)) {
+                        <div class="moderation">
+                          <label class="field">
+                            <span class="field__label">{{ copy.reason }}</span>
+                            <textarea
+                              class="field__input"
+                              rows="2"
+                              [value]="moderationText()"
+                              (input)="onModerationText($event)"
+                            ></textarea>
+                          </label>
+                          <p class="moderation__actions">
+                            @if (comment.state === 'visible') {
+                              <button
+                                type="button"
+                                class="btn"
+                                [disabled]="!canModerateNow()"
+                                (click)="moderate(comment, 'hide')"
+                              >
+                                {{ copy.hide }}
+                              </button>
+                            }
+                            @if (comment.state === 'hidden') {
+                              <button
+                                type="button"
+                                class="btn"
+                                [disabled]="!canModerateNow()"
+                                (click)="moderate(comment, 'restore')"
+                              >
+                                {{ copy.restore }}
+                              </button>
+                            }
+                            <button
+                              type="button"
+                              class="btn"
+                              [disabled]="!canModerateNow()"
+                              (click)="moderate(comment, 'reply')"
+                            >
+                              {{ copy.reply }}
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn--danger"
+                              [disabled]="!canModerateNow()"
+                              (click)="askToRemove(comment)"
+                            >
+                              {{ copy.remove }}
+                            </button>
+                          </p>
+                        </div>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+            </ng-template>
+          </app-async-content>
+        </section>
+
+        <section class="card post__panel" aria-labelledby="history-heading">
+          <h2 class="post__heading" id="history-heading">{{ copy.historyHeading }}</h2>
+          @if (history().length === 0) {
+            <p class="post__hint">{{ copy.noHistory }}</p>
+          } @else {
+            <ul class="history">
+              @for (row of history(); track row.id) {
+                <li class="history__item">
+                  <p class="history__head">
+                    <span class="history__action">{{ actionLabel(row) }}</span>
+                    <time class="history__time">
+                      {{ row.occurredAt | date: 'd MMM y, HH:mm' }}
+                    </time>
+                  </p>
+                  <p class="history__summary">{{ row.summary }}</p>
+                  @if (row.reason) {
+                    <p class="history__reason">{{ row.reason }}</p>
+                  }
+                  <p class="history__actor">{{ row.actorName }}</p>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      </div>
+    }
+  </ng-template>
+</app-async-content>
+
+<!-- The one act on this screen behind a modal: the words go for good. -->
+<app-modal
+  [open]="removing() !== null"
+  [heading]="copy.removeConfirmHeading"
+  (dismissed)="cancelRemove()"
+>
+  <p modal-body>{{ copy.removeConfirmBody }}</p>
+  <button modal-actions type="button" class="btn" (click)="cancelRemove()">
+    {{ copy.cancel }}
+  </button>
+  <button modal-actions type="button" class="btn btn--danger" (click)="confirmRemove()">
+    {{ copy.removeConfirm }}
+  </button>
+</app-modal>

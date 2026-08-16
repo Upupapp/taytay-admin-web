@@ -79,6 +79,8 @@ export const API_ENDPOINTS = {
   staffAccounts: 'governance/accounts',
   audit: 'governance/audit',
   governance: 'governance',
+  /** Posts and their comments. Nothing here returns who reacted (`DL-126`). */
+  newsfeed: 'newsfeed',
 } as const;
 
 export function toPage<TItem>(response: ApiListResponse<TItem>): Page<TItem> {
