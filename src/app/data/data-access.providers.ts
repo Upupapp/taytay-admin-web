@@ -7,6 +7,7 @@ import {
   CASE_REPOSITORY,
   DASHBOARD_REPOSITORY,
   DISBURSEMENT_REPOSITORY,
+  FIELD_VISIT_REPOSITORY,
   FAMILY_REPOSITORY,
   HOUSEHOLD_REPOSITORY,
   NOTIFICATION_REPOSITORY,
@@ -24,6 +25,7 @@ import {
   HttpCaseRepository,
   HttpDashboardRepository,
   HttpDisbursementRepository,
+  HttpFieldVisitRepository,
   HttpFamilyRepository,
   HttpHouseholdRepository,
   HttpNotificationRepository,
@@ -38,6 +40,7 @@ import { MockBeneficiaryRepository } from './mock/mock-beneficiary.repository';
 import { MockCaseRepository } from './mock/mock-case.repository';
 import { MockDashboardRepository } from './mock/mock-dashboard.repository';
 import { MockDisbursementRepository } from './mock/mock-disbursement.repository';
+import { MockFieldVisitRepository } from './mock/mock-field-visit.repository';
 import { MockFamilyRepository } from './mock/mock-family.repository';
 import { MockHouseholdRepository } from './mock/mock-household.repository';
 import { MockNotificationRepository } from './mock/mock-notification.repository';
@@ -76,6 +79,7 @@ function mockProviders(): Provider[] {
     { provide: FAMILY_REPOSITORY, useClass: MockFamilyRepository },
     { provide: CASE_REPOSITORY, useClass: MockCaseRepository },
     { provide: BENEFICIARY_REPOSITORY, useClass: MockBeneficiaryRepository },
+    { provide: FIELD_VISIT_REPOSITORY, useClass: MockFieldVisitRepository },
   ];
 }
 
@@ -94,5 +98,6 @@ function httpProviders(): Provider[] {
     { provide: FAMILY_REPOSITORY, useClass: HttpFamilyRepository },
     { provide: CASE_REPOSITORY, useClass: HttpCaseRepository },
     { provide: BENEFICIARY_REPOSITORY, useClass: HttpBeneficiaryRepository },
+    { provide: FIELD_VISIT_REPOSITORY, useClass: HttpFieldVisitRepository },
   ];
 }

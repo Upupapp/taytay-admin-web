@@ -31,6 +31,14 @@ import {
   type ServiceProvider,
   type ServiceProviderFilter,
   type ServiceProviderId,
+  type FieldVisit,
+  type FieldVisitDraft,
+  type FieldVisitFilter,
+  type FieldVisitId,
+  type FieldVisitRepository,
+  type FieldVisitSortField,
+  type VisitObservationDraft,
+  type VisitOutcomeDraft,
   type ConditionalApplicability,
   type DocumentAccessGrant,
   type DocumentRequest,
@@ -829,4 +837,65 @@ function toParams(filter: object): Record<string, string> {
     params[key] = String(value);
   }
   return params;
+}
+
+/**
+ * Field visits over HTTP.
+ *
+ * `recordObservations` is a POST that appends; there is deliberately no PUT or
+ * DELETE for an observation. A worker correcting an earlier one records another
+ * saying so (`DL-85`), and the verb is part of the contract the API owes.
+ *
+ * Nothing here sends a location. That absence is the contract too.
+ */
+@Injectable()
+export class HttpFieldVisitRepository implements FieldVisitRepository {
+  private readonly api = inject(ApiClient);
+
+  list(
+    filter: FieldVisitFilter,
+    page: PageRequest<FieldVisitSortField>,
+  ): Observable<Page<FieldVisit>> {
+    return this.api.page<FieldVisit>(API_ENDPOINTS.fieldVisits, page, toParams(filter));
+  }
+
+  getById(id: FieldVisitId): Observable<FieldVisit | null> {
+    return this.api.optionalItem<FieldVisit>(`${API_ENDPOINTS.fieldVisits}/${id}`);
+  }
+
+  mine(filter: FieldVisitFilter): Observable<readonly FieldVisit[]> {
+    return this.api.collection<FieldVisit>(`${API_ENDPOINTS.fieldVisits}/mine`, toParams(filter));
+  }
+
+  forResident(id: ResidentId): Observable<readonly FieldVisit[]> {
+    return this.api.collection<FieldVisit>(API_ENDPOINTS.fieldVisits, { residentId: id });
+  }
+
+  schedule(draft: FieldVisitDraft): Observable<FieldVisit> {
+    return this.api.post<FieldVisit, FieldVisitDraft>(API_ENDPOINTS.fieldVisits, draft);
+  }
+
+  recordObservations(
+    id: FieldVisitId,
+    observations: readonly VisitObservationDraft[],
+  ): Observable<FieldVisit> {
+    return this.api.post<FieldVisit, { observations: readonly VisitObservationDraft[] }>(
+      `${API_ENDPOINTS.fieldVisits}/${id}/observations`,
+      { observations },
+    );
+  }
+
+  setChecklist(id: FieldVisitId, checkedCodes: readonly string[]): Observable<FieldVisit> {
+    return this.api.post<FieldVisit, { checkedCodes: readonly string[] }>(
+      `${API_ENDPOINTS.fieldVisits}/${id}/checklist`,
+      { checkedCodes },
+    );
+  }
+
+  close(id: FieldVisitId, outcome: VisitOutcomeDraft): Observable<FieldVisit> {
+    return this.api.post<FieldVisit, VisitOutcomeDraft>(
+      `${API_ENDPOINTS.fieldVisits}/${id}/close`,
+      outcome,
+    );
+  }
 }

@@ -78,6 +78,14 @@ import type {
 } from '../referrals/referral';
 import type { DisclosurePlan, ReferralSummarySheet } from '../referrals/referral-disclosure';
 import type {
+  FieldVisit,
+  FieldVisitDraft,
+  FieldVisitFilter,
+  FieldVisitSortField,
+  VisitOutcomeDraft,
+} from '../visits/field-visit';
+import type { VisitObservationDraft } from '../visits/visit-observation';
+import type {
   ServiceProvider,
   ServiceProviderFilter,
 } from '../referrals/service-provider';
@@ -99,6 +107,7 @@ import type {
   RelationshipId,
   RequirementId,
   ResidentId,
+  FieldVisitId,
   SavedViewId,
   ServiceProviderId,
   StaffUserId,
@@ -522,6 +531,56 @@ export interface BeneficiaryRepository {
 
 export const BENEFICIARY_REPOSITORY = new InjectionToken<BeneficiaryRepository>(
   'BeneficiaryRepository',
+);
+
+/**
+ * Field visits.
+ *
+ * Two absences are load-bearing and enforced by `tools/check-visits.mjs`.
+ *
+ * **No location.** There is no method that records or returns where a worker
+ * was, no check-in, no route and no coordinate. The master command forbids
+ * continuous tracking, covert tracking, geofencing and background surveillance;
+ * those are easy to refuse as features and easy to acquire as an innocuous
+ * field, so the absence is asserted rather than assumed.
+ *
+ * **No second task system.** A visit that needs following up produces a
+ * `CaseTask` through `CaseRepository` (`DL-55`), so "what does this office owe
+ * this family next?" has one answer rather than one per module.
+ *
+ * `recordObservations` takes drafts that each state **whose claim they are**
+ * (`DL-85`), and appends. Nothing here edits or removes an observation: a
+ * worker who wants to correct one records another saying so.
+ */
+export interface FieldVisitRepository {
+  list(
+    filter: FieldVisitFilter,
+    page: PageRequest<FieldVisitSortField>,
+  ): Observable<Page<FieldVisit>>;
+  getById(id: FieldVisitId): Observable<FieldVisit | null>;
+  /** The signed-in worker's own visits, for the day-planning view. */
+  mine(filter: FieldVisitFilter): Observable<readonly FieldVisit[]>;
+  forResident(id: ResidentId): Observable<readonly FieldVisit[]>;
+
+  schedule(draft: FieldVisitDraft): Observable<FieldVisit>;
+
+  /** Appends observations. Never edits or removes one (`DL-85`). */
+  recordObservations(
+    id: FieldVisitId,
+    observations: readonly VisitObservationDraft[],
+  ): Observable<FieldVisit>;
+
+  setChecklist(id: FieldVisitId, checkedCodes: readonly string[]): Observable<FieldVisit>;
+
+  /**
+   * Closes the visit. Terminal in every outcome: a second attempt is a second
+   * visit, so "how many times did we go?" keeps one answer.
+   */
+  close(id: FieldVisitId, outcome: VisitOutcomeDraft): Observable<FieldVisit>;
+}
+
+export const FIELD_VISIT_REPOSITORY = new InjectionToken<FieldVisitRepository>(
+  'FieldVisitRepository',
 );
 
 export interface DisbursementRepository {
