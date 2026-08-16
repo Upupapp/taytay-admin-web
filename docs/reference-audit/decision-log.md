@@ -1931,3 +1931,148 @@ enrollment, and an enrollment that continues itself.
 **Consequence:** enrollment is read-only in the UI for now. The states exist and
 are validated; the screen that records them is a known gap, listed in
 `docs/beneficiaries/README.md`.
+
+### DL-76 · A document is required, optional or conditional — and a person rules on it
+
+**Status:** Settled (implemented in TAB 14; supersedes the `isMandatory` boolean).
+
+`ProgramRequirement.isMandatory` and `SubmittedRequirement.isMandatory` are
+replaced by a `RequirementObligation` of `required`, `optional` or
+`conditional`.
+
+The boolean could not say *"only if you are claiming for a child"*. Faced with
+such a document the office had two bad options: record it as required, and every
+applicant who did not need it appears to be missing one; or record it as
+optional, and nobody chases it from the applicants who do. Both are wrong in
+front of a family.
+
+A conditional requirement carries `appliesWhen` — the circumstances, **written
+for a person to read** — and an applicability of `undecided`, `applies` or
+`does-not-apply`. **The software never evaluates the condition.** It states it,
+and a staff member rules on it with a recorded reason and their name. That is
+the same refusal to decide that governs vulnerability factors (`DL-42`), the
+intake advisory (`DL-60`) and eligibility guidance (`DL-66`); here it would
+otherwise decide either that an applicant owes a paper they never needed, or
+that a paper the office does need was never asked for.
+
+**An undecided conditional is not outstanding.** Nobody has said it applies, so
+nothing is missing yet — it surfaces as a decision the *office* owes, which is a
+different prompt aimed at different people. `awaitsApplicabilityDecision` exists
+to keep those two apart.
+
+`isOutstandingObligation` is the single derivation, and everything that read
+`isMandatory` now reads it: a conditional document cannot be counted one way on
+a checklist and another way in a report.
+
+Two statuses were added at the same time. `expired` and `needs-replacement` are
+held apart from `rejected` because the applicant did nothing wrong — telling
+somebody their certificate was "rejected" when it merely lapsed is inaccurate,
+and needlessly bruising at a counter.
+
+**Consequence:** a 57-site migration across seeds, adapters, screens and specs,
+rather than adding `obligation` beside the boolean. Two sources of truth for
+"must they bring this?" would be worse than either one alone.
+
+### DL-77 · Replacing a document appends; it never overwrites
+
+**Status:** Settled (implemented in TAB 14).
+
+A `RequirementDocument` is an **append-only list of `DocumentVersion`s**.
+Recording a replacement marks the previous version `supersededAt` with a
+**required** `supersededReason` and appends a new one. Version numbers are
+assigned from the length of the history and never reused: version 3 stays
+version 3 forever.
+
+Nothing in the domain, the ports, either adapter or any screen removes a
+version. There is no `deleteDocument`, no `replaceVersion`, and no path that
+reassigns `versions` to a filtered copy — the last of which is how an overwrite
+usually disguises itself.
+
+Why this rather than a file with a pointer: the superseded version is the
+evidence of what the office actually read when it decided. A request approved in
+March on a certificate reissued in June has to remain explicable in December,
+and an overwriting model makes that permanently unanswerable — not merely
+inconvenient. The append-only doctrine that governs case events (`DL-54`) and
+relationships (`DL-48`) applies here with more force, because this is the
+evidence rather than the narrative.
+
+Two shapes follow from it:
+
+- **`openDocument` returns a grant, not a URL.** An opaque, short-lived handle
+  plus the warning to show first. A model carrying a link is one copy-paste from
+  an unauthorised download, and a read the server never sees cannot be logged.
+  The warning is composed server-side because only the server knows whether the
+  record is handled under a protected sector; a client-side guess would be
+  reassuring exactly when it should not be.
+- **`encoded` and `external-verification` hold no file.** The office routinely
+  verifies a document without keeping a copy, and inventing an empty file for
+  those cases makes "is there something to open?" a question the screen has to
+  guess at.
+
+Numbers are masked to their last four characters by default (`maskDocumentNumber`),
+on the same reasoning that limits the PhilSys reference to four digits
+(RA 11055, `CLAUDE.md` §6.2): enough to confirm the right paper is in hand, not
+enough to reconstruct an identifier. A number short enough that masking would
+reveal most of it is masked whole.
+
+**Consequence:** `check:documents` enforces all of it and was validated against
+**thirteen planted regressions, all thirteen caught**. Two of them exposed real
+holes in the checker itself — a file-wide search for `'replacement-needs-a-reason'`
+passed while the rule raising it was commented out, because the string survived
+in the `DocumentProblem` union; and the same failure for `'undecided'`, which
+survived in a comparison after being removed from the type. Both checks are now
+scoped to the declaration they are about. A third plant reported "stale" against
+a real anchor because the repository checks out CRLF on Windows.
+
+### DL-78 · Requirement completion counts; it never decides
+
+**Status:** Settled (implemented in TAB 14).
+
+`RequirementCompletion` carries counts and nothing else. There is deliberately
+no `isComplete`, no `isEligible`, no `canApprove` and no percentage promoted to
+a verdict, and `check:documents` fails the build if a decision-shaped field
+appears.
+
+The master command is explicit — show completion at case level, but never equate
+100% document completeness with automatic eligibility. This is the **fourth**
+surface where the same doctrine has had to be enforced (`DL-42`, `DL-60`,
+`DL-66`), and it is the one where the temptation is strongest, because a
+complete checklist genuinely *looks* like a green light in a way a vulnerability
+indicator does not.
+
+`describeCompletion` returns the sentence stating the boundary — "Eligibility is
+still a caseworker's decision" — **from the domain**, not from a template. A
+template is exactly where such a sentence gets shortened to "Complete" by
+somebody tidying up, and the checker also verifies that a screen actually
+renders it: a rule held and never shown is the same omission it was written to
+prevent.
+
+The counts keep four things apart that a single "outstanding" number would
+merge: documents genuinely outstanding, conditional documents awaiting a
+decision, documents presented but not yet checked, and documents needing another
+copy. Only the first is the applicant's to act on.
+
+**Consequence:** the assessment workspace shows counts and the sentence
+together, and there is no state in which the screen says a request is ready.
+
+### DL-79 · A permission is a read or a write because it is listed, not because of its name
+
+**Status:** Settled (implemented in TAB 14; corrects a latent defect).
+
+`MUTATING_PERMISSIONS` was derived by name shape: anything not ending in
+`.view` and not starting with `report.` counted as mutating. TAB 14 broke it.
+`document.download` reads a file and changes nothing, but by its spelling it
+made the **auditor** — a read-only role by definition — look like a role that
+could alter records, and `isReadOnlyRole('auditor')` began returning false.
+
+The heuristic was always going to fail on the first read whose name did not end
+in `.view`; it simply had not been written yet. `READ_ONLY_PERMISSIONS` is now an
+explicit list, which fails the other way: a genuinely new *mutating* permission
+is treated as mutating by default, and a new read has to be added deliberately
+by somebody who thought about it. That is the safe direction for a
+classification that separation-of-duties checks depend on.
+
+**Consequence:** caught by an existing test rather than in production — the
+permission matrix spec asserts the auditor is read-only, and it failed the moment
+the permission was added. A test asserting a property, rather than a snapshot of
+current values, is what made a naming heuristic's failure visible.

@@ -303,3 +303,79 @@ describe('the assessment workspace', () => {
     expect(element.textContent).toContain('That request is not available');
   });
 });
+
+/* ── Documents and verification (TAB 14) ──────────────────────────────────── */
+
+describe('the document checklist', () => {
+  it('shows the version history rather than only the current file', async () => {
+    // req-0001's indigency certificate was replaced once. A reader who cannot
+    // see that will read the current copy as the only one there has ever been.
+    const element = html(await openAssessment(ENDORSED));
+    expect(element.textContent).toContain('1 earlier version, kept on file');
+    expect(element.textContent).toContain('household size corrected from 4 to 6');
+  });
+
+  it('masks a document number rather than printing it', async () => {
+    const element = html(await openAssessment(ENDORSED));
+    const text = element.textContent ?? '';
+
+    expect(text).toContain('••••0964');
+    // The full numbers seeded on this request must not appear anywhere.
+    expect(text).not.toContain('BC-2026-00964');
+    expect(text).not.toContain('PN-2019-448271');
+  });
+
+  it('counts completion and refuses to call it a decision', async () => {
+    const element = html(await openAssessment(ENDORSED));
+    expect(element.querySelector('.completion__hint')?.textContent).toContain(
+      'eligibility is assessed by a caseworker',
+    );
+  });
+
+  it('never renders the word complete as a verdict on its own', async () => {
+    const element = html(await openAssessment(ENDORSED));
+    const counts = element.querySelector('.completion__counts')?.textContent?.trim() ?? '';
+
+    expect(counts).not.toBe('Complete');
+    expect(counts.length).toBeGreaterThan(0);
+  });
+
+  it('offers no way to open a file to a role without the download grant', async () => {
+    // An intake officer records documents but does not pull the scans.
+    const element = html(await openAssessment(ENDORSED, 'intake-officer'));
+    const labels = [...element.querySelectorAll('button')].map((node) =>
+      (node.textContent ?? '').trim(),
+    );
+
+    expect(labels).not.toContain('Open document');
+  });
+
+  it('offers the open to a social worker, behind a warning', async () => {
+    const fixture = await openAssessment(ENDORSED);
+    const element = html(fixture);
+    const open = [...element.querySelectorAll('button')].find(
+      (node) => (node.textContent ?? '').trim() === 'Open document',
+    );
+
+    expect(open).toBeDefined();
+
+    open?.click();
+    await fixture.whenStable();
+
+    // The warning is shown before anything opens, and names the file.
+    // The first requirement on this request is the government ID, so that is
+    // the file the first Open button belongs to.
+    const modal = html(fixture).querySelector('.access');
+    expect(modal?.textContent).toContain('valid-id-mercado.pdf');
+    expect(modal?.textContent).toContain('personal information');
+  });
+
+  it('marks an expired document expired rather than rejected', async () => {
+    const element = html(await openAssessment(ENDORSED));
+    const labels = [...element.querySelectorAll('button')].map((node) =>
+      (node.textContent ?? '').trim(),
+    );
+
+    expect(labels).toContain('Mark expired');
+  });
+});

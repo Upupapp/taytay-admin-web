@@ -120,3 +120,85 @@
   flex-wrap: wrap;
   gap: var(--space-compact);
 }
+
+/* ── documents (TAB 14) ───────────────────────────────────────────────────── */
+
+.completion {
+  margin: 0 0 var(--space-base);
+  padding: var(--space-compact) var(--space-snug);
+  border-inline-start: 3px solid var(--c-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface-sunken, var(--c-surface));
+}
+
+.completion__counts {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Never abbreviated to "Complete": the sentence is the boundary (DL-78). */
+.completion__hint {
+  display: block;
+  margin-block-start: var(--space-micro);
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}
+
+.documents__obligation {
+  padding: 1px var(--space-compact);
+  border-radius: var(--radius-sm);
+  background: var(--tone-neutral-bg);
+  color: var(--tone-neutral-fg);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.applicability {
+  margin-block: var(--space-compact);
+  padding: var(--space-snug);
+  border: 1px dashed var(--c-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.applicability__prompt {
+  margin: 0;
+  font-size: 12.5px;
+}
+
+.applicability__tag {
+  margin-inline-end: var(--space-compact);
+  padding: 1px var(--space-compact);
+  border-radius: var(--radius-sm);
+  background: var(--tone-info-bg);
+  color: var(--tone-info-fg);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.applicability__when {
+  margin: var(--space-compact) 0 0;
+  font-size: 12.5px;
+}
+
+.applicability__when-label {
+  color: var(--c-text-muted);
+  font-weight: 600;
+}
+
+.access__file {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.access__warning {
+  margin: var(--space-compact) 0 0;
+  font-size: 13px;
+}
+
+.access__redacted {
+  margin: var(--space-compact) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}

@@ -21,7 +21,7 @@ import { daysBeforeAnchor } from './seed-utils';
 export const MOCK_DOCUMENT_REQUESTS: readonly DocumentRequest[] = [
   {
     id: asId<DocumentRequestId>('dr-0001'),
-    assistanceRequestId: asId<AssistanceRequestId>('ar-0003'),
+    assistanceRequestId: asId<AssistanceRequestId>('req-0003'),
     requirementId: asId<RequirementId>('rq-0011'),
     state: 'open',
     channel: 'sms',
@@ -35,7 +35,7 @@ export const MOCK_DOCUMENT_REQUESTS: readonly DocumentRequest[] = [
   },
   {
     id: asId<DocumentRequestId>('dr-0002'),
-    assistanceRequestId: asId<AssistanceRequestId>('ar-0003'),
+    assistanceRequestId: asId<AssistanceRequestId>('req-0003'),
     requirementId: asId<RequirementId>('rq-0012'),
     state: 'answered',
     channel: 'in-person',
@@ -48,8 +48,8 @@ export const MOCK_DOCUMENT_REQUESTS: readonly DocumentRequest[] = [
   },
   {
     id: asId<DocumentRequestId>('dr-0003'),
-    assistanceRequestId: asId<AssistanceRequestId>('ar-0004'),
-    requirementId: asId<RequirementId>('rq-0016'),
+    assistanceRequestId: asId<AssistanceRequestId>('req-0004'),
+    requirementId: asId<RequirementId>('rq-0031'),
     state: 'withdrawn',
     channel: 'barangay-relay',
     message: 'Asked through the barangay for a copy of the death certificate.',

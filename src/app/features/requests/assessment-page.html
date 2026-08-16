@@ -53,13 +53,80 @@
           <h2 class="assessment__heading" id="documents-heading">{{ copy.documentsHeading }}</h2>
           <p class="assessment__note">{{ copy.documentsNote }}</p>
 
+          <!-- Counts, and the sentence that keeps them from reading as a
+               verdict. The wording comes from the domain so a template cannot
+               shorten it to "Complete" (`DL-78`). -->
+          <p class="completion">
+            <span class="completion__counts">{{ completionSummary(request) }}</span>
+            <span class="completion__hint">{{ documentCopy.completionHint }}</span>
+          </p>
+
           <ul class="documents">
             @for (requirement of request.requirements; track requirement.id) {
               <li class="documents__item">
                 <p class="documents__label">
                   {{ requirement.label }}
+                  <span class="documents__obligation">{{ obligationLabel(requirement) }}</span>
                   <app-status-badge [catalog]="requirementCatalog" [status]="requirement.status" />
                 </p>
+
+                <!-- A conditional document states its circumstances and waits
+                     for a person. The software never rules on it (`DL-76`). -->
+                @if (needsApplicabilityDecision(requirement)) {
+                  <div class="applicability">
+                    <p class="applicability__prompt">
+                      <span class="applicability__tag">{{ documentCopy.awaitingDecision }}</span>
+                      {{ documentCopy.awaitingDecisionHint }}
+                    </p>
+                    @if (requirement.appliesWhen) {
+                      <p class="applicability__when">
+                        <span class="applicability__when-label">{{ documentCopy.appliesWhen }}</span>
+                        {{ requirement.appliesWhen }}
+                      </p>
+                    }
+                    @if (canReviewDocuments()) {
+                      <label class="field">
+                        <span class="field__label">{{ documentCopy.applicabilityReason }}</span>
+                        <input
+                          type="text"
+                          class="field__input"
+                          [value]="applicabilityReason(requirement.id)"
+                          (input)="onApplicabilityReason(requirement.id, $event)"
+                        />
+                        <span class="field__hint">{{ documentCopy.applicabilityReasonHint }}</span>
+                      </label>
+                      <div class="documents__controls">
+                        <button
+                          type="button"
+                          class="btn btn--subtle"
+                          [disabled]="!canDecide(requirement.id)"
+                          (click)="decide(requirement.id, 'applies')"
+                        >
+                          {{ documentCopy.applies }}
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn--subtle"
+                          [disabled]="!canDecide(requirement.id)"
+                          (click)="decide(requirement.id, 'does-not-apply')"
+                        >
+                          {{ documentCopy.doesNotApply }}
+                        </button>
+                      </div>
+                    }
+                  </div>
+                } @else if (requirement.applicabilityReason) {
+                  <p class="assessment__note">
+                    {{ applicabilityLabel(requirement) }} — {{ requirement.applicabilityReason }}
+                  </p>
+                }
+
+                <app-document-panel
+                  [document]="requirement.document"
+                  [canDownload]="canDownloadDocuments()"
+                  (openRequested)="askToOpen(requirement.id, $event)"
+                />
+
                 @if (requirement.remarks) {
                   <p class="assessment__note">{{ requirement.remarks }}</p>
                 }
@@ -94,6 +161,15 @@
                       (click)="review(requirement.id, 'waived')"
                     >
                       {{ copy.waive }}
+                    </button>
+                    <!-- Held apart from Reject: the applicant did nothing
+                         wrong when a certificate simply lapsed. -->
+                    <button
+                      type="button"
+                      class="btn btn--subtle"
+                      (click)="review(requirement.id, 'expired')"
+                    >
+                      {{ documentCopy.markExpired }}
                     </button>
                   </div>
                 }
@@ -202,3 +278,29 @@
     </div>
   }
 </ng-template>
+
+<!-- Opening a file is a second, deliberate act. The warning names the file and
+     says whether the record is protected — both from the grant the server
+     issued, so the sentence is true rather than reassuring. -->
+@if (pendingAccess(); as grant) {
+  <app-modal
+    [open]="true"
+    [heading]="accessCopy.warningHeading"
+    (dismissed)="cancelOpen()"
+  >
+    <div modal-body class="access">
+      <p class="access__file">{{ grant.fileName }}</p>
+      <p class="access__warning">{{ grant.warning }}</p>
+      @if (grant.redactedForSharing) {
+        <p class="access__redacted">{{ accessCopy.redacted }}</p>
+      }
+    </div>
+
+    <button type="button" modal-actions class="btn" (click)="cancelOpen()">
+      {{ accessCopy.cancel }}
+    </button>
+    <button type="button" modal-actions class="btn btn--primary" (click)="confirmOpen()">
+      {{ accessCopy.proceed }}
+    </button>
+  </app-modal>
+}

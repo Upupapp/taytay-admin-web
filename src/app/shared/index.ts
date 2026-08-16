@@ -24,6 +24,8 @@ export * from './intake/intake.copy';
 export * from './families/relationship.copy';
 export * from './households/vulnerability-snapshot';
 export * from './households/vulnerability.copy';
+export * from './requirements/document-panel';
+export * from './requirements/requirements.copy';
 export * from './residents/person-picker';
 export * from './residents/resident-summary-card';
 export * from './pipes/barangay-name.pipe';

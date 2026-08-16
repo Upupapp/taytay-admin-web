@@ -15,6 +15,15 @@ import { of, switchMap } from 'rxjs';
 import { PermissionService } from '@core/access/permission.service';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
+  CONDITIONAL_APPLICABILITY_LABELS,
+  REQUIREMENT_OBLIGATION_LABELS,
+  awaitsApplicabilityDecision,
+  describeCompletion,
+  summariseRequirements,
+  type ConditionalApplicability,
+  type DocumentAccessGrant,
+  type DocumentVersionId,
+  type SubmittedRequirement,
   ASSISTANCE_REQUEST_REPOSITORY,
   ASSISTANCE_STATUS_CATALOG,
   PROGRAM_REPOSITORY,
@@ -37,12 +46,15 @@ import {
   type RequirementStatus,
   type ResidentProfile,
 } from '@domain/index';
+import { DocumentPanel } from '@shared/requirements/document-panel';
+import { REQUIREMENTS_COPY } from '@shared/requirements/requirements.copy';
 import { AdvisoryPanel } from '@shared/intake/advisory-panel';
 import { INTAKE_COPY } from '@shared/intake/intake.copy';
 import { ResidentSummaryCard } from '@shared/residents/resident-summary-card';
 import { StatusTransition, type StatusTransitionRequest } from '@shared/cases/status-transition';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
@@ -73,7 +85,9 @@ import { REQUESTS_COPY } from './requests.copy';
   imports: [
     AdvisoryPanel,
     AsyncContent,
+    DocumentPanel,
     DatePipe,
+    Modal,
     PageHeader,
     PesoPipe,
     ResidentSummaryCard,
@@ -244,6 +258,106 @@ export class AssessmentPage {
       ),
       this.copy.studySaved,
     );
+  }
+
+  /* ── documents (TAB 14) ─────────────────────────────────────────────────── */
+
+  protected readonly documentCopy = REQUIREMENTS_COPY.checklist;
+  protected readonly accessCopy = REQUIREMENTS_COPY.access;
+
+  /** Reading a file is its own grant, never implied by reviewing the checklist. */
+  protected readonly canDownloadDocuments = computed(() =>
+    this.permissions.has('document.download'),
+  );
+
+  private readonly applicabilityReasons = signal<Readonly<Record<string, string>>>({});
+
+  /** The grant awaiting confirmation. A file never opens without a deliberate second act. */
+  protected readonly pendingAccess = signal<DocumentAccessGrant | null>(null);
+
+  protected obligationLabel(requirement: SubmittedRequirement): string {
+    return REQUIREMENT_OBLIGATION_LABELS[requirement.obligation];
+  }
+
+  protected applicabilityLabel(requirement: SubmittedRequirement): string {
+    return CONDITIONAL_APPLICABILITY_LABELS[requirement.applicability];
+  }
+
+  protected needsApplicabilityDecision(requirement: SubmittedRequirement): boolean {
+    return awaitsApplicabilityDecision(requirement.obligation, requirement.applicability);
+  }
+
+  protected completionSummary(request: AssistanceRequest): string {
+    return describeCompletion(summariseRequirements(request.requirements));
+  }
+
+  protected applicabilityReason(requirementId: RequirementId): string {
+    return this.applicabilityReasons()[requirementId] ?? '';
+  }
+
+  protected onApplicabilityReason(requirementId: RequirementId, event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.applicabilityReasons.update((current) => ({ ...current, [requirementId]: value }));
+  }
+
+  /** A ruling either way is consequential, so both need a reason before they can be made. */
+  protected canDecide(requirementId: RequirementId): boolean {
+    return this.applicabilityReason(requirementId).trim().length > 0;
+  }
+
+  protected decide(requirementId: RequirementId, applicability: ConditionalApplicability): void {
+    const reason = this.applicabilityReason(requirementId).trim();
+    if (reason === '') {
+      return;
+    }
+    this.run(
+      this.requests.decideApplicability(
+        asId<AssistanceRequestId>(this.id()),
+        requirementId,
+        applicability,
+        reason,
+      ),
+      this.copy.studySaved,
+    );
+  }
+
+  /**
+   * Asks the data layer for permission to open a file, then shows what the
+   * reader is about to see and waits.
+   *
+   * Two steps rather than one because the warning has to be true: it names the
+   * file and says whether the record is protected, and only the server knows
+   * that. A warning composed client-side from a guess would be reassuring
+   * exactly when it should not be.
+   */
+  protected askToOpen(requirementId: RequirementId, versionId: DocumentVersionId): void {
+    this.requests
+      .openDocument(asId<AssistanceRequestId>(this.id()), requirementId, versionId)
+      .subscribe({
+        next: (grant) => this.pendingAccess.set(grant),
+        error: () => this.notifications.error(this.accessCopy.denied),
+      });
+  }
+
+  protected cancelOpen(): void {
+    this.pendingAccess.set(null);
+  }
+
+  /**
+   * Confirms the open.
+   *
+   * There is no backend to stream bytes from in this build, so this reports
+   * what would happen rather than pretending a file arrived. Saying "opened" for
+   * something that did not open is the kind of false success `DL-22` exists to
+   * prevent.
+   */
+  protected confirmOpen(): void {
+    const grant = this.pendingAccess();
+    if (grant === null) {
+      return;
+    }
+    this.pendingAccess.set(null);
+    this.notifications.info(grant.fileName, grant.warning);
   }
 
   /* ── the lifecycle move ─────────────────────────────────────────────────── */

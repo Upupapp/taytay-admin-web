@@ -29,7 +29,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-44 permissions × 7 roles. `X` means the role holds the permission.
+47 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -65,6 +65,9 @@ self-registration), `DL-33` (accessible authentication).
 | `request.schedule`                | X     | X    |     |        |      |      |       |
 | `request.close`                   | X     | X    |     |        |      |      |       |
 | `request.view-sensitive`          | X     | X    | X   |        |      |      |       |
+| `document.record`                 | X     | X    | X   | X      |      |      |       |
+| `document.download`               | X     | X    | X   |        |      |      | X     |
+| `document.view-full-number`       | X     | X    | X   |        |      |      |       |
 | `disbursement.view`               | X     | X    |     |        | X    |      | X     |
 | `disbursement.schedule`           | X     | X    |     |        | X    |      |       |
 | `disbursement.release`            | X     |      |     |        | X    |      |       |
@@ -169,6 +172,18 @@ them.
 `beneficiary.export` is held apart from `report.export`, which produces
 aggregates. Taking a named beneficiary list out of the system is the operation
 TAB 05 called sensitive, and it reaches the head and the administrator only.
+
+**The document permissions separate recording from reading the file** (`DL-77`).
+`document.record` is intake work: the counter says what was presented and
+replaces a copy when it lapses. `document.download` opens the file itself, and
+intake does **not** hold it — recording what somebody handed over and pulling
+the scan of their medical abstract off the system are different disclosures, and
+the counter needs only the first. `document.view-full-number` is narrower again,
+because a document number is disclosive on its own; everywhere else the number
+is masked to its last four characters.
+
+The auditor holds `document.download` and neither of the others: oversight has to
+be able to check that the office held what it claims to have held.
 
 ---
 

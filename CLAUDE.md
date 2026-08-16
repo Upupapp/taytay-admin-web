@@ -94,8 +94,8 @@ npm run verify     # lint + typecheck + repository checks + test + build
 ```
 
 The repository checks are `check:brand`, `check:shell`, `check:access`,
-`check:vulnerability`, `check:case-audit`, `check:intake`, `check:programs` and
-`check:beneficiary`. Each enforces a rule a comment
+`check:vulnerability`, `check:case-audit`, `check:intake`, `check:programs`,
+`check:beneficiary` and `check:documents`. Each enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 
@@ -263,6 +263,35 @@ without deleting it, and `distinct-people` is recorded so the pair stops
 resurfacing. `beneficiary.review-duplicates` is deliberately withheld from
 intake, who usually created the second record, and from the auditor, whose
 oversight must not be able to alter the identities it checks.
+
+### Replacing a document appends; it never overwrites
+
+A document is an append-only list of versions (`DL-77`). Replacing one marks the
+previous version superseded **with a required reason** and adds a new one.
+Nothing in the domain, the ports or either adapter removes a version, and
+`npm run check:documents` fails the build if anything tries.
+
+The superseded copy is the evidence of what the office actually read when it
+decided. A request approved in March on a certificate replaced in June must stay
+explicable in December.
+
+**A document is asked for as `required`, `optional` or `conditional`** (`DL-76`),
+replacing the old `isMandatory` boolean. A conditional document states its
+circumstances in words and starts `undecided`; the software never evaluates the
+condition, and a person rules on it with a recorded reason. An undecided
+conditional is **not** counted against the applicant — it is a decision the
+office owes.
+
+**Requirement completion counts; it never decides** (`DL-78`). `RequirementCompletion`
+carries no `isComplete`, `isEligible` or percentage-as-verdict, and
+`describeCompletion` says in words that eligibility remains a caseworker's
+decision. This is the fourth surface where a checklist could quietly become an
+eligibility engine, and the one where the temptation is strongest.
+
+**Document numbers are masked to their last four characters** by default, and
+opening a file is a separate grant (`document.download`) obtained through the
+data layer rather than a URL on the model — with a warning shown first, composed
+from what the server said rather than from a client-side guess.
 
 ### Separation of duties
 
