@@ -17,10 +17,18 @@ intent through the audit in `docs/reference-audit/`.
 
 ## Where the build is
 
-- **Completed and certified:** TABs 01–17.
-- **Current:** TAB 18 — Notifications, Tasks, Alerts & Work Queues.
-- **Remaining:** 19–23 (reports, search, users/audit, hardening, QA),
-  then 24–26 (Newsfeed, Events).
+- **Completed and certified:** TABs 01–18.
+- **Current:** TAB 19 — Reports, Analytics, Exports & LGU Decision Support.
+- **Remaining:** 20–23 (search, users/audit, hardening, QA), then 24–26
+  (Newsfeed, Events).
+
+**The master command PDF is on disk** at
+`C:\Users\paulg\Downloads\Taytay_Rizal_LGUIDS_Admin_Portal_Master_Command_LATEST.pdf`
+(65 pages, readable with `pypdf`). **Read the TAB's text directly before
+starting it.** The objectives recorded in `state.json` are summaries, and TAB 18
+turned out materially richer than its summary — eleven named task types, a team
+queue, assignment and snooze, and three acceptance criteria that shaped the
+whole design.
 
 ## Architecture
 
@@ -46,7 +54,7 @@ are handed.
 
 ## Non-negotiables carried by build checkers
 
-`npm run verify` = lint + typecheck + 12 checkers + 1074 tests + build. Each
+`npm run verify` = lint + typecheck + 13 checkers + 1120 tests + build. Each
 checker was validated against planted regressions. Do not weaken one to pass.
 
 | Checker | Refuses |
@@ -63,6 +71,7 @@ checker was validated against planted regressions. Do not weaken one to pass.
 | `check:referrals` | sending without a lawful basis; a bulk share; a resident field on a referral screen; a stored overdue flag; an ungated adapter read |
 | `check:visits` | any location capture; an observation without its kind; an unattributed third-party account; an edited observation; a non-terminal outcome |
 | `check:releases` | a ledger, account code, bank account or posting date; a status on a payout session; a session summarised as one verdict; a deferral reason blaming the beneficiary; an amount forced onto goods; an unmasked or over-full manifest; a screen composing its own manifest; self-release blocking; an ungated adapter method |
+| `check:work` | an email/SMS/push/webhook channel; an alert with a due date, assignee or done state; a mutator on the work port; a stored urgency flag; lateness not said in words; a queue summarised as a verdict; duplicate review as work; an unfiltered notification read |
 
 ## Doctrines that constrain every later TAB
 
@@ -112,20 +121,28 @@ checker was validated against planted regressions. Do not weaken one to pass.
 - **`VisitCapture` is modelled and tested but not wired to a screen.**
 - **No screen creates a payout session.** `createBatch` is built, gated and
   tested; the scheduling form is not. (`DL-90`)
+- **Task reassignment has no picker.** `CaseRepository.assignTask` is built,
+  gated, reason-requiring and tested; the queue exposes complete and reschedule
+  only. The staff picker belongs with the administration TAB. (`DL-99`)
 - **Voiding a release has no screen** — `changeStatus` and `disbursement.void`
   exist and are gated.
 - **The remaining placeholder routes are `reports` and `administration`.**
-  Assume their adapters are ungated until read: two for two so far (`DL-84`,
-  `DL-95`).
+  Assume their adapters are ungated until read: **three for three** so far
+  (`DL-84`, `DL-95`, `DL-100`).
 
 ## A recurring defect worth naming
 
-**A file-wide string search in a checker passes when the string survives
-elsewhere in the same file.** This has now bitten five times — a problem code
-still present in a type union, a state still present in a comparison, a statute
-still present in a doc comment, a short label matching before the long
-description, and a scope helper still named in an **import statement** — each
-time letting a deleted rule report clean.
+**A checker assertion that is not scoped to the declaration it is about will
+pass while the rule is gone.** This has now bitten **nine** times, in five
+shapes:
+
+1. the string survives elsewhere in the same file (a problem code still in a
+   union, a state still in a comparison, a statute still in a doc comment);
+2. the identifier survives in an **import statement** (`check:releases`,
+   `check:work` twice);
+3. a **short label matches before the long description** it was meant to check;
+4. one key is a **prefix of another** (`copy.overdue` matched `copy.overdueHint`);
+5. `files.some(...)` passes because a **different file** still satisfies it.
 **Scope every checker assertion to the declaration it is about** (the interface
 block, the function body, the constant), not to the file.
 
@@ -134,51 +151,58 @@ a literal `\n` matches nothing and reports "stale" rather than failing; and a
 detector that has only ever reported clean has not been tested, so plant
 regressions before trusting one.
 
-Applying this while *writing* `check:visits` produced the first checker to catch
-14/14 on the first run, and `check:releases` ran clean first time too. But the
-fifth instance was found **only by a planted regression** — the checker looked
-right and was wrong. Scope up front, and still plant. The plants are not a
+Both `check:releases` and `check:work` were written *with this rule in mind* and
+ran clean on their first try. Both still contained instances of it — one and
+four respectively — found **only by the planted regressions**.
+
+Writing the rule down does not prevent it, because the failure is not one of
+knowledge. **"Does this assertion have a scope?" has to be asked per assertion,
+at the moment of writing each one.** An intention held at the top of a file does
+not survive two hundred lines.
+
+The plants are the only thing that has ever caught this. They are not a
 formality.
 
 ## Next action
 
-Begin TAB 18 — Notifications, Tasks, Alerts & Work Queues.
+Begin TAB 19 — Reports, Analytics, Exports & LGU Decision Support. **Read its
+text in the PDF first** (page ~42).
 
-**Inspect what exists first, and extend it.** Three mechanisms are already
-built and must not be duplicated:
-
-1. `core/notifications/notification.store.ts` + `NotificationRepository` —
-   `info` / `success` / `warning` / `error` / `notify()`, deciding toast versus
-   inbox. Errors persist until dismissed and always reach the inbox. `ToastHost`
-   is mounted once by `App`.
-2. **`CaseTask` is already the next-action model** (`DL-55`): what this office
-   undertook to do, by when, and who owes it — deliberately *not* derived from a
-   status. A work queue is a view over these, not a second task entity.
-3. `FieldVisit` follow-ups (`DL-88`) and `Referral` follow-up dates (`DL-83`)
-   already produce work that is owed. Overdue is **derived**, never stored.
+The objective is reporting that supports planning and accountability **while
+minimising exposure of citizen data**. Fourteen report areas: caseload,
+assistance pipeline, programme utilisation, beneficiaries by barangay,
+vulnerability indicators, demographic reach, case aging and turnaround,
+requirements bottlenecks, referral outcomes, visit workload, release status,
+repeat assistance, data completeness, and staff workload.
 
 The tab's load-bearing constraints:
 
-1. **No channel the LGU did not supply.** No push service, no email sending, no
-   SMS gateway, no webhook. Same doctrine as `DL-89` refusing accounting: a
-   notification the office believes was sent, and was not, is worse than none.
-   Expect the checker to enforce the absence.
-2. **A work queue says who owes what, by when.** Roles differ — a disbursing
-   officer's queue is not a social worker's. Derive from permission and scope,
-   never a hard-coded role branch.
-3. **An alert must not become a decision.** Same line as `DL-42`, `DL-60` and
-   `DL-78`: it surfaces evidence and gates nothing.
-4. **Nothing personal in a notification body** that a toast would render to
-   somebody outside the record's scope. Redaction happens in the data layer
-   (`DL-38`).
-5. **Deriving overdue** stays derived. A stored flag is wrong every morning
-   until a job runs.
+1. **Aggregate first.** No names by default. Drill to person level only when
+   necessary, behind a permission and a privacy warning. This is the strongest
+   statement of data minimisation in the whole master command, and `DL-38`
+   already says redaction happens in the data layer — a report must not be the
+   surface that reintroduces PII a screen was never handed.
+2. **Every chart claim must be verifiable from tabular data**, and every
+   visualisation gets summary text plus a tabular equivalent. `ChartTable`
+   already exists and **is** a real table (`CLAUDE.md` §7) — extend it, do not
+   build a second one.
+3. **Charts must not rely on hue alone** — the same rule as `DL-102`, which the
+   work queue already implements as sentence + heading + position.
+4. **Exports state their applied filters and generation metadata**, so a
+   printed report cannot be read as covering something it did not.
+5. **Staff workload must avoid simplistic performance ranking.** The team queue
+   (`DL-97`) already sorts by who is most behind *to direct help*, not to rank
+   people; keep that framing and expect the checker to enforce the absence of a
+   score, a league table or a productivity index.
+6. The dashboard's `AttentionSignal` and `DashboardRepository.summary` already
+   compute figures under a filter and echo it back — reuse that discipline
+   rather than inventing a second one.
 
-Then: `npm run verify`, commit locally, write
-`tab-reports/TAB-18-notifications.md`, advance state to TAB 19.
+Then: `npm run verify`, commit locally, write `tab-reports/TAB-19-reports.md`,
+advance state to TAB 20.
 
 ## Git
 
 - Branch `main`, no remote configured. **Never push.**
-- HEAD at TAB 17 certification: `fb65486`.
+- HEAD at TAB 18 certification: `378b8f8`.
 - Working tree clean.
