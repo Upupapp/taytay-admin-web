@@ -2734,3 +2734,143 @@ raise a case task to deal with one. What is refused is the software manufacturin
 **Consequence:** a source belongs on a queue only if a named person owes it. The
 checker refuses `duplicate-review` as a `WorkSource`, and a feature test asserts
 the personal queue stays under thirty items.
+### DL-104 · Reports are aggregate first, and naming people has to argue for itself
+
+**Status:** Settled (implemented in TAB 19).
+
+The master command asks for reporting that supports planning and accountability
+**while minimising exposure of citizen data**, with aggregate-first reports by
+default and person-level detail only when necessary. That is a modelling rule,
+not a screen preference, so the grain is a property of the **report definition**
+rather than a choice a screen makes.
+
+Thirteen of the fourteen reports are aggregate. The fourteenth — data
+completeness — names residents, and it carries three things the others do not:
+
+1. **A stated reason.** `personLevelJustification` is required on any
+   person-level report and forbidden on an aggregate one, and
+   `reportProblems` refuses a definition that breaks either rule. "We have
+   always shown names here" is not a lawful basis; writing the reason down is
+   what makes it reviewable.
+2. **A higher permission.** `report.export` rather than `report.view`. Naming
+   people is a different act from reading a count of them, and a definition that
+   names people behind only `report.view` is refused by the domain.
+3. **A caution on screen**, saying it names people and must not be circulated.
+
+The reason completeness must name people is concrete: the report exists to be
+worked through record by record, and "42 records incomplete" cannot be acted on
+because nobody knows which 42.
+
+**Consequence:** the catalogue is data (`REPORT_CATALOGUE`), like programme
+eligibility (`DL-66`). No screen branches on a report id, and `check:reports`
+fails the build if the person-level count grows.
+
+### DL-105 · An aggregate is not automatically anonymous
+
+**Status:** Settled (implemented in TAB 19).
+
+"Barangay San Juan: 1 VAWC survivor served" names somebody to anyone in that
+barangay who knows who has been to the office. "2" is barely better. A table of
+counts can identify a person as surely as a list of names, and the office would
+have published it believing it had published statistics.
+
+So counts of **people or households** below a threshold are withheld, and four
+choices inside that rule are deliberate:
+
+- **Withheld, not dropped.** A missing row reads as "none", which is a different
+  and false claim. The row keeps its label and is marked.
+- **Not rounded.** Rounding 2 up to 5 puts a figure in a report that is not
+  true, and somebody will act on it.
+- **Not zero.** Zero identifies nobody, and hiding it would hide the absence of
+  service — exactly the gap a planning report exists to show.
+- **The drill-down goes too.** Withholding a figure while leaving a link to the
+  four records behind it withholds nothing at all.
+
+The **total is taken before suppression** and labelled as such, because the
+alternative is a reader adding up the visible rows and quietly believing a
+smaller number. The screen says so above the table, not in a footnote.
+
+The threshold of five follows common statistical disclosure practice for
+small-area counts. **No Taytay issuance was supplied fixing it**, so it is
+marked `convention-pending-confirmation` and says so on screen, exactly as the
+intake review windows do (`DL-68`).
+
+**Consequence:** there is no parameter anywhere — port, adapter or screen —
+that asks for the unsuppressed set. "Just this once" is how a threshold stops
+being one.
+
+### DL-106 · An export carries its own conditions, inside the file
+
+**Status:** Settled (implemented in TAB 19).
+
+A spreadsheet on somebody's desktop six months from now has no screen around it.
+A printed report that does not say what it covers **will** be read as covering
+everything, and the office will make a decision on it.
+
+So every export begins with a manifest, in the file: which report it is, the
+question it answers, the filter applied **in words**, when it was generated and
+by whom, how many rows, whether it names people, whether anything was withheld,
+and the handling rule under RA 10173.
+
+The file is **composed by the data layer**, never assembled by a screen — the
+same rule as the payout manifest (`DL-92`) and the referral summary (`DL-82`),
+and for the same reason: a template holding the fuller result is one binding
+away from writing a name into a spreadsheet the report was never meant to
+contain. `check:reports` fails the build if a screen touches `csvCell`, a
+`Blob`, or `URL.createObjectURL`.
+
+A person-level export is **warned about before the file exists**, not after it
+is on somebody's desktop. The warning says plainly that nothing can be recalled.
+
+**Consequence:** `describeFilter` lives in the domain rather than in a template,
+because the sentence in the file and the sentence on the screen must be the same
+sentence.
+
+### DL-107 · Staff workload counts what people carry; it does not rank them
+
+**Status:** Settled (implemented in TAB 19).
+
+The master command asks for staff workload reporting and warns, in the same
+line, to avoid simplistic performance ranking. Both halves are honoured.
+
+The report counts **open items per officer**, so a supervisor can move work.
+There is no completion rate, no average turnaround per person, no score and no
+index — and the rows are ordered **alphabetically**, not by volume. Sorting by
+count is what turns a workload table into a league table, whatever the heading
+says.
+
+The caution is rendered above the figures: a heavy caseload is usually a hard
+caseload, and the office cannot see from a count who is doing well.
+
+This is the same framing the team queue already uses (`DL-97`), which sorts by
+who is most behind **in order to direct help**, not to rank people.
+
+**Consequence:** `check:reports` refuses a productivity, efficiency, completion
+rate or score field anywhere in the reports domain, adapters or screens — and
+matches those as **identifiers**, so the caution that warns against ranking is
+not itself flagged as ranking.
+
+### DL-108 · A chart that is not a table is a claim nobody can check
+
+**Status:** Settled (reaffirmed in TAB 19).
+
+The master command asks that every visualisation get summary text and a tabular
+equivalent, that charts not rely on hue alone, and that all chart claims be
+verifiable from tabular data.
+
+The `ChartTable` primitive built in TAB 06 already satisfies all three: it is a
+real `<table>` with a caption, a header row and one row per category, and the
+bar is an `aria-hidden` span that only repeats what the number beside it already
+says. TAB 19 **extends it rather than adding a charting library**.
+
+`ReportSeries.summary` is therefore required, not optional. A visualisation with
+no plain-text equivalent is one a screen reader cannot convey and a sighted
+reader cannot check, and an optional field is one that is eventually omitted.
+The summary names the largest row and its share — a claim somebody can verify
+against the row beneath it — rather than describing a shape.
+
+**Consequence:** `check:reports` fails the build on a `<canvas>` or `<svg>` in a
+report template, on a chart rendered without its summary bound, and on any
+charting dependency appearing in `package.json`. A chart plus a separate
+accessible table is two things that drift apart, and the table is what stops
+being updated.

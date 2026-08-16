@@ -96,7 +96,7 @@ npm run verify     # lint + typecheck + repository checks + test + build
 The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:vulnerability`, `check:case-audit`, `check:intake`, `check:programs`,
 `check:beneficiary`, `check:documents`, `check:referrals`, `check:visits`,
-`check:releases` and `check:work`. Each enforces a rule a comment
+`check:releases`, `check:work` and `check:reports`. Each enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 
@@ -338,6 +338,39 @@ those are easy to refuse as features and easy to acquire as an innocuous field.
 state means the office record has it, and a failed send says plainly that
 nothing was queued in the background. A worker who believes a visit was filed
 and returns to find it was not has been failed twice.
+
+### Reporting exposes as little as it can get away with
+
+Fourteen reports, thirteen of them **aggregate**. The fourteenth names people,
+and it has to argue for itself (`DL-104`): a stated
+`personLevelJustification`, the higher `report.export` permission rather than
+`report.view`, and a caution on screen. `reportProblems` refuses a definition
+that breaks any of those, and the catalogue is **data** like programme
+eligibility (`DL-66`) — no screen branches on a report id.
+
+**An aggregate is not automatically anonymous** (`DL-105`). "Barangay San Juan:
+1 VAWC survivor served" names somebody. Counts of people or households below
+`SMALL_CELL_THRESHOLD` are **withheld** — never dropped (a missing row reads as
+"none"), never rounded (that puts an untrue figure in a report), never a zero
+(an absence of service is the finding), and the drill-down goes with them. The
+**total is taken before suppression** and labelled, so a reader adding up the
+visible rows is not misled. The threshold is
+`convention-pending-confirmation` and says so, like the review windows
+(`DL-68`). Nothing anywhere can ask for the unsuppressed set.
+
+**An export carries its own conditions, inside the file** (`DL-106`): the
+report, the question, the filter in words, when and by whom, whether it names
+people, whether anything was withheld, and the RA 10173 handling rule. It is
+**composed by the data layer**, like a payout manifest (`DL-92`). A person-level
+export is warned about **before** the file exists.
+
+**Staff workload counts what people carry; it does not rank them** (`DL-107`).
+No rate, no score, no index, and rows ordered alphabetically — sorting by volume
+is what turns a workload table into a league table.
+
+**A chart that is not a table is a claim nobody can check** (`DL-108`).
+`ChartTable` already *is* a real table; TAB 19 extends it rather than adding a
+charting library, and `ReportSeries.summary` is required rather than optional.
 
 ### Three surfaces: what is owed, what happened, what is wrong
 

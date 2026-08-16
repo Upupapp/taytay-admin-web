@@ -1,0 +1,224 @@
+.report {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+}
+
+.report__back {
+  margin: var(--space-base) 0 0;
+}
+
+.report__heading {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.report__about,
+.filters,
+.series,
+.disclosure,
+.export {
+  padding: var(--space-base);
+}
+
+.report__question {
+  margin: var(--space-compact) 0 0;
+  font-size: 14px;
+}
+
+.report__conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-loose);
+  margin: var(--space-base) 0 0;
+}
+
+.report__conditions dt {
+  color: var(--c-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.report__conditions dd {
+  margin: var(--space-micro) 0 0;
+  font-size: 13px;
+}
+
+.report__coverage {
+  font-weight: 600;
+}
+
+/* What the numbers do not show, above the numbers. */
+.report__caution,
+.report__names {
+  margin: var(--space-base) 0 0;
+  padding: var(--space-snug) var(--space-base);
+  border-inline-start: 3px solid var(--c-border);
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  max-inline-size: 78ch;
+}
+
+.report__names {
+  border-inline-start-color: var(--c-danger, #a4262c);
+}
+
+.report__caution-heading,
+.report__names-heading {
+  display: block;
+  margin-block-end: var(--space-micro);
+  color: var(--c-text);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+
+.filters__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-base);
+  margin-block-start: var(--space-snug);
+}
+
+.filters__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+  min-inline-size: 180px;
+}
+
+.filters__label {
+  color: var(--c-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.filters__input {
+  padding: var(--space-compact) var(--space-snug);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-base);
+  background: var(--c-surface);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
+
+.series__withheld {
+  margin: 0 0 var(--space-base);
+  padding: var(--space-snug) var(--space-base);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-base);
+  font-size: 12.5px;
+  max-inline-size: 78ch;
+}
+
+.series__withheld-heading {
+  display: block;
+  margin-block-end: var(--space-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+
+.series__total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-snug);
+  margin: var(--space-base) 0 0;
+  padding-block-start: var(--space-snug);
+  border-block-start: 1px solid var(--c-border);
+  font-size: 13px;
+}
+
+.series__total-label {
+  font-weight: 700;
+}
+
+.series__total-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.series__total-hint {
+  color: var(--c-text-muted);
+  font-size: 12px;
+}
+
+.disclosure__basis {
+  margin: var(--space-compact) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  max-inline-size: 78ch;
+}
+
+.export__hint,
+.export__denied {
+  margin: var(--space-compact) 0 var(--space-snug);
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  max-inline-size: 78ch;
+}
+
+.export__warning {
+  margin: var(--space-snug) 0;
+  padding: var(--space-snug) var(--space-base);
+  border-inline-start: 3px solid var(--c-danger, #a4262c);
+  font-size: 12.5px;
+  max-inline-size: 78ch;
+}
+
+.export__warning-heading {
+  display: block;
+  margin-block-end: var(--space-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+
+.export__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-snug);
+  margin: 0;
+}
+
+.report__empty {
+  padding: var(--space-loose);
+  text-align: center;
+}
+
+.report__empty-heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.report__empty-message {
+  margin: var(--space-compact) 0 0;
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+/* Only the report prints — filters and the export panel are not part of it. */
+@media print {
+  .filters,
+  .export,
+  app-page-header {
+    display: none;
+  }
+
+  .report__about,
+  .series,
+  .disclosure {
+    border: none;
+    padding: 0;
+    margin-block-end: var(--space-base);
+  }
+}

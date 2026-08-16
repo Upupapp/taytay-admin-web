@@ -355,13 +355,23 @@ export const routes: Routes = [
       },
       {
         path: 'reports',
-        title: 'Reports — Taytay Social Welfare',
-        canActivate: [permissionGuard('report.view')],
-        ...placeholder({
-          title: 'Reports',
-          subtitle: 'Statutory and management reporting for the office.',
-          plannedIn: 'the reporting TAB',
-        }),
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            title: 'Reports — Taytay Social Welfare',
+            canActivate: [permissionGuard('report.view')],
+            loadComponent: () =>
+              import('@features/reports/report-hub-page').then((m) => m.ReportHubPage),
+          },
+          {
+            path: ':id',
+            title: 'Report — Taytay Social Welfare',
+            canActivate: [permissionGuard('report.view')],
+            loadComponent: () =>
+              import('@features/reports/report-view-page').then((m) => m.ReportViewPage),
+          },
+        ],
       },
       {
         path: 'administration',

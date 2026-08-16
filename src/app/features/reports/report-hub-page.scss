@@ -1,0 +1,87 @@
+.hub {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-loose);
+}
+
+.hub__notice {
+  margin: 0;
+  padding: var(--space-snug) var(--space-base);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-base);
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  max-inline-size: 78ch;
+}
+
+.hub__empty {
+  padding: var(--space-loose);
+  text-align: center;
+}
+
+.hub__empty-heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.hub__empty-message {
+  margin: var(--space-compact) 0 0;
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+.area__heading {
+  margin: 0 0 var(--space-snug);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.area__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-base);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-base);
+}
+
+.report-card__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.report-card__question {
+  margin: var(--space-compact) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+/* The one report that names people says so before it is opened. */
+.report-card__names {
+  margin: var(--space-snug) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12px;
+}
+
+.report-card__names-flag {
+  display: inline-block;
+  margin-inline-end: var(--space-micro);
+  padding: 1px 7px;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+
+.report-card__actions {
+  margin: var(--space-base) 0 0;
+}

@@ -1,0 +1,46 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+
+<div class="hub">
+  <!-- Said once, at the top, rather than repeated on every card. -->
+  <p class="hub__notice">{{ copy.aggregateNotice }}</p>
+
+  <app-async-content [state]="state()" [content]="hubContent" [skeletonLines]="6">
+    <ng-template #hubContent>
+      @if (!hasAny()) {
+        <div class="card hub__empty">
+          <h2 class="hub__empty-heading">{{ copy.emptyHeading }}</h2>
+          <p class="hub__empty-message">{{ copy.emptyMessage }}</p>
+        </div>
+      } @else {
+        @for (group of areas(); track group.area) {
+          <section class="area" [attr.aria-label]="group.label">
+            <h2 class="area__heading">{{ group.label }}</h2>
+            <ul class="area__list">
+              @for (report of group.reports; track report.id) {
+                <li class="card report-card">
+                  <h3 class="report-card__title">
+                    <a [routerLink]="['/reports', report.id]">{{ report.title }}</a>
+                  </h3>
+                  <!-- The question, not only the title: a report nobody can say
+                       the purpose of is one an office prints and never reads. -->
+                  <p class="report-card__question">{{ report.question }}</p>
+
+                  @if (report.grain === 'person-level') {
+                    <p class="report-card__names">
+                      <span class="report-card__names-flag">{{ copy.namesPeople }}</span>
+                      {{ copy.namesPeopleHint }}
+                    </p>
+                  }
+
+                  <p class="report-card__actions">
+                    <a class="btn" [routerLink]="['/reports', report.id]">{{ copy.open }}</a>
+                  </p>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      }
+    </ng-template>
+  </app-async-content>
+</div>

@@ -134,7 +134,14 @@ import {
   type StaffRepository,
   type StaffUser,
   type StaffUserId,
+  type ExportFormat,
   type OfficeAlert,
+  type ReportDefinition,
+  type ReportExport,
+  type ReportFilter,
+  type ReportId,
+  type ReportRepository,
+  type ReportResult,
   type TeamQueue,
   type WorkQueue,
   type WorkRepository,
@@ -410,6 +417,36 @@ export class HttpCaseRepository implements CaseRepository {
     return this.api.post<CaseWorkspace, { dueOn: IsoDate; reason: string }>(
       `${API_ENDPOINTS.cases}/${id}/tasks/${taskId}/schedule`,
       { dueOn, reason },
+    );
+  }
+}
+
+/**
+ * Reports over HTTP.
+ *
+ * Note what is absent: there is no parameter asking the server for
+ * unsuppressed figures, and no client-side aggregation. The server applies the
+ * same small-cell rule and composes the export file itself, so a screen never
+ * holds the raw set it would have to be trusted not to render (`DL-105`).
+ */
+@Injectable()
+export class HttpReportRepository implements ReportRepository {
+  private readonly api = inject(ApiClient);
+
+  catalogue(): Observable<readonly ReportDefinition[]> {
+    return this.api.collection<ReportDefinition>(API_ENDPOINTS.reports);
+  }
+
+  run(id: ReportId, filter: ReportFilter): Observable<ReportResult | null> {
+    return this.api.optionalItem<ReportResult>(
+      `${API_ENDPOINTS.reports}/${id}?${new URLSearchParams(toParams(filter)).toString()}`,
+    );
+  }
+
+  export(id: ReportId, filter: ReportFilter, format: ExportFormat): Observable<ReportExport> {
+    return this.api.post<ReportExport, { filter: ReportFilter; format: ExportFormat }>(
+      `${API_ENDPOINTS.reports}/${id}/export`,
+      { filter, format },
     );
   }
 }

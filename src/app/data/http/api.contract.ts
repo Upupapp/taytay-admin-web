@@ -60,6 +60,13 @@ export const API_ENDPOINTS = {
    * to that record's own endpoint (`DL-97`).
    */
   work: 'work',
+  /**
+   * Reports are computed server-side under the same aggregate-first and
+   * small-cell rules, and the export is composed there for the same reason it
+   * is composed here: a file that leaves the office must carry its own
+   * conditions (`DL-104`, `DL-105`, `DL-106`).
+   */
+  reports: 'reports',
 } as const;
 
 export function toPage<TItem>(response: ApiListResponse<TItem>): Page<TItem> {

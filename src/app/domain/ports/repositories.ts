@@ -1,6 +1,16 @@
 import { InjectionToken } from '@angular/core';
 import type { Observable } from 'rxjs';
 
+import type {
+  ReportDefinition,
+  ReportId,
+} from '../reports/report-definition';
+import type {
+  ExportFormat,
+  ReportExport,
+  ReportFilter,
+  ReportResult,
+} from '../reports/report-result';
 import type { OfficeAlert } from '../work/office-alert';
 import type { TeamQueue, WorkQueue } from '../work/work-queue';
 import type {
@@ -840,6 +850,36 @@ export interface WorkRepository {
 }
 
 export const WORK_REPOSITORY = new InjectionToken<WorkRepository>('WorkRepository');
+
+/**
+ * Reports.
+ *
+ * **The export is composed here, never by a screen.** Same reasoning as the
+ * payout manifest (`DL-92`) and the referral summary (`DL-82`): a file that
+ * leaves the office must carry its own conditions, and a template holding the
+ * fuller result is one binding away from writing a name into a spreadsheet the
+ * report was never meant to contain.
+ *
+ * `run` returns figures already suppressed for small cells (`DL-105`) and
+ * already carrying the applied filter in words. A caller cannot ask for the
+ * unsuppressed set: there is no parameter for it, because "just this once" is
+ * how a threshold stops being one.
+ */
+export interface ReportRepository {
+  /** The reports this user may open, in catalogue order. */
+  catalogue(): Observable<readonly ReportDefinition[]>;
+  run(id: ReportId, filter: ReportFilter): Observable<ReportResult | null>;
+  /**
+   * Composes a file.
+   *
+   * Requires `report.export`, and a person-level report requires that the
+   * caller has already been warned — the screen shows the warning, the adapter
+   * re-checks the permission (`DL-30`).
+   */
+  export(id: ReportId, filter: ReportFilter, format: ExportFormat): Observable<ReportExport>;
+}
+
+export const REPORT_REPOSITORY = new InjectionToken<ReportRepository>('ReportRepository');
 
 export interface DashboardRepository {
   /**

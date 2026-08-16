@@ -1,0 +1,160 @@
+<app-async-content [state]="state()" [content]="reportContent" [skeletonLines]="8">
+  <ng-template #reportContent let-result>
+    @if (result === null) {
+      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <p class="report__back"><a class="btn" routerLink="/reports">{{ copy.back }}</a></p>
+    } @else {
+      <app-page-header [title]="result.definition.title">
+        <a page-actions class="btn" routerLink="/reports">{{ copy.back }}</a>
+      </app-page-header>
+
+      <div class="report">
+        <section class="card report__about" aria-labelledby="about-heading">
+          <h2 class="report__heading" id="about-heading">{{ copy.question }}</h2>
+          <p class="report__question">{{ result.definition.question }}</p>
+
+          <!-- The conditions travel with the figures, on screen and in the
+               export. A number without them is a number nobody can check. -->
+          <dl class="report__conditions">
+            <div>
+              <dt>{{ copy.coverage }}</dt>
+              <dd class="report__coverage">{{ result.appliedFilterDescription }}</dd>
+            </div>
+            <div>
+              <dt>{{ copy.generated }}</dt>
+              <dd>{{ result.generatedAt | date: 'd MMM y, HH:mm' }}</dd>
+            </div>
+          </dl>
+
+          @if (result.caution) {
+            <!-- Above the numbers, not in a footnote: this is what they do not
+                 show, and a reader needs it before they read them. -->
+            <p class="report__caution">
+              <span class="report__caution-heading">{{ copy.cautionHeading }}</span>
+              {{ result.caution }}
+            </p>
+          }
+
+          @if (result.grain === 'person-level') {
+            <p class="report__names">
+              <span class="report__names-heading">{{ copy.namesPeopleHeading }}</span>
+              {{ personLevelWarning }}
+            </p>
+          }
+        </section>
+
+        <section class="card filters" aria-labelledby="filters-heading">
+          <h2 class="report__heading" id="filters-heading">{{ copy.filtersHeading }}</h2>
+          <div class="filters__row">
+            @if (result.definition.filters.period) {
+              <label class="filters__field">
+                <span class="filters__label">{{ copy.period }}</span>
+                <select class="filters__input" (change)="onPeriod($event)">
+                  @for (value of periods; track value) {
+                    <option [value]="value" [selected]="period() === value">
+                      {{ periodLabel(value) }}
+                    </option>
+                  }
+                </select>
+              </label>
+            }
+
+            @if (result.definition.filters.barangay) {
+              <label class="filters__field">
+                <span class="filters__label">{{ copy.barangay }}</span>
+                <select class="filters__input" (change)="onBarangay($event)">
+                  <option value="">{{ copy.allBarangays }}</option>
+                  @for (barangay of barangays; track barangay.id) {
+                    <option [value]="barangay.id" [selected]="barangayId() === barangay.id">
+                      {{ barangay.name }}
+                    </option>
+                  }
+                </select>
+              </label>
+            }
+
+            @if (hasFilters()) {
+              <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+            }
+          </div>
+        </section>
+
+        @if (populated(result).length === 0) {
+          <div class="card report__empty">
+            <h2 class="report__empty-heading">{{ copy.emptyHeading }}</h2>
+            <p class="report__empty-message">{{ copy.emptyMessage }}</p>
+          </div>
+        } @else {
+          @for (series of populated(result); track series.key) {
+            <section class="card series" [attr.aria-label]="series.title">
+              @if (series.suppressionNotice) {
+                <!-- Said above the table. A reader who does not know figures are
+                     missing will total the column and defend the answer. -->
+                <p class="series__withheld" role="note">
+                  <span class="series__withheld-heading">{{ copy.withheldHeading }}</span>
+                  {{ series.suppressionNotice }}
+                </p>
+              }
+
+              <!-- The chart IS the table. One artifact, so nothing drifts. -->
+              <app-chart-table
+                [caption]="series.title"
+                [summary]="series.summary"
+                [rows]="series.rows"
+                [labelHeader]="series.labelHeader"
+                [valueHeader]="series.valueHeader"
+              />
+
+              <p class="series__total">
+                <span class="series__total-label">{{ copy.total }}:</span>
+                <span class="series__total-value">{{ series.total }}</span>
+                <span class="series__total-hint">{{ copy.totalHint }}</span>
+              </p>
+            </section>
+          }
+
+          <section class="card disclosure" aria-labelledby="disclosure-heading">
+            <h2 class="report__heading" id="disclosure-heading">{{ copy.disclosureHeading }}</h2>
+            <p class="disclosure__basis">{{ result.disclosureBasis }}</p>
+          </section>
+        }
+
+        <section class="card export" aria-labelledby="export-heading">
+          <h2 class="report__heading" id="export-heading">{{ copy.exportHeading }}</h2>
+
+          @if (!canExport()) {
+            <p class="export__denied">{{ copy.noExportPermission }}</p>
+          } @else if (awaitingConfirmation()) {
+            <p class="export__warning" role="alert">
+              <span class="export__warning-heading">{{ copy.exportWarningHeading }}</span>
+              {{ personLevelWarning }}
+            </p>
+            <p class="export__actions">
+              <button
+                type="button"
+                class="btn btn--primary"
+                [disabled]="exporting()"
+                (click)="confirmExport(result)"
+              >
+                {{ copy.exportConfirm }}
+              </button>
+              <button type="button" class="btn" (click)="cancelExport()">
+                {{ copy.exportCancel }}
+              </button>
+            </p>
+          } @else {
+            <p class="export__hint">{{ copy.exportHint }}</p>
+            <button
+              type="button"
+              class="btn"
+              [disabled]="exporting()"
+              (click)="requestExport(result)"
+            >
+              {{ copy.exportCsv }}
+            </button>
+          }
+        </section>
+      </div>
+    }
+  </ng-template>
+</app-async-content>
