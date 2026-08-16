@@ -1,0 +1,120 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions *appHasPermission="'referral.view'" class="btn" routerLink="/referrals/providers">
+    {{ copy.directory }}
+  </a>
+</app-page-header>
+
+<div class="card referrals">
+  <div class="filters">
+    <label class="filters__field filters__field--wide">
+      <span class="filters__label">{{ copy.search }}</span>
+      <input
+        type="search"
+        class="filters__input"
+        [placeholder]="copy.searchPlaceholder"
+        [value]="searchText()"
+        aria-describedby="referral-search-hint"
+        (input)="onSearch($event)"
+      />
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.status }}</span>
+      <select class="filters__input" (change)="onStatus($event)">
+        <option value="" [selected]="!filter().status">{{ copy.allStatuses }}</option>
+        @for (status of statuses; track status) {
+          <option [value]="status" [selected]="filter().status === status">
+            {{ statusLabel(status) }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.destination }}</span>
+      <select class="filters__input" (change)="onDestination($event)">
+        <option value="" [selected]="!filter().destination">{{ copy.allDestinations }}</option>
+        @for (destination of destinations; track destination) {
+          <option [value]="destination" [selected]="filter().destination === destination">
+            {{ destinationLabel(destination) }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.urgency }}</span>
+      <select class="filters__input" (change)="onUrgency($event)">
+        <option value="" [selected]="!filter().urgency">{{ copy.allUrgencies }}</option>
+        @for (urgency of urgencies; track urgency) {
+          <option [value]="urgency" [selected]="filter().urgency === urgency">
+            {{ urgencyLabel(urgency) }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__check">
+      <input
+        type="checkbox"
+        [checked]="filter().overdueOnly === true"
+        (change)="onOverdueOnly($event)"
+      />
+      <span>{{ copy.overdueOnly }}</span>
+    </label>
+
+    <label class="filters__check">
+      <input type="checkbox" [checked]="filter().openOnly === true" (change)="onOpenOnly($event)" />
+      <span>{{ copy.openOnly }}</span>
+    </label>
+
+    @if (hasFilters()) {
+      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+    }
+  </div>
+
+  <p class="filters__hint" id="referral-search-hint">{{ copy.searchHint }}</p>
+
+  <app-data-table
+    [caption]="copy.caption"
+    [columns]="columns()"
+    [rows]="rows()"
+    [rowKey]="rowKey"
+    [loading]="isLoading()"
+    [page]="page()"
+    [sort]="sort()"
+    [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
+    [emptyHeading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
+    [emptyMessage]="hasFilters() ? copy.noResultsMessage : copy.emptyMessage"
+    [emptyActionLabel]="hasFilters() ? copy.clear : null"
+    (sortChanged)="onSortChanged($event)"
+    (pageChanged)="onPageChanged($event)"
+    (emptyActionSelected)="clearFilters()"
+  />
+</div>
+
+<ng-template #referenceCell let-referral>
+  <a class="referrals__reference" [routerLink]="detailLink(referral)">
+    {{ referral.referenceNumber }}
+  </a>
+  <span class="referrals__service">{{ referral.serviceRequested }}</span>
+</ng-template>
+
+<ng-template #statusCell let-referral>
+  <app-status-badge [catalog]="statusCatalog" [status]="referral.status" />
+</ng-template>
+
+<ng-template #followUpCell let-referral>
+  @if (referral.status === 'draft') {
+    <span class="referrals__muted">{{ copy.awaitingSend }}</span>
+  } @else if (referral.followUpOn) {
+    <span class="referrals__date">{{ referral.followUpOn }}</span>
+    <!-- Said in words, not by colour alone: an overdue row has to announce
+         itself to every reader (WCAG 1.4.1). -->
+    @if (isOverdue(referral)) {
+      <span class="referrals__overdue" [title]="copy.overdueHint">{{ copy.overdue }}</span>
+    }
+  } @else {
+    <span class="referrals__muted">{{ copy.noFollowUp }}</span>
+  }
+</ng-template>

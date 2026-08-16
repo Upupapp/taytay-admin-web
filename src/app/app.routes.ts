@@ -246,13 +246,34 @@ export const routes: Routes = [
       },
       {
         path: 'referrals',
-        title: 'Referrals — Taytay Social Welfare',
-        canActivate: [permissionGuard('referral.view')],
-        ...placeholder({
-          title: 'Referrals',
-          subtitle: 'Cases routed to partner offices, hospitals and national agencies.',
-          plannedIn: 'the referral TAB',
-        }),
+        // `providers` must precede `:id`, or the directory is read as a
+        // referral id and becomes unreachable.
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            title: 'Referrals — Taytay Social Welfare',
+            canActivate: [permissionGuard('referral.view')],
+            loadComponent: () =>
+              import('@features/referrals/referral-list-page').then((m) => m.ReferralListPage),
+          },
+          {
+            path: 'providers',
+            title: 'Service providers — Taytay Social Welfare',
+            canActivate: [permissionGuard('referral.view')],
+            loadComponent: () =>
+              import('@features/referrals/provider-directory-page').then(
+                (m) => m.ProviderDirectoryPage,
+              ),
+          },
+          {
+            path: ':id',
+            title: 'Referral — Taytay Social Welfare',
+            canActivate: [permissionGuard('referral.view')],
+            loadComponent: () =>
+              import('@features/referrals/referral-detail-page').then((m) => m.ReferralDetailPage),
+          },
+        ],
       },
       {
         path: 'reports',

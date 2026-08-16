@@ -2076,3 +2076,145 @@ classification that separation-of-duties checks depend on.
 permission matrix spec asserts the auditor is read-only, and it failed the moment
 the permission was added. A test asserting a property, rather than a snapshot of
 current values, is what made a naming heuristic's failure visible.
+
+### DL-80 · The offices we refer to are a directory, not a text field
+
+**Status:** Settled (implemented in TAB 15).
+
+`ServiceProvider` records the destinations the MSWDO refers into: what each
+office actually does, how to reach it, which channels it accepts, and how long
+it usually takes to answer.
+
+The failure this prevents shows up at a counter rather than in a database.
+"PhilHealth Rizal", "Philhealth - Rizal" and "PHIC Rizal" are three spellings of
+one office. Once they exist, an applicant asking whether anybody has heard back
+cannot be answered, and a report on referral outcomes counts one destination
+three ways — which is how an office concludes that a provider never responds
+when in fact two thirds of its referrals were filed under other names.
+
+Carrying `servicesOffered` is the second half: a referral sent to an office that
+does not do this work costs the family a trip they cannot afford.
+
+`suspended` and `retired` entries are **listed, not hidden**. A worker who
+cannot see that a shelter is full will keep sending families there, and a retired
+entry has to stay readable or the referrals attached to it stop making sense —
+the same reasoning that keeps a superseded document version (`DL-77`).
+
+**Consequence:** `providerProblems` refuses an entry with no channel, no way to
+reach it, or no stated service. A directory row that cannot be sent to is a
+name, and sending to it produces a referral nobody can follow up.
+
+### DL-81 · A referral cannot be sent without a lawful basis
+
+**Status:** Settled (implemented in TAB 15).
+
+`ReferralRepository.send` takes a `DisclosurePlan` and refuses without one. The
+plan carries a `DisclosureAuthority` — `client-consent`, `statutory-mandate` or
+`vital-interest` — with a **required note** saying what the client was told,
+which law applies, or what the risk was.
+
+The basis is a parameter of the sending rather than a field set earlier, and
+that is the whole design. Recording authority and transmitting are one act, so
+there is no window in which a referral sits authorised-but-unsent or, worse,
+sendable-but-unauthorised.
+
+Three bases rather than one because consent alone would be its own failure.
+Insisting on written agreement from somebody unconscious in an emergency room,
+or from a child at risk, would mean either not referring or lying about consent
+on the record. `vital-interest` requires the worker to say what the risk was,
+which is the honest version of what they would otherwise have written anyway.
+
+This is the Data Privacy Act's lawful-basis, minimisation and purpose-limitation
+duties (RA 10173) expressed as a function signature rather than a paragraph in a
+manual — the same move as `DL-77`'s access grant. **Not verified against the
+statute text in this offline run**; a TAB that turns on the precise wording of a
+basis should retrieve the IRR first.
+
+**Consequence:** the seed carries a referral in `draft` with `disclosure: null`,
+so the refusal is exercised by a record that reached that state honestly.
+
+### DL-82 · What leaves the building is chosen a field at a time
+
+**Status:** Settled (implemented in TAB 15).
+
+The referral summary is **composed** by `composeReferralSummary`, not laid out by
+a template. The minimum is the client's name, the reference number and the
+reason — enough for the receiving office to know who is coming and why.
+Everything else is a `SharedFieldChoice` with a required `because`.
+
+There is deliberately no "share full profile" switch. A single switch is ticked
+once and forgotten; naming each field makes each one a decision somebody made
+and can be asked about. `check:referrals` fails the build on a bulk share.
+
+Three details are load-bearing:
+
+- **A withheld field is omitted, not blanked.** A line reading "Address:
+  withheld" tells the reader there is an address worth hiding, which for a
+  protection case is itself the disclosure.
+- **A chosen field the record does not hold is skipped**, because an empty line
+  invites the receiving office to ask for it.
+- **The composer reads `ResidentView`**, so a field the sender was not cleared to
+  see is not there to share. The redaction is inherited from `DL-38` rather than
+  re-implemented, and the adapter additionally refuses to send extra fields when
+  the sender's own view was redacted.
+
+The sheet prints the basis it was shared on and a handling notice naming
+RA 10173 — so the receiving office knows the purpose limitation it holds the
+information under, rather than being left to assume there is none.
+
+**Consequence:** no referral screen may render a resident field directly, and
+`check:referrals` enforces it. The screen is handed a sheet already reduced; a
+page holding a fuller record is a page that will eventually print from it.
+
+### DL-83 · Overdue is derived, and moving the date is a recorded act
+
+**Status:** Settled (implemented in TAB 15).
+
+A referral is overdue when the office said it would chase by a date, that date
+has passed, and nobody has heard back. `isReferralOverdue` computes it; nothing
+stores it. A stored flag would need a nightly job to stay true and would be
+wrong every morning until it ran.
+
+The default follow-up date comes from urgency — 2, 7 or 14 days — and is offered
+rather than imposed, because a provider that answers in a day and one that
+answers in a month are both real and neither is described by a constant. The
+window is the office's own convention, recorded as `FOLLOW_UP_BASIS` and
+unconfirmed against a written issuance in this offline run.
+
+`reschedule` takes a **required reason and appends it as a note**. Moving a chase
+date quietly is precisely how an overdue referral stops being overdue without
+anybody acting on it — the queue goes green and the family is still waiting.
+
+Urgency is described in the domain as advisory to the receiving office and
+operational to us: it orders our queue and sets our own chase date, and confers
+no priority the MSWDO can actually grant over another office's work. The screens
+do not imply otherwise.
+
+**Consequence:** the queue is ordered overdue-first, then by urgency, then
+oldest — computed by `byReferralUrgency` rather than left to a sort dropdown,
+because the order the work is actually done in should not depend on which column
+somebody last clicked.
+
+### DL-84 · The referral adapter had no permission checks at all
+
+**Status:** Fixed in TAB 15.
+
+`MockReferralRepository.list` and `.getById` returned seeded referrals to **any
+caller, including an unauthenticated one**, with no barangay scoping. Every
+other adapter in this application opens with `denyUnless`; this one never did.
+
+It was not caught earlier because the `/referrals` route was a placeholder, so
+nothing reachable called it — the `check:access` detector reads routes and
+registration surfaces, and a repository nobody routes to has no surface to
+inspect. That is the same shape as `feedback_foundation_without_callers`: the
+hole was in a foundation whose call sites did not exist yet.
+
+A referral is not a low-value record. It names a client, a receiving office and a
+reason, which together disclose more than most single records here — that
+somebody is a VAWC survivor is inferable from the destination alone.
+
+**Consequence:** `check:referrals` now asserts that `list`, `forResident`,
+`queue` and `listProviders` each check permission and that the adapter applies
+barangay scope, so this cannot regress once the screens exist. The lesson
+generalises: an adapter written ahead of its screens should be audited when the
+screens land, because until then nothing exercises it.

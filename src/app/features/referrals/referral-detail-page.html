@@ -1,0 +1,295 @@
+<app-async-content [state]="state()" [content]="body" [skeletonLines]="8">
+  <ng-template #body let-referral>
+    @if (referral === null) {
+      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <p class="referral__back">
+        <a class="btn" routerLink="/referrals">{{ copy.back }}</a>
+      </p>
+    } @else {
+      <app-page-header
+        [title]="referral.referenceNumber"
+        [subtitle]="referral.destinationName"
+      >
+        <a page-actions class="btn" routerLink="/referrals">{{ copy.back }}</a>
+      </app-page-header>
+
+      <div class="referral">
+        <section class="card referral__panel" aria-labelledby="about-heading">
+          <h2 class="referral__heading" id="about-heading">{{ copy.aboutHeading }}</h2>
+
+          <p class="referral__status">
+            <app-status-badge [catalog]="statusCatalog" [status]="referral.status" />
+            <span class="referral__urgency">{{ urgencyLabel(referral) }}</span>
+            @if (isOverdue(referral)) {
+              <span class="referral__overdue">Overdue</span>
+            }
+          </p>
+
+          <dl class="facts">
+            <div class="facts__item">
+              <dt>{{ copy.service }}</dt>
+              <dd>{{ referral.serviceRequested }}</dd>
+            </div>
+            <div class="facts__item">
+              <dt>{{ copy.reason }}</dt>
+              <dd>{{ referral.reason }}</dd>
+            </div>
+            <div class="facts__item">
+              <dt>{{ copy.destination }}</dt>
+              <dd>{{ referral.destinationName }} ({{ destinationLabel(referral) }})</dd>
+            </div>
+            @if (referral.destinationContact) {
+              <div class="facts__item">
+                <dt>{{ copy.contact }}</dt>
+                <dd>{{ referral.destinationContact }}</dd>
+              </div>
+            }
+            <div class="facts__item">
+              <dt>{{ copy.referredOn }}</dt>
+              <dd>{{ referral.referredAt | date: 'd MMM y' }}</dd>
+            </div>
+            <div class="facts__item">
+              <dt>{{ copy.followUp }}</dt>
+              <dd>{{ referral.followUpOn ?? '—' }}</dd>
+            </div>
+            <div class="facts__item">
+              <dt>{{ copy.responded }}</dt>
+              <dd>
+                {{
+                  referral.respondedAt
+                    ? (referral.respondedAt | date: 'd MMM y')
+                    : copy.noResponse
+                }}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- What was shared, and on whose authority. Shown to staff in full so
+             the office can account for its own disclosure (DL-81). -->
+        <section class="card referral__panel" aria-labelledby="disclosure-heading">
+          <h2 class="referral__heading" id="disclosure-heading">{{ copy.disclosureHeading }}</h2>
+
+          @if (referral.disclosure === null) {
+            <p class="referral__empty">{{ copy.disclosureNone }}</p>
+          } @else {
+            <dl class="facts">
+              <div class="facts__item">
+                <dt>{{ copy.basis }}</dt>
+                <dd>{{ basisLabel(referral) }}</dd>
+              </div>
+              <div class="facts__item">
+                <dt>{{ copy.basisNote }}</dt>
+                <dd>{{ referral.disclosure.authority.note }}</dd>
+              </div>
+            </dl>
+
+            <h3 class="referral__subheading">{{ copy.sharedFields }}</h3>
+            @if (referral.disclosure.extraFields.length === 0) {
+              <p class="referral__empty">{{ copy.sharedNothingExtra }}</p>
+            } @else {
+              <ul class="shared">
+                @for (choice of referral.disclosure.extraFields; track choice.field) {
+                  <li class="shared__item">
+                    <span class="shared__field">{{ fieldLabel(choice) }}</span>
+                    <span class="shared__because">{{ copy.because }}: {{ choice.because }}</span>
+                  </li>
+                }
+              </ul>
+            }
+
+            @if (referral.disclosure.attachments.length > 0) {
+              <h3 class="referral__subheading">{{ copy.attachments }}</h3>
+              <ul class="shared">
+                @for (attachment of referral.disclosure.attachments; track attachment.documentId) {
+                  <li class="shared__item">
+                    <span class="shared__field">{{ attachment.label }}</span>
+                    <span class="shared__because">
+                      {{ copy.because }}: {{ attachment.because }}
+                    </span>
+                  </li>
+                }
+              </ul>
+            }
+          }
+        </section>
+
+        <!-- The sheet itself, exactly as the receiving office sees it. -->
+        <section class="card referral__panel referral__panel--wide" aria-labelledby="sheet-heading">
+          <div class="sheet__header">
+            <div>
+              <h2 class="referral__heading" id="sheet-heading">{{ copy.summaryHeading }}</h2>
+              <p class="referral__hint">{{ copy.summaryHint }}</p>
+            </div>
+            @if (summary()) {
+              <button type="button" class="btn" (click)="print()">{{ copy.print }}</button>
+            }
+          </div>
+
+          @if (summary(); as sheet) {
+            <article class="sheet">
+              <p class="sheet__line">
+                <span class="sheet__label">Reference</span>
+                <span class="sheet__value">{{ sheet.referenceNumber }}</span>
+              </p>
+              <p class="sheet__line">
+                <span class="sheet__label">To</span>
+                <span class="sheet__value">{{ sheet.destinationName }}</span>
+              </p>
+              <p class="sheet__line">
+                <span class="sheet__label">Service requested</span>
+                <span class="sheet__value">{{ sheet.serviceRequested }}</span>
+              </p>
+              <p class="sheet__line">
+                <span class="sheet__label">Reason</span>
+                <span class="sheet__value">{{ sheet.reason }}</span>
+              </p>
+
+              @for (line of sheet.lines; track line.label) {
+                <p class="sheet__line">
+                  <span class="sheet__label">{{ line.label }}</span>
+                  <span class="sheet__value">{{ line.value }}</span>
+                </p>
+              }
+
+              @if (sheet.attachmentLabels.length > 0) {
+                <p class="sheet__line">
+                  <span class="sheet__label">Attached</span>
+                  <span class="sheet__value">{{ sheet.attachmentLabels.join(', ') }}</span>
+                </p>
+              }
+
+              <p class="sheet__authority">{{ sheet.authorityStatement }}</p>
+              <p class="sheet__notice">{{ sheet.handlingNotice }}</p>
+            </article>
+          } @else {
+            <p class="referral__empty">{{ copy.summaryUnavailable }}</p>
+          }
+        </section>
+
+        <section class="card referral__panel" aria-labelledby="outcome-heading">
+          <h2 class="referral__heading" id="outcome-heading">{{ copy.outcomeHeading }}</h2>
+
+          @if (referral.outcome) {
+            <p class="referral__outcome">{{ referral.outcome }}</p>
+          } @else {
+            <p class="referral__empty">{{ copy.outcomeNone }}</p>
+          }
+
+          @if (canManage() && outcomeStatuses(referral).length > 0) {
+            <label class="field">
+              <span class="field__label">{{ copy.outcomeLabel }}</span>
+              <textarea
+                class="field__input"
+                rows="3"
+                [value]="outcomeText()"
+                [placeholder]="copy.outcomePlaceholder"
+                (input)="onOutcome($event)"
+              ></textarea>
+            </label>
+
+            <label class="field">
+              <span class="field__label">{{ copy.outcomeStatus }}</span>
+              <select class="field__input" (change)="onOutcomeStatus($event)">
+                @for (status of outcomeStatuses(referral); track status) {
+                  <option [value]="status" [selected]="outcomeStatus() === status">
+                    {{ statusCatalog[status].label }}
+                  </option>
+                }
+              </select>
+            </label>
+
+            <button
+              type="button"
+              class="btn btn--primary"
+              [disabled]="!canRecordOutcome()"
+              (click)="recordOutcome()"
+            >
+              {{ copy.saveOutcome }}
+            </button>
+          }
+        </section>
+
+        <section class="card referral__panel" aria-labelledby="notes-heading">
+          <h2 class="referral__heading" id="notes-heading">{{ copy.notesHeading }}</h2>
+
+          @if (referral.handoffNotes.length === 0) {
+            <p class="referral__empty">{{ copy.notesNone }}</p>
+          } @else {
+            <ol class="notes">
+              @for (note of referral.handoffNotes; track note.id) {
+                <li class="notes__item">
+                  <p class="notes__body">{{ note.body }}</p>
+                  <p class="notes__meta">
+                    {{ note.authorName }} ·
+                    <time [attr.datetime]="note.recordedAt">
+                      {{ note.recordedAt | date: 'd MMM y, HH:mm' }}
+                    </time>
+                  </p>
+                </li>
+              }
+            </ol>
+          }
+
+          @if (canManage()) {
+            <label class="field">
+              <span class="field__label">{{ copy.addNote }}</span>
+              <textarea
+                class="field__input"
+                rows="2"
+                [value]="noteText()"
+                [placeholder]="copy.notePlaceholder"
+                (input)="onNote($event)"
+              ></textarea>
+            </label>
+            <button
+              type="button"
+              class="btn"
+              [disabled]="!canAddNote()"
+              (click)="addNote()"
+            >
+              {{ copy.saveNote }}
+            </button>
+          }
+        </section>
+
+        @if (canManage() && referral.status !== 'draft') {
+          <section class="card referral__panel" aria-labelledby="reschedule-heading">
+            <h2 class="referral__heading" id="reschedule-heading">{{ copy.rescheduleHeading }}</h2>
+
+            <label class="field">
+              <span class="field__label">{{ copy.rescheduleDate }}</span>
+              <input
+                type="date"
+                class="field__input"
+                [value]="rescheduleDate()"
+                (change)="onRescheduleDate($event)"
+              />
+            </label>
+
+            <label class="field">
+              <span class="field__label">{{ copy.rescheduleReason }}</span>
+              <input
+                type="text"
+                class="field__input"
+                [value]="rescheduleReason()"
+                aria-describedby="reschedule-hint"
+                (input)="onRescheduleReason($event)"
+              />
+              <span class="field__hint" id="reschedule-hint">{{ copy.rescheduleReasonHint }}</span>
+            </label>
+
+            <button
+              type="button"
+              class="btn"
+              [disabled]="!canReschedule()"
+              (click)="reschedule()"
+            >
+              {{ copy.saveReschedule }}
+            </button>
+          </section>
+        }
+      </div>
+    }
+  </ng-template>
+</app-async-content>

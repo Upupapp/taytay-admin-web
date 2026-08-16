@@ -95,7 +95,7 @@ npm run verify     # lint + typecheck + repository checks + test + build
 
 The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:vulnerability`, `check:case-audit`, `check:intake`, `check:programs`,
-`check:beneficiary` and `check:documents`. Each enforces a rule a comment
+`check:beneficiary`, `check:documents` and `check:referrals`. Each enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 
@@ -292,6 +292,26 @@ eligibility engine, and the one where the temptation is strongest.
 opening a file is a separate grant (`document.download`) obtained through the
 data layer rather than a URL on the model — with a warning shown first, composed
 from what the server said rather than from a client-side guess.
+
+### A referral summary leaves the building
+
+Everything else here is read inside the office. A referral summary is handed to
+**another organisation**, and once it is printed or sent nothing can be taken
+back. So it is **composed, not laid out** (`DL-81`): the minimum is the client's
+name, the reference and the reason, and every field beyond that is chosen
+individually with a stated need (`DL-82`).
+
+**A referral cannot be sent without a lawful basis** — client consent, statutory
+mandate, or vital interest — recorded in the same act as the sending, so there
+is no window in which a sendable referral has none. `ReferralRepository.send`
+takes the disclosure plan as a parameter for exactly this reason.
+
+The sheet comes from `summaryFor`, never from a screen assembling one out of a
+fuller record it happens to hold. `npm run check:referrals` fails the build if a
+referral template renders a resident field directly.
+
+**Overdue is derived** from the follow-up date, never stored (`DL-83`): a stored
+flag needs a nightly job to stay true and is wrong every morning until it runs.
 
 ### Separation of duties
 

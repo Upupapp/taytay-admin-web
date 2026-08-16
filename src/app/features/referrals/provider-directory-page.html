@@ -1,0 +1,97 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions class="btn" routerLink="/referrals">{{ copy.back }}</a>
+</app-page-header>
+
+<div class="card directory">
+  <div class="filters">
+    <label class="filters__field filters__field--wide">
+      <span class="filters__label">{{ copy.search }}</span>
+      <input
+        type="search"
+        class="filters__input"
+        [placeholder]="copy.searchPlaceholder"
+        (input)="onSearch($event)"
+      />
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.status }}</span>
+      <select class="filters__input" (change)="onStatus($event)">
+        <option value="">{{ copy.allStatuses }}</option>
+        @for (value of statuses; track value) {
+          <option [value]="value">{{ statusLabel(value) }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <app-async-content [state]="state()" [content]="body" [skeletonLines]="6">
+    <ng-template #body>
+      @if (providers().length === 0) {
+        <div class="directory__empty">
+          <h2 class="directory__empty-heading">{{ copy.emptyHeading }}</h2>
+          <p class="directory__empty-message">{{ copy.emptyMessage }}</p>
+        </div>
+      } @else {
+        <ul class="providers">
+          @for (provider of providers(); track provider.id) {
+            <li class="providers__item">
+              <p class="providers__head">
+                <span class="providers__name">{{ provider.name }}</span>
+                <span class="providers__kind">{{ destinationLabel(provider) }}</span>
+              </p>
+
+              <!-- Said in words. A worker who cannot see that a shelter is full
+                   will keep sending families there. -->
+              @if (!accepting(provider)) {
+                <p class="providers__closed">
+                  {{ provider.status === 'retired' ? copy.retired : copy.notAccepting }}
+                </p>
+              }
+
+              <p class="providers__services">
+                <span class="providers__label">{{ copy.services }}</span>
+                {{ provider.servicesOffered.join(' · ') }}
+              </p>
+
+              <p class="providers__meta">
+                <span class="providers__label">{{ copy.channels }}</span>
+                @for (channel of provider.channels; track channel) {
+                  <span class="providers__chip">{{ channelLabel(channel) }}</span>
+                }
+              </p>
+
+              @if (provider.usualResponseDays !== null) {
+                <p class="providers__meta">
+                  <span class="providers__label">{{ copy.respondsIn }}</span>
+                  {{ provider.usualResponseDays }} {{ copy.days }}
+                </p>
+              }
+
+              <p class="providers__meta">
+                <span class="providers__label">{{ copy.contact }}</span>
+                @if (provider.contact.phone || provider.contact.email || provider.address) {
+                  <span>
+                    {{ provider.contact.position }}
+                    {{ provider.contact.phone }}
+                    {{ provider.contact.email }}
+                    {{ provider.address }}
+                  </span>
+                } @else {
+                  <span class="providers__muted">{{ copy.noContact }}</span>
+                }
+              </p>
+
+              @if (provider.notes) {
+                <p class="providers__notes">
+                  <span class="providers__label">{{ copy.notes }}</span>
+                  {{ provider.notes }}
+                </p>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </ng-template>
+  </app-async-content>
+</div>
