@@ -16,7 +16,26 @@ export type AuditAction =
   | 'exported'
   | 'deleted'
   | 'membership-changed'
-  | 'factor-corrected';
+  | 'factor-corrected'
+  /*
+   * Newsfeed and Events seams, named by the late-phase command.
+   *
+   * Added to the existing union rather than given their own, so the audit
+   * explorer, its filters and `DL-114`'s row/detail split apply to a published
+   * post exactly as they do to a resident record. A second action vocabulary
+   * would need a second explorer.
+   */
+  | 'published'
+  | 'scheduled'
+  | 'archived'
+  | 'pinned'
+  | 'unpinned'
+  | 'comment-hidden'
+  | 'comment-restored'
+  | 'comment-replied'
+  | 'cancelled'
+  | 'registration-changed'
+  | 'attendance-changed';
 
 /**
  * One immutable line of the audit trail. Required by RA 10173 accountability

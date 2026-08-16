@@ -46,6 +46,19 @@ export const AUDIT_ACTION_LABELS: Readonly<Record<AuditAction, string>> = {
   deleted: 'Removed',
   'membership-changed': 'Membership changed',
   'factor-corrected': 'Indicator corrected',
+  // Newsfeed and Events. Worded like the rest: what a person did, in the words
+  // an officer reading the trail would use.
+  published: 'Published',
+  scheduled: 'Scheduled',
+  archived: 'Archived',
+  pinned: 'Pinned',
+  unpinned: 'Unpinned',
+  'comment-hidden': 'Comment hidden',
+  'comment-restored': 'Comment restored',
+  'comment-replied': 'Replied to a comment',
+  cancelled: 'Cancelled',
+  'registration-changed': 'Registration changed',
+  'attendance-changed': 'Attendance changed',
 };
 
 /**

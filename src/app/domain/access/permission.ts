@@ -126,6 +126,47 @@ export const PERMISSIONS = [
    */
   'view.share',
 
+  /*
+   * Newsfeed and Events, added by the late-phase command.
+   *
+   * Extending this array rather than starting a second RBAC is the whole point
+   * of the guardrail TAB: `check:access` already holds every key against the
+   * office reference in `docs/access/permission-matrix.md`, and a parallel
+   * permission system would be invisible to it (`DL-122`).
+   *
+   * The command suggests `moderate_comments` and `view_insights` in snake_case.
+   * They are written here in the kebab-case every other key in this array uses,
+   * because "extend the existing model" governs the *shape* as well as the
+   * location — one array with two naming conventions is a model nobody can
+   * predict.
+   */
+  'newsfeed.view',
+  'newsfeed.create',
+  'newsfeed.edit',
+  // Publishing is held apart from editing throughout this application, and a
+  // post is the one artefact here that reaches residents directly.
+  'newsfeed.publish',
+  'newsfeed.schedule',
+  'newsfeed.archive',
+  'newsfeed.pin',
+  // Hiding somebody's comment is a disclosure decision about a resident's own
+  // words, not a formatting one.
+  'newsfeed.moderate-comments',
+  'newsfeed.view-insights',
+
+  'events.view',
+  'events.create',
+  'events.edit',
+  'events.publish',
+  'events.cancel',
+  'events.archive',
+  'events.manage-registrations',
+  // Held apart from managing them: a registration list names residents who
+  // said they would attend, and a file of it leaves the building (`DL-106`).
+  'events.export-registrations',
+  'events.mark-attendance',
+  'events.view-insights',
+
   'settings.manage',
 ] as const;
 
@@ -231,6 +272,29 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'audit.view',
       'staff.view',
       'view.share',
+      // The head is the office's publishing authority: a post or an event goes
+      // out in the MSWDO's name, and the command's "Newsfeed Manager" and
+      // "Events Manager" map onto the role that already answers for what the
+      // office says.
+      'newsfeed.view',
+      'newsfeed.create',
+      'newsfeed.edit',
+      'newsfeed.publish',
+      'newsfeed.schedule',
+      'newsfeed.archive',
+      'newsfeed.pin',
+      'newsfeed.moderate-comments',
+      'newsfeed.view-insights',
+      'events.view',
+      'events.create',
+      'events.edit',
+      'events.publish',
+      'events.cancel',
+      'events.archive',
+      'events.manage-registrations',
+      'events.export-registrations',
+      'events.mark-attendance',
+      'events.view-insights',
     ],
   },
   'social-worker': {
@@ -319,6 +383,12 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       // (`DL-114`).
       'audit.view-detail',
       'staff.view',
+      // Oversight of what the office published, and nothing that changes it.
+      // The command's "Read-only Executive" maps here rather than to a new role.
+      'newsfeed.view',
+      'newsfeed.view-insights',
+      'events.view',
+      'events.view-insights',
     ],
   },
 };

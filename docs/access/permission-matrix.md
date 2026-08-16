@@ -29,7 +29,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-49 permissions × 7 roles. `X` means the role holds the permission.
+68 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -83,6 +83,28 @@ self-registration), `DL-33` (accessible authentication).
 | `view.share`                      | X     | X    |     |        |      |      |       |
 | `settings.manage`                 | X     |      |     |        |      |      |       |
 
+<!-- Newsfeed and Events, added by the late-phase command (TAB 24). -->
+
+| `newsfeed.view`                    | X     | X     |       |       |       |       | X    |
+| `newsfeed.create`                  | X     | X     |       |       |       |       |      |
+| `newsfeed.edit`                    | X     | X     |       |       |       |       |      |
+| `newsfeed.publish`                 | X     | X     |       |       |       |       |      |
+| `newsfeed.schedule`                | X     | X     |       |       |       |       |      |
+| `newsfeed.archive`                 | X     | X     |       |       |       |       |      |
+| `newsfeed.pin`                     | X     | X     |       |       |       |       |      |
+| `newsfeed.moderate-comments`       | X     | X     |       |       |       |       |      |
+| `newsfeed.view-insights`           | X     | X     |       |       |       |       | X    |
+| `events.view`                      | X     | X     |       |       |       |       | X    |
+| `events.create`                    | X     | X     |       |       |       |       |      |
+| `events.edit`                      | X     | X     |       |       |       |       |      |
+| `events.publish`                   | X     | X     |       |       |       |       |      |
+| `events.cancel`                    | X     | X     |       |       |       |       |      |
+| `events.archive`                   | X     | X     |       |       |       |       |      |
+| `events.manage-registrations`      | X     | X     |       |       |       |       |      |
+| `events.export-registrations`      | X     | X     |       |       |       |       |      |
+| `events.mark-attendance`           | X     | X     |       |       |       |       |      |
+| `events.view-insights`             | X     | X     |       |       |       |       | X    |
+
 ---
 
 ## The three rows worth reading twice
@@ -96,6 +118,15 @@ test asserts it is empty, so this cannot regress quietly.
 **`staff.manage` and `settings.manage` are administrator-only.** The head can
 _see_ staff (`staff.view`) but cannot change roles. Whoever can grant permissions
 should not also be working cases with them.
+
+**Newsfeed and Events sit with the head, not with caseworkers.** A post or an
+event goes out in the MSWDO's name, so the command's suggested "Newsfeed
+Manager" and "Events Manager" map onto the role that already answers for what
+the office says (`DL-122`). A caseworker's remit is casework; nothing about it
+implies speaking for the municipality. The auditor holds the two `view` and two
+`view-insights` keys and nothing that changes anything — which is why
+`export-registrations` and both `view-insights` keys are classified read-only,
+or adding them would have turned oversight into a mutating role.
 
 **`audit.view-detail` is held by the auditor and not the head.** Reading the
 trail is oversight — did somebody record a reason, assign an owner, act in time?

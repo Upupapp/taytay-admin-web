@@ -1,5 +1,7 @@
 import type { Routes } from '@angular/router';
 
+import type { PlaceholderRouteData } from '@features/placeholder/feature-placeholder-page';
+
 import {
   anonymousOnlyGuard,
   authenticatedGuard,
@@ -14,11 +16,20 @@ import {
  *  - authenticated routes live under the `Shell`, unauthenticated ones do not;
  *  - a screen that a later TAB will build gets a placeholder, never a dead link.
  *
- * As of TAB 21 **there are no placeholder routes left**. Every entry below
- * loads a real screen. `FeaturePlaceholderPage` stays in the tree because the
- * rule it exists to serve still holds: a module planned for a later TAB gets a
- * placeholder rather than a dead link.
+ * Newsfeed and Events are placeholders again as of TAB 24: the late-phase
+ * command wires their scope and permissions before TABs 25 and 26 build the
+ * screens, and a nav entry pointing at nothing is the one thing this file has
+ * never allowed.
  */
+function placeholder(data: PlaceholderRouteData) {
+  return {
+    loadComponent: () =>
+      import('@features/placeholder/feature-placeholder-page').then(
+        (m) => m.FeaturePlaceholderPage,
+      ),
+    data,
+  };
+}
 
 export const routes: Routes = [
   {
@@ -354,6 +365,30 @@ export const routes: Routes = [
               import('@features/visits/visit-detail-page').then((m) => m.VisitDetailPage),
           },
         ],
+      },
+      {
+        // Newsfeed and Events arrive with the late-phase command. TAB 24 wires
+        // the scope, the permissions and the audit seams; TABs 25 and 26 build
+        // the screens. A placeholder rather than a dead link, which is the rule
+        // this routing file has followed since TAB 04.
+        path: 'newsfeed',
+        title: 'Newsfeed — Taytay Social Welfare',
+        canActivate: [permissionGuard('newsfeed.view')],
+        ...placeholder({
+          title: 'Newsfeed',
+          subtitle: 'Publishing, scheduling and comment moderation.',
+          plannedIn: 'the newsfeed management TAB',
+        }),
+      },
+      {
+        path: 'events',
+        title: 'Events — Taytay Social Welfare',
+        canActivate: [permissionGuard('events.view')],
+        ...placeholder({
+          title: 'Events',
+          subtitle: 'Municipal activities, registrations and attendance.',
+          plannedIn: 'the events management TAB',
+        }),
       },
       {
         path: 'reports',

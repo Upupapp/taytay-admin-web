@@ -55,6 +55,7 @@ export * from './residents/resident';
 export * from './reports/report-definition';
 export * from './reports/report-disclosure';
 export * from './reports/report-result';
+export * from './community/resident-contract';
 export * from './governance/audit-view';
 export * from './governance/correction-request';
 export * from './governance/data-classification';

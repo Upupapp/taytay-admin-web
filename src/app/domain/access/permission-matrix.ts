@@ -96,7 +96,12 @@ export const READ_ONLY_PERMISSIONS: readonly Permission[] = PERMISSIONS.filter(
     // and caught by the auditor read-only property test the same way
     // 'document.download' was in TAB 14 — a name-shape heuristic would have
     // called both of them mutations.
-    permission === 'audit.view-detail',
+    permission === 'audit.view-detail' ||
+    // Insights are a read. Exporting a registration list is a disclosure but
+    // not a change, exactly as `report.export` is classified above — which is
+    // what keeps the auditor a read-only role.
+    permission.endsWith('.view-insights') ||
+    permission === 'events.export-registrations',
 );
 
 /** Permissions that alter data, as opposed to merely reading it. */

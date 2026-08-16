@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify": "npm run lint && npm run typecheck && npm run check:brand && npm run check:shell && npm run check:access && npm run check:vulnerability && npm run check:case-audit && npm run check:intake && npm run check:programs && npm run check:beneficiary && npm run check:documents && npm run check:referrals && npm run check:visits && npm run check:releases && npm run check:work && npm run check:reports && npm run check:search && npm run check:governance && npm run check:hardening && npm test && npm run build",
+    "verify": "npm run lint && npm run typecheck && npm run check:brand && npm run check:shell && npm run check:access && npm run check:vulnerability && npm run check:case-audit && npm run check:intake && npm run check:programs && npm run check:beneficiary && npm run check:documents && npm run check:referrals && npm run check:visits && npm run check:releases && npm run check:work && npm run check:reports && npm run check:search && npm run check:governance && npm run check:hardening && npm run check:community && npm test && npm run build",
     "check:brand": "node tools/check-brand-assets.mjs",
     "check:shell": "node tools/check-shell-a11y.mjs",
     "check:access": "node tools/check-access.mjs",
@@ -28,7 +28,8 @@
     "check:reports": "node tools/check-reports.mjs",
     "check:search": "node tools/check-search.mjs",
     "check:governance": "node tools/check-governance.mjs",
-    "check:hardening": "node tools/check-hardening.mjs"
+    "check:hardening": "node tools/check-hardening.mjs",
+    "check:community": "node tools/check-community.mjs"
   },
   "private": true,
   "packageManager": "npm@11.12.1",

@@ -97,7 +97,8 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:vulnerability`, `check:case-audit`, `check:intake`, `check:programs`,
 `check:beneficiary`, `check:documents`, `check:referrals`, `check:visits`,
 `check:releases`, `check:work`, `check:reports`, `check:search` and
-`check:governance` and `check:hardening`. Each enforces a rule a comment
+`check:governance`, `check:hardening` and `check:community`. Each enforces a
+rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 
@@ -339,6 +340,28 @@ those are easy to refuse as features and easy to acquire as an innocuous field.
 state means the office record has it, and a failed send says plainly that
 nothing was queued in the background. A worker who believes a visit was filed
 and returns to find it was not has been failed twice.
+
+### Newsfeed and Events extend what exists; residents never publish
+
+Nineteen keys join the **existing** `PERMISSIONS` array — there is no second
+RBAC, because `check:access` generates the office reference from that array and
+would not see one (`DL-122`). They are kebab-case like every other key, and the
+audit seams extend `AuditAction` for the same reason: a second vocabulary would
+need a second explorer.
+
+Roles were **mapped, not invented**. Publishing and moderation sit with the
+MSWDO head, because a post goes out in the office's name; the auditor holds only
+`view` and `view-insights`; caseworkers hold neither module.
+`events.export-registrations` and both `view-insights` keys are classified
+**read-only**, or the auditor silently becomes a mutating role.
+
+**The resident contract is types only** (`DL-123`). No resident component, route
+or template exists in this repository. A resident may read and respond — view,
+react, comment, share, register. A resident may **never** publish, moderate, see
+a registration list or mark attendance: the municipality speaks in its own name
+and residents answer. `ResidentPostView` names the office rather than the member
+of staff; `ResidentEventView` reports places left rather than how many
+neighbours signed up.
 
 ### Degraded connection: warn, never queue
 

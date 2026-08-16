@@ -3248,3 +3248,86 @@ account with no barangay. Asserting non-emptiness first turned a vacuous pass
 into a real check, and into a second test worth having: **an account scoped to
 its own barangay with no barangay set sees nothing**, which is the fail-closed
 reading of a misconfiguration.
+
+### DL-122 · Newsfeed and Events extend the one permission model
+
+**Status:** Settled (implemented in TAB 24).
+
+The late-phase command adds two modules and says, in as many words, to extend
+the existing centralised permission model and not create a second RBAC. That is
+easy to agree with and easy to drift from: a new module arrives with its own
+notion of who may do what, and a year later the office has two answers to the
+same question.
+
+So nineteen keys join the existing `PERMISSIONS` array — nine for Newsfeed, ten
+for Events — and nothing else changes about how permission works. That matters
+concretely: `check:access` generates its comparison from that array and has
+**twice** caught a permission missing from `docs/access/permission-matrix.md`,
+in TABs 20 and 21. A parallel array would be invisible to it.
+
+**The keys are written in kebab-case**, not the snake_case the command
+suggests. The command's own instruction governs: extending the existing model
+means extending its *shape* as well as its location, and one array holding both
+`newsfeed.moderate_comments` and `request.view-sensitive` is a model nobody can
+predict from memory.
+
+**Roles were mapped, not invented.** The command lists example roles — Newsfeed
+Manager, Events Manager, Read-only Executive — and says to map them *only if
+compatible with roles already built*. They are:
+
+- the **MSWDO head** takes publishing and moderation, because a post goes out in
+  the office's name and that role already answers for what the office says;
+- the **auditor** takes the two `view` and two `view-insights` keys and nothing
+  that changes anything;
+- **caseworkers, intake and disbursement officers take neither module.** Nothing
+  about casework implies speaking for the municipality.
+
+`events.export-registrations` and both `view-insights` keys are classified
+**read-only**. Exporting discloses but does not change, exactly as `report.export`
+is classified — and getting this wrong would have quietly turned the auditor
+into a mutating role, which is the same trap `document.download` set in TAB 14
+and `audit.view-detail` set in TAB 21.
+
+**Consequence:** the audit seams extend `AuditAction` for the same reason. A
+second action vocabulary would need a second explorer, and `DL-114`'s row/detail
+split would not apply to a published post.
+
+### DL-123 · The resident contract is written down and never implemented
+
+**Status:** Settled (implemented in TAB 24).
+
+The command permits the admin portal to define typed interfaces describing what
+the separate resident mobile app consumes, and forbids implementing that app.
+Both halves are honoured: `domain/community/resident-contract.ts` is types only,
+and `check:community` fails the build on a component, a template, a stylesheet
+or a resident feature folder.
+
+Writing the contract down is still worth doing. The resident app is built by
+another team against the same backend, and the boundary is easiest to state
+while the admin side is being designed — not afterwards, when the two have each
+assumed something different about who may post.
+
+**The boundary is an asymmetry.** A resident may **read and respond**: view a
+published post, react, comment, share, view a published event, register. A
+resident may never **publish** — create or edit a post, schedule, pin, archive,
+moderate somebody else's comment, create or cancel an event, see a registration
+list, or mark attendance.
+
+That asymmetry is the whole contract. The municipality speaks in its own name;
+residents answer. A resident capability that could publish would let somebody
+post under the MSWDO's masthead, which is a different kind of harm from any this
+application otherwise guards against.
+
+`RESIDENT_MUST_NEVER` names every admin key that is refused, even though the
+capability list is already an allow-list. The redundancy is deliberate: an edit
+that adds `newsfeed.publish` to the capabilities has to **delete a line that
+says why not**, rather than quietly widen a union.
+
+Two shapes carry the same reasoning further:
+
+- `ResidentPostView` names the **office**, never the member of staff who pressed
+  publish. A resident sees the MSWDO, not that Grace Ocampo posted at 4pm.
+- `ResidentEventView` reports `capacityRemaining` and **not** a registration
+  count. A resident deciding whether to attend does not need to know how many
+  neighbours already have, and in a municipality this size a low count on a
+  sensitive service is disclosive.
