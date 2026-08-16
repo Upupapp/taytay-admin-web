@@ -2,7 +2,7 @@
 
 Compact state for resuming this build. Not a transcript. The authoritative
 records are `CLAUDE.md` (the constitution), `docs/reference-audit/decision-log.md`
-(DL-01..DL-79) and the git history.
+(DL-01..DL-84) and the git history.
 
 ## Master Command
 
@@ -17,10 +17,10 @@ intent through the audit in `docs/reference-audit/`.
 
 ## Where the build is
 
-- **Completed and certified:** TABs 01–14.
-- **Current:** TAB 15 — Referrals, Service Providers & Inter-Office Coordination.
-- **Remaining:** 16–23 (field visits, releases, tasks, reports, search,
-  users/audit, hardening, QA), then 24–26 (Newsfeed, Events).
+- **Completed and certified:** TABs 01–15.
+- **Current:** TAB 16 — Field Visits, Case Notes & Follow-Up.
+- **Remaining:** 17–23 (releases, tasks, reports, search, users/audit,
+  hardening, QA), then 24–26 (Newsfeed, Events).
 
 ## Architecture
 
@@ -46,7 +46,7 @@ are handed.
 
 ## Non-negotiables carried by build checkers
 
-`npm run verify` = lint + typecheck + 10 checkers + 944 tests + build. Each
+`npm run verify` = lint + typecheck + 11 checkers + 991 tests + build. Each
 checker was validated against planted regressions. Do not weaken one to pass.
 
 | Checker | Refuses |
@@ -60,6 +60,7 @@ checker was validated against planted regressions. Do not weaken one to pass.
 | `check:programs` | a component branching on a programme code; a national programme recorded as one the municipality runs |
 | `check:beneficiary` | a `BeneficiaryId`; any merge or delete of a person; a match signal carrying a value; a stored standing flag |
 | `check:documents` | removing a document version; an unexplained replacement; a raw document number in a template; a decision-shaped completion field |
+| `check:referrals` | sending without a lawful basis; a bulk share; a resident field on a referral screen; a stored overdue flag; an ungated adapter read |
 
 ## Doctrines that constrain every later TAB
 
@@ -100,31 +101,51 @@ checker was validated against planted regressions. Do not weaken one to pass.
 - **Document requests are callable but not composed from the UI.**
 - **`redactedForSharing` is a flag**, not a renderer — the redacted copy is
   backend work.
+- **No create-referral screen.** `createDraft`/`send` are built and tested; the
+  form that composes a referral and its disclosure plan is not. (`DL-81`)
+- **Referral attachments are modelled but not attachable** to the TAB 14
+  document store. (`DL-82`)
+
+## A recurring defect worth naming
+
+**A file-wide string search in a checker passes when the string survives
+elsewhere in the same file.** This has now bitten three times — a problem code
+still present in a type union, a state still present in a comparison, a statute
+still present in a doc comment — each time letting a deleted rule report clean.
+**Scope every checker assertion to the declaration it is about** (the interface
+block, the function body, the constant), not to the file.
+
+Two related traps: the repo checks out **CRLF**, so a plant or check anchored on
+a literal `\n` matches nothing and reports "stale" rather than failing; and a
+detector that has only ever reported clean has not been tested, so plant
+regressions before trusting one.
 
 ## Next action
 
-Begin TAB 15 — Referrals, Service Providers & Inter-Office Coordination. Inspect
-what exists first: `domain/referrals/referral.ts` already holds `Referral`,
-`ReferralDestination` and `ReferralStatus` with a catalog, `ReferralRepository`
-already offers `list`/`getById`, seeds exist in `referrals.seed.ts`, and the
-`/referrals` route is still a placeholder. **Extend that model; do not start a
-second one.**
+Begin TAB 16 — Field Visits, Case Notes & Follow-Up. Inspect what exists first:
+`domain/cases/case-note.ts` already holds the two-tier note model with the
+protected tier withheld in the data layer (`DL-58`), `case-task.ts` holds the
+next-action model (`DL-55`), and `CaseRepository` already offers `addNote`,
+`addTask` and `completeTask`. **Field visits attach to that; they do not start a
+second task or note system.**
 
-The tab's load-bearing constraints, in order of how easily they are lost:
+The tab's load-bearing constraints:
 
-1. **Minimum necessary disclosure.** A referral summary leaves the building. It
-   shows only what the receiving office needs, and sensitive attachments are
-   opt-in and permission-gated. `DL-77`'s access grant is the pattern to reuse.
-2. **Every referral traces to a case or client**, and overdue ones surface in
-   work queues — which means the queue shape from TAB 10 rather than a new one.
-3. **Status compatibility.** Referral statuses map onto the universal vocabulary
-   rather than fragmenting it; the existing `ReferralStatus` catalog already
-   does this and should not be widened casually.
-4. Outcome capture is a recorded act with a reason, like every other mutation
-   here (`DL-54`).
+1. **This must not become a surveillance product.** The master command is
+   explicit: no continuous location tracking, no covert tracking, no geofencing
+   of clients, no background surveillance. If visit coordinates are ever
+   captured, it is explicit, purpose-limited and permission-aware. Expect the
+   checker to enforce the absence.
+2. **Distinguish factual observation, client statement and caseworker
+   assessment.** Three different kinds of claim, and collapsing them is how an
+   inference ends up read as something the family said.
+3. **Offline/degraded-friendly drafts** without promising transactional
+   integrity there is no backend for (`DL-22` on false success).
+4. Photos and attachments only when necessary and consented — reuse the TAB 14
+   document grant rather than inventing a second path.
 
 ## Git
 
 - Branch `main`, no remote configured. **Never push.**
-- HEAD at TAB 14 certification: `a07d929`.
+- HEAD at TAB 15 certification: `b4e1a15`.
 - Working tree clean.
