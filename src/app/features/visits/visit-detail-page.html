@@ -1,0 +1,254 @@
+<app-async-content [state]="state()" [content]="visitContent" [skeletonLines]="8">
+  <ng-template #visitContent let-visit>
+    @if (visit === null) {
+      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <p class="visit__back"><a class="btn" routerLink="/visits">{{ copy.back }}</a></p>
+    } @else {
+      <app-page-header [title]="visit.referenceNumber" [subtitle]="visit.addressVisited">
+        <a page-actions class="btn" routerLink="/visits">{{ copy.back }}</a>
+      </app-page-header>
+
+      <div class="visit">
+        <section class="card visit__panel" aria-labelledby="about-heading">
+          <h2 class="visit__heading" id="about-heading">{{ copy.aboutHeading }}</h2>
+          <p class="visit__status">
+            <app-status-badge [catalog]="statusCatalog" [status]="visit.status" />
+            <span class="visit__purpose">{{ purposeLabel(visit) }}</span>
+          </p>
+
+          <dl class="facts">
+            <div class="facts__item">
+              <dt>{{ copy.scheduled }}</dt>
+              <dd>{{ visit.scheduledFor }}</dd>
+            </div>
+            @if (visit.scheduledWindow) {
+              <div class="facts__item">
+                <dt>{{ copy.window }}</dt>
+                <dd>{{ visit.scheduledWindow }}</dd>
+              </div>
+            }
+            <div class="facts__item">
+              <dt>{{ copy.address }}</dt>
+              <dd>{{ visit.addressVisited }}</dd>
+            </div>
+            @if (visit.completedAt) {
+              <div class="facts__item">
+                <dt>{{ copy.completedAt }}</dt>
+                <dd>{{ visit.completedAt | date: 'd MMM y' }}</dd>
+              </div>
+            }
+          </dl>
+
+          @if (visit.outcome) {
+            <p class="visit__outcome">{{ visit.outcome }}</p>
+          }
+          @if (visit.declinedReason) {
+            <p class="visit__declined">
+              <span class="visit__term">{{ copy.declinedReason }}:</span>
+              {{ visit.declinedReason }}
+            </p>
+          }
+          @if (visit.serviceNeeds) {
+            <p class="visit__needs">
+              <span class="visit__term">{{ copy.serviceNeeds }}:</span>
+              {{ visit.serviceNeeds }}
+            </p>
+          }
+        </section>
+
+        <section class="card visit__panel" aria-labelledby="checklist-heading">
+          <h2 class="visit__heading" id="checklist-heading">{{ copy.checklistHeading }}</h2>
+          <p class="visit__hint">{{ copy.checklistHint }}</p>
+
+          @if (visit.checklist.length === 0) {
+            <p class="visit__empty">{{ copy.checklistNone }}</p>
+          } @else {
+            <ul class="checklist">
+              @for (item of visit.checklist; track item.code) {
+                <li class="checklist__item">
+                  <label class="checklist__label">
+                    <input
+                      type="checkbox"
+                      [checked]="checked(item.code)"
+                      [disabled]="!canManage() || !isOpen()"
+                      (change)="onTick(item.code, $event)"
+                    />
+                    <span>{{ item.label }}</span>
+                  </label>
+                  @if (item.note) {
+                    <p class="checklist__note">{{ item.note }}</p>
+                  }
+                </li>
+              }
+            </ul>
+
+            @if (canManage() && isOpen()) {
+              <button type="button" class="btn" (click)="saveChecklist()">
+                {{ copy.saveChecklist }}
+              </button>
+            }
+          }
+        </section>
+
+        <section class="card visit__panel visit__panel--wide" aria-labelledby="found-heading">
+          <h2 class="visit__heading" id="found-heading">{{ copy.observationsHeading }}</h2>
+          <p class="visit__hint">{{ copy.observationsHint }}</p>
+
+          <!-- Surfaced, not blocked: a file built only of assessments is the
+               shape that hardens into a label. -->
+          @if (allJudgement()) {
+            <p class="visit__warning" role="status">{{ copy.allJudgementWarning }}</p>
+          }
+
+          @if (visit.observations.length === 0) {
+            <p class="visit__empty">{{ copy.observationsNone }}</p>
+          } @else {
+            <ol class="observations">
+              @for (entry of visit.observations; track entry.id) {
+                <li class="observations__item" [attr.data-kind]="entry.kind">
+                  <p class="observations__kind">{{ observationLabel(entry) }}</p>
+                  <p class="observations__body">{{ entry.body }}</p>
+                  <p class="observations__meta">
+                    @if (entry.attributedTo) {
+                      <span class="observations__who">
+                        {{ copy.attributedTo }}: {{ entry.attributedTo }}
+                      </span>
+                    }
+                    <time [attr.datetime]="entry.recordedAt">
+                      {{ entry.recordedAt | date: 'd MMM y, HH:mm' }}
+                    </time>
+                  </p>
+                </li>
+              }
+            </ol>
+          }
+
+          @if (canManage() && isOpen()) {
+            <h3 class="visit__subheading">{{ copy.addObservationHeading }}</h3>
+
+            <!-- The kind is the first choice, not a detail at the end: a worker
+                 who has already written a paragraph will not reclassify it. -->
+            <fieldset class="kinds">
+              <legend class="field__label">{{ copy.kind }}</legend>
+              @for (value of kinds; track value) {
+                <label class="kinds__option">
+                  <input
+                    type="radio"
+                    name="observation-kind"
+                    [value]="value"
+                    [checked]="kind() === value"
+                    (change)="onKind(value)"
+                  />
+                  <span>
+                    <span class="kinds__label">{{ kindLabel(value) }}</span>
+                    <span class="kinds__hint">{{ kindDescription(value) }}</span>
+                  </span>
+                </label>
+              }
+            </fieldset>
+
+            @if (needsWho()) {
+              <label class="field">
+                <span class="field__label">{{ copy.attribution }}</span>
+                <input
+                  type="text"
+                  class="field__input"
+                  [value]="attribution()"
+                  aria-describedby="attribution-hint"
+                  (input)="onAttribution($event)"
+                />
+                <span class="field__hint" id="attribution-hint">{{ copy.attributionHint }}</span>
+              </label>
+            }
+
+            <label class="field">
+              <span class="field__label">{{ copy.body }}</span>
+              <textarea
+                class="field__input"
+                rows="3"
+                [value]="body()"
+                [placeholder]="copy.bodyPlaceholder"
+                (input)="onBody($event)"
+              ></textarea>
+            </label>
+
+            <button
+              type="button"
+              class="btn btn--primary"
+              [disabled]="!canAddObservation()"
+              (click)="addObservation()"
+            >
+              {{ copy.addObservation }}
+            </button>
+          }
+        </section>
+
+        @if (canManage() && isOpen()) {
+          <section class="card visit__panel" aria-labelledby="close-heading">
+            <h2 class="visit__heading" id="close-heading">{{ copy.outcomeHeading }}</h2>
+            <p class="visit__hint">{{ copy.outcomeHint }}</p>
+
+            <label class="field">
+              <span class="field__label">{{ copy.outcomeStatus }}</span>
+              <select class="field__input" (change)="onOutcomeStatus($event)">
+                @for (value of closingStatuses; track value) {
+                  <option [value]="value" [selected]="outcomeStatus() === value">
+                    {{ statusCatalog[value].label }}
+                  </option>
+                }
+              </select>
+            </label>
+
+            @if (isRefusal()) {
+              <label class="field">
+                <span class="field__label">{{ copy.declinedReason }}</span>
+                <textarea
+                  class="field__input"
+                  rows="2"
+                  [value]="declinedReason()"
+                  aria-describedby="declined-hint"
+                  (input)="onDeclinedReason($event)"
+                ></textarea>
+                <span class="field__hint" id="declined-hint">{{ copy.declinedReasonHint }}</span>
+              </label>
+            }
+
+            <label class="field">
+              <span class="field__label">{{ copy.outcomeText }}</span>
+              <textarea
+                class="field__input"
+                rows="3"
+                [value]="outcomeText()"
+                [placeholder]="copy.outcomePlaceholder"
+                (input)="onOutcomeText($event)"
+              ></textarea>
+            </label>
+
+            <label class="field">
+              <span class="field__label">{{ copy.serviceNeeds }}</span>
+              <textarea
+                class="field__input"
+                rows="2"
+                [value]="serviceNeeds()"
+                (input)="onServiceNeeds($event)"
+              ></textarea>
+            </label>
+
+            <button
+              type="button"
+              class="btn btn--primary"
+              [disabled]="!canClose()"
+              (click)="closeVisit()"
+            >
+              {{ copy.close }}
+            </button>
+          </section>
+        } @else if (!isOpen()) {
+          <section class="card visit__panel">
+            <p class="visit__empty">{{ copy.alreadyClosed }}</p>
+          </section>
+        }
+      </div>
+    }
+  </ng-template>
+</app-async-content>

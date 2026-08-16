@@ -1,0 +1,142 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+
+<div class="card visits">
+  <div class="scope" role="group" aria-label="Whose visits">
+    <button
+      type="button"
+      class="scope__button"
+      [class.scope__button--on]="onlyMine()"
+      [attr.aria-pressed]="onlyMine()"
+      (click)="onScope(true)"
+    >
+      {{ copy.mine }}
+    </button>
+    <button
+      type="button"
+      class="scope__button"
+      [class.scope__button--on]="!onlyMine()"
+      [attr.aria-pressed]="!onlyMine()"
+      (click)="onScope(false)"
+    >
+      {{ copy.all }}
+    </button>
+  </div>
+
+  <div class="filters">
+    <label class="filters__field filters__field--wide">
+      <span class="filters__label">{{ copy.search }}</span>
+      <input
+        type="search"
+        class="filters__input"
+        [placeholder]="copy.searchPlaceholder"
+        (input)="onSearch($event)"
+      />
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.status }}</span>
+      <select class="filters__input" (change)="onStatus($event)">
+        <option value="">{{ copy.allStatuses }}</option>
+        @for (value of statuses; track value) {
+          <option [value]="value">{{ statusLabel(value) }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.purpose }}</span>
+      <select class="filters__input" (change)="onPurpose($event)">
+        <option value="">{{ copy.allPurposes }}</option>
+        @for (value of purposes; track value) {
+          <option [value]="value">{{ purposeLabel(value) }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__check">
+      <input type="checkbox" [checked]="overdueOnly()" (change)="onOverdueOnly($event)" />
+      <span>{{ copy.overdueOnly }}</span>
+    </label>
+
+    @if (hasFilters()) {
+      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+    }
+  </div>
+
+  <app-async-content [state]="state()" [content]="body" [skeletonLines]="6">
+    <ng-template #body>
+      @if (!hasAny()) {
+        <div class="visits__empty">
+          <h2 class="visits__empty-heading">
+            {{ hasFilters() ? copy.noResultsHeading : copy.emptyHeading }}
+          </h2>
+          <p class="visits__empty-message">
+            {{ hasFilters() ? copy.noResultsMessage : copy.emptyMessage }}
+          </p>
+        </div>
+      } @else {
+        <!-- Overdue first. The heading says the office is late, not the family. -->
+        @if (overdue().length > 0) {
+          <section class="bucket bucket--overdue" aria-labelledby="overdue-heading">
+            <h2 class="bucket__heading" id="overdue-heading">
+              {{ copy.overdue }}
+              <span class="bucket__count">{{ overdue().length }}</span>
+            </h2>
+            <p class="bucket__hint">{{ copy.overdueHint }}</p>
+            <ng-container [ngTemplateOutlet]="rows" [ngTemplateOutletContext]="{ $implicit: overdue() }" />
+          </section>
+        }
+
+        @if (dueToday().length > 0) {
+          <section class="bucket" aria-labelledby="today-heading">
+            <h2 class="bucket__heading" id="today-heading">
+              {{ copy.dueToday }}
+              <span class="bucket__count">{{ dueToday().length }}</span>
+            </h2>
+            <ng-container [ngTemplateOutlet]="rows" [ngTemplateOutletContext]="{ $implicit: dueToday() }" />
+          </section>
+        }
+
+        @if (upcoming().length > 0) {
+          <section class="bucket" aria-labelledby="upcoming-heading">
+            <h2 class="bucket__heading" id="upcoming-heading">
+              {{ copy.upcoming }}
+              <span class="bucket__count">{{ upcoming().length }}</span>
+            </h2>
+            <ng-container [ngTemplateOutlet]="rows" [ngTemplateOutletContext]="{ $implicit: upcoming() }" />
+          </section>
+        }
+
+        @for (day of closedByDay(); track day.date) {
+          <section class="bucket" [attr.aria-label]="day.date">
+            <h2 class="bucket__heading">{{ day.date }}</h2>
+            <ng-container [ngTemplateOutlet]="rows" [ngTemplateOutletContext]="{ $implicit: day.visits }" />
+          </section>
+        }
+      }
+    </ng-template>
+  </app-async-content>
+</div>
+
+<ng-template #rows let-visits>
+  <ul class="visit-rows">
+    @for (visit of visits; track visit.id) {
+      <li class="visit-rows__item">
+        <p class="visit-rows__head">
+          <a class="visit-rows__reference" [routerLink]="detailLink(visit)">
+            {{ visit.referenceNumber }}
+          </a>
+          <app-status-badge [catalog]="statusCatalog" [status]="visit.status" />
+          <span class="visit-rows__purpose">{{ purposeLabel(visit.purpose) }}</span>
+        </p>
+        <p class="visit-rows__meta">
+          <span class="visit-rows__date">{{ visit.scheduledFor }}</span>
+          @if (visit.scheduledWindow) {
+            <span>{{ visit.scheduledWindow }}</span>
+          }
+          <span class="visit-rows__address">{{ visit.addressVisited }}</span>
+        </p>
+      </li>
+    }
+  </ul>
+</ng-template>

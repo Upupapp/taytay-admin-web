@@ -78,6 +78,13 @@ export const NAVIGATION: readonly NavSection[] = [
         description: 'Family units and the relationships between people.',
       },
       {
+        label: 'Field visits',
+        route: '/visits',
+        glyph: 'FV',
+        permissions: ['case.view'],
+        description: 'Home visits, what was found, and what is owed next.',
+      },
+      {
         label: 'Referrals',
         route: '/referrals',
         glyph: 'RF',

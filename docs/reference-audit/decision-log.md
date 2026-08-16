@@ -2218,3 +2218,129 @@ somebody is a VAWC survivor is inferable from the destination alone.
 barangay scope, so this cannot regress once the screens exist. The lesson
 generalises: an adapter written ahead of its screens should be audited when the
 screens land, because until then nothing exercises it.
+
+### DL-85 · An observation says whose claim it is
+
+**Status:** Settled (implemented in TAB 16).
+
+A `VisitObservation` carries a **kind**: `observed`, `client-said`,
+`third-party-said` or `worker-assessed`. A third-party account must name who
+said it, and an attribution on any other kind is refused.
+
+Consider three sentences a worker might write in one paragraph after a home
+visit:
+
+- "The roof is missing sheets over the sleeping area."
+- "She says her husband has not sent money since March."
+- "The household appears unable to meet its own food costs."
+
+The first is checkable by another visit. The second is a report the office is
+repeating, and may be wrong without anybody lying. The third is a professional
+judgement a later reader may disagree with. Written as prose they become
+indistinguishable, and six months on a different worker reads all three as
+established fact about the family — at which point the family is arguing with a
+record rather than with a person.
+
+Nothing here prevents recording a judgement. It prevents a judgement being
+mistaken for something the family said.
+
+Three details make it real rather than decorative:
+
+- **The form asks for the kind first.** A worker who has already written a
+  paragraph will not go back and reclassify it.
+- **The kind is rendered**, and `check:visits` fails the build if no screen
+  shows it. A distinction held and never displayed is the same collapse.
+- **`isAllJudgement` surfaces a record built only of assessments.** Not blocked
+  — a doorstep conversation can legitimately produce one — but visible, because
+  that is the shape that hardens into a label.
+
+Observations are **appended, never edited or removed**. A worker correcting an
+earlier one records another saying so, on the same append-only doctrine as case
+events (`DL-54`) and document versions (`DL-77`).
+
+**Consequence:** an unattributed "a neighbour said" is refused. It is a rumour
+the office cannot check and cannot answer for.
+
+### DL-86 · The visit model holds no location, and the absence is enforced
+
+**Status:** Settled (implemented in TAB 16).
+
+There is no coordinate, no check-in time, no arrival or departure timestamp, no
+route and no `navigator.geolocation` call anywhere in the visit domain, its
+adapters, its seed or its screens. `check:visits` scans all of them and fails
+the build on any of it.
+
+The master command forbids continuous location tracking, covert tracking,
+geofencing of clients and background surveillance. Those are easy to refuse as
+*features* and easy to acquire as *fields*. A "visit location" column added in
+good faith to help a supervisor plan routes is the first half of a system that
+records where poor families live and which worker was outside their door at
+which minute. The second half arrives as a reporting request a year later, and
+by then the data exists.
+
+So the absence is asserted rather than intended. The check is written against
+the names such a field arrives under — `latitude`, `coordinates`, `checkedInAt`,
+`geofence`, `getCurrentPosition` — and validated against planted regressions
+that add each one.
+
+What the visit *does* record is `addressVisited`, **copied** from the household
+at scheduling rather than referenced. A household that later moves must not
+silently rewrite where a past visit was made; the record would then claim the
+worker went somewhere they did not.
+
+**Consequence:** if visit coordinates are ever genuinely needed, that is a
+deliberate change with its own decision entry, its own permission and its own
+disclosure — not a field somebody adds.
+
+### DL-87 · A field capture never says "probably saved"
+
+**Status:** Settled (implemented in TAB 16).
+
+`CaptureState` is `held-locally`, `sending`, `sent` or `send-failed`. **Exactly
+one of them means the office record has it**, and a test asserts that.
+
+Field work happens where the signal does not. The master command is explicit:
+do not promise offline transactional integrity without a backend strategy, and
+never silently queue a sensitive submission without the user's knowledge. So the
+failed state says in words that **nothing was queued in the background** and the
+worker must send it again.
+
+A worker who believes a visit was filed and returns to the office to find it was
+not has been failed twice — once by the network and once by the interface. The
+second failure is the one this application controls.
+
+`unsentWarning` is returned from the domain rather than written in a template,
+so it cannot be softened into "you have unsaved changes" — which reads as a
+browser nuisance rather than a warning that a family's visit record is about to
+be lost. `warnsOnLeaving` includes `sending`, because navigating away mid-send
+leaves the worker unable to find out whether it landed.
+
+**Consequence:** no optimistic UI on a visit write. The screen reports what the
+data layer confirmed, and nothing else.
+
+### DL-88 · Every visit outcome is terminal, and nobody-home is not a refusal
+
+**Status:** Settled (implemented in TAB 16).
+
+`completed`, `not-found`, `refused` and `cancelled` all transition nowhere. A
+second attempt is a **second visit**, so "how many times did we go?" keeps one
+answer and a visit that happened cannot be re-described a week later.
+
+`not-found` and `refused` are held apart deliberately, and both apart from
+`cancelled`:
+
+- **Nobody home** is the household doing nothing. The status description says
+  so in as many words, because a worker reading "failed visit" writes a
+  different case note than one reading "nobody home".
+- **Declined** is a decision the household made, and their reason is kept in
+  their words when they gave one. `visitOutcomeProblems` refuses a declined
+  reason on any other outcome: attaching one to a completed visit would put
+  words in a household's mouth.
+- **Cancelled** is the office calling it off, which is the office's own fact.
+
+The vocabulary matters more here than in most modules because these words end up
+describing a family to the next worker who opens the file. "Non-compliant" would
+be a label the office then acts on; "nobody home" is what happened.
+
+**Consequence:** the screens carry the same distinction — the list heading for a
+missed visit says the office owes it, not the family.

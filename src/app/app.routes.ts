@@ -276,6 +276,26 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'visits',
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            title: 'Field visits — Taytay Social Welfare',
+            canActivate: [permissionGuard('case.view')],
+            loadComponent: () =>
+              import('@features/visits/visit-list-page').then((m) => m.VisitListPage),
+          },
+          {
+            path: ':id',
+            title: 'Field visit — Taytay Social Welfare',
+            canActivate: [permissionGuard('case.view')],
+            loadComponent: () =>
+              import('@features/visits/visit-detail-page').then((m) => m.VisitDetailPage),
+          },
+        ],
+      },
+      {
         path: 'reports',
         title: 'Reports — Taytay Social Welfare',
         canActivate: [permissionGuard('report.view')],

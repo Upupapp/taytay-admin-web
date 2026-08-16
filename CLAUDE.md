@@ -95,7 +95,8 @@ npm run verify     # lint + typecheck + repository checks + test + build
 
 The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:vulnerability`, `check:case-audit`, `check:intake`, `check:programs`,
-`check:beneficiary`, `check:documents` and `check:referrals`. Each enforces a rule a comment
+`check:beneficiary`, `check:documents`, `check:referrals` and `check:visits`.
+Each enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 
@@ -312,6 +313,31 @@ referral template renders a resident field directly.
 
 **Overdue is derived** from the follow-up date, never stored (`DL-83`): a stored
 flag needs a nightly job to stay true and is wrong every morning until it runs.
+
+### A visit record says whose claim each line is
+
+"The roof is missing sheets", "she says he has not sent money since March" and
+"the household appears unable to meet its food costs" are a fact, a report and a
+judgement. Written as one paragraph they become indistinguishable, and six
+months on a different worker reads all three as established fact about the
+family.
+
+So a `VisitObservation` carries its **kind** — observed, client-said,
+third-party-said, worker-assessed — and a third-party account must name who said
+it (`DL-85`). The entry form asks for the kind *first*: a worker who has already
+written a paragraph will not go back and reclassify it. Observations are
+appended, never edited or removed.
+
+**This is not a tracking product.** There is no coordinate, no check-in, no
+route and no geolocation call anywhere in the visit model, its adapters or its
+screens, and `npm run check:visits` fails the build if one appears (`DL-86`).
+The master command forbids continuous tracking, covert tracking and geofencing;
+those are easy to refuse as features and easy to acquire as an innocuous field.
+
+**Field capture is honest about what has been saved** (`DL-87`). Exactly one
+state means the office record has it, and a failed send says plainly that
+nothing was queued in the background. A worker who believes a visit was filed
+and returns to find it was not has been failed twice.
 
 ### Separation of duties
 
