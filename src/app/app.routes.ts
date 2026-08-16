@@ -5,8 +5,6 @@ import {
   authenticatedGuard,
   permissionGuard,
 } from '@core/access/access.guards';
-import type { PlaceholderRouteData } from '@features/placeholder/feature-placeholder-page';
-
 /**
  * Routing skeleton.
  *
@@ -15,16 +13,12 @@ import type { PlaceholderRouteData } from '@features/placeholder/feature-placeho
  *  - every route carries the same permission its nav entry declares;
  *  - authenticated routes live under the `Shell`, unauthenticated ones do not;
  *  - a screen that a later TAB will build gets a placeholder, never a dead link.
+ *
+ * As of TAB 21 **there are no placeholder routes left**. Every entry below
+ * loads a real screen. `FeaturePlaceholderPage` stays in the tree because the
+ * rule it exists to serve still holds: a module planned for a later TAB gets a
+ * placeholder rather than a dead link.
  */
-function placeholder(data: PlaceholderRouteData) {
-  return {
-    loadComponent: () =>
-      import('@features/placeholder/feature-placeholder-page').then(
-        (m) => m.FeaturePlaceholderPage,
-      ),
-    data,
-  };
-}
 
 export const routes: Routes = [
   {
@@ -389,31 +383,31 @@ export const routes: Routes = [
             path: 'staff',
             title: 'Staff and roles — Taytay Social Welfare',
             canActivate: [permissionGuard('staff.view')],
-            ...placeholder({
-              title: 'Staff and roles',
-              subtitle: 'Accounts, role assignment and data scope.',
-              plannedIn: 'the administration TAB',
-            }),
+            loadComponent: () =>
+              import('@features/administration/staff-page').then((m) => m.StaffPage),
+          },
+          {
+            path: 'roles',
+            title: 'Permission matrix — Taytay Social Welfare',
+            // Reading the matrix is reading the office's own rules; it names no
+            // person and needs no more than seeing staff exist.
+            canActivate: [permissionGuard('staff.view')],
+            loadComponent: () =>
+              import('@features/administration/roles-page').then((m) => m.RolesPage),
           },
           {
             path: 'audit',
             title: 'Audit trail — Taytay Social Welfare',
             canActivate: [permissionGuard('audit.view')],
-            ...placeholder({
-              title: 'Audit trail',
-              subtitle: 'Who accessed or changed a record, and when.',
-              plannedIn: 'the administration TAB',
-            }),
+            loadComponent: () =>
+              import('@features/administration/audit-page').then((m) => m.AuditPage),
           },
           {
             path: 'settings',
-            title: 'Settings — Taytay Social Welfare',
+            title: 'Data governance — Taytay Social Welfare',
             canActivate: [permissionGuard('settings.manage')],
-            ...placeholder({
-              title: 'Settings',
-              subtitle: 'Reference data and office configuration.',
-              plannedIn: 'the administration TAB',
-            }),
+            loadComponent: () =>
+              import('@features/administration/governance-page').then((m) => m.GovernancePage),
           },
         ],
       },

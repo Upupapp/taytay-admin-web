@@ -96,8 +96,8 @@ npm run verify     # lint + typecheck + repository checks + test + build
 The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:vulnerability`, `check:case-audit`, `check:intake`, `check:programs`,
 `check:beneficiary`, `check:documents`, `check:referrals`, `check:visits`,
-`check:releases`, `check:work`, `check:reports` and `check:search`. Each
-enforces a rule a comment
+`check:releases`, `check:work`, `check:reports`, `check:search` and
+`check:governance`. Each enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 
@@ -339,6 +339,48 @@ those are easy to refuse as features and easy to acquire as an innocuous field.
 state means the office record has it, and a failed send says plainly that
 nothing was queued in the background. A worker who believes a visit was filed
 and returns to find it was not has been failed twice.
+
+### The audit trail says what changed, never what it changed to
+
+`AuditRow` carries actor, action, entity, a summary in words, a source, and
+**which fields moved with how sensitive each is**. It carries no old value and
+no new value, and `toAuditRow` has no parameter that could take one. The
+recorded values are `AuditEntryDetail`, a separate read behind
+`audit.view-detail` (`DL-114`).
+
+The split is structural rather than a rendering rule, because an audit list is
+the one screen designed to be scrolled and filtered by somebody reviewing *other
+people's* work: a row reading `monthlyIncome: 3,200 → 18,000` discloses a
+resident's income to every reviewer who filters by date.
+
+`audit.view-detail` is held by the **auditor and not the head**. Reading the
+trail is oversight; reading the values is access to the record.
+
+**Deactivation ends a live session** (`DL-116`). `canHoldSession` lives in the
+domain and both `signIn` and `currentUser` ask it, so an account switched off at
+10am cannot keep its grants until the person happens to sign out. An
+administrator cannot deactivate the account they are signed in as.
+
+**An account and a directory entry are different records** (`DL-115`).
+`StaffUser` answers who may do what; `StaffProfile` holds employee ID, unit and
+contact details — which are personal information about an employee, with the
+same protection a resident's has. One identity, two facets, keyed on
+`StaffUserId`.
+
+**Retention invents nothing** (`DL-113`). No disposition schedule was supplied,
+so every period is `null`, the provenance is `awaiting-office-policy`, and the
+screen says "No schedule recorded" — never a zero, never a default. An office
+that believes it may delete after five years, and does, cannot undo it.
+
+**A correction is raised, considered and answered, never applied silently**
+(`DL-117`). `applied` and `refused` each require an outcome in words and are
+terminal, like a closed case (`DL-53`). The capture screen is **not built**, and
+the governance page says so rather than offering a form that goes nowhere.
+
+**There is no invite or reset flow.** Accounts are provisioned by an
+administrator outside this console (`DL-32`), and the screens say so — a
+half-built invite form is worse than none, because whoever fills it in
+reasonably believes an account now exists.
 
 ### Search reads only what it may show
 

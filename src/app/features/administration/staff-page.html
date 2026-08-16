@@ -1,0 +1,140 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  @if (canSeeAudit()) {
+    <a page-actions class="btn" routerLink="/administration/audit">{{ copy.audit }}</a>
+  }
+  <a page-actions class="btn" routerLink="/administration/roles">{{ copy.roles }}</a>
+</app-page-header>
+
+<div class="staff">
+  <div class="card filters">
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.search }}</span>
+      <input
+        type="search"
+        class="filters__input"
+        [placeholder]="copy.searchPlaceholder"
+        (input)="onSearch($event)"
+      />
+    </label>
+    <label class="filters__check">
+      <input type="checkbox" [checked]="includeInactive()" (change)="onIncludeInactive($event)" />
+      <span>{{ copy.includeInactive }}</span>
+    </label>
+  </div>
+
+  <app-async-content [state]="state()" [content]="staffContent" [skeletonLines]="6">
+    <ng-template #staffContent>
+      @if (!hasAny()) {
+        <div class="card staff__empty">
+          <h2 class="staff__empty-heading">{{ copy.emptyHeading }}</h2>
+          <p class="staff__empty-message">{{ copy.emptyMessage }}</p>
+        </div>
+      } @else {
+        <ul class="accounts">
+          @for (account of accounts(); track account.staffId) {
+            <li class="card account" [class.account--inactive]="!account.isActive">
+              <div class="account__head">
+                <h2 class="account__name">{{ account.displayName }}</h2>
+                <!-- Status said in a word, not by colour alone. -->
+                <span class="account__status">
+                  {{ account.isActive ? copy.active : copy.inactive }}
+                </span>
+              </div>
+
+              <dl class="account__facts">
+                <div>
+                  <dt>{{ copy.columnRole }}</dt>
+                  <dd>{{ account.roleLabel }}</dd>
+                </div>
+                @if (account.profile) {
+                  <div>
+                    <dt>{{ copy.columnUnit }}</dt>
+                    <dd>{{ account.profile.unit }}</dd>
+                  </div>
+                  <div>
+                    <dt>ID</dt>
+                    <dd class="account__employee-id">{{ account.profile.employeeId }}</dd>
+                  </div>
+                }
+                <div>
+                  <dt>{{ copy.columnScope }}</dt>
+                  <dd>{{ account.barangayLabel ?? copy.allBarangays }}</dd>
+                </div>
+                <div>
+                  <dt>{{ copy.columnLastSignIn }}</dt>
+                  <dd>
+                    {{
+                      account.lastSignInAt
+                        ? (account.lastSignInAt | date: 'd MMM y, HH:mm')
+                        : copy.never
+                    }}
+                  </dd>
+                </div>
+              </dl>
+
+              @if (account.additionalPermissionCount > 0) {
+                <p class="account__grants">
+                  {{ account.additionalPermissionCount }} {{ copy.extraGrants }}
+                </p>
+              }
+
+              @if (canManage()) {
+                <p class="account__actions">
+                  <button type="button" class="btn" (click)="toggle(account)">
+                    {{
+                      isOpen(account)
+                        ? copy.cancel
+                        : account.isActive
+                          ? copy.deactivate
+                          : copy.reactivate
+                    }}
+                  </button>
+                </p>
+
+                @if (isOpen(account)) {
+                  <div class="account__panel">
+                    <label class="field">
+                      <span class="field__label">{{ copy.statusReason }}</span>
+                      <input
+                        type="text"
+                        class="field__input"
+                        aria-describedby="reason-hint"
+                        [value]="reason()"
+                        (input)="onReason($event)"
+                      />
+                      <span class="field__hint" id="reason-hint">{{ copy.statusReasonHint }}</span>
+                    </label>
+                    <button
+                      type="button"
+                      class="btn btn--primary"
+                      [disabled]="!canSave()"
+                      (click)="apply(account)"
+                    >
+                      {{ copy.confirm }}
+                    </button>
+                  </div>
+                }
+              }
+            </li>
+          }
+        </ul>
+      }
+    </ng-template>
+  </app-async-content>
+
+  <!-- Said plainly rather than implied by a disabled button: an administrator
+       who fills in a form reasonably believes it worked. -->
+  <section class="card not-built" aria-labelledby="provisioning-heading">
+    <h2 class="not-built__heading" id="provisioning-heading">{{ copy.provisioningHeading }}</h2>
+    <p class="not-built__body">{{ provisioningNotice }}</p>
+
+    <h3 class="not-built__subheading">{{ copy.resetHeading }}</h3>
+    <p class="not-built__body">{{ resetNotice }}</p>
+  </section>
+
+  @if (canSeeGovernance()) {
+    <p class="staff__governance-link">
+      <a class="btn" routerLink="/administration/settings">Data governance</a>
+    </p>
+  }
+</div>

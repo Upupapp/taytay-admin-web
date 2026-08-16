@@ -142,7 +142,16 @@ import {
   type ReportId,
   type ReportRepository,
   type ReportResult,
+  type AuditEntryDetail,
+  type AuditEntryId,
+  type AuditFilter,
+  type AuditRow,
+  type ClassifiedRecordType,
+  type CorrectionRequest,
+  type GovernanceRepository,
+  type RetentionRule,
   type SearchRepository,
+  type StaffAccount,
   type SearchResults,
   type TeamQueue,
   type WorkQueue,
@@ -420,6 +429,63 @@ export class HttpCaseRepository implements CaseRepository {
       `${API_ENDPOINTS.cases}/${id}/tasks/${taskId}/schedule`,
       { dueOn, reason },
     );
+  }
+}
+
+/**
+ * Governance over HTTP.
+ *
+ * Note the two reads. `auditRows` returns rows; `auditDetail` returns the
+ * recorded values, from a different path, behind a different permission. There
+ * is no `include=values` and no `expand` — the split is in the API shape, not
+ * in what a client remembers to ask for (`DL-114`).
+ *
+ * And there is no `create`, `invite` or `resetAccess`: accounts are provisioned
+ * outside this console (`DL-32`).
+ */
+@Injectable()
+export class HttpGovernanceRepository implements GovernanceRepository {
+  private readonly api = inject(ApiClient);
+
+  accounts(): Observable<readonly StaffAccount[]> {
+    return this.api.collection<StaffAccount>(API_ENDPOINTS.staffAccounts);
+  }
+
+  accountById(id: StaffUserId): Observable<StaffAccount | null> {
+    return this.api.optionalItem<StaffAccount>(`${API_ENDPOINTS.staffAccounts}/${id}`);
+  }
+
+  setAccountActive(
+    id: StaffUserId,
+    isActive: boolean,
+    reason: string,
+  ): Observable<StaffAccount> {
+    return this.api.post<StaffAccount, { isActive: boolean; reason: string }>(
+      `${API_ENDPOINTS.staffAccounts}/${id}/status`,
+      { isActive, reason },
+    );
+  }
+
+  auditRows(filter: AuditFilter): Observable<readonly AuditRow[]> {
+    return this.api.collection<AuditRow>(API_ENDPOINTS.audit, toParams(filter));
+  }
+
+  auditDetail(id: AuditEntryId): Observable<AuditEntryDetail | null> {
+    return this.api.optionalItem<AuditEntryDetail>(`${API_ENDPOINTS.audit}/${id}/values`);
+  }
+
+  classifications(): Observable<readonly ClassifiedRecordType[]> {
+    return this.api.collection<ClassifiedRecordType>(
+      `${API_ENDPOINTS.governance}/classifications`,
+    );
+  }
+
+  retention(): Observable<readonly RetentionRule[]> {
+    return this.api.collection<RetentionRule>(`${API_ENDPOINTS.governance}/retention`);
+  }
+
+  corrections(): Observable<readonly CorrectionRequest[]> {
+    return this.api.collection<CorrectionRequest>(`${API_ENDPOINTS.governance}/corrections`);
   }
 }
 

@@ -91,7 +91,12 @@ export const READ_ONLY_PERMISSIONS: readonly Permission[] = PERMISSIONS.filter(
     permission === 'request.view-sensitive' ||
     permission === 'case.view-protected-note' ||
     permission === 'document.download' ||
-    permission === 'document.view-full-number',
+    permission === 'document.view-full-number' ||
+    // Opening recorded audit values reads; it changes nothing. Added in TAB 21,
+    // and caught by the auditor read-only property test the same way
+    // 'document.download' was in TAB 14 — a name-shape heuristic would have
+    // called both of them mutations.
+    permission === 'audit.view-detail',
 );
 
 /** Permissions that alter data, as opposed to merely reading it. */

@@ -1,0 +1,169 @@
+.staff {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-base);
+  padding: var(--space-base);
+}
+
+.filters__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+  flex: 1 1 260px;
+}
+
+.filters__label {
+  color: var(--c-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.filters__input {
+  padding: var(--space-compact) var(--space-snug);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-base);
+  background: var(--c-surface);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
+
+.filters__check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-compact);
+  font-size: 12.5px;
+}
+
+.accounts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-base);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.account {
+  padding: var(--space-base);
+}
+
+/* A deactivated account reads as one by its word and its border, not by colour. */
+.account--inactive {
+  border-style: dashed;
+}
+
+.account__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-snug);
+}
+
+.account__name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.account__status {
+  padding: 1px 8px;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.account__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-snug);
+  margin: var(--space-base) 0 0;
+}
+
+.account__facts dt {
+  color: var(--c-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.account__facts dd {
+  margin: var(--space-micro) 0 0;
+  font-size: 13px;
+}
+
+.account__employee-id {
+  font-variant-numeric: tabular-nums;
+}
+
+.account__grants {
+  margin: var(--space-snug) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12px;
+}
+
+.account__actions {
+  margin: var(--space-base) 0 0;
+}
+
+.account__panel {
+  margin-block-start: var(--space-snug);
+  padding-block-start: var(--space-snug);
+  border-block-start: 1px solid var(--c-border);
+}
+
+.staff__empty {
+  padding: var(--space-loose);
+  text-align: center;
+}
+
+.staff__empty-heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.staff__empty-message {
+  margin: var(--space-compact) 0 0;
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+.not-built {
+  padding: var(--space-base);
+  border-style: dashed;
+}
+
+.not-built__heading {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.not-built__subheading {
+  margin: var(--space-base) 0 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.not-built__body {
+  margin: var(--space-compact) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  max-inline-size: 78ch;
+}
+
+.staff__governance-link {
+  margin: 0;
+}

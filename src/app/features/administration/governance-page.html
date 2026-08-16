@@ -1,0 +1,130 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions class="btn" routerLink="/administration/staff">{{ copy.back }}</a>
+</app-page-header>
+
+<div class="governance">
+  <section class="card section" aria-labelledby="classification-heading">
+    <h2 class="section__heading" id="classification-heading">
+      {{ copy.classificationHeading }}
+    </h2>
+    <p class="section__notice">{{ copy.classificationNotice }}</p>
+
+    <app-async-content
+      [state]="classificationState()"
+      [content]="classificationContent"
+      [skeletonLines]="5"
+    >
+      <ng-template #classificationContent>
+        <div class="table__scroll">
+          <table class="table">
+            <caption class="table__caption">{{ copy.classificationHeading }}</caption>
+            <thead>
+              <tr>
+                <th scope="col">{{ copy.columnRecord }}</th>
+                <th scope="col">{{ copy.columnClassification }}</th>
+                <th scope="col">{{ copy.columnHolds }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (type of classifications(); track type.key) {
+                <tr>
+                  <th scope="row">{{ type.label }}</th>
+                  <td>
+                    <app-status-badge
+                      [catalog]="classificationCatalog"
+                      [status]="type.classification"
+                    />
+                  </td>
+                  <td class="table__holds">{{ type.holds }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="section__subheading">{{ copy.basisHeading }}</h3>
+        <dl class="basis">
+          @for (label of usedClassifications(); track label) {
+            <div class="basis__item">
+              <dt>{{ classificationCatalog[label].label }}</dt>
+              <dd>{{ basisFor(label) }}</dd>
+            </div>
+          }
+        </dl>
+      </ng-template>
+    </app-async-content>
+  </section>
+
+  <section class="card section" aria-labelledby="retention-heading">
+    <h2 class="section__heading" id="retention-heading">{{ copy.retentionHeading }}</h2>
+    <!-- Empty on purpose. An invented retention period is the one invented
+         policy an office cannot undo once it has acted on it. -->
+    <p class="section__notice">{{ retentionNotice }}</p>
+
+    <app-async-content
+      [state]="retentionState()"
+      [content]="retentionContent"
+      [skeletonLines]="4"
+    >
+      <ng-template #retentionContent>
+        <p class="section__count">
+          {{ awaitingPolicy() }} {{ copy.retentionAwaiting }}.
+        </p>
+        <ul class="retention">
+          @for (rule of retention(); track rule.recordTypeKey) {
+            <li class="retention__item">
+              <span class="retention__label">{{ rule.label }}</span>
+              <!-- Never a zero and never a blank. -->
+              <span class="retention__period">{{ retentionFor(rule) }}</span>
+            </li>
+          }
+        </ul>
+      </ng-template>
+    </app-async-content>
+  </section>
+
+  <section class="card section" aria-labelledby="correction-heading">
+    <h2 class="section__heading" id="correction-heading">{{ copy.correctionHeading }}</h2>
+    <p class="section__notice">{{ copy.correctionNotice }}</p>
+
+    <app-async-content
+      [state]="correctionState()"
+      [content]="correctionContent"
+      [skeletonLines]="4"
+    >
+      <ng-template #correctionContent>
+        @if (corrections().length === 0) {
+          <p class="section__empty">{{ copy.correctionEmpty }}</p>
+        } @else {
+          <ul class="corrections">
+            @for (request of corrections(); track request.id) {
+              <li class="corrections__item">
+                <p class="corrections__head">
+                  <app-status-badge
+                    [catalog]="correctionCatalog"
+                    [status]="request.status"
+                  />
+                  <span class="corrections__field">{{ request.field }}</span>
+                  <span class="corrections__entity">{{ request.entityType }}</span>
+                </p>
+                <p class="corrections__claim">{{ request.claim }}</p>
+                <p class="corrections__meta">
+                  {{ copy.correctionRaisedBy }}: {{ request.raisedByName }}
+                </p>
+                <p class="corrections__outcome">
+                  <span class="corrections__outcome-label">{{ copy.correctionOutcome }}:</span>
+                  {{ request.outcome ?? copy.correctionPending }}
+                </p>
+              </li>
+            }
+          </ul>
+        }
+
+        <div class="not-built">
+          <h3 class="not-built__heading">{{ copy.notBuiltHeading }}</h3>
+          <p class="not-built__body">{{ correctionNotBuilt }}</p>
+        </div>
+      </ng-template>
+    </app-async-content>
+  </section>
+</div>

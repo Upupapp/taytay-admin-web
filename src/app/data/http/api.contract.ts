@@ -72,6 +72,13 @@ export const API_ENDPOINTS = {
    * server applies the same closed set of searchable fields (`DL-109`).
    */
   search: 'search',
+  /**
+   * Governance. `audit` returns rows with no recorded values; the values are a
+   * separate resource behind their own permission (`DL-114`).
+   */
+  staffAccounts: 'governance/accounts',
+  audit: 'governance/audit',
+  governance: 'governance',
 } as const;
 
 export function toPage<TItem>(response: ApiListResponse<TItem>): Page<TItem> {

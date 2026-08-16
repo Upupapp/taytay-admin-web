@@ -1,0 +1,63 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions class="btn" routerLink="/administration/staff">{{ copy.back }}</a>
+</app-page-header>
+
+<div class="roles">
+  <p class="roles__notice">{{ copy.notice }}</p>
+
+  <section class="card separation" aria-labelledby="separation-heading">
+    <h2 class="separation__heading" id="separation-heading">{{ copy.separationHeading }}</h2>
+    <p class="separation__body">{{ copy.separationBody }}</p>
+    @if (separationBreaches().length > 0) {
+      <p class="separation__breach" role="alert">
+        {{ separationBreaches().join(', ') }}
+      </p>
+    }
+  </section>
+
+  <div class="matrix__scroll">
+    <table class="matrix">
+      <caption class="matrix__caption">
+        {{ copy.title }}: {{ permissions.length }} permissions across {{ roles.length }} roles
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col" class="matrix__corner">{{ copy.columnPermission }}</th>
+          @for (entry of roleLabels(); track entry.role) {
+            <th scope="col" class="matrix__role">{{ entry.label }}</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (permission of permissions; track permission) {
+          <tr>
+            <th scope="row" class="matrix__permission">
+              <span class="matrix__name">{{ permission }}</span>
+              <span class="matrix__tags">
+                @if (isSensitive(permission)) {
+                  <span class="matrix__tag matrix__tag--sensitive">{{ copy.sensitiveFlag }}</span>
+                }
+                @if (isReadOnly(permission)) {
+                  <span class="matrix__tag">{{ copy.readOnly }}</span>
+                }
+              </span>
+            </th>
+            @for (entry of roleLabels(); track entry.role) {
+              <td class="matrix__cell">
+                <!-- A tick with no text is a matrix nobody using assistive
+                     technology can read, and this is the office reference. -->
+                @if (holds(entry.role, permission)) {
+                  <span class="matrix__held" aria-hidden="true">●</span>
+                  <span class="visually-hidden">{{ copy.holds }}</span>
+                } @else {
+                  <span class="matrix__absent" aria-hidden="true">–</span>
+                  <span class="visually-hidden">{{ copy.doesNotHold }}</span>
+                }
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

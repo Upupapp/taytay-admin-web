@@ -1,0 +1,134 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions class="btn" routerLink="/administration/staff">{{ copy.back }}</a>
+</app-page-header>
+
+<div class="audit">
+  <!-- Said at the top, so the absence of values reads as a rule rather than as
+       a missing feature. -->
+  <p class="audit__notice">{{ copy.valuesNotice }}</p>
+
+  <div class="card filters">
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.search }}</span>
+      <input
+        type="search"
+        class="filters__input"
+        [placeholder]="copy.searchPlaceholder"
+        (input)="onSearch($event)"
+      />
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.action }}</span>
+      <select class="filters__input" (change)="onAction($event)">
+        <option value="">{{ copy.allActions }}</option>
+        @for (value of actions; track value) {
+          <option [value]="value">{{ actionLabel(value) }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__check">
+      <input type="checkbox" [checked]="sensitiveOnly()" (change)="onSensitiveOnly($event)" />
+      <span>{{ copy.sensitiveOnly }}</span>
+    </label>
+
+    @if (hasFilters()) {
+      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+    }
+  </div>
+
+  <app-async-content [state]="state()" [content]="auditContent" [skeletonLines]="6">
+    <ng-template #auditContent>
+      <p class="audit__summary" role="status">
+        <span class="audit__coverage">{{ coverage() }}</span>
+        {{ summary() }}
+      </p>
+
+      @if (rows().length === 0) {
+        <div class="card audit__empty">
+          <h2 class="audit__empty-heading">{{ copy.emptyHeading }}</h2>
+          <p class="audit__empty-message">{{ copy.emptyMessage }}</p>
+        </div>
+      } @else {
+        <ul class="entries">
+          @for (row of rows(); track row.id) {
+            <li class="card entry" [class.entry--sensitive]="row.touchesSensitive">
+              <p class="entry__head">
+                <span class="entry__action">{{ actionLabel(row.action) }}</span>
+                <span class="entry__entity">{{ row.entityLabel }}</span>
+                @if (row.touchesSensitive) {
+                  <!-- The word, not only the border. -->
+                  <span class="entry__sensitive">{{ copy.sensitiveBadge }}</span>
+                }
+                <time class="entry__time">{{ row.occurredAt | date: 'd MMM y, HH:mm' }}</time>
+              </p>
+
+              <p class="entry__summary">{{ row.summary }}</p>
+
+              <p class="entry__meta">
+                <span class="entry__actor">{{ row.actorName }}</span>
+                <span class="entry__source">{{ copy.source }} {{ sourceLabel(row) }}</span>
+              </p>
+
+              @if (row.changedFields.length > 0) {
+                <p class="entry__fields">
+                  <span class="entry__fields-label">{{ copy.changedFields }}:</span>
+                  @for (change of row.changedFields; track change.field) {
+                    <!-- Named, never quoted. -->
+                    <span class="entry__field">{{ change.label }}</span>
+                  }
+                </p>
+              }
+
+              @if (row.reason) {
+                <p class="entry__reason">
+                  <span class="entry__reason-label">{{ copy.reason }}:</span> {{ row.reason }}
+                </p>
+              }
+
+              @if (row.hasDetail) {
+                @if (canOpenValues()) {
+                  <p class="entry__actions">
+                    <button type="button" class="btn" (click)="toggleValues(row)">
+                      {{ isOpen(row) ? copy.hideValues : copy.openValues }}
+                    </button>
+                  </p>
+                } @else {
+                  <p class="entry__denied">{{ copy.cannotOpenValues }}</p>
+                }
+              }
+
+              @if (isOpen(row)) {
+                <div class="values">
+                  <h3 class="values__heading">{{ copy.valuesHeading }}</h3>
+                  @if (detail(); as recorded) {
+                    <!-- Restated where it is used: opening this is itself recorded. -->
+                    <p class="values__rationale">{{ recorded.accessRationale }}</p>
+                    <dl class="values__list">
+                      @for (change of recorded.changes; track change.field) {
+                        <div class="values__item">
+                          <dt>{{ change.label }}</dt>
+                          <dd>
+                            <span class="values__before">
+                              {{ copy.before }}: {{ change.before ?? '—' }}
+                            </span>
+                            <span class="values__after">
+                              {{ copy.after }}: {{ change.after ?? '—' }}
+                            </span>
+                          </dd>
+                        </div>
+                      }
+                    </dl>
+                  } @else {
+                    <p class="values__empty">{{ copy.noValues }}</p>
+                  }
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </ng-template>
+  </app-async-content>
+</div>

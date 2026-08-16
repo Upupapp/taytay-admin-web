@@ -102,6 +102,16 @@ export const PERMISSIONS = [
   'report.export',
 
   'audit.view',
+  /**
+   * Opening the recorded before-and-after values on an audit entry.
+   *
+   * Held apart from `audit.view` because the list is designed to be scrolled
+   * and filtered by somebody reviewing other people's work, and a row that
+   * quotes what changed discloses it to everyone who filters by date. Reading
+   * that a record was updated is oversight; reading what it was updated *to*
+   * is access to the record itself (`DL-114`).
+   */
+  'audit.view-detail',
 
   'staff.view',
   'staff.manage',
@@ -302,6 +312,12 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'report.view',
       'report.export',
       'audit.view',
+      // The auditor, and not the head, may open recorded values. Oversight of
+      // the office is checking that a reason was given and an owner assigned;
+      // checking whether a figure was altered improperly is the audit remit
+      // specifically, and it is why this role is read-only everywhere else
+      // (`DL-114`).
+      'audit.view-detail',
       'staff.view',
     ],
   },

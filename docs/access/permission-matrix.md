@@ -29,7 +29,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-48 permissions × 7 roles. `X` means the role holds the permission.
+49 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -77,6 +77,7 @@ self-registration), `DL-33` (accessible authentication).
 | `report.view`                     | X     | X    | X   |        | X    |      | X     |
 | `report.export`                   | X     | X    |     |        |      |      | X     |
 | `audit.view`                      | X     | X    |     |        |      |      | X     |
+| `audit.view-detail`               | X     |      |     |        |      |      | X     |
 | `staff.view`                      | X     | X    |     |        |      |      | X     |
 | `staff.manage`                    | X     |      |     |        |      |      |       |
 | `view.share`                      | X     | X    |     |        |      |      |       |
@@ -95,6 +96,13 @@ test asserts it is empty, so this cannot regress quietly.
 **`staff.manage` and `settings.manage` are administrator-only.** The head can
 _see_ staff (`staff.view`) but cannot change roles. Whoever can grant permissions
 should not also be working cases with them.
+
+**`audit.view-detail` is held by the auditor and not the head.** Reading the
+trail is oversight — did somebody record a reason, assign an owner, act in time?
+Reading the **recorded values** is access to the record itself, and a list
+designed to be scrolled and filtered by a reviewer must not quote what changed
+(`DL-114`). Checking whether a figure was altered improperly is the audit remit
+specifically, which is why that role holds it and is read-only everywhere else.
 
 **`view.share` separates a preference from office configuration.** Anyone may
 save a named filter for themselves; publishing one to the whole office needs the

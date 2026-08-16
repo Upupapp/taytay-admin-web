@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 
 import {
+  canHoldSession,
   formatPersonName,
   isPlausibleEmail,
   isPlausiblePassword,
@@ -90,7 +91,17 @@ export class MockStaffRepository implements StaffRepository {
       return this.latency.respond(null);
     }
     const staff = MOCK_STAFF.find((candidate) => candidate.id === signedInId);
-    return this.latency.respond(staff ? toAuthenticatedUser(staff) : null);
+
+    // **Deactivation takes effect now, not at next sign-in** (`DL-116`).
+    // Before TAB 21 this resolved a deactivated account into a fully
+    // permissioned identity, so somebody switched off at 10am kept every grant
+    // until they happened to close their browser. `signIn` refused them and
+    // this did not, which is the worst of both: the office believed the account
+    // was off.
+    if (staff === undefined || !canHoldSession(staff)) {
+      return this.latency.respond(null);
+    }
+    return this.latency.respond(toAuthenticatedUser(staff));
   }
 
   signIn(credentials: SignInCredentials): Observable<AuthenticatedUser> {
@@ -105,7 +116,7 @@ export class MockStaffRepository implements StaffRepository {
     const staff = MOCK_STAFF.find((candidate) => candidate.email.toLowerCase() === email);
 
     // Unknown address and deactivated account produce the identical failure.
-    if (!staff || !staff.isActive) {
+    if (!staff || !canHoldSession(staff)) {
       return throwError(() => invalidCredentials());
     }
 

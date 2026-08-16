@@ -11,6 +11,15 @@ import type {
   ReportFilter,
   ReportResult,
 } from '../reports/report-result';
+import type {
+  AuditEntryDetail,
+  AuditFilter,
+  AuditRow,
+} from '../governance/audit-view';
+import type { CorrectionRequest } from '../governance/correction-request';
+import type { ClassifiedRecordType } from '../governance/data-classification';
+import type { RetentionRule } from '../governance/retention';
+import type { StaffAccount } from '../governance/staff-profile';
 import type { SearchResults } from '../search/search-result';
 import type { OfficeAlert } from '../work/office-alert';
 import type { TeamQueue, WorkQueue } from '../work/work-queue';
@@ -118,6 +127,7 @@ import type { SavedView, SavedViewDraft, SavedViewResource } from '../views/save
 import type { Page, PageRequest } from '../shared/pagination';
 import type {
   AssistanceRequestId,
+  AuditEntryId,
   CaseId,
   CaseTaskId,
   DisbursementId,
@@ -903,6 +913,53 @@ export interface SearchRepository {
 }
 
 export const SEARCH_REPOSITORY = new InjectionToken<SearchRepository>('SearchRepository');
+
+/**
+ * Governance: accounts, the audit trail, and what the office says about its
+ * own data.
+ *
+ * **The audit split is enforced here, not by a screen** (`DL-114`). `auditRows`
+ * returns rows that carry no recorded value — there is no parameter that could
+ * ask it to inline them — and `auditDetail` is a separate read behind
+ * `audit.view-detail`. A list designed to be scrolled and filtered by somebody
+ * reviewing other people's work must not quote what changed.
+ *
+ * Note the absences. There is no `create`, no `invite` and no `resetAccess`:
+ * accounts are provisioned by an administrator outside this console, and a
+ * half-built invite flow is worse than none because an administrator who fills
+ * one in reasonably believes an account now exists (`DL-32`, restated).
+ */
+export interface GovernanceRepository {
+  /** The staff directory, assembled from the account and its profile. */
+  accounts(): Observable<readonly StaffAccount[]>;
+  accountById(id: StaffUserId): Observable<StaffAccount | null>;
+  /**
+   * Turns an account on or off, with a required reason.
+   *
+   * The only write in this port, and it appends to the trail like every other
+   * mutation in this application (`DL-54`).
+   */
+  setAccountActive(
+    id: StaffUserId,
+    isActive: boolean,
+    reason: string,
+  ): Observable<StaffAccount>;
+
+  auditRows(filter: AuditFilter): Observable<readonly AuditRow[]>;
+  /** Recorded values for one entry. Refused without `audit.view-detail`. */
+  auditDetail(id: AuditEntryId): Observable<AuditEntryDetail | null>;
+
+  /** What the office holds, classified. Reference data, about nobody. */
+  classifications(): Observable<readonly ClassifiedRecordType[]>;
+  /** Retention rules — all of them awaiting an office schedule (`DL-113`). */
+  retention(): Observable<readonly RetentionRule[]>;
+  /** Correction requests on file. Read-only until the capture screen exists. */
+  corrections(): Observable<readonly CorrectionRequest[]>;
+}
+
+export const GOVERNANCE_REPOSITORY = new InjectionToken<GovernanceRepository>(
+  'GovernanceRepository',
+);
 
 export interface DashboardRepository {
   /**

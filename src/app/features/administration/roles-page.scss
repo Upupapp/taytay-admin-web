@@ -1,0 +1,121 @@
+.roles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+}
+
+.roles__notice {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  max-inline-size: 82ch;
+}
+
+.separation {
+  padding: var(--space-base);
+}
+
+.separation__heading {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.separation__body {
+  margin: var(--space-compact) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  max-inline-size: 82ch;
+}
+
+.separation__breach {
+  margin: var(--space-snug) 0 0;
+  padding: var(--space-snug) var(--space-base);
+  border-inline-start: 3px solid var(--c-danger, #a4262c);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* The matrix is wide by nature; it scrolls in its own box rather than the page. */
+.matrix__scroll {
+  overflow-x: auto;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-base);
+  background: var(--c-surface);
+}
+
+.matrix {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.matrix__caption {
+  padding: var(--space-snug) var(--space-base);
+  color: var(--c-text-muted);
+  font-size: 12px;
+  text-align: start;
+}
+
+.matrix th,
+.matrix td {
+  padding: var(--space-compact) var(--space-snug);
+  border-block-start: 1px solid var(--c-border);
+  text-align: start;
+}
+
+.matrix__role {
+  color: var(--c-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+.matrix__corner {
+  min-inline-size: 260px;
+}
+
+.matrix__permission {
+  font-weight: 500;
+}
+
+.matrix__name {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+}
+
+.matrix__tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-micro);
+  margin-inline-start: var(--space-compact);
+}
+
+.matrix__tag {
+  padding: 0 6px;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  color: var(--c-text-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.matrix__tag--sensitive {
+  border-color: var(--c-danger, #a4262c);
+  color: var(--c-danger, #a4262c);
+}
+
+.matrix__cell {
+  text-align: center;
+}
+
+.matrix__held {
+  font-size: 14px;
+}
+
+.matrix__absent {
+  color: var(--c-text-subtle);
+}

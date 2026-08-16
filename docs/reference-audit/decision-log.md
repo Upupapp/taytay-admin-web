@@ -2983,3 +2983,138 @@ cannot ask the right person for access.
 **Consequence:** the `/search` route itself is guarded only by being signed in.
 A narrower guard would hide the very screen that explains which types an account
 cannot search.
+### DL-113 · Retention is empty on purpose, and says so
+
+**Status:** Settled (implemented in TAB 21).
+
+The master command asks for "retention/purge policy placeholders for future
+backend integration". The word *placeholder* is doing real work there, and this
+module refuses to quietly upgrade it.
+
+No records disposition schedule was supplied. RA 9470 requires a government
+agency to have one approved by the National Archives, and the MSWDO will have
+one — but this application was not given it, and the periods differ by record
+series in ways nobody can guess.
+
+So every rule carries `provenance: 'awaiting-office-policy'`, a `periodInYears`
+of `null`, and the screen prints **"No schedule recorded"** — never a zero,
+never "indefinite", never a default. The list covers *every* classified record
+type rather than a subset, because showing three of ten with schedules would
+imply the other seven need none.
+
+This is the same refusal as `DL-89` (no invented accounting), `DL-101` (no
+invented service standard) and `DL-105` (a threshold marked unconfirmed). It is
+the most consequential of the four: an office that believes it may delete after
+five years, and does, **cannot undo it**.
+
+**Consequence:** the governance screen counts how many record types are still
+waiting on a schedule, so the gap is visible rather than dormant — the same
+device as `awaitsConfirmation` for the review windows (`DL-68`).
+
+### DL-114 · An audit row says what changed, never what it changed to
+
+**Status:** Settled (implemented in TAB 21).
+
+The master command asks for an event stream with a before/after summary and, in
+the same breath, that generic list rows must not dump full sensitive record
+values. Those pull against each other unless the split is **structural**.
+
+A rendering rule — "do not show values in the list" — lasts until the first
+person who wants to see what changed without clicking through. So the values are
+not on the row at all:
+
+- **`AuditRow`** carries actor, action, entity, a summary in words, a timestamp,
+  a source, and **which fields moved with how sensitive each is**. No old value,
+  no new value, and `toAuditRow` has no parameter that could carry one.
+- **`AuditEntryDetail`** is a separate read, by id, behind `audit.view-detail`.
+
+The failure this prevents is specific. An audit list is the one screen designed
+to be scrolled, filtered and exported by somebody reviewing *other people's*
+work. A row reading `monthlyIncome: 3,200 → 18,000` discloses a resident's
+income to every reviewer who filters by date — and does so in the name of
+accountability, which is what makes it hard to argue with afterwards.
+
+**`audit.view-detail` is held by the auditor and not the MSWDO head.** Reading
+the trail is oversight: did somebody record a reason, assign an owner, act in
+time? Reading the values is access to the record. Checking whether a figure was
+altered improperly is the audit remit specifically, and it is why that role is
+read-only everywhere else.
+
+**Consequence:** the permission is classified `READ_ONLY` explicitly — the same
+catch as `document.download` in TAB 14, where a name-shape heuristic would have
+called it a mutation and quietly made the auditor a mutating role.
+
+### DL-115 · An account and a directory entry are different records
+
+**Status:** Settled (implemented in TAB 21).
+
+`StaffUser` is the **authorisation** model. Every guard, every adapter and
+twenty-eight test fixtures depend on its shape, and it answers exactly one
+question: who may do what.
+
+The master command also asks for an internal directory — employee ID, unit,
+contact details. Putting those on `StaffUser` would make every permission test
+care about a phone number, and would ripple a directory change through
+twenty-eight files that have nothing to do with directories.
+
+They are also **different data**. A role is office structure. An employee's
+contact number is personal information about that employee, with the same
+protection under RA 10173 that a resident's has. Keeping them in separate
+records is what makes it possible to show a role without showing a number.
+
+So `StaffProfile` is its own record, keyed on `StaffUserId`. One identity, two
+facets, nothing to keep in step — and `StaffAccount` composes both in the data
+layer rather than in a screen, so the disclosure decision lives in one place.
+
+**Consequence:** this is the same instinct as `Resident` versus `ResidentView`
+(`DL-38`). A model that answers one question stays answerable.
+
+### DL-116 · Deactivation ends a live session, not the next one
+
+**Status:** Settled (fixed in TAB 21).
+
+`MockStaffRepository.signIn` refused a deactivated account. `currentUser()` did
+not — it resolved the same account into a fully permissioned identity.
+
+So an account switched off at 10am kept **every grant** until the person
+happened to sign out. Worse than either half alone: the office saw the account
+marked inactive, believed access had been withdrawn, and it had not been. The
+one moment deactivation matters most — somebody being walked out — is the moment
+it did nothing.
+
+`canHoldSession` now lives in the domain and both paths ask it, so sign-in and
+session cannot drift apart again. The screen states the consequence plainly: an
+open session stops being able to act as soon as the next request is made.
+
+**Consequence:** an administrator cannot deactivate the account they are signed
+in as. It would take effect immediately and they could not undo it from here.
+
+### DL-117 · A correction is raised, considered and answered — never applied silently
+
+**Status:** Settled (implemented in TAB 21).
+
+RA 10173 gives a data subject the right to have inaccurate personal information
+corrected. This application already holds two rules about how: relationship and
+family history is append-only (`DL-48`), and replacing a document supersedes
+rather than overwrites (`DL-77`).
+
+A correction request is the third face of the same doctrine. Somebody says a
+record is wrong; the office decides; and **whichever way it goes, the request
+and its answer stay on file**:
+
+- A correction applied with no trace leaves a record that silently disagrees
+  with the decision made on the old one — a request approved in March on a
+  figure corrected in June must stay explicable in December.
+- A request refused with no trace leaves a resident with no evidence they ever
+  asked, and nothing to appeal against.
+
+So `applied` and `refused` both require an outcome in words, and both are
+**terminal** along with `withdrawn`. Somebody who disagrees raises a new request
+naming the old one — the same shape as a case that recurs (`DL-53`), because
+reopening rewrites what the office decided and when.
+
+**Consequence:** the record, its states and the reason rule are built; **the
+screen that captures one is not**, and the governance page says so rather than
+offering a form that goes nowhere. A half-built correction flow is worse than
+none: a resident told their request was filed, when it was not, has been failed
+twice.
