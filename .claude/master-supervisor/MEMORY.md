@@ -17,9 +17,9 @@ intent through the audit in `docs/reference-audit/`.
 
 ## Where the build is
 
-- **Completed and certified:** TABs 01–21.
-- **Current:** TAB 22 — Responsive, Offline/Degraded, Accessibility & Performance.
-- **Remaining:** 23 (QA), then 24–26 (Newsfeed, Events).
+- **Completed and certified:** TABs 01–22.
+- **Current:** TAB 23 — QA, Test Data, Acceptance Testing & Final Polish.
+- **Remaining:** 24–26 (Newsfeed, Events).
 - **There are no placeholder routes left.** Every route loads a real screen.
 
 **The master command PDF is on disk** at
@@ -54,7 +54,7 @@ are handed.
 
 ## Non-negotiables carried by build checkers
 
-`npm run verify` = lint + typecheck + 16 checkers + 1261 tests + build. Each
+`npm run verify` = lint + typecheck + 17 checkers + 1272 tests + build. Each
 checker was validated against planted regressions. Do not weaken one to pass.
 
 | Checker | Refuses |
@@ -72,6 +72,7 @@ checker was validated against planted regressions. Do not weaken one to pass.
 | `check:visits` | any location capture; an observation without its kind; an unattributed third-party account; an edited observation; a non-terminal outcome |
 | `check:releases` | a ledger, account code, bank account or posting date; a status on a payout session; a session summarised as one verdict; a deferral reason blaming the beneficiary; an amount forced onto goods; an unmasked or over-full manifest; a screen composing its own manifest; self-release blocking; an ungated adapter method |
 | `check:work` | an email/SMS/push/webhook channel; an alert with a due date, assignee or done state; a mutator on the work port; a stored urgency flag; lateness not said in words; a queue summarised as a verdict; duplicate review as work; an unfiltered notification read |
+| `check:hardening` | an offline queue or a notice promising a send/sync/retry; the connection banner unmounted; a feature stylesheet redefining `.field`/`.card`/`.btn`; a local debounce constant or an undebounced search; a placeholder-only label; an assertive live region; an overlay that stops trapping focus; reduced motion that speeds ambient animation instead of stopping it; the build's style budget removed |
 | `check:governance` | a recorded value on an audit row or field-change; a port that inlines values; `audit.view-detail` gone or misclassified; a deactivated account keeping its session; an invite/reset method or a form on an admin screen; an invented retention period; a correction answerable with no reason or reopenable; a matrix cell conveyed by mark alone; an ungated governance read |
 | `check:search` | a free-text field on a search hit; the adapter reading a refused field; a port parameter that widens the read; `localStorage`/`sessionStorage`/cookie in the search path; a record type dropped instead of named; scope missing from a producer; a shared saved view creatable without `view.share` |
 | `check:reports` | a second person-level report; a person-level report with no stated reason or only `report.view`; suppression dropped, rounded, applied to zero, or bypassable; a total taken after suppression; an optional series summary; a canvas or charting dependency; an export missing its filter/author/handling notice; a screen composing an export; a productivity or completion-rate field; staff workload sorted by volume |
@@ -129,6 +130,11 @@ checker was validated against planted regressions. Do not weaken one to pass.
   only. The staff picker belongs with the administration TAB. (`DL-99`)
 - **Voiding a release has no screen** — `changeStatus` and `disbursement.void`
   exist and are gated.
+- **Responsive work in TAB 22 was verification, not change**, and 200% zoom and
+  long Filipino names were reasoned about structurally rather than exercised.
+  TAB 23's QA scenarios should exercise them.
+- **Virtualised lists were deliberately not added** — a municipal caseload does
+  not reach the size that justifies them, and `LIST_LIMIT = 300` is stated.
 - **Role and scope assignment is displayed, not editable.** Changing a role is
   the most consequential write in the application and needs the confirmation and
   audit design `setAccountActive` got, plus a staff picker. (`DL-115`)
@@ -202,42 +208,42 @@ formality.
 
 ## Next action
 
-Begin TAB 22 — Responsive, Offline/Degraded, Accessibility & Performance.
-**Read its text in the PDF first** (page ~48).
+Begin TAB 23 — QA, Test Data, Acceptance Testing & Final Polish. **Read its text
+in the PDF first** (page ~50). This is the last of the original 23.
 
-This is a **hardening pass over completed modules**, not a new feature. The
-deliverables are cross-module fixes, an accessibility checklist,
-network/degraded-state components, and a performance findings log.
+Four deliverables: a realistic linked mock dataset, a QA/scenario document,
+automated tests for the highest-risk workflows, and a polish log.
 
 Load-bearing constraints:
 
-1. **Do not promise offline transactional integrity.** The master command is
-   explicit: this is an admin system with no backend strategy for it. Banners,
-   retry, a read-only cached shell where safe, and clear unsynced warnings —
-   and **never silently queue a sensitive submission**. `DL-87` already settled
-   the honest-capture doctrine for field visits; extend it, do not invent a
-   second one.
-2. **200% zoom must not hide critical controls**, and long Filipino names and
-   purok addresses must not break layouts. Both are testable.
-3. **Core workflows usable keyboard-only**, with a focus trap in dialogs and
-   drawers. `Modal` and `Drawer` already exist — audit them rather than
-   rebuilding.
-4. **`aria-live` only for meaningful async updates.** Over-announcing is its own
-   accessibility failure.
-5. **No misleading "saved" state during network failure** — the same rule as
-   `DL-87`, applied application-wide.
-6. Charts already have table alternatives (`DL-108`); confirm rather than
-   rebuild.
+1. **Do not redesign for novelty.** The master command says this explicitly for
+   this TAB. Prioritise consistency and clarity; a change at this stage needs a
+   defect behind it.
+2. **The seed must stay internally consistent.** It already spans five
+   barangays and is heavily interlinked — residents, households, families,
+   cases, requests, documents, referrals, visits, releases, audit. Adding data
+   means adding it *coherently*: TAB 17 already had to fix a release naming a
+   request that belonged to a different resident. Check the joins.
+3. **Never real residents.** Every name is fictional, and `check:brand` plus the
+   access checker already guard against real PII and stray branding.
+4. **17 named scenarios** — several are already covered by existing specs
+   (restricted export, duplicate warning, overdue referral, network failure).
+   **Audit which are genuinely untested before writing anything**, and say which
+   were already covered rather than padding the count.
+5. **No Esperanza or Get Hired branding** — `check:brand` covers the seal; grep
+   for the names too.
+6. **Console errors**: check for any warning emitted during tests or build.
 
-Start by **measuring**: run the existing checkers, look at the bundle, and find
-the real gaps rather than assuming them. `visit-detail-page.scss` is 79 bytes
-over its budget and has been for six TABs — clear it here.
+The honest risk here is inventing work. Much of this TAB is *verification*, and
+the report should say plainly which scenarios were already covered, which were
+added, and which cannot be exercised in this environment (visual zoom, real
+devices).
 
-Then: `npm run verify`, commit locally, write `tab-reports/TAB-22-hardening.md`,
-advance state to TAB 23.
+Then: `npm run verify`, commit locally, write `tab-reports/TAB-23-qa.md`,
+advance state to TAB 24.
 
 ## Git
 
 - Branch `main`, no remote configured. **Never push.**
-- HEAD at TAB 21 certification: `a9cbca4`.
+- HEAD at TAB 22 certification: `cebc676`.
 - Working tree clean.
