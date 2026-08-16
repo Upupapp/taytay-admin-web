@@ -1,12 +1,17 @@
 import {
   asId,
+  asIsoDate,
   pesos,
   type AssistanceRequest,
   type AssistanceRequestId,
   type BarangayId,
+  type DocumentVersion,
+  type DocumentVersionId,
   type RequestNote,
   type RequestNoteId,
   type ProgramId,
+  type RequirementDocument,
+  type RequirementDocumentId,
   type RequirementId,
   type ResidentId,
   type StaffUserId,
@@ -16,6 +21,44 @@ import { daysBeforeAnchor, stamp } from './seed-utils';
 
 const staff = (slug: string): StaffUserId => asId<StaffUserId>(`staff-${slug}`);
 const brgy = (slug: string): BarangayId => asId<BarangayId>(`brgy-${slug}`);
+
+/* ── Documents ────────────────────────────────────────────────────────────── */
+
+function file(fileName: string, mimeType: string, byteSize: number, pageCount: number | null) {
+  return { fileName, mimeType, byteSize, pageCount };
+}
+
+/**
+ * A document with a single version. The ordinary case.
+ */
+function scanned(
+  serial: string,
+  requirementId: string,
+  fileName: string,
+  received: number,
+  extras: Partial<DocumentVersion> = {},
+): RequirementDocument {
+  return {
+    id: asId<RequirementDocumentId>(`doc-${serial}`),
+    requirementId: asId<RequirementId>(requirementId),
+    versions: [
+      {
+        id: asId<DocumentVersionId>(`dv-${serial}`),
+        version: 1,
+        file: file(fileName, 'application/pdf', 184_320, 1),
+        source: 'scanned',
+        documentNumber: null,
+        issuedOn: null,
+        expiresOn: null,
+        receivedBy: asId<StaffUserId>('staff-intake'),
+        receivedAt: daysBeforeAnchor(received),
+        supersededAt: null,
+        supersededReason: null,
+        ...extras,
+      },
+    ],
+  };
+}
 
 export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
   {
@@ -45,7 +88,11 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         reviewedBy: staff('intake'),
         reviewedAt: daysBeforeAnchor(12),
         remarks: null,
-        document: null,
+        document: scanned('0001', 'rq-0001', 'valid-id-mercado.pdf', 12, {
+          documentNumber: 'PN-2019-448271',
+          issuedOn: asIsoDate('2019-06-02'),
+          expiresOn: asIsoDate('2029-06-02'),
+        }),
       },
       {
         id: asId<RequirementId>('rq-0002'),
@@ -61,7 +108,45 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         reviewedBy: staff('intake'),
         reviewedAt: daysBeforeAnchor(12),
         remarks: null,
-        document: null,
+        document: {
+          id: asId<RequirementDocumentId>('doc-0002'),
+          requirementId: asId<RequirementId>('rq-0002'),
+          // Two versions. The first was superseded when the barangay reissued
+          // the certificate with the household size corrected — and the
+          // superseded copy stays, because it is what the office actually read
+          // when it first looked at this request (`DL-77`).
+          versions: [
+            {
+              id: asId<DocumentVersionId>('dv-0002'),
+              version: 1,
+              file: file('indigency-mercado.pdf', 'application/pdf', 96_140, 1),
+              source: 'scanned',
+              documentNumber: 'BC-2026-00817',
+              issuedOn: asIsoDate('2026-01-14'),
+              expiresOn: asIsoDate('2026-07-14'),
+              receivedBy: asId<StaffUserId>('staff-intake'),
+              receivedAt: daysBeforeAnchor(30),
+              supersededAt: daysBeforeAnchor(12),
+              supersededReason:
+                'Barangay reissued it with the household size corrected from 4 to 6.',
+            },
+            {
+              id: asId<DocumentVersionId>('dv-0003'),
+              version: 2,
+              file: file('indigency-mercado-v2.pdf', 'application/pdf', 98_233, 1),
+              source: 'scanned',
+              documentNumber: 'BC-2026-00964',
+              issuedOn: asIsoDate('2026-01-28'),
+              // Already past on the seed anchor, so the expiry treatment is
+              // exercised by a record that reached it honestly.
+              expiresOn: asIsoDate('2026-07-28'),
+              receivedBy: asId<StaffUserId>('staff-intake'),
+              receivedAt: daysBeforeAnchor(12),
+              supersededAt: null,
+              supersededReason: null,
+            },
+          ],
+        },
       },
       {
         id: asId<RequirementId>('rq-0003'),

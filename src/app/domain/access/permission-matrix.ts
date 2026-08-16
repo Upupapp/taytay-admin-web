@@ -70,9 +70,33 @@ export function rolesBreachingSeparationOfDuties(): readonly StaffRole[] {
   );
 }
 
+/**
+ * Permissions that only read, listed explicitly.
+ *
+ * This was a name-shape rule until TAB 14 — anything not ending in `.view` was
+ * treated as mutating — and TAB 14 broke it: `document.download` reads a file
+ * and changes nothing, but by its name it made the auditor look like a role
+ * that could alter records.
+ *
+ * The heuristic was always going to fail on the first read whose name did not
+ * end in `.view`. An explicit list fails the other way, which is the right way:
+ * a genuinely new mutating permission is mutating by default, and a new read has
+ * to be added here deliberately by somebody who thought about it.
+ */
+export const READ_ONLY_PERMISSIONS: readonly Permission[] = PERMISSIONS.filter(
+  (permission) =>
+    permission.endsWith('.view') ||
+    permission.startsWith('report.') ||
+    permission === 'resident.view-sensitive' ||
+    permission === 'request.view-sensitive' ||
+    permission === 'case.view-protected-note' ||
+    permission === 'document.download' ||
+    permission === 'document.view-full-number',
+);
+
 /** Permissions that alter data, as opposed to merely reading it. */
 export const MUTATING_PERMISSIONS: readonly Permission[] = PERMISSIONS.filter(
-  (permission) => !permission.endsWith('.view') && !permission.startsWith('report.'),
+  (permission) => !READ_ONLY_PERMISSIONS.includes(permission),
 );
 
 /** True when the role can read but never change anything. */

@@ -4,10 +4,16 @@ import { Observable, throwError } from 'rxjs';
 import {
   ACCESS_CONTEXT,
   canReadRecord,
+  hasSensitiveSector,
   ASSISTANCE_STATUS_CATALOG,
   ASSISTANCE_STATUS_TRANSITIONS,
   asId,
+  asIsoDate,
   asIsoDateTime,
+  byRequestUrgency,
+  documentRequestProblems,
+  documentVersionProblems,
+  DocumentVersionInvalidError,
   assessIntake,
   canTransition,
   isCaseOpen,
@@ -28,23 +34,36 @@ import {
   type AssistanceRequestRepository,
   type AssistanceRequestSortField,
   type AssistanceRequestStatus,
+  type ConditionalApplicability,
+  type DocumentAccessGrant,
+  type DocumentRequest,
+  type DocumentRequestDraft,
+  type DocumentRequestId,
+  type DocumentVersion,
+  type DocumentVersionDraft,
+  type DocumentVersionId,
   type IntakeAdvisory,
   type IntakeDraft,
   type IntakeRequirementEntry,
   type Page,
   type PageRequest,
   type PriorRelease,
+  type Permission,
   type PriorRequest,
   type ProgramId,
+  type RequirementDocument,
+  type RequirementDocumentId,
   type RequestNote,
   type RequirementId,
   type RequirementStatus,
   type ResidentId,
+  type StaffUserId,
   type StatusChange,
   type SubmittedRequirement,
 } from '@domain/index';
 
 import { MOCK_ASSISTANCE_REQUESTS, MOCK_REQUEST_NOTES } from './seed/assistance-requests.seed';
+import { MOCK_DOCUMENT_REQUESTS } from './seed/document-requests.seed';
 import { MOCK_DISBURSEMENTS } from './seed/disbursements.seed';
 import { MOCK_PROGRAMS } from './seed/programs.seed';
 import { denyUnless } from './mock-access';
@@ -68,6 +87,10 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
   private readonly residents = inject(MockResidentStore);
   private readonly cases = inject(MockCaseStore);
   private requests: AssistanceRequest[] = [...MOCK_ASSISTANCE_REQUESTS];
+  private documentRequests: readonly DocumentRequest[] = [...MOCK_DOCUMENT_REQUESTS];
+  private documentSequence = highestDocumentVersionSerial(MOCK_ASSISTANCE_REQUESTS);
+  private documentIdSequence = highestDocumentSerial(MOCK_ASSISTANCE_REQUESTS);
+  private documentRequestSequence = MOCK_DOCUMENT_REQUESTS.length;
   /** Ids for drafts created in this session. */
   private sequence = 0;
   /** Control numbers issued at filing. */
@@ -456,6 +479,265 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     return this.latency.respond(updated);
   }
 
+  /* ── documents (TAB 14) ─────────────────────────────────────────────────── */
+
+  recordDocument(
+    id: AssistanceRequestId,
+    requirementId: RequirementId,
+    draft: DocumentVersionDraft,
+  ): Observable<AssistanceRequest> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<AssistanceRequest>(user, 'document.record');
+    if (denied) {
+      return denied;
+    }
+
+    const found = this.locate<AssistanceRequest>(id, requirementId, 'document.record');
+    if ('error' in found) {
+      return found.error;
+    }
+    const { request, requirement } = found;
+
+    const existing = requirement.document;
+    const isReplacement = existing !== null && existing.versions.length > 0;
+    const problems = documentVersionProblems(draft, isReplacement);
+    if (problems.length > 0) {
+      return throwError(() => new DocumentVersionInvalidError(problems));
+    }
+
+    const now = asIsoDateTime(new Date());
+    this.documentSequence += 1;
+    const version: DocumentVersion = {
+      id: asId<DocumentVersionId>(`dv-${String(this.documentSequence).padStart(4, '0')}`),
+      // Numbered from the length of the history, never from a count of the
+      // live ones: version 3 stays version 3 forever.
+      version: (existing?.versions.length ?? 0) + 1,
+      file: draft.file,
+      source: draft.source,
+      documentNumber: draft.documentNumber,
+      issuedOn: draft.issuedOn,
+      expiresOn: draft.expiresOn,
+      receivedBy: user?.id ?? asId<StaffUserId>('staff-unknown'),
+      receivedAt: now,
+      supersededAt: null,
+      supersededReason: null,
+    };
+
+    // The previous version is *marked* superseded, never removed. This is the
+    // whole point of the model: what the office saw when it decided survives.
+    const priorVersions = (existing?.versions ?? []).map((entry, index, all) =>
+      index === all.length - 1
+        ? { ...entry, supersededAt: now, supersededReason: draft.replacesBecause?.trim() ?? null }
+        : entry,
+    );
+
+    this.documentIdSequence += existing === null ? 1 : 0;
+    const document: RequirementDocument = {
+      id:
+        existing?.id ??
+        asId<RequirementDocumentId>(`doc-${String(this.documentIdSequence).padStart(4, '0')}`),
+      requirementId,
+      versions: [...priorVersions, version],
+    };
+
+    return this.latency.respond(
+      this.saveRequirement(request, requirementId, (entry) => ({
+        ...entry,
+        document,
+        // Presenting a document moves a pending requirement to submitted; it
+        // never marks it verified. Checking it is a separate act by a person.
+        status: entry.status === 'verified' ? entry.status : 'submitted',
+        submittedAt: entry.submittedAt ?? now,
+      })),
+    );
+  }
+
+  decideApplicability(
+    id: AssistanceRequestId,
+    requirementId: RequirementId,
+    applicability: ConditionalApplicability,
+    reason: string,
+  ): Observable<AssistanceRequest> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<AssistanceRequest>(user, 'document.record');
+    if (denied) {
+      return denied;
+    }
+
+    if (reason.trim().length === 0) {
+      return throwError(() => new Error('Say why this document does or does not apply.'));
+    }
+
+    const found = this.locate<AssistanceRequest>(id, requirementId, 'document.record');
+    if ('error' in found) {
+      return found.error;
+    }
+    if (found.requirement.obligation !== 'conditional') {
+      // Ruling on a required document would let staff quietly excuse one
+      // without recording a waiver, which is the audited path for that.
+      return throwError(() => new Error('Only a conditional document can be ruled on this way.'));
+    }
+
+    return this.latency.respond(
+      this.saveRequirement(found.request, requirementId, (entry) => ({
+        ...entry,
+        applicability,
+        applicabilityDecidedBy: user?.id ?? null,
+        applicabilityReason: reason.trim(),
+      })),
+    );
+  }
+
+  requestDocument(
+    id: AssistanceRequestId,
+    draft: DocumentRequestDraft,
+  ): Observable<readonly DocumentRequest[]> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<readonly DocumentRequest[]>(user, 'document.record');
+    if (denied) {
+      return denied;
+    }
+
+    const today = asIsoDate(new Date().toISOString().slice(0, 10));
+    const problems = documentRequestProblems(draft, today);
+    if (problems.length > 0) {
+      return throwError(() => new Error('That document request needs correcting.'));
+    }
+
+    const found = this.locate<readonly DocumentRequest[]>(id, draft.requirementId, 'document.record');
+    if ('error' in found) {
+      return found.error;
+    }
+
+    this.documentRequestSequence += 1;
+    const record: DocumentRequest = {
+      id: asId<DocumentRequestId>(`dr-${String(this.documentRequestSequence).padStart(4, '0')}`),
+      assistanceRequestId: id,
+      requirementId: draft.requirementId,
+      state: 'open',
+      channel: draft.channel,
+      message: draft.message.trim(),
+      neededBy: draft.neededBy,
+      requestedBy: user?.id ?? asId<StaffUserId>('staff-unknown'),
+      requestedAt: asIsoDateTime(new Date()),
+      closedAt: null,
+      withdrawnReason: null,
+    };
+
+    this.documentRequests = [...this.documentRequests, record];
+    return this.latency.respond(this.documentRequestsFor(id));
+  }
+
+  listDocumentRequests(id: AssistanceRequestId): Observable<readonly DocumentRequest[]> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<readonly DocumentRequest[]>(user, 'request.view');
+    if (denied) {
+      return denied;
+    }
+    return this.latency.respond(this.documentRequestsFor(id));
+  }
+
+  openDocument(
+    id: AssistanceRequestId,
+    requirementId: RequirementId,
+    versionId: DocumentVersionId,
+  ): Observable<DocumentAccessGrant> {
+    const user = this.access.currentUser();
+    // The narrow grant. Seeing that a certificate was verified is `request.view`;
+    // pulling the scan itself is this.
+    const denied = denyUnless<DocumentAccessGrant>(user, 'document.download');
+    if (denied) {
+      return denied;
+    }
+
+    const found = this.locate<DocumentAccessGrant>(id, requirementId, 'document.download');
+    if ('error' in found) {
+      return found.error;
+    }
+
+    const version = found.requirement.document?.versions.find((entry) => entry.id === versionId);
+    if (version === undefined || version.file === null) {
+      return throwError(() => new Error('There is no file to open for that document.'));
+    }
+
+    // Sensitive records are shared in redacted form by default. The office
+    // routinely attaches a document to a referral, and the copy that leaves the
+    // building should not carry more than the receiving office needs.
+    const resident = this.residents.find(found.request.residentId);
+    const isSensitive = resident !== undefined && hasSensitiveSector(resident);
+
+    const grant: DocumentAccessGrant = {
+      versionId,
+      fileName: version.file.fileName,
+      mimeType: version.file.mimeType,
+      // Opaque and short-lived, never a durable public URL: a link that keeps
+      // working is a link that gets forwarded.
+      handle: `mock-grant:${versionId}`,
+      expiresAt: asIsoDateTime(new Date(Date.now() + 5 * 60_000)),
+      redactedForSharing: isSensitive,
+      warning: isSensitive
+        ? 'This record is handled under a protected sector. Open it only if this is your work, and do not forward the file.'
+        : 'This file contains personal information. Do not save it outside office systems.',
+    };
+
+    return this.latency.respond(grant);
+  }
+
+  /* ── document helpers ───────────────────────────────────────────────────── */
+
+  private documentRequestsFor(id: AssistanceRequestId): readonly DocumentRequest[] {
+    return this.documentRequests
+      .filter((entry) => entry.assistanceRequestId === id)
+      .slice()
+      .sort(byRequestUrgency);
+  }
+
+  /**
+   * Finds a request and one of its requirements, refusing out of scope. Shared
+   * so every document operation applies the same check in the same order.
+   */
+  private locate<TValue>(
+    id: AssistanceRequestId,
+    requirementId: RequirementId,
+    permission: Permission,
+  ):
+    | { readonly request: AssistanceRequest; readonly requirement: SubmittedRequirement }
+    | { readonly error: Observable<TValue> } {
+    const user = this.access.currentUser();
+    const request = this.requests.find((entry) => entry.id === id);
+    if (request === undefined || !isWithinBarangayScope(user, request.barangayId)) {
+      return { error: throwError(() => new PermissionDeniedError(permission)) };
+    }
+    const requirement = request.requirements.find((entry) => entry.id === requirementId);
+    if (requirement === undefined) {
+      return {
+        error: throwError(() => new Error('That requirement is not on this request.')),
+      };
+    }
+    return { request, requirement };
+  }
+
+  private saveRequirement(
+    request: AssistanceRequest,
+    requirementId: RequirementId,
+    change: (requirement: SubmittedRequirement) => SubmittedRequirement,
+  ): AssistanceRequest {
+    const user = this.access.currentUser();
+    const updated: AssistanceRequest = {
+      ...request,
+      requirements: request.requirements.map((entry) =>
+        entry.id === requirementId ? change(entry) : entry,
+      ),
+      audit: {
+        ...request.audit,
+        updatedAt: asIsoDateTime(new Date()),
+        updatedBy: user?.id ?? null,
+      },
+    };
+    this.requests = this.requests.map((entry) => (entry.id === request.id ? updated : entry));
+    return updated;
+  }
+
   /* ── assembly ───────────────────────────────────────────────────────────── */
 
   /**
@@ -628,4 +910,41 @@ function requestSortKey(
     case 'updatedAt':
       return request.audit.updatedAt;
   }
+}
+
+/**
+ * Highest serial already used by a seeded id, so a session-created document
+ * cannot be handed an id that already belongs to one. Counting records would
+ * do exactly that the moment a seed id skips a number.
+ */
+function highestSerialIn(values: readonly string[]): number {
+  let highest = 0;
+  for (const value of values) {
+    const digits = /(\d+)$/.exec(value)?.[1];
+    const serial = digits === undefined ? 0 : Number.parseInt(digits, 10);
+    if (serial > highest) {
+      highest = serial;
+    }
+  }
+  return highest;
+}
+
+function highestDocumentSerial(requests: readonly AssistanceRequest[]): number {
+  return highestSerialIn(
+    requests.flatMap((request) =>
+      request.requirements
+        .map((requirement) => requirement.document?.id)
+        .filter((id): id is NonNullable<typeof id> => id !== undefined && id !== null),
+    ),
+  );
+}
+
+function highestDocumentVersionSerial(requests: readonly AssistanceRequest[]): number {
+  return highestSerialIn(
+    requests.flatMap((request) =>
+      request.requirements.flatMap((requirement) =>
+        (requirement.document?.versions ?? []).map((version) => version.id),
+      ),
+    ),
+  );
 }

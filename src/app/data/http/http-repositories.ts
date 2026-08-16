@@ -22,6 +22,12 @@ import {
   type IdentityResolutionDraft,
   type MergePreview,
   type ProgramEnrollment,
+  type ConditionalApplicability,
+  type DocumentAccessGrant,
+  type DocumentRequest,
+  type DocumentRequestDraft,
+  type DocumentVersionDraft,
+  type DocumentVersionId,
   type CaseFilter,
   type CaseId,
   type CaseNoteSensitivity,
@@ -501,6 +507,64 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
     return this.api.post<AssistanceRequest, { status: RequirementStatus; remarks: string | null }>(
       `${API_ENDPOINTS.assistanceRequests}/${id}/requirements/${requirementId}`,
       { status, remarks },
+    );
+  }
+
+  recordDocument(
+    id: AssistanceRequestId,
+    requirementId: RequirementId,
+    draft: DocumentVersionDraft,
+  ): Observable<AssistanceRequest> {
+    // POST, never PUT: recording a document appends a version to a history and
+    // never replaces one (`DL-77`). The verb is part of the contract.
+    return this.api.post<AssistanceRequest, DocumentVersionDraft>(
+      `${API_ENDPOINTS.assistanceRequests}/${id}/requirements/${requirementId}/documents`,
+      draft,
+    );
+  }
+
+  decideApplicability(
+    id: AssistanceRequestId,
+    requirementId: RequirementId,
+    applicability: ConditionalApplicability,
+    reason: string,
+  ): Observable<AssistanceRequest> {
+    return this.api.post<
+      AssistanceRequest,
+      { applicability: ConditionalApplicability; reason: string }
+    >(`${API_ENDPOINTS.assistanceRequests}/${id}/requirements/${requirementId}/applicability`, {
+      applicability,
+      reason,
+    });
+  }
+
+  requestDocument(
+    id: AssistanceRequestId,
+    draft: DocumentRequestDraft,
+  ): Observable<readonly DocumentRequest[]> {
+    return this.api.post<readonly DocumentRequest[], DocumentRequestDraft>(
+      `${API_ENDPOINTS.assistanceRequests}/${id}/document-requests`,
+      draft,
+    );
+  }
+
+  listDocumentRequests(id: AssistanceRequestId): Observable<readonly DocumentRequest[]> {
+    return this.api.collection<DocumentRequest>(
+      `${API_ENDPOINTS.assistanceRequests}/${id}/document-requests`,
+    );
+  }
+
+  openDocument(
+    id: AssistanceRequestId,
+    requirementId: RequirementId,
+    versionId: DocumentVersionId,
+  ): Observable<DocumentAccessGrant> {
+    // A POST for a read, deliberately: opening a file is an act the API records
+    // against the reader, and a cacheable GET would let a proxy serve it again
+    // without the server ever seeing the second read.
+    return this.api.post<DocumentAccessGrant, Record<string, never>>(
+      `${API_ENDPOINTS.assistanceRequests}/${id}/requirements/${requirementId}/documents/${versionId}/access`,
+      {},
     );
   }
 }

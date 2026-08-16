@@ -78,6 +78,18 @@ export const PERMISSIONS = [
   // Opens records flagged under a sensitive sector (VAWC survivors, CICL).
   'request.view-sensitive',
 
+  // Recording what an applicant presented, and replacing it when it lapses.
+  // Held apart from `request.intake` because a document is evidence the office
+  // stays answerable for long after the request itself is settled.
+  'document.record',
+  // Opening or saving the file. The narrow grant: a clerk can see that a
+  // certificate was verified, and read its masked number, without being able to
+  // pull the scan of somebody's medical abstract off the system.
+  'document.download',
+  // Reading a document number in full rather than masked to its last four
+  // characters. Separate again, because a number is disclosive on its own.
+  'document.view-full-number',
+
   'disbursement.view',
   'disbursement.schedule',
   'disbursement.release',
@@ -144,6 +156,7 @@ const INTAKE_PERMISSIONS: readonly Permission[] = [
   'request.view',
   'request.create',
   'request.intake',
+  'document.record',
   'referral.view',
 ];
 
@@ -161,6 +174,8 @@ const SOCIAL_WORKER_PERMISSIONS: readonly Permission[] = [
   'request.assess',
   'request.endorse',
   'request.view-sensitive',
+  'document.download',
+  'document.view-full-number',
   'referral.manage',
   'report.view',
 ];
@@ -270,6 +285,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       // Reading the history, never adjudicating it: `beneficiary.review-duplicates`
       // would let oversight alter the very identities it is checking.
       'beneficiary.view',
+      'document.download',
       'disbursement.view',
       'referral.view',
       'report.view',

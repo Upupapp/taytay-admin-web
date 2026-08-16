@@ -60,6 +60,16 @@ describe('permission matrix', () => {
     expect(MUTATING_PERMISSIONS).not.toContain('resident.view' as Permission);
   });
 
+  it('does not mistake a read for a change because of how it is spelled', () => {
+    // `document.download` reads a file and alters nothing. Under the name-shape
+    // rule this replaced, it counted as mutating and made the auditor — a
+    // read-only role by definition — look like one that could change records.
+    expect(MUTATING_PERMISSIONS).not.toContain('document.download' as Permission);
+    expect(MUTATING_PERMISSIONS).not.toContain('document.view-full-number' as Permission);
+    // And recording one is still a change.
+    expect(MUTATING_PERMISSIONS).toContain('document.record' as Permission);
+  });
+
   it('answers who holds a permission', () => {
     const approvers = rolesWith('request.approve');
     expect(approvers).toContain('mswdo-head');

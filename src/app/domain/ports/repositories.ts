@@ -22,6 +22,12 @@ import type {
   MergePreview,
 } from '../beneficiaries/duplicate-review';
 import type { ProgramEnrollment } from '../beneficiaries/program-enrollment';
+import type {
+  DocumentRequest,
+  DocumentRequestDraft,
+} from '../requirements/document-request';
+import type { DocumentVersionDraft } from '../requirements/requirement-document';
+import type { ConditionalApplicability } from '../requirements/requirement-obligation';
 import type { AssessmentDraft } from '../intake/assessment';
 import type { AdvisoryAcknowledgement, IntakeAdvisory } from '../intake/intake-advisory';
 import type { IntakeDraft } from '../intake/intake-draft';
@@ -71,7 +77,9 @@ import type {
   CaseId,
   CaseTaskId,
   DisbursementId,
+  DocumentVersionId,
   HouseholdId,
+  IsoDateTime,
   NotificationId,
   ProgramId,
   FamilyId,
@@ -359,6 +367,77 @@ export interface AssistanceRequestRepository {
     status: RequirementStatus,
     remarks: string | null,
   ): Observable<AssistanceRequest>;
+
+  /**
+   * Records a document against a requirement, or replaces the one already
+   * there.
+   *
+   * **Always appends.** There is no `replaceDocument` and no `deleteDocument`,
+   * and there must not be: the superseded version is the evidence of what the
+   * office actually saw when it decided, and a request approved on a
+   * certificate that was replaced two months later must still be explicable a
+   * year on (`DL-77`). A replacement carries a required reason.
+   */
+  recordDocument(
+    id: AssistanceRequestId,
+    requirementId: RequirementId,
+    draft: DocumentVersionDraft,
+  ): Observable<AssistanceRequest>;
+
+  /**
+   * Rules on whether a conditional document applies to this applicant.
+   *
+   * The software states the condition and never evaluates it (`DL-76`). The
+   * reason is required, because deciding that somebody does not need a document
+   * is as consequential as deciding that they do.
+   */
+  decideApplicability(
+    id: AssistanceRequestId,
+    requirementId: RequirementId,
+    applicability: ConditionalApplicability,
+    reason: string,
+  ): Observable<AssistanceRequest>;
+
+  /** Records that the office asked the applicant for a missing document. */
+  requestDocument(
+    id: AssistanceRequestId,
+    draft: DocumentRequestDraft,
+  ): Observable<readonly DocumentRequest[]>;
+
+  listDocumentRequests(id: AssistanceRequestId): Observable<readonly DocumentRequest[]>;
+
+  /**
+   * Opens a document for viewing or saving.
+   *
+   * A **method rather than a URL on the model**, so that reading a file is an
+   * act the data layer can refuse and the API can log. A screen holding a link
+   * it may not follow is how an unauthorised download becomes a copy-paste
+   * away.
+   */
+  openDocument(
+    id: AssistanceRequestId,
+    requirementId: RequirementId,
+    versionId: DocumentVersionId,
+  ): Observable<DocumentAccessGrant>;
+}
+
+/**
+ * Permission to read one file, once, with the disclosure it carries stated.
+ *
+ * `redactedForSharing` is the seam for the redaction-ready preview the master
+ * command asks for: a copy shared outside the office is marked as such, and the
+ * grant says so rather than leaving it to the screen to remember.
+ */
+export interface DocumentAccessGrant {
+  readonly versionId: DocumentVersionId;
+  readonly fileName: string;
+  readonly mimeType: string;
+  /** Opaque handle the API exchanges for the bytes. Never a durable public URL. */
+  readonly handle: string;
+  readonly expiresAt: IsoDateTime;
+  readonly redactedForSharing: boolean;
+  /** What the reader is about to see, for the warning shown before opening. */
+  readonly warning: string;
 }
 
 export const ASSISTANCE_REQUEST_REPOSITORY = new InjectionToken<AssistanceRequestRepository>(
