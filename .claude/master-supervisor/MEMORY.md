@@ -17,10 +17,10 @@ intent through the audit in `docs/reference-audit/`.
 
 ## Where the build is
 
-- **Completed and certified:** TABs 01–18.
-- **Current:** TAB 19 — Reports, Analytics, Exports & LGU Decision Support.
-- **Remaining:** 20–23 (search, users/audit, hardening, QA), then 24–26
-  (Newsfeed, Events).
+- **Completed and certified:** TABs 01–19.
+- **Current:** TAB 20 — Global Search, Saved Filters & Record Discovery.
+- **Remaining:** 21–23 (users/audit, hardening, QA), then 24–26 (Newsfeed,
+  Events).
 
 **The master command PDF is on disk** at
 `C:\Users\paulg\Downloads\Taytay_Rizal_LGUIDS_Admin_Portal_Master_Command_LATEST.pdf`
@@ -54,7 +54,7 @@ are handed.
 
 ## Non-negotiables carried by build checkers
 
-`npm run verify` = lint + typecheck + 13 checkers + 1120 tests + build. Each
+`npm run verify` = lint + typecheck + 14 checkers + 1180 tests + build. Each
 checker was validated against planted regressions. Do not weaken one to pass.
 
 | Checker | Refuses |
@@ -72,6 +72,7 @@ checker was validated against planted regressions. Do not weaken one to pass.
 | `check:visits` | any location capture; an observation without its kind; an unattributed third-party account; an edited observation; a non-terminal outcome |
 | `check:releases` | a ledger, account code, bank account or posting date; a status on a payout session; a session summarised as one verdict; a deferral reason blaming the beneficiary; an amount forced onto goods; an unmasked or over-full manifest; a screen composing its own manifest; self-release blocking; an ungated adapter method |
 | `check:work` | an email/SMS/push/webhook channel; an alert with a due date, assignee or done state; a mutator on the work port; a stored urgency flag; lateness not said in words; a queue summarised as a verdict; duplicate review as work; an unfiltered notification read |
+| `check:reports` | a second person-level report; a person-level report with no stated reason or only `report.view`; suppression dropped, rounded, applied to zero, or bypassable; a total taken after suppression; an optional series summary; a canvas or charting dependency; an export missing its filter/author/handling notice; a screen composing an export; a productivity or completion-rate field; staff workload sorted by volume |
 
 ## Doctrines that constrain every later TAB
 
@@ -126,14 +127,17 @@ checker was validated against planted regressions. Do not weaken one to pass.
   only. The staff picker belongs with the administration TAB. (`DL-99`)
 - **Voiding a release has no screen** — `changeStatus` and `disbursement.void`
   exist and are gated.
-- **The remaining placeholder routes are `reports` and `administration`.**
-  Assume their adapters are ungated until read: **three for three** so far
-  (`DL-84`, `DL-95`, `DL-100`).
+- **`administration` is the last placeholder route.** Assume its adapters are
+  ungated until read: **three for three** so far (`DL-84`, `DL-95`, `DL-100`).
+- **The report filter bar renders 2 of 5 declared filters.** Programme, status
+  and caseworker are honoured by the adapter and declared per report; their
+  pickers need the programme and staff lists (TABs 20–21). Offering a control a
+  report ignores would be a lie, so they are declared and not yet rendered.
 
 ## A recurring defect worth naming
 
 **A checker assertion that is not scoped to the declaration it is about will
-pass while the rule is gone.** This has now bitten **nine** times, in five
+pass while the rule is gone.** This has now bitten **ten** times, in eight
 shapes:
 
 1. the string survives elsewhere in the same file (a problem code still in a
@@ -142,7 +146,17 @@ shapes:
    `check:work` twice);
 3. a **short label matches before the long description** it was meant to check;
 4. one key is a **prefix of another** (`copy.overdue` matched `copy.overdueHint`);
-5. `files.some(...)` passes because a **different file** still satisfies it.
+5. `files.some(...)` passes because a **different file** still satisfies it;
+6. the phrase survives in the **doc comment** above the declaration;
+7. a lazy block regex terminates on a delimiter **inside a string literal**
+   (`/SMALL_CELL_BASIS[\s\S]*?;/` stopped at "…practice; the MSWDO…");
+8. the checker flags the **prose that satisfies the rule** as violating it — a
+   caution warning against ranking necessarily contains the word "productivity".
+
+**And a counter-trap on the validation side:** a plant that edits the *wrong
+occurrence* looks exactly like a checker weakness. Two of TAB 19's four misses
+were that. Diagnose a miss by grepping for the surviving string **before**
+rewriting the rule.
 **Scope every checker assertion to the declaration it is about** (the interface
 block, the function body, the constant), not to the file.
 
@@ -165,44 +179,44 @@ formality.
 
 ## Next action
 
-Begin TAB 19 — Reports, Analytics, Exports & LGU Decision Support. **Read its
-text in the PDF first** (page ~42).
+Begin TAB 20 — Global Search, Saved Filters & Record Discovery. **Read its text
+in the PDF first** (page ~44).
 
-The objective is reporting that supports planning and accountability **while
-minimising exposure of citizen data**. Fourteen report areas: caseload,
-assistance pipeline, programme utilisation, beneficiaries by barangay,
-vulnerability indicators, demographic reach, case aging and turnaround,
-requirements bottlenecks, referral outcomes, visit workload, release status,
-repeat assistance, data completeness, and staff workload.
+The objective is making large municipal datasets navigable in seconds **without
+exposing too much sensitive information in search results**.
+
+**Inspect what exists first.** `SavedViewRepository` and `SAVED_VIEW_REPOSITORY`
+were built in an early TAB as a hook, with `saved-views.seed.ts` and a
+`SavedViewsBar` primitive already in `@shared`. Extend them; do not start a
+second system.
 
 The tab's load-bearing constraints:
 
-1. **Aggregate first.** No names by default. Drill to person level only when
-   necessary, behind a permission and a privacy warning. This is the strongest
-   statement of data minimisation in the whole master command, and `DL-38`
-   already says redaction happens in the data layer — a report must not be the
-   surface that reintroduces PII a screen was never handed.
-2. **Every chart claim must be verifiable from tabular data**, and every
-   visualisation gets summary text plus a tabular equivalent. `ChartTable`
-   already exists and **is** a real table (`CLAUDE.md` §7) — extend it, do not
-   build a second one.
-3. **Charts must not rely on hue alone** — the same rule as `DL-102`, which the
-   work queue already implements as sentence + heading + position.
-4. **Exports state their applied filters and generation metadata**, so a
-   printed report cannot be read as covering something it did not.
-5. **Staff workload must avoid simplistic performance ranking.** The team queue
-   (`DL-97`) already sorts by who is most behind *to direct help*, not to rank
-   people; keep that framing and expect the checker to enforce the absence of a
-   score, a league table or a productivity index.
-6. The dashboard's `AttentionSignal` and `DashboardRepository.summary` already
-   compute figures under a filter and echo it back — reuse that discipline
-   rather than inventing a second one.
+1. **Safe snippets only.** Name, ID, barangay, status and limited context.
+   **Never case-note text in global results** — and `DL-58` already withholds a
+   protected note's body in the data layer, so search must not become the
+   surface that reintroduces it. Expect the checker to enforce the absence.
+2. **Results reveal only role-appropriate data.** Search crosses six entity
+   types, each with its own permission and scope. This is the widest surface in
+   the application for an access mistake, and the disclosure rules already exist
+   (`DL-38` for residents, `DL-58` for notes, `DL-73` for duplicates) — reuse
+   them rather than writing a seventh.
+3. **Recent searches may be local-only and must not persist sensitive query
+   content.** A resident's name typed into a search box and kept in
+   `localStorage` is a disclosure the office never decided to make. Note that
+   `CLAUDE.md` §2.5 already forbids this app putting tokens in `localStorage`;
+   apply the same caution here and prefer in-memory.
+4. **Personal saved views first; shared team views need a permission.**
+5. **Filters stay understandable and removable** — chips, clear-all, a count of
+   filtered records, and URL sync **where safe**. "Where safe" is the
+   interesting part: a query string containing a resident's name ends up in
+   browser history and in any screenshot of the address bar.
 
-Then: `npm run verify`, commit locally, write `tab-reports/TAB-19-reports.md`,
-advance state to TAB 20.
+Then: `npm run verify`, commit locally, write `tab-reports/TAB-20-search.md`,
+advance state to TAB 21.
 
 ## Git
 
 - Branch `main`, no remote configured. **Never push.**
-- HEAD at TAB 18 certification: `378b8f8`.
+- HEAD at TAB 19 certification: `70d7976`.
 - Working tree clean.
