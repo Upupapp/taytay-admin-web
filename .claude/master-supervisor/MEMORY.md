@@ -2,7 +2,7 @@
 
 Compact state for resuming this build. Not a transcript. The authoritative
 records are `CLAUDE.md` (the constitution), `docs/reference-audit/decision-log.md`
-(DL-01..DL-75) and the git history.
+(DL-01..DL-79) and the git history.
 
 ## Master Command
 
@@ -17,10 +17,10 @@ intent through the audit in `docs/reference-audit/`.
 
 ## Where the build is
 
-- **Completed and certified:** TABs 01–13.
-- **Current:** TAB 14 — Requirements, Documents & Verification.
-- **Remaining:** 15–23 (referrals, field visits, releases, tasks, reports,
-  search, users/audit, hardening, QA), then 24–26 (Newsfeed, Events).
+- **Completed and certified:** TABs 01–14.
+- **Current:** TAB 15 — Referrals, Service Providers & Inter-Office Coordination.
+- **Remaining:** 16–23 (field visits, releases, tasks, reports, search,
+  users/audit, hardening, QA), then 24–26 (Newsfeed, Events).
 
 ## Architecture
 
@@ -46,7 +46,7 @@ are handed.
 
 ## Non-negotiables carried by build checkers
 
-`npm run verify` = lint + typecheck + 9 checkers + 904 tests + build. Each
+`npm run verify` = lint + typecheck + 10 checkers + 944 tests + build. Each
 checker was validated against planted regressions. Do not weaken one to pass.
 
 | Checker | Refuses |
@@ -59,6 +59,7 @@ checker was validated against planted regressions. Do not weaken one to pass.
 | `check:intake` | an advisory rendered as a verdict |
 | `check:programs` | a component branching on a programme code; a national programme recorded as one the municipality runs |
 | `check:beneficiary` | a `BeneficiaryId`; any merge or delete of a person; a match signal carrying a value; a stored standing flag |
+| `check:documents` | removing a document version; an unexplained replacement; a raw document number in a template; a decision-shaped completion field |
 
 ## Doctrines that constrain every later TAB
 
@@ -94,24 +95,36 @@ checker was validated against planted regressions. Do not weaken one to pass.
 - **An identity finding cannot be corrected.** The opposite verdict is refused
   rather than silently applied; the correction screen is missing. (`DL-74`)
 - **`beneficiary.export` has no export yet** — it exists for the reporting TAB.
+- **No document upload form.** Port, adapter, validation and version history are
+  built and tested; the screen that captures a file is not. (`DL-77`)
+- **Document requests are callable but not composed from the UI.**
+- **`redactedForSharing` is a flag**, not a renderer — the redacted copy is
+  backend work.
 
 ## Next action
 
-Begin TAB 14 — Requirements, Documents & Verification. Read the master command's
-TAB 14 section, then inspect what already exists: `AssistanceRequest` already
-carries requirements and `reviewRequirement` on its port (TAB 11), and
-`RequirementTemplate` plus `resolveRequirements` already merge a programme's
-documents with a shared template (TAB 12, `DL-67`). **Extend those rather than
-building a parallel document model.**
+Begin TAB 15 — Referrals, Service Providers & Inter-Office Coordination. Inspect
+what exists first: `domain/referrals/referral.ts` already holds `Referral`,
+`ReferralDestination` and `ReferralStatus` with a catalog, `ReferralRepository`
+already offers `list`/`getById`, seeds exist in `referrals.seed.ts`, and the
+`/referrals` route is still a placeholder. **Extend that model; do not start a
+second one.**
 
-The tab's own load-bearing constraints: replacing a file must not erase history
-(version metadata, like every other append-only record here); document
-completeness must never imply eligibility (`DL-42`/`DL-66` again); and sensitive
-document numbers are masked by default in list contexts, with a warning before
-download or export.
+The tab's load-bearing constraints, in order of how easily they are lost:
+
+1. **Minimum necessary disclosure.** A referral summary leaves the building. It
+   shows only what the receiving office needs, and sensitive attachments are
+   opt-in and permission-gated. `DL-77`'s access grant is the pattern to reuse.
+2. **Every referral traces to a case or client**, and overdue ones surface in
+   work queues — which means the queue shape from TAB 10 rather than a new one.
+3. **Status compatibility.** Referral statuses map onto the universal vocabulary
+   rather than fragmenting it; the existing `ReferralStatus` catalog already
+   does this and should not be widened casually.
+4. Outcome capture is a recorded act with a reason, like every other mutation
+   here (`DL-54`).
 
 ## Git
 
 - Branch `main`, no remote configured. **Never push.**
-- HEAD at TAB 13 certification: `1ab6c0d`.
+- HEAD at TAB 14 certification: `a07d929`.
 - Working tree clean.
