@@ -3,6 +3,10 @@
 <div class="shell" [class.shell--nav-open]="navOpen()">
   <a class="skip-link" href="#main-content">{{ copy.skipToContent }}</a>
 
+  <!-- Before the nav and before the content: an officer who cannot save needs
+       to know before they spend five minutes typing, not after. -->
+  <app-connection-banner />
+
   <!-- Compact only: dismisses the drawer without needing to hit the toggle. -->
   @if (isCompact() && navOpen()) {
     <button

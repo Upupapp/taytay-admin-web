@@ -3,6 +3,7 @@
  * Adding a new cross-feature primitive means exporting it here so the next TAB
  * finds it instead of re-inventing it.
  */
+export * from './state/debounced';
 export * from './state/view-state';
 export * from './brand/app-image';
 export * from './brand/asset-manifest';
@@ -34,6 +35,7 @@ export * from './pipes/peso.pipe';
 export * from './pipes/relative-time.pipe';
 export * from './ui/async-content/async-content';
 export * from './ui/chart-table/chart-table';
+export * from './ui/connection-banner/connection-banner';
 export * from './ui/data-table/data-table';
 export * from './ui/data-table/table-column';
 export * from './ui/drawer/drawer';

@@ -3118,3 +3118,96 @@ screen that captures one is not**, and the governance page says so rather than
 offering a form that goes nowhere. A half-built correction flow is worse than
 none: a resident told their request was filed, when it was not, has been failed
 twice.
+### DL-118 · The office is warned about a lost connection; nothing is queued
+
+**Status:** Settled (implemented in TAB 22).
+
+The master command asks for graceful network-loss handling and, in the same
+paragraph, that this admin system must not promise full offline transactional
+integrity without a backend strategy — and must **never silently queue a
+sensitive submission**.
+
+So `NetworkStatus` observes `navigator.onLine` and drives a **warning only**.
+Nothing is held, nothing is retried in the background, and nothing is marked
+saved on the strength of it. `navigator.onLine` is a weak signal anyway — it
+reports whether an interface is up, not whether the API is reachable — and the
+service is honest about that by never letting it change behaviour.
+
+`DL-87` already settled this for field visits: exactly one state means the
+office record has it, and a failed send says plainly that nothing was queued in
+the background. This extends it application-wide.
+
+Three choices in the banner are deliberate:
+
+- **`role="status"`, not `role="alert"`.** Losing a connection is a condition of
+  the device, not an error in the page, and `alert` interrupts a screen reader
+  mid-sentence.
+- **The reconnected message does not auto-dismiss.** It says work was *not*
+  kept — exactly the message that must survive somebody looking away. A person
+  dismisses it; never a timer.
+- **No "we will retry" anywhere.** A caseworker who reads that closes the tab
+  believing the request was filed.
+
+**Consequence:** `check:hardening` fails the build if any notice starts
+promising a send or a sync, and if an offline queue, background sync or service
+worker registration appears anywhere in the application.
+
+### DL-119 · One debounce window, and only the typed term waits
+
+**Status:** Settled (implemented in TAB 22).
+
+Two findings, one cause.
+
+**Seven list screens each declared `const SEARCH_DEBOUNCE_MS = 250` privately.**
+Seven copies of one number is how two screens come to feel different for no
+stated reason — the same trap as two constants meaning "due soon", which TAB 18
+avoided by importing the case module's window rather than restating it.
+
+**Five other screens had no debounce at all.** Typing "Sarmiento" fired nine
+reads across the registry — nine sorts, nine paginations, nine disclosure
+passes — and the eight that were thrown away cost exactly as much as the one
+that was kept.
+
+`SEARCH_DEBOUNCE_MS` and `debouncedTerm` now live in one module and every screen
+imports them.
+
+**Only the typed term is debounced**, never the whole query. Choosing a status
+from a dropdown is a single deliberate act and should take effect at once;
+debouncing it would make every filter feel broken.
+
+The URL-driven lists debounce the *navigation* rather than a signal, because
+each keystroke would otherwise push a history entry as well as a query. Same
+constant, different application — and the constant is now shared.
+
+**Consequence:** a screen that declares its own debounce window, or searches
+without settling the term, fails the build.
+
+### DL-120 · A shared primitive is defined once, or it is not shared
+
+**Status:** Settled (fixed in TAB 22).
+
+`.field`, `.field__label`, `.field__input` and `.field__hint` have been in
+`src/styles.scss` since the shell TAB, under a comment reading: *"a field that
+looks and behaves differently on each screen is how an encoder learns to
+distrust one."*
+
+Five feature stylesheets had redefined them anyway, and **with different
+values** — `display: block` instead of flex, a different label colour, a
+different hint colour. Nobody chose that; each screen copied a working block and
+adjusted it, and the shared control quietly stopped being shared.
+
+A local copy does not extend a shared primitive. It replaces it, on that one
+screen, with something slightly different.
+
+Removing them cleared ~3kB of duplication and brought
+`visit-detail-page.scss` back under the component-style budget it had exceeded
+**since TAB 16** — six TABs of a warning that was really a symptom.
+
+`.field + .field` now supplies the stacking margin the local copies were
+actually there for, which is why they were written in the first place.
+
+**Consequence:** `check:hardening` fails the build if a feature stylesheet
+declares a selector that `styles.scss` already owns. The component-style budget
+is **not** re-measured there: `ng build` already enforces it against the
+compiled CSS, and a second budget with a different number is the same drift in
+another costume — so the checker asserts the build's guard still exists instead.

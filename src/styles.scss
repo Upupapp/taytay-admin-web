@@ -210,6 +210,13 @@ textarea.field__input {
   resize: vertical;
 }
 
+/* Stacked fields space themselves, so a screen does not re-declare `.field`
+   just to add a margin — which is how five feature stylesheets came to
+   redefine the shared control slightly differently (`DL-120`). */
+.field + .field {
+  margin-block-start: var(--space-4);
+}
+
 .check {
   display: inline-flex;
   align-items: center;

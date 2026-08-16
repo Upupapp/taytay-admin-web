@@ -1,0 +1,62 @@
+.connection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-snug);
+  padding: var(--space-snug) var(--space-base);
+  border-block-end: 1px solid var(--c-border);
+  font-size: 13px;
+}
+
+/*
+ * Carried by a word and a rule, never by colour alone. The label reads
+ * "Offline" / "Connection restored" in text, so the banner survives a
+ * monochrome display and a screen reader announces the state, not a hue.
+ */
+.connection--offline {
+  border-inline-start: 4px solid var(--c-warning, #b26b00);
+}
+
+.connection--restored {
+  border-inline-start: 4px solid var(--c-success, #1c7a4d);
+}
+
+.connection__message {
+  margin: 0;
+  max-inline-size: 92ch;
+}
+
+.connection__label {
+  display: inline-block;
+  margin-inline-end: var(--space-compact);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11.5px;
+}
+
+.connection__dismiss {
+  /* Meets the touch-target floor the rest of the shell uses. */
+  min-block-size: var(--target-min);
+  margin-inline-start: auto;
+  padding-inline: var(--space-snug);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-base);
+  background: var(--c-surface);
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.connection__dismiss:focus-visible {
+  outline: 2px solid var(--c-focus, currentColor);
+  outline-offset: 2px;
+}
+
+/* At 200% zoom the banner wraps rather than pushing the dismiss control off. */
+@media (width <= 600px) {
+  .connection__dismiss {
+    margin-inline-start: 0;
+  }
+}

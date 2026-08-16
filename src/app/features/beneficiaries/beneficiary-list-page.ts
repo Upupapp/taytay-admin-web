@@ -31,6 +31,7 @@ import {
   type Page,
   type SortSpec,
 } from '@domain/index';
+import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { RelativeTimePipe } from '@shared/pipes/relative-time.pipe';
@@ -42,7 +43,6 @@ import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { BENEFICIARIES_COPY } from './beneficiaries.copy';
 import { beneficiaryFilterParams, readBeneficiaryQuery } from './beneficiary-query';
 
-const SEARCH_DEBOUNCE_MS = 250;
 
 /**
  * The beneficiary registry list.

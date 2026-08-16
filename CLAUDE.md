@@ -97,7 +97,7 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:vulnerability`, `check:case-audit`, `check:intake`, `check:programs`,
 `check:beneficiary`, `check:documents`, `check:referrals`, `check:visits`,
 `check:releases`, `check:work`, `check:reports`, `check:search` and
-`check:governance`. Each enforces a rule a comment
+`check:governance` and `check:hardening`. Each enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 
@@ -339,6 +339,28 @@ those are easy to refuse as features and easy to acquire as an innocuous field.
 state means the office record has it, and a failed send says plainly that
 nothing was queued in the background. A worker who believes a visit was filed
 and returns to find it was not has been failed twice.
+
+### Degraded connection: warn, never queue
+
+`NetworkStatus` observes `navigator.onLine` and drives a **warning only**
+(`DL-118`). Nothing is queued, nothing is retried in the background, and nothing
+is marked saved on the strength of it — this is an admin system with no backend
+strategy for offline integrity, and `DL-87` already settled that a failed send
+must say plainly that nothing was held.
+
+The banner is `role="status"` rather than `alert`, and its reconnected message
+is dismissed by a person rather than a timer, because it says work was *not*
+kept. No notice may promise a send, a sync or a retry.
+
+**One debounce window** (`DL-119`). `SEARCH_DEBOUNCE_MS` and `debouncedTerm`
+live in `@shared/state/debounced`; no screen declares its own. Only the **typed
+term** is debounced — a dropdown is a single deliberate act and takes effect at
+once.
+
+**A shared primitive is defined once, or it is not shared** (`DL-120`).
+`.field`, `.card` and `.btn` belong to `styles.scss`. A feature stylesheet that
+redefines one is not extending it, it is replacing it on that screen — which is
+how five of them came to render the same form control three different ways.
 
 ### The audit trail says what changed, never what it changed to
 

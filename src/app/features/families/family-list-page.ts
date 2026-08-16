@@ -22,6 +22,7 @@ import {
   type Page,
   type SortSpec,
 } from '@domain/index';
+import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -30,7 +31,6 @@ import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { FAMILIES_COPY } from './families.copy';
 import { readFamilyQuery } from './family-query';
 
-const SEARCH_DEBOUNCE_MS = 250;
 
 /**
  * The family registry.

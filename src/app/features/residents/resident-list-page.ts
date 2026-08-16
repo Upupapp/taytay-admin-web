@@ -31,6 +31,7 @@ import {
   type SortSpec,
   type VulnerabilitySector,
 } from '@domain/index';
+import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -40,7 +41,6 @@ import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { RESIDENTS_COPY } from './residents.copy';
 import { readResidentQuery, residentFilterParams } from './resident-query';
 
-const SEARCH_DEBOUNCE_MS = 250;
 
 /**
  * The registry list, and the reference implementation for list screens.

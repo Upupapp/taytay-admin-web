@@ -18,6 +18,7 @@ import {
   type VisitPurpose,
   type VisitStatus,
 } from '@domain/index';
+import { debouncedTerm } from '@shared/state/debounced';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -59,6 +60,15 @@ export class VisitListPage {
 
   protected readonly onlyMine = signal(false);
   protected readonly search = signal('');
+
+  /**
+   * The term the data layer actually sees.
+   *
+   * Debounced so typing a surname is one read rather than one per keystroke
+   * (`DL-119`). The other filters are not debounced: choosing from a dropdown
+   * is a single deliberate act and should take effect at once.
+   */
+  private readonly settledSearch = debouncedTerm(this.search);
   protected readonly status = signal<VisitStatus | null>(null);
   protected readonly purpose = signal<VisitPurpose | null>(null);
   protected readonly overdueOnly = signal(false);
@@ -66,7 +76,7 @@ export class VisitListPage {
   private readonly query = computed(() => ({
     mine: this.onlyMine(),
     filter: {
-      ...(this.search() ? { search: this.search() } : {}),
+      ...(this.settledSearch() ? { search: this.settledSearch() } : {}),
       ...(this.status() ? { status: this.status() as VisitStatus } : {}),
       ...(this.purpose() ? { purpose: this.purpose() as VisitPurpose } : {}),
       ...(this.overdueOnly() ? { overdueOnly: true } : {}),

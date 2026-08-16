@@ -19,6 +19,7 @@ import {
   type AuditFilter,
   type AuditRow,
 } from '@domain/index';
+import { debouncedTerm } from '@shared/state/debounced';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -55,6 +56,15 @@ export class AuditPage {
   protected readonly actions = Object.keys(AUDIT_ACTION_LABELS) as AuditAction[];
 
   protected readonly search = signal('');
+
+  /**
+   * The term the data layer actually sees.
+   *
+   * Debounced so typing a surname is one read rather than one per keystroke
+   * (`DL-119`). The other filters are not debounced: choosing from a dropdown
+   * is a single deliberate act and should take effect at once.
+   */
+  private readonly settledSearch = debouncedTerm(this.search);
   protected readonly action = signal<AuditAction | null>(null);
   protected readonly sensitiveOnly = signal(false);
 
@@ -63,7 +73,7 @@ export class AuditPage {
   );
 
   private readonly filter = computed<AuditFilter>(() => ({
-    ...(this.search() ? { search: this.search() } : {}),
+    ...(this.settledSearch() ? { search: this.settledSearch() } : {}),
     ...(this.action() ? { action: this.action() as AuditAction } : {}),
     ...(this.sensitiveOnly() ? { sensitiveOnly: true } : {}),
   }));

@@ -19,6 +19,7 @@ import { NotificationStore } from '@core/notifications/notification.store';
 import { barangayName, type NotificationId } from '@domain/index';
 import { BrandMark } from '@shared/brand/brand-mark';
 import { RelativeTimePipe } from '@shared/pipes/relative-time.pipe';
+import { ConnectionBanner } from '@shared/ui/connection-banner/connection-banner';
 import { Drawer } from '@shared/ui/drawer/drawer';
 import { EmptyState } from '@shared/ui/empty-state/empty-state';
 import { RouteProgress } from '@shared/ui/route-progress/route-progress';
@@ -47,6 +48,7 @@ import { LAYOUT_COPY } from '../layout.copy';
     AppNav,
     AppTopbar,
     BrandMark,
+    ConnectionBanner,
     Drawer,
     EmptyState,
     RelativeTimePipe,

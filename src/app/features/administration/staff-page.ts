@@ -12,6 +12,7 @@ import {
   RESET_ACCESS_IS_NOT_BUILT,
   type StaffAccount,
 } from '@domain/index';
+import { debouncedTerm } from '@shared/state/debounced';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -47,6 +48,15 @@ export class StaffPage {
   protected readonly resetNotice = RESET_ACCESS_IS_NOT_BUILT;
 
   protected readonly search = signal('');
+
+  /**
+   * The term the data layer actually sees.
+   *
+   * Debounced so typing a surname is one read rather than one per keystroke
+   * (`DL-119`). The other filters are not debounced: choosing from a dropdown
+   * is a single deliberate act and should take effect at once.
+   */
+  private readonly settledSearch = debouncedTerm(this.search);
   protected readonly includeInactive = signal(false);
   private readonly reloads = signal(0);
   protected readonly saving = signal(false);
@@ -63,7 +73,7 @@ export class StaffPage {
   private readonly all = computed<readonly StaffAccount[]>(() => valueOf(this.state()) ?? []);
 
   protected readonly accounts = computed(() => {
-    const term = this.search().trim().toLocaleLowerCase();
+    const term = this.settledSearch().toLocaleLowerCase();
     return this.all()
       .filter((account) => this.includeInactive() || account.isActive)
       .filter((account) => {

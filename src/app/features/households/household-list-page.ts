@@ -23,6 +23,7 @@ import {
   type Page,
   type SortSpec,
 } from '@domain/index';
+import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
 import { VULNERABILITY_COPY } from '@shared/households/vulnerability.copy';
 import { DataTable } from '@shared/ui/data-table/data-table';
@@ -36,7 +37,6 @@ import {
   readHouseholdQuery,
 } from './household-query';
 
-const SEARCH_DEBOUNCE_MS = 250;
 
 /**
  * Households, ordered and filterable — the barangay-level view of who the

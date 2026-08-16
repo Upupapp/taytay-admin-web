@@ -26,6 +26,7 @@ import {
   type SortDirection,
   type SortSpec,
 } from '@domain/index';
+import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -35,7 +36,6 @@ import type { TableColumn } from '@shared/ui/data-table/table-column';
 
 import { REQUESTS_COPY } from './requests.copy';
 
-const SEARCH_DEBOUNCE_MS = 250;
 
 const STATUSES: readonly AssistanceRequestStatus[] = [
   'draft',

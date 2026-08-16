@@ -27,6 +27,7 @@ import {
   type Page,
   type SortSpec,
 } from '@domain/index';
+import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { CASE_COPY } from '@shared/cases/case.copy';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
@@ -37,7 +38,6 @@ import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { CASES_COPY } from './cases.copy';
 import { readCaseQuery } from './case-query';
 
-const SEARCH_DEBOUNCE_MS = 250;
 
 /**
  * The case list, read as a set of work queues.

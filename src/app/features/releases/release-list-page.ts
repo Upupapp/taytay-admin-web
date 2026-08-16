@@ -14,6 +14,7 @@ import {
   type DisbursementStatus,
   type ReleaseKind,
 } from '@domain/index';
+import { debouncedTerm } from '@shared/state/debounced';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -58,8 +59,17 @@ export class ReleaseListPage {
   protected readonly kind = signal<ReleaseKind | null>(null);
   protected readonly openOnly = signal(false);
 
+  /**
+   * The term the data layer actually sees.
+   *
+   * Debounced so typing a surname is one read rather than one per keystroke
+   * (`DL-119`). The other filters are not debounced: choosing from a dropdown
+   * is a single deliberate act and should take effect at once.
+   */
+  private readonly settledSearch = debouncedTerm(this.search);
+
   private readonly query = computed(() => ({
-    ...(this.search() ? { search: this.search() } : {}),
+    ...(this.settledSearch() ? { search: this.settledSearch() } : {}),
     ...(this.status() ? { status: this.status() as DisbursementStatus } : {}),
     ...(this.kind() ? { kind: this.kind() as ReleaseKind } : {}),
     ...(this.openOnly() ? { openOnly: true } : {}),
