@@ -17,9 +17,9 @@ intent through the audit in `docs/reference-audit/`.
 
 ## Where the build is
 
-- **Completed and certified:** TABs 01–23 — **the whole original command**.
-- **Current:** TAB 24 — Late-Phase Admin Scope & Permissions Guardrail.
-- **Remaining:** 25–26 (Newsfeed management, Events management).
+- **Completed and certified:** TABs 01–24.
+- **Current:** TAB 25 — Newsfeed Management.
+- **Remaining:** 26 (Events management).
 - The late-phase TABs are **additive**: integrate into the existing code, never
   re-scaffold or redesign a completed module.
 - **There are no placeholder routes left.** Every route loads a real screen.
@@ -56,7 +56,7 @@ are handed.
 
 ## Non-negotiables carried by build checkers
 
-`npm run verify` = lint + typecheck + 17 checkers + 1292 tests + build. Each
+`npm run verify` = lint + typecheck + 18 checkers + 1314 tests + build. Each
 checker was validated against planted regressions. Do not weaken one to pass.
 
 | Checker | Refuses |
@@ -74,6 +74,7 @@ checker was validated against planted regressions. Do not weaken one to pass.
 | `check:visits` | any location capture; an observation without its kind; an unattributed third-party account; an edited observation; a non-terminal outcome |
 | `check:releases` | a ledger, account code, bank account or posting date; a status on a payout session; a session summarised as one verdict; a deferral reason blaming the beneficiary; an amount forced onto goods; an unmasked or over-full manifest; a screen composing its own manifest; self-release blocking; an ungated adapter method |
 | `check:work` | an email/SMS/push/webhook channel; an alert with a due date, assignee or done state; a mutator on the work port; a stored urgency flag; lateness not said in words; a queue summarised as a verdict; duplicate review as work; an unfiltered notification read |
+| `check:community` | a permission key outside the one array, or in snake_case; a second permission array; any resident component, template or route; a resident capability that could publish; a refused key missing from `RESIDENT_MUST_NEVER`; a resident post naming a staff member or an event counting registrations; a missing audit seam or label; a nav entry pointing at nothing; a removed sidebar section |
 | `check:hardening` | an offline queue or a notice promising a send/sync/retry; the connection banner unmounted; a feature stylesheet redefining `.field`/`.card`/`.btn`; a local debounce constant or an undebounced search; a placeholder-only label; an assertive live region; an overlay that stops trapping focus; reduced motion that speeds ambient animation instead of stopping it; the build's style budget removed |
 | `check:governance` | a recorded value on an audit row or field-change; a port that inlines values; `audit.view-detail` gone or misclassified; a deactivated account keeping its session; an invite/reset method or a form on an admin screen; an invented retention period; a correction answerable with no reason or reopenable; a matrix cell conveyed by mark alone; an ungated governance read |
 | `check:search` | a free-text field on a search hit; the adapter reading a refused field; a port parameter that widens the read; `localStorage`/`sessionStorage`/cookie in the search path; a record type dropped instead of named; scope missing from a producer; a shared saved view creatable without `view.share` |
@@ -132,6 +133,12 @@ checker was validated against planted regressions. Do not weaken one to pass.
   only. The staff picker belongs with the administration TAB. (`DL-99`)
 - **Voiding a release has no screen** — `changeStatus` and `disbursement.void`
   exist and are gated.
+- **Newsfeed and Events are placeholder routes**, filled by TABs 25 and 26.
+  Their permissions, audit seams and resident contract are settled (`DL-122`,
+  `DL-123`); their models, adapters and seeds are not built.
+- **Any permission that discloses without changing needs an explicit read-only
+  entry.** Third occurrence: `document.download` (TAB 14), `audit.view-detail`
+  (TAB 21), `events.export-registrations` + both `view-insights` (TAB 24).
 - **Responsive work in TAB 22 was verification, not change**, and 200% zoom and
   long Filipino names were reasoned about structurally rather than exercised.
   TAB 23's QA scenarios should exercise them.
@@ -215,41 +222,45 @@ formality.
 
 ## Next action
 
-Begin TAB 24 — Late-Phase Admin Scope & Permissions Guardrail. **Read its text
-in the PDF first** (page ~53). This is the first of three late-phase TABs adding
-Newsfeed and Events.
+Begin TAB 25 — Newsfeed Management. **Read its text in the PDF first**
+(page ~56). The permissions, audit seams and resident boundary are already
+built in TAB 24; this TAB builds the admin console.
 
-**The governing rule is in the command itself:** *integrate into the Angular
-code already built; do not restart, re-scaffold, or redesign completed modules
-unless a small non-breaking integration change is required.*
-
-TAB 24 is the **guardrail** TAB — scope, permissions and seams, not screens.
-TABs 25 and 26 build the modules themselves.
+The late-phase continuation rules still govern: integrate into what exists,
+reuse the shared components and data-access conventions, make additive changes.
 
 Load-bearing constraints:
 
-1. **No duplicate permission architecture.** `PERMISSIONS`, `ROLE_DEFINITIONS`
-   and `permission-matrix.md` already exist and are guarded by `check:access`,
-   which has twice caught a new permission missing from the office reference.
-   Extend that array; do not start a second one.
-2. **`newsfeed.*` and `events.*` keys** as listed in the PDF. Map them to
-   existing roles **only where compatible** — the command says so explicitly.
-   A role may hold Newsfeed without Events. Do not invent new roles unless the
-   existing seven genuinely cannot express it, and say so if they cannot.
-3. **Audit seams** for publishing, moderation, registration export and status
-   changes. `AuditAction` already exists; `DL-114` already settled that a row
-   says what changed and never what it changed to. Extend, do not duplicate.
-4. **Resident contracts are TYPES ONLY.** The command is explicit: no resident
-   Angular portal, no mobile interface. Residents may view, react, comment,
-   share and register — never publish or create. Expect the checker to enforce
-   the absence of any resident-facing component.
-5. **TABs 01–23 must continue to work** — 1292 tests stay green.
+1. **Reuse, do not re-invent.** `StatusBadge` + a `StatusCatalog`, `DataTable`,
+   `Modal`, `Drawer`, `AsyncContent`, `EmptyState`, `PageHeader`,
+   `SavedViewsBar`, the URL-filter convention (`DL-36`), `debouncedTerm`
+   (`DL-119`) and the `.field` primitives (`DL-120`) all exist. A newsfeed list
+   is a list like every other list here.
+2. **Statuses are defined once, in the domain**, as a `StatusCatalog` plus a
+   `StatusTransitions` map (`CLAUDE.md` §2.7). Draft → scheduled → published →
+   archived, with the transitions the office can actually make.
+3. **Alt text is not optional.** The command lists "image alt text /
+   accessible description" as a field; WCAG 2.2 AA is the target (`DL-20`), and
+   a cover image without alt text is a post a screen reader cannot convey.
+   Expect the checker to require it.
+4. **Moderation is a recorded act.** Hiding or deleting a resident's comment is
+   a decision about their words — `DL-54`'s "every mutation carries a reason"
+   applies, and TAB 24 already named the audit seams (`comment-hidden`,
+   `comment-restored`, `comment-replied`).
+5. **Deleting a comment needs confirmation**, and the append-only doctrine
+   (`DL-48`, `DL-77`) suggests hiding should be reversible while deletion is
+   not — decide deliberately and record why.
+6. **No AI moderation, no sentiment analysis.** The command is explicit. Expect
+   the checker to enforce the absence.
+7. **Barangay targeting only if the existing model supports it cleanly** —
+   `BarangayId` and `TAYTAY_BARANGAYS` exist, so it does. Audience scope
+   defaults to all Taytay residents.
 
-Then: `npm run verify`, commit locally, write `tab-reports/TAB-24-guardrail.md`,
-advance state to TAB 25.
+Then: `npm run verify`, commit locally, write `tab-reports/TAB-25-newsfeed.md`,
+advance state to TAB 26.
 
 ## Git
 
 - Branch `main`, no remote configured. **Never push.**
-- HEAD at TAB 23 certification: `274efb6`.
+- HEAD at TAB 24 certification: `0648fcd`.
 - Working tree clean.
