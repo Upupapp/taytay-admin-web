@@ -1,0 +1,242 @@
+.event {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+  max-inline-size: 92ch;
+}
+
+.event__back {
+  margin: var(--space-base) 0 0;
+}
+
+.event__panel {
+  padding: var(--space-base);
+}
+
+.event__heading {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.event__subheading {
+  margin: var(--space-loose) 0 var(--space-compact);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.event__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-snug);
+  margin: var(--space-snug) 0 0;
+}
+
+.event__category {
+  padding: 1px 8px;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  color: var(--c-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.event__figure {
+  margin: var(--space-base) 0 0;
+}
+
+.event__image {
+  display: block;
+  inline-size: 100%;
+  max-inline-size: 100%;
+  block-size: auto;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-base);
+}
+
+.event__caption {
+  margin-block-start: var(--space-compact);
+  color: var(--c-text-muted);
+  font-size: 12px;
+}
+
+.event__summary {
+  margin: var(--space-base) 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.event__body {
+  margin: 0;
+  font-size: 13.5px;
+  white-space: pre-line;
+  max-inline-size: 78ch;
+}
+
+.event__line {
+  margin: 0 0 var(--space-micro);
+  font-size: 13px;
+}
+
+.event__line--muted {
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.event__hint {
+  margin: var(--space-snug) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  max-inline-size: 78ch;
+}
+
+.event__counts {
+  margin: var(--space-snug) 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.event__warning {
+  margin: var(--space-snug) 0;
+  padding: var(--space-snug) var(--space-base);
+  border-inline-start: 3px solid var(--c-warning, #b26b00);
+  font-size: 12.5px;
+  max-inline-size: 78ch;
+}
+
+.event__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-snug);
+  margin: var(--space-base) 0 0;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-compact) var(--space-base);
+  margin: var(--space-snug) 0 0;
+}
+
+.facts__item dt {
+  color: var(--c-text-muted);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.facts__item dd {
+  margin: 0;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.registrant-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-base);
+  margin-block-start: var(--space-snug);
+}
+
+.registrant-filters__export {
+  margin-inline-start: auto;
+}
+
+/* Wide content scrolls inside its own box; the page never scrolls sideways. */
+.registrants__scroll {
+  overflow-x: auto;
+  margin-block-start: var(--space-base);
+}
+
+.registrants {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.registrants th,
+.registrants td {
+  padding: var(--space-compact) var(--space-snug);
+  border-block-end: 1px solid var(--c-border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.registrants th {
+  color: var(--c-text-muted);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.registrants__reference {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.registrants__note {
+  display: block;
+  margin-block-start: var(--space-micro);
+  color: var(--c-text-muted);
+  font-size: 12px;
+}
+
+.registrants__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-compact);
+}
+
+.history {
+  margin: var(--space-snug) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history__item {
+  padding-block: var(--space-snug);
+  border-block-start: 1px solid var(--c-border);
+}
+
+.history__item:first-child {
+  border-block-start: none;
+}
+
+.history__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-snug);
+  margin: 0;
+}
+
+.history__action {
+  padding: 1px 8px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-tight, 4px);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.history__time {
+  margin-inline-start: auto;
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}
+
+.history__summary {
+  margin: var(--space-compact) 0 0;
+  font-size: 13px;
+}
+
+.history__reason,
+.history__actor {
+  margin: var(--space-micro) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}

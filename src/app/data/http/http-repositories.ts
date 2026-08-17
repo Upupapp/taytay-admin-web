@@ -151,7 +151,21 @@ import {
   type CommentFilter,
   type CommentId,
   type ModerationAction,
+  type AttendanceStatus,
+  type EventCapacitySummary,
+  type EventDraft,
+  type EventFilter,
+  type EventMetrics,
+  type EventRegistrationId,
+  type EventRepository,
+  type EventView,
+  type LguEvent,
+  type LguEventId,
   type NewsfeedRepository,
+  type RegistrantExport,
+  type RegistrantFilter,
+  type RegistrantView,
+  type RegistrationAction,
   type Post,
   type PostDraft,
   type PostFilter,
@@ -1250,5 +1264,104 @@ export class HttpFieldVisitRepository implements FieldVisitRepository {
       `${API_ENDPOINTS.fieldVisits}/${id}/close`,
       outcome,
     );
+  }
+}
+
+/**
+ * Events over HTTP.
+ *
+ * Capacity is read back from the server on every call rather than tracked
+ * here, and promotion posts an intent and returns whatever the server did with
+ * it. The client never decides that a place is free (`DL-129`).
+ */
+@Injectable()
+export class HttpEventRepository implements EventRepository {
+  private readonly api = inject(ApiClient);
+
+  list(view: EventView, filter: EventFilter): Observable<readonly LguEvent[]> {
+    return this.api.collection<LguEvent>(API_ENDPOINTS.events, { view, ...toParams(filter) });
+  }
+
+  getById(id: LguEventId): Observable<LguEvent | null> {
+    return this.api.optionalItem<LguEvent>(`${API_ENDPOINTS.events}/${id}`);
+  }
+
+  saveDraft(draft: EventDraft, id: LguEventId | null): Observable<LguEvent> {
+    return this.api.post<LguEvent, { draft: EventDraft; id: LguEventId | null }>(
+      `${API_ENDPOINTS.events}/drafts`,
+      { draft, id },
+    );
+  }
+
+  publish(id: LguEventId, reason: string): Observable<LguEvent> {
+    return this.api.post<LguEvent, { reason: string }>(
+      `${API_ENDPOINTS.events}/${id}/publish`,
+      { reason },
+    );
+  }
+
+  cancel(id: LguEventId, reason: string): Observable<LguEvent> {
+    return this.api.post<LguEvent, { reason: string }>(
+      `${API_ENDPOINTS.events}/${id}/cancel`,
+      { reason },
+    );
+  }
+
+  complete(id: LguEventId, reason: string): Observable<LguEvent> {
+    return this.api.post<LguEvent, { reason: string }>(
+      `${API_ENDPOINTS.events}/${id}/complete`,
+      { reason },
+    );
+  }
+
+  archive(id: LguEventId, reason: string): Observable<LguEvent> {
+    return this.api.post<LguEvent, { reason: string }>(
+      `${API_ENDPOINTS.events}/${id}/archive`,
+      { reason },
+    );
+  }
+
+  registrants(id: LguEventId, filter: RegistrantFilter): Observable<readonly RegistrantView[]> {
+    return this.api.collection<RegistrantView>(
+      `${API_ENDPOINTS.events}/${id}/registrants`,
+      toParams(filter),
+    );
+  }
+
+  capacity(id: LguEventId): Observable<EventCapacitySummary> {
+    return this.api.item<EventCapacitySummary>(`${API_ENDPOINTS.events}/${id}/capacity`);
+  }
+
+  metrics(id: LguEventId): Observable<EventMetrics> {
+    return this.api.item<EventMetrics>(`${API_ENDPOINTS.events}/${id}/metrics`);
+  }
+
+  actOnRegistration(
+    registrationId: EventRegistrationId,
+    action: RegistrationAction,
+    reason: string,
+  ): Observable<RegistrantView> {
+    return this.api.post<RegistrantView, { action: RegistrationAction; reason: string }>(
+      `${API_ENDPOINTS.events}/registrations/${registrationId}`,
+      { action, reason },
+    );
+  }
+
+  markAttendance(
+    registrationId: EventRegistrationId,
+    attendance: AttendanceStatus,
+  ): Observable<RegistrantView> {
+    return this.api.post<RegistrantView, { attendance: AttendanceStatus }>(
+      `${API_ENDPOINTS.events}/registrations/${registrationId}/attendance`,
+      { attendance },
+    );
+  }
+
+  exportRegistrants(id: LguEventId): Observable<RegistrantExport> {
+    return this.api.item<RegistrantExport>(`${API_ENDPOINTS.events}/${id}/registrants/export`);
+  }
+
+  history(id: LguEventId): Observable<readonly AuditRow[]> {
+    return this.api.collection<AuditRow>(`${API_ENDPOINTS.events}/${id}/history`);
   }
 }

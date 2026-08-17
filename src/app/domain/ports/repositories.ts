@@ -23,6 +23,16 @@ import type {
   ModerationAction,
 } from '../newsfeed/comment';
 import type { Post, PostDraft, PostFilter, PostView } from '../newsfeed/post';
+import type { EventDraft, EventFilter, EventView, LguEvent } from '../events/event';
+import type {
+  AttendanceStatus,
+  EventCapacitySummary,
+  EventMetrics,
+  RegistrantExport,
+  RegistrantFilter,
+  RegistrantView,
+  RegistrationAction,
+} from '../events/registration';
 import type { ClassifiedRecordType } from '../governance/data-classification';
 import type { RetentionRule } from '../governance/retention';
 import type { StaffAccount } from '../governance/staff-profile';
@@ -148,6 +158,8 @@ import type {
   FamilyId,
   ReferralId,
   ReleaseBatchId,
+  EventRegistrationId,
+  LguEventId,
   RelationshipId,
   RequirementId,
   ResidentId,
@@ -1019,6 +1031,70 @@ export interface NewsfeedRepository {
 }
 
 export const NEWSFEED_REPOSITORY = new InjectionToken<NewsfeedRepository>('NewsfeedRepository');
+
+/**
+ * Events, and the registrations residents make in the separate mobile app.
+ *
+ * Note what is **not** here: no `create registration`. Residents sign up on
+ * their own phones; this office manages what arrives, and a method letting a
+ * clerk register somebody would be an admin screen quietly acquiring the one
+ * capability the resident contract reserves (`DL-123`).
+ *
+ * Note also what registrant reads return: `RegistrantView`, composed by the
+ * adapter, never `EventRegistration` (`DL-130`).
+ */
+export interface EventRepository {
+  list(view: EventView, filter: EventFilter): Observable<readonly LguEvent[]>;
+  getById(id: LguEventId): Observable<LguEvent | null>;
+
+  /** Saves a draft. Refuses what the domain refuses (`eventProblems`). */
+  saveDraft(draft: EventDraft, id: LguEventId | null): Observable<LguEvent>;
+  publish(id: LguEventId, reason: string): Observable<LguEvent>;
+  /** Irreversible, and everybody registered is told (`DL-131`). */
+  cancel(id: LguEventId, reason: string): Observable<LguEvent>;
+  /** Declares attendance final. Nothing unmarked becomes a no-show. */
+  complete(id: LguEventId, reason: string): Observable<LguEvent>;
+  archive(id: LguEventId, reason: string): Observable<LguEvent>;
+
+  registrants(id: LguEventId, filter: RegistrantFilter): Observable<readonly RegistrantView[]>;
+  /**
+   * How full it was **when asked**. Carries its own `asOf`, and offers no
+   * `hasRoom`: whether a place exists is the backend's answer (`DL-129`).
+   */
+  capacity(id: LguEventId): Observable<EventCapacitySummary>;
+  metrics(id: LguEventId): Observable<EventMetrics>;
+
+  /**
+   * Moves one registration, with a reason.
+   *
+   * Promotion from the waitlist goes through here like any other move and is
+   * **attempted**, never predicted — the caller reads back what happened
+   * rather than deciding in advance that a place was free.
+   */
+  actOnRegistration(
+    registrationId: EventRegistrationId,
+    action: RegistrationAction,
+    reason: string,
+  ): Observable<RegistrantView>;
+
+  markAttendance(
+    registrationId: EventRegistrationId,
+    attendance: AttendanceStatus,
+  ): Observable<RegistrantView>;
+
+  /**
+   * The registrant list as a file.
+   *
+   * Composed by the data layer with its own conditions inside it (`DL-106`),
+   * and holding the same closed set of fields the screen shows — an export is
+   * not a wider read than the screen it came from.
+   */
+  exportRegistrants(id: LguEventId): Observable<RegistrantExport>;
+
+  history(id: LguEventId): Observable<readonly AuditRow[]>;
+}
+
+export const EVENT_REPOSITORY = new InjectionToken<EventRepository>('EventRepository');
 
 export interface DashboardRepository {
   /**

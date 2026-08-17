@@ -3453,3 +3453,125 @@ action on an already-removed comment — including `restore`, which would promis
 to bring back words the data no longer holds. An official reply is attributed to
 the office rather than to the officer who typed it (`DL-123`); the trail records
 who acted.
+
+### DL-128 · Registration availability is derived, never stored
+
+**Status:** Settled (implemented in TAB 26).
+
+`RegistrationAvailability` — `not-required | not-open | open | closed | full` —
+is computed by `registrationAvailability(event, registeredCount, now)` from
+four things: what the office set up, the clock, the count it was handed, and
+the event's own status. There is no `registrationState` column anywhere, and
+`check:events` fails the build if one appears.
+
+A stored availability needs a job to keep it true. Between the deadline passing
+at 5pm and that job running overnight, every screen in the office says
+registration is open, and somebody tells a resident to sign up. This is the
+same reasoning as `DL-83` (overdue is derived from the follow-up date) and
+`DL-126` (a scheduled post's visibility is derived from the clock): a flag
+that describes the passage of time is wrong every morning until something
+fixes it.
+
+The checker asserts the function **compares** against each input rather than
+merely naming it. That distinction was not theoretical — the first version of
+the rule passed on `const { opensAt, closesAt, capacity } = event.registration;`
+with every test beneath it replaced by `if (false)`.
+
+**`full` is a report, not a refusal.** It is computed from a count the office
+was handed and says what the office should be told; whether a place actually
+exists is a different question, answered only by the backend (`DL-129`).
+
+### DL-129 · The client counts; the backend decides
+
+**Status:** Settled (implemented in TAB 26).
+
+The command says, in as many words, not to invent backend concurrency
+guarantees. This is how that is made structural rather than remembered.
+
+`EventCapacitySummary` carries counts and a **required** `asOf`, and no
+`hasRoom`, `canRegister`, `isAvailable` or `isFull`. The screen prints the
+timestamp and the sentence "These numbers were true when this screen last
+asked. Residents are registering in the app while you read them, and the system
+of record decides who gets the last place."
+
+The failure this prevents is concrete and mundane. Two clerks open the same
+event, both read "1 place left", both promote somebody from the waitlist, and
+one family is turned away at the door by a number this application showed them.
+No amount of client-side care fixes that; the only honest thing is to stop
+claiming.
+
+So **promotion is offered on any waitlisted registration**, including one the
+office's own figures call full. `canOfferPromotion` takes the status and
+nothing else — it may not consult the capacity — and `promotionExceedsCapacity`
+drives a **warning** beside the button rather than a disabled state. A place
+may have opened a second ago, and only the server knows. The attempt is made
+and the outcome read back, exactly as `DL-91` warns rather than blocks on a
+self-release.
+
+The counts on `LguEvent` are denormalised for the list, and the adapter
+recomputes them on every read rather than trusting what it stored.
+
+### DL-130 · A registrant list is composed, and its names go through one reader
+
+**Status:** Settled (implemented in TAB 26).
+
+Reads return `RegistrantView`, built in the data layer, holding exactly:
+reference, display name, barangay, when they registered, registration status,
+attendance, and notes **only** where the reader holds
+`events.manage-registrations`. The checker fails the build on any field added
+to that interface.
+
+An events clerk marking attendance at a feeding programme needs to find the
+person on a list. They do not need an address, a birth date, PhilSys digits, an
+income or a sector, and RA 10173 minimisation is not satisfied by a screen
+choosing not to display what it was sent. This is the doctrine of `DL-82` (a
+referral summary is composed field by field) and `DL-92` (a payout manifest is
+composed by the data layer), applied to the one list in this application that
+gets carried to a venue on a clipboard.
+
+**The display name comes from `discloseResident`.** This is the part that was
+easy to get wrong: a registrant is a resident, and the events adapter
+formatting the name itself would hand an events clerk the full name of somebody
+the residents module shows as "Cordero, M." (`DL-38`). One reader for the
+protection, or it is not a protection — the same lesson as a capability gate
+with a second reader.
+
+The export holds the same closed set as the screen, which is why
+`events.export-registrations` is classified read-only: it is not a wider read
+than the list it comes from. It carries its handling notice **inside the file**,
+in both the manifest and the header rows (`DL-106`).
+
+### DL-131 · Cancelling is one-way, and "past" is not "completed"
+
+**Status:** Settled (implemented in TAB 26).
+
+Two lifecycle decisions, and one distinction between them that is the whole
+point of the attendance design.
+
+**`cancelled → archived` only.** An event that was called off and is then back
+on is a **new event**, naming the old one through `replacesEventId`, on the
+same reasoning as a closed case (`DL-53`) and a published post (`DL-124`):
+everybody registered was told it was off and made other plans, and a status
+flipping back does not reach them. Cancelling is the one act on the screen
+behind a modal, and the confirmation says so.
+
+Cancelling **one registration** is the opposite — freely reversible — because
+it is a change to one person's place rather than a public announcement, and
+somebody who withdrew on Monday and can come after all on Tuesday should not
+have to sign up again from a phone they may not have with them.
+
+**`hasFinished` is the clock's opinion; `completed` is the office's.** A
+published event whose date has passed is *past* and not yet *completed*, and
+the gap between them is where attendance is marked. `Past` is a view; `completed`
+is a recorded act that declares attendance final.
+
+That gap exists for one reason. If an event auto-completed at its end time,
+every registrant not yet marked would become a no-show — and a no-show is a
+**claim about a person**: that they took a place, deprived somebody on the
+waitlist of it, and did not come. It has to be recorded by somebody who was
+there. `complete()` therefore sweeps nothing, the badge for `not-checked-in`
+says "this is not the same as saying they did not come", `describeAttendance`
+reports the unmarked in their own right rather than folding them into no-shows,
+and `attendanceRateOf` returns `null` until the office says the list is final —
+because a rate taken mid-afternoon reads as a poor turnout and is really an
+unfinished list.

@@ -1,0 +1,65 @@
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+  max-inline-size: 78ch;
+}
+
+.composer__panel {
+  padding: var(--space-base);
+}
+
+.composer__heading {
+  margin: 0 0 var(--space-snug);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.composer__hint {
+  margin: 0 0 var(--space-snug);
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+  max-inline-size: 72ch;
+}
+
+.composer__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-compact);
+  min-block-size: var(--target-min);
+  font-size: 13px;
+}
+
+.problems {
+  padding: var(--space-base);
+  border-inline-start: 3px solid var(--c-border);
+}
+
+/* Something that cannot be saved at all reads differently from something that
+   is merely not ready to publish. */
+.problems--blocking {
+  border-inline-start-color: var(--c-danger, #a4262c);
+}
+
+.problems__heading {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.problems__list {
+  margin: var(--space-snug) 0 0;
+  padding-inline-start: var(--space-base);
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.problems__list li + li {
+  margin-block-start: var(--space-compact);
+}
+
+.composer__actions {
+  margin: 0;
+}

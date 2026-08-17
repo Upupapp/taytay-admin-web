@@ -1,0 +1,130 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  @if (canCompose()) {
+    <a page-actions class="btn btn--primary" routerLink="/events/new">{{ copy.compose }}</a>
+  }
+</app-page-header>
+
+<div class="events">
+  <nav class="views" [attr.aria-label]="copy.title">
+    <ul class="views__list">
+      @for (value of views; track value) {
+        <li>
+          <button
+            type="button"
+            class="views__tab"
+            [class.views__tab--current]="view() === value"
+            [attr.aria-current]="view() === value ? 'true' : null"
+            (click)="onView(value)"
+          >
+            {{ viewLabel(value) }}
+          </button>
+        </li>
+      }
+    </ul>
+  </nav>
+
+  <div class="card filters">
+    <label class="filters__field filters__field--wide">
+      <span class="filters__label">{{ copy.search }}</span>
+      <input
+        type="search"
+        class="filters__input"
+        [placeholder]="copy.searchPlaceholder"
+        (input)="onSearch($event)"
+      />
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.category }}</span>
+      <select class="filters__input" (change)="onCategory($event)">
+        <option value="">{{ copy.allCategories }}</option>
+        @for (value of categories; track value) {
+          <option [value]="value">{{ categoryLabel(value) }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.from }}</span>
+      <input type="date" class="filters__input" [value]="from()" (input)="onFrom($event)" />
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.to }}</span>
+      <input type="date" class="filters__input" [value]="to()" (input)="onTo($event)" />
+    </label>
+
+    @if (hasFilters()) {
+      <button type="button" class="btn filters__clear" (click)="clearFilters()">
+        {{ copy.clear }}
+      </button>
+    }
+  </div>
+
+  <app-async-content [state]="state()" [content]="rows" [skeletonLines]="6">
+    <ng-template #rows>
+      @if (events().length === 0) {
+        <div class="card empty">
+          <!-- An empty filter result is a different fact from an empty feed. -->
+          <h2 class="empty__heading">
+            {{ hasFilters() ? copy.noResultsHeading : copy.emptyHeading }}
+          </h2>
+          <p class="empty__message">
+            {{ hasFilters() ? copy.noResultsMessage : copy.emptyMessage }}
+          </p>
+        </div>
+      } @else {
+        <ul class="cards">
+          @for (event of events(); track event.id) {
+            <li class="card event">
+              @if (event.image) {
+                <img class="event__thumb" [src]="event.image.url" [alt]="event.image.altText" />
+              } @else {
+                <span class="event__thumb event__thumb--none" aria-hidden="true"></span>
+              }
+
+              <div class="event__body">
+                <p class="event__head">
+                  <a class="event__title" [routerLink]="['/events', event.id]">{{ event.title }}</a>
+                  <app-status-badge [catalog]="statusCatalog" [status]="event.status" />
+                </p>
+
+                <p class="event__summary">{{ event.summary }}</p>
+
+                <dl class="event__facts">
+                  <div class="event__fact">
+                    <dt>{{ copy.when }}</dt>
+                    <dd>{{ event.startsAt | date: 'EEE d MMM y, HH:mm' }}</dd>
+                  </div>
+                  <div class="event__fact">
+                    <dt>{{ copy.venue }}</dt>
+                    <dd>{{ venueLine(event) }}</dd>
+                  </div>
+                  <div class="event__fact">
+                    <dt>{{ copy.registration }}</dt>
+                    <!-- Derived from the event, the count and the clock every
+                         render; nothing stores it (`DL-128`). -->
+                    <dd>{{ availabilityLabel(event) }}</dd>
+                  </div>
+                  <div class="event__fact">
+                    <dt>{{ copy.registered }}</dt>
+                    <dd>
+                      {{ event.registeredCount }} /
+                      {{ event.registration.capacity ?? copy.noCapacity }}
+                    </dd>
+                  </div>
+                  <div class="event__fact">
+                    <dt>{{ copy.updated }}</dt>
+                    <dd>{{ event.audit.updatedAt | date: 'd MMM y, HH:mm' }}</dd>
+                  </div>
+                </dl>
+              </div>
+
+              <a class="btn event__open" [routerLink]="['/events', event.id]">{{ copy.open }}</a>
+            </li>
+          }
+        </ul>
+      }
+    </ng-template>
+  </app-async-content>
+</div>

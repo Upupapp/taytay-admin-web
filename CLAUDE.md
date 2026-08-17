@@ -97,7 +97,8 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:vulnerability`, `check:case-audit`, `check:intake`, `check:programs`,
 `check:beneficiary`, `check:documents`, `check:referrals`, `check:visits`,
 `check:releases`, `check:work`, `check:reports`, `check:search` and
-`check:governance`, `check:hardening`, `check:community` and `check:newsfeed`.
+`check:governance`, `check:hardening`, `check:community`, `check:newsfeed` and
+`check:events`.
 Each enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
@@ -396,6 +397,44 @@ was removed.
 Scheduling is **derived from the clock**, never from a job having run, and there
 is no timer anywhere in the module. `npm run check:newsfeed` fails the build on
 any of the above.
+
+### An event is the office's side of somebody else's workflow
+
+Residents register in a **separate mobile app**. This module creates events and
+manages what arrives; there is no method, anywhere, that signs a resident up
+(`DL-123`).
+
+**Registration availability is derived** (`DL-128`) — `not-required | not-open |
+open | closed | full`, computed from the plan, the clock, the count and the
+status. No stored `registrationState`: a flag about the passage of time is
+wrong every morning until a job fixes it (`DL-83`).
+
+**The client counts; the backend decides** (`DL-129`). The command forbids
+inventing backend concurrency guarantees, so `EventCapacitySummary` carries a
+required `asOf` and no `hasRoom`/`canRegister`/`isFull`, and the screen prints
+both the timestamp and the sentence saying the system of record decides who
+gets the last place. Promotion from the waitlist is **offered even when the
+office's own figures say full** — warned, not blocked, like a self-release
+(`DL-91`) — because a place may have opened a second ago and only the server
+knows.
+
+**A registrant list is composed** (`DL-130`): reference, display name,
+barangay, date, two statuses, and notes behind a grant. Nothing else, ever. The
+display name goes through `discloseResident`, the same reader the residents
+module uses — a second surface formatting it would hand an events clerk the
+full name of somebody shown elsewhere as "Cordero, M." (`DL-38`).
+
+**Cancelling is one-way, and "past" is not "completed"** (`DL-131`). An event
+that is back on is a new event naming the old; one *registration* is freely
+restored, because that is a person's place rather than a public announcement.
+`hasFinished` is the clock's opinion and `completed` is the office's, and the
+gap between them is where attendance is marked — so that nothing turns an
+unmarked registrant into a no-show. A no-show is a claim about a person, and
+only somebody who was there can make it.
+
+No ticketing, pricing, seat maps, promo codes, payment, recurring events, event
+chat or event comments. No share link, because there is no deep-link contract
+to honour one (`DL-32`). `npm run check:events` fails the build on all of it.
 
 ### Degraded connection: warn, never queue
 

@@ -28,3 +28,15 @@ export function stamp(createdDaysAgo: number, updatedDaysAgo = createdDaysAgo): 
     updatedBy: actor,
   };
 }
+
+/**
+ * A date after the anchor, for things that have not happened yet.
+ *
+ * Offsets here are deliberately generous. The anchor is fixed so mock output
+ * stays stable, but "upcoming" is judged against the real clock — an event
+ * seeded three days ahead of the anchor stops being upcoming almost at once,
+ * and the list it is meant to demonstrate renders empty.
+ */
+export function daysAfterAnchor(days: number, hour = 9): IsoDateTime {
+  return daysBeforeAnchor(-days, hour);
+}

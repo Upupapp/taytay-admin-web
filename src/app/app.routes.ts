@@ -1,7 +1,5 @@
 import type { Routes } from '@angular/router';
 
-import type { PlaceholderRouteData } from '@features/placeholder/feature-placeholder-page';
-
 import {
   anonymousOnlyGuard,
   authenticatedGuard,
@@ -14,22 +12,13 @@ import {
  *  - every feature route is lazy (`loadComponent` / `loadChildren`);
  *  - every route carries the same permission its nav entry declares;
  *  - authenticated routes live under the `Shell`, unauthenticated ones do not;
- *  - a screen that a later TAB will build gets a placeholder, never a dead link.
+ *  - a screen a later TAB will build gets a placeholder, never a dead link.
  *
- * Newsfeed and Events are placeholders again as of TAB 24: the late-phase
- * command wires their scope and permissions before TABs 25 and 26 build the
- * screens, and a nav entry pointing at nothing is the one thing this file has
- * never allowed.
+ * As of TAB 26 there are **no placeholders left** — Events was the last one,
+ * and the helper went with it. `FeaturePlaceholderPage` stays in the tree for
+ * the next module that needs a routed screen before it has one; reintroduce
+ * the helper beside it rather than pointing a nav entry at nothing.
  */
-function placeholder(data: PlaceholderRouteData) {
-  return {
-    loadComponent: () =>
-      import('@features/placeholder/feature-placeholder-page').then(
-        (m) => m.FeaturePlaceholderPage,
-      ),
-    data,
-  };
-}
 
 export const routes: Routes = [
   {
@@ -399,13 +388,33 @@ export const routes: Routes = [
       },
       {
         path: 'events',
-        title: 'Events — Taytay Social Welfare',
-        canActivate: [permissionGuard('events.view')],
-        ...placeholder({
-          title: 'Events',
-          subtitle: 'Municipal activities, registrations and attendance.',
-          plannedIn: 'the events management TAB',
-        }),
+        // `new` before `:id`, or the composer resolves as an event id.
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            title: 'Events — Taytay Social Welfare',
+            canActivate: [permissionGuard('events.view')],
+            loadComponent: () =>
+              import('@features/events/event-list-page').then((m) => m.EventListPage),
+          },
+          {
+            path: 'new',
+            title: 'Create an event — Taytay Social Welfare',
+            // Writing costs `create`; putting it in the resident app costs
+            // `publish`, on the detail screen.
+            canActivate: [permissionGuard('events.create')],
+            loadComponent: () =>
+              import('@features/events/event-composer-page').then((m) => m.EventComposerPage),
+          },
+          {
+            path: ':id',
+            title: 'Event — Taytay Social Welfare',
+            canActivate: [permissionGuard('events.view')],
+            loadComponent: () =>
+              import('@features/events/event-detail-page').then((m) => m.EventDetailPage),
+          },
+        ],
       },
       {
         path: 'reports',

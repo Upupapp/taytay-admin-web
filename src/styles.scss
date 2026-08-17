@@ -171,6 +171,17 @@ button {
   color: var(--c-text-muted);
 }
 
+/* A row action inside a table, where a full-size control would push the row
+   taller than the text it belongs to. Defined here rather than in the one
+   feature that needed it first, for the reason in `DL-120`. The target stays
+   at the accessible minimum — this is smaller type and tighter padding, not a
+   smaller thing to hit. */
+.btn--small {
+  min-block-size: var(--target-min);
+  padding: var(--space-1) var(--space-2);
+  font-size: 12.5px;
+}
+
 /* Shared form-field vocabulary. Three features now render the same labelled
    control, and a fourth would have copied it again; a field that looks and
    behaves differently on each screen is how an encoder learns to distrust one. */

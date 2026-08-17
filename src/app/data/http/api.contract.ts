@@ -81,6 +81,14 @@ export const API_ENDPOINTS = {
   governance: 'governance',
   /** Posts and their comments. Nothing here returns who reacted (`DL-126`). */
   newsfeed: 'newsfeed',
+  /**
+   * Events and the registrations residents make in the mobile app.
+   *
+   * `.../registrants` returns the composed view, never resident records — the
+   * server applies the same closed set this application does (`DL-130`), and
+   * no endpoint answers "who else is on the list" more fully than the screen.
+   */
+  events: 'events',
 } as const;
 
 export function toPage<TItem>(response: ApiListResponse<TItem>): Page<TItem> {
