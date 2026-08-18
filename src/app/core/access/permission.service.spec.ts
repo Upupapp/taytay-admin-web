@@ -12,6 +12,7 @@ import {
   type StaffRepository,
   type StaffUser,
   type StaffUserId,
+  type SignInOutcome,
 } from '@domain/index';
 
 import { SessionStore } from '../auth/session.store';
@@ -44,7 +45,13 @@ function stubRepository(user: StaffUser | null): StaffRepository {
     list: (): Observable<Page<StaffUser>> => of(emptyPage<StaffUser>()),
     getById: (): Observable<StaffUser | null> => of(user),
     currentUser: (): Observable<AuthenticatedUser | null> => of(authenticated),
-    signIn: (): Observable<AuthenticatedUser> => {
+    signIn: (): Observable<SignInOutcome> => {
+      if (!authenticated) {
+        throw new Error('No user');
+      }
+      return of({ kind: 'authenticated', user: authenticated });
+    },
+    completeMfa: (): Observable<AuthenticatedUser> => {
       if (!authenticated) {
         throw new Error('No user');
       }

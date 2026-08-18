@@ -38,4 +38,38 @@ export const AUTH_COPY = {
     'Password resets are handled by the MSWDO administrator. Contact the office to have yours reset.',
 
   signedOutNotice: 'You have been signed out.',
+
+  /*
+   * The second factor.
+   *
+   * One labelled field, nothing that auto-advances. Split boxes that jump focus
+   * per digit are announced by a screen reader as six unlabelled inputs, break
+   * paste on several browsers, and strand anybody who mistypes — WCAG 2.2
+   * §3.3.8 treats blocking paste as removing the Mechanism a user relies on.
+   */
+  codeTitle: 'Enter your authentication code',
+  codeSubtitle:
+    'Your password was accepted. Enter the six-digit code from your authenticator app to finish signing in.',
+  codeLabel: 'Authentication code',
+  codeHint: 'Six digits, or one of your recovery codes if you cannot use your authenticator.',
+  codeRequired: 'Enter the code from your authenticator app.',
+  codeSubmit: 'Verify and sign in',
+  codeSubmitting: 'Verifying…',
+  codeExpiry: (minutes: number): string =>
+    `This code request expires in ${minutes} minute${minutes === 1 ? '' : 's'}. After that you will need to sign in again.`,
+  codeStartOver: 'Start again',
+
+  // A wrong code and an expired challenge are one message: telling them apart
+  // says which half of the attempt was right.
+  codeRefused: 'That code was not accepted. Start again and request a new one.',
+
+  recoveryHelp:
+    'Lost your authenticator? Use a recovery code, or contact the MSWDO administrator to have your second factor reset.',
+
+  /**
+   * Throttling. Says nothing about the account — only about this caller's rate
+   * — and gives the one fact the user can act on.
+   */
+  throttled: (seconds: number): string =>
+    `Too many sign-in attempts. Try again in ${seconds} second${seconds === 1 ? '' : 's'}.`,
 } as const;

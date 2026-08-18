@@ -17,6 +17,50 @@
       </div>
     }
 
+    @if (awaitingCode()) {
+      <!-- The second factor. One labelled field, paste-friendly, nothing that
+           auto-advances: six boxes that move focus per digit are announced as
+           six unlabelled inputs and strand anybody who mistypes. -->
+      <h2 class="sign-in__step-title">{{ copy.codeTitle }}</h2>
+      <p class="sign-in__step-subtitle">{{ copy.codeSubtitle }}</p>
+
+      @if (challenge(); as pending) {
+        @if (pending.expiresInMinutes > 0) {
+          <p class="sign-in__expiry">{{ copy.codeExpiry(pending.expiresInMinutes) }}</p>
+        }
+      }
+
+      <form class="sign-in__form" novalidate (submit)="submitCode($event)">
+        <div class="field">
+          <label class="field__label" for="sign-in-code">{{ copy.codeLabel }}</label>
+          <input
+            id="sign-in-code"
+            class="field__input"
+            type="text"
+            name="one-time-code"
+            autocomplete="one-time-code"
+            inputmode="numeric"
+            autocapitalize="none"
+            spellcheck="false"
+            required
+            aria-describedby="sign-in-code-hint"
+            [value]="code()"
+            (input)="onCode($event)"
+          />
+          <p id="sign-in-code-hint" class="field__hint">{{ copy.codeHint }}</p>
+        </div>
+
+        <button type="submit" class="btn btn--primary sign-in__submit" [disabled]="submitting()">
+          {{ submitting() ? copy.codeSubmitting : copy.codeSubmit }}
+        </button>
+
+        <button type="button" class="btn btn--subtle sign-in__start-over" (click)="startOver()">
+          {{ copy.codeStartOver }}
+        </button>
+      </form>
+
+      <p class="sign-in__recovery">{{ copy.recoveryHelp }}</p>
+    } @else {
     <!-- No onpaste handler anywhere in this form: blocking paste would defeat
          password managers, which is the Mechanism this screen relies on to
          satisfy WCAG 3.3.8. -->
@@ -69,6 +113,7 @@
         {{ submitting() ? copy.submitting : copy.submit }}
       </button>
     </form>
+    }
 
     <footer class="sign-in__footer">
       <details class="sign-in__help">

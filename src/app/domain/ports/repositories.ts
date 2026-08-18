@@ -70,7 +70,7 @@ import type { AssessmentDraft } from '../intake/assessment';
 import type { AdvisoryAcknowledgement, IntakeAdvisory } from '../intake/intake-advisory';
 import type { IntakeDraft } from '../intake/intake-draft';
 import type { AuthenticatedUser, StaffFilter, StaffUser } from '../access/staff-user';
-import type { SignInCredentials } from '../access/credentials';
+import type { MfaCredentials, SignInCredentials, SignInOutcome } from '../access/credentials';
 import type { AppNotification, NotificationRequest } from '../notifications/notification';
 import type { AssistanceProgram, ProgramDraft, ProgramFilter } from '../programs/program';
 import type { ProgramUtilization } from '../programs/program-utilization';
@@ -825,7 +825,23 @@ export interface StaffRepository {
    * There is deliberately no `register` counterpart: staff accounts are
    * provisioned by an administrator, never self-created (`DL-32`).
    */
-  signIn(credentials: SignInCredentials): Observable<AuthenticatedUser>;
+  signIn(credentials: SignInCredentials): Observable<SignInOutcome>;
+  /**
+   * The second step, when `signIn` answered `mfa-required`.
+   *
+   * A separate method rather than an overload of `signIn`: the challenge is a
+   * server-issued single-use handle, not a credential the user holds, and
+   * passing it alongside an email and password would invite a caller to send
+   * all three.
+   */
+  completeMfa(credentials: MfaCredentials): Observable<AuthenticatedUser>;
+  /**
+   * Ends the session **server-side**.
+   *
+   * Discarding a variable is not revocation. The token is only dropped once the
+   * API confirms, so a failed sign-out leaves the user signed in and says so,
+   * rather than showing a signed-out screen while the token stays valid.
+   */
   signOut(): Observable<void>;
 }
 

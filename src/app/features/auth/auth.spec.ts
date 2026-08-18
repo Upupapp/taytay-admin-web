@@ -9,7 +9,7 @@ import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import { ACCESS_CONTEXT, NOTIFICATION_REPOSITORY, STAFF_REPOSITORY } from '@domain/index';
 import type { AppNotification, NotificationRepository } from '@domain/index';
-import { MockStaffRepository } from '@data/mock/mock-staff.repository';
+import { MockStaffRepository, MOCK_MFA_CODE } from '@data/mock/mock-staff.repository';
 import type { AppEnvironment } from '@env/environment.model';
 import { of, type Observable } from 'rxjs';
 
@@ -79,6 +79,20 @@ async function submit(fixture: ComponentFixture<SignInPage>): Promise<void> {
     .querySelector('form')
     ?.dispatchEvent(new Event('submit', { cancelable: true }));
   await fixture.whenStable();
+}
+
+/**
+ * The whole sign-in, both steps.
+ *
+ * Every staff account has a second factor — the mock adapter issues a challenge
+ * for the same reason the API does, so the offline path cannot skip a control
+ * the real one applies. A test that only submitted the password would be
+ * asserting a flow that does not exist.
+ */
+async function signInFully(fixture: ComponentFixture<SignInPage>): Promise<void> {
+  await submit(fixture);
+  type(fixture, '#sign-in-code', MOCK_MFA_CODE);
+  await submit(fixture);
 }
 
 /* ── WCAG 3.3.8 Accessible Authentication ─────────────────────────────────── */
@@ -181,10 +195,51 @@ describe('credential handling', () => {
     const fixture = await setUp();
     type(fixture, '#sign-in-email', KNOWN_EMAIL);
     type(fixture, '#sign-in-password', ANY_PASSWORD);
-    await submit(fixture);
+    await signInFully(fixture);
 
     expect(TestBed.inject(SessionStore).isAuthenticated()).toBe(true);
     expect(TestBed.inject(Router).url).toBe('/dashboard');
+  });
+
+  it('does not sign anybody in on the password alone', async () => {
+    // The password is one factor. Until the code is accepted there is no
+    // session, and no guard may treat this state as one.
+    const fixture = await setUp();
+    type(fixture, '#sign-in-email', KNOWN_EMAIL);
+    type(fixture, '#sign-in-password', ANY_PASSWORD);
+    await submit(fixture);
+
+    expect(TestBed.inject(SessionStore).isAuthenticated()).toBe(false);
+    expect(TestBed.inject(SessionStore).status()).toBe('second-factor-required');
+  });
+
+  it('asks for the code in one labelled, paste-friendly field', async () => {
+    const fixture = await setUp();
+    type(fixture, '#sign-in-email', KNOWN_EMAIL);
+    type(fixture, '#sign-in-password', ANY_PASSWORD);
+    await submit(fixture);
+
+    const element = fixture.nativeElement as HTMLElement;
+    const code = element.querySelector('#sign-in-code');
+
+    expect(code).not.toBeNull();
+    expect(code?.getAttribute('autocomplete')).toBe('one-time-code');
+    expect(code?.hasAttribute('onpaste')).toBe(false);
+    // One field, not six that auto-advance: split boxes are announced as six
+    // unlabelled inputs and strand anybody who mistypes.
+    expect(element.querySelectorAll('input[name="one-time-code"]')).toHaveLength(1);
+    expect(element.querySelector('label[for="sign-in-code"]')).not.toBeNull();
+  });
+
+  it('refuses a wrong code without saying which half was wrong', async () => {
+    const fixture = await setUp();
+    type(fixture, '#sign-in-email', KNOWN_EMAIL);
+    type(fixture, '#sign-in-password', ANY_PASSWORD);
+    await submit(fixture);
+    type(fixture, '#sign-in-code', '999999');
+    await submit(fixture);
+
+    expect(TestBed.inject(SessionStore).isAuthenticated()).toBe(false);
   });
 
   it('gives the same message for an unknown address as for a bad password', async () => {
@@ -250,7 +305,7 @@ describe('credential handling', () => {
 
     type(fixture, '#sign-in-email', KNOWN_EMAIL);
     type(fixture, '#sign-in-password', ANY_PASSWORD);
-    await submit(fixture);
+    await signInFully(fixture);
 
     expect(TestBed.inject(Router).url).toBe('/residents');
   });
@@ -300,7 +355,7 @@ describe('session lifecycle', () => {
     const fixture = await setUp();
     type(fixture, '#sign-in-email', KNOWN_EMAIL);
     type(fixture, '#sign-in-password', ANY_PASSWORD);
-    await submit(fixture);
+    await signInFully(fixture);
 
     const session = TestBed.inject(SessionStore);
     expect(session.isAuthenticated()).toBe(true);

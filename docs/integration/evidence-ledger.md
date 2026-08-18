@@ -379,3 +379,115 @@ to §4.
 **TAB 01 complete on both sides.** The console now describes the API that exists, the P1 defect
 is fixed at its source with a gate that has been watched failing, and the six envelope
 divergences are closed and guarded. Two divergences (D2, D7) belong to TAB 05 by design.
+
+---
+
+## TAB 02 — Authentication and session (console half)
+
+| | |
+| --- | --- |
+| Date | 18 August 2026 |
+| HEAD at start | `18b42bb` |
+| Backend half | `taytay-backend` commit `cc2ae05`, and [ADR 0043] |
+| Status | Console flow complete and unit-tested. Three items deferred, listed below |
+
+### What was built
+
+**`AuthTokenHolder` (step 1).** The access token lives in a `#private` class field and nowhere
+else — not `localStorage`, not `sessionStorage`, not a cookie, never a URL or a log. Deliberately
+**not a signal**: a signal is readable by any component that injects the service, and a template
+that can read a token can render one. The only operations are `hold`, `authorization()`,
+`hasToken()`, `expiresAt()` and `clear()`; there is no getter for the value. A test asserts the
+token does not appear in `JSON.stringify` and that the instance has no enumerable keys, because a
+token on an enumerable property reaches a log line or an error report without anybody deciding it
+should.
+
+**The real flow (step 2).** `HttpStaffRepository` now calls `POST auth/tokens` with
+`{email, password, device_name}`, handles the three answers the API actually gives, and holds the
+token *before* calling `GET me` — the one ordering in the flow that matters, because `me` is
+authenticated by it. `signOut()` is `DELETE auth/tokens/current`, and the token is dropped **only
+after the API confirms**: clearing it first would show a signed-out screen over a credential that
+still worked, and would make the failure invisible, because the request that would have revoked it
+now goes out unauthenticated.
+
+**The second-factor step (step 3).** One labelled field, `autocomplete="one-time-code"`,
+paste never blocked, and nothing that auto-advances — six boxes that move focus per digit are
+announced as six unlabelled inputs and strand anybody who mistypes. The challenge expiry is shown
+on screen rather than discovered by typing into a dead form, and a recovery-code path is named.
+
+**`SignInOutcome` as a discriminated union**, not a nullable user beside a flag. The most
+important assertion in the new suite is that an outstanding challenge is **not** a session: if
+`mfa-required` set a user, every guard in the application would let that half-authenticated caller
+through and the second factor would be decorative.
+
+**Refusals (step 6).** A wrong password, an unknown address, a locked account and a deactivated one
+produce one identical message. Throttling is the single exception, because it discloses nothing
+about the account — it is a fact about this caller's rate — and the user can act on it once told
+how long. A transport error never reaches the form: a test asserts a connection string cannot leak
+into it.
+
+**Expiry (step 5, partial).** A `401 UNAUTHENTICATED` ends the session locally without a
+round-trip — `signOut()` would present the credential that was just rejected and answer `401`
+again — and carries the current URL so the user returns to the screen they were on.
+
+**The mock keeps the seam honest.** The mock adapter issues a challenge too. A mock that signed
+people straight in would be an offline path that skips a control the real one applies, and the
+second-factor screen would go unexercised until somebody pointed the console at staging. Its
+development code is deliberately **not** surfaced on the sign-in screen: a view importing from
+`data/mock` is the one thing CLAUDE.md §2.3 forbids outright, and a convenience hint is not worth a
+hole in the seam.
+
+### `check:auth` (step 7), and its mutation transcript
+
+| Rule | Planted regression | Result |
+| --- | --- | --- |
+| No web storage anywhere in application code | `localStorage.getItem` added | **caught** |
+| The holder exposes no getter | `get token()` added | **caught** |
+| No credential-less sign-in | `signInAs` reintroduced | **caught** |
+| Only the staff adapter may hold a token | — (rule present) | — |
+| Sign-out revokes server-side | `signOut` changed to clear locally and call another path | **caught** |
+
+The whole of web storage is refused rather than "storage of anything that looks like a token": a
+rule about *what* is stored needs somebody to judge each case correctly forever, and a rule about
+*whether* does not. `DL-110` already refuses it for search terms, for the same reason.
+
+### A check that earned its keep
+
+The existing `check:access` failed the build on the new `session.store.spec.ts`, flagging a
+password literal in a fixture. It was right to — the rule is that no credential is committed, and
+a spec is not an exemption. The spec now uses the same non-credential constant `auth.spec.ts`
+already used.
+
+### Verification
+
+| Check | Result |
+| --- | --- |
+| `npm run verify` | **green** |
+| Test files / tests | **75 / 1474** (was 73 / 1454) |
+| Repository checks | **22**, including the new `check:auth` |
+| Backend suite | 909 passed, 6758 assertions |
+
+Twenty-one existing spec files were updated for the port change — mechanical, and the port had to
+change: `signIn` returning `AuthenticatedUser` could not express the answer the API actually gives.
+
+### Deferred, and why
+
+- **Enrolment in the console.** The API now answers `mfa-enrolment-required` for a staff account
+  with no factor, and issues a token that can reach enrolment and nothing else. The console
+  **drops that token deliberately** and says what must happen and to whom: holding it would give
+  this application a session that looks real to every guard and can do nothing, which is worse
+  than no session, because the caseworker would find out one refused screen at a time. Building
+  the enrolment screen is carried to TAB 03, which touches this surface anyway.
+- **Refresh.** Decided, not built — ADR 0043 §4. Every place a refresh credential could live is
+  refused by an accepted decision, and ADR 0006's residual risk is unmitigated until TAB 13
+  deploys the CSP.
+- **The pre-expiry warning and in-progress form preservation.** Step 5 asks for a warning before
+  the token lapses with an offer to extend, and for a form to survive a session boundary.
+  "Extend" is refresh by another name and waits on the same decision. Preserving the form needs
+  re-authentication *in place* — an overlay that keeps the screen mounted rather than routing away
+  — which is the right design and is not built. What exists today returns the user to the same
+  URL; six paragraphs of assessment typed into an unsaved form would still be lost. Recorded
+  rather than glossed: it is the specific harm ADR 0006 names.
+- **Live acceptance.** "Sign in with MFA, work, sign out; the revoked token is refused by the API
+  on the next call" needs a running API. Every step is unit-tested against the shapes the backend
+  was measured to produce; none has been exercised end to end.

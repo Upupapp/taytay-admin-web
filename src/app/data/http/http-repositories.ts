@@ -1,5 +1,9 @@
+import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { map, type Observable } from 'rxjs';
+import { catchError, map, of, switchMap, tap, throwError, type Observable } from 'rxjs';
+
+import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
+import { AuthTokenHolder } from '@core/auth/auth-token.holder';
 
 import {
   toAuthenticatedUser,
@@ -181,10 +185,13 @@ import {
   type TeamQueue,
   type WorkQueue,
   type WorkRepository,
+  type MfaCredentials,
+  SignInError,
+  type SignInOutcome,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
-import { API_ENDPOINTS } from './api.contract';
+import { API_ENDPOINTS, type ApiItemResponse } from './api.contract';
 
 /**
  * HTTP adapters implementing the domain ports against the provisional contract
@@ -1126,6 +1133,9 @@ export class HttpBeneficiaryRepository implements BeneficiaryRepository {
 @Injectable()
 export class HttpStaffRepository implements StaffRepository {
   private readonly api = inject(ApiClient);
+  private readonly http = inject(HttpClient);
+  private readonly tokens = inject(AuthTokenHolder);
+  private readonly baseUrl = inject(APP_ENVIRONMENT).apiBaseUrl.replace(/\/+$/, '');
 
   list(filter: StaffFilter, page: PageRequest): Observable<Page<StaffUser>> {
     return this.api.page<StaffUser>(API_ENDPOINTS.staff, page, { ...filter });
@@ -1135,23 +1145,187 @@ export class HttpStaffRepository implements StaffRepository {
     return this.api.optionalItem<StaffUser>(`${API_ENDPOINTS.staff}/${id}`);
   }
 
+  /**
+   * Who the server says the caller is.
+   *
+   * `GET me` returns the account **with the permissions and roles the server
+   * resolved** — TAB 03 moves the console onto those. Until then the identity is
+   * still assembled from the role map, and this only answers "is there a live
+   * session"; with a memory-only token, on a fresh page load there is not.
+   */
   currentUser(): Observable<AuthenticatedUser | null> {
+    if (!this.tokens.hasToken()) {
+      // No round-trip: without a token there is nothing to ask about, and an
+      // unauthenticated GET would answer 401 and bounce the user to sign-in
+      // through the error interceptor — on every reload, before they had done
+      // anything.
+      return of(null);
+    }
+
     return this.api
-      .optionalItem<StaffUser>(API_ENDPOINTS.session)
+      .optionalItem<StaffUser>(API_ENDPOINTS.me)
       .pipe(map((staff) => (staff ? toAuthenticatedUser(staff) : null)));
   }
 
-  signIn(credentials: SignInCredentials): Observable<AuthenticatedUser> {
-    // Credentials travel in the request body over the session endpoint; the
-    // API sets an HTTP-only cookie. Nothing is stored client-side.
-    return this.api
-      .post<StaffUser>(API_ENDPOINTS.session, credentials)
-      .pipe(map(toAuthenticatedUser));
+  /**
+   * Step one. Answers either a token or a second-factor challenge.
+   *
+   * `POST auth/tokens` returns **200** with `{status: "mfa-required", challenge}`
+   * when a second factor is enrolled — the password was right, so it is
+   * deliberately not a 401 — and **201** with `{token, expires_at}` otherwise.
+   */
+  signIn(credentials: SignInCredentials): Observable<SignInOutcome> {
+    return this.http
+      .post<ApiItemResponse<SignInWire>>(this.authUrl('auth/tokens'), {
+        email: credentials.email,
+        password: credentials.password,
+        device_name: DEVICE_NAME,
+      })
+      .pipe(
+        switchMap((response) => this.readSignIn(response.data)),
+        catchError((error: unknown) => throwError(() => toSignInError(error))),
+      );
   }
 
-  signOut(): Observable<void> {
-    return this.api.postVoid(`${API_ENDPOINTS.session}/sign-out`, {});
+  /** Step two. The challenge is single-use and expires. */
+  completeMfa(credentials: MfaCredentials): Observable<AuthenticatedUser> {
+    return this.http
+      .post<ApiItemResponse<SignInWire>>(this.authUrl('auth/tokens/mfa'), {
+        challenge: credentials.challenge,
+        code: credentials.code,
+      })
+      .pipe(
+        switchMap((response) => this.readSignIn(response.data)),
+        map((outcome) => {
+          if (outcome.kind !== 'authenticated') {
+            // The API does not chain a second challenge onto a completed one.
+            // If that ever changes, failing loudly here beats returning a user
+            // the server never issued a token for.
+            throw new SignInError('unavailable', SIGN_IN_UNAVAILABLE);
+          }
+          return outcome.user;
+        }),
+        catchError((error: unknown) => throwError(() => toSignInError(error))),
+      );
   }
+
+  /**
+   * Sign-out is server-side revocation.
+   *
+   * The token is dropped only after the API confirms. Clearing it first would
+   * show a signed-out screen while the credential stayed valid on the server —
+   * and would make the failure invisible, because the request that would have
+   * revoked it now goes out unauthenticated.
+   */
+  signOut(): Observable<void> {
+    return this.http.delete<unknown>(this.authUrl('auth/tokens/current')).pipe(
+      tap(() => this.tokens.clear()),
+      map(() => undefined),
+    );
+  }
+
+  private readSignIn(payload: SignInWire): Observable<SignInOutcome> {
+    if (payload.status === 'mfa-required' && typeof payload.challenge === 'string') {
+      return of({
+        kind: 'mfa-required' as const,
+        challenge: {
+          challenge: payload.challenge,
+          expiresInMinutes: payload.expires_in_minutes ?? 0,
+        },
+      });
+    }
+
+    if (payload.status === 'mfa-enrolment-required') {
+      /*
+       * The API answered with a token, and the console deliberately drops it.
+       *
+       * It is an enrolment-scoped credential: `EnforceTokenAbilities` refuses it
+       * everywhere except second-factor enrolment. Holding it would give this
+       * application a session that looks real to every guard and can do nothing,
+       * which is worse than no session — the caseworker would find out one
+       * refused screen at a time.
+       *
+       * Enrolment itself is not built here yet (TAB 02 report, deferred): until
+       * it is, the honest answer is to say what has to happen and to whom.
+       */
+      return throwError(
+        () =>
+          new SignInError(
+            'second-factor-enrolment-required',
+            'This account still needs an authenticator app set up before it can be used. Contact the MSWDO administrator to complete enrolment.',
+          ),
+      );
+    }
+
+    if (typeof payload.token !== 'string') {
+      return throwError(() => new SignInError('unavailable', SIGN_IN_UNAVAILABLE));
+    }
+
+    this.tokens.hold(payload.token, payload.expires_at ? new Date(payload.expires_at) : null);
+
+    // The token has to be held before this call, because `GET me` is
+    // authenticated by it. This is the one ordering in the flow that matters.
+    return this.api
+      .item<StaffUser>(API_ENDPOINTS.me)
+      .pipe(map((staff) => ({ kind: 'authenticated' as const, user: toAuthenticatedUser(staff) })));
+  }
+
+  /**
+   * The sign-in calls bypass `ApiClient` because they are the only two requests
+   * whose response envelope is read directly rather than unwrapped to `data`.
+   * They still go through the same versioned base and the same interceptors.
+   */
+  private authUrl(path: string): string {
+    return `${this.baseUrl}/${path}`;
+  }
+}
+
+/** What the console calls itself in the staff member's device list. */
+const DEVICE_NAME = 'MSWDO admin console';
+
+const SIGN_IN_UNAVAILABLE = 'Sign-in is unavailable right now. Please try again shortly.';
+
+/**
+ * The wire shape of both sign-in steps. One interface, because the API answers
+ * on the same endpoint with either half populated.
+ */
+interface SignInWire {
+  readonly status?: string;
+  readonly challenge?: string;
+  readonly expires_in_minutes?: number;
+  readonly token?: string;
+  readonly token_type?: string;
+  readonly expires_at?: string;
+}
+
+/**
+ * Every refusal says the same thing, except throttling.
+ *
+ * A wrong password, an unknown address, a locked account and a deactivated one
+ * are one message: any difference turns the sign-in form into a directory of
+ * which municipal staff addresses exist. Throttling is different — it discloses
+ * nothing about the account, and the user can act on it once told how long.
+ */
+function toSignInError(error: unknown): SignInError {
+  if (error instanceof SignInError) {
+    return error;
+  }
+
+  const failure = error as { status?: number; code?: string | null; retryAfterSeconds?: number | null };
+
+  if (failure.status === 429 || failure.code === 'RATE_LIMITED') {
+    return new SignInError(
+      'throttled',
+      'Too many sign-in attempts. Please wait before trying again.',
+      failure.retryAfterSeconds ?? null,
+    );
+  }
+
+  if (failure.status === 401 || failure.status === 422) {
+    return new SignInError('invalid-credentials', 'That email address and password do not match.');
+  }
+
+  return new SignInError('unavailable', SIGN_IN_UNAVAILABLE);
 }
 
 @Injectable()

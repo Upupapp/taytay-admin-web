@@ -18,6 +18,8 @@ import {
   type StaffRepository,
   type StaffUser,
   type StaffUserId,
+  type MfaCredentials,
+  type SignInOutcome,
 } from '@domain/index';
 
 import { denyUnless } from './mock-access';
@@ -48,6 +50,8 @@ export class MockStaffRepository implements StaffRepository {
   private readonly latency = inject(MockLatency);
   private readonly access = inject(ACCESS_CONTEXT);
   private signedInId: StaffUserId | null = null;
+  /** Who is midway through the second factor. Cleared on success or refusal. */
+  private pendingChallenge: StaffUserId | null = null;
 
   list(filter: StaffFilter, page: PageRequest): Observable<Page<StaffUser>> {
     // Re-checked here, not only in the UI: a hidden screen is not protection.
@@ -104,7 +108,7 @@ export class MockStaffRepository implements StaffRepository {
     return this.latency.respond(toAuthenticatedUser(staff));
   }
 
-  signIn(credentials: SignInCredentials): Observable<AuthenticatedUser> {
+  signIn(credentials: SignInCredentials): Observable<SignInOutcome> {
     const email = credentials.email.trim().toLowerCase();
 
     // Shape is checked before any lookup, so a malformed submission never
@@ -120,14 +124,79 @@ export class MockStaffRepository implements StaffRepository {
       return throwError(() => invalidCredentials());
     }
 
+    /*
+     * THE MOCK ISSUES A SECOND-FACTOR CHALLENGE TOO.
+     *
+     * The API enforces MFA for every staff account, so a mock that signed
+     * people straight in would be an offline path that skips a control the real
+     * one applies — and the second-factor screen would go unexercised until
+     * somebody pointed the console at staging. The challenge is a fixed
+     * development handle; the code is checked against MOCK_MFA_CODE below.
+     */
+    this.pendingChallenge = staff.id;
+
+    return this.latency.respond({
+      kind: 'mfa-required' as const,
+      challenge: { challenge: MOCK_CHALLENGE, expiresInMinutes: MOCK_CHALLENGE_TTL_MINUTES },
+    });
+  }
+
+  completeMfa(credentials: MfaCredentials): Observable<AuthenticatedUser> {
+    const pending = this.pendingChallenge;
+
+    // A wrong code and a challenge that was never issued fail identically, and
+    // both burn the challenge: separating them tells an attacker which half
+    // they got right, and leaving it alive turns a six-digit code into
+    // something worth guessing at.
+    if (pending === null || credentials.challenge !== MOCK_CHALLENGE) {
+      this.pendingChallenge = null;
+      return throwError(() => secondFactorRefused());
+    }
+
+    if (credentials.code.trim() !== MOCK_MFA_CODE) {
+      this.pendingChallenge = null;
+      return throwError(() => secondFactorRefused());
+    }
+
+    const staff = MOCK_STAFF.find((candidate) => candidate.id === pending);
+
+    if (staff === undefined || !canHoldSession(staff)) {
+      this.pendingChallenge = null;
+      return throwError(() => secondFactorRefused());
+    }
+
+    this.pendingChallenge = null;
     this.signedInId = staff.id;
+
     return this.latency.respond(toAuthenticatedUser(staff));
   }
 
   signOut(): Observable<void> {
     this.signedInId = null;
+    this.pendingChallenge = null;
     return this.latency.respond(undefined);
   }
+}
+
+/**
+ * The development second factor.
+ *
+ * Not a credential: it authenticates nobody, guards nothing, and exists only so
+ * the offline path exercises the same two screens the real one does.
+ *
+ * Deliberately **not** surfaced on the sign-in screen. A view importing from
+ * `data/mock` is the one thing CLAUDE.md §2.3 forbids outright, and a
+ * convenience hint is not worth a hole in the seam — a developer reads it here.
+ */
+export const MOCK_MFA_CODE = '000000';
+const MOCK_CHALLENGE = 'mock-challenge';
+const MOCK_CHALLENGE_TTL_MINUTES = 5;
+
+function secondFactorRefused(): SignInError {
+  return new SignInError(
+    'second-factor-refused',
+    'That code was not accepted. Ask for a new one and try again.',
+  );
 }
 
 function invalidCredentials(): SignInError {

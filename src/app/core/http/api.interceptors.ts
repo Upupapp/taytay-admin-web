@@ -3,7 +3,11 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 
+import { RETURN_URL_PARAM } from '../access/access.guards';
+
 import { readApiError, type ApiFailure } from './api-failure';
+import { AuthTokenHolder } from '../auth/auth-token.holder';
+import { SessionStore } from '../auth/session.store';
 import { NotificationStore } from '../notifications/notification.store';
 
 /**
@@ -28,18 +32,23 @@ import { NotificationStore } from '../notifications/notification.store';
  * grants nothing; not sending it recorded every staff request as an unknown
  * channel, which is a gap in the audit trail rather than a cosmetic one.
  *
- * The token itself is attached in TAB 02 by a holder that keeps it in a private
- * field of a service — never in this interceptor, and never in web storage.
+ * The bearer token comes from `AuthTokenHolder`, which keeps it in a private
+ * field and exposes no getter. This interceptor never reads, stores or logs the
+ * token itself — it asks for a header and attaches whatever it is given.
  */
-export const apiHeadersInterceptor: HttpInterceptorFn = (request, next) =>
-  next(
+export const apiHeadersInterceptor: HttpInterceptorFn = (request, next) => {
+  const tokens = inject(AuthTokenHolder);
+
+  return next(
     request.clone({
       setHeaders: {
         Accept: 'application/json',
         'X-Client-Channel': 'admin-console',
+        ...tokens.authorization(),
       },
     }),
   );
+};
 
 /**
  * Turns a failure into one user-visible message and one navigation decision, so
@@ -58,6 +67,7 @@ export const apiHeadersInterceptor: HttpInterceptorFn = (request, next) =>
 export const httpErrorInterceptor: HttpInterceptorFn = (request, next) => {
   const notifications = inject(NotificationStore);
   const router = inject(Router);
+  const session = inject(SessionStore);
 
   return next(request).pipe(
     catchError((error: unknown) => {
@@ -78,7 +88,20 @@ export const httpErrorInterceptor: HttpInterceptorFn = (request, next) => {
        */
       switch (failure.code ?? codeFromStatus(failure.status)) {
         case 'UNAUTHENTICATED':
-          void router.navigate(['/sign-in']);
+          /*
+           * The token is gone or the server refused it. End the session
+           * locally without a round-trip: `signOut()` would call
+           * `DELETE auth/tokens/current` with the credential that was just
+           * rejected, and answer 401 again.
+           *
+           * The current URL is carried so the user comes back to the screen
+           * they were on rather than the dashboard. What it does **not** yet
+           * carry is unsaved work — see the deferred item in TAB 02's report.
+           */
+          session.endExpiredSession();
+          void router.navigate(['/sign-in'], {
+            queryParams: { [RETURN_URL_PARAM]: router.url },
+          });
           break;
 
         case 'FORBIDDEN':

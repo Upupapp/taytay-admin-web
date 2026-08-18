@@ -24,6 +24,7 @@ import {
   type StaffRole,
   type StaffUser,
   type StaffUserId,
+  type SignInOutcome,
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
 
@@ -66,7 +67,8 @@ function staffRepository(user: StaffUser): StaffRepository {
     list: (): Observable<Page<StaffUser>> => of(emptyPage<StaffUser>()),
     getById: (): Observable<StaffUser | null> => of(user),
     currentUser: (): Observable<AuthenticatedUser | null> => of(authenticated),
-    signIn: (): Observable<AuthenticatedUser> => of(authenticated),
+    signIn: (): Observable<SignInOutcome> => of({ kind: 'authenticated', user: authenticated }),
+    completeMfa: (): Observable<AuthenticatedUser> => of(authenticated),
     signOut: (): Observable<void> => of(undefined),
   };
 }

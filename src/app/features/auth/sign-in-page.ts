@@ -48,12 +48,20 @@ export class SignInPage {
 
   protected readonly email = signal('');
   protected readonly password = signal('');
+  protected readonly code = signal('');
   protected readonly passwordVisible = signal(false);
   protected readonly submitting = signal(false);
   /** Client-side messages only. Server refusals live on `session.error`. */
   protected readonly clientErrors = signal<readonly string[]>([]);
 
   protected readonly serverError = this.session.error;
+
+  /** True once the password is accepted and a second factor is outstanding. */
+  protected readonly awaitingCode = computed(
+    () => this.session.status() === 'second-factor-required',
+  );
+  protected readonly challenge = this.session.pendingChallenge;
+  protected readonly retryAfterSeconds = this.session.retryAfterSeconds;
 
   protected readonly errors = computed<readonly string[]>(() => {
     const server = this.serverError();
@@ -104,16 +112,60 @@ export class SignInPage {
 
     this.submitting.set(true);
     this.session.signIn({ email, password }).subscribe({
-      next: (ok) => {
+      next: (signedIn) => {
         this.submitting.set(false);
-        if (ok) {
-          // Cleared so a password never lingers in memory longer than needed.
-          this.password.set('');
+        // Cleared whichever way this went: on success it is no longer needed,
+        // and on a second-factor challenge it must not sit in memory through a
+        // step that can take minutes.
+        this.password.set('');
+
+        if (signedIn) {
+          void this.router.navigateByUrl(this.returnUrl() ?? '/dashboard');
+        }
+        // Otherwise either the attempt was refused — the message is on
+        // `session.error` — or a second factor is outstanding, and the template
+        // switches to the code step on `session.status`.
+      },
+      error: () => this.submitting.set(false),
+    });
+  }
+
+  protected onCode(event: Event): void {
+    this.code.set((event.target as HTMLInputElement).value);
+    this.clearMessages();
+  }
+
+  protected submitCode(event: Event): void {
+    event.preventDefault();
+    if (this.submitting()) {
+      return;
+    }
+
+    const code = this.code().trim();
+
+    if (code.length === 0) {
+      this.clientErrors.set([this.copy.codeRequired]);
+      return;
+    }
+
+    this.submitting.set(true);
+    this.session.completeSecondFactor(code).subscribe({
+      next: (signedIn) => {
+        this.submitting.set(false);
+        this.code.set('');
+        if (signedIn) {
           void this.router.navigateByUrl(this.returnUrl() ?? '/dashboard');
         }
       },
       error: () => this.submitting.set(false),
     });
+  }
+
+  protected startOver(): void {
+    this.code.set('');
+    this.password.set('');
+    this.clientErrors.set([]);
+    this.session.cancelSecondFactor();
   }
 
   private clearMessages(): void {

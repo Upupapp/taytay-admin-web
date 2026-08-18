@@ -149,7 +149,12 @@ export const API_ENDPOINTS = {
   serviceProviders: 'service-providers',
   fieldVisits: 'field-visits',
   staff: 'staff',
-  session: 'session',
+  /**
+   * The signed-in account, and the permissions the **server** resolved for it.
+   * Replaces the cookie-era `session` endpoint, which the API never had.
+   * TAB 03 moves the console onto the permissions this returns.
+   */
+  me: 'me',
   notifications: 'notifications',
   dashboardSummary: 'dashboard/summary',
   /**
