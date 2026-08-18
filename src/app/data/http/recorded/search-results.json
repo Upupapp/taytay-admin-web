@@ -1,0 +1,31 @@
+{
+  "data": {
+    "term": "Bautista",
+    "results": [
+      {
+        "type": "resident",
+        "id": "01a013cd-2008-7062-8e59-91e736654fd7",
+        "title": "Teodoro Bautista",
+        "barangay_id": 2,
+        "status": "unverified"
+      },
+      {
+        "type": "resident",
+        "id": "01a013cd-2009-7226-8b7f-829e5d811a4f",
+        "title": "Aurelia Bautista",
+        "barangay_id": 2,
+        "status": "unverified"
+      },
+      {
+        "type": "resident",
+        "id": "01a013cd-200a-71a9-ac76-147a0072c026",
+        "title": "Nicanor Bautista",
+        "barangay_id": 2,
+        "status": "unverified"
+      }
+    ]
+  },
+  "meta": {
+    "request_id": "4f0b390a50c8d2ad30d501efb8c0f7c6"
+  }
+}

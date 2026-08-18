@@ -1,0 +1,31 @@
+{
+  "data": {
+    "id": "01a01428-d6ff-727d-899e-363d657c759f",
+    "rule": "name-and-birth-date",
+    "confidence": "exact",
+    "decision": "same-person",
+    "decision_note": "Same household, same date of birth, confirmed with the applicant.",
+    "decided_at": "2026-08-18T09:17:12Z",
+    "residents": [
+      {
+        "id": "01a013cd-2009-7226-8b7f-829e5d811a4f",
+        "name": "Aurelia Bautista",
+        "birth_date": "1982-06-17",
+        "barangay_id": 2,
+        "verification_tier": "unverified",
+        "is_active": true
+      },
+      {
+        "id": "01a01428-d6e8-7177-9876-dda362aaa68e",
+        "name": "Aurelia Bautista",
+        "birth_date": "1982-06-17",
+        "barangay_id": 2,
+        "verification_tier": "unverified",
+        "is_active": true
+      }
+    ]
+  },
+  "meta": {
+    "request_id": "b1e231b81902ccfbeebd12ad55d30025"
+  }
+}
