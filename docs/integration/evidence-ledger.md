@@ -862,3 +862,50 @@ all propagate, so the screen shows a failure rather than an absence.
 `404` is also what the API returns when the actor may not *know* the record exists
 (`conventions.md` §4). The console cannot tell those apart either — which is the point of the
 convention, not a limitation of the client.
+
+### Steps 4 and 6 — the mapping layer, and the first resource mapped
+
+`data/http/mappers/wire.ts` holds the primitives every per-resource mapper is built from, and
+`resident.mapper.ts` is the first resource, written against the field names `openapi.json` now
+publishes rather than against the console's idea of what a resident looks like.
+
+**Still no generic recursive case-converter, deliberately.** A converter cannot tell a field name
+from a key inside a free-text note or an opaque identifier, so it renames what it was never asked
+to rename and the failure surfaces months later inside a case file.
+
+Everything in the layer is **total**: a missing, null or wrongly-typed wire value yields the
+domain's "absent" rather than throwing. A mapper that can throw turns one unexpected field into a
+blank screen, and the field that surprises you is never the one you were watching. `oneOf` never
+widens — an unrecognised status becomes absent rather than passing through, which is the L-07
+failure mode in miniature. `int` rejects a non-integer rather than rounding it, because the only
+numbers this API sends are counts and centavos.
+
+### L-12 — the resident payload does not carry what the resident screens need
+
+Writing the first mapper made the gap visible immediately. The detail payload publishes 19 fields;
+the domain `Resident` needs four that are **not among them**:
+
+| Domain field | Where it actually lives |
+| --- | --- |
+| `householdId` | `GET admin/residents/{resident}/households` — a separate call returning a collection |
+| `sectors` | `GET admin/residents/{resident}/vulnerability`, behind its own permission |
+| `philsysLastFour` | absent — identity tier, `resident.view-sensitive` |
+| `monthlyIncome` | absent — means tier, same permission |
+
+They are mapped to their absent value and **not invented**. That is the honest reading, and the
+reason the endpoint withholds them is the same reason the console masks them: they are a wider
+tier than the record itself.
+
+The consequence is recorded for TAB 07 rather than papered over — `getProfile` will have to
+assemble four calls or receive a projection built for it. `verification_tier` and `verified_at`
+come back with **no domain counterpart at all** (the console has never modelled KYC, which is the
+citizen surface) and are dropped deliberately rather than carried as unmapped extras.
+
+### On the fixtures
+
+The mapper's tests use the **published** payload field for field, not responses recorded from a
+running API. TAB 05 step 10 asks for the latter — *"not hand-written fixtures, which drift toward
+what the author expected"* — and no staging API exists here. What these prove is that the mapper
+agrees with the published contract, which is a strictly weaker claim and stated as such.
+
+`npm run verify` green — 79 files, **1501 tests**, 22 checks.
