@@ -491,3 +491,86 @@ change: `signIn` returning `AuthenticatedUser` could not express the answer the 
 - **Live acceptance.** "Sign in with MFA, work, sign out; the revoked token is refused by the API
   on the next call" needs a running API. Every step is unit-tested against the shapes the backend
   was measured to produce; none has been exercised end to end.
+
+---
+
+## TAB 03 — Authorization convergence (steps 1–4: the reconciliation and the decisions)
+
+| | |
+| --- | --- |
+| Date | 18 August 2026 |
+| HEAD at start | `9ae4caa` |
+| Deliverable | [`docs/access/permission-reconciliation.md`](../access/permission-reconciliation.md) |
+| Status | **Partial.** Steps 1–4 complete. Steps 5–9 — applying it — not started |
+
+### Why this is a separate, earlier deliverable
+
+TAB 03 step 1 says to build the table **before proposing any change**, because *"a rename applied
+to a key that was actually a split loses a distinction the domain was drawing on purpose."* That
+turned out to be the operative risk: of the 87 keys with no counterpart on the other side, only
+nine are simple renames. Four are console splits over a coarser backend key, two are console
+merges over a finer backend split, and six cannot be decided at all until TAB 04 settles what a
+case is.
+
+Applying a naive rename pass first would have destroyed four deliberate distinctions and produced
+a vocabulary that agreed on strings while disagreeing on meaning — which is worse than the
+disagreement, because it looks settled.
+
+### Measured
+
+68 console keys, 61 backend keys, **21 identical**, 47 console-only, 40 backend-only, **zero shared
+role names**. Every sweep figure for this TAB reproduced exactly, unlike its route and test counts
+(L-01), so both were enumerated rather than assumed.
+
+### L-06 (P1) — the console guards field visits with `case.view`
+
+`app.routes.ts:345` guards the visit list with `permissionGuard('case.view')`. The console has no
+`visit.*` key at all; the backend has `visit.view` and `visit.manage`.
+
+**A role holding `case.view` but not `visit.view` sees the Field visits link, opens it, and is
+refused by the API.** This is not a prediction about cutover — the two vocabularies disagree
+today, and it is exactly the "unusable product" TAB 03 exists to prevent. Closed by adopting the
+backend's dedicated keys and repointing the guard.
+
+### Decisions
+
+- **Convention.** The backend's catalog is canonical in *location*; the console's is canonical in
+  *form* — one kebab-case `resource.action`, two segments. The backend enum currently mixes three
+  conventions (kebab, `snake_case`, and three dotted segments) in one vocabulary. Six backend keys
+  are renamed; none changes what is granted.
+- **Splits are kept, not collapsed.** Newsfeed (7 v 2), events (10 v 4), disbursement (4 v 1). The
+  disbursement split is the highest-value row in the table: separation of duties is asserted by a
+  console test today, and a single `request.release` cannot express it — TAB 08 would have to build
+  the split anyway.
+- **Merges are undone.** Field visits get their own keys (L-06); documents adopt the backend's
+  `manage`/`verify` split, because verifying a document is the act the office is accountable for.
+- **`document.view-full-number` is kept** and becomes a *backend* key. Masking a document number to
+  its last four characters is a data-minimisation rule under RA 10173, and seeing the whole number
+  should cost a permission.
+- **Roles: backend names are canonical, the console's staff set is canonical.** `auditor` must not
+  be merged into `lgu_staff` — it holds `audit.view-detail` where the head does not, and merging
+  would give the person checking the work the grants of the people doing it. Three backend roles
+  with no MSWDO counterpart are kept and simply never appear in this console.
+- **Six keys deferred to TAB 04**, and deliberately not decided here: `case.*` (five) and
+  `resident.merge`. `case.close` is held apart from `case.manage` because ending the office's
+  involvement with a family is a decision rather than a step (`DL-53`) — a distinction that
+  survives under TAB 04 option A and evaporates under option B. Wiring them now would bake in an
+  answer nobody has given.
+- **`settings.manage` withdrawn** — nothing reads it.
+- **Data scope is open**, not assumed equivalent. It needs the same row-by-row treatment against
+  `ScopeResolver`, and its acceptance criterion cannot be proven without a running API.
+
+### Not done — TAB 03 steps 5–9
+
+Applying the table. That is: the backend renames plus a migration over stored role-permission
+rows; the new keys on both sides; the console moving onto the permissions `GET /api/v1/me`
+resolves, with `ROLE_DEFINITIONS` demoted to documentation and test fixture and a check that fails
+the build if a guard reads it at runtime; fail-closed handling of unknown keys in both directions;
+regenerating `permission-matrix.md`; the direct-call refusal tests; and the scope reconciliation.
+
+Steps 8 and 9 need a running API in any case — *"call the endpoint directly with a token that
+lacks it and confirm 403"* cannot be done here.
+
+### Verification
+
+No code changed. `npm run verify` green (75 files, 1474 tests, 22 checks); backend 909 passed.
