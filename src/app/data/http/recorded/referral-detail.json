@@ -1,0 +1,39 @@
+{
+  "data": {
+    "id": "01a01408-5db8-7316-9fd1-24213fcf1c72",
+    "reference_number": "REF-20260818-KN2EV",
+    "resident_id": "01a013cd-2009-7226-8b7f-829e5d811a4f",
+    "destination_type": "health-facility",
+    "destination_name": "Taytay Rural Health Unit",
+    "destination_contact": "Dr Santos",
+    "provider_id": "01a01408-3621-70a4-b887-c16766839a8e",
+    "status": "draft",
+    "urgency": "routine",
+    "service_requested": "Medical consultation",
+    "reason": "Household member needs follow-up care after hospitalisation.",
+    "referred_at": "2026-08-18T08:41:27Z",
+    "sent_at": null,
+    "follow_up_on": null,
+    "responded_at": null,
+    "outcome": null,
+    "is_overdue": false,
+    "available_transitions": [
+      "sent",
+      "closed"
+    ],
+    "disclosure": {
+      "basis": null,
+      "note": null,
+      "recorded_at": null,
+      "fields": [],
+      "attachments": []
+    },
+    "blockers": [
+      "disclosure-basis-required"
+    ],
+    "notes": []
+  },
+  "meta": {
+    "request_id": "db7a427fc2df83309947296d1147208b"
+  }
+}

@@ -115,7 +115,24 @@ Two fields the console's model requires do not exist on the API side at all:
 **Blocks:** `AssistanceRequestRepository` — the console's busiest surface. Both gaps are pinned by
 test, so they fail the day they are closed.
 
-### 2.5 Two smaller ones
+### 2.5 Referral destinations are free text (L-18) — backend, and it has a privacy consequence
+
+`ReferralDestination` is a closed union of eight Philippine destinations in the console —
+`dswd-field-office`, `hospital-msw`, `philhealth`, `peso`, `barangay-vaw-desk`,
+`women-and-children-protection-desk`, `other-lgu-office`, `ngo-partner`. The API validates
+`destination_type` as `['sometimes','string','max:48']` and sent `health-facility`.
+
+**Two of the console's eight are protection desks.** Whether a referral is going to one governs
+how much may be disclosed and whether `referral.disclose-protected` applies. Against a free string
+the console cannot tell, so it cannot apply the rule.
+
+Either the API adopts the controlled vocabulary, or the office accepts that destination type is
+descriptive and protection handling is driven by something else — but it needs deciding, not
+defaulting.
+
+**Blocks:** `ReferralRepository` (13 methods).
+
+### 2.6 Two smaller ones
 
 - **`HouseholdBand` cannot say "we did not ask"** (L-14). Either it gains an unassessed member,
   the list screen stops rendering a band, or the endpoint carries the snapshot. Until then a
