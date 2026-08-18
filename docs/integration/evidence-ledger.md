@@ -1172,3 +1172,52 @@ above holds — but nothing about concurrency, row locking or `lockForUpdate` is
 unrun, and TAB 00 step 5 stays open.
 
 `npm run verify` green — 83 files, **1532 tests**, 22 checks.
+
+---
+
+## CI — the console had none, and the scan became a standing gate
+
+Found immediately after the first push: the backend has a pipeline; **the console had no CI at
+all.** Twenty-two repository checks and 1,532 tests existed and ran only when somebody remembered
+to run them locally, so the answer to *"is `main` green?"* was *"probably"*. Twenty-six commits
+were published before anything verified them.
+
+`.github/workflows/ci.yml` now runs on every push and every pull request, in the backend's own
+style and with no `continue-on-error` anywhere: `npm ci` (the install is itself a check — a
+populated `node_modules` masks a broken one), `npm run verify`, and two artefact checks that
+nothing else would catch:
+
+- **`_headers` and `_redirects` reach the bundle.** They are the fallback copies of the CSP and
+  the SPA fallback. A build-configuration change that stopped copying them would silently remove
+  the policy ADR 0005 and ADR 0006 depend on.
+- **No credential-shaped string in `dist/`.** The recorded fixtures carry redacted tokens; this
+  keeps that true.
+
+### The secret scan is now a job, in both repositories
+
+TAB 00 said the scan becomes *"a standing pre-push gate rather than a one-off"* while a repository
+is public. It now is — a separate job, so a finding reads as *"do not publish"* rather than
+*"a test is flaky"*.
+
+Making it a gate required two fixes to the scanner, and both are the interesting part.
+
+**An accepted-findings allowlist.** Five hits across the two repositories are real matches on
+synthetic values: fixtures inside tests that exist to prove credentials *do not* leak, and a
+historical blob of this ledger from before TAB 01 redacted a quotation. Without a way to accept
+them the gate is permanently red, and **a permanently red gate is one everybody learns to
+ignore** — worse than not having it. The alternative people reach for is loosening the pattern,
+which blinds the scanner to the real thing too. So the pattern stays sharp and each accepted hit
+is listed by `rule|path` with a reason somebody wrote, in a file whose whole purpose is to be
+argued with.
+
+Mutation-tested with a planted AWS key: still caught, with the allowlist in place.
+
+**It was scanning unreachable objects.** `--batch-all-objects` also yields dangling blobs left by
+aborted operations — a `git add` followed by a reset, a rebase. Those can never be pushed and no
+history rewrite removes them, so reporting them produces alarms nobody can action. Found the way
+these things usually are: the planted probe kept being reported after it was removed. The scan now
+reads objects reachable from refs, via `git rev-list --objects --all`.
+
+Both repositories: **0 findings**, 1 and 3 accepted respectively.
+
+Console verify green — 83 files, 1,532 tests, 22 checks. Backend 914 tests, Pint clean.
