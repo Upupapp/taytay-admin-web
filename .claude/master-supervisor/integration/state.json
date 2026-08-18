@@ -6,7 +6,7 @@
     "state": "../state.json",
     "summary": "26 TABs, all certified locally, console feature-complete on mock adapters. Preserved, not superseded."
   },
-  "currentTab": "TAB 03 \u2014 Authorization convergence",
+  "currentTab": "TAB 03 \u2014 Authorization convergence (steps 5\u20139 remaining)",
   "currentTabIndex": 3,
   "totalTabs": 20,
   "completedTabs": [
@@ -14,9 +14,9 @@
     "TAB 01 \u2014 Contract reconciliation (complete, both repositories)",
     "TAB 02 \u2014 Authentication and session (complete; enrolment screen, refresh and the expiry warning deferred with recorded reasons)"
   ],
-  "currentObjective": "TAB 03: one permission vocabulary and one role model across both repositories; the console renders from the permissions GET /api/v1/me resolves; every screen a role can reach is one the server will serve.",
+  "currentObjective": "TAB 03 steps 5\u20139: apply docs/access/permission-reconciliation.md. Backend renames + migration over stored role-permission rows; new keys both sides; console onto GET /me permissions with ROLE_DEFINITIONS demoted to documentation/fixture and a check that fails the build if a guard reads it at runtime; fail-closed unknown keys both directions; regenerate permission-matrix.md; refusal tests (needs live API); reconcile data scope against ScopeResolver.",
   "status": "IN_PROGRESS",
-  "lastCheckpointAt": "2026-08-18T12:55:00+08:00",
+  "lastCheckpointAt": "2026-08-18T13:10:00+08:00",
   "repositories": {
     "console": {
       "path": "/Users/user/development/taytay-admin-web",
@@ -112,6 +112,7 @@
     "tab01": "Closed D1, D3, D4, D5, D6, D8 plus F-08 and the pagination publication defect. D2 (admin/ namespace) and D7 (field casing) are TAB 05 by design. check:contract guards all seven rules, each mutation-tested.",
     "tab02Precondition": "TAB 01 complete. TAB 02 needs a live API to prove sign-in end to end; none exists here, so the console-side flow, token holder and MFA screen are built and unit-tested, and every acceptance criterion requiring a live round-trip is recorded as environmentally deferred.",
     "tab02": "Closed D3/F-07 console-side. Found and fixed L-04 (second factor was opt-in by enrolment; three existing tests asserted the bypass) and L-05 (token abilities assigned but never enforced anywhere). ADR 0043 records both plus why refresh is sequenced after TAB 13.",
-    "tab03Precondition": "TAB 02 complete. TAB 03 needs an authenticated /me response; none can be obtained without a running API, so the reconciliation table, the canonical vocabulary decision and the console move onto server-issued permissions proceed against the measured 61-key backend enum and 68-key console array, with live refusal tests deferred."
+    "tab03Precondition": "TAB 02 complete. TAB 03 needs an authenticated /me response; none can be obtained without a running API, so the reconciliation table, the canonical vocabulary decision and the console move onto server-issued permissions proceed against the measured 61-key backend enum and 68-key console array, with live refusal tests deferred.",
+    "tab03Progress": "Steps 1-4 COMPLETE and committed (console 5faf09a): reconciliation table with a decision per row at docs/access/permission-reconciliation.md, convention decision, role mapping. Steps 5-9 NOT STARTED. L-06 found: console guards field visits with case.view and has no visit.* key; backend has visit.view/visit.manage. Six keys deferred to TAB 04 (case.* x5, resident.merge). Data scope open."
   }
 }
