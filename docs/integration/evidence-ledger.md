@@ -1100,3 +1100,75 @@ release gate remains **NO-GO** on blockers no engineering closes: no DPO holds `
 approved retention schedule, and no backup has ever been restored. What changed is that the
 console is no longer *missing a control it depends on* — TAB 13's remaining work is verification
 against a deployed origin, which needs an origin.
+
+---
+
+## TAB 05 step 10 — the API was run, and the mappers were checked against it
+
+**The console's target ran for the first time in this integration.** No Docker, no PostgreSQL and
+no package manager exist on this machine, so the backend was migrated against a **file database**,
+seeded, and served over HTTP on `127.0.0.1:8000`.
+
+| Step | Result |
+| --- | --- |
+| `artisan migrate` | all 38 migrations, **100 tables** |
+| `artisan db:seed` | 5 barangays, 5 households, 13 residents |
+| `artisan serve` | live; `GET /api/v1/health` → `200` |
+
+### What that proved, on the wire rather than in a document
+
+| Divergence | Verified |
+| --- | --- |
+| **F-08** | `VALIDATION_FAILED`, `UNAUTHENTICATED`, `METHOD_NOT_ALLOWED` — SCREAMING_SNAKE_CASE, matching what TAB 01 published. The console's `code` branching matches reality |
+| **D6** | `{error:{code,message,details,request_id}}`, with `details` as `field → [messages]` — parsed by `readApiError` field for field |
+| **D4** | `meta.pagination` with **all five keys including `has_more`**. The console's old `meta.pageSize`/`totalItems` appear nowhere |
+| **D5** | `?per_page=2` honoured and echoed. `pageSize` would have been ignored and every list silently served the default 25 |
+| **TAB 03** | `GET /me` returns server-resolved `permissions[]` and `roles[]`, ingested by `fromServerIdentity` |
+
+### TAB 02's acceptance criterion, met end to end
+
+*"Sign in with MFA, work, sign out; the revoked token is refused by the API on the next call."*
+
+1. Password on an unenrolled account → **`mfa-enrolment-required`**, `expires_at` **15 minutes**.
+   Before the TAB 02 fix this same request returned `201` and a full twelve-hour session.
+2. That restricted token: `GET admin/residents` → **`403 FORBIDDEN`** with the enrolment message;
+   `POST me/mfa` → **`201`**; `GET me` → **`200`**. The restriction is real, not advisory.
+3. Enrolled a factor with a live TOTP code, signed in again → **`mfa-required`** + challenge, then
+   `auth/tokens/mfa` → a session with `expires_at` **12 hours**.
+4. `DELETE auth/tokens/current` → `GET me` went **200 → 401**. Sign-out revokes server-side.
+
+### TAB 03's step 8, met by accident and then on purpose
+
+The seeded account holds `security_officer`, which does not carry `resident.view`. A direct call to
+`admin/residents` was refused **`403 FORBIDDEN`**, with `details.required_permission` naming the
+grant. That is the *"call the endpoint directly with a token that lacks it"* criterion, satisfied
+against a running server — and it also gives TAB 16 the field a refusal message should quote.
+
+### Two operational findings
+
+- **The MFA challenge needs a shared, persistent cache.** With `CACHE_STORE=array` the challenge
+  issued by one request does not exist for the next, and the second factor always answers *"that
+  sign-in attempt has expired"*. Production uses Redis and is unaffected; anyone running locally
+  must not use the array store, and it belongs in the setup notes.
+- **The sign-in routes hard-depend on Redis being reachable.** With Redis down, `POST auth/tokens`
+  answers `500 SERVER_ERROR` from the rate limiter before validation runs — so a Redis outage
+  presents as "the server is broken", not "sign-in is throttled". Worth a degradation test in
+  TAB 15.
+
+### The recorded fixtures
+
+Six payloads captured verbatim into `src/app/data/http/recorded/`, with **bearer tokens and MFA
+challenges replaced by `<redacted-…>`** — a credential in a fixture is a credential in the
+repository, and this one is public. A test asserts no token-shaped string survives.
+
+This is what step 10 asked for: *"not hand-written fixtures, which drift toward what the author
+expected. Capture them from staging."*
+
+### What this does **not** prove
+
+The database was **SQLite, not PostgreSQL**. Response shape does not vary by driver, so everything
+above holds — but nothing about concurrency, row locking or `lockForUpdate` is proven, and
+**release-gate blocker 4 stands untouched**. `artisan migrate` against real PostgreSQL remains
+unrun, and TAB 00 step 5 stays open.
+
+`npm run verify` green — 83 files, **1532 tests**, 22 checks.

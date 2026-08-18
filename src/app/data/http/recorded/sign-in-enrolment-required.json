@@ -1,0 +1,11 @@
+{
+  "data": {
+    "status": "mfa-enrolment-required",
+    "token": "<redacted-token>",
+    "token_type": "Bearer",
+    "expires_at": "2026-08-18T06:42:31Z"
+  },
+  "meta": {
+    "request_id": "ee5500ee99affc32fc3e3ed78cc1e018"
+  }
+}

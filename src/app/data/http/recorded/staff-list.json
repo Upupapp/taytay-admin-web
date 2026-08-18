@@ -1,0 +1,34 @@
+{
+  "data": [
+    {
+      "id": "01a0138a-6767-705a-b2c1-c89ad55070f6",
+      "display_name": "Local Staff",
+      "email": "staff@example.test",
+      "status": "active",
+      "last_signed_in_at": "2026-08-18T06:28:33Z",
+      "authority": {
+        "roles": [
+          "security_officer"
+        ],
+        "permissions": [
+          "staff.view",
+          "staff.manage"
+        ],
+        "scope": {
+          "type": "all-barangays",
+          "barangay_ids": []
+        }
+      }
+    }
+  ],
+  "meta": {
+    "request_id": "63f20ff2bd95df8ff64e902fd65f9921",
+    "pagination": {
+      "page": 1,
+      "per_page": 2,
+      "total": 1,
+      "total_pages": 1,
+      "has_more": false
+    }
+  }
+}

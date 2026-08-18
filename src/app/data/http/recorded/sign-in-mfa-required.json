@@ -1,0 +1,10 @@
+{
+  "data": {
+    "status": "mfa-required",
+    "challenge": "<redacted-challenge>",
+    "expires_in_minutes": 5
+  },
+  "meta": {
+    "request_id": "217e603c3a89d1d06844d1753cfed6f6"
+  }
+}

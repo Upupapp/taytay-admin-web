@@ -1,0 +1,25 @@
+{
+  "data": {
+    "id": "01a0138a-6767-705a-b2c1-c89ad55070f6",
+    "account_type": "staff",
+    "status": "active",
+    "display_name": "Local Staff",
+    "email": "staff@example.test",
+    "email_verified": true,
+    "mobile_number": null,
+    "mobile_verified": false,
+    "mfa_enabled": true,
+    "last_signed_in_at": "2026-08-18T06:28:33Z",
+    "permissions": [
+      "staff.view",
+      "staff.manage"
+    ],
+    "roles": [
+      "security_officer"
+    ],
+    "resident_id": null
+  },
+  "meta": {
+    "request_id": "7f4a68b34b72bfe723e27a0ffb50383e"
+  }
+}

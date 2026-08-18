@@ -1,0 +1,15 @@
+{
+  "error": {
+    "code": "VALIDATION_FAILED",
+    "message": "The given data was invalid.",
+    "details": {
+      "email": [
+        "The email field is required."
+      ],
+      "password": [
+        "The password field is required."
+      ]
+    },
+    "request_id": "fbd27fccf98f0e3c3809fb3338ee5ad3"
+  }
+}
