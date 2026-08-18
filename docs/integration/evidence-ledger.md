@@ -1348,3 +1348,45 @@ forty-sixth cannot arrive quietly, which is the only thing a check can honestly 
 work is outstanding.
 
 `npm run verify` green — 89 files, 1,566 tests, **25 checks**.
+
+### L-23 — most of the console's permission vocabulary does not exist on the server
+
+Chasing a stale line in the backend's gap list (G-09: *"the catalog holds 2 of about 31
+permissions"*) turned up something much larger, and it is the most consequential divergence this
+integration has found.
+
+|  | count |
+| --- | --- |
+| permission keys the console defines | 70 |
+| permission keys the API publishes (`AccessControlPermission`) | 61 |
+| **keys both sides agree on** | **30** |
+| console keys with no server counterpart | 40 |
+| server keys the console never asks for | 31 |
+
+The 30 that match are the assistance-request lifecycle, referrals, visits, reports, staff, events
+and newsfeed — the spine of the product, and it holds. What diverges is everything around it.
+
+**Why this is not cosmetic.** `fromServerIdentity` keeps only the keys it recognises from the list
+the server sends, and invents nothing — correct, and the fail-closed behaviour TAB 02 built
+deliberately. So a key the API has never heard of can never be held by anyone, and the guard on it
+refuses every user in every role, permanently.
+
+Measured against `app.routes.ts`: **24 of 43 permission-guarded routes are unreachable**, including
+`dashboard.view` — the landing page.
+
+They are not one problem, and the fixes differ:
+
+* **naming divergence over an act both sides implement** — the console splits `resident.create` and
+  `resident.update`; the API grants `resident.manage`. Likewise `disbursement.*` against the API's
+  `request.release`;
+* **concepts the API genuinely does not have** — `case.view` awaits ADR 0044, `beneficiary.*` is a
+  projection this console invented (`DL-71`), and `dashboard.view` and `settings.manage` have no
+  server counterpart at all.
+
+Which is which is the API owner's and the office's decision, not a checker's — it is on the master
+TODO. `check:permission-parity` holds the line meanwhile, failing in both directions: a new
+unreachable guard, and a guard reconciled without lowering the number. Both mutation-tested.
+
+**Nothing is broken today**, because the console still runs on mock adapters where every route
+opens. It breaks the day TAB 12 flips `dataSource` — and it breaks as a blank console rather than
+an error, which is why it is recorded here at full size rather than left for that TAB to discover.
