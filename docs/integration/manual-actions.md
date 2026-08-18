@@ -101,7 +101,21 @@ appear in a payload."*
 The console tolerates it at two call sites so records are not dropped, and the tolerance is
 one-way, so nothing here needs changing when it is fixed. Expose the barangay's UUID, or its code.
 
-### 2.4 Two smaller ones
+### 2.4 The assistance request cannot be built from the API (L-16, L-17) — backend
+
+Two fields the console's model requires do not exist on the API side at all:
+
+- **Why the household applied.** `reasonForRequest` is required in the domain; `welfare_cases` has
+  no narrative or reason column, only `priority_reason`, which is about urgency. Not withheld by a
+  permission — absent. A console that cannot show why a family applied cannot support the decision
+  it asks a social worker to make.
+- **Any amount.** `requestedAmount` and `approvedAmount` have no counterpart; money lives on
+  releases. That may be the better model, but it is a *different* model, and TAB 08 must settle it.
+
+**Blocks:** `AssistanceRequestRepository` — the console's busiest surface. Both gaps are pinned by
+test, so they fail the day they are closed.
+
+### 2.5 Two smaller ones
 
 - **`HouseholdBand` cannot say "we did not ask"** (L-14). Either it gains an unassessed member,
   the list screen stops rendering a band, or the endpoint carries the snapshot. Until then a

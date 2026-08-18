@@ -1,0 +1,27 @@
+{
+  "data": [
+    {
+      "id": "01a013f2-ce34-7103-bf09-91f641c27bd9",
+      "case_number": "SWC-2026-TQFRCIZV",
+      "type": "medical",
+      "status": "draft",
+      "priority": "normal",
+      "resident_id": "01a013cd-2009-7226-8b7f-829e5d811a4f",
+      "barangay_id": 2,
+      "assigned_to": null,
+      "opened_at": "2026-08-18T08:17:54Z",
+      "last_activity_at": "2026-08-18T08:17:54Z",
+      "next_follow_up_on": null
+    }
+  ],
+  "meta": {
+    "request_id": "db8b0fc182f01996a4cefffb419f04f0",
+    "pagination": {
+      "page": 1,
+      "per_page": 2,
+      "total": 1,
+      "total_pages": 1,
+      "has_more": false
+    }
+  }
+}

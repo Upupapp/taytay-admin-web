@@ -1,0 +1,31 @@
+{
+  "data": {
+    "id": "01a013f2-ce34-7103-bf09-91f641c27bd9",
+    "case_number": "SWC-2026-TQFRCIZV",
+    "type": "medical",
+    "status": "draft",
+    "priority": "normal",
+    "resident_id": "01a013cd-2009-7226-8b7f-829e5d811a4f",
+    "barangay_id": 2,
+    "assigned_to": null,
+    "opened_at": "2026-08-18T08:17:54Z",
+    "last_activity_at": "2026-08-18T08:17:54Z",
+    "next_follow_up_on": null,
+    "household_id": null,
+    "program_id": null,
+    "priority_reason": null,
+    "needs_home_visit": false,
+    "is_escalated": false,
+    "opened_by": "01a013cd-1eb9-739a-bc38-dbe9876ad695",
+    "closed_at": null,
+    "archived_at": null,
+    "is_open": true,
+    "available_transitions": [
+      "submitted",
+      "cancelled"
+    ]
+  },
+  "meta": {
+    "request_id": "0280bfa8d3577df824a27f33b9f4446e"
+  }
+}
