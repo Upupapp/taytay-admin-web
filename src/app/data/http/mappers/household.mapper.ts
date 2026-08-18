@@ -25,6 +25,9 @@ import { field, id, idTolerantOfNumeric, str, text } from './wire';
  * temptation when a field is missing is to compute it from the factors that
  * *are* present. That would be an automated eligibility decision by another
  * name, so it is `false` here and the gap goes to TAB 07 instead.
+ *
+ * @consumes GET admin/households
+ * @consumes GET admin/households/{household}
  */
 export function toHousehold(wire: unknown): Household | null {
   const householdId = id<HouseholdId>(field(wire, 'id'));

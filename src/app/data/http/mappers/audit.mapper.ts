@@ -31,6 +31,8 @@ import { field, id, list, oneOf, str, text, dateTime } from './wire';
  * | --- | --- | --- |
  * | `hasDetail` | from `audit.view-detail` being available on a separate route | The row itself never carries the values, so "is there detail" is a property of the resource, not of the row |
  * | `touchesSensitive` | derived from the classifications the payload sends | Computed from what arrived, not assumed |
+ *
+ * @consumes GET admin/audit-entries
  */
 export function toAuditRow(wire: unknown): AuditRow | null {
   const entryId = id<AuditEntryId>(field(wire, 'id'));

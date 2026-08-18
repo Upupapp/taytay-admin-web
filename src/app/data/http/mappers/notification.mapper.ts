@@ -26,6 +26,8 @@ import { dateTime, field, id, oneOf, str, text } from './wire';
  * endpoint's own contract fixes is not the same as a field nobody sent. Compare
  * `household.mapper.ts`, where the absent field was a claim about a household
  * and the mapper was left unwritten.
+ *
+ * @consumes GET me/notifications
  */
 export function toNotification(wire: unknown): AppNotification | null {
   const notificationId = id<NotificationId>(field(wire, 'id'));

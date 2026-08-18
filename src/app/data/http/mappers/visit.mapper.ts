@@ -46,6 +46,9 @@ import { bool, date, dateTime, field, id, list, oneOf, str, text } from './wire'
  * `is_overdue` (the console derives lateness itself, `DL-83`, and a stored flag
  * is wrong every morning until a job runs), `next_action`, `follow_up_on` and
  * `worker_safety_advisory`.
+ *
+ * @consumes GET admin/visits
+ * @consumes GET admin/visits/{visit}
  */
 export function toFieldVisit(wire: unknown): FieldVisit | null {
   const visitId = id<FieldVisitId>(field(wire, 'id'));

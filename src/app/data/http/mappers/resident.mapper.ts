@@ -45,6 +45,9 @@ import { bool, date, dateTime, field, id, idTolerantOfNumeric, str, text } from 
  * counterpart at all** — the console has never modelled KYC, which is the
  * citizen surface. They are dropped deliberately rather than carried as
  * unmapped extras.
+ *
+ * @consumes GET admin/residents
+ * @consumes GET admin/residents/{resident}
  */
 export function toResident(wire: unknown): Resident | null {
   const residentId = id<ResidentId>(field(wire, 'id'));

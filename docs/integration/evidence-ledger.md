@@ -1305,3 +1305,46 @@ one. Stated here rather than left implied, because a drift check that sounds lik
 backend and does not is worse than none.
 
 `npm run verify` green — 89 files, 1,566 tests, **23 checks**.
+
+### Step 3 — the consumer half of a real contract test
+
+`tools/emit-consumer-expectations.mjs` derives, from the mappers themselves, what this console
+requires off the wire: the `field(wire, '…')` reads, and the null-guards that decide whether a
+record survives. The backend vendors the output and replays it against its real router.
+
+It is **derived, never written**. A hand-maintained expectations file would be a third description
+of the API beside the mapper and the controller, and `--check` fails when a mapper changes what it
+reads and the committed file still describes the old shape — mutation-tested by relaxing a guard,
+which flipped `birth_date` from required to optional and was caught.
+
+Eight interactions, 24 required fields. `required` is the set worth gating: absence makes the
+mapper return `null`, the record is dropped, and the list is simply shorter with nothing on screen
+saying so.
+
+### L-22 — the mapping layer is proven, and unused
+
+Twenty adapter classes. **Forty-five reads. Zero mappers.** Every read in `http-repositories.ts`
+still does:
+
+```ts
+return this.api.page<ResidentView>(API_ENDPOINTS.residents, page, filter);
+```
+
+That generic is an assertion, not a conversion. It tells TypeScript the `snake_case` payload *is* a
+`ResidentView`; nothing at run time makes that true. `barangay_id` never becomes
+`address.barangayId`, and the property a template reads comes back `undefined` — which renders
+blank rather than raising anything.
+
+So TAB 05's mappers are tested, correct, and not on the path any screen takes. **The console is
+presently no safer than it was before they existed.** Repointing twenty adapters is TAB 12's work.
+
+What belongs here is that the gap can only close: `check:mapper-adoption` records the ceiling of 45
+and fails **in both directions** — a forty-sixth cast, and a cast removed without lowering the
+number in the same commit. Both mutation-tested. A ceiling rather than an allowlist because a list
+somebody edits routinely is a list nobody reads.
+
+It is a ratchet, not a gate. It does not claim the 45 are acceptable; it guarantees the
+forty-sixth cannot arrive quietly, which is the only thing a check can honestly promise while the
+work is outstanding.
+
+`npm run verify` green — 89 files, 1,566 tests, **25 checks**.
