@@ -909,3 +909,41 @@ what the author expected"* — and no staging API exists here. What these prove 
 agrees with the published contract, which is a strictly weaker claim and stated as such.
 
 `npm run verify` green — 79 files, **1501 tests**, 22 checks.
+
+### Households mapped — and two findings that stopped a mapper being written
+
+**L-13 — the console's assistance request has no summary type.**
+`HouseholdRepository` returns `Page<HouseholdSummary>` and `HouseholdDetail`; the API publishes an
+8-field list projection and a 21-field detail one. The two sides draw the summary/detail line in
+the same place, and households map comfortably as a result.
+
+`AssistanceRequestRepository.list` returns **`Page<AssistanceRequest>`** — the full model — while
+the API's list projection carries 11 fields against a domain model needing seventeen, including
+`requirements`, `assessment`, `statusHistory` and both money fields. Mapping a list row into it
+means eight fields blanked per row, on the console's busiest screen. The honest fix is a summary
+type in the domain, which is a domain change and therefore not TAB 05's to make (the command's own
+guardrail: *"if a feature file needs editing to make an adapter work, the mapping is wrong, not
+the feature"* — here it is the port that is wrong). Recorded for TAB 07.
+
+**L-14 — `HouseholdBand` cannot say "we did not ask", so one mapper was not written.**
+`HouseholdSummary.band` is `'none' | 'watch' | 'elevated' | 'high'`. The list payload does not
+carry the vulnerability snapshot — it sits behind its own permission at `/vulnerability` — so a
+summary mapper would have to put something in `band`, and the only available something is
+`'none'`.
+
+On screen that reads as **"no vulnerability factors present"**: a positive claim about a
+household, made on the strength of data nobody sent, about exactly the households the office
+exists to notice.
+
+TAB 05 step 5 settled the same question for a different field — *"never render an empty record
+where the truth is 'we could not ask'"*. So `toHouseholdSummary` **was not written**, and the
+reason is recorded in the file where somebody would go looking for it. Three ways out, all
+decisions and none belonging in an adapter: `HouseholdBand` gains an unassessed member, the list
+screen stops rendering a band, or the endpoint carries the snapshot.
+
+`isIndigent` is the related trap and is asserted by test: it is *"a recorded classification, made
+by a person… never derived from the vulnerability snapshot"* (`DL-42`), and the temptation when a
+field is missing is to compute it from the factors that are present. That would be an automated
+eligibility decision by another name.
+
+`npm run verify` green — 80 files, **1506 tests**, 22 checks.
