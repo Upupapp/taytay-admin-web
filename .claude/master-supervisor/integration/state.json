@@ -6,19 +6,20 @@
     "state": "../state.json",
     "summary": "26 TABs, all certified locally, console feature-complete on mock adapters. Preserved, not superseded."
   },
-  "currentTab": "TAB 05 \u2014 Repoint the adapters (steps 2, 4\u201310 remaining)",
-  "currentTabIndex": 5,
+  "currentTab": "TAB 06 \u2014 Contract testing in CI",
+  "currentTabIndex": 6,
   "totalTabs": 20,
   "completedTabs": [
     "TAB 00 \u2014 Baseline, remotes and the evidence ledger (locally complete; environmentally blocked)",
     "TAB 01 \u2014 Contract reconciliation (complete, both repositories)",
     "TAB 02 \u2014 Authentication and session (complete; enrolment screen, refresh and the expiry warning deferred with recorded reasons)",
     "TAB 03 \u2014 Authorization convergence (steps 1\u20137, 9 complete; step 8 needs a live API; 6 keys wait on TAB 04)",
-    "TAB 04 \u2014 The case collision (decision recorded as ADR 0044, accepted in principle pending MSWDO ratification; routes renamed; status vocabularies reconciled; continuing-involvement module outstanding)"
+    "TAB 04 \u2014 The case collision (decision recorded as ADR 0044, accepted in principle pending MSWDO ratification; routes renamed; status vocabularies reconciled; continuing-involvement module outstanding)",
+    "TAB 05 \u2014 Repoint the adapters (steps 1,3,5,8,9 complete; 5 resources mapped against recorded responses; 5 pinned as unmappable with reasons; remaining work blocked on recorded decisions)"
   ],
-  "currentObjective": "TAB 05: every HTTP adapter calls a route the backend actually registers, with the parameters it accepts, mapping the payload it returns \u2014 verified against the running API. Begins with the authoritative 147-row mapping built from route:list and openapi.json.",
+  "currentObjective": "TAB 06: a change on either side that would break the other fails in CI, on the pull request that caused it, naming the consumer it breaks. Vendor the generated types with a source SHA, add a drift check, record consumer contracts, verify them against the provider, mutation-test every gate.",
   "status": "IN_PROGRESS",
-  "lastCheckpointAt": "2026-08-18T14:40:00+08:00",
+  "lastCheckpointAt": "2026-08-18T19:40:00+08:00",
   "repositories": {
     "console": {
       "path": "/Users/user/development/taytay-admin-web",
@@ -40,8 +41,8 @@
   "measuredBaseline": {
     "console": {
       "verify": "PASS",
-      "testFiles": 80,
-      "tests": 1506,
+      "testFiles": 89,
+      "tests": 1566,
       "repositoryChecks": 22,
       "productionBuild": "clean",
       "dataSource": "mock in both environments",
@@ -124,6 +125,9 @@
     "tab03": "Canonical vocabulary applied: 6 backend renames (no data migration needed \u2014 role\u2192permission is code; report_exports.permission_context snapshots deliberately NOT rewritten), console renamed to match, visit.view/visit.manage added closing L-06, console now renders from GET /me permissions with fail-closed handling both directions, matrix regenerated (70x7), data scope already agreed. Step 8 (direct-call refusal tests) needs a live API. Backend does not yet gain the console fine-grained splits \u2014 those land with enforcement points in TAB 07.",
     "tab04Precondition": "TAB 04 is a DECISION command: it needs a working session with the MSWDO head, a social worker and an intake officer, and the master command says explicitly it must not be resolved in code or by whichever side is easier to change. Six permission keys (case.* x5, resident.merge) and the whole of TAB 05 are blocked on it.",
     "tab04": "Option A + supersede, ADR 0044 in both repos, accepted in principle pending MSWDO ratification. admin/cases -> admin/assistance-requests (30 routes) done as ADR 0007 conformance (F-23), safe under all 3 options; me/cases deliberately NOT renamed (shipped Flutter client, /api/v1 stable). L-07: case and assistance vocabularies overlap on exactly one state (assessment) \u2014 worse than none. Releases diverge 9v6, TAB 08 owns it. OUTSTANDING: continuing-involvement module, 6 permission keys, citizen-visible note projection.",
-    "tab05Progress": "Steps 1,3,5,8,9 COMPLETE. Steps 2/4/6/7 PARTIAL and correctly blocked: wire.ts mapping layer + resident and household mappers written; programs CANNOT be constructed (ProgramResponsibility needs statement+sources the wire does not carry; synthesising trips the domain validator national-programme-claimed-as-owned). toHouseholdSummary deliberately NOT written (L-14: HouseholdBand has no \"we did not ask\" member). L-13: AssistanceRequestRepository.list returns the full model against an 11-field list projection \u2014 needs a domain summary type. Consolidated handover written: docs/integration/tab-07-input.md, with a recommended order. Step 10 impossible without staging. KEY INSIGHT: \"maps cleanly\" in port-mapping.md means the ROUTE matches, not that the PAYLOAD fills the model."
+    "tab05Progress": "Steps 1,3,5,8,9 COMPLETE. Steps 2/4/6/7 PARTIAL and correctly blocked: wire.ts mapping layer + resident and household mappers written; programs CANNOT be constructed (ProgramResponsibility needs statement+sources the wire does not carry; synthesising trips the domain validator national-programme-claimed-as-owned). toHouseholdSummary deliberately NOT written (L-14: HouseholdBand has no \"we did not ask\" member). L-13: AssistanceRequestRepository.list returns the full model against an 11-field list projection \u2014 needs a domain summary type. Consolidated handover written: docs/integration/tab-07-input.md, with a recommended order. Step 10 impossible without staging. KEY INSIGHT: \"maps cleanly\" in port-mapping.md means the ROUTE matches, not that the PAYLOAD fills the model.",
+    "masterTodo": "MANUAL-TODO.md at the console repo root \u2014 manual-only items, checkbox form. Detail lives in docs/integration/manual-actions.md.",
+    "standingRules": "Auto-continue to the next TAB after each task summary. Record manual-only items on MANUAL-TODO.md.",
+    "tab05Final": "MAPPED against recorded responses: residents, households, notifications, audit rows, field visits. PINNED as unmappable with reasons: programmes, assistance requests (L-16/L-17), referrals (L-18), household summaries (L-14), assistance list rows (L-13). Findings L-15..L-21 all found by running the API. Eight console doctrines independently matched by the API (DL-85, DL-82, DL-109 x3, DL-93, DL-74, DL-124, DL-125, DL-126); three genuine disagreements, all policy questions for the office."
   }
 }
