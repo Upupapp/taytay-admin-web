@@ -978,3 +978,35 @@ applicant that the municipality runs a programme it does not run.
 **A note on what a "maps cleanly" row means.** In `port-mapping.md` it means *the route matches*.
 It does not mean the payload fills the model. That distinction was not visible until mappers were
 written against real field names, and it is the main thing this stretch of TAB 05 established.
+
+### Notifications mapped — and the distinction that makes it possible
+
+`GET me/notifications` is the cleanest resource so far, and the reason is worth stating because it
+is the rule the rest of TAB 05 turns on.
+
+Three domain fields are absent from the payload and are nevertheless **determined, not guessed**:
+
+| Field | Value | Why it is not an invention |
+| --- | --- | --- |
+| `channel` | `'inbox'` | That is what the endpoint *is* |
+| `autoDismissMs` | `null` | An inbox entry is not a toast; nothing dismisses it on a timer |
+| `recipientId` | `null` (the caller) | The route is `me/…`; there is no other person it could be about |
+
+**A field the endpoint's own contract fixes is not the same as a field nobody sent.** Compare
+`household.mapper.ts`, where the absent field was a claim about a household's vulnerability and
+the mapper was therefore left unwritten. That is the whole line, and it is why some resources map
+and others cannot.
+
+Two smaller judgements, both tested:
+
+- An unrecognised `priority` becomes `'info'`, never `'error'`. An inbox that cries wolf on every
+  unfamiliar type is an inbox people stop reading, which is how the one real alert gets missed.
+- An unrecognised `subject_type` yields **no action** rather than a guessed route. A link that
+  404s is worse than no link, because the user concludes the record is gone rather than that the
+  console failed to understand the reference.
+
+The payload carries `subject_type` and `subject_id` and **no narrative**, which the console
+preserves: a notification says something happened and points at it, and the record itself is read
+over the authenticated API behind its own permission — the same rule the push payload follows.
+
+`npm run verify` green — 81 files, **1513 tests**, 22 checks.
