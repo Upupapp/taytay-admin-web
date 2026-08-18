@@ -102,7 +102,6 @@ import {
   type MembershipChange,
   type NotificationId,
   type NotificationRepository,
-  type NotificationRequest,
   type Page,
   type PageRequest,
   type ProgramFilter,
@@ -1383,10 +1382,6 @@ export class HttpNotificationRepository implements NotificationRepository {
 
   listForCurrentUser(): Observable<readonly AppNotification[]> {
     return this.api.collection<AppNotification>(API_ENDPOINTS.notifications);
-  }
-
-  create(request: NotificationRequest): Observable<AppNotification> {
-    return this.api.post<AppNotification>(API_ENDPOINTS.notifications, request);
   }
 
   markRead(id: NotificationId): Observable<AppNotification> {

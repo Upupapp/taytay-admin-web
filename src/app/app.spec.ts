@@ -12,9 +12,6 @@ import { App } from './app';
 
 const stubNotifications: NotificationRepository = {
   listForCurrentUser: (): Observable<readonly AppNotification[]> => of([]),
-  create: (): Observable<AppNotification> => {
-    throw new Error('not used');
-  },
   markRead: (): Observable<AppNotification> => {
     throw new Error('not used');
   },

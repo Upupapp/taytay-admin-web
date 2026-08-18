@@ -71,7 +71,7 @@ import type { AdvisoryAcknowledgement, IntakeAdvisory } from '../intake/intake-a
 import type { IntakeDraft } from '../intake/intake-draft';
 import type { AuthenticatedUser, StaffFilter, StaffUser } from '../access/staff-user';
 import type { MfaCredentials, SignInCredentials, SignInOutcome } from '../access/credentials';
-import type { AppNotification, NotificationRequest } from '../notifications/notification';
+import type { AppNotification } from '../notifications/notification';
 import type { AssistanceProgram, ProgramDraft, ProgramFilter } from '../programs/program';
 import type { ProgramUtilization } from '../programs/program-utilization';
 import type { RequirementTemplate } from '../programs/requirement-template';
@@ -847,9 +847,21 @@ export interface StaffRepository {
 
 export const STAFF_REPOSITORY = new InjectionToken<StaffRepository>('StaffRepository');
 
+/**
+ * The actor's inbox — **read-only**, plus marking read.
+ *
+ * `create()` was deleted in TAB 05. The API offers `GET me/notifications`,
+ * `POST me/notifications/{id}/read` and `POST me/notifications/read-all`, and
+ * nothing that mints one: a client creating its own notification asserts
+ * something the server never agreed to, and the record would exist in exactly
+ * one browser tab.
+ *
+ * Messages the console raises for itself — toasts, and errors that also belong
+ * in the inbox — are built locally by `toLocalNotification` and never sent
+ * anywhere.
+ */
 export interface NotificationRepository {
   listForCurrentUser(): Observable<readonly AppNotification[]>;
-  create(request: NotificationRequest): Observable<AppNotification>;
   markRead(id: NotificationId): Observable<AppNotification>;
   markAllRead(): Observable<readonly AppNotification[]>;
 }

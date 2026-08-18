@@ -813,3 +813,38 @@ The adapter bodies themselves (steps 2, 4–10): per-resource `snake_case` → d
 end to end, deleting `NotificationRepository.create`, and adapter tests against **recorded real
 responses**. The last of those cannot be done here — there is no staging API to record from, and
 "proven in staging" is the acceptance criterion for every step in this command.
+
+### Step 9 — `NotificationRepository.create()` deleted
+
+The API's inbox is **read-only for the actor**: `GET me/notifications` and the two read-marking
+routes, and nothing that mints one. The port offered `create()` anyway, so the console could
+assert a notification the server never issued — and the "record" would exist in exactly one
+browser tab.
+
+Removing it exposed what the method was actually for: **local UI messages**. Every toast the
+console raises — "Request failed", "Saved" — went through it. Those are messages this tab is
+showing its user, not office records, so they are now built by `toLocalNotification()` in the
+domain and sent nowhere.
+
+Two consequences had to be implemented rather than described:
+
+- **`markRead` on a local message marks it read locally.** Sending a `local-` id to
+  `POST me/notifications/{id}/read` would ask the API about something it never issued and be
+  answered with a `404` — which the user would see as a failure to dismiss their own toast.
+- **`markAllRead` marks the local ones unconditionally** and merges, because the server's answer
+  replaces only what the server knows about, and it knows about none of them.
+
+### Step 8 — `Idempotency-Key`, generated per intent
+
+`WriteIntent` carries one key across however many attempts an act takes. The key is made when the
+officer commits — pressing Release, submitting an intake — not per HTTP call.
+
+**That distinction is the whole mechanism.** A key generated per attempt defeats it exactly: the
+retry carries a different key, the server sees a second genuine request, and on the release
+surface that is a second payout to the same household. Omitting `intent` sends no key at all,
+which is correct for a write that is not safely replayable and should fail rather than silently
+repeat.
+
+Tested at the level that matters: one key across attempts, different keys for different acts.
+
+`npm run verify` green — 78 files, **1494 tests**, 22 checks.

@@ -3,14 +3,11 @@ import { Observable, throwError } from 'rxjs';
 
 import {
   ACCESS_CONTEXT,
-  asId,
   asIsoDateTime,
-  DEFAULT_TOAST_DISMISS_MS,
   isForRecipient,
   type AppNotification,
   type NotificationId,
   type NotificationRepository,
-  type NotificationRequest,
 } from '@domain/index';
 
 import { MOCK_NOTIFICATIONS } from './seed/notifications.seed';
@@ -53,34 +50,7 @@ export class MockNotificationRepository implements NotificationRepository {
     return this.latency.respond(sortItems(mine, (notification) => notification.createdAt, 'desc'));
   }
 
-  create(request: NotificationRequest): Observable<AppNotification> {
-    this.sequence += 1;
-    const severity = request.severity;
-    const user = this.access.currentUser();
-    const notification: AppNotification = {
-      id: asId<NotificationId>(`ntf-local-${this.sequence}`),
-      // Raised without a recipient means "for me", not "for everybody": a
-      // success toast on my own action must not land in the whole office's
-      // inbox as an announcement.
-      recipientId: request.recipientId ?? user?.id ?? null,
-      severity,
-      kind: request.kind ?? 'general',
-      title: request.title,
-      body: request.body ?? null,
-      channel: request.channel ?? 'toast',
-      action: request.action ?? null,
-      createdAt: asIsoDateTime(new Date()),
-      readAt: null,
-      autoDismissMs:
-        request.autoDismissMs !== undefined
-          ? request.autoDismissMs
-          : severity === 'error'
-            ? null
-            : DEFAULT_TOAST_DISMISS_MS,
-    };
-    this.notifications = [notification, ...this.notifications];
-    return this.latency.respond(notification);
-  }
+
 
   markRead(id: NotificationId): Observable<AppNotification> {
     const user = this.access.currentUser();

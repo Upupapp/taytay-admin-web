@@ -162,3 +162,51 @@ export function isForRecipient(
 ): boolean {
   return notification.recipientId === null || notification.recipientId === userId;
 }
+
+/**
+ * Builds a notification the console raises **itself** — a toast, or an error
+ * that also belongs in the inbox.
+ *
+ * TAB 05 moved this out of `NotificationRepository`. The API's inbox is
+ * **read-only for the actor**: `GET me/notifications` and the two read-marking
+ * routes, and nothing that mints one. A client creating its own server
+ * notification asserts something the server never agreed to.
+ *
+ * So a locally-raised message is exactly what it looks like — a message this
+ * tab is showing its user. It is not persisted, it does not survive a reload,
+ * and it is never presented as though the office's record holds it. The
+ * `local-` id prefix is what keeps the two kinds distinguishable in the inbox
+ * list, and `markRead` refuses to send one to the server.
+ */
+export function toLocalNotification(
+  request: NotificationRequest,
+  actorId: StaffUserId | null,
+  sequence: number,
+  now: Date,
+): AppNotification {
+  return {
+    id: `local-${sequence}` as NotificationId,
+    // Raised without a recipient means "for me", not "for everybody": a success
+    // toast on my own action must not read as an office-wide announcement.
+    recipientId: request.recipientId ?? actorId,
+    severity: request.severity,
+    kind: request.kind ?? 'general',
+    title: request.title,
+    body: request.body ?? null,
+    channel: request.channel ?? 'toast',
+    action: request.action ?? null,
+    createdAt: new Date(now).toISOString() as IsoDateTime,
+    readAt: null,
+    autoDismissMs:
+      request.autoDismissMs !== undefined
+        ? request.autoDismissMs
+        : request.severity === 'error'
+          ? null
+          : DEFAULT_TOAST_DISMISS_MS,
+  };
+}
+
+/** True for a message this console raised rather than one the API sent. */
+export function isLocalNotification(notification: AppNotification): boolean {
+  return String(notification.id).startsWith('local-');
+}

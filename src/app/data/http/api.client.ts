@@ -49,12 +49,28 @@ export class ApiClient {
       .pipe(map((response) => response?.data ?? null));
   }
 
-  post<TItem, TBody = unknown>(path: string, body: TBody): Observable<TItem> {
-    return this.http.post<ApiItemResponse<TItem>>(this.url(path), body).pipe(map((r) => r.data));
+  /**
+   * A write.
+   *
+   * `intent` makes it **replayable**: the key is generated once, when the
+   * officer commits the intent, and reused for every attempt at that same act.
+   * Generating one per HTTP attempt would defeat the purpose entirely — a retry
+   * would carry a new key and the server would treat it as a second, genuine
+   * request. On money, that is a second payout.
+   *
+   * Omitting `intent` sends no key, which is correct for a write that is not
+   * safely replayable and must fail rather than silently repeat.
+   */
+  post<TItem, TBody = unknown>(path: string, body: TBody, intent?: WriteIntent): Observable<TItem> {
+    return this.http
+      .post<ApiItemResponse<TItem>>(this.url(path), body, { headers: idempotency(intent) })
+      .pipe(map((r) => r.data));
   }
 
-  postVoid<TBody = unknown>(path: string, body: TBody): Observable<void> {
-    return this.http.post<void>(this.url(path), body).pipe(map(() => undefined));
+  postVoid<TBody = unknown>(path: string, body: TBody, intent?: WriteIntent): Observable<void> {
+    return this.http
+      .post<void>(this.url(path), body, { headers: idempotency(intent) })
+      .pipe(map(() => undefined));
   }
 
   deleteVoid(path: string): Observable<void> {
@@ -68,4 +84,25 @@ export class ApiClient {
   private url(path: string): string {
     return `${this.baseUrl}/${path.replace(/^\/+/, '')}`;
   }
+}
+
+/**
+ * One user intent, carried across however many attempts it takes.
+ *
+ * Created by the caller at the moment the officer commits — pressing Release,
+ * submitting an intake — and held while the request is retried. The API replays
+ * the stored response for the same key and answers `409` if the same key
+ * arrives with a different body, which is what makes a double-click, a flaky
+ * connection and a browser retry all resolve to one act.
+ */
+export class WriteIntent {
+  readonly key: string;
+
+  constructor(key?: string) {
+    this.key = key ?? crypto.randomUUID();
+  }
+}
+
+function idempotency(intent: WriteIntent | undefined): Record<string, string> {
+  return intent === undefined ? {} : { 'Idempotency-Key': intent.key };
 }

@@ -27,9 +27,6 @@ const TEST_ENVIRONMENT: AppEnvironment = {
 
 const notifications: NotificationRepository = {
   listForCurrentUser: (): Observable<readonly AppNotification[]> => of([]),
-  create: (): Observable<AppNotification> => {
-    throw new Error('not used');
-  },
   markRead: (): Observable<AppNotification> => {
     throw new Error('not used');
   },

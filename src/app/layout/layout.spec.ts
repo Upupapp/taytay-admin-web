@@ -66,9 +66,6 @@ function staffRepository(user: StaffUser | null): StaffRepository {
 
 const notificationRepository: NotificationRepository = {
   listForCurrentUser: (): Observable<readonly AppNotification[]> => of([]),
-  create: (): Observable<AppNotification> => {
-    throw new Error('not used');
-  },
   markRead: (): Observable<AppNotification> => {
     throw new Error('not used');
   },
