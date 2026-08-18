@@ -6,18 +6,19 @@
     "state": "../state.json",
     "summary": "26 TABs, all certified locally, console feature-complete on mock adapters. Preserved, not superseded."
   },
-  "currentTab": "TAB 04 \u2014 The case collision (decision, then implementation)",
-  "currentTabIndex": 4,
+  "currentTab": "TAB 05 \u2014 Repoint the adapters",
+  "currentTabIndex": 5,
   "totalTabs": 20,
   "completedTabs": [
     "TAB 00 \u2014 Baseline, remotes and the evidence ledger (locally complete; environmentally blocked)",
     "TAB 01 \u2014 Contract reconciliation (complete, both repositories)",
     "TAB 02 \u2014 Authentication and session (complete; enrolment screen, refresh and the expiry warning deferred with recorded reasons)",
-    "TAB 03 \u2014 Authorization convergence (steps 1\u20137, 9 complete; step 8 needs a live API; 6 keys wait on TAB 04)"
+    "TAB 03 \u2014 Authorization convergence (steps 1\u20137, 9 complete; step 8 needs a live API; 6 keys wait on TAB 04)",
+    "TAB 04 \u2014 The case collision (decision recorded as ADR 0044, accepted in principle pending MSWDO ratification; routes renamed; status vocabularies reconciled; continuing-involvement module outstanding)"
   ],
-  "currentObjective": "TAB 04: a single, ADR-recorded model of what a case is, what an assistance request is and how they relate \u2014 implemented identically on both sides, with the duplicate-resolution doctrine settled in the same act.",
+  "currentObjective": "TAB 05: every HTTP adapter calls a route the backend actually registers, with the parameters it accepts, mapping the payload it returns \u2014 verified against the running API. Begins with the authoritative 147-row mapping built from route:list and openapi.json.",
   "status": "IN_PROGRESS",
-  "lastCheckpointAt": "2026-08-18T13:25:00+08:00",
+  "lastCheckpointAt": "2026-08-18T13:35:00+08:00",
   "repositories": {
     "console": {
       "path": "/Users/user/development/taytay-admin-web",
@@ -39,8 +40,8 @@
   "measuredBaseline": {
     "console": {
       "verify": "PASS",
-      "testFiles": 76,
-      "tests": 1481,
+      "testFiles": 77,
+      "tests": 1491,
       "repositoryChecks": 22,
       "productionBuild": "clean",
       "dataSource": "mock in both environments",
@@ -57,7 +58,7 @@
       "openApiPaths": 221,
       "openApiSchemas": 54,
       "migrations": 38,
-      "adrs": 43,
+      "adrs": 44,
       "releaseGate": "NO-GO",
       "permissions": 61
     },
@@ -102,7 +103,8 @@
     "TAB 00 steps 4\u20137: provision PostgreSQL 18 + Redis + object storage + Mailpit, migrate on real Postgres, seed, stand up staging",
     "TAB 14: appoint a Data Protection Officer \u2014 longest lead time in the document, start immediately",
     "TAB 04: schedule the case-model working session with the MSWDO head, a social worker and an intake officer",
-    "TAB 19 runbook: enrol every existing staff account in MFA BEFORE cutover \u2014 since TAB 02 an unenrolled staff account signs in to an enrolment-only session."
+    "TAB 19 runbook: enrol every existing staff account in MFA BEFORE cutover \u2014 since TAB 02 an unenrolled staff account signs in to an enrolment-only session.",
+    "TAB 04 ratification: run the working session (MSWDO head + social worker + intake officer) against ADR 0044 \u2014 it proposes Option A and supersede-not-merge, and the continuing-involvement module waits on it."
   ],
   "activeBlockers": [],
   "pendingQuestions": [],
@@ -118,6 +120,7 @@
     "tab03Precondition": "TAB 02 complete. TAB 03 needs an authenticated /me response; none can be obtained without a running API, so the reconciliation table, the canonical vocabulary decision and the console move onto server-issued permissions proceed against the measured 61-key backend enum and 68-key console array, with live refusal tests deferred.",
     "tab03Progress": "Steps 1-4 COMPLETE and committed (console 5faf09a): reconciliation table with a decision per row at docs/access/permission-reconciliation.md, convention decision, role mapping. Steps 5-9 NOT STARTED. L-06 found: console guards field visits with case.view and has no visit.* key; backend has visit.view/visit.manage. Six keys deferred to TAB 04 (case.* x5, resident.merge). Data scope open.",
     "tab03": "Canonical vocabulary applied: 6 backend renames (no data migration needed \u2014 role\u2192permission is code; report_exports.permission_context snapshots deliberately NOT rewritten), console renamed to match, visit.view/visit.manage added closing L-06, console now renders from GET /me permissions with fail-closed handling both directions, matrix regenerated (70x7), data scope already agreed. Step 8 (direct-call refusal tests) needs a live API. Backend does not yet gain the console fine-grained splits \u2014 those land with enforcement points in TAB 07.",
-    "tab04Precondition": "TAB 04 is a DECISION command: it needs a working session with the MSWDO head, a social worker and an intake officer, and the master command says explicitly it must not be resolved in code or by whichever side is easier to change. Six permission keys (case.* x5, resident.merge) and the whole of TAB 05 are blocked on it."
+    "tab04Precondition": "TAB 04 is a DECISION command: it needs a working session with the MSWDO head, a social worker and an intake officer, and the master command says explicitly it must not be resolved in code or by whichever side is easier to change. Six permission keys (case.* x5, resident.merge) and the whole of TAB 05 are blocked on it.",
+    "tab04": "Option A + supersede, ADR 0044 in both repos, accepted in principle pending MSWDO ratification. admin/cases -> admin/assistance-requests (30 routes) done as ADR 0007 conformance (F-23), safe under all 3 options; me/cases deliberately NOT renamed (shipped Flutter client, /api/v1 stable). L-07: case and assistance vocabularies overlap on exactly one state (assessment) \u2014 worse than none. Releases diverge 9v6, TAB 08 owns it. OUTSTANDING: continuing-involvement module, 6 permission keys, citizen-visible note projection."
   }
 }
