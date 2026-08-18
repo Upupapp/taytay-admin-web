@@ -117,13 +117,13 @@ export class MockReportRepository implements ReportRepository {
 
   export(id: ReportId, filter: ReportFilter, format: ExportFormat): Observable<ReportExport> {
     const user = this.access.currentUser();
-    const denied = denyUnless<ReportExport>(user, 'report.export');
+    const denied = denyUnless<ReportExport>(user, 'report.export-person-level');
     if (denied) {
       return denied;
     }
     const definition = reportById(id);
     if (definition === null || !userHasPermission(user, definition.permission)) {
-      return denyUnless<ReportExport>(null, 'report.export') as Observable<ReportExport>;
+      return denyUnless<ReportExport>(null, 'report.export-person-level') as Observable<ReportExport>;
     }
 
     const series = this.seriesFor(definition, filter, user);

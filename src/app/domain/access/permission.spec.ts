@@ -77,8 +77,8 @@ describe('role definitions', () => {
 
 describe('permission requirements', () => {
   it('builds every/some requirements', () => {
-    expect(requireAll('report.view', 'report.export').match).toBe('every');
-    expect(requireAny('report.view', 'report.export').match).toBe('some');
+    expect(requireAll('report.view', 'report.export-person-level').match).toBe('every');
+    expect(requireAny('report.view', 'report.export-person-level').match).toBe('some');
   });
 });
 
@@ -113,8 +113,8 @@ describe('toAuthenticatedUser', () => {
   });
 
   it('adds explicit extra grants on top of the role', () => {
-    const user = toAuthenticatedUser(staff({ additionalPermissions: ['report.export'] }));
-    expect(user.permissions.has('report.export')).toBe(true);
+    const user = toAuthenticatedUser(staff({ additionalPermissions: ['report.export-person-level'] }));
+    expect(user.permissions.has('report.export-person-level')).toBe(true);
   });
 
   it('cannot be used to take a role permission away', () => {

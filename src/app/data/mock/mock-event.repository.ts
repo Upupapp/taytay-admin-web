@@ -88,7 +88,7 @@ export class MockEventRepository implements EventRepository {
   /* ── Reading ────────────────────────────────────────────────────────────── */
 
   list(view: EventView, filter: EventFilter): Observable<readonly LguEvent[]> {
-    const denied = denyUnless<readonly LguEvent[]>(this.access.currentUser(), 'events.view');
+    const denied = denyUnless<readonly LguEvent[]>(this.access.currentUser(), 'event.view');
     if (denied) {
       return denied;
     }
@@ -110,7 +110,7 @@ export class MockEventRepository implements EventRepository {
   }
 
   getById(id: LguEventId): Observable<LguEvent | null> {
-    if (!userHasPermission(this.access.currentUser(), 'events.view')) {
+    if (!userHasPermission(this.access.currentUser(), 'event.view')) {
       return this.latency.respond(null);
     }
     const found = this.events.find((event) => event.id === id);
@@ -118,7 +118,7 @@ export class MockEventRepository implements EventRepository {
   }
 
   history(id: LguEventId): Observable<readonly AuditRow[]> {
-    const denied = denyUnless<readonly AuditRow[]>(this.access.currentUser(), 'events.view');
+    const denied = denyUnless<readonly AuditRow[]>(this.access.currentUser(), 'event.view');
     if (denied) {
       return denied;
     }
@@ -128,7 +128,7 @@ export class MockEventRepository implements EventRepository {
   /* ── Registrants ────────────────────────────────────────────────────────── */
 
   registrants(id: LguEventId, filter: RegistrantFilter): Observable<readonly RegistrantView[]> {
-    const denied = denyUnless<readonly RegistrantView[]>(this.access.currentUser(), 'events.view');
+    const denied = denyUnless<readonly RegistrantView[]>(this.access.currentUser(), 'event.view');
     if (denied) {
       return denied;
     }
@@ -142,7 +142,7 @@ export class MockEventRepository implements EventRepository {
   }
 
   capacity(id: LguEventId): Observable<EventCapacitySummary> {
-    const denied = denyUnless<EventCapacitySummary>(this.access.currentUser(), 'events.view');
+    const denied = denyUnless<EventCapacitySummary>(this.access.currentUser(), 'event.view');
     if (denied) {
       return denied;
     }
@@ -150,7 +150,7 @@ export class MockEventRepository implements EventRepository {
   }
 
   metrics(id: LguEventId): Observable<EventMetrics> {
-    const denied = denyUnless<EventMetrics>(this.access.currentUser(), 'events.view-insights');
+    const denied = denyUnless<EventMetrics>(this.access.currentUser(), 'event.view-insights');
     if (denied) {
       return denied;
     }
@@ -176,7 +176,7 @@ export class MockEventRepository implements EventRepository {
 
   saveDraft(draft: EventDraft, id: LguEventId | null): Observable<LguEvent> {
     const user = this.access.currentUser();
-    const denied = denyUnless<LguEvent>(user, id === null ? 'events.create' : 'events.edit');
+    const denied = denyUnless<LguEvent>(user, id === null ? 'event.create' : 'event.edit');
     if (denied) {
       return denied;
     }
@@ -188,7 +188,7 @@ export class MockEventRepository implements EventRepository {
     const now = asIsoDateTime(new Date());
     const existing = id === null ? undefined : this.events.find((event) => event.id === id);
     if (id !== null && existing === undefined) {
-      return throwError(() => new PermissionDeniedError('events.edit'));
+      return throwError(() => new PermissionDeniedError('event.edit'));
     }
 
     const saved: LguEvent = {
@@ -234,7 +234,7 @@ export class MockEventRepository implements EventRepository {
   }
 
   publish(id: LguEventId, reason: string): Observable<LguEvent> {
-    return this.move(id, 'published', 'events.publish', reason, (event, user) => ({
+    return this.move(id, 'published', 'event.publish', reason, (event, user) => ({
       status: 'published' as const,
       publishedAt: event.publishedAt ?? asIsoDateTime(new Date()),
       publishedBy: event.publishedBy ?? user,
@@ -242,7 +242,7 @@ export class MockEventRepository implements EventRepository {
   }
 
   cancel(id: LguEventId, reason: string): Observable<LguEvent> {
-    return this.move(id, 'cancelled', 'events.cancel', reason, () => ({
+    return this.move(id, 'cancelled', 'event.cancel', reason, () => ({
       status: 'cancelled' as const,
       cancelledAt: asIsoDateTime(new Date()),
       cancellationReason: reason,
@@ -253,13 +253,13 @@ export class MockEventRepository implements EventRepository {
     // Nothing is swept: whoever is `not-checked-in` when this runs stays
     // `not-checked-in`. Turning them into no-shows would be the software
     // making a claim about people it never saw (`DL-131`).
-    return this.move(id, 'completed', 'events.edit', reason, () => ({
+    return this.move(id, 'completed', 'event.edit', reason, () => ({
       status: 'completed' as const,
     }));
   }
 
   archive(id: LguEventId, reason: string): Observable<LguEvent> {
-    return this.move(id, 'archived', 'events.archive', reason, () => ({
+    return this.move(id, 'archived', 'event.archive', reason, () => ({
       status: 'archived' as const,
     }));
   }
@@ -271,14 +271,14 @@ export class MockEventRepository implements EventRepository {
   ): Observable<RegistrantView> {
     const denied = denyUnless<RegistrantView>(
       this.access.currentUser(),
-      'events.manage-registrations',
+      'event.manage-registrations',
     );
     if (denied) {
       return denied;
     }
     const registration = this.registrations.find((entry) => entry.id === registrationId);
     if (registration === undefined) {
-      return throwError(() => new PermissionDeniedError('events.manage-registrations'));
+      return throwError(() => new PermissionDeniedError('event.manage-registrations'));
     }
     const problems = registrationProblems(registration, action, reason);
     if (problems.length > 0) {
@@ -300,13 +300,13 @@ export class MockEventRepository implements EventRepository {
     registrationId: EventRegistrationId,
     attendance: AttendanceStatus,
   ): Observable<RegistrantView> {
-    const denied = denyUnless<RegistrantView>(this.access.currentUser(), 'events.mark-attendance');
+    const denied = denyUnless<RegistrantView>(this.access.currentUser(), 'event.mark-attendance');
     if (denied) {
       return denied;
     }
     const registration = this.registrations.find((entry) => entry.id === registrationId);
     if (registration === undefined) {
-      return throwError(() => new PermissionDeniedError('events.mark-attendance'));
+      return throwError(() => new PermissionDeniedError('event.mark-attendance'));
     }
     if (registration.status === 'cancelled') {
       return throwError(
@@ -320,13 +320,13 @@ export class MockEventRepository implements EventRepository {
 
   exportRegistrants(id: LguEventId): Observable<RegistrantExport> {
     const user = this.access.currentUser();
-    const denied = denyUnless<RegistrantExport>(user, 'events.export-registrations');
+    const denied = denyUnless<RegistrantExport>(user, 'event.export-registrants');
     if (denied) {
       return denied;
     }
     const event = this.events.find((entry) => entry.id === id);
     if (event === undefined) {
-      return throwError(() => new PermissionDeniedError('events.export-registrations'));
+      return throwError(() => new PermissionDeniedError('event.export-registrants'));
     }
     const rows = this.registrationsFor(id).map((registration) => this.compose(registration));
     const now = asIsoDateTime(new Date());
@@ -400,7 +400,7 @@ export class MockEventRepository implements EventRepository {
       // Notes are the office's own words about a person, so they need the
       // grant that covers managing the registration rather than merely seeing
       // that it exists.
-      notes: holds('events.manage-registrations') ? registration.notes : null,
+      notes: holds('event.manage-registrations') ? registration.notes : null,
     };
   }
 

@@ -77,7 +77,7 @@ export class PostDetailPage {
   protected readonly canArchive = computed(() => this.permissions.has('newsfeed.archive'));
   protected readonly canPin = computed(() => this.permissions.has('newsfeed.pin'));
   protected readonly canModerate = computed(() =>
-    this.permissions.has('newsfeed.moderate-comments'),
+    this.permissions.has('newsfeed.moderate'),
   );
 
   private readonly key = computed(() => ({ id: this.id(), nonce: this.reloads() }));

@@ -89,7 +89,7 @@ export const READ_ONLY_PERMISSIONS: readonly Permission[] = PERMISSIONS.filter(
     permission.startsWith('report.') ||
     permission === 'resident.view-sensitive' ||
     permission === 'request.view-sensitive' ||
-    permission === 'case.view-protected-note' ||
+    permission === 'case-note.view-protected' ||
     permission === 'document.download' ||
     permission === 'document.view-full-number' ||
     // Opening recorded audit values reads; it changes nothing. Added in TAB 21,
@@ -101,7 +101,7 @@ export const READ_ONLY_PERMISSIONS: readonly Permission[] = PERMISSIONS.filter(
     // not a change, exactly as `report.export` is classified above — which is
     // what keeps the auditor a read-only role.
     permission.endsWith('.view-insights') ||
-    permission === 'events.export-registrations',
+    permission === 'event.export-registrants',
 );
 
 /** Permissions that alter data, as opposed to merely reading it. */

@@ -83,7 +83,7 @@ export class ReportViewPage {
 
   protected readonly result = computed(() => valueOf(this.state()) ?? null);
 
-  protected readonly canExport = computed(() => this.permissions.has('report.export'));
+  protected readonly canExport = computed(() => this.permissions.has('report.export-person-level'));
   protected readonly hasFilters = computed(
     () => this.period() !== 'all-time' || this.barangayId() !== null,
   );

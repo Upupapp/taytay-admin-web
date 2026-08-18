@@ -98,7 +98,7 @@ export const MOCK_CASES: readonly SocialCase[] = [
   },
   {
     // The protected file. Everything about how this record behaves for a role
-    // without `case.view-protected-note` is decided by the notes below.
+    // without `case-note.view-protected` is decided by the notes below.
     id: socialCase('case-0003'),
     referenceNumber: 'CASE-2026-0064',
     subjectResidentId: person('res-0005'),
@@ -289,7 +289,7 @@ export const MOCK_CASE_TASKS: readonly CaseTask[] = [
  *
  * `note-c0003-*` are the point of the third acceptance criterion: two of the
  * three notes on the survivor's file are `protected`, and a role without
- * `case.view-protected-note` receives them with no body at all.
+ * `case-note.view-protected` receives them with no body at all.
  */
 export const MOCK_CASE_NOTES: readonly CaseNote[] = [
   {

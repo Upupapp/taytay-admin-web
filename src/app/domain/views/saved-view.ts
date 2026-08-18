@@ -51,7 +51,7 @@ export const SAVED_VIEW_PERMISSIONS: Readonly<Record<SavedViewResource, Permissi
  * describes a population, and it outlives whoever wrote it. So creating or
  * removing one costs `view.share`, and everyone can still keep their own.
  */
-export const SHARE_VIEW_PERMISSION: Permission = 'view.share';
+export const SHARE_VIEW_PERMISSION: Permission = 'saved-view.share';
 
 export interface SavedView {
   readonly id: SavedViewId;

@@ -2,6 +2,12 @@
 
 Who may do what in the MSWDO staff console.
 
+Reconciled with the API's own vocabulary in TAB 03 — see
+[`permission-reconciliation.md`](./permission-reconciliation.md) for every key on
+both sides with a decision. The console no longer computes these grants: it
+renders from the `permissions[]` that `GET /api/v1/me` resolves, and this table
+describes what the two sides agreed the words mean.
+
 **Source of truth is code**, not this page: `ROLE_DEFINITIONS` in
 `src/app/domain/access/permission.ts` is where a grant is written, and
 `PERMISSION_MATRIX` in `permission-matrix.ts` is the derived view that tests
@@ -29,7 +35,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-68 permissions × 7 roles. `X` means the role holds the permission.
+70 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -51,8 +57,10 @@ self-registration), `DL-33` (accessible authentication).
 | `case.view`                       | X     | X    | X   | X      |      |      | X     |
 | `case.manage`                     | X     | X    | X   | X      |      |      |       |
 | `case.note`                       | X     | X    | X   | X      |      |      |       |
-| `case.view-protected-note`        | X     | X    | X   |        |      |      |       |
+| `case-note.view-protected`        | X     | X    | X   |        |      |      |       |
 | `case.close`                      | X     | X    |     |        |      |      |       |
+| `visit.view`                      | X     | X    | X   | X      |      |      | X     |
+| `visit.manage`                    | X     | X    | X   |        |      |      |       |
 | `program.view`                    | X     | X    | X   | X      | X    | X    | X     |
 | `program.manage`                  | X     | X    |     |        |      |      |       |
 | `request.view`                    | X     | X    | X   | X      | X    | X    | X     |
@@ -75,12 +83,12 @@ self-registration), `DL-33` (accessible authentication).
 | `referral.view`                   | X     | X    | X   | X      |      | X    | X     |
 | `referral.manage`                 | X     | X    | X   |        |      |      |       |
 | `report.view`                     | X     | X    | X   |        | X    |      | X     |
-| `report.export`                   | X     | X    |     |        |      |      | X     |
+| `report.export-person-level`                   | X     | X    |     |        |      |      | X     |
 | `audit.view`                      | X     | X    |     |        |      |      | X     |
 | `audit.view-detail`               | X     |      |     |        |      |      | X     |
 | `staff.view`                      | X     | X    |     |        |      |      | X     |
 | `staff.manage`                    | X     |      |     |        |      |      |       |
-| `view.share`                      | X     | X    |     |        |      |      |       |
+| `saved-view.share`                      | X     | X    |     |        |      |      |       |
 | `settings.manage`                 | X     |      |     |        |      |      |       |
 
 <!-- Newsfeed and Events, added by the late-phase command (TAB 24). -->
@@ -92,18 +100,18 @@ self-registration), `DL-33` (accessible authentication).
 | `newsfeed.schedule`                | X     | X     |       |       |       |       |      |
 | `newsfeed.archive`                 | X     | X     |       |       |       |       |      |
 | `newsfeed.pin`                     | X     | X     |       |       |       |       |      |
-| `newsfeed.moderate-comments`       | X     | X     |       |       |       |       |      |
+| `newsfeed.moderate`       | X     | X     |       |       |       |       |      |
 | `newsfeed.view-insights`           | X     | X     |       |       |       |       | X    |
-| `events.view`                      | X     | X     |       |       |       |       | X    |
-| `events.create`                    | X     | X     |       |       |       |       |      |
-| `events.edit`                      | X     | X     |       |       |       |       |      |
-| `events.publish`                   | X     | X     |       |       |       |       |      |
-| `events.cancel`                    | X     | X     |       |       |       |       |      |
-| `events.archive`                   | X     | X     |       |       |       |       |      |
-| `events.manage-registrations`      | X     | X     |       |       |       |       |      |
-| `events.export-registrations`      | X     | X     |       |       |       |       |      |
-| `events.mark-attendance`           | X     | X     |       |       |       |       |      |
-| `events.view-insights`             | X     | X     |       |       |       |       | X    |
+| `event.view`                      | X     | X     |       |       |       |       | X    |
+| `event.create`                    | X     | X     |       |       |       |       |      |
+| `event.edit`                      | X     | X     |       |       |       |       |      |
+| `event.publish`                   | X     | X     |       |       |       |       |      |
+| `event.cancel`                    | X     | X     |       |       |       |       |      |
+| `event.archive`                   | X     | X     |       |       |       |       |      |
+| `event.manage-registrations`      | X     | X     |       |       |       |       |      |
+| `event.export-registrants`      | X     | X     |       |       |       |       |      |
+| `event.mark-attendance`           | X     | X     |       |       |       |       |      |
+| `event.view-insights`             | X     | X     |       |       |       |       | X    |
 
 ---
 
@@ -135,7 +143,7 @@ designed to be scrolled and filtered by a reviewer must not quote what changed
 (`DL-114`). Checking whether a figure was altered improperly is the audit remit
 specifically, which is why that role holds it and is read-only everywhere else.
 
-**`view.share` separates a preference from office configuration.** Anyone may
+**`saved-view.share` separates a preference from office configuration.** Anyone may
 save a named filter for themselves; publishing one to the whole office needs the
 grant (`DL-111`). A shared view's *name* describes a population ("VAWC
 survivors, Santa Ana") to every colleague who opens that screen, and it outlives
@@ -164,7 +172,7 @@ indicator nobody is answerable for.
 **The case permissions are five, not one** (`DL-52`, `DL-58`). `case.view` opens
 the file. `case.manage` moves it along, assigns it and records tasks.
 `case.note` writes on the running record — a clerk may move a file without
-adding to the social worker's notes. `case.view-protected-note` is the narrow
+adding to the social worker's notes. `case-note.view-protected` is the narrow
 tier: safety planning under RA 9262, anything identifying a child in conflict
 with the law under RA 9344, a confidence given in a session. `case.close` ends
 the office's involvement, which is a decision rather than a step, and reaches
@@ -176,7 +184,7 @@ registry current, and the casework record of their own neighbours is not theirs
 to read; proximity is a reason to be stricter, not looser. **`disbursement-officer`
 holds none either**: a payout is authorised by the approved request in front of
 them, and the family's case file is not part of paying it out. **`auditor` holds
-`case.view` and never `case.view-protected-note`** — oversight is checking that
+`case.view` and never `case-note.view-protected`** — oversight is checking that
 a reason was recorded, an owner assigned and the work done in time, none of
 which requires reading a survivor's safety plan.
 
@@ -197,7 +205,7 @@ accepted, and is the sort of thing a first office pilot should re-examine.
 ## Per-user grants
 
 `StaffUser.additionalPermissions` adds to the role baseline for one person — the
-seeded social worker Jomar Villanueva holds `report.export` this way. It can
+seeded social worker Jomar Villanueva holds `report.export-person-level` this way. It can
 only ever **add**: nothing takes a role permission away, so the effective set is
 always a superset of the role and stays easy to reason about
 (`toAuthenticatedUser`). That is why this table describes roles, not people.
@@ -216,7 +224,7 @@ it is checking is not oversight. A caller without it receives no candidates at
 all — the data layer withholds them rather than trusting a template to hide
 them.
 
-`beneficiary.export` is held apart from `report.export`, which produces
+`beneficiary.export` is held apart from `report.export-person-level`, which produces
 aggregates. Taking a named beneficiary list out of the system is the operation
 TAB 05 called sensitive, and it reaches the head and the administrator only.
 

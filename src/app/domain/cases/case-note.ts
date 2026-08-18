@@ -11,7 +11,7 @@ import type { CaseId, CaseNoteId, IsoDateTime, StaffUserId } from '../shared/ids
  * `protected` is the narrow tier: safety planning for a VAWC survivor
  * (RA 9262), anything identifying a child in conflict with the law (RA 9344),
  * a third party's disclosure given in confidence, or clinical detail. It is
- * read only by staff holding `case.view-protected-note`.
+ * read only by staff holding `case-note.view-protected`.
  */
 export type CaseNoteSensitivity = 'routine' | 'protected';
 
@@ -19,7 +19,7 @@ export const CASE_NOTE_SENSITIVITIES: readonly CaseNoteSensitivity[] = ['routine
 
 export const CASE_NOTE_PERMISSIONS: Readonly<Record<CaseNoteSensitivity, Permission>> = {
   routine: 'case.view',
-  protected: 'case.view-protected-note',
+  protected: 'case-note.view-protected',
 };
 
 export interface CaseNote {

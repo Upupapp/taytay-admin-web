@@ -228,8 +228,8 @@ export class MockCaseRepository implements CaseRepository {
     }
     // Writing into the protected tier requires the clearance to read it. A note
     // its own author cannot re-open is a note that gets written somewhere else.
-    if (sensitivity === 'protected' && !userHasPermission(user, 'case.view-protected-note')) {
-      return throwError(() => new PermissionDeniedError('case.view-protected-note'));
+    if (sensitivity === 'protected' && !userHasPermission(user, 'case-note.view-protected')) {
+      return throwError(() => new PermissionDeniedError('case-note.view-protected'));
     }
     if (!isValidNoteBody(body)) {
       return throwError(() => new Error('A note needs enough words to be worth keeping.'));

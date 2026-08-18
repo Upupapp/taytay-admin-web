@@ -6,7 +6,7 @@ import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import { AuthTokenHolder } from '@core/auth/auth-token.holder';
 
 import {
-  toAuthenticatedUser,
+  asId,
   type AppNotification,
   type AssistanceProgram,
   type AssistanceRequest,
@@ -188,6 +188,9 @@ import {
   type MfaCredentials,
   SignInError,
   type SignInOutcome,
+  fromServerIdentity,
+  type DataScope,
+  type BarangayId,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -1163,8 +1166,8 @@ export class HttpStaffRepository implements StaffRepository {
     }
 
     return this.api
-      .optionalItem<StaffUser>(API_ENDPOINTS.me)
-      .pipe(map((staff) => (staff ? toAuthenticatedUser(staff) : null)));
+      .optionalItem<MeWire>(API_ENDPOINTS.me)
+      .pipe(map((me) => (me ? toIdentity(me) : null)));
   }
 
   /**
@@ -1266,8 +1269,8 @@ export class HttpStaffRepository implements StaffRepository {
     // The token has to be held before this call, because `GET me` is
     // authenticated by it. This is the one ordering in the flow that matters.
     return this.api
-      .item<StaffUser>(API_ENDPOINTS.me)
-      .pipe(map((staff) => ({ kind: 'authenticated' as const, user: toAuthenticatedUser(staff) })));
+      .item<MeWire>(API_ENDPOINTS.me)
+      .pipe(map((me) => ({ kind: 'authenticated' as const, user: toIdentity(me) })));
   }
 
   /**
@@ -1278,6 +1281,52 @@ export class HttpStaffRepository implements StaffRepository {
   private authUrl(path: string): string {
     return `${this.baseUrl}/${path}`;
   }
+}
+
+/**
+ * `GET /api/v1/me`, as the wire carries it.
+ *
+ * The two fields that matter are `permissions` and `roles`: they are the
+ * server's own answer about this actor, and the console renders from them
+ * rather than recomputing anything (`DL-133`).
+ */
+interface MeWire {
+  readonly id: string;
+  readonly display_name?: string;
+  readonly name?: string;
+  readonly email: string;
+  readonly position?: string;
+  readonly barangay_id?: string | null;
+  readonly scope?: string;
+  readonly permissions?: readonly string[];
+  readonly roles?: readonly string[];
+}
+
+/**
+ * Maps `/me` into the console's identity.
+ *
+ * The scope is narrowed here rather than trusted: the wire is a string, and an
+ * unrecognised one becomes the **narrowest** scope, not the widest. A value the
+ * console does not understand must never widen what somebody can reach.
+ */
+function toIdentity(me: MeWire): AuthenticatedUser {
+  return fromServerIdentity({
+    id: asId<StaffUserId>(me.id),
+    displayName: me.display_name ?? me.name ?? me.email,
+    email: me.email,
+    roles: me.roles ?? [],
+    roleLabel: 'Staff',
+    position: me.position ?? '',
+    barangayId: me.barangay_id ? asId<BarangayId>(me.barangay_id) : null,
+    scope: toScope(me.scope),
+    permissions: me.permissions ?? [],
+  });
+}
+
+function toScope(value: string | undefined): DataScope {
+  return value === 'all-barangays' || value === 'own-barangay' || value === 'assigned-cases'
+    ? value
+    : 'assigned-cases';
 }
 
 /** What the console calls itself in the staff member's device list. */

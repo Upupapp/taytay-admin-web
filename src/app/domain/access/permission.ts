@@ -54,7 +54,7 @@ export const PERMISSIONS = [
   // Reading a note written under the protected tier: safety planning (RA 9262),
   // anything identifying a child in conflict with the law (RA 9344), a third
   // party's confidence. The narrow grant, and never implied by `case.view`.
-  'case.view-protected-note',
+  'case-note.view-protected',
   // Ending the office's involvement with a family. A decision, not a step, and
   // so held apart from `case.manage`.
   'case.close',
@@ -99,7 +99,7 @@ export const PERMISSIONS = [
   'referral.manage',
 
   'report.view',
-  'report.export',
+  'report.export-person-level',
 
   'audit.view',
   /**
@@ -124,7 +124,22 @@ export const PERMISSIONS = [
    * survivors, Santa Ana"), and it persists after whoever wrote it has moved
    * on. A personal view needs no grant; an office-wide one does (`DL-111`).
    */
-  'view.share',
+  'saved-view.share',
+
+  /*
+   * FIELD VISITS — their own grants, as of TAB 03.
+   *
+   * The visit screens were guarded by `case.view` and this console had no
+   * `visit.*` key at all, while the API has always had two. A role holding
+   * `case.view` but not `visit.view` therefore saw the Field visits link, opened
+   * it, and was refused by the server — the "hides the wrong things and reveals
+   * the wrong things" failure this convergence exists to end.
+   *
+   * A visit is a record with its own lifecycle, screens and disclosure rules
+   * (`DL-85`, `DL-86`). Borrowing a case permission for it was convenience.
+   */
+  'visit.view',
+  'visit.manage',
 
   /*
    * Newsfeed and Events, added by the late-phase command.
@@ -151,21 +166,21 @@ export const PERMISSIONS = [
   'newsfeed.pin',
   // Hiding somebody's comment is a disclosure decision about a resident's own
   // words, not a formatting one.
-  'newsfeed.moderate-comments',
+  'newsfeed.moderate',
   'newsfeed.view-insights',
 
-  'events.view',
-  'events.create',
-  'events.edit',
-  'events.publish',
-  'events.cancel',
-  'events.archive',
-  'events.manage-registrations',
+  'event.view',
+  'event.create',
+  'event.edit',
+  'event.publish',
+  'event.cancel',
+  'event.archive',
+  'event.manage-registrations',
   // Held apart from managing them: a registration list names residents who
   // said they would attend, and a file of it leaves the building (`DL-106`).
-  'events.export-registrations',
-  'events.mark-attendance',
-  'events.view-insights',
+  'event.export-registrants',
+  'event.mark-attendance',
+  'event.view-insights',
 
   'settings.manage',
 ] as const;
@@ -213,6 +228,9 @@ const INTAKE_PERMISSIONS: readonly Permission[] = [
   'case.view',
   'case.manage',
   'case.note',
+  // Reading visit records. Until TAB 03 this came free with `case.view`; it is
+  // now its own grant, and the roles that could see the screen before still can.
+  'visit.view',
   'program.view',
   'request.view',
   'request.create',
@@ -227,7 +245,9 @@ const SOCIAL_WORKER_PERMISSIONS: readonly Permission[] = [
   'household.correct-vulnerability',
   // The case manager writes and reads the protected tier. Nobody else routinely
   // needs the content of a safety plan to do their job.
-  'case.view-protected-note',
+  'case-note.view-protected',
+  // The worker who went to the house writes the record of it.
+  'visit.manage',
   // Deliberately not held by the intake officer, who is usually the person
   // whose counter created the duplicate. Whether two records are one person is
   // then adjudicated by somebody other than whoever typed the second one.
@@ -268,10 +288,25 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'disbursement.view',
       'disbursement.schedule',
       'disbursement.void',
-      'report.export',
+      'report.export-person-level',
       'audit.view',
       'staff.view',
-      'view.share',
+      'saved-view.share',
+
+  /*
+   * FIELD VISITS — their own grants, as of TAB 03.
+   *
+   * The visit screens were guarded by `case.view` and this console had no
+   * `visit.*` key at all, while the API has always had two. A role holding
+   * `case.view` but not `visit.view` therefore saw the Field visits link, opened
+   * it, and was refused by the server — the "hides the wrong things and reveals
+   * the wrong things" failure this convergence exists to end.
+   *
+   * A visit is a record with its own lifecycle, screens and disclosure rules
+   * (`DL-85`, `DL-86`). Borrowing a case permission for it was convenience.
+   */
+  'visit.view',
+  'visit.manage',
       // The head is the office's publishing authority: a post or an event goes
       // out in the MSWDO's name, and the command's "Newsfeed Manager" and
       // "Events Manager" map onto the role that already answers for what the
@@ -283,18 +318,18 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'newsfeed.schedule',
       'newsfeed.archive',
       'newsfeed.pin',
-      'newsfeed.moderate-comments',
+      'newsfeed.moderate',
       'newsfeed.view-insights',
-      'events.view',
-      'events.create',
-      'events.edit',
-      'events.publish',
-      'events.cancel',
-      'events.archive',
-      'events.manage-registrations',
-      'events.export-registrations',
-      'events.mark-attendance',
-      'events.view-insights',
+      'event.view',
+      'event.create',
+      'event.edit',
+      'event.publish',
+      'event.cancel',
+      'event.archive',
+      'event.manage-registrations',
+      'event.export-registrants',
+      'event.mark-attendance',
+      'event.view-insights',
     ],
   },
   'social-worker': {
@@ -356,7 +391,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
     label: 'Auditor',
     description: 'Read-only oversight across the whole municipality.',
     scope: 'all-barangays',
-    // `case.view` and not `case.view-protected-note`: oversight is checking that
+    // `case.view` and not `case-note.view-protected`: oversight is checking that
     // the office recorded a reason, assigned an owner and acted in time. None of
     // that requires reading a survivor's safety plan.
     permissions: [
@@ -365,6 +400,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'household.view',
       'family.view',
       'case.view',
+      'visit.view',
       'program.view',
       'request.view',
       // Reading the history, never adjudicating it: `beneficiary.review-duplicates`
@@ -374,7 +410,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'disbursement.view',
       'referral.view',
       'report.view',
-      'report.export',
+      'report.export-person-level',
       'audit.view',
       // The auditor, and not the head, may open recorded values. Oversight of
       // the office is checking that a reason was given and an owner assigned;
@@ -387,8 +423,8 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       // The command's "Read-only Executive" maps here rather than to a new role.
       'newsfeed.view',
       'newsfeed.view-insights',
-      'events.view',
-      'events.view-insights',
+      'event.view',
+      'event.view-insights',
     ],
   },
 };

@@ -46,7 +46,7 @@ export const MOCK_STAFF: readonly StaffUser[] = [
     role: 'social-worker',
     position: 'Social Welfare Officer I',
     barangayId: null,
-    additionalPermissions: ['report.export'],
+    additionalPermissions: ['report.export-person-level'],
     isActive: true,
     lastSignInAt: daysBeforeAnchor(2, 11),
     audit: stamp(300),

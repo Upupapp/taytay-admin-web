@@ -38,6 +38,7 @@ export class SessionStore {
   private readonly lastError = signal<string | null>(null);
   private readonly challenge = signal<MfaChallenge | null>(null);
   private readonly retryAfter = signal<number | null>(null);
+  private driftReported = false;
 
   readonly user = this.state.user;
   readonly status = this.sessionStatus.asReadonly();
@@ -185,6 +186,36 @@ export class SessionStore {
   private apply(user: AuthenticatedUser | null): void {
     this.state.set(user);
     this.sessionStatus.set(user ? 'authenticated' : 'anonymous');
+    this.reportVocabularyDrift(user);
+  }
+
+  /**
+   * Says once, per session, that the two vocabularies have drifted.
+   *
+   * A key the server sends that this console does not know is ignored — it
+   * guards nothing here, so honouring it would grant something no screen has
+   * been reasoned about. But silence would make the next report ("the button is
+   * missing") a mystery, so the drift is stated where a developer sees it and
+   * nowhere a user does.
+   *
+   * Once per session, not per check: a permission is asked about hundreds of
+   * times a screen, and a warning that repeats is a warning people filter out.
+   */
+  private reportVocabularyDrift(user: AuthenticatedUser | null): void {
+    const unknown = user?.unknownPermissions ?? [];
+
+    if (unknown.length === 0 || this.driftReported) {
+      return;
+    }
+
+    this.driftReported = true;
+
+    // A developer-facing diagnostic; never shown to a user, and never carrying
+    // personal data — permission keys only.
+    console.warn(
+      `[access] The API granted ${unknown.length} permission(s) this console does not know, and they were ignored: ` +
+        `${unknown.join(', ')}. The two vocabularies have drifted — reconcile them (docs/access/permission-reconciliation.md).`,
+    );
   }
 }
 

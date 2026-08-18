@@ -476,10 +476,10 @@ const exportBody = new RegExp('\\n  export\\(([\\s\\S]*?)\\n  \\}').exec(adapter
 // A later `denyUnless(null, 'report.export')` on the not-found path leaves the
 // string present while the guard that actually runs has been downgraded — the
 // same false clean this suite keeps producing in new shapes.
-const firstGuard = /denyUnless<ReportExport>\(user,\s*'([a-z.]+)'\)/.exec(exportBody)?.[1] ?? '';
-if (firstGuard !== 'report.export') {
+const firstGuard = /denyUnless<ReportExport>\(user,\s*'([a-z.-]+)'\)/.exec(exportBody)?.[1] ?? '';
+if (firstGuard !== 'report.export-person-level') {
   problems.push(
-    `Exporting is guarded by '${firstGuard || 'nothing'}' rather than report.export. Producing a ` +
+    `Exporting is guarded by '${firstGuard || 'nothing'}' rather than report.export-person-level. Producing a ` +
       'file is a separate grant from reading a figure on screen.',
   );
 }

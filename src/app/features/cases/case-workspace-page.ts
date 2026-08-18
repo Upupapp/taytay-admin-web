@@ -122,7 +122,7 @@ export class CaseWorkspacePage {
   protected readonly canManage = computed(() => this.permissions.has('case.manage'));
   protected readonly canNote = computed(() => this.permissions.has('case.note'));
   protected readonly canWriteProtected = computed(() =>
-    this.permissions.has('case.view-protected-note'),
+    this.permissions.has('case-note.view-protected'),
   );
 
   /**

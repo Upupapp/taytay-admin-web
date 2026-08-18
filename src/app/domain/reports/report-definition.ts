@@ -270,7 +270,7 @@ export const REPORT_CATALOGUE: readonly ReportDefinition[] = [
     title: 'Data completeness and verification',
     question: 'Which records are missing something the office needs?',
     grain: 'person-level',
-    permission: 'report.export',
+    permission: 'report.export-person-level',
     // The one report that must name people. A completeness report exists so
     // somebody can go and fix the records it names; a count of "42 incomplete"
     // is unactionable, and an officer would have to search for them by hand.

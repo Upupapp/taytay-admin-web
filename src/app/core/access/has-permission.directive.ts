@@ -9,7 +9,7 @@ import { PermissionService } from './permission.service';
  * permission(s).
  *
  *   <button *appHasPermission="'request.approve'">Approve</button>
- *   <a *appHasPermission="['report.view', 'report.export']; match: 'every'">Export</a>
+ *   <a *appHasPermission="['report.view', 'report.export-person-level']; match: 'every'">Export</a>
  */
 @Directive({ selector: '[appHasPermission]' })
 export class HasPermissionDirective {

@@ -159,6 +159,37 @@ if (signOut !== '') {
   }
 }
 
+// ── 6. Authorization is decided from what the server issued ─────────────────
+//
+// TAB 03 moved the console onto the permissions `GET /api/v1/me` resolves.
+// `ROLE_DEFINITIONS` stays as documentation, as the office-facing reference
+// matrix, and as a fixture for the mock adapter and tests — but nothing that
+// *decides* may read it, or the console is computing an answer the server has
+// already given and the two will disagree.
+//
+// Deliberately scoped to the deciders rather than every reader: the
+// administration screen renders the matrix for the office, which is the map's
+// legitimate use, and forbidding that would only push it somewhere less visible.
+const DECIDERS = [
+  'src/app/core/access/',
+  'src/app/core/auth/session.store.ts',
+  'src/app/core/auth/session-state.ts',
+];
+
+for (const { path, code } of files) {
+  if (path.endsWith('.spec.ts')) continue;
+  if (!DECIDERS.some((prefix) => path.startsWith(prefix))) continue;
+
+  if (/\bROLE_DEFINITIONS\b/.test(code)) {
+    fail(
+      path,
+      'reads ROLE_DEFINITIONS. Guards, directives and the session decide from the permissions the ' +
+        'server resolved (GET /me); the role map is documentation and a fixture. Two authorities ' +
+        'means showing a caseworker a button the server refuses, or hiding one it would allow.',
+    );
+  }
+}
+
 // ── report ───────────────────────────────────────────────────────────────────
 if (failures.length > 0) {
   console.error('\nAuthentication check failed:\n');

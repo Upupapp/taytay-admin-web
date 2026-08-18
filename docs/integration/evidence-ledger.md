@@ -574,3 +574,95 @@ lacks it and confirm 403"* cannot be done here.
 ### Verification
 
 No code changed. `npm run verify` green (75 files, 1474 tests, 22 checks); backend 909 passed.
+
+---
+
+## TAB 03 — Authorization convergence (console half, steps 5–9)
+
+| | |
+| --- | --- |
+| Date | 18 August 2026 |
+| Backend half | `taytay-backend` commit `4eead78` |
+| Status | Steps 5, 6, 7 and 9 complete. Step 8 needs a running API |
+
+### Step 5 — the console renders from what the server resolved
+
+`fromServerIdentity()` builds the identity from the `permissions[]` and `roles[]` that
+`GET /api/v1/me` returns. `toAuthenticatedUser()` — which computed permissions from
+`ROLE_DEFINITIONS` — is retained **only** for the mock adapter and tests, which have no server to
+ask.
+
+This is the change that matters most in this TAB. With 21 of 68 keys in common and no shared role
+names, a console computing its own answer would have hidden things the server allows and shown
+things it refuses, from the first authenticated page load — and both are reported as "the system
+is broken".
+
+**The role is now presentation only.** It labels the account on screen; nothing branches on it.
+
+### Step 6 — failing closed in both directions
+
+- A key the **server** sends that this console does not know is **ignored**. It guards nothing
+  here, so honouring it would grant something no screen has been reasoned about.
+- A key this console expects that the **server** never sends is simply absent, so the feature stays
+  hidden.
+
+Both are silent to the user and loud to a developer: `unknownPermissions` carries the drift, and
+`SessionStore` logs it **once per session** — not per check, because a permission is asked about
+hundreds of times a screen and a warning that repeats is a warning people filter out. The message
+carries permission keys only, never personal data.
+
+The scope is narrowed the same way: an unrecognised scope string becomes the **narrowest**
+(`assigned-cases`), never the widest. A value the console does not understand must not widen what
+somebody can reach.
+
+### L-06 closed — field visits have their own grants
+
+`visit.view` and `visit.manage` join the array, and `app.routes.ts` guards the visit screens with
+`visit.view` instead of `case.view`. Grants were assigned so **no role loses reach it had**: intake
+and the auditor keep read access (they held `case.view`), and the social worker — the person who
+went to the house — gets `visit.manage`.
+
+### Step 7 — the matrix
+
+Renamed and extended, now 70 permissions × 7 roles, with a pointer to the reconciliation table.
+`check:access` kept it honest throughout: it failed the build 31 times while the rename was
+half-applied, which is exactly its job.
+
+### Step 9 — data scope
+
+Already agreed. `role_assignments.scope_type` and the console's `DataScope` are the same three
+strings. What remains is behavioural, not lexical, and needs a running API.
+
+### Four checkers encoded the old vocabulary
+
+`check:reports`, `check:community` and `check:events` each hard-coded permission strings, and
+`check:reports`' regex (`[a-z.]+`) could not even express a hyphenated key. Each was updated to
+the canonical name — the same rule, a new spelling, never a weakened one.
+
+One of them taught something worth keeping: `check:community` derived the permission from the route
+segment (`` `${module}.view` ``), so making the resource singular broke it. **The URL was
+deliberately left plural.** A bookmarked link is a promise to a caseworker, and renaming a
+permission is no reason to break one; the checker now maps route segment to resource explicitly.
+
+### Verification
+
+| Check | Result |
+| --- | --- |
+| `npm run verify` | **green** |
+| Test files / tests | **76 / 1481** (was 75 / 1474) |
+| Repository checks | 22 |
+| Backend suite | 912 passed, 6761 assertions |
+
+`check:auth` gains a sixth rule: nothing under `core/access/`, `session.store.ts` or
+`session-state.ts` may read `ROLE_DEFINITIONS`. Scoped to the **deciders** rather than every
+reader — the administration screen renders the matrix for the office, which is the map's
+legitimate use, and forbidding that would only push it somewhere less visible. Mutation-tested.
+
+### Deferred
+
+- **Step 8 — direct-call refusal tests** (`403`, or `404` where existence is itself a privilege)
+  need a running API. This is the acceptance criterion that proves enforcement is server-side, and
+  it cannot be met here.
+- **Six keys wait on TAB 04**: `case.*` (five) and `resident.merge`.
+- **The backend gaining the console's finer splits** lands with the endpoints that enforce them in
+  TAB 07 — a permission with no enforcement point is decoration.

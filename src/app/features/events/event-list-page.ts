@@ -62,7 +62,7 @@ export class EventListPage {
   protected readonly from = signal('');
   protected readonly to = signal('');
 
-  protected readonly canCompose = computed(() => this.permissions.has('events.create'));
+  protected readonly canCompose = computed(() => this.permissions.has('event.create'));
 
   private readonly query = computed(() => ({
     view: this.view(),

@@ -60,7 +60,7 @@ export class RolesPage {
   protected isSensitive(permission: Permission): boolean {
     return (
       permission.endsWith('view-sensitive') ||
-      permission === 'case.view-protected-note' ||
+      permission === 'case-note.view-protected' ||
       permission === 'document.view-full-number' ||
       permission === 'audit.view-detail'
     );

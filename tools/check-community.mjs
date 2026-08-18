@@ -63,21 +63,21 @@ const NEWSFEED_KEYS = [
   'newsfeed.schedule',
   'newsfeed.archive',
   'newsfeed.pin',
-  'newsfeed.moderate-comments',
+  'newsfeed.moderate',
   'newsfeed.view-insights',
 ];
 
 const EVENT_KEYS = [
-  'events.view',
-  'events.create',
-  'events.edit',
-  'events.publish',
-  'events.cancel',
-  'events.archive',
-  'events.manage-registrations',
-  'events.export-registrations',
-  'events.mark-attendance',
-  'events.view-insights',
+  'event.view',
+  'event.create',
+  'event.edit',
+  'event.publish',
+  'event.cancel',
+  'event.archive',
+  'event.manage-registrations',
+  'event.export-registrants',
+  'event.mark-attendance',
+  'event.view-insights',
 ];
 
 /* ── 1. One RBAC ─────────────────────────────────────────────────────────── */
@@ -177,7 +177,7 @@ const mustNever = block(
   'RESIDENT_MUST_NEVER',
 );
 for (const key of [...NEWSFEED_KEYS, ...EVENT_KEYS]) {
-  if (key === 'newsfeed.view' || key === 'events.view') continue;
+  if (key === 'newsfeed.view' || key === 'event.view') continue;
   if (!mustNever.includes(`'${key}'`)) {
     problems.push(
       `RESIDENT_MUST_NEVER does not name ${key}. Listing every refused key is what makes an ` +
@@ -250,12 +250,19 @@ for (const [, route] of navigation.matchAll(/route: '(\/[a-z-]+)'/g)) {
     );
   }
 }
-for (const module of ['newsfeed', 'events']) {
+// The route segment is plural and the permission resource is singular: every
+// other resource in both vocabularies is singular, and TAB 03 made `events.*`
+// stop being the outlier. The URL did not change — a bookmarked link is a
+// promise to a caseworker, and renaming a permission is no reason to break one.
+for (const [module, resource] of [
+  ['newsfeed', 'newsfeed'],
+  ['events', 'event'],
+]) {
   if (!new RegExp(`route: '/${module}'`).test(navigation)) {
     problems.push(`The ${module} module has no navigation entry.`);
   }
-  if (!new RegExp(`permissionGuard\\('${module}\\.view'\\)`).test(routes)) {
-    problems.push(`The ${module} route is not guarded by ${module}.view.`);
+  if (!new RegExp(`permissionGuard\\('${resource}\\.view'\\)`).test(routes)) {
+    problems.push(`The ${module} route is not guarded by ${resource}.view.`);
   }
 }
 // The existing sections must survive: the command said place them naturally,

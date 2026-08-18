@@ -342,14 +342,14 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Field visits — Taytay Social Welfare',
-            canActivate: [permissionGuard('case.view')],
+            canActivate: [permissionGuard('visit.view')],
             loadComponent: () =>
               import('@features/visits/visit-list-page').then((m) => m.VisitListPage),
           },
           {
             path: ':id',
             title: 'Field visit — Taytay Social Welfare',
-            canActivate: [permissionGuard('case.view')],
+            canActivate: [permissionGuard('visit.view')],
             loadComponent: () =>
               import('@features/visits/visit-detail-page').then((m) => m.VisitDetailPage),
           },
@@ -394,7 +394,7 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Events — Taytay Social Welfare',
-            canActivate: [permissionGuard('events.view')],
+            canActivate: [permissionGuard('event.view')],
             loadComponent: () =>
               import('@features/events/event-list-page').then((m) => m.EventListPage),
           },
@@ -403,14 +403,14 @@ export const routes: Routes = [
             title: 'Create an event — Taytay Social Welfare',
             // Writing costs `create`; putting it in the resident app costs
             // `publish`, on the detail screen.
-            canActivate: [permissionGuard('events.create')],
+            canActivate: [permissionGuard('event.create')],
             loadComponent: () =>
               import('@features/events/event-composer-page').then((m) => m.EventComposerPage),
           },
           {
             path: ':id',
             title: 'Event — Taytay Social Welfare',
-            canActivate: [permissionGuard('events.view')],
+            canActivate: [permissionGuard('event.view')],
             loadComponent: () =>
               import('@features/events/event-detail-page').then((m) => m.EventDetailPage),
           },

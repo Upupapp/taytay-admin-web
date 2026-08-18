@@ -491,12 +491,12 @@ if (actSignature !== '' && !/reason:\s*string/.test(actSignature)) {
 }
 
 const PERMISSIONS = [
-  ['publish', 'events.publish'],
-  ['cancel', 'events.cancel'],
-  ['archive', 'events.archive'],
-  ['actOnRegistration', 'events.manage-registrations'],
-  ['markAttendance', 'events.mark-attendance'],
-  ['exportRegistrants', 'events.export-registrations'],
+  ['publish', 'event.publish'],
+  ['cancel', 'event.cancel'],
+  ['archive', 'event.archive'],
+  ['actOnRegistration', 'event.manage-registrations'],
+  ['markAttendance', 'event.mark-attendance'],
+  ['exportRegistrants', 'event.export-registrants'],
 ];
 for (const [method, permission] of PERMISSIONS) {
   const start = mock.indexOf(`\n  ${method}(`);
@@ -630,9 +630,9 @@ if (eventsBlock === '') {
   // Read out of the block: two routes ask for `events.view`, so a file-wide
   // search for the string is satisfied by whichever sibling still has it.
   const EXPECTED = [
-    ["''", 'events.view'],
-    ["'new'", 'events.create'],
-    ["':id'", 'events.view'],
+    ["''", 'event.view'],
+    ["'new'", 'event.create'],
+    ["':id'", 'event.view'],
   ];
   const children = eventsBlock.split(/\n\s{10}\{/).slice(1);
   if (children.length !== EXPECTED.length) {

@@ -144,7 +144,7 @@ export const NAVIGATION: readonly NavSection[] = [
         label: 'Events',
         route: '/events',
         glyph: 'EV',
-        permissions: ['events.view'],
+        permissions: ['event.view'],
         description: 'Municipal activities, registrations and attendance.',
       },
     ],

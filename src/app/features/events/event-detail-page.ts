@@ -89,18 +89,18 @@ export class EventDetailPage {
   private readonly reloads = signal(0);
   protected readonly saving = signal(false);
 
-  protected readonly canPublish = computed(() => this.permissions.has('events.publish'));
-  protected readonly canCancel = computed(() => this.permissions.has('events.cancel'));
-  protected readonly canArchive = computed(() => this.permissions.has('events.archive'));
-  protected readonly canEdit = computed(() => this.permissions.has('events.edit'));
+  protected readonly canPublish = computed(() => this.permissions.has('event.publish'));
+  protected readonly canCancel = computed(() => this.permissions.has('event.cancel'));
+  protected readonly canArchive = computed(() => this.permissions.has('event.archive'));
+  protected readonly canEdit = computed(() => this.permissions.has('event.edit'));
   protected readonly canManage = computed(() =>
-    this.permissions.has('events.manage-registrations'),
+    this.permissions.has('event.manage-registrations'),
   );
   protected readonly canMarkAttendance = computed(() =>
-    this.permissions.has('events.mark-attendance'),
+    this.permissions.has('event.mark-attendance'),
   );
   protected readonly canExport = computed(() =>
-    this.permissions.has('events.export-registrations'),
+    this.permissions.has('event.export-registrants'),
   );
 
   private readonly key = computed(() => ({ id: this.id(), nonce: this.reloads() }));

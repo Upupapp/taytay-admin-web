@@ -198,11 +198,11 @@ export class MockNewsfeedRepository implements NewsfeedRepository {
 
   setCommentsEnabled(id: PostId, enabled: boolean, reason: string): Observable<Post> {
     const user = this.access.currentUser();
-    const denied = denyUnless<Post>(user, 'newsfeed.moderate-comments');
+    const denied = denyUnless<Post>(user, 'newsfeed.moderate');
     if (denied) {
       return denied;
     }
-    const outcome = this.locate(id, 'newsfeed.moderate-comments', reason);
+    const outcome = this.locate(id, 'newsfeed.moderate', reason);
     if ('error' in outcome) {
       return outcome.error;
     }
@@ -228,14 +228,14 @@ export class MockNewsfeedRepository implements NewsfeedRepository {
 
   moderate(commentId: CommentId, action: ModerationAction, text: string): Observable<Comment> {
     const user = this.access.currentUser();
-    const denied = denyUnless<Comment>(user, 'newsfeed.moderate-comments');
+    const denied = denyUnless<Comment>(user, 'newsfeed.moderate');
     if (denied) {
       return denied;
     }
 
     const comment = this.commentState.find((entry) => entry.id === commentId);
     if (comment === undefined) {
-      return throwError(() => new PermissionDeniedError('newsfeed.moderate-comments'));
+      return throwError(() => new PermissionDeniedError('newsfeed.moderate'));
     }
 
     // Re-checked here, not only on the screen: hiding or removing somebody's

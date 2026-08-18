@@ -74,7 +74,7 @@ describe('the report catalogue', () => {
     const bad: ReportDefinition = {
       ...(REPORT_CATALOGUE[0] as ReportDefinition),
       grain: 'person-level',
-      permission: 'report.export',
+      permission: 'report.export-person-level',
       personLevelJustification: '   ',
     };
 

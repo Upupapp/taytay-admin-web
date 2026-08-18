@@ -21,21 +21,21 @@ const NEWSFEED_KEYS = [
   'newsfeed.schedule',
   'newsfeed.archive',
   'newsfeed.pin',
-  'newsfeed.moderate-comments',
+  'newsfeed.moderate',
   'newsfeed.view-insights',
 ] as const;
 
 const EVENT_KEYS = [
-  'events.view',
-  'events.create',
-  'events.edit',
-  'events.publish',
-  'events.cancel',
-  'events.archive',
-  'events.manage-registrations',
-  'events.export-registrations',
-  'events.mark-attendance',
-  'events.view-insights',
+  'event.view',
+  'event.create',
+  'event.edit',
+  'event.publish',
+  'event.cancel',
+  'event.archive',
+  'event.manage-registrations',
+  'event.export-registrants',
+  'event.mark-attendance',
+  'event.view-insights',
 ] as const;
 
 /* ── Criterion: no duplicate permission architecture ──────────────────────── */
@@ -68,8 +68,8 @@ describe('who may publish', () => {
     const head = permissionsForRole('mswdo-head');
 
     expect(head).toContain('newsfeed.publish');
-    expect(head).toContain('events.publish');
-    expect(head).toContain('newsfeed.moderate-comments');
+    expect(head).toContain('event.publish');
+    expect(head).toContain('newsfeed.moderate');
   });
 
   it('gives a caseworker neither module by default', () => {
@@ -104,9 +104,9 @@ describe('the auditor stays read-only', () => {
     const auditor = permissionsForRole('auditor');
 
     expect(auditor).toContain('newsfeed.view');
-    expect(auditor).toContain('events.view');
+    expect(auditor).toContain('event.view');
     expect(auditor).not.toContain('newsfeed.publish');
-    expect(auditor).not.toContain('events.cancel');
+    expect(auditor).not.toContain('event.cancel');
   });
 
   it('is still a read-only role after the additions', () => {
@@ -118,14 +118,14 @@ describe('the auditor stays read-only', () => {
 
   it('classifies insights and registration export as reads', () => {
     expect(READ_ONLY_PERMISSIONS).toContain('newsfeed.view-insights');
-    expect(READ_ONLY_PERMISSIONS).toContain('events.view-insights');
-    expect(READ_ONLY_PERMISSIONS).toContain('events.export-registrations');
+    expect(READ_ONLY_PERMISSIONS).toContain('event.view-insights');
+    expect(READ_ONLY_PERMISSIONS).toContain('event.export-registrants');
   });
 
   it('does not classify publishing or moderation as a read', () => {
     expect(READ_ONLY_PERMISSIONS).not.toContain('newsfeed.publish');
-    expect(READ_ONLY_PERMISSIONS).not.toContain('newsfeed.moderate-comments');
-    expect(READ_ONLY_PERMISSIONS).not.toContain('events.mark-attendance');
+    expect(READ_ONLY_PERMISSIONS).not.toContain('newsfeed.moderate');
+    expect(READ_ONLY_PERMISSIONS).not.toContain('event.mark-attendance');
   });
 });
 
@@ -206,7 +206,7 @@ describe('the resident contract', () => {
 
   it('names every admin permission it refuses, so an addition has to delete a line', () => {
     for (const key of [...NEWSFEED_KEYS, ...EVENT_KEYS]) {
-      if (key === 'newsfeed.view' || key === 'events.view') {
+      if (key === 'newsfeed.view' || key === 'event.view') {
         continue;
       }
       expect(RESIDENT_MUST_NEVER, `${key} is not refused to residents`).toContain(key);

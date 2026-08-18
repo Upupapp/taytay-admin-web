@@ -129,7 +129,7 @@ describe('the case lifecycle', () => {
   it('lets an auditor read a case but never the protected tier', () => {
     const auditor = ROLE_DEFINITIONS.auditor.permissions;
     expect(auditor).toContain('case.view');
-    expect(auditor).not.toContain('case.view-protected-note');
+    expect(auditor).not.toContain('case-note.view-protected');
     expect(auditor).not.toContain('case.note');
   });
 });
@@ -272,7 +272,7 @@ describe('a protected note is withheld by removing it, not by hiding it', () => 
   it('opens the protected tier to the clearance that owns it', () => {
     const view = discloseCaseNote(
       note({ sensitivity: 'protected' }),
-      holding('case.view', 'case.view-protected-note'),
+      holding('case.view', 'case-note.view-protected'),
     );
     expect(view.body).toBe(note().body);
     expect(view.isWithheld).toBe(false);
