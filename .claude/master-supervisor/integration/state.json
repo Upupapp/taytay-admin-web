@@ -18,7 +18,7 @@
   ],
   "currentObjective": "TAB 05: every HTTP adapter calls a route the backend actually registers, with the parameters it accepts, mapping the payload it returns \u2014 verified against the running API. Begins with the authoritative 147-row mapping built from route:list and openapi.json.",
   "status": "IN_PROGRESS",
-  "lastCheckpointAt": "2026-08-18T14:20:00+08:00",
+  "lastCheckpointAt": "2026-08-18T14:40:00+08:00",
   "repositories": {
     "console": {
       "path": "/Users/user/development/taytay-admin-web",
@@ -40,8 +40,8 @@
   "measuredBaseline": {
     "console": {
       "verify": "PASS",
-      "testFiles": 78,
-      "tests": 1495,
+      "testFiles": 80,
+      "tests": 1506,
       "repositoryChecks": 22,
       "productionBuild": "clean",
       "dataSource": "mock in both environments",
@@ -105,7 +105,8 @@
     "TAB 14: appoint a Data Protection Officer \u2014 longest lead time in the document, start immediately",
     "TAB 04: schedule the case-model working session with the MSWDO head, a social worker and an intake officer",
     "TAB 19 runbook: enrol every existing staff account in MFA BEFORE cutover \u2014 since TAB 02 an unenrolled staff account signs in to an enrolment-only session.",
-    "TAB 04 ratification: run the working session (MSWDO head + social worker + intake officer) against ADR 0044 \u2014 it proposes Option A and supersede-not-merge, and the continuing-involvement module waits on it."
+    "TAB 04 ratification: run the working session (MSWDO head + social worker + intake officer) against ADR 0044 \u2014 it proposes Option A and supersede-not-merge, and the continuing-involvement module waits on it.",
+    "TAB 07 decision: does the programme payload carry ProgramResponsibility, or does the console keep its own catalog? It has a legal-accuracy consequence (AICS is DSWD-run) and blocks the intake screens."
   ],
   "activeBlockers": [],
   "pendingQuestions": [],
@@ -123,6 +124,6 @@
     "tab03": "Canonical vocabulary applied: 6 backend renames (no data migration needed \u2014 role\u2192permission is code; report_exports.permission_context snapshots deliberately NOT rewritten), console renamed to match, visit.view/visit.manage added closing L-06, console now renders from GET /me permissions with fail-closed handling both directions, matrix regenerated (70x7), data scope already agreed. Step 8 (direct-call refusal tests) needs a live API. Backend does not yet gain the console fine-grained splits \u2014 those land with enforcement points in TAB 07.",
     "tab04Precondition": "TAB 04 is a DECISION command: it needs a working session with the MSWDO head, a social worker and an intake officer, and the master command says explicitly it must not be resolved in code or by whichever side is easier to change. Six permission keys (case.* x5, resident.merge) and the whole of TAB 05 are blocked on it.",
     "tab04": "Option A + supersede, ADR 0044 in both repos, accepted in principle pending MSWDO ratification. admin/cases -> admin/assistance-requests (30 routes) done as ADR 0007 conformance (F-23), safe under all 3 options; me/cases deliberately NOT renamed (shipped Flutter client, /api/v1 stable). L-07: case and assistance vocabularies overlap on exactly one state (assessment) \u2014 worse than none. Releases diverge 9v6, TAB 08 owns it. OUTSTANDING: continuing-involvement module, 6 permission keys, citizen-visible note projection.",
-    "tab05Progress": "Steps 1, 3, 5, 8, 9 COMPLETE. L-11 found AND closed at source: openapi.json published no resource shapes (52 of 56 schemas were enums); OpenApiGenerator::payloadShape() now reads field names from the *Projection() methods \u2014 171 of 263 responses described, 2266 field declarations, inherited keys resolved. docs/api/wire-shapes.md is the human reference. This UNBLOCKS the per-resource mappers: the console can now map against published names rather than invented ones. REMAINING in TAB 05: steps 2/4/6/7/10 \u2014 write the 20 per-resource mappers, money as integer centavos and ISO dates end to end, adapter bodies in dependency order, and adapter tests against recorded real responses (that last still needs a staging API)."
+    "tab05Progress": "Steps 1,3,5,8,9 COMPLETE. Steps 2/4/6/7 PARTIAL and correctly blocked: wire.ts mapping layer + resident and household mappers written; programs CANNOT be constructed (ProgramResponsibility needs statement+sources the wire does not carry; synthesising trips the domain validator national-programme-claimed-as-owned). toHouseholdSummary deliberately NOT written (L-14: HouseholdBand has no \"we did not ask\" member). L-13: AssistanceRequestRepository.list returns the full model against an 11-field list projection \u2014 needs a domain summary type. Consolidated handover written: docs/integration/tab-07-input.md, with a recommended order. Step 10 impossible without staging. KEY INSIGHT: \"maps cleanly\" in port-mapping.md means the ROUTE matches, not that the PAYLOAD fills the model."
   }
 }

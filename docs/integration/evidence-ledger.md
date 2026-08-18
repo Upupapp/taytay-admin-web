@@ -947,3 +947,34 @@ field is missing is to compute it from the factors that are present. That would 
 eligibility decision by another name.
 
 `npm run verify` green — 80 files, **1506 tests**, 22 checks.
+
+### The pattern behind L-12 to L-14, and the consolidated TAB 07 input
+
+Four resources in, the same shape had appeared four times, so it was measured rather than
+discovered a fifth time. [`tab-07-input.md`](./tab-07-input.md) is the result.
+
+**The field counts are comparable** — wire 11–27, domain 8–21 — so this is not a size problem. It
+is a **composition** problem: the console's models carry structured sub-objects the wire flattens
+or does not send (`eligibility`, `responsibility`, `disclosure`, `assessment`, `checklist`,
+`sectors`).
+
+**One root cause.** The console was built against a mock *it also authored*, so its models are
+shaped by what the screens wanted and the API's projections by what the modules own. Nobody was
+wrong; the two were never compared, and TAB 05 is the first thing that has tried to satisfy one
+from the other. That is why the gaps cluster in the same place every time.
+
+**`AssistanceProgram` is the sharpest, and is why programmes are recorded as *cannot be
+constructed*.** `ProgramResponsibility` requires a `statement` — *"what the office may honestly
+tell an applicant, in one sentence"* — and `sources`. The wire carries `owner_office`,
+`decided_by`, `authority` and `funding_source_label`, and neither of the two. Synthesising one
+produces a record the domain's own validator rejects: `claim-without-source` is a defined problem
+code, and so is **`national-programme-claimed-as-owned`**. CLAUDE.md states that AICS is a DSWD
+programme with DSWD-disbursed funds and that recording it otherwise *"was a defect, not a wording
+preference"*.
+
+A guessed mapping there does not produce a slightly-wrong field. It produces the console telling an
+applicant that the municipality runs a programme it does not run.
+
+**A note on what a "maps cleanly" row means.** In `port-mapping.md` it means *the route matches*.
+It does not mean the payload fills the model. That distinction was not visible until mappers were
+written against real field names, and it is the main thing this stretch of TAB 05 established.
