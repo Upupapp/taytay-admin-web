@@ -1,0 +1,89 @@
+{
+  "masterCommand": "Taytay_Rizal_Admin_Portal_Backend_Integration_Master_Command_2026-08-18.pdf — 20 commands (TAB 00–19) taking the MSWDO console from a mock application to a backend-integrated production system, and through the launch gate.",
+  "sequence": "integration",
+  "priorSequence": {
+    "name": "build",
+    "state": "../state.json",
+    "summary": "26 TABs, all certified locally, console feature-complete on mock adapters. Preserved, not superseded."
+  },
+  "currentTab": "TAB 01 — Contract reconciliation",
+  "currentTabIndex": 1,
+  "totalTabs": 20,
+  "completedTabs": [
+    "TAB 00 — Baseline, remotes and the evidence ledger (locally complete; environmentally blocked)"
+  ],
+  "currentObjective": "TAB 01: make api.contract.ts and api.client.ts describe what the backend actually serves, fix the P1 error-code defect at its source in both generators, and make a console request well-formed the first time it leaves the browser.",
+  "status": "IN_PROGRESS",
+  "lastCheckpointAt": "2026-08-18T12:00:00+08:00",
+  "repositories": {
+    "console": {
+      "path": "/Users/user/development/taytay-admin-web",
+      "remote": "https://github.com/Upupapp/taytay-admin-web.git",
+      "visibility": "PUBLIC — recommended private, owner decision open (D-00-01)",
+      "baselineHead": "6df92acbf4604a27e36b3598bc086e4711f3267a",
+      "baselineCommits": 71,
+      "branch": "main"
+    },
+    "backend": {
+      "path": "/Users/user/development/taytay-backend",
+      "remote": "https://github.com/Upupapp/taytay-backend.git",
+      "visibility": "PUBLIC — recommended private, owner decision open (D-00-01)",
+      "baselineHead": "22cb10d8eb3c687f959ad7f5084454db8df82fb8",
+      "baselineCommits": 48,
+      "branch": "main"
+    }
+  },
+  "measuredBaseline": {
+    "console": {
+      "verify": "PASS",
+      "testFiles": 71,
+      "tests": 1437,
+      "repositoryChecks": 20,
+      "productionBuild": "clean",
+      "dataSource": "mock in both environments",
+      "apiBaseUrl": "/api (prod), http://localhost:8000/api (dev)"
+    },
+    "backend": {
+      "tests": 906,
+      "assertions": 6696,
+      "testFiles": 72,
+      "routesRegistered": 266,
+      "routesApiV1": 263,
+      "routesUnderAdmin": 174,
+      "openApiPaths": 221,
+      "openApiSchemas": 54,
+      "migrations": 38,
+      "adrs": 42,
+      "releaseGate": "NO-GO"
+    },
+    "note": "These supersede the sweep's stated 889 tests / 262 routes / 173 admin routes. See ledger finding L-01."
+  },
+  "toolchain": {
+    "node": "v24.19.0",
+    "npm": "11.17.0",
+    "php": "8.4.23 (Herd; not on PATH — ~/Library/Application Support/Herd/bin)",
+    "composer": "2.10.1",
+    "absent": ["PostgreSQL", "Redis", "Docker", "package manager", "gitleaks"],
+    "phpTestMemoryLimit": "must exceed 128M default; use -d memory_limit=1G (ledger finding L-02)"
+  },
+  "boundary": {
+    "allowed": ["local commits", "local branches", "local file changes", "reading public HTTP"],
+    "forbidden": ["push", "remote administration", "branch protection changes", "deployment", "production access", "destructive production data operations", "credential changes", "merges to protected branches", "force-push"]
+  },
+  "openOwnerActions": [
+    "D-00-01: decide and record repository visibility for BOTH repositories (both currently public)",
+    "TAB 00 step 2: create private remote / protect main on both repositories",
+    "TAB 00 steps 4–7: provision PostgreSQL 18 + Redis + object storage + Mailpit, migrate on real Postgres, seed, stand up staging",
+    "TAB 14: appoint a Data Protection Officer — longest lead time in the document, start immediately",
+    "TAB 04: schedule the case-model working session with the MSWDO head, a social worker and an intake officer"
+  ],
+  "activeBlockers": [],
+  "pendingQuestions": [],
+  "contextPressure": "NORMAL",
+  "notes": {
+    "sweepMachine": "The sweep was run on a Windows machine (C:\\Users\\paulg, Desktop\\Taytay_Rizal_LGUIDS_Backend). Work is now on macOS against fresh GitHub clones. F-14 (console has no remote) and F-25 (no PHP toolchain) were true there and are not true here.",
+    "criticalPath": "00 → 01 → 02 → 03 → 04 → 05 → 12 → 17 → 19",
+    "tab01Precondition": "TAB 01 states its precondition as 'a running backend to observe, not merely a document to read'. No staging API exists and no Postgres runs on this machine; TAB 01 proceeds against the repository as the source of observed truth (route:list, openapi.json, conventions.md, config/cors.php, the real generators), and every acceptance criterion needing a live call is recorded as environmentally deferred.",
+    "verifyCommand": "npm run verify (console) / php -d memory_limit=1G vendor/bin/phpunit (backend)"
+  }
+}
