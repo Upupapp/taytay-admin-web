@@ -1,0 +1,24 @@
+{
+  "data": {
+    "id": "01a0149d-b29a-70b4-bbef-fb91a9d41a8a",
+    "headline": null,
+    "body": "The office will be closed on Monday for a public holiday.",
+    "category": "advisory",
+    "is_pinned": false,
+    "comments_enabled": true,
+    "published_at": "2026-08-18T11:24:48Z",
+    "media": [],
+    "status": "published",
+    "author_subject_id": "01a013cd-1eb9-739a-bc38-dbe9876ad695",
+    "audience": "municipality",
+    "audience_barangay_id": null,
+    "scheduled_for": "2026-08-18T11:24:48Z",
+    "archived_at": null,
+    "available_transitions": [
+      "archived"
+    ]
+  },
+  "meta": {
+    "request_id": "73132ff80e719ef0ebe07a787654f49c"
+  }
+}

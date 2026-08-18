@@ -1,0 +1,1 @@
+{"error":{"code":"VALIDATION_FAILED","message":"The given data was invalid.","details":{"file_id":["The file id field is required."],"alt_text":["The alt text field is required when is decorative is not present."]},"request_id":"b3c09f14502e5d8e988f5d8cfabf91fe"}}
