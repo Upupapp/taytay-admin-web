@@ -1,0 +1,34 @@
+{
+  "data": {
+    "id": "01a0141f-f6f0-71c5-b706-77935a11fd23",
+    "reference_number": "REL-20260818-4GXRU",
+    "resident_id": "01a013cd-2009-7226-8b7f-829e5d811a4f",
+    "program_id": null,
+    "program_code": null,
+    "approval_reference": "SWC-2026-TQFRCIZV",
+    "sequence": 1,
+    "kind": "cash",
+    "amount_centavos": 250000,
+    "currency": "PHP",
+    "in_kind_description": null,
+    "release_mode": "over-the-counter",
+    "funding_source": null,
+    "scheduled_for": "2026-08-28",
+    "release_location": null,
+    "status": "ready",
+    "released_at": null,
+    "acknowledged_by_name": null,
+    "acknowledged_relationship": null,
+    "acknowledgement_method": null,
+    "outcome_reason": null,
+    "available_transitions": [
+      "released",
+      "failed",
+      "deferred",
+      "cancelled"
+    ]
+  },
+  "meta": {
+    "request_id": "4d026367c35511a3b0f8694d97c13a00"
+  }
+}

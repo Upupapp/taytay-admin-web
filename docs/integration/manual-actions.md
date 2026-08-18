@@ -132,7 +132,27 @@ defaulting.
 
 **Blocks:** `ReferralRepository` (13 methods).
 
-### 2.6 Two smaller ones
+### 2.6 Self-release: block or warn? (L-19) — **the office decides, and it is the sharpest one**
+
+Walked end to end against the running API. It refuses at the *person* level, twice:
+
+- *"The person who endorsed a case may not approve it."*
+- *"The person who approved this assistance cannot also release it."*
+
+The console takes the **opposite** position, deliberately (`DL-91`): it warns and lets the officer
+proceed, because *"a small office on a bad day may have one person available, and refusing the
+payout punishes the family for the office's staffing."*
+
+Both are defensible. **They cannot both be executed.** And today the console's screen warns and
+then proceeds — against this API the proceed always fails, so **the warning becomes a lie**: it
+tells an officer they may continue with care, and the server refuses. A one-officer office gets a
+family turned away with no path forward in the product.
+
+Either the API relaxes to warn-and-record with the self-release audited, or the console stops
+offering the path and says a second officer is required. **Take it to the same session as the case
+model (2.2)** — it is the same kind of question and the same people answer it.
+
+### 2.7 Two smaller ones
 
 - **`HouseholdBand` cannot say "we did not ask"** (L-14). Either it gains an unassessed member,
   the list screen stops rendering a band, or the endpoint carries the snapshot. Until then a
