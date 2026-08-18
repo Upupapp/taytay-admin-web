@@ -42,7 +42,7 @@
       "repositoryChecks": 21,
       "productionBuild": "clean",
       "dataSource": "mock in both environments",
-      "apiBaseUrl": "/api (prod), http://localhost:8000/api (dev)"
+      "apiBaseUrl": "https://api.<approved-domain>/api/v1 (prod), http://localhost:8000/api/v1 (dev) \u2014 repointed in TAB 01"
     },
     "backend": {
       "tests": 907,
@@ -57,7 +57,7 @@
       "adrs": 42,
       "releaseGate": "NO-GO"
     },
-    "note": "These supersede the sweep's stated 889 tests / 262 routes / 173 admin routes. See ledger finding L-01."
+    "note": "Current measured state, refreshed each TAB. The TAB 00 starting figures (console 71/1437/20 checks, backend 906 tests) live in the evidence ledgers. These supersede the sweep's stated 889 tests / 262 routes / 173 admin routes \u2014 ledger finding L-01."
   },
   "toolchain": {
     "node": "v24.19.0",
