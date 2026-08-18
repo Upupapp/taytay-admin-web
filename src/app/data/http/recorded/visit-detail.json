@@ -1,0 +1,35 @@
+{
+  "data": {
+    "id": "01a013fa-df85-7024-93aa-192a04ca6b88",
+    "reference_number": "FV-20260818-PN8CR",
+    "resident_id": "01a013cd-2009-7226-8b7f-829e5d811a4f",
+    "status": "scheduled",
+    "purpose": "initial-assessment",
+    "assigned_to": "01a013cd-1eb9-739a-bc38-dbe9876ad695",
+    "scheduled_for": "2026-08-25",
+    "scheduled_window": null,
+    "address_visited": "7 Ilang-Ilang Street",
+    "completed_at": null,
+    "is_overdue": false,
+    "checklist": [],
+    "observations": [
+      {
+        "id": "01a013fb-7061-71b9-aa8d-6de79a67923d",
+        "kind": "observed",
+        "kind_label": "Seen by the worker",
+        "body": "Roof sheeting missing over the kitchen.",
+        "attributed_to": null,
+        "recorded_at": "2026-08-18T08:27:20Z"
+      }
+    ],
+    "service_needs": null,
+    "declined_reason": null,
+    "outcome": null,
+    "next_action": null,
+    "follow_up_on": null,
+    "worker_safety_advisory": null
+  },
+  "meta": {
+    "request_id": "bb9ebd0a0ce2fd3716df441512653d2a"
+  }
+}

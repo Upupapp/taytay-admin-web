@@ -1221,3 +1221,47 @@ reads objects reachable from refs, via `git rev-list --objects --all`.
 Both repositories: **0 findings**, 1 and 3 accepted respectively.
 
 Console verify green — 83 files, 1,532 tests, 22 checks. Backend 914 tests, Pint clean.
+
+---
+
+## Field visits — the first complex resource that maps
+
+Worth recording as clearly as the failures, because it shows what "good" looks like on this seam.
+
+A visit was **created through the running API**, an observation recorded against it, and the
+result read back. The detail endpoint returns 19 fields — `observations`, `checklist`, `outcome`,
+`service_needs`, `declined_reason`, everything the visit screens read. `toFieldVisit` is written
+and tested against those recorded payloads.
+
+**Both vocabularies already agreed, string for string:** `VisitStatus` (5) and `VisitPurpose` (6).
+The first attempt failed validation because *I* sent `assessment` rather than
+`initial-assessment` — my input was wrong, not the API.
+
+**And the API enforces the doctrine the console documents.** Recording an attribution on anything
+other than a third-party account is refused: *"Only something said by a third party carries an
+attribution."* That is `DL-85` — the rule that keeps "the roof is missing sheets", "she says he
+has not sent money since March" and "the household appears unable to meet its food costs" from
+collapsing into one paragraph a later worker reads as established fact. Both sides reached it
+independently, and the server holds the line.
+
+### One constraint recorded rather than papered over
+
+The list payload has **11 fields and no `observations` key**; the detail has 19. A mapper filling
+`observations: []` from a list row would be claiming a worker recorded nothing — which on a
+*completed* visit is a claim about that worker's diligence.
+
+An empty list is honest for a newly scheduled visit and dishonest for a completed one read from a
+list row, and the model has no way to say "not loaded". So the constraint is stated in the mapper:
+**screens must fetch the detail before showing "no observations recorded"**. Same shape as L-14,
+caught before it shipped rather than after.
+
+`recordedBy` is left empty rather than invented — the payload does not name the recorder, and a
+wrong name against somebody's observation is worse than none.
+
+### Where the mappers now stand
+
+| Written, against recorded responses | Cannot be constructed |
+| --- | --- |
+| residents, households, notifications, audit rows, **field visits** | programmes, assistance requests (L-16/L-17), household summaries (L-14), assistance list rows (L-13) |
+
+`npm run verify` green — 85 files, **1,550 tests**, 22 checks.
