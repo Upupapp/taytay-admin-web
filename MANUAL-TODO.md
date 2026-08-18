@@ -6,7 +6,7 @@ Anything that *can* be automated is not on this list — it has been done, or it
 as engineering work. Detail and reasoning for each item live in
 [`docs/integration/manual-actions.md`](docs/integration/manual-actions.md); this page is the list.
 
-Last updated: 18 August 2026, after TAB 05.
+Last updated: 18 August 2026, after TAB 06.
 
 ---
 
@@ -25,6 +25,16 @@ Last updated: 18 August 2026, after TAB 05.
 ---
 
 ## 🟠 Decisions — an hour each, and code is waiting on them
+
+- [ ] **Settle the permission vocabulary** (L-23 / backend G-09a) — *now the largest one*
+      Only **30 of the console's 70** permission keys exist on the API. **24 of 43 guarded routes
+      are unreachable, including the dashboard.** Two separate calls:
+      1. *Naming* — the console splits `resident.create` / `resident.update`; the API grants
+         `resident.manage`. Same act, two spellings. Pick one. (API owner, ~1 hour.)
+      2. *Concepts the API lacks* — `dashboard.view`, `settings.manage`, `beneficiary.*`,
+         `family.view`. Each needs an endpoint before it needs a permission.
+      → Nothing is broken today; it breaks the day TAB 12 flips to the real API, as a blank
+      console rather than an error.
 
 - [ ] **Self-release: block or warn?** (L-19) — *the sharpest one*
       The API refuses at the person level; the console warns and proceeds on purpose. Both are
@@ -65,6 +75,15 @@ Last updated: 18 August 2026, after TAB 05.
 ---
 
 ## 🔵 Repository administration
+
+- [ ] **Decide whether the other three clients publish contract expectations**
+      Four clients consume the API; only the admin console publishes what it reads, so citizen web,
+      citizen mobile and verifier devices could each lose a field they depend on with CI green.
+      `taytay-mobile-app` is on this machine and reads the wire in the same shape (5 DTOs), so
+      generating its file is small — but it is a third repository, outside the two this Master
+      Command joins.
+      → Adding one is a data change: drop the generated file into `docs/api/consumers/`.
+
 
 - [ ] **Decide repository visibility** — both are public today; recommendation is private for both
 - [ ] **Protect `main`** on both repos — no force-push, no deletion, required checks, one reviewer
