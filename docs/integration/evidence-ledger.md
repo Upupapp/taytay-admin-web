@@ -666,3 +666,54 @@ legitimate use, and forbidding that would only push it somewhere less visible. M
 - **Six keys wait on TAB 04**: `case.*` (five) and `resident.merge`.
 - **The backend gaining the console's finer splits** lands with the endpoints that enforce them in
   TAB 07 — a permission with no enforcement point is decoration.
+
+---
+
+## TAB 04 — The case collision (console half)
+
+| | |
+| --- | --- |
+| Date | 18 August 2026 |
+| Decision record | [ADR 0044](../adr/0044-what-a-case-is.md) · backend copy `57e76a3` |
+| Status | Decision recorded; status vocabularies reconciled; option-specific build outstanding |
+
+### The decision, and its honest status
+
+**Option A — two entities**, and **supersede rather than merge**. Recorded as *accepted in
+principle, pending MSWDO ratification*: the working session with the head, a social worker and an
+intake officer has not happened, and the ADR says so rather than implying a mandate.
+
+What makes deciding early safe is that **everything built is true under all three options**. The
+option-specific half — the continuing-involvement entity — is not built.
+
+### L-07 — the overlap is one state, and that is worse than none
+
+`assessment` is in both the console's 7-state case catalog and the 13-state assistance lifecycle.
+Nothing else is.
+
+A mis-wired `CaseRepository` would therefore render one status correctly and blank twelve. A screen
+that is *partly* right reads as incomplete data, not as broken wiring — so the trap comes with its
+own cover story. Now pinned by test at exactly one; a second coincidence has to be a decision.
+
+### Step 4 — reconciled by measurement, and three of four already agreed
+
+`status-vocabularies.spec.ts` walks all of them against the API's enums. Referral (8), field visit
+(5) and enrolment (3) are **identical on both sides** and needed no work.
+
+**Releases diverge**: nine console states against six, three shared. The console has no catalog
+entry for `ready`, `failed` or `cancelled` — a release arriving in any of them renders blank today
+— and draws six distinctions the API cannot express. The two that matter are `unclaimed` and
+`needs-correction`: `DL-94` holds that **deferred is the office's failing and unclaimed is
+nobody's**, so collapsing them would blame a household for the office's missing countersignature.
+TAB 08 owns the reconciliation; the tests pin the gap so it cannot widen quietly.
+
+### Outstanding
+
+The continuing-involvement module; the six permission keys TAB 03 held back (`case.*` ×5 and the
+`resident.merge` / `beneficiary.review-duplicates` alignment); and the citizen-facing projection —
+`welfare_case_events` carries `is_citizen_visible` and `citizen_message`, the console's `CaseEvent`
+has no such concept, so **a caseworker cannot yet tell which of their notes a resident will read.**
+
+### Verification
+
+`npm run verify` green — **77 files, 1491 tests**, 22 checks, clean build.
