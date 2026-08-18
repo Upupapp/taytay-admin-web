@@ -717,3 +717,76 @@ has no such concept, so **a caseworker cannot yet tell which of their notes a re
 ### Verification
 
 `npm run verify` green — **77 files, 1491 tests**, 22 checks, clean build.
+
+---
+
+## TAB 05 — Repoint the adapters (step 1: the authoritative mapping)
+
+| | |
+| --- | --- |
+| Date | 18 August 2026 |
+| Deliverable | [`docs/integration/port-mapping.md`](./port-mapping.md) |
+| Status | Step 1 complete. Steps 2–10 (the rewrite) not started |
+
+### 148 rows, not 147
+
+`completeMfa` was added to `StaffRepository` in TAB 02. Two of the sweep's per-port counts were
+also wrong — `HouseholdRepository` is 5, not 6; `EventRepository` is 14, not 13 — and the errors
+cancelled in its total, the same pattern as L-01.
+
+| Status | Count |
+| --- | --- |
+| maps cleanly | **66** |
+| maps with transformation | **46** |
+| **no counterpart** | **36** |
+
+### Built from the router, and it mattered
+
+The mapping was generated from `php artisan route:list` and `openapi.json`, with **every route
+verified to exist** before the row was accepted. The first pass flagged **28 rows whose route did
+not exist as written** — routes I had inferred from the console's method names and the sweep's
+prose. Each was corrected against the real router. Had the mapping been written from the endpoint
+matrix, those 28 would have become 28 adapters that compile, typecheck and 404.
+
+That is the command's own point — *"the call sites are typing; the mapping is the work"* — and it
+is now evidence rather than advice.
+
+### Three findings from the exercise
+
+**L-08 — the supersede doctrine is already implemented.** `POST admin/resident-duplicates/{pair}/decide`
+and `POST .../preview` **both exist**. ADR 0044 chose supersede over merge as a doctrinal decision;
+it turns out to need **no backend change at all** — `/decide` records the finding, `/preview` shows
+what would follow, and `/merge` simply goes unused. The sweep listed only `/merge`, which made the
+conflict look sharper than it is.
+
+**L-09 — the release manifest exists.** `GET admin/release-batches/{batch}/manifest` is registered.
+The sweep implied the manifest was missing. What is genuinely absent is the batch **list** and
+**detail**.
+
+**L-10 — the staff surface is not under `admin/`.** All nine staff routes sit at `/staff`, not
+`/admin/staff`, which contradicts the general rule that staff routes carry the prefix. Every
+`StaffRepository` and `GovernanceRepository` row is a transformation for that reason alone.
+
+### The 36 no-counterpart rows, handed to TAB 07 in writing
+
+- **`CaseRepository` — all 11.** Blocked on TAB 04 ratification, not on TAB 07. Do not wire.
+- **`FamilyRepository` — 4 of 8.** No list, no detail, no families-for-resident, no kinship
+  history. The write side exists; this is the read side of the same aggregate.
+- **`WorkRepository` — all 3.** Derived queues over the Tasks module.
+- **`ReportRepository` — 2 of 3.** No catalogue, no synchronous run.
+- **`BeneficiaryRepository` — 3.** The projection, and the findings history.
+- **`DisbursementRepository` — 3.** Batch list, batch detail, and `approverFor` — the last is what
+  separation of duties needs, and TAB 08 cannot assert it without one.
+- **`ProgramRepository` — 3.** Utilisation, and the read side of requirement templates.
+- **Others** — `FieldVisitRepository.mine` (scope, not a resource), `NewsfeedRepository.history`,
+  `EventRepository.metrics`/`history`, `GovernanceRepository.classifications`,
+  `AssistanceRequestRepository.advisoryFor` (computed console-side by design).
+- **`NotificationRepository.create` — delete the port method.** The API is read-only for the actor;
+  a client that mints its own notifications asserts something the server never agreed to.
+
+### Not started
+
+Steps 2–10: the adapter rewrite itself, in dependency order, each proven in staging. **No staging
+API exists**, so "proven in staging" cannot be met here; the adapters can be written against the
+mapping and unit-tested against recorded shapes, and the acceptance criteria that need a live API
+are deferred.
