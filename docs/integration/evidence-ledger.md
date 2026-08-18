@@ -1010,3 +1010,34 @@ preserves: a notification says something happened and points at it, and the reco
 over the authenticated API behind its own permission — the same rule the push payload follows.
 
 `npm run verify` green — 81 files, **1513 tests**, 22 checks.
+
+### Audit rows mapped — the row that must not carry values
+
+`DL-114` splits the trail in two: reading *that* a record changed is oversight, and reading *what
+it changed to* is access to the record. The list is designed to be scrolled and filtered by
+somebody reviewing other people's work, so a row reading `monthlyIncome: 3,200 → 18,000` would
+disclose a resident's income to every reviewer who filtered by date.
+
+**The API agrees, and the payload proves it:** `changed_fields` carries field *names*, and the
+values live behind `audit.view-detail` on a separate resource. The mapper's job is to keep that
+true, so it reads names and nothing else — there is deliberately no branch that could pick up a
+value if one ever appeared. Asserted directly: a payload carrying `old`/`new` alongside a field
+name produces a row whose serialised form contains neither number.
+
+**Unknown classification fails to the most sensitive, not the least.** A field the console cannot
+classify is treated as `sensitive-personal` rather than `public`. This is the one place in the
+trail where failing open would itself disclose something, so it fails closed — the same direction
+as TAB 03's unknown-permission handling, for the same reason.
+
+`npm run verify` green — 82 files, **1519 tests**, 22 checks.
+
+### Where the mappers stand
+
+**Written:** `wire.ts` (the shared layer), residents, households, notifications, audit rows.
+**Deliberately not written, each with the reason in the file:** `toHouseholdSummary` (L-14),
+programmes (`ProgramResponsibility` cannot be synthesised), assistance-request list rows (L-13).
+
+The four that are written share a property the three that are not do not have: **every field the
+wire omits is either fixed by the endpoint's own contract, or is honestly absent.** None of them
+required the console to state something about a household, a family or a programme that nobody
+sent.
