@@ -6,16 +6,17 @@
     "state": "../state.json",
     "summary": "26 TABs, all certified locally, console feature-complete on mock adapters. Preserved, not superseded."
   },
-  "currentTab": "TAB 02 \u2014 Authentication and session",
-  "currentTabIndex": 2,
+  "currentTab": "TAB 03 \u2014 Authorization convergence",
+  "currentTabIndex": 3,
   "totalTabs": 20,
   "completedTabs": [
     "TAB 00 \u2014 Baseline, remotes and the evidence ledger (locally complete; environmentally blocked)",
-    "TAB 01 \u2014 Contract reconciliation (complete, both repositories)"
+    "TAB 01 \u2014 Contract reconciliation (complete, both repositories)",
+    "TAB 02 \u2014 Authentication and session (complete; enrolment screen, refresh and the expiry warning deferred with recorded reasons)"
   ],
-  "currentObjective": "TAB 02: a staff member signs in with credentials and a second factor, works a full shift without arbitrary sign-out, and signing out revokes the token server-side. No credential in localStorage, sessionStorage, a cookie, a URL or a log.",
+  "currentObjective": "TAB 03: one permission vocabulary and one role model across both repositories; the console renders from the permissions GET /api/v1/me resolves; every screen a role can reach is one the server will serve.",
   "status": "IN_PROGRESS",
-  "lastCheckpointAt": "2026-08-18T12:25:00+08:00",
+  "lastCheckpointAt": "2026-08-18T12:55:00+08:00",
   "repositories": {
     "console": {
       "path": "/Users/user/development/taytay-admin-web",
@@ -37,16 +38,16 @@
   "measuredBaseline": {
     "console": {
       "verify": "PASS",
-      "testFiles": 73,
-      "tests": 1454,
-      "repositoryChecks": 21,
+      "testFiles": 75,
+      "tests": 1474,
+      "repositoryChecks": 22,
       "productionBuild": "clean",
       "dataSource": "mock in both environments",
       "apiBaseUrl": "https://api.<approved-domain>/api/v1 (prod), http://localhost:8000/api/v1 (dev) \u2014 repointed in TAB 01"
     },
     "backend": {
-      "tests": 907,
-      "assertions": 6742,
+      "tests": 909,
+      "assertions": 6758,
       "testFiles": 72,
       "routesRegistered": 266,
       "routesApiV1": 263,
@@ -54,7 +55,7 @@
       "openApiPaths": 221,
       "openApiSchemas": 54,
       "migrations": 38,
-      "adrs": 42,
+      "adrs": 43,
       "releaseGate": "NO-GO"
     },
     "note": "Current measured state, refreshed each TAB. The TAB 00 starting figures (console 71/1437/20 checks, backend 906 tests) live in the evidence ledgers. These supersede the sweep's stated 889 tests / 262 routes / 173 admin routes \u2014 ledger finding L-01."
@@ -97,7 +98,8 @@
     "TAB 00 step 2: create private remote / protect main on both repositories",
     "TAB 00 steps 4\u20137: provision PostgreSQL 18 + Redis + object storage + Mailpit, migrate on real Postgres, seed, stand up staging",
     "TAB 14: appoint a Data Protection Officer \u2014 longest lead time in the document, start immediately",
-    "TAB 04: schedule the case-model working session with the MSWDO head, a social worker and an intake officer"
+    "TAB 04: schedule the case-model working session with the MSWDO head, a social worker and an intake officer",
+    "TAB 19 runbook: enrol every existing staff account in MFA BEFORE cutover \u2014 since TAB 02 an unenrolled staff account signs in to an enrolment-only session."
   ],
   "activeBlockers": [],
   "pendingQuestions": [],
@@ -108,6 +110,8 @@
     "tab01Precondition": "TAB 01 states its precondition as 'a running backend to observe, not merely a document to read'. No staging API exists and no Postgres runs on this machine; TAB 01 proceeds against the repository as the source of observed truth (route:list, openapi.json, conventions.md, config/cors.php, the real generators), and every acceptance criterion needing a live call is recorded as environmentally deferred.",
     "verifyCommand": "npm run verify (console) / php -d memory_limit=1G vendor/bin/phpunit (backend)",
     "tab01": "Closed D1, D3, D4, D5, D6, D8 plus F-08 and the pagination publication defect. D2 (admin/ namespace) and D7 (field casing) are TAB 05 by design. check:contract guards all seven rules, each mutation-tested.",
-    "tab02Precondition": "TAB 01 complete. TAB 02 needs a live API to prove sign-in end to end; none exists here, so the console-side flow, token holder and MFA screen are built and unit-tested, and every acceptance criterion requiring a live round-trip is recorded as environmentally deferred."
+    "tab02Precondition": "TAB 01 complete. TAB 02 needs a live API to prove sign-in end to end; none exists here, so the console-side flow, token holder and MFA screen are built and unit-tested, and every acceptance criterion requiring a live round-trip is recorded as environmentally deferred.",
+    "tab02": "Closed D3/F-07 console-side. Found and fixed L-04 (second factor was opt-in by enrolment; three existing tests asserted the bypass) and L-05 (token abilities assigned but never enforced anywhere). ADR 0043 records both plus why refresh is sequenced after TAB 13.",
+    "tab03Precondition": "TAB 02 complete. TAB 03 needs an authenticated /me response; none can be obtained without a running API, so the reconciliation table, the canonical vocabulary decision and the console move onto server-issued permissions proceed against the measured 61-key backend enum and 68-key console array, with live refusal tests deferred."
   }
 }
