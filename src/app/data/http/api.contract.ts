@@ -29,22 +29,28 @@ import type { Page, PageRequest } from '@domain/index';
  * later inside a case file.
  */
 
-/** Error codes the API emits. Branch on these; never on `message`. */
-export type ApiErrorCode =
-  | 'BAD_REQUEST'
-  | 'UNAUTHENTICATED'
-  | 'FORBIDDEN'
-  | 'NOT_FOUND'
-  | 'METHOD_NOT_ALLOWED'
-  | 'CONFLICT'
-  | 'INVALID_STATE_TRANSITION'
-  | 'VALIDATION_FAILED'
-  | 'RATE_LIMITED'
-  | 'PAYLOAD_TOO_LARGE'
-  | 'UNSUPPORTED_MEDIA_TYPE'
-  | 'SERVER_ERROR'
-  | 'SERVICE_UNAVAILABLE';
+/**
+ * Error codes the API emits. Branch on these; never on `message`.
+ *
+ * **Re-exported from the vendored contract, not restated here.** TAB 06 pulls
+ * `docs/api/types.ts` in from the backend as a build artefact with its source
+ * commit recorded, so a backend enum change is a **TypeScript error in this
+ * console** rather than a runtime surprise. Restating the union locally would
+ * put the console back where TAB 01 found it: holding a second description of
+ * the API and discovering the difference in production.
+ */
+export type { ApiErrorCode } from './contract/types';
 
+import type { ApiErrorCode } from './contract/types';
+
+/**
+ * The same vocabulary as a runtime value.
+ *
+ * TypeScript unions vanish at build time and `isApiErrorCode` has to check
+ * something at run time, so this list exists — and `check:contract` fails the
+ * build if it drifts from the vendored union, which is the only reason it is
+ * safe to have two of them.
+ */
 const API_ERROR_CODES: readonly string[] = [
   'BAD_REQUEST',
   'UNAUTHENTICATED',

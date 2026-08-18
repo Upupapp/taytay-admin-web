@@ -1265,3 +1265,43 @@ wrong name against somebody's observation is worse than none.
 | residents, households, notifications, audit rows, **field visits** | programmes, assistance requests (L-16/L-17), household summaries (L-14), assistance list rows (L-13) |
 
 `npm run verify` green — 85 files, **1,550 tests**, 22 checks.
+
+---
+
+## TAB 06 — the generated contract, vendored and checked
+
+### Step 1 — the console consumes the backend's artefact instead of restating it
+
+`docs/api/types.ts` is vendored to `src/app/data/http/contract/types.ts`, with its provenance
+recorded beside it: repository, **full commit SHA**, file `sha256`, and the date.
+
+`ApiErrorCode` is now **re-exported from the vendored file** rather than declared in
+`api.contract.ts`. That is the whole point of the exercise: a backend enum change becomes a
+**TypeScript error in this console** instead of a runtime surprise. Restating the union locally
+would have put the console back exactly where TAB 01 found it — holding a second description of
+the API and discovering the difference in production.
+
+### Step 2 — `check:contract-drift`, and what it can and cannot know
+
+Four rules, each mutation-tested:
+
+| Rule | Planted regression | Result |
+| --- | --- | --- |
+| The vendored file matches its recorded `sha256` | a line appended by hand | **caught** |
+| Provenance identifies a commit unambiguously | full SHA replaced with the short one | **caught** |
+| The runtime list matches the compile-time union | `RATE_LIMITED` removed from `API_ERROR_CODES` | **caught** |
+| Wire vocabulary stays behind the transport seam | the contract imported from `features/` | **caught** |
+
+The third is the one worth explaining. A TypeScript union does not exist at run time, and
+`isApiErrorCode` has to check *something* — so the vocabulary is described twice, once as a type
+and once as an array. **Two descriptions of one thing is the exact shape of every divergence this
+integration has found**, so the pair is checked rather than trusted. A code in the union but
+missing from the list means the console silently treats a real error as unrecognised.
+
+**What this check cannot know** is whether the backend has moved since that commit — this
+repository holds no copy of it. That is the provider half of TAB 06: a backend CI job replaying
+recorded consumer expectations against the real router, failing when a response stops satisfying
+one. Stated here rather than left implied, because a drift check that sounds like it watches the
+backend and does not is worse than none.
+
+`npm run verify` green — 89 files, 1,566 tests, **23 checks**.
