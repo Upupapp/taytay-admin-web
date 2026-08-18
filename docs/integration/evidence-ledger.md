@@ -133,8 +133,9 @@ The three backend hits are fixtures inside tests whose purpose is to assert that
 
 - `tests/Feature/Api/V1/CredentialLeakageTest.php:64` — `'correct-horse-battery-staple'`, the
   password posted by `a_password_never_reaches_the_log_or_the_response`.
-- `tests/Feature/Console/ReadinessCommandTest.php:98–99` — `postgres://lguids:hunter2@…` and
-  its redacted form, the input and expectation of `it_redacts_credentials_out_of_driver_errors`.
+- `tests/Feature/Console/ReadinessCommandTest.php:98–99` — a Postgres DSN carrying a fake
+  password and its redacted form: the input and expectation of
+  `it_redacts_credentials_out_of_driver_errors`.
 
 **Verdict: clean.** No live credential is present in either history. Nothing requires rotation
 on disclosure grounds.
@@ -233,3 +234,148 @@ Steps 1, 8 and 9 — the secret scan, the ledger and the baseline — are comple
 reproducible and written down; the history of both repositories is proven clean of
 credentials; and the ledger is open. The backup, the private remote, the branch protection and
 the staging environment are not in place, and none of them can be put in place from here.
+
+---
+
+## TAB 01 — Contract reconciliation (console half)
+
+| | |
+| --- | --- |
+| Date | 18 August 2026 |
+| HEAD at start | `f540cd2` |
+| Severity | P0 — six of the eight divergences |
+| Backend half | `taytay-backend` ledger, TAB 01 section, commit `eec71e6` |
+
+### Precondition
+
+TAB 01's stated precondition is *"a running backend to observe, not merely a document to read."*
+No staging API and no PostgreSQL exist here. The backend **is** runnable, so every shape below
+was taken from the application itself — `ApiResponse`, `Page::meta()`, `config/cors.php`, the
+router — rather than from prose. Acceptance criteria that need a live call are recorded as
+deferred rather than claimed.
+
+### What changed, and which divergence it closes
+
+| # | Divergence | Change |
+| --- | --- | --- |
+| D1 | Base path | `apiBaseUrl` is now an **absolute origin plus `/api/v1`** in both environments. The relative `/api` assumed same-origin; the topology is `admin.<domain>` calling `api.<domain>`, so it resolved against the static host and never reached Laravel. Production carries a placeholder domain — a real hostname is a deployment fact, and TAB 12 owns the environment matrix |
+| D3 | Authentication | **`withCredentials: true` removed.** Against an API with `supports_credentials => false` this is refused by the browser before any application code runs — a CORS failure, not a `401`, so nothing could catch it and the only symptom was a console message. Removed outright rather than made conditional: there is no configuration in which it is correct against this API |
+| D4 | Pagination | `ApiListResponse` reads `meta.pagination.{page,per_page,total,total_pages,has_more}`; `toPage` maps it into the domain `Page`. `toQueryParams` emits `per_page` and clamps it to 100 |
+| D5 | Sorting | Descending is a leading `-` on `sort`. The `direction` parameter is gone — the server has none, so sorting was silently ignored while the grid's header arrow asserted an order the data did not have |
+| D6 | Error envelope | New `ApiFailure` + `readApiError` read `{ error: { code, message, details, request_id } }`. The interceptor branches on `code`, surfaces `message`, keeps `details` for forms and shows the `request_id` |
+| D8 | Headers | `X-Client-Channel: admin-console` added; `Accept: application/json` kept |
+
+D2 (the `admin/` route namespace) and D7 (field casing per resource) are **TAB 05's**. TAB 01
+settles the envelope; TAB 05 repoints the twenty adapters. `API_ENDPOINTS` is deliberately
+untouched — rewriting paths here would mix two commands' diffs in one review and leave neither
+checkable.
+
+### The error interceptor, in more detail
+
+Previously it looked for `{ message }` — a shape this API has never sent. So every failure
+rendered *"The server responded with 422"*, the field-level `details` a form needed were
+dropped, and the `request_id` a caseworker would be asked to quote was never displayed.
+
+Now the raw `HttpErrorResponse` is translated once into an `ApiFailure` and **that** is
+rethrown, so a form reads `details` without re-parsing a body and nothing downstream needs to
+know the wire shape. Branching is on `code`, never `message`:
+
+- `VALIDATION_FAILED` raises no toast — the form owns it and renders `details` beside the
+  fields. A toast as well would say the same thing twice, less usefully.
+- `INVALID_STATE_TRANSITION` is a **domain outcome**, not a transport fault: somebody moved the
+  record on while this screen was open, and the user is told that rather than "409".
+- `RATE_LIMITED` reports the `Retry-After` wait in plain words.
+- Status is a **fallback only**, used where no envelope arrived — a refusal that never reached
+  the application still has to send the user somewhere sensible.
+
+`readApiError` is deliberately total. An HTML error page from a proxy, a `413` rejected before
+Laravel saw it, or a status `0` all produce a usable failure. A parser that can throw while
+explaining a failure turns one broken screen into a blank one.
+
+### The transport seam (step 6)
+
+`data/http` and `core/http` are the only two directories allowed to name a `snake_case` wire
+field: the first holds the adapters and the contract, the second holds the interceptors, which
+must read the error envelope to translate it. Everything else works in the application's own
+vocabulary.
+
+**No generic recursive case-converter, deliberately.** A converter cannot distinguish a field
+name from a key inside a free-text note or an opaque identifier, so it renames things it was
+never asked to rename and the failure surfaces months later inside a case file. Per-resource
+mappers are TAB 05's, written adapter by adapter against recorded real responses; TAB 01
+establishes the boundary and the rule that enforces it.
+
+`ApiFieldErrors` is redeclared in `core/http` rather than imported from `data/http`, because
+`core` does not depend on an adapter (CLAUDE.md §4).
+
+### `check:contract` (step 10), and its mutation transcript
+
+Seven rules, in the style of the existing twenty checks. Every one of these divergences
+compiled and typechecked cleanly for the life of the defect — the envelope is cast at the
+boundary, so strict TypeScript cannot see any of them. That is why they are a checker and not a
+type.
+
+Each rule was proven to fail on its own planted regression before being trusted:
+
+| Rule | Planted regression | Result |
+| --- | --- | --- |
+| 1 | `withCredentials: true` reintroduced | **caught** |
+| 2 | `apiBaseUrl` reverted to relative `/api` | **caught** |
+| 4 | `toPage` stops reading `meta.pagination` | **caught** |
+| 5 | emits `pageSize` instead of `per_page` | **caught** |
+| 5 | emits a `direction` parameter | **caught** |
+| 6 | envelope reader drops `request_id` | **caught** |
+| 6 | interceptor drops `X-Client-Channel` | **caught** |
+| 7 | a wire field name placed in `features/` | **caught** |
+
+One finding from writing it, worth keeping: the first version scanned raw source and failed on
+the *comment explaining why `withCredentials` was removed* — a rule tripping its own
+documentation, which teaches a team to delete the explanation rather than keep the guard. The
+checker now strips comments and reasons only about code.
+
+### Verification
+
+| Check | Result |
+| --- | --- |
+| `npm run verify` | **green** |
+| Test files / tests | **73 / 1454** (was 71 / 1437 — two new spec files, 17 new tests) |
+| Repository checks | **21**, including the new `check:contract` |
+| Production build | clean |
+| Backend suite | 907 passed, 6742 assertions; Pint clean |
+
+New specs: `data/http/api.contract.spec.ts` (pagination mapping, `per_page`, clamping, sort
+encoding, the error-code guard rejecting the PHP case names the contract used to publish) and
+`core/http/api-failure.spec.ts` (envelope reading, field details, header fallback,
+`Retry-After`, and the three malformed-body paths).
+
+### Documentation corrected
+
+`CLAUDE.md` rule 5 stated that *"session credentials travel in an HTTP-only cookie set by the
+API."* They never have — ADR 0005 chose first-party bearer tokens precisely to avoid widening
+cookie scope and adding a CSRF surface. Left standing, that sentence would have had TAB 02
+implement the wrong thing. Rewritten, with the transport-seam rule and `check:contract` added
+to §4.
+
+### Guardrails observed
+
+- **The backend was not bent to the console.** `supports_credentials` untouched, CORS not
+  widened, Sanctum stateful domains not enabled. The only backend changes publish what was
+  already served and add a test.
+- **No domain model touched.** `Page`, `PageRequest` and every domain type are unchanged;
+  the adapter maps into them.
+- No `any`, no `@ts-ignore`, no non-null assertion. No check weakened.
+
+### Deferred — needs a live environment
+
+- *"A single live call from the console to `GET /api/v1/health` and one authenticated list
+  endpoint returns parsed, correctly-paginated data in staging"* — no staging API exists.
+- *"A deliberately invalid write renders the server's field-level messages beside the fields,
+  with the request id visible"* — the mechanism is built and unit-tested; the screenshot needs
+  a running API and is TAB 05's to capture once adapters are repointed.
+- A network trace of a successful paginated call.
+
+### Verdict
+
+**TAB 01 complete on both sides.** The console now describes the API that exists, the P1 defect
+is fixed at its source with a gate that has been watched failing, and the six envelope
+divergences are closed and guarded. Two divergences (D2, D7) belong to TAB 05 by design.

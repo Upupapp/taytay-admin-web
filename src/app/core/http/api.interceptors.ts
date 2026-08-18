@@ -3,24 +3,57 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 
+import { readApiError, type ApiFailure } from './api-failure';
 import { NotificationStore } from '../notifications/notification.store';
 
 /**
- * Adds the headers every API call needs. Credentials travel in an
- * HTTP-only cookie set by the API, so no token is read or stored here —
- * see the "Secrets and credentials" rule in CLAUDE.md.
+ * The headers every API call carries.
+ *
+ * `withCredentials: true` used to be set here, and it was the single most
+ * expensive line in the console. The API authenticates with a first-party
+ * bearer token and sets `supports_credentials => false` (ADR 0005, ADR 0006),
+ * so a credentialed request against an origin that does not answer
+ * `Access-Control-Allow-Credentials` is refused **by the browser**. That is a
+ * CORS failure, not a `401`: nothing reaches this application to be handled, no
+ * interceptor sees a status, and the only symptom is a console message. It is
+ * removed rather than made conditional — there is no configuration in which it
+ * is correct against this API.
+ *
+ * The fix is never to widen the server. Enabling `supports_credentials`,
+ * widening CORS or turning on Sanctum stateful domains would each make the
+ * request succeed and each was refused deliberately.
+ *
+ * `X-Client-Channel` is telemetry and presentation default only, never
+ * authority (`conventions.md` §2, backend constitution Article 3.3). Sending it
+ * grants nothing; not sending it recorded every staff request as an unknown
+ * channel, which is a gap in the audit trail rather than a cosmetic one.
+ *
+ * The token itself is attached in TAB 02 by a holder that keeps it in a private
+ * field of a service — never in this interceptor, and never in web storage.
  */
 export const apiHeadersInterceptor: HttpInterceptorFn = (request, next) =>
   next(
     request.clone({
-      setHeaders: { Accept: 'application/json' },
-      withCredentials: true,
+      setHeaders: {
+        Accept: 'application/json',
+        'X-Client-Channel': 'admin-console',
+      },
     }),
   );
 
 /**
- * Turns transport failures into one user-visible message and one navigation
- * decision, so no feature has to hand-roll error handling.
+ * Turns a failure into one user-visible message and one navigation decision, so
+ * no feature has to hand-roll error handling.
+ *
+ * What changed in TAB 01: this reads the envelope the API actually sends.
+ * It previously looked for `{ message }`, which this API has never returned —
+ * so every failure fell through to "The server responded with 422", the
+ * field-level `details` a form needed were dropped on the floor, and the
+ * `request_id` a caseworker would quote to a support desk was never shown.
+ *
+ * The parsed failure is rethrown in place of the raw `HttpErrorResponse` so a
+ * form can read `details` without re-parsing the body, and so nothing
+ * downstream has to know the wire shape.
  */
 export const httpErrorInterceptor: HttpInterceptorFn = (request, next) => {
   const notifications = inject(NotificationStore);
@@ -28,30 +61,84 @@ export const httpErrorInterceptor: HttpInterceptorFn = (request, next) => {
 
   return next(request).pipe(
     catchError((error: unknown) => {
-      if (error instanceof HttpErrorResponse) {
-        if (error.status === 401) {
-          void router.navigate(['/sign-in']);
-        } else if (error.status === 403) {
-          void router.navigate(['/forbidden']);
-        } else {
-          notifications.error('Request failed', describeHttpError(error));
-        }
+      if (!(error instanceof HttpErrorResponse)) {
+        return throwError(() => error);
       }
-      return throwError(() => error);
+
+      const failure = readApiError(error);
+
+      /*
+       * Branch on `code`, never on `message` — the message is written for
+       * operators and may be reworded at any time (`conventions.md` §4).
+       *
+       * The status is the fallback rather than the primary, and only where the
+       * envelope is missing: a refusal that never reached the application, or
+       * an error page from something in front of Laravel, still has to send the
+       * user somewhere sensible.
+       */
+      switch (failure.code ?? codeFromStatus(failure.status)) {
+        case 'UNAUTHENTICATED':
+          void router.navigate(['/sign-in']);
+          break;
+
+        case 'FORBIDDEN':
+          void router.navigate(['/forbidden']);
+          break;
+
+        case 'VALIDATION_FAILED':
+          // The form owns this one: it renders `details` beside the fields.
+          // A toast as well would say the same thing twice, less usefully.
+          break;
+
+        case 'INVALID_STATE_TRANSITION':
+          // A domain outcome, not a transport fault. Somebody else moved the
+          // record on while this screen was open, and the user needs to be
+          // told what happened rather than that "the server responded with
+          // 409".
+          notifications.warning('That change no longer applies', describeFailure(failure));
+          break;
+
+        case 'RATE_LIMITED':
+          notifications.warning('Too many requests', describeFailure(failure));
+          break;
+
+        default:
+          notifications.error('Request failed', describeFailure(failure));
+      }
+
+      return throwError(() => failure);
     }),
   );
 };
 
-function describeHttpError(error: HttpErrorResponse): string {
-  const body: unknown = error.error;
-  if (body !== null && typeof body === 'object' && 'message' in body) {
-    const message = (body as { message: unknown }).message;
-    if (typeof message === 'string' && message.length > 0) {
-      return message;
-    }
+/**
+ * Only for a response that carried no envelope. Anything richer would be
+ * guessing at a body that was never sent.
+ */
+function codeFromStatus(status: number): string | null {
+  switch (status) {
+    case 401:
+      return 'UNAUTHENTICATED';
+    case 403:
+      return 'FORBIDDEN';
+    default:
+      return null;
   }
-  if (error.status === 0) {
-    return 'The server could not be reached. Check the network connection.';
+}
+
+/**
+ * One sentence a caseworker can act on, plus the id they would be asked for.
+ */
+function describeFailure(failure: ApiFailure): string {
+  const parts = [failure.message];
+
+  if (failure.code === 'RATE_LIMITED' && failure.retryAfterSeconds !== null) {
+    parts.push(`Try again in ${failure.retryAfterSeconds} seconds.`);
   }
-  return `The server responded with ${error.status} ${error.statusText}.`;
+
+  if (failure.requestId !== null) {
+    parts.push(`Reference ${failure.requestId}.`);
+  }
+
+  return parts.join(' ');
 }

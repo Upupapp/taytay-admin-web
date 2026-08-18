@@ -47,8 +47,14 @@ one, stop and say so.
    boundary.** The API re-checks every permission. Hiding a button is not
    protection.
 5. **Secrets and credentials are never read, printed, stored or committed.**
-   No token is placed in `localStorage` by this app; session credentials travel
-   in an HTTP-only cookie set by the API.
+   No token is placed in `localStorage`, `sessionStorage`, a cookie, a URL or a
+   log by this app. Authentication is a **first-party bearer token** held in a
+   private field of an injectable service (ADR 0005, ADR 0006); TAB 02 builds
+   the holder. This rule previously said credentials travel in an HTTP-only
+   cookie set by the API — they never have. The API sets
+   `supports_credentials => false`, so a credentialed request is refused by the
+   browser before any application code runs, and `withCredentials` was removed
+   in TAB 01. Never widen the server to make a request succeed.
 6. **Money is integer centavos** (`Money` in `domain/shared/money.ts`). No
    floating-point arithmetic on amounts, anywhere, ever. Format only at render
    time via `PesoPipe`.
@@ -98,8 +104,7 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:beneficiary`, `check:documents`, `check:referrals`, `check:visits`,
 `check:releases`, `check:work`, `check:reports`, `check:search` and
 `check:governance`, `check:hardening`, `check:community`, `check:newsfeed` and
-`check:events`.
-Each enforces a rule a comment
+`check:events` and `check:contract`. Each enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 
@@ -149,10 +154,18 @@ src/
 `provideDataAccess()` binds every port to one adapter set. Flipping the flag
 swaps the whole application. **No component, route or feature file changes.**
 
-`dataSource` is currently `'mock'` in both environments because no API exists
-yet. `data/http/api.contract.ts` documents the envelope the API is expected to
-honour and is explicitly provisional — reconcile it first when the API lands,
-and adjust adapters, never domain models.
+`dataSource` is currently `'mock'` in both environments. The API exists;
+TAB 01 reconciled `data/http/api.contract.ts` against it, so that file now
+describes what `/api/v1` actually serves rather than what the console hoped for.
+TAB 05 repoints the twenty adapters and TAB 12 flips the flag per environment —
+flipping it before the adapters are repointed would 404 every screen.
+
+`data/http` and `core/http` are the **transport seam**: the only two places
+allowed to name a `snake_case` wire field. Adapters map wire shapes into the
+domain explicitly — never a generic recursive case-converter, which cannot tell
+a field name from a key inside a free-text note. `npm run check:contract`
+enforces the seam, the versioned base URL, the pagination and sort shapes, the
+error envelope and the absence of `withCredentials`.
 
 ---
 
