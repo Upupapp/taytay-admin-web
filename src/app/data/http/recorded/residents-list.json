@@ -1,0 +1,30 @@
+{
+  "data": [
+    {
+      "id": "01a013cd-2009-7226-8b7f-829e5d811a4f",
+      "name": "Aurelia Bautista",
+      "birth_date": "1982-06-17",
+      "barangay_id": 2,
+      "verification_tier": "unverified",
+      "is_active": true
+    },
+    {
+      "id": "01a013cd-200a-71a9-ac76-147a0072c026",
+      "name": "Nicanor Bautista",
+      "birth_date": "2009-03-08",
+      "barangay_id": 2,
+      "verification_tier": "unverified",
+      "is_active": true
+    }
+  ],
+  "meta": {
+    "request_id": "9beef3ecee0abc34c3ba6ee106ab49f2",
+    "pagination": {
+      "page": 1,
+      "per_page": 2,
+      "total": 13,
+      "total_pages": 7,
+      "has_more": true
+    }
+  }
+}

@@ -92,7 +92,16 @@ adopt.
 **Blocks:** the continuing-involvement module, six permission keys (`case.*` ×5 and
 `resident.merge`), and eleven `CaseRepository` methods.
 
-### 2.3 Two smaller ones
+### 2.3 Fix `barangay_id` (L-15) — backend, small, and it is a contract violation
+
+The API sends `"barangay_id": 2` — the raw auto-increment key — on residents and households.
+`conventions.md` §6 forbids exactly this: *"Auto-increment primary keys are internal and must never
+appear in a payload."*
+
+The console tolerates it at two call sites so records are not dropped, and the tolerance is
+one-way, so nothing here needs changing when it is fixed. Expose the barangay's UUID, or its code.
+
+### 2.4 Two smaller ones
 
 - **`HouseholdBand` cannot say "we did not ask"** (L-14). Either it gains an unassessed member,
   the list screen stops rendering a band, or the endpoint carries the snapshot. Until then a

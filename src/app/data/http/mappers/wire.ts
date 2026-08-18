@@ -85,6 +85,32 @@ export function id<T extends Branded<string, string>>(value: unknown): T | null 
 }
 
 /**
+ * An identifier that the API sends as a **number** rather than a UUID string.
+ *
+ * This exists for one measured contract violation and should not be used to
+ * paper over others. `conventions.md` §6 states: *"Identifiers exposed to
+ * clients: UUID strings. Auto-increment primary keys are internal and must never
+ * appear in a payload."* `barangay_id` is sent as the raw auto-increment key —
+ * `2`, not a UUID — on residents and households alike (ledger finding L-15).
+ *
+ * The console tolerates it **narrowly and visibly** rather than silently: the
+ * alternative was `id()` returning `null` for every record carrying one, which
+ * meant every resident and every household being dropped by the mapper. That is
+ * what a recorded response caught and a hand-written fixture never could,
+ * because the published schema declares payload properties untyped.
+ *
+ * When the backend fixes it (TAB 07), this stays working — a UUID string passes
+ * through unchanged — and the call sites can then be narrowed back to `id()`.
+ */
+export function idTolerantOfNumeric<T extends Branded<string, string>>(value: unknown): T | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return asId<T>(String(value));
+  }
+
+  return id<T>(value);
+}
+
+/**
  * Narrows a wire string to a domain union, or returns `null`.
  *
  * **Never widens.** An unrecognised value becomes absent rather than being

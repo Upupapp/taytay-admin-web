@@ -1,6 +1,6 @@
 import type { BarangayId, Household, HouseholdId, ResidentId } from '@domain/index';
 
-import { field, id, str, text } from './wire';
+import { field, id, idTolerantOfNumeric, str, text } from './wire';
 
 /**
  * `admin/households` → the domain.
@@ -28,7 +28,7 @@ import { field, id, str, text } from './wire';
  */
 export function toHousehold(wire: unknown): Household | null {
   const householdId = id<HouseholdId>(field(wire, 'id'));
-  const barangayId = id<BarangayId>(field(wire, 'barangay_id'));
+  const barangayId = idTolerantOfNumeric<BarangayId>(field(wire, 'barangay_id'));
 
   if (householdId === null || barangayId === null) {
     return null;

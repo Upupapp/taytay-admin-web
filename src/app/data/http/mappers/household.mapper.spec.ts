@@ -1,4 +1,5 @@
 import { toHousehold } from './household.mapper';
+import RECORDED from '../recorded/households-list.json';
 
 /** The published `admin/households/{household}` payload, field for field. */
 const DETAIL = {
@@ -52,5 +53,26 @@ describe('toHousehold', () => {
     expect(toHousehold({ ...DETAIL, barangay_id: null })).toBeNull();
     expect(toHousehold(null)).toBeNull();
     expect(toHousehold('<html>502</html>')).toBeNull();
+  });
+});
+
+describe('against a response recorded from the running API', () => {
+  it('maps a real list row, numeric barangay and all', () => {
+    // Same L-15 finding as residents: `"barangay_id": 1`, the raw
+    // auto-increment key. Every household would have been dropped.
+    const wire = RECORDED.data[0];
+
+    expect(typeof wire?.barangay_id).toBe('number');
+
+    const household = toHousehold(wire);
+
+    expect(household).not.toBeNull();
+    expect(household?.referenceNumber).toBe('DEMO-HH-001');
+    expect(household?.address.streetAddress).toBe('12 Sampaguita Street');
+    expect(household?.address.barangayId).toBe('1');
+  });
+
+  it('reads a null purok as absent rather than as an empty string', () => {
+    expect(toHousehold(RECORDED.data[0])?.address.purokOrSitio).toBeNull();
   });
 });

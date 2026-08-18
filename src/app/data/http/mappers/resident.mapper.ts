@@ -8,7 +8,7 @@ import type {
   Sex,
 } from '@domain/index';
 
-import { bool, date, dateTime, field, id, str, text } from './wire';
+import { bool, date, dateTime, field, id, idTolerantOfNumeric, str, text } from './wire';
 
 /**
  * `admin/residents` → the domain `Resident`.
@@ -48,7 +48,7 @@ import { bool, date, dateTime, field, id, str, text } from './wire';
  */
 export function toResident(wire: unknown): Resident | null {
   const residentId = id<ResidentId>(field(wire, 'id'));
-  const barangayId = id<BarangayId>(field(wire, 'barangay_id'));
+  const barangayId = idTolerantOfNumeric<BarangayId>(field(wire, 'barangay_id'));
   const birthDate = date(field(wire, 'birth_date'));
 
   // Without an identity, a barangay and a date of birth there is no resident to
