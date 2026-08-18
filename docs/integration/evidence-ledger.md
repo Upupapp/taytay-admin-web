@@ -848,3 +848,17 @@ repeat.
 Tested at the level that matters: one key across attempts, different keys for different acts.
 
 `npm run verify` green — 78 files, **1494 tests**, 22 checks.
+
+### Step 5 — absence is not failure
+
+`optionalItem` mapped any empty body to `null`, so a transport failure and a genuine absence
+produced the same answer. A screen would render "no record found" when the truth was "we could not
+ask" — and for a caseworker checking whether a household has an open referral, those are opposite
+conclusions, only one of which is safe to act on.
+
+Now only a `404` becomes `null`. A `500`, a refused cross-origin request and a dropped connection
+all propagate, so the screen shows a failure rather than an absence.
+
+`404` is also what the API returns when the actor may not *know* the record exists
+(`conventions.md` §4). The console cannot tell those apart either — which is the point of the
+convention, not a limitation of the client.

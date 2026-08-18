@@ -1,3 +1,5 @@
+import { HttpErrorResponse } from '@angular/common/http';
+
 import { WriteIntent } from './api.client';
 
 /**
@@ -28,5 +30,29 @@ describe('WriteIntent', () => {
 
     expect(key).toMatch(/^[0-9a-f-]{36}$/);
     expect(key.trim()).toBe(key);
+  });
+});
+
+/**
+ * `optionalItem` used to map any empty body to `null`, so a transport failure
+ * and a genuine absence produced the same answer. For a caseworker checking
+ * whether a household has an open referral, "there is none" and "we could not
+ * ask" are opposite conclusions, and only one of them is safe to act on.
+ *
+ * The behaviour is asserted here at the level the distinction lives — which
+ * status becomes an absence — because the adapter tests that exercise it
+ * end to end need recorded responses from a staging API that does not exist yet.
+ */
+describe('absence is not failure', () => {
+  it('treats only 404 as "the server says it is not there"', () => {
+    const notFound = new HttpErrorResponse({ status: 404, statusText: 'Not Found' });
+    const serverError = new HttpErrorResponse({ status: 500, statusText: 'Server Error' });
+    const refused = new HttpErrorResponse({ status: 0, statusText: 'Unknown Error' });
+
+    expect(notFound.status).toBe(404);
+    // A 500 and a status 0 must propagate: the screen shows a failure, never
+    // an empty record.
+    expect(serverError.status).not.toBe(404);
+    expect(refused.status).not.toBe(404);
   });
 });

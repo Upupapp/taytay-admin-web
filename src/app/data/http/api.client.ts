@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { map, type Observable } from 'rxjs';
+import { catchError, map, of, throwError, type Observable } from 'rxjs';
 
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import type { Page, PageRequest } from '@domain/index';
@@ -42,11 +42,36 @@ export class ApiClient {
       .pipe(map((r) => r.data));
   }
 
-  /** `GET` for a resource that legitimately may not exist. */
+  /**
+   * `GET` for a resource that legitimately may not exist.
+   *
+   * **`null` means the server told us it is not there.** It does not mean the
+   * request failed.
+   *
+   * This previously mapped any empty body to `null`, so a transport failure and
+   * a genuine absence became the same answer — and a screen would render "no
+   * record found" when the truth was "we could not ask". For a caseworker
+   * looking up whether a household has an open referral, those are opposite
+   * conclusions, and only one of them is safe to act on.
+   *
+   * A `404` is the server's answer and becomes `null`. Everything else — a
+   * `500`, a refused cross-origin request, a dropped connection — propagates,
+   * so the screen shows a failure rather than an absence.
+   *
+   * Note that `404` is also what the API returns when the actor may not know
+   * the record exists (`conventions.md` §4). That is deliberate on both sides:
+   * the console cannot distinguish them either, which is the point.
+   */
   optionalItem<TItem>(path: string): Observable<TItem | null> {
-    return this.http
-      .get<ApiItemResponse<TItem> | null>(this.url(path))
-      .pipe(map((response) => response?.data ?? null));
+    return this.http.get<ApiItemResponse<TItem>>(this.url(path)).pipe(
+      map((response) => response.data),
+      catchError((error: unknown) => {
+        if (error instanceof HttpErrorResponse && error.status === 404) {
+          return of(null);
+        }
+        return throwError(() => error);
+      }),
+    );
   }
 
   /**
