@@ -790,3 +790,26 @@ Steps 2–10: the adapter rewrite itself, in dependency order, each proven in st
 API exists**, so "proven in staging" cannot be met here; the adapters can be written against the
 mapping and unit-tested against recorded shapes, and the acceptance criteria that need a live API
 are deferred.
+
+### Step 3 — `API_ENDPOINTS` repointed (D2 closed for the constants)
+
+Every endpoint constant now names a route the mapping proved exists, with the `admin/` prefix
+where the backend uses it. Two exceptions are measured rather than assumed: `staff` carries no
+prefix (L-10) and `programs` reads from the public catalog surface while writes go to
+`admin/programs`.
+
+`cases` is left pointing at `admin/cases` — **a route that no longer exists.** That is deliberate.
+The continuing-involvement entity has no endpoint and is blocked on ADR 0044's ratification, so an
+adapter wired to it must fail loudly at 404 rather than quietly succeed against
+`admin/assistance-requests`, which is exactly the trap L-07 describes. A placeholder that 404s is
+safer than one that returns somebody else's records.
+
+`npm run verify` green — 77 files, 1491 tests, 22 checks.
+
+### Still to do in TAB 05
+
+The adapter bodies themselves (steps 2, 4–10): per-resource `snake_case` → domain mappers, the
+`Idempotency-Key` on retryable writes, honest `404` handling, integer centavos and ISO dates
+end to end, deleting `NotificationRepository.create`, and adapter tests against **recorded real
+responses**. The last of those cannot be done here — there is no staging API to record from, and
+"proven in staging" is the acceptance criterion for every step in this command.

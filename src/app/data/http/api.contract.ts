@@ -122,76 +122,89 @@ export const MAX_PER_PAGE = 100;
 
 export const API_ENDPOINTS = {
   /*
-   * PATHS ARE TAB 05's, NOT THIS COMMAND'S. TAB 01 settles the envelope; TAB 05
-   * repoints all twenty adapters against the real router, where most of these
-   * gain the `admin/` prefix the backend uses for staff routes. They are left
-   * alone here on purpose — rewriting them now would mix two commands' diffs in
-   * one review and leave neither checkable.
-   */
-  residents: 'residents',
-  households: 'households',
-  families: 'families',
-  relationships: 'relationships',
-  cases: 'cases',
-  savedViews: 'saved-views',
-  programs: 'programs',
-  beneficiaries: 'beneficiaries',
-  /**
-   * The duplicate-review queue and its findings. A sibling of `beneficiaries`
-   * rather than a nested path: the queue is worked across the whole registry,
-   * not from inside one person's record.
-   */
-  identityReview: 'beneficiaries/identity-review',
-  assistanceRequests: 'assistance-requests',
-  disbursements: 'disbursements',
-  releaseBatches: 'release-batches',
-  referrals: 'referrals',
-  serviceProviders: 'service-providers',
-  fieldVisits: 'field-visits',
-  staff: 'staff',
-  /**
-   * The signed-in account, and the permissions the **server** resolved for it.
-   * Replaces the cookie-era `session` endpoint, which the API never had.
-   * TAB 03 moves the console onto the permissions this returns.
-   */
-  me: 'me',
-  notifications: 'notifications',
-  dashboardSummary: 'dashboard/summary',
-  /**
-   * Work queues are **read-only** and derived server-side, for the same reason
-   * they are derived here: an item is a view of a record, and acting on it goes
-   * to that record's own endpoint (`DL-97`).
-   */
-  work: 'work',
-  /**
-   * Reports are computed server-side under the same aggregate-first and
-   * small-cell rules, and the export is composed there for the same reason it
-   * is composed here: a file that leaves the office must carry its own
-   * conditions (`DL-104`, `DL-105`, `DL-106`).
-   */
-  reports: 'reports',
-  /**
-   * One search endpoint with one parameter. No field list and no note flag: the
-   * server applies the same closed set of searchable fields (`DL-109`).
-   */
-  search: 'search',
-  /**
-   * Governance. `audit` returns rows with no recorded values; the values are a
-   * separate resource behind their own permission (`DL-114`).
-   */
-  staffAccounts: 'governance/accounts',
-  audit: 'governance/audit',
-  governance: 'governance',
-  /** Posts and their comments. Nothing here returns who reacted (`DL-126`). */
-  newsfeed: 'newsfeed',
-  /**
-   * Events and the registrations residents make in the mobile app.
+   * REPOINTED IN TAB 05 against `php artisan route:list`, one row per line of
+   * `docs/integration/port-mapping.md`.
    *
-   * `.../registrants` returns the composed view, never resident records — the
-   * server applies the same closed set this application does (`DL-130`), and
-   * no endpoint answers "who else is on the list" more fully than the screen.
+   * The `admin/` prefix confers no authority — it is a routing convention that
+   * keeps permission-guarded staff endpoints out of the public namespace, and
+   * the console follows it rather than arguing with it.
+   *
+   * Two deliberate exceptions, both measured rather than assumed:
+   *
+   *  * `staff` carries **no** prefix. All nine staff routes sit at `/staff`,
+   *    against the general rule (ledger finding L-10).
+   *  * `programs` reads from the **public catalog** surface; only writes are
+   *    under `admin/`.
    */
-  events: 'events',
+  residents: 'admin/residents',
+  households: 'admin/households',
+  families: 'admin/families',
+  savedViews: 'admin/saved-views',
+  /** Reads are public-catalog; `admin/programs` takes the writes. */
+  programs: 'programs',
+  programsAdmin: 'admin/programs',
+  /** The duplicate-review queue. `/decide` records a finding; `/merge` is unused (ADR 0044). */
+  residentDuplicates: 'admin/resident-duplicates',
+  /**
+   * The intervention. Renamed from `cases` in TAB 04 — ADR 0007 §2 always
+   * called it this, and the implementation had drifted.
+   */
+  assistanceRequests: 'admin/assistance-requests',
+  assistanceIntakes: 'admin/assistance-intakes',
+  enrollments: 'admin/enrollments',
+  releases: 'admin/releases',
+  releaseBatches: 'admin/release-batches',
+  referrals: 'admin/referrals',
+  serviceProviders: 'admin/service-providers',
+  visits: 'admin/visits',
+  /** No `admin/` prefix — see L-10. */
+  staff: 'staff',
+  /** The signed-in account and the permissions the server resolved for it. */
+  me: 'me',
+  notifications: 'me/notifications',
+  tasks: 'tasks',
+  dashboard: 'admin/dashboard',
+  exports: 'admin/exports',
+  search: 'admin/search',
+  auditEntries: 'admin/audit-entries',
+  residentCorrections: 'admin/resident-corrections',
+  privacyRetention: 'admin/privacy/retention',
+  newsfeed: 'admin/newsfeed',
+  newsfeedComments: 'admin/newsfeed-comments',
+  events: 'admin/events',
+
+  /*
+   * ── Aliases the adapters still use, and the routes they truly resolve to ──
+   *
+   * These keep the existing call sites compiling while the adapters are
+   * rewritten port by port (TAB 05 steps 2–10). Each points at what the mapping
+   * proved exists.
+   */
+  relationships: 'admin/residents',
+  beneficiaries: 'admin/residents',
+  identityReview: 'admin/resident-duplicates',
+  disbursements: 'admin/releases',
+  fieldVisits: 'admin/visits',
+  staffAccounts: 'staff',
+  audit: 'admin/audit-entries',
+  governance: 'admin/privacy',
+  dashboardSummary: 'admin/dashboard',
+
+  /*
+   * NO COUNTERPART — do not wire these.
+   *
+   * `cases` is the continuing-involvement entity, which has no endpoint at all
+   * and is blocked on ADR 0044's ratification. The value below is deliberately
+   * the route that **used to** exist and no longer does, so an adapter wired to
+   * it fails loudly at 404 rather than quietly succeeding against
+   * `admin/assistance-requests` — which is the "looks like success when wrong"
+   * trap TAB 04 exists to prevent (ledger L-07).
+   *
+   * `work` and `reports` are derived server-side surfaces TAB 07 builds.
+   */
+  cases: 'admin/cases',
+  work: 'work',
+  reports: 'reports',
 } as const;
 
 /**
