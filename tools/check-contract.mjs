@@ -235,6 +235,73 @@ for (const { path, code } of files) {
   }
 }
 
+// ── 8. The hosting configuration, and the CSP two ADRs depend on ────────────
+//
+// F-09: no hosting configuration existed at all. ADR 0005 and ADR 0006 both name
+// a strict CSP among the mitigations for the XSS exposure bearer tokens carry,
+// and the backend's topology document states that without it "the residual risk
+// both ADRs accepted is unmitigated, not merely undocumented".
+//
+// So this is checked here rather than left to a deployment review: the whole
+// point of committing the policy is that weakening it shows up in a diff.
+/*
+ * Comments stripped for the same reason the TypeScript rules strip them, and it
+ * bit twice: this file's own paragraphs explain the CSP and say why HSTS is
+ * deliberately absent, and the first version of these rules read that prose as
+ * configuration. A rule that fails on its own documentation teaches people to
+ * delete the documentation.
+ */
+const withoutComments = (source) =>
+  source
+    .split('\n')
+    .filter((line) => !line.trimStart().startsWith('#'))
+    .join('\n');
+
+const hosting = withoutComments(readFileSync(join(ROOT, 'netlify.toml'), 'utf8'));
+
+if (!/\[\[redirects\]\]/.test(hosting) || !/to = "\/index\.html"/.test(hosting)) {
+  fail('netlify.toml', 'no SPA fallback. Every deep link 404s — a bookmarked case URL, and every link a caseworker pastes to a colleague.');
+}
+
+for (const [name, source] of [['netlify.toml', hosting], ['public/_headers', withoutComments(readFileSync(join(ROOT, 'public/_headers'), 'utf8'))]]) {
+  const csp = /Content-Security-Policy[ =:]+"?([^"\n]+)/.exec(source)?.[1] ?? '';
+
+  if (csp === '') {
+    fail(name, 'declares no Content-Security-Policy. ADR 0005 and ADR 0006 both depend on it.');
+    continue;
+  }
+
+  for (const forbidden of ["'unsafe-inline'", "'unsafe-eval'"]) {
+    if (csp.includes(forbidden)) {
+      fail(
+        name,
+        `the CSP contains ${forbidden}, which defeats the control it exists to be. Angular's inline ` +
+          'component styles are answered with ngCspNonce, never by widening the policy — that is the ' +
+          'exact silent weakening the deployment topology warns about.',
+      );
+    }
+  }
+
+  if (/connect-src[^;]*\*/.test(csp)) {
+    fail(name, 'connect-src carries a wildcard. It names one API origin for this environment, never a pattern — anybody can create a site on a shared hosting domain.');
+  }
+
+  for (const directive of ['default-src', 'script-src', 'frame-ancestors', 'base-uri', 'object-src', 'form-action']) {
+    if (!csp.includes(directive)) {
+      fail(name, `the CSP is missing ${directive}. The baseline is in taytay-backend/docs/architecture/deployment-topology.md and is an obligation, not a starting point.`);
+    }
+  }
+}
+
+if (/Strict-Transport-Security/.test(hosting)) {
+  fail(
+    'netlify.toml',
+    'sets Strict-Transport-Security. It cannot be undone from the server — a certificate problem then ' +
+      'locks the office out of its own console with no server-side remedy — so it is added in TAB 13 ' +
+      'only after the custom domain and certificate chain are confirmed.',
+  );
+}
+
 // ── report ───────────────────────────────────────────────────────────────────
 if (failures.length > 0) {
   console.error('\nContract check failed:\n');

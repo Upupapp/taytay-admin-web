@@ -1,0 +1,118 @@
+# Hosting configuration for the MSWDO staff console.
+#
+# THIS FILE IS A SECURITY CONTROL, NOT DEPLOYMENT PLUMBING.
+#
+# The integration sweep recorded F-09: no hosting configuration of any kind existed in
+# this repository. That is not a gap in polish. ADR 0005 and ADR 0006 both name a strict
+# Content-Security-Policy among the mitigations for the XSS exposure that bearer-token
+# authentication carries, and the backend's own deployment topology states it plainly:
+#
+#   "If the policy below is not deployed, the residual risk both ADRs accepted is
+#    unmitigated, not merely undocumented."
+#
+# ADR 0006 holds the access token in memory precisely so that injected script cannot read
+# a persisted credential — but it can still read a variable. The CSP is what closes that,
+# so until this file is deployed the console's authentication model is unsound as
+# deployed, however correct the code is.
+#
+# It lives in the repository rather than in a dashboard so that it is reviewed like code:
+# a weakened directive shows up in a diff, where clicking one into a hosting console shows
+# up nowhere.
+#
+# ── Before this is used ──────────────────────────────────────────────────────────────
+#
+# Every `<approved-domain>` below is a placeholder and must be replaced with the real
+# hostnames. `npm run check:contract` fails a build whose `apiBaseUrl` still carries a
+# placeholder; nothing yet fails a build on a placeholder *here*, because this file is
+# read by the host and not by the bundler — so it is a line item on TAB 18's signed
+# configuration checklist instead.
+
+[build]
+  command = "npm run build"
+  publish = "dist/taytay-social-welfare/browser"
+
+# ── Single-page application routing ──────────────────────────────────────────────────
+#
+# Without this, every deep link 404s: a bookmarked case URL, and every link a caseworker
+# pastes to a colleague. The console owns its routes, so an unknown path is served the
+# shell and the router decides — including the 404 screen, which is a decision the
+# application makes rather than the host.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# ── Security headers ─────────────────────────────────────────────────────────────────
+#
+# Applied to every path. The CSP is the baseline from
+# `taytay-backend/docs/architecture/deployment-topology.md`, unchanged.
+#
+# `connect-src` names ONE API origin. Never a wildcard, and never the production API from
+# a staging or preview host — a preview that can reach production contradicts the whole
+# point of a preview.
+#
+# `style-src` deliberately does NOT carry 'unsafe-inline'. Angular emits component styles
+# as inline <style> blocks, and the sanctioned answer is `ngCspNonce` with a per-response
+# nonce (TAB 13). Adding 'unsafe-inline' here to make the build work is the exact silent
+# weakening the topology document warns against: it re-opens the injection path the whole
+# policy exists to close.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; connect-src 'self' https://api.<approved-domain>; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; upgrade-insecure-requests"
+
+    # A referrer carrying a case identifier to a third party is a personal-data leak.
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Content-Type-Options = "nosniff"
+
+    # Nothing here needs a camera, a microphone, a location or a payment handler. A
+    # console that cannot ask is a console that cannot be tricked into asking.
+    Permissions-Policy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+
+    # DELIBERATELY ABSENT: Strict-Transport-Security.
+    #
+    # HSTS cannot be undone from the server — a browser that has seen it will refuse
+    # plain HTTP for the whole max-age, and a certificate problem then locks the office
+    # out of its own console with no server-side remedy. It is added in TAB 13, AFTER the
+    # custom domain and certificate chain are confirmed, and that ordering is the
+    # decision rather than an oversight.
+
+# ── Caching ──────────────────────────────────────────────────────────────────────────
+#
+# The shell is never cached: a stale index.html pins a caseworker to an old bundle after
+# a release, including a release that fixed something.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-store, must-revalidate"
+
+# Hashed assets are immutable by construction — the filename changes when the content
+# does — so they are cached hard.
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# ── Deploy previews ──────────────────────────────────────────────────────────────────
+#
+# A preview gets a generated *.netlify.app origin. It must reach the STAGING API and
+# never production: anybody can create a site on that domain, so a preview trusted by the
+# production API would be a public front door to residents' records.
+[context.deploy-preview]
+  [context.deploy-preview.environment]
+    NG_APP_ENVIRONMENT = "staging"
+
+[[context.deploy-preview.headers]]
+  for = "/*"
+  [context.deploy-preview.headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; connect-src 'self' https://api-staging.<approved-domain>; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; upgrade-insecure-requests"
+
+    # Previews carry synthetic data and unreleased screens. Keeping them out of search
+    # results is not secrecy, it is not publishing a half-built welfare console under the
+    # municipality's name.
+    X-Robots-Tag = "noindex, nofollow"

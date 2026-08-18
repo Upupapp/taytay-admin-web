@@ -1041,3 +1041,62 @@ The four that are written share a property the three that are not do not have: *
 wire omits is either fixed by the endpoint's own contract, or is honestly absent.** None of them
 required the console to state something about a household, a family or a programme that nobody
 sent.
+
+---
+
+## TAB 13 (brought forward) — F-09 closed: the console now has a hosting configuration
+
+Brought forward out of order because it is a **precondition for any deployment**, and because
+until it exists the console's authentication model is unsound however correct the code is.
+
+The sweep recorded F-09: *no* hosting configuration of any kind — no `netlify.toml`, no
+`_headers`, no `_redirects`, no `Dockerfile`. ADR 0005 and ADR 0006 both name a strict
+Content-Security-Policy among the mitigations for the XSS exposure bearer tokens carry, and the
+backend's topology document is unambiguous: *"If the policy below is not deployed, the residual
+risk both ADRs accepted is unmitigated, not merely undocumented."*
+
+ADR 0006 holds the token in memory precisely so injected script cannot read a **persisted**
+credential — but it can still read a variable. The CSP is what closes that.
+
+### What was added
+
+| File | Why both |
+| --- | --- |
+| `netlify.toml` | Source of truth: CSP, companion headers, SPA fallback, cache policy, and a deploy-preview context pinned to the **staging** API |
+| `public/_headers`, `public/_redirects` | Ship **inside the bundle**, so the policy survives a host configured from a dashboard, or a move to a different static host |
+
+Both confirmed present in `dist/…/browser/` after a production build.
+
+### Three decisions worth stating
+
+- **No `'unsafe-inline'` in `style-src`.** Angular emits component styles as inline `<style>`
+  blocks, and the sanctioned answer is `ngCspNonce` with a per-response nonce. Adding
+  `'unsafe-inline'` to make the build work is the exact silent weakening the topology document
+  warns about — it re-opens the injection path the whole policy exists to close.
+- **`Strict-Transport-Security` is deliberately absent.** It cannot be undone from the server: a
+  browser that has seen it refuses plain HTTP for the whole `max-age`, so a certificate problem
+  locks the office out of its own console with no server-side remedy. It goes in **after** the
+  domain and certificate chain are confirmed, and the ordering is the decision.
+- **Deploy previews reach staging only, and carry `noindex`.** Anybody can create a site on a
+  shared hosting domain, so a preview trusted by the production API would be a public front door
+  to residents' records.
+
+### The rules, mutation-tested
+
+`check:contract` gains five, each proven against its own planted regression: `'unsafe-inline'`
+added, a wildcard `connect-src`, `frame-ancestors` dropped, HSTS set early, and the SPA fallback
+removed.
+
+**And it bit the same way twice.** The first version read this file's own comments as
+configuration — the paragraphs explaining the CSP and stating why HSTS is absent — and failed on
+its own documentation. Exactly the failure TAB 01 recorded when `check:contract` first tripped on
+the comment explaining `withCredentials`. A rule that fails on its own explanation teaches people
+to delete the explanation, so both checkers now strip comments and read only configuration.
+
+### Still not deployable, and this does not change that
+
+The `<approved-domain>` placeholders are real hostnames somebody must supply, and the backend's
+release gate remains **NO-GO** on blockers no engineering closes: no DPO holds `audit.view`, no
+approved retention schedule, and no backup has ever been restored. What changed is that the
+console is no longer *missing a control it depends on* — TAB 13's remaining work is verification
+against a deployed origin, which needs an origin.

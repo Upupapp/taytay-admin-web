@@ -1,0 +1,6 @@
+# SPA fallback, for a host that reads `_redirects` rather than `netlify.toml`.
+#
+# Without it every deep link 404s — a bookmarked case URL, and every link a caseworker
+# pastes to a colleague. 200 rather than 301: the shell is SERVED at the requested path,
+# so the router sees the real URL and the address bar keeps it.
+/*    /index.html   200
