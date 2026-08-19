@@ -45,8 +45,24 @@ export class SearchPage {
   protected readonly copy = SEARCH_COPY;
 
   /** The term, read from the URL rather than held privately. */
+  /**
+   * The term lives in a signal for this tab, and **never in the URL** (`DL-137`).
+   *
+   * It used to be a query parameter, which made a search shareable and bookmarkable and put a
+   * resident's name in the address bar — carried by a screenshot, by a pasted link, and into
+   * browser history, which outlives the session and belongs to the next person at that desk.
+   *
+   * `DL-110` already decided this for storage: *"there is no way to tell a safe query from an
+   * unsafe one — 'Dela Cruz' is a surname and also a street"*, so nothing is persisted. The URL is
+   * persistence; it was simply a surface that entry did not name.
+   *
+   * The cost is that a refresh clears the search. That is the same cost `DL-110` already accepted
+   * for the recent-terms list, and the screen says so.
+   */
+  protected readonly typedTerm = signal('');
+
   protected readonly term = toSignal(
-    this.route.queryParamMap.pipe(map((params) => params.get('q') ?? '')),
+    toObservable(this.typedTerm).pipe(map((value) => value)),
     { initialValue: '' },
   );
 
@@ -85,10 +101,8 @@ export class SearchPage {
     if (isSearchable(trimmed)) {
       this.recentTerms.update((existing) => addRecentSearch(existing, trimmed));
     }
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: trimmed === '' ? {} : { q: trimmed },
-    });
+    // Held in the tab, never navigated into the address bar. See `typedTerm` above.
+    this.typedTerm.set(trimmed);
   }
 
   protected clearRecent(): void {

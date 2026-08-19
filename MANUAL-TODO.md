@@ -271,3 +271,24 @@ are.
 - [ ] **Test degradation**: take Redis down, take the queue workers down, make object storage
       refuse, make the API slow. The console must say what is wrong and what the user can still do
       — never a spinner that never resolves.
+
+---
+
+## 🟩 TAB 16 — accessibility needs a person at a screen
+
+Automated checks catch roughly a third of accessibility issues. Contrast is computed and passing;
+these are the other two thirds.
+
+- [ ] **Keyboard-only walkthrough of the six core journeys** — every control reachable, focus
+      visible throughout, focus order matching reading order, Escape closing every overlay with
+      focus restored.
+- [ ] **Screen-reader walkthrough** with NVDA and one mobile reader — table semantics, form labels
+      and error association, status chips announced by meaning rather than colour.
+- [ ] **Zoom and real conditions** — 200% zoom at 320 CSS pixels wide, on an older monitor, in a
+      bright office, on the office's actual browser.
+- [ ] **The WCAG 2.2 additions** — focus not obscured, dragging alternatives, target size,
+      consistent help, and no redundant re-entry across the four-section intake flow.
+- [ ] **Review every user-facing string with the MSWDO** — status labels, errors, empty states,
+      confirmations, refusals. The office has its own vocabulary and the software should use it.
+- [ ] **Print the referral summary and the release manifest** — both leave the building on paper.
+      Confirm the print view carries the same field discipline as the screen.

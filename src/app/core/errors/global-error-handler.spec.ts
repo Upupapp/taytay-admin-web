@@ -94,4 +94,57 @@ describe('GlobalErrorHandler', () => {
     expect(message).not.toContain('SQLSTATE');
     expect(message).toContain('r1');
   });
+  it('names the field a validation failure was about', () => {
+    const { handler, notifications } = setUp();
+
+    handler.handleError(
+      new HttpErrorResponse({
+        status: 422,
+        error: {
+          error: {
+            code: 'VALIDATION_FAILED',
+            message: 'The given data was invalid.',
+            request_id: 'r2',
+            details: {
+              street_address: ['This field is required.'],
+              amount_centavos: ['Must be a whole number of centavos.'],
+            },
+          },
+        },
+      }),
+    );
+
+    const message = notifications.inbox()[0]?.body ?? '';
+
+    /*
+     * "The server responded with 422" tells a caseworker nothing, and neither does "the given data
+     * was invalid" on a screen with fourteen inputs.
+     */
+    expect(message).toContain('Street address');
+    expect(message).toContain('This field is required.');
+    expect(message).toContain('Amount centavos');
+    expect(message).toContain('r2');
+  });
+
+  it('uses the API\'s own wording rather than inventing guidance', () => {
+    const { handler, notifications } = setUp();
+
+    handler.handleError(
+      new HttpErrorResponse({
+        status: 422,
+        error: {
+          error: {
+            code: 'VALIDATION_FAILED',
+            message: 'invalid',
+            details: { reason: ['A deferral reason is the office\'s own, never the family\'s.'] },
+          },
+        },
+      }),
+    );
+
+    // Verbatim. A layer that rephrased these would be a second description of every validation
+    // rule in the system, drifting from the one that actually refuses.
+    expect(notifications.inbox()[0]?.body).toContain("A deferral reason is the office's own");
+  });
+
 });

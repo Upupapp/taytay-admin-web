@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ErrorHandler, inject, Injectable } from '@angular/core';
 
-import { readApiError } from '@core/http/api-failure';
+import { describeFailure, readApiError } from '@core/http/api-failure';
 import { APP_ENVIRONMENT } from '../config/app-environment.token';
 import { NotificationStore } from '../notifications/notification.store';
 
@@ -47,8 +47,16 @@ export class GlobalErrorHandler implements ErrorHandler {
       return base;
     }
 
-    const requestId = readApiError(error).requestId;
+    const failure = readApiError(error);
 
-    return requestId === null ? base : `${base} Quote reference ${requestId}.`;
+    /*
+     * A validation failure names its fields. `describeFailure` assembles the API's own per-field
+     * messages, so a form with one bad field says which one rather than saying that something,
+     * somewhere, was wrong.
+     */
+    const described = describeFailure(failure);
+    const body = described === failure.message ? base : described;
+
+    return failure.requestId === null ? body : `${body} Quote reference ${failure.requestId}.`;
   }
 }

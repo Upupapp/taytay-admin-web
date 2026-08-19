@@ -103,9 +103,30 @@ async function openSearch(
   id = 'staff-head',
 ): Promise<ComponentFixture<SearchPage>> {
   await configure(role, id);
-  await TestBed.inject(Router).navigateByUrl(term === '' ? '/search' : `/search?q=${term}`);
+  await TestBed.inject(Router).navigateByUrl('/search');
+
   const fixture = TestBed.createComponent(SearchPage);
   await fixture.whenStable();
+
+  /*
+   * Driven through the page rather than through the URL (`DL-137`).
+   *
+   * This used to navigate to `/search?q=…`, which is how the screen used to work — and putting a
+   * resident's name in the address bar is what that entry removed. The term now lives in a signal
+   * for the tab, so the test does what a caseworker does: type it and submit.
+   */
+  if (term !== '') {
+    const input = html(fixture).querySelector('input');
+
+    if (input !== null) {
+      input.value = term;
+      input.dispatchEvent(new Event('input'));
+    }
+
+    html(fixture).querySelector('form')?.dispatchEvent(new Event('submit'));
+    await fixture.whenStable();
+  }
+
   return fixture;
 }
 
@@ -287,9 +308,31 @@ describe('the search screen', () => {
     expect(summary).toMatch(/\d/);
   });
 
-  it('keeps the term in the URL so a search can be sent to a colleague', async () => {
-    await openSearch('mercado');
-    expect(TestBed.inject(Router).url).toContain('q=mercado');
+  it('never puts the term in the URL, because that is a name in the address bar', async () => {
+    /*
+     * `DL-137`, superseding the test this replaces.
+     *
+     * It used to read *"keeps the term in the URL so a search can be sent to a colleague"*, and
+     * the convenience is real. What it costs is a resident's name in the address bar — carried by
+     * a screenshot, by a pasted link, and into browser history, which outlives the session and
+     * belongs to the next person who sits at that desk.
+     *
+     * TAB 16's guardrail is explicit: *"Never put a resident's name in a page title, a browser tab
+     * or a URL that a screenshot or a shared link would carry."* And `DL-110` had already reached
+     * the same conclusion for storage — *"there is no way to tell a safe query from an unsafe one:
+     * 'Dela Cruz' is a surname and also a street"* — the URL was simply a surface that entry did
+     * not name.
+     *
+     * Nothing is lost but convenience: a colleague who needs the same person is staff with the
+     * same access, and can type the name themselves.
+     */
+    const fixture = await openSearch('mercado');
+
+    expect(TestBed.inject(Router).url).not.toContain('q=');
+    expect(TestBed.inject(Router).url).not.toContain('mercado');
+
+    // And the search still ran — the term lives in a signal for this tab.
+    expect(html(fixture).textContent).toContain('Mercado');
   });
 
   it('shows a hit as a name, a reference, a barangay and a status — nothing more', async () => {

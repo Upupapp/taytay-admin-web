@@ -264,17 +264,32 @@ if (!/export const MIN_SEARCH_LENGTH/.test(result)) {
       'with a filter box on top.',
   );
 }
+/*
+ * ── the term never reaches the URL (DL-137, superseding DL-36) ──────────────
+ *
+ * This rule used to enforce the OPPOSITE: that the term lived in `queryParamMap`, so a search
+ * could be sent to a colleague as a link and the back button would behave.
+ *
+ * TAB 16's guardrail overrules it — *"Never put a resident's name in a page title, a browser tab or
+ * a URL that a screenshot or a shared link would carry."* A search for `Dela Cruz` put that name in
+ * the address bar, in every screenshot, in every pasted link, and in browser history, which
+ * outlives the session and belongs to whoever sits at that desk next.
+ *
+ * `DL-110` had already decided this for storage. The URL is persistence; it was a surface that
+ * entry did not name.
+ */
 const searchPage = 'src/app/features/search/search-page.ts';
 if (existsSync(join(root, searchPage))) {
   const text = read(searchPage);
-  if (!/queryParamMap/.test(text)) {
+  if (/queryParams:\s*\{[^}]*\bq\b/.test(text) || /params\.get\('q'\)/.test(text)) {
     problems.push(
-      'The search term no longer lives in the URL. A search should be a link somebody can send a ' +
-        'colleague, and the back button should behave (DL-36).',
+      'The search term is written to the URL. That puts a resident\'s name in the address bar — ' +
+        'in every screenshot, in every pasted link, and in browser history, which outlives the ' +
+        'session and belongs to whoever sits at that desk next (DL-137, superseding DL-36).',
     );
   }
 }
-notes.push('term: held in the URL, short queries refused');
+notes.push('term: held in the tab and never in the URL, short queries refused');
 
 /* ── Report ──────────────────────────────────────────────────────────────── */
 

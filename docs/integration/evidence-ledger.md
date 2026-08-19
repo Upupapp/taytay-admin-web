@@ -1662,3 +1662,90 @@ browser will actually receive.
 
 **Step 9's CI half.** The checks exist and run in `npm run verify`; there is no CI to run them in,
 by the owner's decision. A header regression fails a local gate rather than a build.
+
+---
+
+## TAB 16 — accessibility, language and content
+
+*"Real names are longer than seed names, and a caseworker reads this screen forty times a day."*
+
+Most of this TAB needs a person at a screen — keyboard order, screen-reader announcements, an older
+monitor in a bright office. Three things did not, and one of them was a disclosure.
+
+### The search term was in the URL
+
+TAB 16's guardrail: *"Never put a resident's name in a page title, a browser tab or a URL that a
+screenshot or a shared link would carry."*
+
+The search screen wrote the term to `?q=`, and both a test and `check:search` enforced that
+deliberately, citing `DL-36`: *"A search should be a link somebody can send a colleague, and the
+back button should behave."*
+
+So a search for `Dela Cruz` put that name in the address bar — in every screenshot of that screen,
+in every pasted link, and in **browser history**, which outlives the session and belongs to whoever
+sits at that desk next. `DL-110` had already reached this conclusion for storage; the URL is
+persistence, and was simply a surface that entry did not name.
+
+Now held in a signal for the tab (`DL-137`). `DL-36` is **narrowed rather than overturned**: filter
+state stays in the URL, because a barangay, a status and a date range are office vocabulary that
+describe no individual. What is lost is a shareable search link — and the colleague is staff with
+the same access, who can type the name themselves.
+
+`check:search` now enforces the opposite of what it enforced, with the supersession written into
+the rule.
+
+### Field errors reached nobody
+
+Step 8: *"The server responded with 422 tells a caseworker nothing. It should name the field, say
+what is wrong, and say what to do — assembled from the API's [details], which TAB 01 made
+available."*
+
+TAB 01 made `details` available and **nothing ever read it**. A validation failure showed the
+envelope's generic sentence, so a form with one bad field said only that something was wrong, on a
+screen with fourteen inputs.
+
+`describeFailure` assembles them now, and **uses the API's wording verbatim**. Field names are
+humanised mechanically — `street_address` → "Street address" — because the wire name is the
+server's vocabulary; the *message* stays the server's, because a layer that rephrased it would be a
+second description of every validation rule in the system, drifting from the one that refuses.
+
+### Contrast, computed rather than eyeballed
+
+Twenty token pairs at WCAG 2.2 AA, and **all of them already passed** — the palette was sound.
+Mutation-tested against four regressions.
+
+**The first version of this check was wrong, and it is worth recording why.** It compared the
+luminance of the status tints and failed when two were within 0.01 — which fired immediately on a
+palette that is fine. Six pale background tints share a narrow luminance band by design; separating
+them enough to be told apart in greyscale would mean redesigning the palette to satisfy a rule
+stricter than WCAG, for no accessibility gain.
+
+WCAG 1.4.1 requires that colour is not the **only** means of conveying information, and `StatusBadge`
+renders `{{ label() }}` — every status is a word before it is a colour. The greyscale test is how
+you *demonstrate* that, not the thing itself. The check now asserts the label, which is what would
+actually break.
+
+### The Filipino question, decided
+
+**Not localised** (`DL-138`), and the reasoning is on the record. The mobile client speaks to
+residents, who are entitled to their own language; this console is used by staff who work in English
+— the forms, the DSWD issuances and the reports filed upward are all English, and a console saying
+*"Naipasa"* against a form saying *"Endorsed"* would add a translation step to every act.
+
+The deciding argument is the guardrail: *"Do not machine-translate welfare terminology. A
+mistranslated status is a mistranslated decision."* Words like `endorsed`, `deferred` and
+`unclaimed` were argued over in earlier commands; translating them is the MSWDO's decision about
+their own vocabulary.
+
+**Cheap to reverse**, which is why it can be taken now: every screen already reads its text from a
+`*.copy.ts` file, so adding a locale is a translation job rather than a rewrite.
+
+### Blocked — and it is most of the TAB
+
+Steps 1–6 in full: the audit against real data, the keyboard walkthrough, the screen-reader
+walkthrough with NVDA and a mobile reader, zoom to 200% at 320 CSS pixels, the office's actual
+hardware and browser, and the WCAG 2.2 additions. **Automated checks catch roughly a third of
+issues; the rest need a person**, and that person needs a running console against real data.
+
+Step 7, the string review with the MSWDO, and step 12, the print paths, are the same: they need the
+office.

@@ -771,6 +771,12 @@ looks identical to "none".
 
 ### DL-36 · Filter state lives in the URL, and travels into every drill-down
 
+> **Narrowed by `DL-137` (TAB 16).** Filter state still lives in the URL — a barangay, a status, a
+> date range are office vocabulary and describe no individual. **The search term does not**, because
+> it is frequently a resident's name, and a shareable link is that name in the address bar, in a
+> screenshot, and in browser history.
+
+
 **Status:** Settled (implemented in TAB 06).
 
 The dashboard filter (barangay, programme type, period) is read from query
@@ -3748,3 +3754,58 @@ names no mock class at all, and `data-access.providers.mock.ts` is selected only
 configuration. A production build cannot reach the mock because it never imports it.
 
 Production initial bundle after the change: **43 kB**.
+
+---
+
+## DL-137 — the search term never enters the URL
+
+TAB 16's guardrail: *"Never put a resident's name in a page title, a browser tab or a URL that a
+screenshot or a shared link would carry."*
+
+The search screen wrote the term to `?q=`, and a test asserted that deliberately: *"keeps the term
+in the URL so a search can be sent to a colleague."* The convenience is real and it is not worth
+what it costs.
+
+A search for `Dela Cruz` put that name in the address bar — in every screenshot of the screen, in
+every pasted link, and in **browser history**, which outlives the session and belongs to whoever
+sits at that desk next.
+
+`DL-110` had already reached this conclusion for storage: *"there is no way to tell a safe query
+from an unsafe one — 'Dela Cruz' is a surname and also a street"*, so nothing is persisted, and the
+recent-terms list lives in a signal for the tab. **The URL is persistence.** It was simply a
+surface that entry did not name.
+
+### What is lost, and why it is affordable
+
+A refresh clears the search, and a search cannot be sent to a colleague as a link. That is the same
+cost `DL-110` already accepted for the recent-terms list. And the colleague is staff with the same
+access: they can type the name themselves, which is one action and leaves no copy anywhere.
+
+## DL-138 — the console is not localised, and the reason is recorded
+
+TAB 16 step 9: *"Decide the Filipino question. One mobile client already localises. Decide whether
+the console does too, and if not, record why."*
+
+**Not localised. English only, for now.**
+
+* **The audience is different.** The mobile client speaks to residents, who are entitled to be
+  addressed in the language they use. This console is used by MSWDO staff, who work in English —
+  the forms, the DSWD issuances, the case files and the reports they file upward are all in
+  English, and a console that said *"Naipasa"* while the form said *"Endorsed"* would add a
+  translation step to every act rather than removing one.
+* **The guardrail is the deciding argument**: *"Do not machine-translate welfare terminology. A
+  mistranslated status is a mistranslated decision."* This vocabulary is the office's, and several
+  terms — `endorsed`, `deferred`, `unclaimed`, `superseded` — carry meanings that were argued over
+  in earlier commands. Translating them is an MSWDO decision about their own words, not an
+  engineering task, and doing it badly would put a wrong word on a record about a family.
+
+### What would change the answer
+
+A barangay focal person or an encoder who works in Filipino. That is a real possibility, and the
+command's instruction is to *"extract strings before launch rather than retrofitting after"* if the
+answer is yes.
+
+**The strings are already extracted**, which is the part that costs money later: every screen reads
+its text from a `*.copy.ts` file rather than holding it inline. Adding a locale is a translation
+job and a lookup, not a rewrite — so this decision is cheap to reverse, which is why it can be
+taken now rather than deferred.

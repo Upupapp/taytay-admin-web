@@ -133,3 +133,50 @@ function readRetryAfter(error: HttpErrorResponse): number | null {
 
   return Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
 }
+
+/**
+ * Turns a failure into a sentence a caseworker can act on.
+ *
+ * `TAB 16` step 8: *"The server responded with 422 tells a caseworker nothing. It should name the
+ * field, say what is wrong, and say what to do — assembled from the API's [details], which TAB 01
+ * made available."*
+ *
+ * TAB 01 made `details` available and **nothing ever read it**. A validation failure showed the
+ * envelope's generic sentence, so a form with one bad field said only that something was wrong,
+ * on a screen with fourteen inputs.
+ *
+ * ## What it will not do
+ *
+ * It does not invent guidance. The API's messages are written for a person and are used verbatim;
+ * this only assembles them and names the field they belong to. A layer that rephrased them would
+ * be a second description of every validation rule in the system, drifting from the one that
+ * actually refuses.
+ *
+ * Field names are humanised (`street_address` → "Street address") because the wire name is the
+ * server's vocabulary, not the office's — but the *message* stays the server's, because that is
+ * the sentence somebody wrote about that rule.
+ */
+export function describeFailure(failure: ApiFailure): string {
+  const fields = Object.entries(failure.details ?? {});
+
+  if (fields.length === 0) {
+    return failure.message;
+  }
+
+  return fields
+    .map(([field, messages]) => `${humaniseField(field)}: ${messages.join(' ')}`)
+    .join('\n');
+}
+
+/**
+ * `acknowledged_by_name` → `Acknowledged by name`.
+ *
+ * Deliberately mechanical rather than a lookup table. A table of nice names for every field in the
+ * system is a table that goes stale silently — a renamed field keeps its old label and nobody
+ * notices, because the label still reads fine.
+ */
+function humaniseField(field: string): string {
+  const words = field.replace(/[._]/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
+
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
