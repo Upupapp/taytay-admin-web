@@ -148,4 +148,21 @@ describe('NotificationStore', () => {
     store.info('Saved');
     expect(store.toasts()[0]?.autoDismissMs).toBe(DEFAULT_TOAST_DISMISS_MS);
   });
+  /**
+   * `DL-135` — TAB 11 step 10. Nothing polls, and nothing claims to be live.
+   *
+   * A recurring request from every open tab against a shared municipal API is a cost somebody
+   * pays; a five-second one called "real time" is that cost plus a false promise.
+   */
+  it('never starts a background poll for the inbox', () => {
+    const setInterval = vi.spyOn(globalThis, 'setInterval');
+
+    const { store } = setUp();
+    store.refresh();
+
+    expect(setInterval).not.toHaveBeenCalled();
+
+    setInterval.mockRestore();
+  });
+
 });

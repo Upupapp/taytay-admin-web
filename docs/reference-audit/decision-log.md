@@ -3664,3 +3664,43 @@ happened and what the feed should say happened.
 
 Everything else in `DL-124` stands: no unpublish, no retract, no unsend, and the warning shown
 **before** the publish button rather than as a confirmation after.
+
+---
+
+## DL-135 — the inbox is fetched on demand; nothing polls, and nothing claims to be live
+
+TAB 11 step 10: *"Decide the delivery mechanism honestly: poll on a stated interval, or subscribe.
+Do not implement a five-second poll against a shared API and call it real time."*
+
+**The decision is neither: on demand.** `NotificationStore.refresh()` runs when the inbox drawer is
+opened, and at no other time. There is no interval, no subscription, and no background request.
+The only timers in the store dismiss toasts.
+
+### Why that is honest rather than lazy
+
+The console **shows no unread badge**. `unreadCount` exists and is used for exactly one thing —
+disabling *Mark all read* inside the drawer that has just been loaded. Nothing in the shell
+advertises a number that would have to be kept current.
+
+That is what makes on-demand correct. A badge is a **freshness claim**: a "3" sitting in the corner
+tells a caseworker there are three things waiting, and if it is only recomputed when they open the
+drawer, it is a claim the system cannot keep. Polling to support a badge nobody asked for would put
+a recurring request from every open tab against a shared municipal API for a feature that does not
+exist.
+
+### What it costs, said plainly
+
+A notification raised **by the server** — a case assigned to you, a referral gone overdue — is not
+seen until somebody opens the inbox. Notifications this console raises itself still appear
+immediately as toasts, because they never travelled.
+
+That is a real limitation and it is the right one for now: this is an admin console used by people
+sitting at the screen doing the work, not a paging system. `DL-96` already draws the line — a
+notification is *something that happened*, and a work item is *something you must do*. Anything
+genuinely owed to somebody belongs in their work queue, which is a screen they open deliberately.
+
+### The condition for revisiting
+
+**If a badge is ever added, this decision must be revisited in the same change.** A badge without a
+stated refresh interval is the dishonesty the command names; a badge with one is a poll, and the
+interval then has to be chosen against real load and written down here.
