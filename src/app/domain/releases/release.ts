@@ -98,7 +98,18 @@ export const RELEASE_STATUS_CATALOG: StatusCatalog<ReleaseStatus> = {
 export const RELEASE_STATUS_TRANSITIONS: StatusTransitions<ReleaseStatus> = {
   'for-release': ['scheduled', 'needs-correction', 'voided'],
   scheduled: ['released', 'deferred', 'unclaimed', 'needs-correction', 'voided'],
-  released: ['claimed', 'unclaimed'],
+  /*
+   * ONE WAY OUT, AND IT IS NOT BACKWARDS (`DL-133`).
+   *
+   * `released` means "funds or goods issued by the disbursing officer" — the money has moved. It
+   * used to lead to `unclaimed`, which by this catalog's own definition means "not collected", and
+   * `unclaimed` leads back to `scheduled`. So an issued payout could return to a payout list, and
+   * that is the exact shape in which a family is paid twice.
+   *
+   * `unclaimed` is reachable from `scheduled`, which is where it belongs: nobody came to collect
+   * something that had not yet been handed over. Nothing legitimate is lost.
+   */
+  released: ['claimed'],
   claimed: ['completed'],
   unclaimed: ['scheduled', 'voided'],
   // Both recoverable: a deferred payout goes back on a schedule once the

@@ -359,3 +359,41 @@ describe('segregation of duties', () => {
     expect(SELF_RELEASE_WARNING).not.toContain('cannot');
   });
 });
+
+/* ── TAB 08: money that has moved cannot move back ──────────────────────────── */
+
+describe('a released payout cannot return to a payout list', () => {
+  /**
+   * The command: *"A released record cannot be rewound; confirm the console offers no control
+   * that implies otherwise."*
+   *
+   * It did. `released` led to `unclaimed`, and `unclaimed` leads back to `scheduled` — so a payout
+   * this catalog describes as "funds or goods issued by the disbursing officer" could rejoin a
+   * payout list. That is the shape in which a family is paid twice, and it was reachable from the
+   * release detail screen.
+   */
+  it('offers no transition out of released except acknowledgement', () => {
+    expect(RELEASE_STATUS_TRANSITIONS.released).toEqual(['claimed']);
+  });
+
+  it('cannot reach a pre-release state from any state where money has moved', () => {
+    const beforeMoneyMoves: readonly ReleaseStatus[] = [
+      'for-release',
+      'scheduled',
+      'needs-correction',
+    ];
+
+    for (const status of ['released', 'claimed', 'completed'] as const) {
+      for (const next of RELEASE_STATUS_TRANSITIONS[status]) {
+        expect(beforeMoneyMoves).not.toContain(next);
+      }
+    }
+  });
+
+  it('still lets an uncollected payout be rescheduled, because nothing was handed over', () => {
+    // `unclaimed` is reachable from `scheduled` and returns there. Removing the rewind above cost
+    // the office nothing it legitimately does.
+    expect(RELEASE_STATUS_TRANSITIONS.scheduled).toContain('unclaimed');
+    expect(RELEASE_STATUS_TRANSITIONS.unclaimed).toContain('scheduled');
+  });
+});
