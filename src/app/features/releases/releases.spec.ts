@@ -6,11 +6,11 @@ import { firstValueFrom, of, type Observable } from 'rxjs';
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
-import { MockDisbursementRepository } from '@data/mock/mock-disbursement.repository';
+import { MockReleaseRepository } from '@data/mock/mock-release.repository';
 import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
 import {
   ACCESS_CONTEXT,
-  DISBURSEMENT_REPOSITORY,
+  RELEASE_REPOSITORY,
   NOTIFICATION_REPOSITORY,
   STAFF_REPOSITORY,
   asId,
@@ -52,7 +52,7 @@ const RELEASED = 'dsb-0009';
 /** Approved by `staff-head`, so signing in as that person is a self-release. */
 const APPROVED_BY_HEAD = 'dsb-0001';
 
-function staffUser(role: StaffRole, id = 'staff-disbursement'): StaffUser {
+function staffUser(role: StaffRole, id = 'staff-release'): StaffUser {
   return {
     id: asId<StaffUserId>(id),
     name: { first: 'Test', middle: null, last: 'User', suffix: null },
@@ -100,7 +100,7 @@ async function configure(user: StaffUser): Promise<void> {
       { provide: APP_ENVIRONMENT, useValue: TEST_ENVIRONMENT },
       { provide: ACCESS_CONTEXT, useExisting: SessionState },
       { provide: STAFF_REPOSITORY, useValue: staffRepository(user) },
-      { provide: DISBURSEMENT_REPOSITORY, useClass: MockDisbursementRepository },
+      { provide: RELEASE_REPOSITORY, useClass: MockReleaseRepository },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
     ],
   });
@@ -108,7 +108,7 @@ async function configure(user: StaffUser): Promise<void> {
 }
 
 async function openList(
-  role: StaffRole = 'disbursement-officer',
+  role: StaffRole = 'release-officer',
 ): Promise<ComponentFixture<ReleaseListPage>> {
   await configure(staffUser(role));
   await TestBed.inject(Router).navigateByUrl('/releases');
@@ -119,7 +119,7 @@ async function openList(
 
 async function openDetail(
   id: string,
-  user: StaffUser = staffUser('disbursement-officer'),
+  user: StaffUser = staffUser('release-officer'),
 ): Promise<ComponentFixture<ReleaseDetailPage>> {
   await configure(user);
   await TestBed.inject(Router).navigateByUrl(`/releases/${id}`);
@@ -130,7 +130,7 @@ async function openDetail(
 }
 
 async function openSessions(
-  role: StaffRole = 'disbursement-officer',
+  role: StaffRole = 'release-officer',
 ): Promise<ComponentFixture<PayoutSessionPage>> {
   await configure(staffUser(role));
   await TestBed.inject(Router).navigateByUrl('/releases/sessions');

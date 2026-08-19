@@ -288,7 +288,7 @@ describe('what reaches a queue', () => {
   });
 
   it('gives the disbursing officer the releases and not the intakes', async () => {
-    const fixture = await openQueue('disbursement-officer', 'staff-disbursement');
+    const fixture = await openQueue('release-officer', 'staff-release');
     const page = fixture.componentInstance as unknown as {
       items: () => readonly { readonly source: string }[];
     };

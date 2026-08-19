@@ -65,7 +65,7 @@ import {
 
 import { MOCK_ASSISTANCE_REQUESTS, MOCK_REQUEST_NOTES } from './seed/assistance-requests.seed';
 import { MOCK_DOCUMENT_REQUESTS } from './seed/document-requests.seed';
-import { MOCK_DISBURSEMENTS } from './seed/disbursements.seed';
+import { MOCK_DISBURSEMENTS } from './seed/releases.seed';
 import { MOCK_PROGRAMS } from './seed/programs.seed';
 import { denyUnless } from './mock-access';
 import { MockCaseStore } from './mock-case.store';
@@ -161,7 +161,7 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     reason: string | null,
   ): Observable<AssistanceRequest> {
     // The action is refused here as well as hidden in the UI. Approving is
-    // gated on `request.approve` and releasing on `disbursement.release`, which
+    // gated on `request.approve` and releasing on `release.release`, which
     // is what keeps DL-08 true even if a button is somehow reachable.
     const denied = denyUnless<AssistanceRequest>(
       this.access.currentUser(),

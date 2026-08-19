@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 
 import {
   ASSISTANCE_STATUS_CATALOG,
-  DISBURSEMENT_STATUS_CATALOG,
+  RELEASE_STATUS_CATALOG,
   ENROLLMENT_STATUS_CATALOG,
   REFERRAL_STATUS_CATALOG,
   TIMELINE_EVENT_KIND_LABELS,
@@ -103,8 +103,8 @@ export class AssistanceHistoryTimeline {
     switch (entry.status.catalog) {
       case 'request':
         return ASSISTANCE_STATUS_CATALOG[entry.status.value];
-      case 'disbursement':
-        return DISBURSEMENT_STATUS_CATALOG[entry.status.value];
+      case 'release':
+        return RELEASE_STATUS_CATALOG[entry.status.value];
       case 'referral':
         return REFERRAL_STATUS_CATALOG[entry.status.value];
       case 'enrollment':

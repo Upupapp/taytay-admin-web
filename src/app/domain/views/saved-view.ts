@@ -15,7 +15,7 @@ export type SavedViewResource =
   | 'residents'
   | 'beneficiaries'
   | 'assistance-requests'
-  | 'disbursements'
+  | 'releases'
   | 'cases'
   | 'households';
 
@@ -23,7 +23,7 @@ export const SAVED_VIEW_RESOURCES: readonly SavedViewResource[] = [
   'residents',
   'beneficiaries',
   'assistance-requests',
-  'disbursements',
+  'releases',
   'cases',
   'households',
 ];
@@ -37,7 +37,7 @@ export const SAVED_VIEW_PERMISSIONS: Readonly<Record<SavedViewResource, Permissi
   residents: 'resident.view',
   beneficiaries: 'beneficiary.view',
   'assistance-requests': 'request.view',
-  disbursements: 'disbursement.view',
+  releases: 'release.view',
   cases: 'case.view',
   households: 'household.view',
 };

@@ -107,7 +107,7 @@ describe('the registry redacts on the way out, not in the template', () => {
   it('withholds the identity tier from a payout role', async () => {
     // A disbursing officer needs to know a person exists and what was paid.
     // They do not need the identity number to hand over an envelope.
-    signedInAs(authenticated('disbursement-officer'));
+    signedInAs(authenticated('release-officer'));
     const view = await firstValueFrom(repo().getById(asId<ResidentId>('res-0001')));
     expect(view?.resident.philsysLastFour).toBeNull();
     expect(view?.withheld).toContain('philsysLastFour');
@@ -198,7 +198,7 @@ describe('one call answers "who is this, and what have we done for them?"', () =
   });
 
   it('discloses family members under the same policy as the subject', async () => {
-    signedInAs(authenticated('disbursement-officer'));
+    signedInAs(authenticated('release-officer'));
     const profile = await firstValueFrom(repo().getProfile(FAMILY_HEAD));
     for (const member of profile?.householdMembers ?? []) {
       expect(member.view.resident.monthlyIncome).toBeNull();

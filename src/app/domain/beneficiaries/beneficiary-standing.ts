@@ -1,5 +1,5 @@
 import type { AssistanceRequestStatus } from '../assistance/assistance-request';
-import type { DisbursementStatus } from '../disbursements/disbursement';
+import type { ReleaseStatus } from '../releases/release';
 import type { ProgramEnrollment } from './program-enrollment';
 import { isCurrentEnrollment } from './program-enrollment';
 
@@ -70,7 +70,7 @@ const OPEN_REQUEST_STATUSES: readonly AssistanceRequestStatus[] = [
  * the money went back in the drawer, and not `deferred`, where the family came
  * and the office could not pay.
  */
-const RECEIVED_DISBURSEMENT_STATUSES: readonly DisbursementStatus[] = [
+const RECEIVED_DISBURSEMENT_STATUSES: readonly ReleaseStatus[] = [
   'released',
   'claimed',
   'completed',
@@ -80,7 +80,7 @@ export function isOpenRequestStatus(status: AssistanceRequestStatus): boolean {
   return OPEN_REQUEST_STATUSES.includes(status);
 }
 
-export function isReceivedDisbursementStatus(status: DisbursementStatus): boolean {
+export function isReceivedReleaseStatus(status: ReleaseStatus): boolean {
   return RECEIVED_DISBURSEMENT_STATUSES.includes(status);
 }
 
@@ -88,7 +88,7 @@ export function isReceivedDisbursementStatus(status: DisbursementStatus): boolea
 export interface StandingEvidence {
   readonly openRequestCount: number;
   readonly settledRequestCount: number;
-  readonly receivedDisbursementCount: number;
+  readonly receivedReleaseCount: number;
   readonly currentEnrollmentCount: number;
   readonly pastEnrollmentCount: number;
 }
@@ -101,7 +101,7 @@ export interface BeneficiaryStanding {
 
 export interface StandingInput {
   readonly requestStatuses: readonly AssistanceRequestStatus[];
-  readonly disbursementStatuses: readonly DisbursementStatus[];
+  readonly releaseStatuses: readonly ReleaseStatus[];
   readonly enrollments: readonly ProgramEnrollment[];
 }
 
@@ -119,8 +119,8 @@ export interface StandingInput {
 export function deriveStanding(input: StandingInput): BeneficiaryStanding {
   const openRequestCount = input.requestStatuses.filter(isOpenRequestStatus).length;
   const settledRequestCount = input.requestStatuses.length - openRequestCount;
-  const receivedDisbursementCount = input.disbursementStatuses.filter(
-    isReceivedDisbursementStatus,
+  const receivedReleaseCount = input.releaseStatuses.filter(
+    isReceivedReleaseStatus,
   ).length;
   const currentEnrollmentCount = input.enrollments.filter(isCurrentEnrollment).length;
   const pastEnrollmentCount = input.enrollments.length - currentEnrollmentCount;
@@ -129,7 +129,7 @@ export function deriveStanding(input: StandingInput): BeneficiaryStanding {
   if (openRequestCount > 0) {
     roles.push('applicant');
   }
-  if (receivedDisbursementCount > 0) {
+  if (receivedReleaseCount > 0) {
     roles.push('beneficiary');
   }
   if (currentEnrollmentCount > 0) {
@@ -141,7 +141,7 @@ export function deriveStanding(input: StandingInput): BeneficiaryStanding {
     evidence: {
       openRequestCount,
       settledRequestCount,
-      receivedDisbursementCount,
+      receivedReleaseCount,
       currentEnrollmentCount,
       pastEnrollmentCount,
     },

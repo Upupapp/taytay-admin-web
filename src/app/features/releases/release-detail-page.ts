@@ -10,9 +10,9 @@ import { NotificationStore } from '@core/notifications/notification.store';
 import {
   ACKNOWLEDGEMENT_KIND_LABELS,
   DEFERRAL_REASON_LABELS,
-  DISBURSEMENT_REPOSITORY,
-  DISBURSEMENT_STATUS_CATALOG,
-  DISBURSEMENT_STATUS_TRANSITIONS,
+  RELEASE_REPOSITORY,
+  RELEASE_STATUS_CATALOG,
+  RELEASE_STATUS_TRANSITIONS,
   RELEASE_KIND_LABELS,
   SELF_RELEASE_WARNING,
   asId,
@@ -20,8 +20,8 @@ import {
   isSelfRelease,
   type AcknowledgementKind,
   type DeferralReason,
-  type Disbursement,
-  type DisbursementId,
+  type Release,
+  type ReleaseId,
   type StaffUserId,
 } from '@domain/index';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
@@ -53,7 +53,7 @@ import { RELEASES_COPY } from './releases.copy';
   styleUrl: './release-detail-page.scss',
 })
 export class ReleaseDetailPage {
-  private readonly repository = inject(DISBURSEMENT_REPOSITORY);
+  private readonly repository = inject(RELEASE_REPOSITORY);
   private readonly notifications = inject(NotificationStore);
   private readonly permissions = inject(PermissionService);
   private readonly session = inject(SessionStore);
@@ -61,7 +61,7 @@ export class ReleaseDetailPage {
   readonly id = input.required<string>();
 
   protected readonly copy = RELEASES_COPY.detail;
-  protected readonly statusCatalog = DISBURSEMENT_STATUS_CATALOG;
+  protected readonly statusCatalog = RELEASE_STATUS_CATALOG;
   protected readonly selfReleaseWarning = SELF_RELEASE_WARNING;
 
   protected readonly deferralReasons = Object.keys(
@@ -76,9 +76,9 @@ export class ReleaseDetailPage {
 
   protected readonly state = toSignal(
     toObservable(computed(() => ({ id: this.id(), nonce: this.reloads() }))).pipe(
-      switchMap((query) => toViewState(this.repository.getById(asId<DisbursementId>(query.id)))),
+      switchMap((query) => toViewState(this.repository.getById(asId<ReleaseId>(query.id)))),
     ),
-    { initialValue: LOADING as ViewState<Disbursement | null> },
+    { initialValue: LOADING as ViewState<Release | null> },
   );
 
   protected readonly release = computed(() => valueOf(this.state()) ?? null);
@@ -86,12 +86,12 @@ export class ReleaseDetailPage {
   /** Who approved the request behind this release. Read, never assumed. */
   protected readonly approver = toSignal(
     toObservable(computed(() => this.id())).pipe(
-      switchMap((id) => this.repository.approverFor(asId<DisbursementId>(id))),
+      switchMap((id) => this.repository.approverFor(asId<ReleaseId>(id))),
     ),
     { initialValue: null as StaffUserId | null },
   );
 
-  protected readonly canRelease = computed(() => this.permissions.has('disbursement.release'));
+  protected readonly canRelease = computed(() => this.permissions.has('release.release'));
 
   protected readonly wouldSelfRelease = computed(() => {
     const me = this.session.user()?.id ?? null;
@@ -103,7 +103,7 @@ export class ReleaseDetailPage {
     return (
       release !== null &&
       this.canRelease() &&
-      canTransition(DISBURSEMENT_STATUS_TRANSITIONS, release.status, 'released')
+      canTransition(RELEASE_STATUS_TRANSITIONS, release.status, 'released')
     );
   });
 
@@ -112,7 +112,7 @@ export class ReleaseDetailPage {
     return (
       release !== null &&
       this.canRelease() &&
-      canTransition(DISBURSEMENT_STATUS_TRANSITIONS, release.status, 'claimed')
+      canTransition(RELEASE_STATUS_TRANSITIONS, release.status, 'claimed')
     );
   });
 
@@ -121,11 +121,11 @@ export class ReleaseDetailPage {
     return (
       release !== null &&
       this.canRelease() &&
-      canTransition(DISBURSEMENT_STATUS_TRANSITIONS, release.status, 'deferred')
+      canTransition(RELEASE_STATUS_TRANSITIONS, release.status, 'deferred')
     );
   });
 
-  protected kindLabel(release: Disbursement): string {
+  protected kindLabel(release: Release): string {
     return RELEASE_KIND_LABELS[release.kind];
   }
 
@@ -156,7 +156,7 @@ export class ReleaseDetailPage {
     }
     await this.run(
       this.repository.markReleased(
-        asId<DisbursementId>(this.id()),
+        asId<ReleaseId>(this.id()),
         this.instrument().trim() || null,
         this.releaseRemarks().trim() || null,
       ),
@@ -206,7 +206,7 @@ export class ReleaseDetailPage {
       return;
     }
     await this.run(
-      this.repository.acknowledge(asId<DisbursementId>(this.id()), {
+      this.repository.acknowledge(asId<ReleaseId>(this.id()), {
         kind: this.ackKind(),
         collectedBy: this.collectedBy().trim() || null,
         authority: this.authority().trim() || null,
@@ -242,7 +242,7 @@ export class ReleaseDetailPage {
     }
     await this.run(
       this.repository.deferRelease(
-        asId<DisbursementId>(this.id()),
+        asId<ReleaseId>(this.id()),
         this.deferReason(),
         this.deferRemarks(),
       ),

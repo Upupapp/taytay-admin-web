@@ -119,7 +119,7 @@ describe('the case lifecycle', () => {
   });
 
   it('gives no case permission at all to the roles that do not do casework', () => {
-    for (const role of ['barangay-link', 'disbursement-officer'] as const) {
+    for (const role of ['barangay-link', 'release-officer'] as const) {
       for (const permission of ROLE_DEFINITIONS[role].permissions) {
         expect(permission.startsWith('case.')).toBe(false);
       }

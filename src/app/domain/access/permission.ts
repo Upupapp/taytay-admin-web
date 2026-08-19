@@ -90,10 +90,10 @@ export const PERMISSIONS = [
   // characters. Separate again, because a number is disclosive on its own.
   'document.view-full-number',
 
-  'disbursement.view',
-  'disbursement.schedule',
-  'disbursement.release',
-  'disbursement.void',
+  'release.view',
+  'release.schedule',
+  'release.release',
+  'release.void',
 
   'referral.view',
   'referral.manage',
@@ -198,7 +198,7 @@ export type StaffRole =
   | 'mswdo-head'
   | 'social-worker'
   | 'intake-officer'
-  | 'disbursement-officer'
+  | 'release-officer'
   | 'barangay-link'
   | 'auditor';
 
@@ -285,9 +285,9 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'request.reject',
       'request.schedule',
       'request.close',
-      'disbursement.view',
-      'disbursement.schedule',
-      'disbursement.void',
+      'release.view',
+      'release.schedule',
+      'release.void',
       'report.export-person-level',
       'audit.view',
       'staff.view',
@@ -346,9 +346,9 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
     scope: 'all-barangays',
     permissions: INTAKE_PERMISSIONS,
   },
-  'disbursement-officer': {
-    role: 'disbursement-officer',
-    label: 'Disbursement officer',
+  'release-officer': {
+    role: 'release-officer',
+    label: 'Release officer',
     description: 'Schedules payouts and releases approved assistance.',
     scope: 'all-barangays',
     // No case access at all. A payout is authorised by the approved request in
@@ -360,9 +360,9 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'family.view',
       'program.view',
       'request.view',
-      'disbursement.view',
-      'disbursement.schedule',
-      'disbursement.release',
+      'release.view',
+      'release.schedule',
+      'release.release',
       'report.view',
     ],
   },
@@ -407,7 +407,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       // would let oversight alter the very identities it is checking.
       'beneficiary.view',
       'document.download',
-      'disbursement.view',
+      'release.view',
       'referral.view',
       'report.view',
       'report.export-person-level',

@@ -32,7 +32,7 @@ describe('role definitions', () => {
       'resident.update',
       'program.manage',
       'request.approve',
-      'disbursement.release',
+      'release.release',
       'staff.manage',
       'settings.manage',
     ];
@@ -55,7 +55,7 @@ describe('role definitions', () => {
       }
       const permissions = permissionsForRole(role);
       const canApprove = permissions.includes('request.approve');
-      const canRelease = permissions.includes('disbursement.release');
+      const canRelease = permissions.includes('release.release');
       expect(canApprove && canRelease).toBe(false);
     }
   });

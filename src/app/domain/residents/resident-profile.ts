@@ -1,9 +1,9 @@
 import type { AssistanceRequestStatus } from '../assistance/assistance-request';
-import type { DisbursementStatus, PayoutMethod } from '../disbursements/disbursement';
+import type { ReleaseStatus, PayoutMethod } from '../releases/release';
 import type { ReferralDestination, ReferralStatus } from '../referrals/referral';
 import type {
   AssistanceRequestId,
-  DisbursementId,
+  ReleaseId,
   IsoDate,
   IsoDateTime,
   ProgramId,
@@ -38,10 +38,10 @@ export interface ResidentCaseSummary {
 }
 
 export interface ResidentPayoutSummary {
-  readonly id: DisbursementId;
+  readonly id: ReleaseId;
   readonly requestId: AssistanceRequestId;
   readonly referenceNumber: string;
-  readonly status: DisbursementStatus;
+  readonly status: ReleaseStatus;
   readonly method: PayoutMethod;
   /** `null` for an in-kind release: goods are counted, never valued (`DL-93`). */
   readonly amount: Money | null;

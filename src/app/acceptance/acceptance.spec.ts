@@ -10,7 +10,7 @@ import {
   ASSISTANCE_REQUEST_REPOSITORY,
   BENEFICIARY_REPOSITORY,
   CASE_REPOSITORY,
-  DISBURSEMENT_REPOSITORY,
+  RELEASE_REPOSITORY,
   FAMILY_REPOSITORY,
   GOVERNANCE_REPOSITORY,
   HOUSEHOLD_REPOSITORY,
@@ -249,7 +249,7 @@ describe('scenario: approved assistance becomes a release', () => {
   it('ties every release to a request and a resident that both exist', async () => {
     await signedInAs('system-administrator');
     const releases = await firstValueFrom(
-      TestBed.inject(DISBURSEMENT_REPOSITORY).list({}, PAGE),
+      TestBed.inject(RELEASE_REPOSITORY).list({}, PAGE),
     );
     const residents = TestBed.inject(RESIDENT_REPOSITORY);
     const requests = TestBed.inject(ASSISTANCE_REQUEST_REPOSITORY);
@@ -266,7 +266,7 @@ describe('scenario: approved assistance becomes a release', () => {
   it('keeps money and goods apart on every record', async () => {
     await signedInAs('system-administrator');
     const releases = await firstValueFrom(
-      TestBed.inject(DISBURSEMENT_REPOSITORY).list({}, PAGE),
+      TestBed.inject(RELEASE_REPOSITORY).list({}, PAGE),
     );
 
     // `DL-93`: an in-kind release carries a description and no amount.

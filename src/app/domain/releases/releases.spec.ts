@@ -1,6 +1,6 @@
 import {
-  DISBURSEMENT_STATUS_CATALOG,
-  DISBURSEMENT_STATUS_TRANSITIONS,
+  RELEASE_STATUS_CATALOG,
+  RELEASE_STATUS_TRANSITIONS,
   MANIFEST_NOTICE,
   SELF_RELEASE_WARNING,
   asId,
@@ -11,16 +11,16 @@ import {
   canTransition,
   composeManifest,
   describeBatch,
-  disbursementProblems,
+  releaseProblems,
   isReleaseOpen,
   isReleased,
   isSelfRelease,
   maskReference,
   pesos,
   sumReleased,
-  type Disbursement,
-  type DisbursementId,
-  type DisbursementStatus,
+  type Release,
+  type ReleaseId,
+  type ReleaseStatus,
   type ReleaseBatchDraft,
   type ResidentId,
   type ResidentView,
@@ -28,12 +28,12 @@ import {
 } from '@domain/index';
 
 const TODAY = asIsoDate('2026-08-01');
-const OFFICER = asId<StaffUserId>('staff-disbursement');
+const OFFICER = asId<StaffUserId>('staff-release');
 const HEAD = asId<StaffUserId>('staff-head');
 
-function release(overrides: Partial<Disbursement> = {}): Disbursement {
+function release(overrides: Partial<Release> = {}): Release {
   return {
-    id: asId<DisbursementId>('dsb-1'),
+    id: asId<ReleaseId>('dsb-1'),
     requestId: asId('req-1'),
     residentId: asId<ResidentId>('res-0001'),
     referenceNumber: 'DV-2026-00311',
@@ -98,28 +98,28 @@ function beneficiary(): ResidentView {
 
 describe('the release lifecycle', () => {
   it('keeps every status in the catalog and the transition map', () => {
-    for (const status of Object.keys(DISBURSEMENT_STATUS_CATALOG) as DisbursementStatus[]) {
-      expect(DISBURSEMENT_STATUS_TRANSITIONS[status]).toBeDefined();
+    for (const status of Object.keys(RELEASE_STATUS_CATALOG) as ReleaseStatus[]) {
+      expect(RELEASE_STATUS_TRANSITIONS[status]).toBeDefined();
     }
   });
 
   it('separates a deferral from an unclaimed payout, in words', () => {
     // One is the office's failing and one is not, and recording them the same
     // way blames a household for a missing countersignature.
-    expect(DISBURSEMENT_STATUS_CATALOG.deferred.description).toContain('against the office');
-    expect(DISBURSEMENT_STATUS_CATALOG.unclaimed.description).toContain('Not collected');
+    expect(RELEASE_STATUS_CATALOG.deferred.description).toContain('against the office');
+    expect(RELEASE_STATUS_CATALOG.unclaimed.description).toContain('Not collected');
   });
 
   it('lets a deferred or corrected release go back on a schedule', () => {
-    expect(canTransition(DISBURSEMENT_STATUS_TRANSITIONS, 'deferred', 'scheduled')).toBe(true);
-    expect(canTransition(DISBURSEMENT_STATUS_TRANSITIONS, 'needs-correction', 'scheduled')).toBe(
+    expect(canTransition(RELEASE_STATUS_TRANSITIONS, 'deferred', 'scheduled')).toBe(true);
+    expect(canTransition(RELEASE_STATUS_TRANSITIONS, 'needs-correction', 'scheduled')).toBe(
       true,
     );
   });
 
   it('treats completed and voided as terminal', () => {
-    expect(DISBURSEMENT_STATUS_TRANSITIONS.completed).toEqual([]);
-    expect(DISBURSEMENT_STATUS_TRANSITIONS.voided).toEqual([]);
+    expect(RELEASE_STATUS_TRANSITIONS.completed).toEqual([]);
+    expect(RELEASE_STATUS_TRANSITIONS.voided).toEqual([]);
     expect(isReleaseOpen('completed')).toBe(false);
     expect(isReleaseOpen('voided')).toBe(false);
     expect(isReleaseOpen('deferred')).toBe(true);
@@ -128,7 +128,7 @@ describe('the release lifecycle', () => {
   it('never lets a for-release payout jump straight to released', () => {
     // It has to be scheduled first: a release with no payout session behind it
     // is one nobody was told to attend.
-    expect(canTransition(DISBURSEMENT_STATUS_TRANSITIONS, 'for-release', 'released')).toBe(false);
+    expect(canTransition(RELEASE_STATUS_TRANSITIONS, 'for-release', 'released')).toBe(false);
   });
 
   it('counts only what reached somebody as released', () => {
@@ -142,7 +142,7 @@ describe('the release lifecycle', () => {
 
 describe('money and goods are different records', () => {
   it('refuses a money release with no amount', () => {
-    expect(disbursementProblems(release({ amount: null }))).toContain(
+    expect(releaseProblems(release({ amount: null }))).toContain(
       'money-release-without-an-amount',
     );
   });
@@ -151,7 +151,7 @@ describe('money and goods are different records', () => {
     // Forcing a value onto a sack of rice invents a number that then appears in
     // reports as though somebody counted it.
     expect(
-      disbursementProblems(
+      releaseProblems(
         release({ kind: 'in-kind', amount: pesos(500), inKindDescription: 'Food pack' }),
       ),
     ).toContain('in-kind-release-with-an-amount');
@@ -159,14 +159,14 @@ describe('money and goods are different records', () => {
 
   it('refuses goods nobody described', () => {
     expect(
-      disbursementProblems(release({ kind: 'in-kind', amount: null, inKindDescription: '  ' })),
+      releaseProblems(release({ kind: 'in-kind', amount: null, inKindDescription: '  ' })),
     ).toContain('in-kind-release-without-a-description');
   });
 
   it('accepts a well-formed release of each kind', () => {
-    expect(disbursementProblems(release())).toEqual([]);
+    expect(releaseProblems(release())).toEqual([]);
     expect(
-      disbursementProblems(
+      releaseProblems(
         release({
           kind: 'in-kind',
           amount: null,
@@ -180,33 +180,33 @@ describe('money and goods are different records', () => {
     const total = sumReleased([
       release({ status: 'claimed', amount: pesos(3000) }),
       release({
-        id: asId<DisbursementId>('dsb-2'),
+        id: asId<ReleaseId>('dsb-2'),
         status: 'claimed',
         kind: 'in-kind',
         amount: null,
         inKindDescription: 'Food pack',
       }),
-      release({ id: asId<DisbursementId>('dsb-3'), status: 'deferred', amount: pesos(9000) }),
+      release({ id: asId<ReleaseId>('dsb-3'), status: 'deferred', amount: pesos(9000) }),
     ]);
 
     expect(total.centavos).toBe(pesos(3000).centavos);
   });
 
   it('refuses a release nobody is accountable for', () => {
-    expect(disbursementProblems(release({ status: 'released', releasedBy: null }))).toContain(
+    expect(releaseProblems(release({ status: 'released', releasedBy: null }))).toContain(
       'released-by-nobody',
     );
   });
 
   it('refuses a deferral with no stated reason', () => {
-    expect(disbursementProblems(release({ status: 'deferred', deferralReason: null }))).toContain(
+    expect(releaseProblems(release({ status: 'deferred', deferralReason: null }))).toContain(
       'deferred-without-a-reason',
     );
   });
 
   it('refuses a representative collecting without authority', () => {
     expect(
-      disbursementProblems(
+      releaseProblems(
         release({
           status: 'claimed',
           releasedBy: OFFICER,
@@ -226,9 +226,9 @@ describe('a batch is a plan, not a unit', () => {
   it('has no status of its own — progress is counted from its members', () => {
     const progress = batchProgress([
       release({ status: 'claimed', releasedBy: OFFICER, amount: pesos(3000) }),
-      release({ id: asId<DisbursementId>('b'), status: 'deferred', deferralReason: 'voucher-error' }),
-      release({ id: asId<DisbursementId>('c'), status: 'scheduled' }),
-      release({ id: asId<DisbursementId>('d'), status: 'needs-correction' }),
+      release({ id: asId<ReleaseId>('b'), status: 'deferred', deferralReason: 'voucher-error' }),
+      release({ id: asId<ReleaseId>('c'), status: 'scheduled' }),
+      release({ id: asId<ReleaseId>('d'), status: 'needs-correction' }),
     ]);
 
     expect(progress.total).toBe(4);
@@ -242,7 +242,7 @@ describe('a batch is a plan, not a unit', () => {
     const sentence = describeBatch(
       batchProgress([
         release({ status: 'claimed', releasedBy: OFFICER }),
-        release({ id: asId<DisbursementId>('b'), status: 'scheduled' }),
+        release({ id: asId<ReleaseId>('b'), status: 'scheduled' }),
       ]),
     );
 
@@ -254,7 +254,7 @@ describe('a batch is a plan, not a unit', () => {
   it('totals only what was handed over, never what was scheduled', () => {
     const progress = batchProgress([
       release({ status: 'claimed', amount: pesos(3000) }),
-      release({ id: asId<DisbursementId>('b'), status: 'scheduled', amount: pesos(50_000) }),
+      release({ id: asId<ReleaseId>('b'), status: 'scheduled', amount: pesos(50_000) }),
     ]);
 
     expect(progress.totalReleased.centavos).toBe(pesos(3000).centavos);
@@ -266,7 +266,7 @@ describe('a batch is a plan, not a unit', () => {
       scheduledFor: asIsoDate('2026-08-10'),
       venue: 'Municipal Hall lobby',
       officerId: OFFICER,
-      disbursementIds: [asId<DisbursementId>('dsb-1')],
+      releaseIds: [asId<ReleaseId>('dsb-1')],
       notes: null,
       ...overrides,
     });
@@ -274,7 +274,7 @@ describe('a batch is a plan, not a unit', () => {
     expect(batchProblems(draft(), TODAY)).toEqual([]);
     // A payout with no stated place is one a beneficiary cannot be told to attend.
     expect(batchProblems(draft({ venue: '  ' }), TODAY)).toContain('venue-required');
-    expect(batchProblems(draft({ disbursementIds: [] }), TODAY)).toContain('nothing-to-release');
+    expect(batchProblems(draft({ releaseIds: [] }), TODAY)).toContain('nothing-to-release');
     expect(batchProblems(draft({ scheduledFor: asIsoDate('2026-07-01') }), TODAY)).toContain(
       'scheduled-in-the-past',
     );
@@ -293,7 +293,7 @@ describe('the manifest that goes to the table', () => {
       { release: release(), beneficiary: beneficiary() },
       {
         release: release({
-          id: asId<DisbursementId>('dsb-2'),
+          id: asId<ReleaseId>('dsb-2'),
           kind: 'in-kind',
           amount: null,
           inKindDescription: 'One family food pack',

@@ -56,7 +56,7 @@ describe('permission matrix', () => {
 
   it('classifies mutating permissions sensibly', () => {
     expect(MUTATING_PERMISSIONS).toContain('request.approve' as Permission);
-    expect(MUTATING_PERMISSIONS).toContain('disbursement.release' as Permission);
+    expect(MUTATING_PERMISSIONS).toContain('release.release' as Permission);
     expect(MUTATING_PERMISSIONS).not.toContain('resident.view' as Permission);
   });
 
@@ -75,8 +75,8 @@ describe('permission matrix', () => {
     expect(approvers).toContain('mswdo-head');
     expect(approvers).not.toContain('social-worker');
 
-    const releasers = rolesWith('disbursement.release');
-    expect(releasers).toContain('disbursement-officer');
+    const releasers = rolesWith('release.release');
+    expect(releasers).toContain('release-officer');
     expect(releasers).not.toContain('mswdo-head');
   });
 

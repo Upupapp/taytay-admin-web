@@ -13,7 +13,7 @@ import {
 } from '@domain/index';
 
 import { MOCK_ASSISTANCE_REQUESTS } from './seed/assistance-requests.seed';
-import { MOCK_DISBURSEMENTS } from './seed/disbursements.seed';
+import { MOCK_DISBURSEMENTS } from './seed/releases.seed';
 import { MOCK_PROGRAMS } from './seed/programs.seed';
 import { MOCK_REFERRALS } from './seed/referrals.seed';
 
@@ -50,18 +50,18 @@ export function historySummaryFor(residentId: ResidentId): ResidentAssistanceHis
     .sort((a, b) => byMostRecent(a.updatedAt, b.updatedAt));
 
   const payouts: readonly ResidentPayoutSummary[] = MOCK_DISBURSEMENTS.filter(
-    (disbursement) =>
-      disbursement.residentId === residentId || requestIds.has(disbursement.requestId),
+    (release) =>
+      release.residentId === residentId || requestIds.has(release.requestId),
   )
-    .map((disbursement) => ({
-      id: disbursement.id,
-      requestId: disbursement.requestId,
-      referenceNumber: disbursement.referenceNumber,
-      status: disbursement.status,
-      method: disbursement.method,
-      amount: disbursement.amount,
-      scheduledFor: disbursement.scheduledFor,
-      releasedAt: disbursement.releasedAt,
+    .map((release) => ({
+      id: release.id,
+      requestId: release.requestId,
+      referenceNumber: release.referenceNumber,
+      status: release.status,
+      method: release.method,
+      amount: release.amount,
+      scheduledFor: release.scheduledFor,
+      releasedAt: release.releasedAt,
     }))
     .sort((a, b) => byMostRecent(a.releasedAt, b.releasedAt));
 

@@ -1,14 +1,14 @@
 import type { AuditStamp } from '../shared/audit';
 import type {
-  DisbursementId,
+  ReleaseId,
   IsoDate,
   IsoDateTime,
   ReleaseBatchId,
   StaffUserId,
 } from '../shared/ids';
 import type { Money } from '../shared/money';
-import type { Disbursement, DisbursementStatus } from './disbursement';
-import { isReleased, sumReleased } from './disbursement';
+import type { Release, ReleaseStatus } from './release';
+import { isReleased, sumReleased } from './release';
 
 /**
  * A payout session: a date, a place, and the releases planned for it.
@@ -34,7 +34,7 @@ export interface ReleaseBatch {
   readonly venue: string;
   /** Who is running the table. The releasing officer for the session. */
   readonly officerId: StaffUserId;
-  readonly disbursementIds: readonly DisbursementId[];
+  readonly releaseIds: readonly ReleaseId[];
   readonly notes: string | null;
   /** Set when the office closes the session, whatever happened in it. */
   readonly closedAt: IsoDateTime | null;
@@ -59,9 +59,9 @@ export interface BatchProgress {
   readonly totalReleased: Money;
 }
 
-const DEFERRED: readonly DisbursementStatus[] = ['deferred', 'unclaimed'];
+const DEFERRED: readonly ReleaseStatus[] = ['deferred', 'unclaimed'];
 
-export function batchProgress(releases: readonly Disbursement[]): BatchProgress {
+export function batchProgress(releases: readonly Release[]): BatchProgress {
   return {
     total: releases.length,
     released: releases.filter((entry) => isReleased(entry.status)).length,
@@ -105,7 +105,7 @@ export interface ReleaseBatchDraft {
   readonly scheduledFor: IsoDate;
   readonly venue: string;
   readonly officerId: StaffUserId;
-  readonly disbursementIds: readonly DisbursementId[];
+  readonly releaseIds: readonly ReleaseId[];
   readonly notes: string | null;
 }
 
@@ -135,7 +135,7 @@ export function batchProblems(
   if (draft.scheduledFor < today) {
     problems.push('scheduled-in-the-past');
   }
-  if (draft.disbursementIds.length === 0) {
+  if (draft.releaseIds.length === 0) {
     problems.push('nothing-to-release');
   }
 

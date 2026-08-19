@@ -134,7 +134,7 @@ export interface DashboardSummary {
   readonly residentsServedInPeriod: number;
   /**
    * Renamed from `disbursedThisMonth` in TAB 06. The old name was inaccurate:
-   * it summed every released disbursement regardless of date, so the label
+   * it summed every released release regardless of date, so the label
    * claimed a window the number never respected. It now means exactly what the
    * `period` filter says.
    */

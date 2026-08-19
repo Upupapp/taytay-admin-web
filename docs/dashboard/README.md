@@ -25,10 +25,10 @@ Six situations are surfaced today:
 | Signal                       | Severity | Permission to act       |
 | ---------------------------- | -------- | ----------------------- |
 | Waiting for approval         | critical | `request.approve`       |
-| Payout scheduled, unreleased | critical | `disbursement.release`  |
+| Payout scheduled, unreleased | critical | `release.release`  |
 | Returned to applicant        | warning  | `request.intake`        |
 | Missing a required document  | warning  | `request.intake`        |
-| Released, not collected      | warning  | `disbursement.schedule` |
+| Released, not collected      | warning  | `release.schedule` |
 | Referral unanswered          | info     | `referral.manage`       |
 
 **The permission is the one needed to act, not to see** (`DL-34`). A read
@@ -100,7 +100,7 @@ _situation_, not this application's URLs.
   claiming `denyUnless(...)` was in every mock repository. It now requires
   `dashboard.view` and respects barangay scope.
 - `disbursedThisMonth` never respected a month — it summed every released
-  disbursement regardless of date. It is now `disbursedInPeriod`, governed by
+  release regardless of date. It is now `disbursedInPeriod`, governed by
   the explicit period filter.
 
 ---

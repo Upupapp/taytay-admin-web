@@ -61,9 +61,9 @@ export const MOCK_STAFF_PROFILES: readonly StaffProfile[] = [
     audit: stamp(300, 30),
   },
   {
-    staffId: asId<StaffUserId>('staff-disbursement'),
+    staffId: asId<StaffUserId>('staff-release'),
     employeeId: 'TR-MSWDO-0031',
-    unit: 'Disbursement',
+    unit: 'Release',
     contactNumber: '(02) 8286 1234 loc. 140',
     officeEmail: 'ronald.mendoza@taytayrizal.gov.ph',
     audit: stamp(280, 30),

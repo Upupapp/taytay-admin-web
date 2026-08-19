@@ -13,12 +13,12 @@ import {
   isBeneficiaryFilterActive,
   isCurrentEnrollment,
   isPeriodReversed,
-  isReceivedDisbursementStatus,
+  isReceivedReleaseStatus,
   pairKey,
   pesos,
   resolutionProblems,
   type AssistanceRequestStatus,
-  type DisbursementStatus,
+  type ReleaseStatus,
   type IdentityResolutionDraft,
   type MatchSignal,
   type ProgramEnrollment,
@@ -104,7 +104,7 @@ describe('beneficiary standing', () => {
   it('always includes constituent, because being on the registry is the floor', () => {
     const standing = deriveStanding({
       requestStatuses: [],
-      disbursementStatuses: [],
+      releaseStatuses: [],
       enrollments: [],
     });
 
@@ -114,7 +114,7 @@ describe('beneficiary standing', () => {
   it('holds several standings at once — they are roles, not a ladder', () => {
     const standing = deriveStanding({
       requestStatuses: ['assessment', 'completed'],
-      disbursementStatuses: ['claimed'],
+      releaseStatuses: ['claimed'],
       enrollments: [enrollment()],
     });
 
@@ -125,7 +125,7 @@ describe('beneficiary standing', () => {
   it('does not call somebody an applicant on the strength of a settled request', () => {
     const standing = deriveStanding({
       requestStatuses: ['rejected', 'completed', 'cancelled', 'expired'],
-      disbursementStatuses: [],
+      releaseStatuses: [],
       enrollments: [],
     });
 
@@ -136,7 +136,7 @@ describe('beneficiary standing', () => {
   it('a draft is not an application — nothing has been filed', () => {
     const standing = deriveStanding({
       requestStatuses: ['draft'],
-      disbursementStatuses: [],
+      releaseStatuses: [],
       enrollments: [],
     });
 
@@ -144,25 +144,25 @@ describe('beneficiary standing', () => {
   });
 
   it('counts somebody a recipient only once something actually reached them', () => {
-    const planned: readonly DisbursementStatus[] = [
+    const planned: readonly ReleaseStatus[] = [
       'for-release',
       'scheduled',
       'unclaimed',
       'deferred',
       'voided',
     ];
-    const arrived: readonly DisbursementStatus[] = ['released', 'claimed', 'completed'];
+    const arrived: readonly ReleaseStatus[] = ['released', 'claimed', 'completed'];
 
     for (const status of planned) {
-      expect(isReceivedDisbursementStatus(status)).toBe(false);
+      expect(isReceivedReleaseStatus(status)).toBe(false);
     }
     for (const status of arrived) {
-      expect(isReceivedDisbursementStatus(status)).toBe(true);
+      expect(isReceivedReleaseStatus(status)).toBe(true);
     }
 
     const scheduledOnly = deriveStanding({
       requestStatuses: [],
-      disbursementStatuses: ['scheduled'],
+      releaseStatuses: ['scheduled'],
       enrollments: [],
     });
     expect(hasStanding(scheduledOnly, 'beneficiary')).toBe(false);
@@ -181,7 +181,7 @@ describe('beneficiary standing', () => {
 
     const standing = deriveStanding({
       requestStatuses: [],
-      disbursementStatuses: [],
+      releaseStatuses: [],
       enrollments: [exited],
     });
 
@@ -192,7 +192,7 @@ describe('beneficiary standing', () => {
   it('a suspended member is still a member — nothing was concluded', () => {
     const standing = deriveStanding({
       requestStatuses: [],
-      disbursementStatuses: [],
+      releaseStatuses: [],
       enrollments: [enrollment({ status: 'suspended' })],
     });
 
@@ -202,7 +202,7 @@ describe('beneficiary standing', () => {
   it('every role in the vocabulary is reachable', () => {
     const standing = deriveStanding({
       requestStatuses: ['submitted'],
-      disbursementStatuses: ['released'],
+      releaseStatuses: ['released'],
       enrollments: [enrollment()],
     });
 
@@ -551,7 +551,7 @@ describe('the registry introduces no second identity', () => {
 
     const standing = deriveStanding({
       requestStatuses: statuses,
-      disbursementStatuses: [],
+      releaseStatuses: [],
       enrollments: [],
     });
 

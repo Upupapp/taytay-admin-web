@@ -131,7 +131,7 @@ describe('navigation reachability', () => {
   });
 
   it('hides modules the role may not open, matching the route guards', async () => {
-    await configure('disbursement-officer');
+    await configure('release-officer');
     const fixture = TestBed.createComponent(AppNav);
     await fixture.whenStable();
     const hrefs = Array.from(

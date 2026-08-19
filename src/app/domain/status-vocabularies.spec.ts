@@ -1,6 +1,6 @@
 import { ASSISTANCE_STATUS_CATALOG, type AssistanceRequestStatus } from './assistance/assistance-request';
 import { CASE_STATUS_CATALOG, type CaseStatus } from './cases/social-case';
-import { DISBURSEMENT_STATUS_CATALOG } from './disbursements/disbursement';
+import { RELEASE_STATUS_CATALOG } from './releases/release';
 import { REFERRAL_STATUS_CATALOG, type ReferralStatus } from './referrals/referral';
 import { VISIT_STATUS_CATALOG, type VisitStatus } from './visits/field-visit';
 import { ENROLLMENT_STATUS_CATALOG, type EnrollmentStatus } from './beneficiaries/program-enrollment';
@@ -40,7 +40,7 @@ const BACKEND_ASSISTANCE_STATUSES: readonly AssistanceRequestStatus[] = [
 
 /**
  * `Modules\Welfare\Domain\ReleaseStatus` — six states, and **not** the console's
- * nine. Typed as strings rather than `DisbursementStatus` precisely because
+ * nine. Typed as strings rather than `ReleaseStatus` precisely because
  * three of them are not console statuses at all.
  */
 const BACKEND_RELEASE_STATUSES: readonly string[] = [
@@ -130,7 +130,7 @@ describe('releases — the one vocabulary that does not agree', () => {
    * afterwards.
    *
    * TAB 08 owns the reconciliation, because it is the command that settles the
-   * noun (`disbursement` v `release`) and maps the state machines transition by
+   * noun (`release` v `release`) and maps the state machines transition by
    * transition. These tests exist so the gap cannot widen quietly in the
    * meantime, and so nobody wires the two together believing they match.
    */
@@ -138,7 +138,7 @@ describe('releases — the one vocabulary that does not agree', () => {
 
   it('shares exactly three states with the API', () => {
     const overlap = BACKEND_RELEASE_STATUSES.filter(
-      (status) => catalogKeys(DISBURSEMENT_STATUS_CATALOG).includes(status),
+      (status) => catalogKeys(RELEASE_STATUS_CATALOG).includes(status),
     ).sort();
 
     expect(overlap).toEqual([...shared].sort());
@@ -148,14 +148,14 @@ describe('releases — the one vocabulary that does not agree', () => {
     // `ready`, `failed`, `cancelled`. A release arriving in any of them today
     // would render blank or throw at the tone lookup.
     const unrenderable = BACKEND_RELEASE_STATUSES.filter(
-      (status) => !catalogKeys(DISBURSEMENT_STATUS_CATALOG).includes(status),
+      (status) => !catalogKeys(RELEASE_STATUS_CATALOG).includes(status),
     ).sort();
 
     expect(unrenderable).toEqual(['cancelled', 'failed', 'ready']);
   });
 
   it('draws six distinctions the API cannot express', () => {
-    const consoleOnly = catalogKeys(DISBURSEMENT_STATUS_CATALOG).filter(
+    const consoleOnly = catalogKeys(RELEASE_STATUS_CATALOG).filter(
       (status) => !BACKEND_RELEASE_STATUSES.includes(status),
     );
 

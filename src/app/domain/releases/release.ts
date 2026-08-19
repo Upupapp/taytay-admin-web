@@ -1,7 +1,7 @@
 import type { AuditStamp } from '../shared/audit';
 import type {
   AssistanceRequestId,
-  DisbursementId,
+  ReleaseId,
   IsoDate,
   IsoDateTime,
   ReleaseBatchId,
@@ -21,7 +21,7 @@ export const PAYOUT_METHOD_LABELS: Readonly<Record<PayoutMethod, string>> = {
   'in-kind': 'In-kind goods',
 };
 
-export type DisbursementStatus =
+export type ReleaseStatus =
   | 'for-release'
   | 'scheduled'
   | 'released'
@@ -32,7 +32,7 @@ export type DisbursementStatus =
   | 'completed'
   | 'voided';
 
-export const DISBURSEMENT_STATUS_CATALOG: StatusCatalog<DisbursementStatus> = {
+export const RELEASE_STATUS_CATALOG: StatusCatalog<ReleaseStatus> = {
   // Renamed from `pending` in TAB 17 to match the queue the office actually
   // works: "for release" says what the next act is, where "pending" only says
   // that nothing has happened.
@@ -95,7 +95,7 @@ export const DISBURSEMENT_STATUS_CATALOG: StatusCatalog<DisbursementStatus> = {
   },
 };
 
-export const DISBURSEMENT_STATUS_TRANSITIONS: StatusTransitions<DisbursementStatus> = {
+export const RELEASE_STATUS_TRANSITIONS: StatusTransitions<ReleaseStatus> = {
   'for-release': ['scheduled', 'needs-correction', 'voided'],
   scheduled: ['released', 'deferred', 'unclaimed', 'needs-correction', 'voided'],
   released: ['claimed', 'unclaimed'],
@@ -110,12 +110,12 @@ export const DISBURSEMENT_STATUS_TRANSITIONS: StatusTransitions<DisbursementStat
 };
 
 /** Something actually reached the beneficiary. */
-export function isReleased(status: DisbursementStatus): boolean {
+export function isReleased(status: ReleaseStatus): boolean {
   return status === 'released' || status === 'claimed' || status === 'completed';
 }
 
 /** Still the office's to act on. */
-export function isReleaseOpen(status: DisbursementStatus): boolean {
+export function isReleaseOpen(status: ReleaseStatus): boolean {
   return status !== 'completed' && status !== 'voided';
 }
 
@@ -176,12 +176,12 @@ export interface ReleaseAcknowledgement {
   readonly authority: string | null;
 }
 
-export interface Disbursement {
-  readonly id: DisbursementId;
+export interface Release {
+  readonly id: ReleaseId;
   readonly requestId: AssistanceRequestId;
   readonly residentId: ResidentId;
   readonly referenceNumber: string;
-  readonly status: DisbursementStatus;
+  readonly status: ReleaseStatus;
   readonly method: PayoutMethod;
   readonly kind: ReleaseKind;
   /** Set for `money`, `null` for `in-kind`. Never both (`DL-93`). */
@@ -216,7 +216,7 @@ export interface Disbursement {
  * Asserted rather than assumed: a screen that trusts `kind` and a report that
  * trusts `amount` must never disagree about whether a family received money.
  */
-export function disbursementProblems(release: Disbursement): readonly string[] {
+export function releaseProblems(release: Release): readonly string[] {
   const problems: string[] = [];
 
   if (release.kind === 'money' && release.amount === null) {
@@ -248,16 +248,16 @@ export function disbursementProblems(release: Disbursement): readonly string[] {
 }
 
 /** Sums what was actually handed over. In-kind contributes nothing to a peso total. */
-export function sumReleased(releases: readonly Disbursement[]): Money {
+export function sumReleased(releases: readonly Release[]): Money {
   const amounts = releases
     .filter((release) => isReleased(release.status) && release.amount !== null)
     .map((release) => release.amount as Money);
   return amounts.length === 0 ? ZERO_PESOS : sumMoney(amounts);
 }
 
-export interface DisbursementFilter {
+export interface ReleaseFilter {
   readonly search?: string;
-  readonly status?: DisbursementStatus;
+  readonly status?: ReleaseStatus;
   readonly method?: PayoutMethod;
   readonly kind?: ReleaseKind;
   readonly batchId?: ReleaseBatchId;
@@ -267,9 +267,9 @@ export interface DisbursementFilter {
   readonly openOnly?: boolean;
 }
 
-export const EMPTY_DISBURSEMENT_FILTER: DisbursementFilter = {};
+export const EMPTY_RELEASE_FILTER: ReleaseFilter = {};
 
-export function isDisbursementFilterActive(filter: DisbursementFilter): boolean {
+export function isReleaseFilterActive(filter: ReleaseFilter): boolean {
   return (
     Boolean(filter.search) ||
     filter.status !== undefined ||
@@ -283,4 +283,4 @@ export function isDisbursementFilterActive(filter: DisbursementFilter): boolean 
   );
 }
 
-export type DisbursementSortField = 'scheduledFor' | 'status' | 'amount' | 'referenceNumber';
+export type ReleaseSortField = 'scheduledFor' | 'status' | 'amount' | 'referenceNumber';

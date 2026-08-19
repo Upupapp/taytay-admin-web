@@ -139,7 +139,7 @@ not invent an endpoint to close one.
 | `setChecklist` | POST | `admin/visits/{visit}/checklist` | `visit.manage` | maps cleanly |  |
 | `close` | POST | `admin/visits/{visit}/conclusion` | `visit.manage` | maps cleanly |  |
 
-### DisbursementRepository (13)
+### ReleaseRepository (13)
 
 | Port method | Verb | Route | Permission | Status | Note |
 | --- | --- | --- | --- | --- | --- |

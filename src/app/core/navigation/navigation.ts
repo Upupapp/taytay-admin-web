@@ -113,8 +113,9 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Releases',
         route: '/releases',
-        glyph: 'DS',
-        permissions: ['disbursement.view'],
+        // Was 'DS', an abbreviation of the noun this console no longer uses (DL-132).
+        glyph: 'RL',
+        permissions: ['release.view'],
         description: 'Payout scheduling, release and acknowledgement.',
       },
       {

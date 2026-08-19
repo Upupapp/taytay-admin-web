@@ -28,7 +28,7 @@ import { denyUnless } from './mock-access';
 import { MockLatency } from './mock-latency';
 import { matchesSearch, sortItems } from './mock-query';
 import { MOCK_ASSISTANCE_REQUESTS } from './seed/assistance-requests.seed';
-import { MOCK_DISBURSEMENTS } from './seed/disbursements.seed';
+import { MOCK_DISBURSEMENTS } from './seed/releases.seed';
 import { MOCK_PROGRAMS } from './seed/programs.seed';
 import { MOCK_REQUIREMENT_TEMPLATES } from './seed/requirement-templates.seed';
 

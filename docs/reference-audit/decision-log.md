@@ -97,7 +97,7 @@ _from_.
 
 "Ready for Release" describes a readiness condition; `scheduled` describes a
 commitment. A beneficiary travelling to the municipal hall needs to know _when_
-and _how_, not that their file is ready. Our `Disbursement` therefore carries
+and _how_, not that their file is ready. Our `Release` therefore carries
 `scheduledFor` and a `PayoutMethod`.
 
 ### DL-06 · Added `expired`; did not adopt `Archived`
@@ -143,12 +143,12 @@ wrong, not the test.
 **Evidence:** `Esperanza/resources/views/admin/payments.blade.php`.
 
 Esperanza's payments module is **citizen → LGU** (fees for documents and
-permits). This console's `Disbursements` module is **LGU → beneficiary** (aid
+permits). This console's `Releases` module is **LGU → beneficiary** (aid
 released to an indigent resident). They share the word "payment" and nothing
 else: different direction, different authorization, different controls, different
 audit obligations.
 
-**Consequence:** `Disbursements` is recorded as this project's own module
+**Consequence:** `Releases` is recorded as this project's own module
 (FSM-09), not as an adaptation of Esperanza's. Treating them as the same module
 would be the single most damaging false economy available in this audit.
 
@@ -740,9 +740,9 @@ approval", not "3 endorsed". Statuses are the system's vocabulary; the office's
 vocabulary is what needs doing.
 
 **The permission on a signal is the one needed to act, not to see.** The first
-cut used `disbursement.view` for unclaimed payouts and `referral.view` for
+cut used `release.view` for unclaimed payouts and `referral.view` for
 unanswered referrals, which put items on the read-only auditor's to-do list that
-they could do nothing about. They are now `disbursement.schedule` and
+they could do nothing about. They are now `release.schedule` and
 `referral.manage`. A test asserting the auditor sees an explicitly role-related
 empty state is what caught it.
 
@@ -802,7 +802,7 @@ Two honesty fixes found while building on TAB 05's foundation:
    requires `dashboard.view` and respects barangay scope, so a `barangay-link`
    sees their own barangay's numbers rather than the municipality's.
 2. **`disbursedThisMonth` never respected a month.** It summed every released
-   disbursement regardless of date, so the label claimed a window the number did
+   release regardless of date, so the label claimed a window the number did
    not honour. It is now `disbursedInPeriod`, governed by the explicit `period`
    filter, and `residentsServedThisMonth` became `residentsServedInPeriod` for
    the same reason.
@@ -2348,7 +2348,7 @@ missed visit says the office owes it, not the family.
 
 **Status:** Settled (implemented in TAB 17).
 
-The master command asks for release, distribution and disbursement **tracking**.
+The master command asks for release, distribution and release **tracking**.
 It supplies no chart of accounts, no fund codes, no bank integration, no posting
 rules and no reconciliation process — because those live in the municipality's
 accounting and treasury systems, which this application does not replace and was
@@ -2375,7 +2375,7 @@ discover by being wrong about it.
 
 **Consequence:** if the LGU later supplies real accounting rules, they arrive as
 a backend integration with its own contract — not as fields quietly added to
-`Disbursement`.
+`Release`.
 
 ### DL-90 · A payout session has no status of its own
 
@@ -2416,7 +2416,7 @@ The second half is that separated *permissions* do not guarantee separated
 *people*. A system administrator holds everything by definition, and a
 misconfigured account can hold both grants. `isSelfRelease` compares the release
 against **who actually approved the request behind it** — read from the data
-layer via `DisbursementRepository.approverFor`, never inferred from the current
+layer via `ReleaseRepository.approverFor`, never inferred from the current
 user's role — and the screen says so before the money moves.
 
 It **warns rather than refuses**. A small municipal office on a bad day may
@@ -2466,8 +2466,8 @@ controls. Only the payout list prints.
 A cash grant and a family food pack are not the same record. `ReleaseKind`
 distinguishes them, and the invariant runs both ways: a `money` release carries
 an amount and no description, an `in-kind` release carries a description and
-**no amount at all**. `Disbursement.amount` is `Money | null` for exactly this
-reason, and `disbursementProblems` rejects either half being wrong.
+**no amount at all**. `Release.amount` is `Money | null` for exactly this
+reason, and `releaseProblems` rejects either half being wrong.
 
 The temptation is to put a peso figure on the rice so totals are easy. That
 figure is invented — nobody at the MSWDO priced that sack — and once it is in the
@@ -2513,7 +2513,7 @@ beneficiary.
 
 **Status:** Settled (fixed in TAB 17).
 
-`MockDisbursementRepository` returned seeded payouts to any caller —
+`MockReleaseRepository` returned seeded payouts to any caller —
 unauthenticated included — with no permission check and no barangay scoping.
 `list`, `getById` and `listForRequest` were all open.
 
@@ -2526,7 +2526,7 @@ read.
 Payout records are not low-value. Each names a person, an amount, and a date and
 place at which they can be found collecting money.
 
-Every method now checks its permission — `disbursement.view` to read,
+Every method now checks its permission — `release.view` to read,
 `.schedule` to batch, `.release` to hand over, `.void` to cancel — and applies
 barangay scope through the beneficiary, because a release is reachable only if
 the person it is for is. Not-found and not-yours read identically (`DL-31`).
@@ -2966,7 +2966,7 @@ left the office unable to correct its own mistakes.
 **Status:** Settled (implemented in TAB 20).
 
 Search crosses six record types, each gated by its own permission — a
-disbursement officer finds the resident and the request behind a payout and no
+release officer finds the resident and the request behind a payout and no
 case file, because they hold no case access (`DL-08`).
 
 The question is what the screen says about the types it skipped. Silently
@@ -3220,7 +3220,7 @@ Every feature spec in this project wires its own repository doubles, which is
 correct: a screen test should not depend on seed data it did not choose.
 
 But that means **no test in the project checked whether the seed was coherent**.
-A double that returns a plausible `Disbursement` proves the release screen
+A double that returns a plausible `Release` proves the release screen
 renders one; it cannot prove the release names a request that exists, belonging
 to the resident the release pays. TAB 17 found exactly that defect by hand — a
 release citing `req-0007` while naming a resident who belonged to a different
@@ -3279,7 +3279,7 @@ compatible with roles already built*. They are:
   the office's name and that role already answers for what the office says;
 - the **auditor** takes the two `view` and two `view-insights` keys and nothing
   that changes anything;
-- **caseworkers, intake and disbursement officers take neither module.** Nothing
+- **caseworkers, intake and release officers take neither module.** Nothing
   about casework implies speaking for the municipality.
 
 `events.export-registrations` and both `view-insights` keys are classified
@@ -3575,3 +3575,63 @@ reports the unmarked in their own right rather than folding them into no-shows,
 and `attendanceRateOf` returns `null` until the office says the list is final —
 because a rate taken mid-afternoon reads as a poor turnout and is really an
 unfinished list.
+
+---
+
+## DL-132 — the console adopts `release`; the API keeps it
+
+**TAB 08 step 1**, which asks for a decision and forbids half of one: *"Decide whether the console
+adopts release or the API adopts release, and change one side completely — URL, payload,
+screen and the words the disbursing officer is trained on. Two names for money in one system is
+how a reconciliation goes wrong."*
+
+### The measurement
+
+|  | console `release` | API `release` |
+| --- | --- | --- |
+| occurrences | 451 across 80 files | — |
+| database tables | none | `releases`, `release_batches`, `release_transitions` |
+| permission keys | none | `request.release`, persisted in `role_assignments` |
+| published URLs | none | 7, under `/api/v1`, consumed by **four** clients |
+| cost of changing | a compiler-checked rename | a migration, a permission rename, and **`/api/v2`** |
+
+The last row decides it on its own. Backend Article 4: *"Breaking changes require `/api/v2`, never
+an in-place mutation."* Renaming `admin/releases` to `admin/releases` is a breaking change to
+a published surface that citizen web, citizen mobile, the admin console and verifier devices all
+read. Changing the console costs a rename the TypeScript compiler verifies exhaustively.
+
+### The console was already half-way there
+
+`src/app/domain/releases/` holds `release.ts`, `release-batch.ts`, `release-manifest.ts`
+and `releases.spec.ts`. Inside `release.ts`, `releaseProblems(release: Release)` and
+`sumReleased(releases)` already name their variables the API's way, and `DL-89`, `DL-90`, `DL-91`
+and `DL-93` are all written about "a release".
+
+So this is less a change of vocabulary than the removal of a second one that had already lost.
+
+### What changes
+
+`Release` → `Release`, `ReleaseStatus` → `ReleaseStatus`, the filter, the sort field, the
+catalogues, the folder, the repository port and token, the route path and the navigation label —
+**including the words on screen**, because the command names those specifically and a disbursing
+officer trained on one word and reading another is the failure this rule exists to prevent.
+
+`ReleaseKind` and `ReleaseAcknowledgement` are already correct and do not move.
+
+### The one awkward name, kept on purpose
+
+The mechanical rename turned `disbursement.release` into **`release.release`**, which reads oddly.
+It stays. The resource is a release and the act is releasing, which is exactly the shape of the
+API's own `request.release` — and inventing a synonym to avoid the stutter would put a second word
+for money back into the system, which is the thing this entry exists to remove.
+
+The wider divergence around it is **not** settled here: the console holds `release.view`,
+`release.schedule`, `release.release` and `release.void`, and the API holds `request.release` and
+`request.schedule`. That is part of L-23, which is on the master TODO as its own decision.
+
+### What did not need changing
+
+The **screens already said "Releases"** — title, subtitle, payout-session copy, the navigation
+label. Only the types disagreed. So the officer's words were never the problem; the second
+vocabulary lived entirely in the code, which is where a naming divergence is hardest to notice and
+easiest to keep.

@@ -277,21 +277,21 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Releases — Taytay Social Welfare',
-            canActivate: [permissionGuard('disbursement.view')],
+            canActivate: [permissionGuard('release.view')],
             loadComponent: () =>
               import('@features/releases/release-list-page').then((m) => m.ReleaseListPage),
           },
           {
             path: 'sessions',
             title: 'Payout sessions — Taytay Social Welfare',
-            canActivate: [permissionGuard('disbursement.view')],
+            canActivate: [permissionGuard('release.view')],
             loadComponent: () =>
               import('@features/releases/payout-session-page').then((m) => m.PayoutSessionPage),
           },
           {
             path: ':id',
             title: 'Release — Taytay Social Welfare',
-            canActivate: [permissionGuard('disbursement.view')],
+            canActivate: [permissionGuard('release.view')],
             loadComponent: () =>
               import('@features/releases/release-detail-page').then((m) => m.ReleaseDetailPage),
           },
@@ -300,7 +300,7 @@ export const routes: Routes = [
       {
         // The old path kept as a redirect: a bookmark or a note from before
         // TAB 17 should still land somewhere, not on the not-found page.
-        path: 'disbursements',
+        path: 'releases',
         pathMatch: 'full',
         redirectTo: 'releases',
       },

@@ -12,7 +12,7 @@ import {
   NEWSFEED_REPOSITORY,
   SEARCH_REPOSITORY,
   WORK_REPOSITORY,
-  DISBURSEMENT_REPOSITORY,
+  RELEASE_REPOSITORY,
   FIELD_VISIT_REPOSITORY,
   FAMILY_REPOSITORY,
   HOUSEHOLD_REPOSITORY,
@@ -36,7 +36,7 @@ import {
   HttpNewsfeedRepository,
   HttpSearchRepository,
   HttpWorkRepository,
-  HttpDisbursementRepository,
+  HttpReleaseRepository,
   HttpFieldVisitRepository,
   HttpFamilyRepository,
   HttpHouseholdRepository,
@@ -57,7 +57,7 @@ import { MockEventRepository } from './mock/mock-event.repository';
 import { MockNewsfeedRepository } from './mock/mock-newsfeed.repository';
 import { MockSearchRepository } from './mock/mock-search.repository';
 import { MockWorkRepository } from './mock/mock-work.repository';
-import { MockDisbursementRepository } from './mock/mock-disbursement.repository';
+import { MockReleaseRepository } from './mock/mock-release.repository';
 import { MockFieldVisitRepository } from './mock/mock-field-visit.repository';
 import { MockFamilyRepository } from './mock/mock-family.repository';
 import { MockHouseholdRepository } from './mock/mock-household.repository';
@@ -87,7 +87,7 @@ function mockProviders(): Provider[] {
     { provide: RESIDENT_REPOSITORY, useClass: MockResidentRepository },
     { provide: PROGRAM_REPOSITORY, useClass: MockProgramRepository },
     { provide: ASSISTANCE_REQUEST_REPOSITORY, useClass: MockAssistanceRequestRepository },
-    { provide: DISBURSEMENT_REPOSITORY, useClass: MockDisbursementRepository },
+    { provide: RELEASE_REPOSITORY, useClass: MockReleaseRepository },
     { provide: REFERRAL_REPOSITORY, useClass: MockReferralRepository },
     { provide: STAFF_REPOSITORY, useClass: MockStaffRepository },
     { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
@@ -112,7 +112,7 @@ function httpProviders(): Provider[] {
     { provide: RESIDENT_REPOSITORY, useClass: HttpResidentRepository },
     { provide: PROGRAM_REPOSITORY, useClass: HttpProgramRepository },
     { provide: ASSISTANCE_REQUEST_REPOSITORY, useClass: HttpAssistanceRequestRepository },
-    { provide: DISBURSEMENT_REPOSITORY, useClass: HttpDisbursementRepository },
+    { provide: RELEASE_REPOSITORY, useClass: HttpReleaseRepository },
     { provide: REFERRAL_REPOSITORY, useClass: HttpReferralRepository },
     { provide: STAFF_REPOSITORY, useClass: HttpStaffRepository },
     { provide: NOTIFICATION_REPOSITORY, useClass: HttpNotificationRepository },

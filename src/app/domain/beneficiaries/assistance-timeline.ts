@@ -1,5 +1,5 @@
 import type { AssistanceRequestStatus } from '../assistance/assistance-request';
-import type { DisbursementStatus } from '../disbursements/disbursement';
+import type { ReleaseStatus } from '../releases/release';
 import type { ReferralStatus } from '../referrals/referral';
 import type {
   ResidentCaseSummary,
@@ -30,7 +30,7 @@ import { ENROLLMENT_EXIT_REASON_LABELS } from './program-enrollment';
  *    in. The timeline reports; it does not narrate.
  */
 
-export type TimelineSourceKind = 'request' | 'disbursement' | 'referral' | 'enrollment';
+export type TimelineSourceKind = 'request' | 'release' | 'referral' | 'enrollment';
 
 /**
  * What kind of thing happened, for grouping and filtering. Deliberately coarse:
@@ -82,7 +82,7 @@ export interface AssistanceTimelineEntry {
  */
 export type TimelineEntryStatus =
   | { readonly catalog: 'request'; readonly value: AssistanceRequestStatus }
-  | { readonly catalog: 'disbursement'; readonly value: DisbursementStatus }
+  | { readonly catalog: 'release'; readonly value: ReleaseStatus }
   | { readonly catalog: 'referral'; readonly value: ReferralStatus }
   | { readonly catalog: 'enrollment'; readonly value: 'active' | 'suspended' | 'exited' };
 
@@ -150,23 +150,23 @@ export function buildAssistanceTimeline(input: TimelineInput): readonly Assistan
 
   for (const payout of input.payouts) {
     // Only a payout that actually happened is history. A scheduled one is a
-    // plan, and it belongs on the disbursement queue, not in a record of what
+    // plan, and it belongs on the release queue, not in a record of what
     // this family has received.
     if (payout.releasedAt === null) {
       continue;
     }
     entries.push({
-      key: `disbursement:${payout.id}:assistance-released`,
+      key: `release:${payout.id}:assistance-released`,
       occurredAt: payout.releasedAt,
       kind: 'assistance-released',
-      sourceKind: 'disbursement',
+      sourceKind: 'release',
       sourceId: payout.id,
       reference: payout.referenceNumber,
       programId: null,
       programName: null,
       summary: 'Assistance released.',
       amount: payout.amount,
-      status: { catalog: 'disbursement', value: payout.status },
+      status: { catalog: 'release', value: payout.status },
     });
   }
 

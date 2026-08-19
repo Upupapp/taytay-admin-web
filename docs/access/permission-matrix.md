@@ -27,7 +27,7 @@ self-registration), `DL-33` (accessible authentication).
 | `mswdo-head`           | Head   | all-barangays  | Approves or rejects endorsed requests; oversees the office.      |
 | `social-worker`        | SW     | assigned-cases | Assesses cases and endorses them.                                |
 | `intake-officer`       | Intake | all-barangays  | Receives applicants, records requests, validates requirements.   |
-| `disbursement-officer` | Disb   | all-barangays  | Schedules payouts and releases approved assistance.              |
+| `release-officer` | Disb   | all-barangays  | Schedules payouts and releases approved assistance.              |
 | `barangay-link`        | Brgy   | own-barangay   | Barangay-based encoder. Sees only their own barangay.            |
 | `auditor`              | Audit  | all-barangays  | Read-only oversight across the municipality.                     |
 
@@ -76,10 +76,10 @@ self-registration), `DL-33` (accessible authentication).
 | `document.record`                 | X     | X    | X   | X      |      |      |       |
 | `document.download`               | X     | X    | X   |        |      |      | X     |
 | `document.view-full-number`       | X     | X    | X   |        |      |      |       |
-| `disbursement.view`               | X     | X    |     |        | X    |      | X     |
-| `disbursement.schedule`           | X     | X    |     |        | X    |      |       |
-| `disbursement.release`            | X     |      |     |        | X    |      |       |
-| `disbursement.void`               | X     | X    |     |        |      |      |       |
+| `release.view`               | X     | X    |     |        | X    |      | X     |
+| `release.schedule`           | X     | X    |     |        | X    |      |       |
+| `release.release`            | X     |      |     |        | X    |      |       |
+| `release.void`               | X     | X    |     |        |      |      |       |
 | `referral.view`                   | X     | X    | X   | X      |      | X    | X     |
 | `referral.manage`                 | X     | X    | X   |        |      |      |       |
 | `report.view`                     | X     | X    | X   |        | X    |      | X     |
@@ -117,7 +117,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## The three rows worth reading twice
 
-**`request.approve` and `disbursement.release` never appear together** except on
+**`request.approve` and `release.release` never appear together** except on
 `system-administrator`. That is separation of duties (`DL-08`): the head
 approves the money, the disbursing officer releases it, and no case-working role
 can do both. `rolesBreachingSeparationOfDuties()` returns the offenders and the
@@ -181,7 +181,7 @@ the head and the administrator only.
 Three exclusions are deliberate rather than oversights. **`barangay-link` holds
 no case permission at all** — a barangay encoder files requests and keeps the
 registry current, and the casework record of their own neighbours is not theirs
-to read; proximity is a reason to be stricter, not looser. **`disbursement-officer`
+to read; proximity is a reason to be stricter, not looser. **`release-officer`
 holds none either**: a payout is authorised by the approved request in front of
 them, and the family's case file is not part of paying it out. **`auditor` holds
 `case.view` and never `case-note.view-protected`** — oversight is checking that

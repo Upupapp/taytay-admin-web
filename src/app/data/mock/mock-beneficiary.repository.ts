@@ -129,7 +129,7 @@ export class MockBeneficiaryRepository implements BeneficiaryRepository {
       families: this.familiesOf(resident.id),
       standing: deriveStanding({
         requestStatuses: history.cases.map((entry) => entry.status),
-        disbursementStatuses: history.payouts.map((payout) => payout.status),
+        releaseStatuses: history.payouts.map((payout) => payout.status),
         enrollments,
       }),
       enrollments,
@@ -224,7 +224,7 @@ export class MockBeneficiaryRepository implements BeneficiaryRepository {
       canonicalResidentId,
       supersededResidentId,
       movingRequestCount: superseded.cases.length,
-      movingDisbursementCount: superseded.payouts.length,
+      movingReleaseCount: superseded.payouts.length,
       movingCaseCount: superseded.openCaseCount,
       movingEnrollmentCount: this.store.enrollmentsFor(supersededResidentId).length,
       // Named, never resolved: which of two payouts under one programme was the
@@ -302,7 +302,7 @@ export class MockBeneficiaryRepository implements BeneficiaryRepository {
       barangayId: resident.address.barangayId,
       standing: deriveStanding({
         requestStatuses: history.cases.map((entry) => entry.status),
-        disbursementStatuses: history.payouts.map((payout) => payout.status),
+        releaseStatuses: history.payouts.map((payout) => payout.status),
         enrollments,
       }),
       currentProgramNames: enrollments

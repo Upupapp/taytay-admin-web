@@ -137,7 +137,7 @@ Five permissions, deliberately not one (`DL-58`, and the matrix in
 
 Three exclusions are deliberate. `barangay-link` holds **no** case permission —
 proximity to the household is a reason to be stricter, not looser.
-`disbursement-officer` holds none either: a payout is authorised by the approved
+`release-officer` holds none either: a payout is authorised by the approved
 request, not by the family's case file. `auditor` holds `case.view` and never
 `case.view-protected-note`.
 

@@ -54,7 +54,7 @@ export const anonymousOnlyGuard: CanActivateFn = (): boolean | UrlTree => {
 /**
  * Route-level permission gate.
  *
- *   { path: 'disbursements', canActivate: [permissionGuard('disbursement.view')] }
+ *   { path: 'releases', canActivate: [permissionGuard('release.view')] }
  *
  * A denial redirects to `/forbidden`, which is a fixed page carrying **no**
  * detail about the route that was refused — see `DL-31`.

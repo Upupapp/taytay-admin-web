@@ -103,16 +103,16 @@ resident names leaving the building). `cancel` belongs with them: cancellation i
 (`DL-131`). The remainder collapse into `event.manage` only if the office is content that whoever
 can edit a venue can also cancel the event.
 
-### 3.3 Disbursement — console 4, backend 1
+### 3.3 Release — console 4, backend 1
 
-Console: `disbursement.view` `disbursement.schedule` `disbursement.release` `disbursement.void`.
+Console: `release.view` `release.schedule` `release.release` `release.void`.
 Backend: `request.release`.
 
 **Decision: adopt the console's split, and treat this as the highest-value row in the table.**
 Separation of duties depends on it: the console's own test asserts that no non-administrator role
-holds both `request.approve` and `disbursement.release`. With a single `request.release` the
+holds both `request.approve` and `release.release`. With a single `request.release` the
 server cannot express that separation at all, and TAB 08 has to build it anyway. The noun is
-TAB 08's to settle (`disbursement` vs `release`); the *split* is settled here.
+TAB 08's to settle (`release` vs `release`); the *split* is settled here.
 
 ### 3.4 Case — console 5, backend 0
 
@@ -196,7 +196,7 @@ screen can hide what the server would refuse.
 | `mswdo-head` | `lgu_staff` + elevated grants | The backend has no head-of-office role; it is `lgu_staff` plus the approval and publication grants |
 | `social-worker` | `lgu_staff` | Direct |
 | `intake-officer` | `lgu_staff` | Direct — the backend does not distinguish intake from casework by role, only by grant |
-| `disbursement-officer` | `disbursing_officer` | **The closest pair, and not the same string.** One character apart, and neither side would match the other |
+| `release-officer` | `disbursing_officer` | **The closest pair, and not the same string.** One character apart, and neither side would match the other |
 | `barangay-link` | `lgu_staff` + barangay scope | Scope, not role. Reconciled with `ScopeResolver` in step 9 |
 | `auditor` | — | No backend counterpart. Read-only oversight |
 | — | `data_protection_officer` | **Unassigned, and release-gate blocker 1.** Holds `audit.view`, and nobody holds the role |

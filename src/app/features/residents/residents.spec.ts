@@ -279,7 +279,7 @@ describe('a resident can be traced without searching four more lists', () => {
   });
 
   it('states what its own role could not see', async () => {
-    const element = html(await openDetail('res-0001', 'disbursement-officer'));
+    const element = html(await openDetail('res-0001', 'release-officer'));
     expect(element.querySelector('.notice__heading')?.textContent).toContain('Hidden by your role');
     expect(element.querySelector('.notice__list')?.textContent).toContain('PhilSys');
   });

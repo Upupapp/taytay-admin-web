@@ -252,7 +252,7 @@ describe('the three surfaces stay apart', () => {
         severity: 'risk',
         summary: 'A voucher does not match the registry.',
         basis: 'Read every release held for correction.',
-        permission: 'disbursement.view',
+        permission: 'release.view',
         link: { routerLink: ['/releases'], label: 'Open releases' },
         detectedFrom: 1,
       },

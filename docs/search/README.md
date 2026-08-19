@@ -61,7 +61,7 @@ Six record types, each gated by its own permission:
 | Families | `family.view` |
 | Programmes | `program.view` |
 
-A disbursement officer finds the resident and the request behind a payout and
+A release officer finds the resident and the request behind a payout and
 **no case file**, because they hold no case access (`DL-08`).
 
 Barangay scope is applied per producer. A family has no barangay of its own, so
@@ -127,7 +127,7 @@ A saved view is a **name attached to query parameters** — nothing more — bec
 filter state already lives in the URL. Applying one is a navigation; sharing one
 is a link. A list that grows a new filter gains it in saved views for free.
 
-Six resources: residents, beneficiaries, assistance requests, disbursements,
+Six resources: residents, beneficiaries, assistance requests, releases,
 cases and households.
 
 **A personal view is a preference. A shared view is office configuration**

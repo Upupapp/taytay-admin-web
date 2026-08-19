@@ -24,7 +24,7 @@ export interface StaffProfile {
   readonly staffId: StaffUserId;
   /** As printed on the plantilla. Not a login, and not a secret. */
   readonly employeeId: string;
-  /** The unit within the MSWDO — intake, casework, disbursement, records. */
+  /** The unit within the MSWDO — intake, casework, release, records. */
   readonly unit: string;
   /** Office extension or mobile. Personal information; shown to staff.view only. */
   readonly contactNumber: string | null;

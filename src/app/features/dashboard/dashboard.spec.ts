@@ -90,7 +90,7 @@ async function setUp(
       provideRouter([
         { path: 'dashboard', component: DashboardPage },
         { path: 'assistance-requests', component: StubPage },
-        { path: 'disbursements', component: StubPage },
+        { path: 'releases', component: StubPage },
         { path: '**', component: StubPage },
       ]),
       { provide: APP_ENVIRONMENT, useValue: TEST_ENVIRONMENT },
@@ -225,7 +225,7 @@ describe('every metric traces back to filtered records', () => {
     expect(attentionDrillDown('returned-to-applicant', {}).queryParams).toEqual({
       status: 'returned',
     });
-    expect(attentionDrillDown('payout-due', {}).route).toBe('/disbursements');
+    expect(attentionDrillDown('payout-due', {}).route).toBe('/releases');
     expect(attentionDrillDown('unclaimed-payout', {}).queryParams).toEqual({
       status: 'unclaimed',
     });
@@ -306,7 +306,7 @@ describe('quick actions respect permission', () => {
   });
 
   it('offers payout scheduling to the disbursing officer', async () => {
-    const element = html(await setUp('disbursement-officer'));
+    const element = html(await setUp('release-officer'));
     expect(element.querySelector('.quick__actions')?.textContent).toContain(
       DASHBOARD_COPY.schedulePayouts,
     );

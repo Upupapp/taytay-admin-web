@@ -73,7 +73,7 @@ roles already built*. The seven existing roles express all of them:
 | Events Registration Staff | *not created* | No existing role fits, and inventing one to hold a permission nobody has yet is speculative. When the office names a person, the grant already exists to give them |
 | Read-only Executive | **auditor** | Already read-only everywhere else |
 
-**Caseworkers, intake and disbursement officers hold neither module.** Nothing
+**Caseworkers, intake and release officers hold neither module.** Nothing
 about casework implies speaking for the municipality.
 
 A role may hold Newsfeed without Events, as the command allows — the keys are

@@ -19,7 +19,7 @@ the payload does.
 | `AssistanceRequest` | 21 (detail), 11 (list) | 16 | detail only — L-13 |
 | `Referral` | 18 | 21 | not yet attempted |
 | `FieldVisit` | 11 | 18 | not yet attempted |
-| `Disbursement` | 22 | 21 | not yet attempted — vocabulary diverges (TAB 04 step 4) |
+| `Release` | 22 | 21 | not yet attempted — vocabulary diverges (TAB 04 step 4) |
 
 **The counts are comparable, so this is not a size problem.** It is a *composition* problem: the
 console's models carry structured sub-objects the wire either flattens or does not send at all —

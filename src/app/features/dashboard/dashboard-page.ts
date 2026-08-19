@@ -33,7 +33,7 @@ import {
   attentionDrillDown,
   barangayDrillDown,
   categoryDrillDown,
-  disbursementsDrillDown,
+  releasesDrillDown,
   requestsDrillDown,
   statusDrillDown,
   type DrillDown,
@@ -201,11 +201,11 @@ export class DashboardPage {
   }
 
   protected scheduledPayoutsLink(summary: DashboardSummary): DrillDown {
-    return disbursementsDrillDown(summary.appliedFilter, { status: 'scheduled' });
+    return releasesDrillDown(summary.appliedFilter, { status: 'scheduled' });
   }
 
   protected disbursedLink(summary: DashboardSummary): DrillDown {
-    return disbursementsDrillDown(summary.appliedFilter, { status: 'released' });
+    return releasesDrillDown(summary.appliedFilter, { status: 'released' });
   }
 
   protected periodLabel(period: DashboardPeriod): string {

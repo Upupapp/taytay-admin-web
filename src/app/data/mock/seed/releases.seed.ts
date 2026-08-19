@@ -3,8 +3,8 @@ import {
   asIsoDate,
   pesos,
   type AssistanceRequestId,
-  type Disbursement,
-  type DisbursementId,
+  type Release,
+  type ReleaseId,
   type ReleaseBatch,
   type ReleaseBatchId,
   type ResidentId,
@@ -13,7 +13,7 @@ import {
 
 import { daysBeforeAnchor, stamp } from './seed-utils';
 
-const disbursingOfficer = asId<StaffUserId>('staff-disbursement');
+const disbursingOfficer = asId<StaffUserId>('staff-release');
 const head = asId<StaffUserId>('staff-head');
 
 const AUGUST_BATCH = asId<ReleaseBatchId>('rbt-0001');
@@ -34,10 +34,10 @@ export const MOCK_RELEASE_BATCHES: readonly ReleaseBatch[] = [
     scheduledFor: asIsoDate('2026-08-10'),
     venue: 'Municipal Hall lobby, Taytay',
     officerId: disbursingOfficer,
-    disbursementIds: [
-      asId<DisbursementId>('dsb-0001'),
-      asId<DisbursementId>('dsb-0005'),
-      asId<DisbursementId>('dsb-0006'),
+    releaseIds: [
+      asId<ReleaseId>('dsb-0001'),
+      asId<ReleaseId>('dsb-0005'),
+      asId<ReleaseId>('dsb-0006'),
     ],
     notes: 'Two cash grants and one food pack. Bring the acknowledgement sheets.',
     closedAt: null,
@@ -57,9 +57,9 @@ export const MOCK_RELEASE_BATCHES: readonly ReleaseBatch[] = [
  * One release is in kind, so the "goods are counted, never valued" rule is
  * exercised by a real record rather than only by a test.
  */
-export const MOCK_DISBURSEMENTS: readonly Disbursement[] = [
+export const MOCK_DISBURSEMENTS: readonly Release[] = [
   {
-    id: asId<DisbursementId>('dsb-0001'),
+    id: asId<ReleaseId>('dsb-0001'),
     requestId: asId<AssistanceRequestId>('req-0003'),
     residentId: asId<ResidentId>('res-0003'),
     referenceNumber: 'DV-2026-00311',
@@ -82,7 +82,7 @@ export const MOCK_DISBURSEMENTS: readonly Disbursement[] = [
     audit: stamp(14, 14),
   },
   {
-    id: asId<DisbursementId>('dsb-0002'),
+    id: asId<ReleaseId>('dsb-0002'),
     requestId: asId<AssistanceRequestId>('req-0005'),
     residentId: asId<ResidentId>('res-0007'),
     referenceNumber: 'DV-2026-00188',
@@ -110,7 +110,7 @@ export const MOCK_DISBURSEMENTS: readonly Disbursement[] = [
     audit: stamp(50, 44),
   },
   {
-    id: asId<DisbursementId>('dsb-0003'),
+    id: asId<ReleaseId>('dsb-0003'),
     requestId: asId<AssistanceRequestId>('req-0005'),
     residentId: asId<ResidentId>('res-0007'),
     referenceNumber: 'DV-2026-00189',
@@ -133,7 +133,7 @@ export const MOCK_DISBURSEMENTS: readonly Disbursement[] = [
     audit: stamp(51, 50),
   },
   {
-    id: asId<DisbursementId>('dsb-0004'),
+    id: asId<ReleaseId>('dsb-0004'),
     requestId: asId<AssistanceRequestId>('req-0001'),
     residentId: asId<ResidentId>('res-0001'),
     referenceNumber: 'DV-2026-00356',
@@ -156,7 +156,7 @@ export const MOCK_DISBURSEMENTS: readonly Disbursement[] = [
     audit: stamp(8, 8),
   },
   {
-    id: asId<DisbursementId>('dsb-0005'),
+    id: asId<ReleaseId>('dsb-0005'),
     requestId: asId<AssistanceRequestId>('req-0002'),
     residentId: asId<ResidentId>('res-0002'),
     referenceNumber: 'DV-2026-00372',
@@ -181,7 +181,7 @@ export const MOCK_DISBURSEMENTS: readonly Disbursement[] = [
     audit: stamp(6, 5),
   },
   {
-    id: asId<DisbursementId>('dsb-0006'),
+    id: asId<ReleaseId>('dsb-0006'),
     requestId: asId<AssistanceRequestId>('req-0004'),
     residentId: asId<ResidentId>('res-0004'),
     referenceNumber: 'DV-2026-00380',
@@ -211,7 +211,7 @@ export const MOCK_DISBURSEMENTS: readonly Disbursement[] = [
     audit: stamp(9, 2),
   },
   {
-    id: asId<DisbursementId>('dsb-0007'),
+    id: asId<ReleaseId>('dsb-0007'),
     requestId: asId<AssistanceRequestId>('req-0006'),
     residentId: asId<ResidentId>('res-0005'),
     referenceNumber: 'DV-2026-00391',
@@ -236,7 +236,7 @@ export const MOCK_DISBURSEMENTS: readonly Disbursement[] = [
     audit: stamp(20, 12),
   },
   {
-    id: asId<DisbursementId>('dsb-0008'),
+    id: asId<ReleaseId>('dsb-0008'),
     requestId: asId<AssistanceRequestId>('req-0007'),
     residentId: asId<ResidentId>('res-0008'),
     referenceNumber: 'DV-2026-00395',
@@ -259,7 +259,7 @@ export const MOCK_DISBURSEMENTS: readonly Disbursement[] = [
     audit: stamp(5, 3),
   },
   {
-    id: asId<DisbursementId>('dsb-0009'),
+    id: asId<ReleaseId>('dsb-0009'),
     requestId: asId<AssistanceRequestId>('req-0004'),
     residentId: asId<ResidentId>('res-0004'),
     referenceNumber: 'DV-2026-00402',

@@ -168,7 +168,7 @@ wrong reading:
 | Open a report | `report.view` **and** the report's own permission |
 | Export any report | `report.export` |
 | Staff workload | `staff.view` |
-| Release status | `disbursement.view` |
+| Release status | `release.view` |
 | Referral outcomes | `referral.view` |
 | Data completeness | `report.export` |
 

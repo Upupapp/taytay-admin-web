@@ -66,7 +66,7 @@ export function rolesBreachingSeparationOfDuties(): readonly StaffRole[] {
     (role) =>
       role !== 'system-administrator' &&
       roleGrants(role, 'request.approve') &&
-      roleGrants(role, 'disbursement.release'),
+      roleGrants(role, 'release.release'),
   );
 }
 

@@ -5,13 +5,13 @@ import { RouterLink } from '@angular/router';
 import { map, switchMap } from 'rxjs';
 
 import {
-  DISBURSEMENT_REPOSITORY,
-  DISBURSEMENT_STATUS_CATALOG,
+  RELEASE_REPOSITORY,
+  RELEASE_STATUS_CATALOG,
   RELEASE_KIND_LABELS,
   isReleaseOpen,
   isReleased,
-  type Disbursement,
-  type DisbursementStatus,
+  type Release,
+  type ReleaseStatus,
   type ReleaseKind,
 } from '@domain/index';
 import { debouncedTerm } from '@shared/state/debounced';
@@ -47,15 +47,15 @@ const LIST_LIMIT = 300;
   styleUrl: './release-list-page.scss',
 })
 export class ReleaseListPage {
-  private readonly repository = inject(DISBURSEMENT_REPOSITORY);
+  private readonly repository = inject(RELEASE_REPOSITORY);
 
   protected readonly copy = RELEASES_COPY.list;
-  protected readonly statusCatalog = DISBURSEMENT_STATUS_CATALOG;
-  protected readonly statuses = Object.keys(DISBURSEMENT_STATUS_CATALOG) as DisbursementStatus[];
+  protected readonly statusCatalog = RELEASE_STATUS_CATALOG;
+  protected readonly statuses = Object.keys(RELEASE_STATUS_CATALOG) as ReleaseStatus[];
   protected readonly kinds: readonly ReleaseKind[] = ['money', 'in-kind'];
 
   protected readonly search = signal('');
-  protected readonly status = signal<DisbursementStatus | null>(null);
+  protected readonly status = signal<ReleaseStatus | null>(null);
   protected readonly kind = signal<ReleaseKind | null>(null);
   protected readonly openOnly = signal(false);
 
@@ -70,7 +70,7 @@ export class ReleaseListPage {
 
   private readonly query = computed(() => ({
     ...(this.settledSearch() ? { search: this.settledSearch() } : {}),
-    ...(this.status() ? { status: this.status() as DisbursementStatus } : {}),
+    ...(this.status() ? { status: this.status() as ReleaseStatus } : {}),
     ...(this.kind() ? { kind: this.kind() as ReleaseKind } : {}),
     ...(this.openOnly() ? { openOnly: true } : {}),
   }));
@@ -85,10 +85,10 @@ export class ReleaseListPage {
         ),
       ),
     ),
-    { initialValue: LOADING as ViewState<readonly Disbursement[]> },
+    { initialValue: LOADING as ViewState<readonly Release[]> },
   );
 
-  protected readonly releases = computed<readonly Disbursement[]>(
+  protected readonly releases = computed<readonly Release[]>(
     () => valueOf(this.state()) ?? [],
   );
 
@@ -121,12 +121,12 @@ export class ReleaseListPage {
       this.openOnly(),
   );
 
-  protected detailLink(release: Disbursement): string {
+  protected detailLink(release: Release): string {
     return `/releases/${release.id}`;
   }
 
-  protected statusLabel(status: DisbursementStatus): string {
-    return DISBURSEMENT_STATUS_CATALOG[status].label;
+  protected statusLabel(status: ReleaseStatus): string {
+    return RELEASE_STATUS_CATALOG[status].label;
   }
 
   protected kindLabel(kind: ReleaseKind): string {
@@ -139,7 +139,7 @@ export class ReleaseListPage {
 
   protected onStatus(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
-    this.status.set(value === '' ? null : (value as DisbursementStatus));
+    this.status.set(value === '' ? null : (value as ReleaseStatus));
   }
 
   protected onKind(event: Event): void {

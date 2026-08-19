@@ -151,8 +151,8 @@ describe('what search may read', () => {
 });
 
 describe('who may search what', () => {
-  it('gives a disbursement officer requests and residents but no case file', async () => {
-    const results = await run('mercado', 'disbursement-officer');
+  it('gives a release officer requests and residents but no case file', async () => {
+    const results = await run('mercado', 'release-officer');
     const types = results.groups.map((group) => group.type);
 
     expect(types).not.toContain('case');
@@ -160,7 +160,7 @@ describe('who may search what', () => {
   });
 
   it('names the types it did not search rather than hiding them', async () => {
-    const results = await run('mercado', 'disbursement-officer');
+    const results = await run('mercado', 'release-officer');
     const notice = describeWithheld(results);
 
     // "You cannot see cases" and "no cases matched" are different answers.

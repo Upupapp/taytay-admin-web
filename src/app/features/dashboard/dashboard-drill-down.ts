@@ -59,16 +59,16 @@ export function barangayDrillDown(filter: DashboardFilter, barangayId: BarangayI
 
 export function categoryDrillDown(filter: DashboardFilter, category: ProgramCategory): DrillDown {
   return {
-    route: '/disbursements',
+    route: '/releases',
     queryParams: { ...base(filter), category },
   };
 }
 
-export function disbursementsDrillDown(
+export function releasesDrillDown(
   filter: DashboardFilter,
   extra: Readonly<Record<string, string>> = {},
 ): DrillDown {
-  return { route: '/disbursements', queryParams: { ...base(filter), ...extra } };
+  return { route: '/releases', queryParams: { ...base(filter), ...extra } };
 }
 
 /** Each attention signal opens exactly the records it counted. */
@@ -81,9 +81,9 @@ export function attentionDrillDown(kind: AttentionKind, filter: DashboardFilter)
     case 'missing-requirements':
       return requestsDrillDown(filter, { openOnly: 'true', missingRequirements: 'true' });
     case 'payout-due':
-      return disbursementsDrillDown(filter, { status: 'scheduled' });
+      return releasesDrillDown(filter, { status: 'scheduled' });
     case 'unclaimed-payout':
-      return disbursementsDrillDown(filter, { status: 'unclaimed' });
+      return releasesDrillDown(filter, { status: 'unclaimed' });
     case 'referral-unanswered':
       return { route: '/referrals', queryParams: { ...base(filter), status: 'sent' } };
   }

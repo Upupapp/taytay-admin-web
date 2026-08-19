@@ -1,6 +1,6 @@
 /**
  * Money is always carried as whole centavos in an integer so that no rounding
- * error can reach a disbursement record. Formatting to `₱1,234.56` happens in
+ * error can reach a release record. Formatting to `₱1,234.56` happens in
  * the presentation layer only.
  */
 export interface Money {

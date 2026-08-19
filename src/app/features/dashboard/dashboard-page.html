@@ -185,9 +185,9 @@
         {{ copy.recordRequest }}
       </a>
       <a
-        *appHasPermission="'disbursement.schedule'"
+        *appHasPermission="'release.schedule'"
         class="btn"
-        routerLink="/disbursements"
+        routerLink="/releases"
         [queryParams]="{ status: 'pending' }"
       >
         {{ copy.schedulePayouts }}

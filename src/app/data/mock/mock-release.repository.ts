@@ -3,13 +3,13 @@ import { throwError, type Observable } from 'rxjs';
 
 import {
   ACCESS_CONTEXT,
-  DISBURSEMENT_STATUS_TRANSITIONS,
+  RELEASE_STATUS_TRANSITIONS,
   asId,
   asIsoDateTime,
   batchProblems,
   canTransition,
   composeManifest,
-  disbursementProblems,
+  releaseProblems,
   discloseResident,
   isReleaseOpen,
   isWithinBarangayScope,
@@ -19,12 +19,12 @@ import {
   userHasPermission,
   type AuthenticatedUser,
   type DeferralReason,
-  type Disbursement,
-  type DisbursementFilter,
-  type DisbursementId,
-  type DisbursementRepository,
-  type DisbursementSortField,
-  type DisbursementStatus,
+  type Release,
+  type ReleaseFilter,
+  type ReleaseId,
+  type ReleaseRepository,
+  type ReleaseSortField,
+  type ReleaseStatus,
   type Page,
   type PageRequest,
   type Permission,
@@ -45,7 +45,7 @@ import {
   MOCK_DISBURSEMENTS,
   MOCK_RELEASE_APPROVERS,
   MOCK_RELEASE_BATCHES,
-} from './seed/disbursements.seed';
+} from './seed/releases.seed';
 
 /**
  * The release adapter.
@@ -62,8 +62,8 @@ import {
  *
  * Four rules, re-checked here rather than only in the UI (`DL-30`):
  *
- *  - **Permission.** `disbursement.view` to read, `disbursement.schedule` to
- *    batch, `disbursement.release` to hand over, `disbursement.void` to cancel.
+ *  - **Permission.** `release.view` to read, `release.schedule` to
+ *    batch, `release.release` to hand over, `release.void` to cancel.
  *  - **Scope.** A release is reachable only if its beneficiary is.
  *  - **Nothing posts.** No ledger, no journal, no account code. This tracks
  *    release operations; the treasury system is elsewhere (`DL-89`).
@@ -71,21 +71,21 @@ import {
  *    list of things the office got wrong.
  */
 @Injectable()
-export class MockDisbursementRepository implements DisbursementRepository {
+export class MockReleaseRepository implements ReleaseRepository {
   private readonly latency = inject(MockLatency);
   private readonly access = inject(ACCESS_CONTEXT);
   private readonly residents = inject(MockResidentStore);
 
-  private releases: readonly Disbursement[] = [...MOCK_DISBURSEMENTS];
+  private releases: readonly Release[] = [...MOCK_DISBURSEMENTS];
   private batches: readonly ReleaseBatch[] = [...MOCK_RELEASE_BATCHES];
   private batchSequence = MOCK_RELEASE_BATCHES.length;
 
   list(
-    filter: DisbursementFilter,
-    page: PageRequest<DisbursementSortField>,
-  ): Observable<Page<Disbursement>> {
+    filter: ReleaseFilter,
+    page: PageRequest<ReleaseSortField>,
+  ): Observable<Page<Release>> {
     const user = this.access.currentUser();
-    const denied = denyUnless<Page<Disbursement>>(user, 'disbursement.view');
+    const denied = denyUnless<Page<Release>>(user, 'release.view');
     if (denied) {
       return denied;
     }
@@ -98,14 +98,14 @@ export class MockDisbursementRepository implements DisbursementRepository {
     return this.latency.respond(paginate(sorted, page));
   }
 
-  getById(id: DisbursementId): Observable<Disbursement | null> {
+  getById(id: ReleaseId): Observable<Release | null> {
     const user = this.access.currentUser();
     const release = this.releases.find((entry) => entry.id === id);
 
     // Not found and not yours read identically (`DL-31`).
     if (
       release === undefined ||
-      !userHasPermission(user, 'disbursement.view') ||
+      !userHasPermission(user, 'release.view') ||
       !this.isReadable(release, user)
     ) {
       return this.latency.respond(null);
@@ -113,9 +113,9 @@ export class MockDisbursementRepository implements DisbursementRepository {
     return this.latency.respond(release);
   }
 
-  listForRequest(id: Disbursement['requestId']): Observable<readonly Disbursement[]> {
+  listForRequest(id: Release['requestId']): Observable<readonly Release[]> {
     const user = this.access.currentUser();
-    const denied = denyUnless<readonly Disbursement[]>(user, 'disbursement.view');
+    const denied = denyUnless<readonly Release[]>(user, 'release.view');
     if (denied) {
       return denied;
     }
@@ -124,9 +124,9 @@ export class MockDisbursementRepository implements DisbursementRepository {
     );
   }
 
-  queue(filter: DisbursementFilter): Observable<readonly Disbursement[]> {
+  queue(filter: ReleaseFilter): Observable<readonly Release[]> {
     const user = this.access.currentUser();
-    const denied = denyUnless<readonly Disbursement[]>(user, 'disbursement.view');
+    const denied = denyUnless<readonly Release[]>(user, 'release.view');
     if (denied) {
       return denied;
     }
@@ -143,9 +143,9 @@ export class MockDisbursementRepository implements DisbursementRepository {
     return this.latency.respond([...open].sort(byQueueOrder));
   }
 
-  approverFor(id: DisbursementId): Observable<StaffUserId | null> {
+  approverFor(id: ReleaseId): Observable<StaffUserId | null> {
     const user = this.access.currentUser();
-    const denied = denyUnless<StaffUserId | null>(user, 'disbursement.view');
+    const denied = denyUnless<StaffUserId | null>(user, 'release.view');
     if (denied) {
       return denied;
     }
@@ -156,7 +156,7 @@ export class MockDisbursementRepository implements DisbursementRepository {
 
   listBatches(): Observable<readonly ReleaseBatch[]> {
     const user = this.access.currentUser();
-    const denied = denyUnless<readonly ReleaseBatch[]>(user, 'disbursement.view');
+    const denied = denyUnless<readonly ReleaseBatch[]>(user, 'release.view');
     if (denied) {
       return denied;
     }
@@ -167,7 +167,7 @@ export class MockDisbursementRepository implements DisbursementRepository {
 
   getBatch(id: ReleaseBatchId): Observable<ReleaseBatch | null> {
     const user = this.access.currentUser();
-    if (!userHasPermission(user, 'disbursement.view')) {
+    if (!userHasPermission(user, 'release.view')) {
       return this.latency.respond(null);
     }
     return this.latency.respond(this.batches.find((batch) => batch.id === id) ?? null);
@@ -175,7 +175,7 @@ export class MockDisbursementRepository implements DisbursementRepository {
 
   createBatch(draft: ReleaseBatchDraft): Observable<ReleaseBatch> {
     const user = this.access.currentUser();
-    const denied = denyUnless<ReleaseBatch>(user, 'disbursement.schedule');
+    const denied = denyUnless<ReleaseBatch>(user, 'release.schedule');
     if (denied) {
       return denied;
     }
@@ -195,7 +195,7 @@ export class MockDisbursementRepository implements DisbursementRepository {
       scheduledFor: draft.scheduledFor,
       venue: draft.venue.trim(),
       officerId: draft.officerId,
-      disbursementIds: draft.disbursementIds,
+      releaseIds: draft.releaseIds,
       notes: draft.notes,
       closedAt: null,
       audit: {
@@ -210,7 +210,7 @@ export class MockDisbursementRepository implements DisbursementRepository {
     // Each member is scheduled individually and keeps its own status: the batch
     // never becomes the thing that is "released" (`DL-90`).
     this.releases = this.releases.map((release) =>
-      draft.disbursementIds.includes(release.id)
+      draft.releaseIds.includes(release.id)
         ? { ...release, batchId: batch.id, status: 'scheduled', scheduledFor: draft.scheduledFor }
         : release,
     );
@@ -220,7 +220,7 @@ export class MockDisbursementRepository implements DisbursementRepository {
 
   manifestFor(id: ReleaseBatchId): Observable<ReleaseManifest | null> {
     const user = this.access.currentUser();
-    if (!userHasPermission(user, 'disbursement.view')) {
+    if (!userHasPermission(user, 'release.view')) {
       return this.latency.respond(null);
     }
 
@@ -229,9 +229,9 @@ export class MockDisbursementRepository implements DisbursementRepository {
       return this.latency.respond(null);
     }
 
-    const entries = batch.disbursementIds
+    const entries = batch.releaseIds
       .map((releaseId) => this.releases.find((release) => release.id === releaseId))
-      .filter((release): release is Disbursement => release !== undefined)
+      .filter((release): release is Release => release !== undefined)
       .filter((release) => this.isReadable(release, user))
       .map((release) => {
         const resident = this.residents.find(release.residentId);
@@ -257,21 +257,21 @@ export class MockDisbursementRepository implements DisbursementRepository {
   /* ── the release itself ─────────────────────────────────────────────────── */
 
   markReleased(
-    id: DisbursementId,
+    id: ReleaseId,
     instrumentReference: string | null,
     remarks: string | null,
-  ): Observable<Disbursement> {
+  ): Observable<Release> {
     const user = this.access.currentUser();
-    const denied = denyUnless<Disbursement>(user, 'disbursement.release');
+    const denied = denyUnless<Release>(user, 'release.release');
     if (denied) {
       return denied;
     }
 
-    const found = this.locate<Disbursement>(id, 'disbursement.release');
+    const found = this.locate<Release>(id, 'release.release');
     if ('error' in found) {
       return found.error;
     }
-    if (!canTransition(DISBURSEMENT_STATUS_TRANSITIONS, found.release.status, 'released')) {
+    if (!canTransition(RELEASE_STATUS_TRANSITIONS, found.release.status, 'released')) {
       return throwError(() => new Error('That release cannot be handed over from its state.'));
     }
 
@@ -279,7 +279,7 @@ export class MockDisbursementRepository implements DisbursementRepository {
       this.save(found.release, {
         status: 'released',
         releasedAt: asIsoDateTime(new Date()),
-        // Recorded against a named officer, never left null: `disbursementProblems`
+        // Recorded against a named officer, never left null: `releaseProblems`
         // reports a release nobody is accountable for.
         releasedBy: user?.id ?? asId<StaffUserId>('staff-unknown'),
         instrumentReference,
@@ -289,20 +289,20 @@ export class MockDisbursementRepository implements DisbursementRepository {
   }
 
   acknowledge(
-    id: DisbursementId,
+    id: ReleaseId,
     acknowledgement: ReleaseAcknowledgementDraft,
-  ): Observable<Disbursement> {
+  ): Observable<Release> {
     const user = this.access.currentUser();
-    const denied = denyUnless<Disbursement>(user, 'disbursement.release');
+    const denied = denyUnless<Release>(user, 'release.release');
     if (denied) {
       return denied;
     }
 
-    const found = this.locate<Disbursement>(id, 'disbursement.release');
+    const found = this.locate<Release>(id, 'release.release');
     if ('error' in found) {
       return found.error;
     }
-    if (!canTransition(DISBURSEMENT_STATUS_TRANSITIONS, found.release.status, 'claimed')) {
+    if (!canTransition(RELEASE_STATUS_TRANSITIONS, found.release.status, 'claimed')) {
       return throwError(() => new Error('Nothing has been released to acknowledge.'));
     }
 
@@ -320,7 +320,7 @@ export class MockDisbursementRepository implements DisbursementRepository {
 
     // A representative collecting on somebody's behalf must present authority.
     // Checked after assembly so the rule lives in one place, in the domain.
-    const problems = disbursementProblems(updated);
+    const problems = releaseProblems(updated);
     if (problems.length > 0) {
       this.releases = this.releases.map((entry) =>
         entry.id === found.release.id ? found.release : entry,
@@ -332,12 +332,12 @@ export class MockDisbursementRepository implements DisbursementRepository {
   }
 
   deferRelease(
-    id: DisbursementId,
+    id: ReleaseId,
     reason: DeferralReason,
     remarks: string,
-  ): Observable<Disbursement> {
+  ): Observable<Release> {
     const user = this.access.currentUser();
-    const denied = denyUnless<Disbursement>(user, 'disbursement.release');
+    const denied = denyUnless<Release>(user, 'release.release');
     if (denied) {
       return denied;
     }
@@ -345,11 +345,11 @@ export class MockDisbursementRepository implements DisbursementRepository {
       return throwError(() => new Error('Say what happened when they came.'));
     }
 
-    const found = this.locate<Disbursement>(id, 'disbursement.release');
+    const found = this.locate<Release>(id, 'release.release');
     if ('error' in found) {
       return found.error;
     }
-    if (!canTransition(DISBURSEMENT_STATUS_TRANSITIONS, found.release.status, 'deferred')) {
+    if (!canTransition(RELEASE_STATUS_TRANSITIONS, found.release.status, 'deferred')) {
       return throwError(() => new Error('That release cannot be deferred from its state.'));
     }
 
@@ -363,15 +363,15 @@ export class MockDisbursementRepository implements DisbursementRepository {
   }
 
   changeStatus(
-    id: DisbursementId,
-    to: DisbursementStatus,
+    id: ReleaseId,
+    to: ReleaseStatus,
     reason: string,
-  ): Observable<Disbursement> {
+  ): Observable<Release> {
     const user = this.access.currentUser();
     // Voiding is its own grant: cancelling an approved payout is not the same
     // authority as scheduling one.
-    const permission: Permission = to === 'voided' ? 'disbursement.void' : 'disbursement.schedule';
-    const denied = denyUnless<Disbursement>(user, permission);
+    const permission: Permission = to === 'voided' ? 'release.void' : 'release.schedule';
+    const denied = denyUnless<Release>(user, permission);
     if (denied) {
       return denied;
     }
@@ -379,11 +379,11 @@ export class MockDisbursementRepository implements DisbursementRepository {
       return throwError(() => new Error('Say why the release is moving.'));
     }
 
-    const found = this.locate<Disbursement>(id, permission);
+    const found = this.locate<Release>(id, permission);
     if ('error' in found) {
       return found.error;
     }
-    if (!canTransition(DISBURSEMENT_STATUS_TRANSITIONS, found.release.status, to)) {
+    if (!canTransition(RELEASE_STATUS_TRANSITIONS, found.release.status, to)) {
       return throwError(() => new Error('A release cannot move that way.'));
     }
     // Handing something over goes through `markReleased`, which records the
@@ -399,7 +399,7 @@ export class MockDisbursementRepository implements DisbursementRepository {
 
   /* ── internals ──────────────────────────────────────────────────────────── */
 
-  private isReadable(release: Disbursement, user: AuthenticatedUser | null): boolean {
+  private isReadable(release: Release, user: AuthenticatedUser | null): boolean {
     const beneficiary = this.residents.find(release.residentId);
     return (
       beneficiary !== undefined && isWithinBarangayScope(user, beneficiary.address.barangayId)
@@ -407,9 +407,9 @@ export class MockDisbursementRepository implements DisbursementRepository {
   }
 
   private locate<TValue>(
-    id: DisbursementId,
+    id: ReleaseId,
     permission: Permission,
-  ): { readonly release: Disbursement } | { readonly error: Observable<TValue> } {
+  ): { readonly release: Release } | { readonly error: Observable<TValue> } {
     const user = this.access.currentUser();
     const release = this.releases.find((entry) => entry.id === id);
     if (release === undefined || !this.isReadable(release, user)) {
@@ -418,9 +418,9 @@ export class MockDisbursementRepository implements DisbursementRepository {
     return { release };
   }
 
-  private save(release: Disbursement, changes: Partial<Disbursement>): Disbursement {
+  private save(release: Release, changes: Partial<Release>): Release {
     const user = this.access.currentUser();
-    const updated: Disbursement = {
+    const updated: Release = {
       ...release,
       ...changes,
       audit: {
@@ -453,7 +453,7 @@ const QUEUE_RANK: Readonly<Record<string, number>> = {
   claimed: 6,
 };
 
-function byQueueOrder(a: Disbursement, b: Disbursement): number {
+function byQueueOrder(a: Release, b: Release): number {
   const rank = (QUEUE_RANK[a.status] ?? 9) - (QUEUE_RANK[b.status] ?? 9);
   if (rank !== 0) {
     return rank;
@@ -461,7 +461,7 @@ function byQueueOrder(a: Disbursement, b: Disbursement): number {
   return (a.scheduledFor ?? '9999-12-31') < (b.scheduledFor ?? '9999-12-31') ? -1 : 1;
 }
 
-function matchesFilter(release: Disbursement, filter: DisbursementFilter): boolean {
+function matchesFilter(release: Release, filter: ReleaseFilter): boolean {
   if (filter.status && release.status !== filter.status) {
     return false;
   }
@@ -493,7 +493,7 @@ function matchesFilter(release: Disbursement, filter: DisbursementFilter): boole
   );
 }
 
-function sortKey(release: Disbursement, field: DisbursementSortField): string {
+function sortKey(release: Release, field: ReleaseSortField): string {
   switch (field) {
     case 'scheduledFor':
       // Unscheduled sorts last rather than first: it is not more urgent than

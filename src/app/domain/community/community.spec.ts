@@ -83,7 +83,7 @@ describe('who may publish', () => {
   });
 
   it('gives an intake officer and a disbursing officer neither module', () => {
-    for (const role of ['intake-officer', 'disbursement-officer'] as const) {
+    for (const role of ['intake-officer', 'release-officer'] as const) {
       const held = permissionsForRole(role);
       for (const key of [...NEWSFEED_KEYS, ...EVENT_KEYS]) {
         expect(held, `${role} should not hold ${key}`).not.toContain(key);

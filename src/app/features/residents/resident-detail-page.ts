@@ -12,7 +12,7 @@ import {
   ASSISTANCE_STATUS_CATALOG,
   barangayName,
   CIVIL_STATUS_LABELS,
-  DISBURSEMENT_STATUS_CATALOG,
+  RELEASE_STATUS_CATALOG,
   HOUSEHOLD_ROLE_LABELS,
   PAYOUT_METHOD_LABELS,
   REFERRAL_STATUS_CATALOG,
@@ -75,7 +75,7 @@ export class ResidentDetailPage {
 
   protected readonly copy = RESIDENTS_COPY.detail;
   protected readonly requestStatuses = ASSISTANCE_STATUS_CATALOG;
-  protected readonly payoutStatuses = DISBURSEMENT_STATUS_CATALOG;
+  protected readonly payoutStatuses = RELEASE_STATUS_CATALOG;
   protected readonly referralStatuses = REFERRAL_STATUS_CATALOG;
 
   private readonly reloads = signal(0);

@@ -19,14 +19,14 @@ import {
   type DashboardPeriod,
   type DashboardRepository,
   type DashboardSummary,
-  type Disbursement,
+  type Release,
   type Money,
   type ProgramCategory,
   type StatusCount,
 } from '@domain/index';
 
 import { MOCK_ASSISTANCE_REQUESTS } from './seed/assistance-requests.seed';
-import { MOCK_DISBURSEMENTS } from './seed/disbursements.seed';
+import { MOCK_DISBURSEMENTS } from './seed/releases.seed';
 import { MOCK_PROGRAMS } from './seed/programs.seed';
 import { MOCK_REFERRALS } from './seed/referrals.seed';
 import { denyUnless } from './mock-access';
@@ -72,9 +72,9 @@ export class MockDashboardRepository implements DashboardRepository {
     );
 
     const requestIds = new Set(requests.map((request) => request.id));
-    const disbursements = MOCK_DISBURSEMENTS.filter((d) => requestIds.has(d.requestId));
+    const releases = MOCK_DISBURSEMENTS.filter((d) => requestIds.has(d.requestId));
 
-    const released = disbursements.filter(
+    const released = releases.filter(
       (d) =>
         (d.status === 'released' || d.status === 'claimed') && withinPeriod(d.releasedAt, since),
     );
@@ -82,11 +82,11 @@ export class MockDashboardRepository implements DashboardRepository {
     const summary: DashboardSummary = {
       generatedAt: asIsoDateTime(new Date()),
       appliedFilter: filter,
-      attention: sortAttention(buildAttention(requests, disbursements, requestIds)),
+      attention: sortAttention(buildAttention(requests, releases, requestIds)),
 
       openRequests: requests.filter((r) => !isTerminalAssistanceStatus(r.status)).length,
       awaitingApproval: countByStatus(requests, 'endorsed'),
-      scheduledPayouts: disbursements.filter((d) => d.status === 'scheduled').length,
+      scheduledPayouts: releases.filter((d) => d.status === 'scheduled').length,
       residentsServedInPeriod: new Set(released.map((d) => d.residentId)).size,
       // Goods reached families too, but carry no peso figure. Left out of the
       // money total rather than counted as zero (`DL-93`).
@@ -115,7 +115,7 @@ export class MockDashboardRepository implements DashboardRepository {
  */
 function buildAttention(
   requests: readonly AssistanceRequest[],
-  disbursements: readonly Disbursement[],
+  releases: readonly Release[],
   requestIds: ReadonlySet<AssistanceRequest['id']>,
 ): readonly AttentionSignal[] {
   const signals: AttentionSignal[] = [];
@@ -148,8 +148,8 @@ function buildAttention(
   push(
     'payout-due',
     'critical',
-    disbursements.filter((d) => d.status === 'scheduled').length,
-    'disbursement.release',
+    releases.filter((d) => d.status === 'scheduled').length,
+    'release.release',
   );
 
   // Released but never collected — the grant may lapse. Acting on it means
@@ -159,8 +159,8 @@ function buildAttention(
   push(
     'unclaimed-payout',
     'warning',
-    disbursements.filter((d) => d.status === 'unclaimed').length,
-    'disbursement.schedule',
+    releases.filter((d) => d.status === 'unclaimed').length,
+    'release.schedule',
   );
 
   // Sent to a partner office with no acknowledgement.
@@ -242,13 +242,13 @@ function byBarangay(requests: readonly AssistanceRequest[]): readonly BarangayCo
 }
 
 function byCategory(
-  released: readonly Disbursement[],
+  released: readonly Release[],
   requests: readonly AssistanceRequest[],
 ): readonly CategoryTotal[] {
   const totals = new Map<ProgramCategory, CategoryTotal>();
 
-  for (const disbursement of released) {
-    const request = requests.find((candidate) => candidate.id === disbursement.requestId);
+  for (const release of released) {
+    const request = requests.find((candidate) => candidate.id === release.requestId);
     const category = request ? categoryOf(request.programId) : null;
     if (category === null) {
       continue;
@@ -256,7 +256,7 @@ function byCategory(
     const existing = totals.get(category);
     totals.set(category, {
       category,
-      amount: sumMoney([existing?.amount ?? ZERO_PESOS, disbursement.amount ?? ZERO_PESOS]),
+      amount: sumMoney([existing?.amount ?? ZERO_PESOS, release.amount ?? ZERO_PESOS]),
       count: (existing?.count ?? 0) + 1,
     });
   }

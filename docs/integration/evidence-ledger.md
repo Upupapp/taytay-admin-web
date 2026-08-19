@@ -538,8 +538,8 @@ backend's dedicated keys and repointing the guard.
   *form* — one kebab-case `resource.action`, two segments. The backend enum currently mixes three
   conventions (kebab, `snake_case`, and three dotted segments) in one vocabulary. Six backend keys
   are renamed; none changes what is granted.
-- **Splits are kept, not collapsed.** Newsfeed (7 v 2), events (10 v 4), disbursement (4 v 1). The
-  disbursement split is the highest-value row in the table: separation of duties is asserted by a
+- **Splits are kept, not collapsed.** Newsfeed (7 v 2), events (10 v 4), release (4 v 1). The
+  release split is the highest-value row in the table: separation of duties is asserted by a
   console test today, and a single `request.release` cannot express it — TAB 08 would have to build
   the split anyway.
 - **Merges are undone.** Field visits get their own keys (L-06); documents adopt the backend's
@@ -775,7 +775,7 @@ The sweep implied the manifest was missing. What is genuinely absent is the batc
 - **`WorkRepository` — all 3.** Derived queues over the Tasks module.
 - **`ReportRepository` — 2 of 3.** No catalogue, no synchronous run.
 - **`BeneficiaryRepository` — 3.** The projection, and the findings history.
-- **`DisbursementRepository` — 3.** Batch list, batch detail, and `approverFor` — the last is what
+- **`ReleaseRepository` — 3.** Batch list, batch detail, and `approverFor` — the last is what
   separation of duties needs, and TAB 08 cannot assert it without one.
 - **`ProgramRepository` — 3.** Utilisation, and the read side of requirement templates.
 - **Others** — `FieldVisitRepository.mine` (scope, not a resource), `NewsfeedRepository.history`,
@@ -1377,7 +1377,7 @@ Measured against `app.routes.ts`: **24 of 43 permission-guarded routes are unrea
 They are not one problem, and the fixes differ:
 
 * **naming divergence over an act both sides implement** — the console splits `resident.create` and
-  `resident.update`; the API grants `resident.manage`. Likewise `disbursement.*` against the API's
+  `resident.update`; the API grants `resident.manage`. Likewise `release.*` against the API's
   `request.release`;
 * **concepts the API genuinely does not have** — `case.view` awaits ADR 0044, `beneficiary.*` is a
   projection this console invented (`DL-71`), and `dashboard.view` and `settings.manage` have no

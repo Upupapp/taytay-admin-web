@@ -180,7 +180,7 @@ export const REPORT_CATALOGUE: readonly ReportDefinition[] = [
     title: 'Release and distribution status',
     question: 'What has been released, what is waiting, and what could not be paid?',
     grain: 'aggregate',
-    permission: 'disbursement.view',
+    permission: 'release.view',
     personLevelJustification: null,
     filters: { ...NONE, period: true, barangay: true },
     unit: 'Releases',

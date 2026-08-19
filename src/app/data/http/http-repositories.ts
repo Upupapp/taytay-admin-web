@@ -37,8 +37,8 @@ import {
   type ServiceProviderFilter,
   type ServiceProviderId,
   type DeferralReason,
-  type DisbursementSortField,
-  type DisbursementStatus,
+  type ReleaseSortField,
+  type ReleaseStatus,
   type ReleaseAcknowledgementDraft,
   type ReleaseBatch,
   type ReleaseBatchDraft,
@@ -79,10 +79,10 @@ import {
   type DashboardRepository,
   type DashboardFilter,
   type DashboardSummary,
-  type Disbursement,
-  type DisbursementFilter,
-  type DisbursementId,
-  type DisbursementRepository,
+  type Release,
+  type ReleaseFilter,
+  type ReleaseId,
+  type ReleaseRepository,
   type FactorState,
   type Family,
   type FamilyDetail,
@@ -888,33 +888,33 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
 }
 
 @Injectable()
-export class HttpDisbursementRepository implements DisbursementRepository {
+export class HttpReleaseRepository implements ReleaseRepository {
   private readonly api = inject(ApiClient);
 
   list(
-    filter: DisbursementFilter,
-    page: PageRequest<DisbursementSortField>,
-  ): Observable<Page<Disbursement>> {
-    return this.api.page<Disbursement>(API_ENDPOINTS.disbursements, page, toParams(filter));
+    filter: ReleaseFilter,
+    page: PageRequest<ReleaseSortField>,
+  ): Observable<Page<Release>> {
+    return this.api.page<Release>(API_ENDPOINTS.releases, page, toParams(filter));
   }
 
-  getById(id: DisbursementId): Observable<Disbursement | null> {
-    return this.api.optionalItem<Disbursement>(`${API_ENDPOINTS.disbursements}/${id}`);
+  getById(id: ReleaseId): Observable<Release | null> {
+    return this.api.optionalItem<Release>(`${API_ENDPOINTS.releases}/${id}`);
   }
 
-  listForRequest(id: AssistanceRequestId): Observable<readonly Disbursement[]> {
-    return this.api.collection<Disbursement>(API_ENDPOINTS.disbursements, { requestId: id });
+  listForRequest(id: AssistanceRequestId): Observable<readonly Release[]> {
+    return this.api.collection<Release>(API_ENDPOINTS.releases, { requestId: id });
   }
 
-  queue(filter: DisbursementFilter): Observable<readonly Disbursement[]> {
-    return this.api.collection<Disbursement>(
-      `${API_ENDPOINTS.disbursements}/queue`,
+  queue(filter: ReleaseFilter): Observable<readonly Release[]> {
+    return this.api.collection<Release>(
+      `${API_ENDPOINTS.releases}/queue`,
       toParams(filter),
     );
   }
 
-  approverFor(id: DisbursementId): Observable<StaffUserId | null> {
-    return this.api.optionalItem<StaffUserId>(`${API_ENDPOINTS.disbursements}/${id}/approver`);
+  approverFor(id: ReleaseId): Observable<StaffUserId | null> {
+    return this.api.optionalItem<StaffUserId>(`${API_ENDPOINTS.releases}/${id}/approver`);
   }
 
   listBatches(): Observable<readonly ReleaseBatch[]> {
@@ -938,44 +938,44 @@ export class HttpDisbursementRepository implements DisbursementRepository {
   }
 
   markReleased(
-    id: DisbursementId,
+    id: ReleaseId,
     instrumentReference: string | null,
     remarks: string | null,
-  ): Observable<Disbursement> {
+  ): Observable<Release> {
     return this.api.post<
-      Disbursement,
+      Release,
       { instrumentReference: string | null; remarks: string | null }
-    >(`${API_ENDPOINTS.disbursements}/${id}/release`, { instrumentReference, remarks });
+    >(`${API_ENDPOINTS.releases}/${id}/release`, { instrumentReference, remarks });
   }
 
   acknowledge(
-    id: DisbursementId,
+    id: ReleaseId,
     acknowledgement: ReleaseAcknowledgementDraft,
-  ): Observable<Disbursement> {
-    return this.api.post<Disbursement, ReleaseAcknowledgementDraft>(
-      `${API_ENDPOINTS.disbursements}/${id}/acknowledgement`,
+  ): Observable<Release> {
+    return this.api.post<Release, ReleaseAcknowledgementDraft>(
+      `${API_ENDPOINTS.releases}/${id}/acknowledgement`,
       acknowledgement,
     );
   }
 
   deferRelease(
-    id: DisbursementId,
+    id: ReleaseId,
     reason: DeferralReason,
     remarks: string,
-  ): Observable<Disbursement> {
-    return this.api.post<Disbursement, { reason: DeferralReason; remarks: string }>(
-      `${API_ENDPOINTS.disbursements}/${id}/defer`,
+  ): Observable<Release> {
+    return this.api.post<Release, { reason: DeferralReason; remarks: string }>(
+      `${API_ENDPOINTS.releases}/${id}/defer`,
       { reason, remarks },
     );
   }
 
   changeStatus(
-    id: DisbursementId,
-    to: DisbursementStatus,
+    id: ReleaseId,
+    to: ReleaseStatus,
     reason: string,
-  ): Observable<Disbursement> {
-    return this.api.post<Disbursement, { to: DisbursementStatus; reason: string }>(
-      `${API_ENDPOINTS.disbursements}/${id}/status`,
+  ): Observable<Release> {
+    return this.api.post<Release, { to: ReleaseStatus; reason: string }>(
+      `${API_ENDPOINTS.releases}/${id}/status`,
       { to, reason },
     );
   }

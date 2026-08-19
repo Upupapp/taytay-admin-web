@@ -135,7 +135,7 @@ describe('data-scope enforcement', () => {
 
 describe('permission enforcement on reads', () => {
   it('refuses a resident list without resident.view', async () => {
-    // disbursement-officer holds resident.view, so use a user with none.
+    // release-officer holds resident.view, so use a user with none.
     signedInAs(null);
     await expect(
       firstValueFrom(TestBed.inject(MockResidentRepository).list({}, DEFAULT_PAGE_REQUEST)),

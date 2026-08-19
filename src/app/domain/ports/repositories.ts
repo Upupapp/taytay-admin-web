@@ -79,16 +79,16 @@ import type { DashboardFilter, DashboardSummary } from '../dashboard/dashboard-s
 import type {
   AcknowledgementKind,
   DeferralReason,
-  Disbursement,
-  DisbursementFilter,
-  DisbursementSortField,
-  DisbursementStatus,
-} from '../disbursements/disbursement';
+  Release,
+  ReleaseFilter,
+  ReleaseSortField,
+  ReleaseStatus,
+} from '../releases/release';
 import type {
   ReleaseBatch,
   ReleaseBatchDraft,
-} from '../disbursements/release-batch';
-import type { ReleaseManifest } from '../disbursements/release-manifest';
+} from '../releases/release-batch';
+import type { ReleaseManifest } from '../releases/release-manifest';
 import type {
   Resident,
   ResidentDraft,
@@ -148,7 +148,7 @@ import type {
   CaseId,
   CaseTaskId,
   CommentId,
-  DisbursementId,
+  ReleaseId,
   DocumentVersionId,
   HouseholdId,
   IsoDate,
@@ -685,18 +685,18 @@ export const FIELD_VISIT_REPOSITORY = new InjectionToken<FieldVisitRepository>(
  * is what keeps "we could not pay you" from being recorded as "you did not
  * come".
  */
-export interface DisbursementRepository {
+export interface ReleaseRepository {
   list(
-    filter: DisbursementFilter,
-    page: PageRequest<DisbursementSortField>,
-  ): Observable<Page<Disbursement>>;
-  getById(id: DisbursementId): Observable<Disbursement | null>;
-  listForRequest(id: AssistanceRequestId): Observable<readonly Disbursement[]>;
+    filter: ReleaseFilter,
+    page: PageRequest<ReleaseSortField>,
+  ): Observable<Page<Release>>;
+  getById(id: ReleaseId): Observable<Release | null>;
+  listForRequest(id: AssistanceRequestId): Observable<readonly Release[]>;
   /** The release queue, ordered by what the office must act on first. */
-  queue(filter: DisbursementFilter): Observable<readonly Disbursement[]>;
+  queue(filter: ReleaseFilter): Observable<readonly Release[]>;
 
   /** Who approved the request behind a release, for the self-release cue. */
-  approverFor(id: DisbursementId): Observable<StaffUserId | null>;
+  approverFor(id: ReleaseId): Observable<StaffUserId | null>;
 
   listBatches(): Observable<readonly ReleaseBatch[]>;
   getBatch(id: ReleaseBatchId): Observable<ReleaseBatch | null>;
@@ -712,16 +712,16 @@ export interface DisbursementRepository {
 
   /** Records that something was handed over, by a named officer. */
   markReleased(
-    id: DisbursementId,
+    id: ReleaseId,
     instrumentReference: string | null,
     remarks: string | null,
-  ): Observable<Disbursement>;
+  ): Observable<Release>;
 
   /** Records the beneficiary's receipt, and how it was evidenced. */
   acknowledge(
-    id: DisbursementId,
+    id: ReleaseId,
     acknowledgement: ReleaseAcknowledgementDraft,
-  ): Observable<Disbursement>;
+  ): Observable<Release>;
 
   /**
    * The beneficiary attended and the office could not release. The reason comes
@@ -729,17 +729,17 @@ export interface DisbursementRepository {
    * (`DL-94`).
    */
   deferRelease(
-    id: DisbursementId,
+    id: ReleaseId,
     reason: DeferralReason,
     remarks: string,
-  ): Observable<Disbursement>;
+  ): Observable<Release>;
 
   /** Moves the release along. Every move takes a reason, as everywhere else. */
   changeStatus(
-    id: DisbursementId,
-    to: DisbursementStatus,
+    id: ReleaseId,
+    to: ReleaseStatus,
     reason: string,
-  ): Observable<Disbursement>;
+  ): Observable<Release>;
 }
 
 /** What the acknowledgement form submits. Time and actor are the store's. */
@@ -749,8 +749,8 @@ export interface ReleaseAcknowledgementDraft {
   readonly authority: string | null;
 }
 
-export const DISBURSEMENT_REPOSITORY = new InjectionToken<DisbursementRepository>(
-  'DisbursementRepository',
+export const RELEASE_REPOSITORY = new InjectionToken<ReleaseRepository>(
+  'ReleaseRepository',
 );
 
 /**
@@ -954,7 +954,7 @@ export const REPORT_REPOSITORY = new InjectionToken<ReportRepository>('ReportRep
  * search must not be the surface that reintroduces it.
  *
  * Results are grouped per record type and gated per record type, so a
- * disbursement officer finds the resident behind a payout and no case file.
+ * release officer finds the resident behind a payout and no case file.
  */
 export interface SearchRepository {
   search(term: string): Observable<SearchResults>;

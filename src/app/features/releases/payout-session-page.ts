@@ -4,10 +4,10 @@ import { RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
 
 import {
-  DISBURSEMENT_REPOSITORY,
+  RELEASE_REPOSITORY,
   batchProgress,
   describeBatch,
-  type Disbursement,
+  type Release,
   type ReleaseBatch,
   type ReleaseBatchId,
   type ReleaseManifest,
@@ -38,7 +38,7 @@ import { RELEASES_COPY } from './releases.copy';
   styleUrl: './payout-session-page.scss',
 })
 export class PayoutSessionPage {
-  private readonly repository = inject(DISBURSEMENT_REPOSITORY);
+  private readonly repository = inject(RELEASE_REPOSITORY);
 
   protected readonly copy = RELEASES_COPY.batches;
 
@@ -68,8 +68,8 @@ export class PayoutSessionPage {
 
   protected progressFor(batch: ReleaseBatch): string {
     const all = this.releases()?.items ?? [];
-    const members = all.filter((release: Disbursement) =>
-      batch.disbursementIds.includes(release.id),
+    const members = all.filter((release: Release) =>
+      batch.releaseIds.includes(release.id),
     );
     return describeBatch(batchProgress(members));
   }

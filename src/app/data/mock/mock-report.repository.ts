@@ -5,7 +5,7 @@ import {
   ACCESS_CONTEXT,
   ASSISTANCE_STATUS_CATALOG,
   CASE_STATUS_CATALOG,
-  DISBURSEMENT_STATUS_CATALOG,
+  RELEASE_STATUS_CATALOG,
   EXPORT_HANDLING_NOTICE,
   REFERRAL_STATUS_CATALOG,
   REPORT_CATALOGUE,
@@ -45,7 +45,7 @@ import { MockCaseStore } from './mock-case.store';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
 import { MOCK_ASSISTANCE_REQUESTS } from './seed/assistance-requests.seed';
-import { MOCK_DISBURSEMENTS } from './seed/disbursements.seed';
+import { MOCK_DISBURSEMENTS } from './seed/releases.seed';
 import { MOCK_FIELD_VISITS } from './seed/field-visits.seed';
 import { MOCK_PROGRAMS } from './seed/programs.seed';
 import { MOCK_REFERRALS } from './seed/referrals.seed';
@@ -367,9 +367,9 @@ export class MockReportRepository implements ReportRepository {
       return resident !== undefined && this.inBarangay(resident.address.barangayId, filter);
     });
 
-    const rows = Object.keys(DISBURSEMENT_STATUS_CATALOG).map((status) => ({
+    const rows = Object.keys(RELEASE_STATUS_CATALOG).map((status) => ({
       key: status,
-      label: DISBURSEMENT_STATUS_CATALOG[status as keyof typeof DISBURSEMENT_STATUS_CATALOG].label,
+      label: RELEASE_STATUS_CATALOG[status as keyof typeof RELEASE_STATUS_CATALOG].label,
       value: releases.filter((release) => release.status === status).length,
     }));
 

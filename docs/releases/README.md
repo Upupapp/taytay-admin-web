@@ -72,7 +72,7 @@ description and **no amount at all** (`DL-93`).
 Putting a peso figure on a food pack invents a number nobody counted, and it
 then appears in reports as though somebody did. So:
 
-- `Disbursement.amount` is `Money | null`, and every consumer handles the null.
+- `Release.amount` is `Money | null`, and every consumer handles the null.
 - `sumReleased` filters in-kind releases out rather than coercing them to zero.
 - A manifest reports a **money total** and a **separate count of goods**. Two
   numbers that each mean something.
@@ -103,7 +103,7 @@ that leaves the building, after the referral summary, and it gets the same
 treatment (`DL-92`).
 
 **Composed by the data layer**, never assembled by a screen:
-`DisbursementRepository.manifestFor(batchId)` returns a `ReleaseManifest`. A
+`ReleaseRepository.manifestFor(batchId)` returns a `ReleaseManifest`. A
 template with the full records in scope is one binding away from printing a
 birth date onto a sheet that leaves the building.
 
@@ -148,7 +148,7 @@ recorded**. The domain refuses the acknowledgement otherwise.
 
 ## Access
 
-Every method on `MockDisbursementRepository` checks its permission and applies
+Every method on `MockReleaseRepository` checks its permission and applies
 barangay scope through the beneficiary. That was not true before TAB 17: the
 adapter was completely ungated, the second one found in that state after
 `MockReferralRepository` (`DL-84`, `DL-95`). Both sat behind placeholder routes,
@@ -156,10 +156,10 @@ so nothing exercised them.
 
 | Act                        | Permission               |
 | -------------------------- | ------------------------ |
-| Read a release or session   | `disbursement.view`      |
-| Create a payout session     | `disbursement.schedule`  |
-| Record a release, receipt or deferral | `disbursement.release` |
-| Void a release              | `disbursement.void`      |
+| Read a release or session   | `release.view`      |
+| Create a payout session     | `release.schedule`  |
+| Record a release, receipt or deferral | `release.release` |
+| Void a release              | `release.void`      |
 
 A release is reachable only if the person it is for is. Not-found and not-yours
 read identically (`DL-31`).
@@ -170,11 +170,11 @@ read identically (`DL-31`).
 
 | Path                                              | What it holds                              |
 | ------------------------------------------------- | ------------------------------------------ |
-| `domain/disbursements/disbursement.ts`            | Statuses, transitions, kinds, invariants   |
-| `domain/disbursements/release-batch.ts`           | Sessions and their derived progress        |
-| `domain/disbursements/release-manifest.ts`        | Manifest composition, masking, self-release |
-| `data/mock/mock-disbursement.repository.ts`       | The gated adapter                          |
-| `data/mock/seed/disbursements.seed.ts`            | Nine releases exercising every state       |
+| `domain/releases/release.ts`            | Statuses, transitions, kinds, invariants   |
+| `domain/releases/release-batch.ts`           | Sessions and their derived progress        |
+| `domain/releases/release-manifest.ts`        | Manifest composition, masking, self-release |
+| `data/mock/mock-release.repository.ts`       | The gated adapter                          |
+| `data/mock/seed/releases.seed.ts`            | Nine releases exercising every state       |
 | `features/releases/release-list-page.*`           | The queue, bucketed by who must act        |
 | `features/releases/release-detail-page.*`         | One release and the acts against it        |
 | `features/releases/payout-session-page.*`         | Sessions and the printed payout list       |

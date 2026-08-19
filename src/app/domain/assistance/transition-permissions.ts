@@ -23,7 +23,7 @@ export const TRANSITION_PERMISSIONS: Readonly<Record<AssistanceRequestStatus, Pe
   approved: 'request.approve',
   rejected: 'request.reject',
   scheduled: 'request.schedule',
-  released: 'disbursement.release',
+  released: 'release.release',
   completed: 'request.close',
   cancelled: 'request.intake',
   expired: 'request.close',

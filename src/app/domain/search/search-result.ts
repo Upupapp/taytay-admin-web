@@ -44,7 +44,7 @@ export const SEARCH_ENTITY_SINGULAR: Readonly<Record<SearchEntityType, string>> 
 /**
  * What each type costs to see at all.
  *
- * Applied per group rather than to search as a whole: a disbursement officer
+ * Applied per group rather than to search as a whole: a release officer
  * searching a name should find the resident and the request behind a payout,
  * and find no case file, because they hold no case access (`DL-08`).
  */

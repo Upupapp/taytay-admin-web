@@ -45,15 +45,15 @@ const walk = (dir, exts) => {
   return out;
 };
 
-const domainFiles = walk('src/app/domain/disbursements', new Set(['.ts'])).filter(
+const domainFiles = walk('src/app/domain/releases', new Set(['.ts'])).filter(
   (file) => !file.includes('.spec.'),
 );
 const viewFiles = walk('src/app/features/releases', new Set(['.ts', '.html'])).filter(
   (file) => !file.includes('.spec.'),
 );
 const dataFiles = [
-  'src/app/data/mock/mock-disbursement.repository.ts',
-  'src/app/data/mock/seed/disbursements.seed.ts',
+  'src/app/data/mock/mock-release.repository.ts',
+  'src/app/data/mock/seed/releases.seed.ts',
 ].filter((file) => existsSync(join(root, file)));
 
 if (domainFiles.length === 0) {
@@ -63,10 +63,10 @@ if (viewFiles.length === 0) {
   problems.push('No release screens found. The feature has moved or been removed.');
 }
 
-const disbursement = read('src/app/domain/disbursements/disbursement.ts');
-const batch = read('src/app/domain/disbursements/release-batch.ts');
-const manifest = read('src/app/domain/disbursements/release-manifest.ts');
-const adapter = read('src/app/data/mock/mock-disbursement.repository.ts');
+const release = read('src/app/domain/releases/release.ts');
+const batch = read('src/app/domain/releases/release-batch.ts');
+const manifest = read('src/app/domain/releases/release-manifest.ts');
+const adapter = read('src/app/data/mock/mock-release.repository.ts');
 const port = read('src/app/domain/ports/repositories.ts');
 
 const isComment = (line) => {
@@ -105,11 +105,11 @@ for (const file of [...domainFiles, ...viewFiles, ...dataFiles]) {
 
 const portBlock = block(
   port,
-  /export interface DisbursementRepository\s*\{[\s\S]*?\n\}/,
-  'DisbursementRepository',
+  /export interface ReleaseRepository\s*\{[\s\S]*?\n\}/,
+  'ReleaseRepository',
 );
 if (portBlock !== '' && ACCOUNTING.test(portBlock)) {
-  problems.push('DisbursementRepository exposes an accounting operation. It must not (DL-89).');
+  problems.push('ReleaseRepository exposes an accounting operation. It must not (DL-89).');
 }
 
 // The boundary is stated where an officer reads it, not only in a decision log.
@@ -178,18 +178,18 @@ notes.push('batch: no status of its own, counted from its members, counts render
 
 /* ── 3. Deferred is not unclaimed ────────────────────────────────────────── */
 
-const statusUnion = /DisbursementStatus =\s*([^;]+);/.exec(disbursement)?.[1] ?? '';
+const statusUnion = /ReleaseStatus =\s*([^;]+);/.exec(release)?.[1] ?? '';
 const statuses = [...statusUnion.matchAll(/'([a-z-]+)'/g)].map((match) => match[1]);
 for (const required of ['deferred', 'unclaimed', 'needs-correction']) {
   if (!statuses.includes(required)) {
     problems.push(
-      `DisbursementStatus no longer distinguishes '${required}'. Recording a payout the office ` +
+      `ReleaseStatus no longer distinguishes '${required}'. Recording a payout the office ` +
         'could not make as "unclaimed" blames a family for the office’s missing signature.',
     );
   }
 }
 
-const reasonUnion = /DeferralReason =\s*([^;]+);/.exec(disbursement)?.[1] ?? '';
+const reasonUnion = /DeferralReason =\s*([^;]+);/.exec(release)?.[1] ?? '';
 const reasons = [...reasonUnion.matchAll(/'([a-z-]+)'/g)].map((match) => match[1]);
 if (reasons.length === 0) {
   problems.push('DeferralReason has gone. A deferral with no stated reason is an unexplained one.');
@@ -199,7 +199,7 @@ if (reasons.length === 0) {
 const BLAMES_THE_FAMILY =
   /beneficiar|client|recipient|no-show|did-not-(come|appear|attend)|absent|failed-to-(appear|claim|collect)|refus/i;
 const labelsBlock = block(
-  disbursement,
+  release,
   /export const DEFERRAL_REASON_LABELS[\s\S]*?\n\};/,
   'DEFERRAL_REASON_LABELS',
 );
@@ -221,9 +221,9 @@ for (const [, label] of labelsBlock.matchAll(/:\s*\n?\s*'([^']*)'/g)) {
 }
 
 const problemsBody = block(
-  disbursement,
-  /export function disbursementProblems[\s\S]*?\n\}/,
-  'disbursementProblems',
+  release,
+  /export function releaseProblems[\s\S]*?\n\}/,
+  'releaseProblems',
 );
 if (!/'deferred-without-a-reason'/.test(problemsBody)) {
   problems.push('A deferral no longer has to state a reason.');
@@ -238,12 +238,12 @@ notes.push(`deferral: ${reasons.length} reasons, all the office’s own; deferre
 
 /* ── 4. Goods are counted, never valued ──────────────────────────────────── */
 
-const disbursementBlock = block(
-  disbursement,
-  /export interface Disbursement\s*\{[\s\S]*?\n\}/,
-  'Disbursement',
+const releaseBlock = block(
+  release,
+  /export interface Release\s*\{[\s\S]*?\n\}/,
+  'Release',
 );
-if (!/readonly amount: Money \| null;/.test(disbursementBlock)) {
+if (!/readonly amount: Money \| null;/.test(releaseBlock)) {
   problems.push(
     'A release amount is no longer nullable. Forcing a peso figure onto a sack of rice invents a ' +
       'number that then appears in reports as though somebody counted it (DL-93).',
@@ -251,11 +251,11 @@ if (!/readonly amount: Money \| null;/.test(disbursementBlock)) {
 }
 for (const rule of ['in-kind-release-with-an-amount', 'money-release-without-an-amount']) {
   if (!problemsBody.includes(rule)) {
-    problems.push(`disbursementProblems no longer rejects '${rule}'.`);
+    problems.push(`releaseProblems no longer rejects '${rule}'.`);
   }
 }
 
-const sumBody = block(disbursement, /export function sumReleased[\s\S]*?\n\}/, 'sumReleased');
+const sumBody = block(release, /export function sumReleased[\s\S]*?\n\}/, 'sumReleased');
 if (!/amount !== null/.test(sumBody)) {
   problems.push(
     'sumReleased no longer excludes in-kind releases. Coercing goods to zero and summing them is ' +
@@ -377,12 +377,12 @@ for (const method of [
 ]) {
   const body = new RegExp(`\\n  ${method}\\(([\\s\\S]*?)\\n  \\}`).exec(adapter)?.[1] ?? '';
   if (body === '') {
-    problems.push(`MockDisbursementRepository.${method} has gone.`);
+    problems.push(`MockReleaseRepository.${method} has gone.`);
     continue;
   }
   if (!/denyUnless|userHasPermission/.test(body)) {
     problems.push(
-      `MockDisbursementRepository.${method} does not check permission. A payout record names a ` +
+      `MockReleaseRepository.${method} does not check permission. A payout record names a ` +
         'person, an amount, and a date and place they can be found collecting money (DL-95).',
     );
   }
@@ -393,7 +393,7 @@ for (const method of [
 const readableBody =
   /private isReadable\([\s\S]*?\n  \}/.exec(adapter)?.[0] ?? '';
 if (readableBody === '') {
-  problems.push('MockDisbursementRepository.isReadable has gone. Nothing applies scope.');
+  problems.push('MockReleaseRepository.isReadable has gone. Nothing applies scope.');
 } else if (!/isWithinBarangayScope\(/.test(readableBody)) {
   problems.push(
     'The release adapter no longer applies barangay scope. A barangay-link account would read ' +

@@ -31,7 +31,7 @@ import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
 import { candidatesFor } from './mock-duplicate-matcher';
 import { MOCK_ASSISTANCE_REQUESTS } from './seed/assistance-requests.seed';
-import { MOCK_DISBURSEMENTS } from './seed/disbursements.seed';
+import { MOCK_DISBURSEMENTS } from './seed/releases.seed';
 import { MOCK_FIELD_VISITS } from './seed/field-visits.seed';
 import { MOCK_REFERRALS } from './seed/referrals.seed';
 import { MOCK_STAFF } from './seed/staff.seed';
@@ -349,7 +349,7 @@ export class MockWorkRepository implements WorkRepository {
         summary: `${unscheduled.length} approved ${unscheduled.length === 1 ? 'release has' : 'releases have'} no payout date.`,
         basis:
           'Read every release still marked for release, and listed those with no scheduled date.',
-        permission: 'disbursement.schedule',
+        permission: 'release.schedule',
         link: { routerLink: ['/releases'], label: 'Open the release queue' },
         detectedFrom: unscheduled.length,
       });
@@ -365,7 +365,7 @@ export class MockWorkRepository implements WorkRepository {
         severity: 'risk',
         summary: `${mismatched.length} ${mismatched.length === 1 ? 'voucher does' : 'vouchers do'} not match the registry and cannot be released.`,
         basis: 'Read every release held for correction. Somebody is waiting on the office.',
-        permission: 'disbursement.view',
+        permission: 'release.view',
         link: { routerLink: ['/releases'], label: 'Open the release queue' },
         detectedFrom: mismatched.length,
       });
@@ -500,36 +500,36 @@ const RELEASE_WORK: Partial<Record<string, OwedWork>> = {
     kind: 'prepare-release',
     priority: 'important',
     title: 'Schedule an approved release',
-    permission: 'disbursement.schedule',
+    permission: 'release.schedule',
   },
   scheduled: {
     kind: 'confirm-release',
     priority: 'important',
     title: 'Release and record the receipt',
-    permission: 'disbursement.release',
+    permission: 'release.release',
   },
   released: {
     kind: 'confirm-release',
     priority: 'important',
     title: 'Record the beneficiary’s receipt',
-    permission: 'disbursement.release',
+    permission: 'release.release',
   },
   deferred: {
     kind: 'prepare-release',
     priority: 'urgent',
     title: 'Fix what stopped this payout and reschedule',
-    permission: 'disbursement.schedule',
+    permission: 'release.schedule',
   },
   'needs-correction': {
     kind: 'prepare-release',
     priority: 'urgent',
     title: 'Correct the voucher',
-    permission: 'disbursement.schedule',
+    permission: 'release.schedule',
   },
   unclaimed: {
     kind: 'prepare-release',
     priority: 'routine',
     title: 'Follow up an uncollected payout',
-    permission: 'disbursement.schedule',
+    permission: 'release.schedule',
   },
 };

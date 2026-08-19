@@ -81,7 +81,7 @@ function resolution(overrides: Partial<IdentityResolutionDraft> = {}): IdentityR
 
 describe('MockBeneficiaryRepository — permission', () => {
   it('refuses the registry to a role without beneficiary.view', () => {
-    const repository = signedInAs(authenticated('disbursement-officer'));
+    const repository = signedInAs(authenticated('release-officer'));
 
     return expect(
       firstValueFrom(repository.list({}, DEFAULT_PAGE_REQUEST)),

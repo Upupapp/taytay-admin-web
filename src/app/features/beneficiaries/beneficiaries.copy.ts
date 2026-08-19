@@ -133,7 +133,7 @@ export const BENEFICIARIES_COPY = {
 
     previewHeading: 'What this finding carries across',
     previewRequests: 'Assistance requests',
-    previewDisbursements: 'Releases',
+    previewReleases: 'Releases',
     previewCases: 'Open cases',
     previewEnrollments: 'Programme enrollments',
     previewOverlap: 'Recorded under both records',

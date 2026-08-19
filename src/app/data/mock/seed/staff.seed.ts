@@ -64,10 +64,10 @@ export const MOCK_STAFF: readonly StaffUser[] = [
     audit: stamp(210),
   },
   {
-    id: asId<StaffUserId>('staff-disbursement'),
+    id: asId<StaffUserId>('staff-release'),
     name: { first: 'Ronald', middle: 'Cruz', last: 'Mendoza', suffix: null },
     email: 'ronald.mendoza@taytay.example.gov.ph',
-    role: 'disbursement-officer',
+    role: 'release-officer',
     position: 'Disbursing Officer II',
     barangayId: null,
     additionalPermissions: [],

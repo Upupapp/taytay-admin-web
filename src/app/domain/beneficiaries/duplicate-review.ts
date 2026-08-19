@@ -254,7 +254,7 @@ export interface MergePreview {
   readonly canonicalResidentId: ResidentId;
   readonly supersededResidentId: ResidentId;
   readonly movingRequestCount: number;
-  readonly movingDisbursementCount: number;
+  readonly movingReleaseCount: number;
   readonly movingCaseCount: number;
   readonly movingEnrollmentCount: number;
   /**

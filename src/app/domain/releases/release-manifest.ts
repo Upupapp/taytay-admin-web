@@ -1,8 +1,8 @@
 import type { ResidentView } from '../residents/resident-disclosure';
 import type { IsoDate, IsoDateTime, StaffUserId } from '../shared/ids';
 import type { Money } from '../shared/money';
-import type { Disbursement, ReleaseKind } from './disbursement';
-import { RELEASE_KIND_LABELS } from './disbursement';
+import type { Release, ReleaseKind } from './release';
+import { RELEASE_KIND_LABELS } from './release';
 
 /**
  * The payout list carried to the table.
@@ -76,7 +76,7 @@ export interface ManifestInput {
   readonly officerName: string;
   readonly preparedAt: IsoDateTime;
   /** Each release with the beneficiary as the composing user may see them. */
-  readonly entries: readonly { release: Disbursement; beneficiary: ResidentView }[];
+  readonly entries: readonly { release: Release; beneficiary: ResidentView }[];
 }
 
 /**

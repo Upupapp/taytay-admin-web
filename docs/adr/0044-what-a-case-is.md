@@ -103,7 +103,7 @@ their own projected vocabulary. That rename belongs to `/api/v2`.
 | Referral | 8 states, **identical** |
 | Field visit | 5 states, **identical** |
 | Enrolment | 3 states, **identical** |
-| Release / disbursement | **Diverges — 9 console states against 6 API states, 3 shared** |
+| Release / release | **Diverges — 9 console states against 6 API states, 3 shared** |
 
 The release divergence is not a naming slip. `DL-94` holds that **deferred is the office's failing
 and unclaimed is nobody's** — funds that have not arrived, a missing countersignature, a voucher

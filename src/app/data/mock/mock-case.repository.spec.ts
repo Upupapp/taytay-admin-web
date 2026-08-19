@@ -135,7 +135,7 @@ describe('cases are read under the same access rules as everything else', () => 
   });
 
   it('refuses a role that holds no case permission, however senior its other work', async () => {
-    signedInAs(authenticated('disbursement-officer'));
+    signedInAs(authenticated('release-officer'));
     await expect(firstValueFrom(repo().list({}, DEFAULT_PAGE_REQUEST))).rejects.toThrow(
       PermissionDeniedError,
     );

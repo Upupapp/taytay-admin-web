@@ -187,9 +187,8 @@ export const API_ENDPOINTS = {
    * proved exists.
    */
   relationships: 'admin/residents',
-  beneficiaries: 'admin/residents',
+  beneficiaries: 'admin/beneficiaries',
   identityReview: 'admin/resident-duplicates',
-  disbursements: 'admin/releases',
   fieldVisits: 'admin/visits',
   staffAccounts: 'staff',
   audit: 'admin/audit-entries',
