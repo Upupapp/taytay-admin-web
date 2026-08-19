@@ -6,8 +6,8 @@
     "state": "../state.json",
     "summary": "26 TABs, all certified locally, console feature-complete on mock adapters. Preserved, not superseded."
   },
-  "currentTab": "TAB 13 \u2014 Console security hardening",
-  "currentTabIndex": 13,
+  "currentTab": "TAB 14 \u2014 Privacy and audit under RA 10173",
+  "currentTabIndex": 14,
   "totalTabs": 20,
   "completedTabs": [
     "TAB 00 \u2014 Baseline, remotes and the evidence ledger (locally complete; environmentally blocked)",
@@ -22,11 +22,12 @@
     "TAB 09 \u2014 Documents and files (file transport built; object-storage posture unverified, no store provisioned)",
     "TAB 10 \u2014 Newsfeed and events (reconciliation; 3 divergences closed, derivation measured and accepted; step 9 blocked on staging)",
     "TAB 11 \u2014 Search, saved views and notifications (search auditing built; saved-view scope and delivery mechanism decided and tested)",
-    "TAB 12 \u2014 Cutover engineering (matrix, both build guards, seam split; dual-run/telemetry/rollback-rehearsal blocked on staging)"
+    "TAB 12 \u2014 Cutover engineering (matrix, both build guards, seam split; dual-run/telemetry/rollback-rehearsal blocked on staging)",
+    "TAB 13 \u2014 Console security hardening (style-src gap closed by changing the feature; step 6 blocked \u2014 nothing deployed)"
   ],
-  "currentObjective": "TAB 13: CSP, headers, hosting, secrets, supply chain. Two accepted risks depend on the CSP.",
+  "currentObjective": "TAB 14: DPO, retention, lawful basis, readable trail, export control.",
   "status": "IN_PROGRESS",
-  "lastCheckpointAt": "2026-08-19T05:45:00+08:00",
+  "lastCheckpointAt": "2026-08-19T06:30:00+08:00",
   "repositories": {
     "console": {
       "path": "/Users/user/development/taytay-admin-web",
@@ -50,11 +51,11 @@
       "verify": "PASS",
       "testFiles": 90,
       "tests": 1580,
-      "repositoryChecks": 30,
-      "dataSource": "http in production/staging/local-api, mock in local-mock (TAB 12 matrix)",
+      "repositoryChecks": 32,
+      "dataSource": "http in production/staging/local-api, mock in local-mock",
       "productionInitialBundle": "43 kB",
       "permissions": 70,
-      "note": "Production is correctly configured and NOT deployable: L-22 and L-23 both come due before a flip."
+      "note": "CSP now complete and unweakenable in the repository; unverified in production (nothing deployed)."
     },
     "backend": {
       "tests": 1036,
