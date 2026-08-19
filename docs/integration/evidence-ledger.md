@@ -1479,3 +1479,99 @@ TAB 09's precondition — *"Object storage provisioned with separate private and
 credentials"* — is unmet. Two buckets, least-privilege keys, and signed-URL issuance against a real
 store are **designed and unproven**. The access-grant model does not depend on the store, so it
 holds; the storage posture does not.
+
+---
+
+## TAB 12 — cutover engineering
+
+*"Flipping one flag is the easy part. Deciding what happens when it is wrong is the command."*
+
+### The environment matrix
+
+| | `dataSource` | API | devtools |
+| --- | --- | --- | --- |
+| `local-mock` | mock | localhost (unused) | on |
+| `local-api` | http | `http://localhost:8000/api/v1` | on |
+| `staging` | http | `https://api-staging.<approved-domain>/api/v1` | on |
+| `production` | http | `https://api.<approved-domain>/api/v1` | off |
+
+Each names itself, because *"which build is this?"* is the first question asked about an
+environment nobody can attach a debugger to, and `production: boolean` cannot tell `local-mock`
+from `local-api`.
+
+### The misconfiguration that had already shipped
+
+`environment.ts` carried `production: true` **and** `dataSource: 'mock'`. Nothing objected: the
+build succeeded, every test passed, the bundle was valid, and the application would have served
+invented residents to whoever opened it.
+
+`check:environments` fails the build on that and five more, each mutation-tested:
+
+| Planted regression | Result |
+| --- | --- |
+| production selecting the mock | **caught** |
+| production pointing at localhost | **caught** |
+| production over plaintext | **caught** |
+| developer tooling in production | **caught** |
+| something shaped like a credential | **caught** |
+| a staging build able to reach production | **caught** |
+| an API host no CSP allows | **caught** |
+
+### `check:bundle` found the real defect on its first run
+
+It inspects the **artefact**, because TAB 12 says an assumption is not a guarantee. It reported
+`Marilou` and `Bautista family` in `main-*.js` — seed records in a production build.
+
+The cause was structural. The seam was one module holding both adapter sets, chosen at runtime:
+
+```ts
+environment.dataSource === 'http' ? httpProviders() : mockProviders()
+```
+
+A **runtime** decision over **static** imports, so every mock repository — and through them the
+whole seed registry — stayed reachable from a live import. It is now two files swapped by
+`angular.json` exactly as environments are (`DL-136`): a production build cannot reach the mock
+because it never imports it. Initial bundle **43 kB**, artefact clean.
+
+### Three mistakes of mine, and what each would have cost
+
+1. **A staging API host no CSP allowed.** I wrote `staging-api.<approved-domain>` where
+   `netlify.toml` had long said `api-staging.<approved-domain>`. Both plausible; together, a console
+   that loads perfectly and cannot reach its API — every request blocked by the browser before it
+   leaves, with nothing in any server log to explain it.
+2. **The rule I added to catch that could not fail.** `new URL` throws on the `<approved-domain>`
+   placeholder, so the `catch` skipped silently and the check passed unconditionally. A check that
+   cannot fail is worse than no check: it reports a guarantee nobody has. It compares origins
+   textually now.
+3. **`check:contract` had stopped checking.** It named `environment.development.ts`, which the
+   matrix replaced — so the rule that guards the versioned base URL had quietly lost its subject.
+   It discovers the files now rather than listing them.
+
+`public/_headers` had also drifted from `netlify.toml`: hashed assets were `immutable` in one and
+unspecified in the other, and `_headers` is the copy that ships **inside** the bundle. Both now
+agree, `media/` included.
+
+### What this does **not** mean
+
+**Production is correctly configured and would not work.** Setting `dataSource: 'http'` makes the
+configuration honest; it does not make the console ready:
+
+* **L-22** — 45 adapter reads still cast wire payloads straight to domain types without a mapper,
+  so `barangay_id` never becomes `address.barangayId` and lists render blank rather than erroring.
+* **L-23** — 24 of 43 permission-guarded routes ask for keys this API never sends, including
+  `dashboard.view`. Those screens are unreachable for every role.
+
+Before TAB 12 this was invisible: production said `mock`, so it "worked" by serving fiction. It is
+now visible as two named findings with ratchets holding them, which is the point. **Neither is
+TAB 12's to fix** — L-22 is adapter work, L-23 is a vocabulary decision on the master TODO — and a
+production deploy before both are closed would put a blank console in front of the office.
+
+### Blocked
+
+* **Step 4, the dual-run.** Needs staging. It would also not be meaningful yet: with L-22 and L-23
+  open, the diff between mock and API is *predictably* enormous and already explained, so running
+  it now would produce noise rather than findings.
+* **Step 7, cutover instrumentation.** Error rate, API failure rate by status and page-load timing
+  need a host and a dashboard, and there is neither.
+* **The rollback rehearsal.** Written up in [`rollback.md`](./rollback.md) and honestly marked as an
+  estimate rather than a measurement — five minutes, from the hosting model, not from a run.

@@ -161,3 +161,21 @@ Last updated: 19 August 2026, after TAB 07.
 ## Done
 
 - [x] Push both repositories to `main` — 18 August 2026
+
+---
+
+## 🟣 Added by TAB 12 — cutover
+
+- [ ] **Rehearse a rollback in staging and time it** — *the cheapest outstanding item*
+      The plan is written ([`docs/integration/rollback.md`](docs/integration/rollback.md)); the
+      five-minute figure is an estimate from the hosting model, not a measurement. Needs a staging
+      site with two deploys and about fifteen minutes.
+
+- [ ] **Stand up cutover telemetry before any flip** — error rate, API failure rate by status code,
+      page-load timing, on a dashboard somebody is watching.
+      → A cutover with no telemetry is a cutover whose failure is reported by a caseworker.
+
+- [ ] **Do not deploy production until L-22 and L-23 are closed**
+      The configuration is now correct — `dataSource: 'http'` — and the console is not ready:
+      45 adapter reads bypass the mappers, and 24 of 43 guarded routes ask for permissions the API
+      never sends, including the dashboard. Before TAB 12 this was hidden behind mock data.
