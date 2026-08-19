@@ -6,8 +6,8 @@
     "state": "../state.json",
     "summary": "26 TABs, all certified locally, console feature-complete on mock adapters. Preserved, not superseded."
   },
-  "currentTab": "TAB 10 \u2014 Newsfeed and events",
-  "currentTabIndex": 10,
+  "currentTab": "TAB 11 \u2014 Search, saved views and notifications",
+  "currentTabIndex": 11,
   "totalTabs": 20,
   "completedTabs": [
     "TAB 00 \u2014 Baseline, remotes and the evidence ledger (locally complete; environmentally blocked)",
@@ -19,11 +19,12 @@
     "TAB 06 \u2014 Contract testing in CI (complete; two CI workflow files uncommitted pending the token's workflow scope)",
     "TAB 07 \u2014 Backend gap closure (complete; 19 endpoints built, 1 mapped, 3 deferred to TAB 08, 11 blocked on MSWDO ratification, 1 withdrawn)",
     "TAB 08 \u2014 Money (9 of 10 steps met; step 8 concurrency unmet, blocked on PostgreSQL and recorded as an honest skip)",
-    "TAB 09 \u2014 Documents and files (file transport built; object-storage posture unverified, no store provisioned)"
+    "TAB 09 \u2014 Documents and files (file transport built; object-storage posture unverified, no store provisioned)",
+    "TAB 10 \u2014 Newsfeed and events (reconciliation; 3 divergences closed, derivation measured and accepted; step 9 blocked on staging)"
   ],
-  "currentObjective": "TAB 10: publishing, moderation, registration and attendance against the API.",
+  "currentObjective": "TAB 11: the three shell services \u2014 search, saved views, notifications.",
   "status": "IN_PROGRESS",
-  "lastCheckpointAt": "2026-08-19T03:10:00+08:00",
+  "lastCheckpointAt": "2026-08-19T04:05:00+08:00",
   "repositories": {
     "console": {
       "path": "/Users/user/development/taytay-admin-web",
@@ -50,13 +51,13 @@
       "repositoryChecks": 28,
       "dataSource": "mock in both environments",
       "permissions": 70,
-      "note": "After TAB 09. File transport exists; adapters still unwired (L-22)."
+      "note": "After TAB 10."
     },
     "backend": {
-      "tests": 1027,
-      "assertions": 7601,
+      "tests": 1030,
+      "assertions": 7628,
       "skipped": 1,
-      "note": "After TAB 09. The skip is ReleaseConcurrencyTest \u2014 TAB 08 step 8 unmet."
+      "note": "After TAB 10. The skip is ReleaseConcurrencyTest \u2014 TAB 08 step 8 unmet."
     },
     "note": "Current measured state, refreshed each TAB. The TAB 00 starting figures (console 71/1437/20 checks, backend 906 tests) live in the evidence ledgers. These supersede the sweep's stated 889 tests / 262 routes / 173 admin routes \u2014 ledger finding L-01."
   },
