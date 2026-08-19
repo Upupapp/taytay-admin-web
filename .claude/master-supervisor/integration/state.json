@@ -6,8 +6,8 @@
     "state": "../state.json",
     "summary": "26 TABs, all certified locally, console feature-complete on mock adapters. Preserved, not superseded."
   },
-  "currentTab": "TAB 15 \u2014 Performance, resilience and observability",
-  "currentTabIndex": 15,
+  "currentTab": "TAB 16 \u2014 Accessibility and usability",
+  "currentTabIndex": 16,
   "totalTabs": 20,
   "completedTabs": [
     "TAB 00 \u2014 Baseline, remotes and the evidence ledger (locally complete; environmentally blocked)",
@@ -24,11 +24,12 @@
     "TAB 11 \u2014 Search, saved views and notifications (search auditing built; saved-view scope and delivery mechanism decided and tested)",
     "TAB 12 \u2014 Cutover engineering (matrix, both build guards, seam split; dual-run/telemetry/rollback-rehearsal blocked on staging)",
     "TAB 13 \u2014 Console security hardening (style-src gap closed by changing the feature; step 6 blocked \u2014 nothing deployed)",
-    "TAB 14 \u2014 Privacy and audit under RA 10173 (engineering half done; steps 1-6 are appointments, all three release blockers remain open)"
+    "TAB 14 \u2014 Privacy and audit under RA 10173 (engineering half done; steps 1-6 are appointments, all three release blockers remain open)",
+    "TAB 15 \u2014 Performance, resilience and observability (query budgets extended and an N+1 fixed; log redaction widened to names; steps 11-14 blocked on infrastructure)"
   ],
-  "currentObjective": "TAB 15: SLOs, query budgets, rate limits, alerting.",
+  "currentObjective": "TAB 16: WCAG 2.2 AA, keyboard paths, screen-reader flows, the office's actual hardware.",
   "status": "IN_PROGRESS",
-  "lastCheckpointAt": "2026-08-19T07:20:00+08:00",
+  "lastCheckpointAt": "2026-08-19T08:15:00+08:00",
   "repositories": {
     "console": {
       "path": "/Users/user/development/taytay-admin-web",
@@ -50,19 +51,18 @@
   "measuredBaseline": {
     "console": {
       "verify": "PASS",
-      "testFiles": 90,
-      "tests": 1580,
+      "testFiles": 91,
+      "tests": 1583,
       "repositoryChecks": 32,
       "dataSource": "http in production/staging/local-api, mock in local-mock",
       "productionInitialBundle": "43 kB",
-      "permissions": 70,
-      "note": "CSP now complete and unweakenable in the repository; unverified in production (nothing deployed)."
+      "permissions": 70
     },
     "backend": {
-      "tests": 1042,
-      "assertions": 7674,
+      "tests": 1046,
+      "assertions": 7716,
       "skipped": 1,
-      "note": "After TAB 14. The skip is ReleaseConcurrencyTest \u2014 TAB 08 step 8 unmet."
+      "note": "After TAB 15. The skip is ReleaseConcurrencyTest \u2014 still unmet, same PostgreSQL requirement as TAB 15 step 14."
     },
     "note": "Current measured state, refreshed each TAB. The TAB 00 starting figures (console 71/1437/20 checks, backend 906 tests) live in the evidence ledgers. These supersede the sweep's stated 889 tests / 262 routes / 173 admin routes \u2014 ledger finding L-01."
   },

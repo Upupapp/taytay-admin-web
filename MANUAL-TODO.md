@@ -241,3 +241,33 @@ are.
 
 - [ ] **Time a simulated data-subject access request** end to end. *"A right that takes three weeks
       of manual work is a right the office will not honour."*
+
+---
+
+## 🔶 TAB 15 — nothing is watching anything
+
+- [ ] **Agree the SLOs with the MSWDO** — *"numbers the office agrees to, not numbers engineering
+      finds comfortable."* Suggested starting points: list screens interactive within 2 s on the
+      office's actual hardware and connection, a case workspace within 3 s, a write acknowledged
+      within 1 s, API availability 99.5% during office hours. Then define the error budget and what
+      happens when it is spent.
+
+- [ ] **Poll the metrics endpoint, and alert** — queue depth, failed jobs, authentication
+      anomalies, error rate by code, latency percentiles, certificate expiry, disk and database
+      capacity. Each alert names an owner and a first action.
+      → The endpoint exists and exposes all of it. Nothing polls it, which is the command's own
+      line: *a metrics endpoint nobody polls is not monitoring, it is a file.*
+
+- [ ] **Uptime checks from outside the network**, against the API health route and the console
+      origin.
+
+- [ ] **One dashboard the office can see** — are requests being processed, is money moving, are
+      notifications arriving. Operational, not technical.
+
+- [ ] **Load-test at municipal scale** — seed to Taytay's actual resident, household, case and
+      document counts, not a demo dataset. *"A list endpoint that is fast over 200 records and
+      quadratic over 40,000 is a launch-morning incident."*
+
+- [ ] **Test degradation**: take Redis down, take the queue workers down, make object storage
+      refuse, make the API slow. The console must say what is wrong and what the user can still do
+      — never a spinner that never resolves.
