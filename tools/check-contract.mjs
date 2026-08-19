@@ -126,8 +126,16 @@ for (const path of ['src/environments/environment.ts', 'src/environments/environ
 //
 // An adapter that hand-builds an absolute URL bypasses the base entirely, and
 // the version with it.
+//
+// SPECS ARE EXEMPT, and only specs. A test has to supply an API origin to configure
+// APP_ENVIRONMENT, and asserting the URL a request actually used is how it proves the base was
+// applied — the opposite of the defect this rule exists to catch. The exemption is narrow on
+// purpose: the rule still covers every adapter, including the file transport, which builds its
+// own URLs from the environment rather than through ApiClient because FormData and upload
+// progress are outside what ApiClient does.
 for (const { path, code } of files) {
   if (!path.startsWith('src/app/data/http/')) continue;
+  if (path.endsWith('.spec.ts')) continue;
 
   for (const [index, line] of code.split('\n').entries()) {
     if (/['"`]https?:\/\//.test(line)) {
