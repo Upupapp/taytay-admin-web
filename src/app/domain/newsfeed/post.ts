@@ -57,14 +57,27 @@ export const POST_STATUS_CATALOG: StatusCatalog<PostStatus> = {
  * it can go back to being unwritten would be a second kind of lie about what
  * publishing did.
  *
- * An archived post can be republished, because taking something down by mistake
- * is an ordinary thing to do and the office should be able to correct it.
+ * **Archiving is terminal** (`DL-134`, superseding `DL-124`'s republish clause).
+ *
+ * This console used to allow `archived → published`, reasoning that taking a post
+ * down by mistake is ordinary and the office should be able to correct it. That
+ * reasoning is about the office. The API's is about the reader, and it is the
+ * stronger one: resurrecting a post puts it back at the top of the feed carrying
+ * its **original date**, which reads as the municipality announcing something old
+ * as though it were new.
+ *
+ * The mistake case is not lost — it is served by publishing a *new* post, which is
+ * what actually happened and what the feed should say happened.
+ *
+ * It was also a control that could not work. `PostStatus::Archived` on the API has
+ * no outgoing transition, so the button would have produced a refusal a caseworker
+ * could do nothing about.
  */
 export const POST_STATUS_TRANSITIONS: StatusTransitions<PostStatus> = {
   draft: ['scheduled', 'published', 'archived'],
   scheduled: ['draft', 'published', 'archived'],
   published: ['archived'],
-  archived: ['published'],
+  archived: [],
 };
 
 export type PostCategory =

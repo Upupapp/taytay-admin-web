@@ -3635,3 +3635,32 @@ The **screens already said "Releases"** — title, subtitle, payout-session copy
 label. Only the types disagreed. So the officer's words were never the problem; the second
 vocabulary lived entirely in the code, which is where a naming divergence is hardest to notice and
 easiest to keep.
+
+---
+
+## DL-134 — archiving is terminal, superseding DL-124's republish clause
+
+`DL-124` allowed `archived → published`, reasoning that *"taking a post down can itself be a
+mistake"*. TAB 10 step 1 asks for the console's lifecycle to be reconciled against the API's, and
+the reconciliation went the opposite way to the one the command anticipated: it warns that the API
+may be more permissive, and here **the console was**.
+
+`PostStatus::Archived` on the API has **no outgoing transition**, and its stated reason is about
+the reader rather than the office:
+
+> An archived post is republished as a NEW post, never resurrected. Resurrecting one would put a
+> post back at the top of the feed with its original date, which reads as the office announcing
+> something old as if it were new.
+
+That argument wins. `DL-124`'s was about the office's convenience; this one is about what a
+resident sees, and this is the module where *"nothing can be taken back"*.
+
+It was also a control that **could not work**. The button would have produced a refusal a
+caseworker could do nothing about, which is worse than no button — the console must not expose a
+capability the API refuses.
+
+The mistake case is not lost. It is served by publishing a *new* post, which is what actually
+happened and what the feed should say happened.
+
+Everything else in `DL-124` stands: no unpublish, no retract, no unsend, and the warning shown
+**before** the publish button rather than as a confirmation after.

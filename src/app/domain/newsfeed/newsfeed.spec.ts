@@ -154,8 +154,18 @@ describe('the post lifecycle', () => {
     expect(POST_STATUS_TRANSITIONS.published).toEqual(['archived']);
   });
 
-  it('lets an archived post be put back, because taking it down can be a mistake', () => {
-    expect(POST_STATUS_TRANSITIONS.archived).toContain('published');
+  it('makes archiving terminal, because a resurrected post lies about its date', () => {
+    /*
+     * `DL-134`, superseding `DL-124`'s republish clause. This console used to allow
+     * `archived → published` on the grounds that taking a post down by mistake is ordinary.
+     * That is an argument about the office; the API's is about the reader, and it wins:
+     * resurfacing a post puts it back at the top of the feed with its **original date**, which
+     * reads as the municipality announcing something old as though it were new.
+     *
+     * It was also a control that could not work — `PostStatus::Archived` has no outgoing
+     * transition on the API, so the button would have produced a refusal nobody could act on.
+     */
+    expect(POST_STATUS_TRANSITIONS.archived).toEqual([]);
   });
 
   it('says on the badge that archiving does not reach anybody who already read it', () => {
