@@ -6,7 +6,7 @@ Anything that *can* be automated is not on this list — it has been done, or it
 as engineering work. Detail and reasoning for each item live in
 [`docs/integration/manual-actions.md`](docs/integration/manual-actions.md); this page is the list.
 
-Last updated: 18 August 2026, after TAB 06.
+Last updated: 19 August 2026, after TAB 07.
 
 ---
 
@@ -41,6 +41,19 @@ Last updated: 18 August 2026, after TAB 06.
       defensible, they cannot both be executed, and today the console's warning is a lie.
       → Take to the same session as the case model.
 
+- [ ] **Is a person in one family, or several?** (backend G-24) — *new, and it blocks a screen*
+      The API allows **one** open family membership per resident and refuses the second, because two
+      memberships count a person twice in per-family grants — the double-payment problem one level
+      down. The console's model is plural and treats a grandmother counted with her own family and
+      her daughter's as ordinary.
+      → Both are coherent, only one can be executed. The API's argument is money; the console's is
+      not erasing how households in Taytay actually compose. Same session as the case model.
+
+- [ ] **Confirm the intake advisory's windows** (backend G-29) — *30 minutes, low stakes*
+      90 days for a repeat grant under the same programme, 12 months for any assistance. Neither
+      came from a DSWD issuance. The advisory **does not block**, so a wrong window adds or omits a
+      caution rather than refusing anybody — a usefulness question, not an entitlement one.
+
 - [ ] **Ratify the case model** — ADR 0044 proposes Option A + supersede-not-merge
       Needs the MSWDO head, a social worker and an intake officer, walking one recurring family
       through both models.
@@ -66,6 +79,15 @@ Last updated: 18 August 2026, after TAB 06.
 ---
 
 ## 🟡 Backend fixes — small, and each has a recorded test that fails until done
+
+- [ ] **Two spellings of one report id** (backend G-27) — console `program-utilisation`, API
+      `program-utilization`. Not a matter of taste once a client routes on it.
+- [ ] **A household head is not enrolled as a member** (backend G-23) — a write-path change with a
+      backfill behind it: what happens to heads who have since moved out?
+- [ ] **A post records when it was archived and not why** (backend G-30) — the one question worth
+      asking about a removed post. The event side already records its reason.
+- [ ] **Family member roles cannot be recorded** (backend G-22) — the schema has no role column, so
+      four of the console's six roles are unknowable and none is guessed.
 
 - [ ] **`barangay_id` is an auto-increment key** (L-15) — `conventions.md` §6 forbids it outright
 - [ ] **No field for why a household applied** (L-16) — `reasonForRequest` has no source at all
