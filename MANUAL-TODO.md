@@ -359,3 +359,55 @@ these are the other two thirds.
 
 - [ ] **Configure backups**: database-native with point-in-time recovery, plus independent off-site
       copies, encrypted, with key custody recorded. Compute snapshots are not a DR plan.
+
+---
+
+## 🟥 TAB 19 — the launch gate is NO-GO
+
+Full assessment: [`docs/integration/launch-gate.md`](docs/integration/launch-gate.md).
+Runbook and abort criteria: [`docs/integration/launch-runbook.md`](docs/integration/launch-runbook.md).
+
+### The P0, and it is engineering's
+
+- [ ] **Wire the 61 composed request paths.** Every one is a 404 in the HTTP configuration, and
+      they include **every money write**. `port-mapping.md` already records the correct route for
+      most of them — the mapping was done in TAB 05 and the code never followed it.
+      Listed in full in `src/app/data/http/contract/unwired-paths.json`; counted on every build.
+      Worked example of the shape, from the release cluster:
+
+      | Adapter calls | API serves |
+      | --- | --- |
+      | `POST admin/releases/{id}/release` | `POST admin/releases/{release}/status` `{status,reason}` |
+      | `POST admin/releases/{id}/acknowledgement` | `POST admin/releases/{release}/confirmation` |
+      | `POST admin/releases/{id}/defer` | `POST admin/releases/{release}/status` with `status: deferred` |
+      | `GET admin/releases/queue` | `GET admin/releases` with a status filter |
+      | `GET admin/releases/{id}/approver` | no endpoint — `approved_by` is on the release itself |
+
+      The nine-versus-six state mapping is already recorded in `docs/integration/release-state-mapping.md`.
+
+- [ ] **Refresh `port-mapping.md`.** It is stale in the *other* direction: TAB 07 built ten of the
+      eleven categories it still lists as having no counterpart. The gate would be signed against
+      this document, and it is wrong in both directions.
+
+### Decisions that are not engineering's to take
+
+- [ ] **Ratify ADR 0044** — the MSWDO head, a social worker and an intake officer, in one room.
+      Eleven port methods and TAB 17's journey 3 are behind it.
+- [ ] **Repository visibility.** Both are public on GitHub. Every push publishes every commit of a
+      system that processes indigent residents' personal data.
+- [ ] **Appoint the DPO** — release-gate blocker 1, longest lead time in the programme.
+- [ ] **Approve a retention schedule.** Every period is currently `null` and says so; an office
+      that believes it may delete after five years, and does, cannot undo it.
+- [ ] **Agree the abort criteria and the pilot boundary** with the MSWDO head. Drafted in the
+      runbook; the recommendation is one barangay.
+- [ ] **Name a person for each handover item** — runbooks, alerts, escalation, backup verification,
+      the deferred backlog. A system nobody owns decays quietly.
+- [ ] **Set the widening decision date before the pilot starts**, so that not deciding is visible
+      as not deciding.
+
+### Before the day
+
+- [ ] Train every user on their own journey, on the real system. A one-page reference at each desk.
+- [ ] Set up support: who a caseworker calls, what that person can see, how a problem becomes a
+      ticket, and what the office is told while it is being fixed.
+- [ ] Communicate — staff, residents, and barangay focal persons **before** their residents ask them.
