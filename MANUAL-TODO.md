@@ -292,3 +292,26 @@ these are the other two thirds.
       confirmations, refusals. The office has its own vocabulary and the software should use it.
 - [ ] **Print the referral summary and the release manifest** — both leave the building on paper.
       Confirm the print view carries the same field discipline as the screen.
+
+---
+
+## 🟦 TAB 17 — the journeys need people and a staging API
+
+- [ ] **User acceptance testing with the actual staff** — an intake officer, a social worker, the
+      head, the disbursing officer, a barangay focal person and the auditor. Each on their own
+      journey, on office hardware, **with the trainer silent**.
+      → *"A workaround discovered during UAT becomes the procedure the office teaches forever."*
+      Record what they get stuck on, and fix it rather than documenting it.
+
+- [ ] **Run the six journeys against a seeded staging API, in CI, on every change**
+      They currently run against a real database, router and permission set — not a mock, but not a
+      deployed API either.
+
+- [ ] **Journey 2's cross-client half** — a resident submits from the mobile app and it appears in
+      the office queue. Needs both clients against one API.
+
+- [ ] **Journey 3 is blocked on the case model** (ADR 0044). Building it now would fix a shape
+      nobody has agreed.
+
+- [ ] **Console failure paths** — API down mid-journey, token expiring mid-form, a slow network, an
+      upload interrupted at 80%. Each must fail legibly and lose nothing the user typed.
