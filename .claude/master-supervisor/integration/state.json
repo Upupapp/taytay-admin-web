@@ -6,8 +6,8 @@
     "state": "../state.json",
     "summary": "26 TABs, all certified locally, console feature-complete on mock adapters. Preserved, not superseded."
   },
-  "currentTab": "TAB 11 \u2014 Search, saved views and notifications",
-  "currentTabIndex": 11,
+  "currentTab": "TAB 12 \u2014 Cutover engineering",
+  "currentTabIndex": 12,
   "totalTabs": 20,
   "completedTabs": [
     "TAB 00 \u2014 Baseline, remotes and the evidence ledger (locally complete; environmentally blocked)",
@@ -20,11 +20,12 @@
     "TAB 07 \u2014 Backend gap closure (complete; 19 endpoints built, 1 mapped, 3 deferred to TAB 08, 11 blocked on MSWDO ratification, 1 withdrawn)",
     "TAB 08 \u2014 Money (9 of 10 steps met; step 8 concurrency unmet, blocked on PostgreSQL and recorded as an honest skip)",
     "TAB 09 \u2014 Documents and files (file transport built; object-storage posture unverified, no store provisioned)",
-    "TAB 10 \u2014 Newsfeed and events (reconciliation; 3 divergences closed, derivation measured and accepted; step 9 blocked on staging)"
+    "TAB 10 \u2014 Newsfeed and events (reconciliation; 3 divergences closed, derivation measured and accepted; step 9 blocked on staging)",
+    "TAB 11 \u2014 Search, saved views and notifications (search auditing built; saved-view scope and delivery mechanism decided and tested)"
   ],
-  "currentObjective": "TAB 11: the three shell services \u2014 search, saved views, notifications.",
+  "currentObjective": "TAB 12: environments, the flag, the dual-run, and retiring the mock. On the critical path (00 \u2192 01 \u2192 02 \u2192 03 \u2192 04 \u2192 05 \u2192 12 \u2192 17 \u2192 19).",
   "status": "IN_PROGRESS",
-  "lastCheckpointAt": "2026-08-19T04:05:00+08:00",
+  "lastCheckpointAt": "2026-08-19T04:55:00+08:00",
   "repositories": {
     "console": {
       "path": "/Users/user/development/taytay-admin-web",
@@ -47,17 +48,17 @@
     "console": {
       "verify": "PASS",
       "testFiles": 90,
-      "tests": 1579,
+      "tests": 1580,
       "repositoryChecks": 28,
       "dataSource": "mock in both environments",
       "permissions": 70,
-      "note": "After TAB 10."
+      "note": "After TAB 11. TAB 12 is the flag flip \u2014 L-22 (45 unmapped adapter reads) and L-23 (24 of 43 guarded routes unreachable) both come due there."
     },
     "backend": {
-      "tests": 1030,
-      "assertions": 7628,
+      "tests": 1036,
+      "assertions": 7655,
       "skipped": 1,
-      "note": "After TAB 10. The skip is ReleaseConcurrencyTest \u2014 TAB 08 step 8 unmet."
+      "note": "After TAB 11. The skip is ReleaseConcurrencyTest \u2014 TAB 08 step 8 unmet."
     },
     "note": "Current measured state, refreshed each TAB. The TAB 00 starting figures (console 71/1437/20 checks, backend 906 tests) live in the evidence ledgers. These supersede the sweep's stated 889 tests / 262 routes / 173 admin routes \u2014 ledger finding L-01."
   },
