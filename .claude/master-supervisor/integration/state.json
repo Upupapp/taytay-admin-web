@@ -6,8 +6,8 @@
     "state": "../state.json",
     "summary": "26 TABs, all certified locally, console feature-complete on mock adapters. Preserved, not superseded."
   },
-  "currentTab": "TAB 12 \u2014 Cutover engineering",
-  "currentTabIndex": 12,
+  "currentTab": "TAB 13 \u2014 Console security hardening",
+  "currentTabIndex": 13,
   "totalTabs": 20,
   "completedTabs": [
     "TAB 00 \u2014 Baseline, remotes and the evidence ledger (locally complete; environmentally blocked)",
@@ -21,11 +21,12 @@
     "TAB 08 \u2014 Money (9 of 10 steps met; step 8 concurrency unmet, blocked on PostgreSQL and recorded as an honest skip)",
     "TAB 09 \u2014 Documents and files (file transport built; object-storage posture unverified, no store provisioned)",
     "TAB 10 \u2014 Newsfeed and events (reconciliation; 3 divergences closed, derivation measured and accepted; step 9 blocked on staging)",
-    "TAB 11 \u2014 Search, saved views and notifications (search auditing built; saved-view scope and delivery mechanism decided and tested)"
+    "TAB 11 \u2014 Search, saved views and notifications (search auditing built; saved-view scope and delivery mechanism decided and tested)",
+    "TAB 12 \u2014 Cutover engineering (matrix, both build guards, seam split; dual-run/telemetry/rollback-rehearsal blocked on staging)"
   ],
-  "currentObjective": "TAB 12: environments, the flag, the dual-run, and retiring the mock. On the critical path (00 \u2192 01 \u2192 02 \u2192 03 \u2192 04 \u2192 05 \u2192 12 \u2192 17 \u2192 19).",
+  "currentObjective": "TAB 13: CSP, headers, hosting, secrets, supply chain. Two accepted risks depend on the CSP.",
   "status": "IN_PROGRESS",
-  "lastCheckpointAt": "2026-08-19T04:55:00+08:00",
+  "lastCheckpointAt": "2026-08-19T05:45:00+08:00",
   "repositories": {
     "console": {
       "path": "/Users/user/development/taytay-admin-web",
@@ -49,10 +50,11 @@
       "verify": "PASS",
       "testFiles": 90,
       "tests": 1580,
-      "repositoryChecks": 28,
-      "dataSource": "mock in both environments",
+      "repositoryChecks": 30,
+      "dataSource": "http in production/staging/local-api, mock in local-mock (TAB 12 matrix)",
+      "productionInitialBundle": "43 kB",
       "permissions": 70,
-      "note": "After TAB 11. TAB 12 is the flag flip \u2014 L-22 (45 unmapped adapter reads) and L-23 (24 of 43 guarded routes unreachable) both come due there."
+      "note": "Production is correctly configured and NOT deployable: L-22 and L-23 both come due before a flip."
     },
     "backend": {
       "tests": 1036,
@@ -79,17 +81,15 @@
   "boundary": {
     "allowed": [
       "local commits",
-      "a local HEAD and local branches",
+      "local branches",
       "file changes",
       "reading public HTTP"
     ],
     "forbidden": [
-      "push to any remote",
-      "merges",
+      "pushing to any remote (owner asked for local-only work until further notice)",
       "force-push",
       "history rewriting",
       "committing CI workflow files (no Actions credit)",
-      "remote administration",
       "deployment",
       "production access",
       "destructive production data operations",
@@ -100,12 +100,13 @@
     "turnCeiling": 200
   },
   "openOwnerActions": [
+    "Do not deploy production until L-22 and L-23 are closed \u2014 the flag is now honest, the console is not ready",
     "PostgreSQL \u2014 blocks TAB 08 step 8, a P0 acceptance criterion",
-    "Object storage with separate private/public credentials \u2014 TAB 09 precondition, still unmet",
-    "nginx client_max_body_size above 10MB, and PHP upload_max_filesize with it",
+    "Object storage with separate private/public credentials \u2014 TAB 09 precondition",
+    "Staging environment \u2014 blocks the dual-run, cutover telemetry and the rollback rehearsal",
     "D-00-01: repository visibility for BOTH repositories (both currently public)",
     "TAB 04/07: ratify the case model (ADR 0044) \u2014 blocks 11 CaseRepository rows",
-    "Approve the retention schedule \u2014 until then nothing is ever disposed of, only made unreachable",
+    "Approve the retention schedule \u2014 until then nothing is disposed of, only made unreachable",
     "G-24: one family per person, or several? Both models coherent, only one executable",
     "L-23: settle the permission vocabulary \u2014 24 of 43 console routes unreachable",
     "TAB 14: appoint a Data Protection Officer \u2014 longest lead time in the document"
