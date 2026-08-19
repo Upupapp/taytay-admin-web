@@ -31,6 +31,7 @@ import { ReleaseDetailPage } from './release-detail-page';
 import { ReleaseListPage } from './release-list-page';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
+  name: 'local-mock',
   production: false,
   appName: 'Test',
   apiBaseUrl: '/api',

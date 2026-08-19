@@ -1,28 +1,23 @@
 import type { AppEnvironment } from './environment.model';
 
 /**
- * Default (production) environment.
+ * **production**.
  *
- * `apiBaseUrl` is an **absolute origin plus `/api/v1`**. The relative `/api`
- * this file used to carry assumed the console and the API share an origin; the
- * topology is cross-origin by design — `admin.<domain>` calling `api.<domain>`
- * (ADR 0004) — so a relative path resolved against the static host and every
- * call 404'd before it reached Laravel.
+ * ── THIS FILE USED TO SAY `dataSource: 'mock'` ───────────────────────────────────────
  *
- * The placeholder domain is deliberate: a real hostname is a deployment fact,
- * and TAB 12 owns the environment matrix that supplies it and fails the build
- * when a production configuration still points at a placeholder, at `localhost`,
- * or at mock data.
+ * A production configuration pointing at mock data, which is the exact combination TAB 12 names
+ * as having shipped once already. Nothing failed, because nothing checked: the build succeeded,
+ * the bundle was valid, and the application served invented residents to whoever opened it.
  *
- * `dataSource` is still `'mock'`. TAB 01 settles the envelope; the adapters are
- * repointed in TAB 05 and the flag is flipped, per environment, in TAB 12.
- * Flipping it before the adapters are repointed would 404 every screen.
+ * `check:environments` now fails the build on it, which is why this file can no longer be wrong
+ * quietly.
  */
 export const environment: AppEnvironment = {
+  name: 'production',
   production: true,
   appName: 'Taytay Social Welfare',
   apiBaseUrl: 'https://api.<approved-domain>/api/v1',
-  dataSource: 'mock',
+  dataSource: 'http',
   mockLatencyMs: 0,
   enableDevTools: false,
 };

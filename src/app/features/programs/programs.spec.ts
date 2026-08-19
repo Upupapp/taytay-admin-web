@@ -32,6 +32,7 @@ import { ProgramDetailPage } from './program-detail-page';
 import { ProgramListPage, readCatalogQuery } from './program-list-page';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
+  name: 'local-mock',
   production: false,
   appName: 'Test',
   apiBaseUrl: '/api',

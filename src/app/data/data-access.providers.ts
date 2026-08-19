@@ -1,4 +1,4 @@
-import type { EnvironmentProviders, Provider } from '@angular/core';
+import type { EnvironmentProviders } from '@angular/core';
 import { makeEnvironmentProviders } from '@angular/core';
 
 import {
@@ -23,7 +23,6 @@ import {
   SAVED_VIEW_REPOSITORY,
   STAFF_REPOSITORY,
 } from '@domain/index';
-import type { AppEnvironment } from '@env/environment.model';
 
 import {
   HttpAssistanceRequestRepository,
@@ -47,68 +46,33 @@ import {
   HttpSavedViewRepository,
   HttpStaffRepository,
 } from './http/http-repositories';
-import { MockAssistanceRequestRepository } from './mock/mock-assistance-request.repository';
-import { MockBeneficiaryRepository } from './mock/mock-beneficiary.repository';
-import { MockCaseRepository } from './mock/mock-case.repository';
-import { MockDashboardRepository } from './mock/mock-dashboard.repository';
-import { MockReportRepository } from './mock/mock-report.repository';
-import { MockGovernanceRepository } from './mock/mock-governance.repository';
-import { MockEventRepository } from './mock/mock-event.repository';
-import { MockNewsfeedRepository } from './mock/mock-newsfeed.repository';
-import { MockSearchRepository } from './mock/mock-search.repository';
-import { MockWorkRepository } from './mock/mock-work.repository';
-import { MockReleaseRepository } from './mock/mock-release.repository';
-import { MockFieldVisitRepository } from './mock/mock-field-visit.repository';
-import { MockFamilyRepository } from './mock/mock-family.repository';
-import { MockHouseholdRepository } from './mock/mock-household.repository';
-import { MockNotificationRepository } from './mock/mock-notification.repository';
-import { MockProgramRepository } from './mock/mock-program.repository';
-import { MockReferralRepository } from './mock/mock-referral.repository';
-import { MockResidentRepository } from './mock/mock-resident.repository';
-import { MockSavedViewRepository } from './mock/mock-saved-view.repository';
-import { MockStaffRepository } from './mock/mock-staff.repository';
-
 /**
- * THE MOCK/HTTP SEAM.
+ * THE MOCK/HTTP SEAM — the HTTP half.
  *
- * This is the only place in the application that decides which adapters back
- * the domain ports. Nothing else may import from `data/mock` or `data/http`.
- * Flipping `environment.dataSource` swaps every repository at once.
+ * ## Why this is a file replacement rather than an `if`
+ *
+ * It used to be one module holding both adapter sets, chosen by
+ * `environment.dataSource === 'http' ? httpProviders() : mockProviders()`.
+ *
+ * That is a **runtime** decision over **static** imports, so every mock repository — and through
+ * them the whole seed registry — stayed reachable from a live import and shipped in the production
+ * bundle. `check:bundle` found it on its first run: `Marilou`, `Bautista family`, invented
+ * residents in an artefact that claims to be production.
+ *
+ * The seeds are fictional, so this was not a privacy breach. It was worse in a quieter way: a
+ * production build carrying a registry-shaped payload a reader could mistake for real, and the
+ * mock reaching a build that says it is production — the misconfiguration `check:environments`
+ * exists to prevent, arriving through a different door.
+ *
+ * Tree-shaking *usually* removes it. It stops doing so when a seed module gains a side effect, a
+ * barrel re-exports it, or a build flag changes — none of which produce an error. TAB 12 is
+ * explicit that an assumption is not a guarantee, so the guarantee is now structural: this file
+ * names no mock class at all, and `angular.json` swaps in `data-access.providers.mock.ts` for the
+ * one configuration that wants them.
  */
-export function provideDataAccess(environment: AppEnvironment): EnvironmentProviders {
-  const providers: Provider[] =
-    environment.dataSource === 'http' ? httpProviders() : mockProviders();
 
-  return makeEnvironmentProviders(providers);
-}
-
-function mockProviders(): Provider[] {
-  return [
-    { provide: RESIDENT_REPOSITORY, useClass: MockResidentRepository },
-    { provide: PROGRAM_REPOSITORY, useClass: MockProgramRepository },
-    { provide: ASSISTANCE_REQUEST_REPOSITORY, useClass: MockAssistanceRequestRepository },
-    { provide: RELEASE_REPOSITORY, useClass: MockReleaseRepository },
-    { provide: REFERRAL_REPOSITORY, useClass: MockReferralRepository },
-    { provide: STAFF_REPOSITORY, useClass: MockStaffRepository },
-    { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
-    { provide: DASHBOARD_REPOSITORY, useClass: MockDashboardRepository },
-    { provide: WORK_REPOSITORY, useClass: MockWorkRepository },
-    { provide: REPORT_REPOSITORY, useClass: MockReportRepository },
-    { provide: SEARCH_REPOSITORY, useClass: MockSearchRepository },
-    { provide: GOVERNANCE_REPOSITORY, useClass: MockGovernanceRepository },
-    { provide: NEWSFEED_REPOSITORY, useClass: MockNewsfeedRepository },
-    { provide: EVENT_REPOSITORY, useClass: MockEventRepository },
-    { provide: SAVED_VIEW_REPOSITORY, useClass: MockSavedViewRepository },
-    { provide: HOUSEHOLD_REPOSITORY, useClass: MockHouseholdRepository },
-    { provide: FAMILY_REPOSITORY, useClass: MockFamilyRepository },
-    { provide: CASE_REPOSITORY, useClass: MockCaseRepository },
-    { provide: BENEFICIARY_REPOSITORY, useClass: MockBeneficiaryRepository },
-    { provide: FIELD_VISIT_REPOSITORY, useClass: MockFieldVisitRepository },
-  ];
-}
-
-function httpProviders(): Provider[] {
-  return [
+export function provideDataAccess(): EnvironmentProviders {
+  return makeEnvironmentProviders([
     { provide: RESIDENT_REPOSITORY, useClass: HttpResidentRepository },
     { provide: PROGRAM_REPOSITORY, useClass: HttpProgramRepository },
     { provide: ASSISTANCE_REQUEST_REPOSITORY, useClass: HttpAssistanceRequestRepository },
@@ -129,5 +93,5 @@ function httpProviders(): Provider[] {
     { provide: CASE_REPOSITORY, useClass: HttpCaseRepository },
     { provide: BENEFICIARY_REPOSITORY, useClass: HttpBeneficiaryRepository },
     { provide: FIELD_VISIT_REPOSITORY, useClass: HttpFieldVisitRepository },
-  ];
+  ]);
 }

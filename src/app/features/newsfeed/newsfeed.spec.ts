@@ -31,6 +31,7 @@ import { PostDetailPage } from './post-detail-page';
 import { PostListPage } from './post-list-page';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
+  name: 'local-mock',
   production: false,
   appName: 'Test',
   apiBaseUrl: '/api',

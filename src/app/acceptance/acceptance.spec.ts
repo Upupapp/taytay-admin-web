@@ -4,7 +4,7 @@ import { firstValueFrom, of, type Observable } from 'rxjs';
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
-import { provideDataAccess } from '@data/data-access.providers';
+import { provideDataAccess } from '@data/data-access.providers.mock';
 import {
   ACCESS_CONTEXT,
   ASSISTANCE_REQUEST_REPOSITORY,
@@ -58,6 +58,7 @@ import type { AppEnvironment } from '@env/environment.model';
  */
 
 const TEST_ENVIRONMENT: AppEnvironment = {
+  name: 'local-mock',
   production: false,
   appName: 'Test',
   apiBaseUrl: '/api',
@@ -108,7 +109,7 @@ async function signedInAs(
   TestBed.configureTestingModule({
     providers: [
       { provide: APP_ENVIRONMENT, useValue: TEST_ENVIRONMENT },
-      provideDataAccess(TEST_ENVIRONMENT),
+      provideDataAccess(),
       { provide: ACCESS_CONTEXT, useExisting: SessionState },
       {
         provide: STAFF_REPOSITORY,

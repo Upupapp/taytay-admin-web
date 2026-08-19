@@ -13,7 +13,7 @@
  * was trusted.
  */
 
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const ROOT = new URL('..', import.meta.url).pathname;
@@ -97,7 +97,12 @@ for (const { path, code } of files) {
 //
 // The version is in the path, never a header (conventions.md §1), and the
 // topology is cross-origin, so a relative base resolves against the static host.
-for (const path of ['src/environments/environment.ts', 'src/environments/environment.development.ts']) {
+// Discovered rather than listed: TAB 12 replaced the two-file setup with a four-configuration
+// matrix, and this loop still named `environment.development.ts`, which no longer exists. A rule
+// that hardcodes filenames stops checking the moment somebody adds one.
+for (const path of readdirSync(join(ROOT, 'src/environments'))
+  .filter((file) => file.startsWith('environment.') && file !== 'environment.model.ts')
+  .map((file) => `src/environments/${file}`)) {
   const source = read(path);
   const match = /apiBaseUrl:\s*'([^']*)'/.exec(source);
 

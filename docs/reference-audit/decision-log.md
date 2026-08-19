@@ -3704,3 +3704,47 @@ genuinely owed to somebody belongs in their work queue, which is a screen they o
 **If a badge is ever added, this decision must be revisited in the same change.** A badge without a
 stated refresh interval is the dishonesty the command names; a badge with one is a poll, and the
 interval then has to be chosen against real load and written down here.
+
+---
+
+## DL-136 — the mock stays, and can no longer reach a production build
+
+TAB 12 step 5 asks for the mock's future to be decided explicitly, and recommends keeping it
+*"scoped to development and testing, with a check that fails the build if a production
+configuration can select it."*
+
+**Kept.** Deleting it would remove two things worth more than the risk it carried: the offline path
+(a UI change would need a database, a seeded registry and a running API), and the fast test double
+that 1,580 tests run against in seconds.
+
+### What made it dangerous was not the mock
+
+`environment.ts` said `production: true` and `dataSource: 'mock'`, and **nothing objected** — the
+build succeeded, every test passed, and the bundle was valid. The command names this as having
+shipped once already, and it was still true when TAB 12 opened.
+
+Two things now prevent it, and neither is a convention:
+
+* `check:environments` fails the build on a production configuration that selects the mock, points
+  at localhost, serves plaintext, ships developer tooling, carries anything shaped like a
+  credential, or names an API host no CSP allows.
+* `check:bundle` inspects the **built artefact** for seed markers — because a tree-shaking
+  assumption is not a guarantee.
+
+### The structural change, which is the real fix
+
+The seam used to be one module holding both adapter sets, chosen at runtime:
+
+```ts
+environment.dataSource === 'http' ? httpProviders() : mockProviders()
+```
+
+A **runtime** decision over **static** imports. Every mock repository, and through them the entire
+seed registry, stayed reachable from a live import — so `check:bundle` found invented residents in
+the production artefact on its first run.
+
+It is now two files, swapped by `angular.json` exactly as environments are: `data-access.providers.ts`
+names no mock class at all, and `data-access.providers.mock.ts` is selected only by the `development`
+configuration. A production build cannot reach the mock because it never imports it.
+
+Production initial bundle after the change: **43 kB**.

@@ -23,6 +23,7 @@ import type { AppEnvironment } from '@env/environment.model';
 import { MockBeneficiaryRepository } from './mock-beneficiary.repository';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
+  name: 'local-mock',
   production: false,
   appName: 'Test',
   apiBaseUrl: '/api',

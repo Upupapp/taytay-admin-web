@@ -35,6 +35,7 @@ import { IntakePage } from './intake-page';
 import { RequestListPage, readRequestQuery } from './request-list-page';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
+  name: 'local-mock',
   production: false,
   appName: 'Test',
   apiBaseUrl: '/api',

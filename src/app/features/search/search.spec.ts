@@ -36,6 +36,7 @@ import type { AppEnvironment } from '@env/environment.model';
 import { SearchPage } from './search-page';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
+  name: 'local-mock',
   production: false,
   appName: 'Test',
   apiBaseUrl: '/api',

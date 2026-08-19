@@ -17,3 +17,24 @@
 
 /index.html
   Cache-Control: no-store, must-revalidate
+
+# ── TAB 12 step 8: hashed assets are immutable ────────────────────────────────
+#
+# Every filename in these paths carries a content hash, so a changed file is a DIFFERENT
+# URL. Caching them for a year is therefore safe by construction — and it is what makes
+# `index.html: no-store` above affordable: the one uncached document is 4 kB, and
+# everything expensive behind it is fetched once per deploy rather than once per visit.
+#
+# On a municipal connection that difference is the whole load time.
+#
+# `immutable` matters as much as `max-age`: without it a browser still revalidates on
+# reload, which is a round trip per asset to be told nothing changed.
+
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/media/*
+  Cache-Control: public, max-age=31536000, immutable

@@ -34,7 +34,9 @@ export function provideCore(environment: AppEnvironment): EnvironmentProviders {
     // SessionStore to avoid a cycle: the store reads the adapters.
     { provide: ACCESS_CONTEXT, useExisting: SessionState },
     provideHttpClient(withInterceptors([apiHeadersInterceptor, httpErrorInterceptor])),
-    provideDataAccess(environment),
+    // No argument: which adapters back the ports is decided by which file angular.json swapped
+    // in, not by a runtime read of the environment. See data-access.providers.ts for why.
+    provideDataAccess(),
     { provide: ErrorHandler, useClass: GlobalErrorHandler },
     provideAppInitializer(async () => {
       const session = inject(SessionStore);

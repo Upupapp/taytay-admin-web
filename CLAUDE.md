@@ -111,7 +111,8 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:releases`, `check:money`, `check:work`, `check:reports`, `check:search` and
 `check:governance`, `check:hardening`, `check:community`, `check:newsfeed` and
 `check:events`, `check:contract`, `check:contract-drift`, `check:consumer-contract`,
-`check:mapper-adoption` and `check:permission-parity`. Each enforces a rule a comment
+`check:mapper-adoption`, `check:permission-parity`, `check:environments` and
+`check:bundle`. Each enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 
@@ -161,7 +162,16 @@ src/
 `provideDataAccess()` binds every port to one adapter set. Flipping the flag
 swaps the whole application. **No component, route or feature file changes.**
 
-`dataSource` is currently `'mock'` in both environments. The API exists;
+**The environment matrix is four configurations** (TAB 12): `local-mock`, `local-api`, `staging`
+and `production`, each with its own `dataSource`, `apiBaseUrl` and console origin. `npm start`
+serves local-mock; `ng serve --configuration local-api` serves the same console against a backend
+on this machine.
+
+`dataSource` was `'mock'` in **both** environments, including production — the combination the
+master command names as having shipped once already. `check:environments` now fails the build on
+it, and `check:bundle` inspects the built artefact for seed data, because a tree-shaking assumption
+is not a guarantee. The seam is two files swapped by `angular.json` rather than a runtime `if`, so
+a production build cannot reach the mock: it never imports it (`DL-136`). The API exists;
 TAB 01 reconciled `data/http/api.contract.ts` against it, so that file now
 describes what `/api/v1` actually serves rather than what the console hoped for.
 TAB 05 repoints the twenty adapters and TAB 12 flips the flag per environment —

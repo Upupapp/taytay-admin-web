@@ -30,6 +30,7 @@ import { VisitDetailPage } from './visit-detail-page';
 import { VisitListPage } from './visit-list-page';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
+  name: 'local-mock',
   production: false,
   appName: 'Test',
   apiBaseUrl: '/api',

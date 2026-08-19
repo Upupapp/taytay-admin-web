@@ -34,6 +34,7 @@ import { FamilyListPage } from './family-list-page';
 import { familyFilterParams, readFamilyFilter, readFamilyPage } from './family-query';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
+  name: 'local-mock',
   production: false,
   appName: 'Test',
   apiBaseUrl: '/api',

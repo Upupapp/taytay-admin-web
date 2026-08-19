@@ -17,6 +17,7 @@ import { AUTH_COPY } from './auth.copy';
 import { SignInPage } from './sign-in-page';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
+  name: 'local-mock',
   production: false,
   appName: 'Test',
   apiBaseUrl: '/api',

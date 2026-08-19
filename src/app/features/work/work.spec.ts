@@ -33,6 +33,7 @@ import { TeamQueuePage } from './team-queue-page';
 import { WorkQueuePage } from './work-queue-page';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
+  name: 'local-mock',
   production: false,
   appName: 'Test',
   apiBaseUrl: '/api',

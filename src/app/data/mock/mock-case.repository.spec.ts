@@ -25,6 +25,7 @@ import type { AppEnvironment } from '@env/environment.model';
 import { MockCaseRepository } from './mock-case.repository';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
+  name: 'local-mock',
   production: false,
   appName: 'Test',
   apiBaseUrl: '/api',

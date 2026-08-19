@@ -31,6 +31,7 @@ import { EventDetailPage } from './event-detail-page';
 import { EventListPage } from './event-list-page';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
+  name: 'local-mock',
   production: false,
   appName: 'Test',
   apiBaseUrl: '/api',

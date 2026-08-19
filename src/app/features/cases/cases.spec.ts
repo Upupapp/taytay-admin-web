@@ -34,6 +34,7 @@ import { CaseWorkspacePage } from './case-workspace-page';
 import { caseFilterParams, readCaseFilter, readCasePage } from './case-query';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
+  name: 'local-mock',
   production: false,
   appName: 'Test',
   apiBaseUrl: '/api',

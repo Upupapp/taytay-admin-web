@@ -26,6 +26,7 @@ import { MockResidentRepository } from './mock-resident.repository';
 import { MockSavedViewRepository } from './mock-saved-view.repository';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
+  name: 'local-mock',
   production: false,
   appName: 'Test',
   apiBaseUrl: '/api',

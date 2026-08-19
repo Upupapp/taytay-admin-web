@@ -3,7 +3,9 @@
   "version": 1,
   "cli": {
     "packageManager": "npm",
-    "schematicCollections": ["angular-eslint"]
+    "schematicCollections": [
+      "angular-eslint"
+    ]
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -30,7 +32,9 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": [
+              "src/styles.scss"
+            ]
           },
           "configurations": {
             "production": {
@@ -48,6 +52,26 @@
               ],
               "outputHashing": "all"
             },
+            "staging": {
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.staging.ts"
+                }
+              ]
+            },
+            "local-api": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.local-api.ts"
+                }
+              ]
+            },
             "development": {
               "optimization": false,
               "extractLicenses": false,
@@ -55,7 +79,11 @@
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
-                  "with": "src/environments/environment.development.ts"
+                  "with": "src/environments/environment.local-mock.ts"
+                },
+                {
+                  "replace": "src/app/data/data-access.providers.ts",
+                  "with": "src/app/data/data-access.providers.mock.ts"
                 }
               ]
             }
@@ -70,6 +98,12 @@
             },
             "development": {
               "buildTarget": "taytay-social-welfare:build:development"
+            },
+            "staging": {
+              "buildTarget": "taytay-social-welfare:build:staging"
+            },
+            "local-api": {
+              "buildTarget": "taytay-social-welfare:build:local-api"
             }
           },
           "defaultConfiguration": "development"
@@ -80,7 +114,10 @@
         "lint": {
           "builder": "@angular-eslint/builder:lint",
           "options": {
-            "lintFilePatterns": ["src/**/*.ts", "src/**/*.html"]
+            "lintFilePatterns": [
+              "src/**/*.ts",
+              "src/**/*.html"
+            ]
           }
         }
       }

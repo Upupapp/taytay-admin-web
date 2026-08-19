@@ -98,6 +98,16 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# Angular emits fonts and images into /media with a content hash, on the same rule as the
+# scripts above. Added in TAB 12: `_headers` and this file had drifted apart on caching,
+# which is the exact failure `_headers`' own docblock warns about — the fallback file is
+# the one that ships INSIDE the bundle, so on a host that reads it instead, the drift is
+# what actually serves.
+[[headers]]
+  for = "/media/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
 # ── Deploy previews ──────────────────────────────────────────────────────────────────
 #
 # A preview gets a generated *.netlify.app origin. It must reach the STAGING API and
