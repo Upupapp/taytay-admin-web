@@ -198,3 +198,46 @@ Last updated: 19 August 2026, after TAB 07.
       Exact origins, never a wildcard and never a `*.netlify.app` pattern — anybody can create a
       site on that domain. `TRUSTED_PROXIES` to the private CIDR, or rate limiting collapses to one
       shared key and every audit entry is attributed to the load balancer.
+
+---
+
+## ⚫ TAB 14 — RA 10173: three release blockers, none closeable by engineering
+
+**These have the longest lead time in the whole programme. Start them now, not after the
+integration commands.** Everything engineering owes here is done; none of it is usable until these
+are.
+
+- [ ] **Appoint a Data Protection Officer and assign the role** — *blocker 1*
+      `audit.view` sits only with `data_protection_officer` and nobody holds it. **The trail is
+      being written and cannot be read by anybody**, which also means the breach procedure has no
+      decision-maker and no signatory.
+      → Deliberately not the MSWDO head: that would be the auditee reading their own audit.
+
+- [ ] **Approve the retention schedule** — *blocker 2*
+      The DPO reviews the inventory, approves or corrects the periods and bases, and records who
+      approved them and when. Until then `mayPurge()` refuses everything — the safe direction, but
+      not a steady state, because indefinite accumulation is itself an exposure.
+      → Two things unblock together: disposal, and the escape hatch in `AuditEntry` that lets an
+      approved purge remove old trail entries.
+
+- [ ] **Record the lawful basis for every processing purpose**, and confirm the consent surfaces
+      residents actually see match what was recorded.
+
+- [ ] **Decide `document.share`'s holder** — held by nobody; the outward path is built and refused.
+
+- [ ] **Place the six parked protection permissions** — currently on the MSWDO head because no
+      protection-officer role exists. Reading a survivor's safety plan is not an administrative
+      convenience.
+
+- [ ] **Rehearse the breach procedure on paper** — about an hour, with the MSWDO head, the DPO and
+      whoever holds the deployment account.
+      → Suggested scenario in [`breach-procedure.md`](../taytay-backend/docs/contracts/breach-procedure.md):
+      a barangay-scoped account found to have read forty records outside its barangay over two
+      weeks. It exercises detection from the trail, containment, assessment and the notifiability
+      judgement — and it is the failure this system's scoping is most designed to prevent.
+
+- [ ] **Find the NPC contact route and the current notification form** — needed before the
+      rehearsal means anything.
+
+- [ ] **Time a simulated data-subject access request** end to end. *"A right that takes three weeks
+      of manual work is a right the office will not honour."*
