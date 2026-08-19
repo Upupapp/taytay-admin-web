@@ -6,8 +6,8 @@
     "state": "../state.json",
     "summary": "26 TABs, all certified locally, console feature-complete on mock adapters. Preserved, not superseded."
   },
-  "currentTab": "TAB 08 \u2014 Money",
-  "currentTabIndex": 8,
+  "currentTab": "TAB 09 \u2014 Documents and files",
+  "currentTabIndex": 9,
   "totalTabs": 20,
   "completedTabs": [
     "TAB 00 \u2014 Baseline, remotes and the evidence ledger (locally complete; environmentally blocked)",
@@ -17,11 +17,12 @@
     "TAB 04 \u2014 The case collision (decision recorded as ADR 0044, accepted in principle pending MSWDO ratification; routes renamed; status vocabularies reconciled; continuing-involvement module outstanding)",
     "TAB 05 \u2014 Repoint the adapters (steps 1,3,5,8,9 complete; 5 resources mapped against recorded responses; 5 pinned as unmappable with reasons; remaining work blocked on recorded decisions)",
     "TAB 06 \u2014 Contract testing in CI (complete; two CI workflow files uncommitted pending the token's workflow scope)",
-    "TAB 07 \u2014 Backend gap closure (complete; 19 endpoints built, 1 mapped, 3 deferred to TAB 08, 11 blocked on MSWDO ratification, 1 withdrawn)"
+    "TAB 07 \u2014 Backend gap closure (complete; 19 endpoints built, 1 mapped, 3 deferred to TAB 08, 11 blocked on MSWDO ratification, 1 withdrawn)",
+    "TAB 08 \u2014 Money (9 of 10 steps met; step 8 concurrency unmet, blocked on PostgreSQL and recorded as an honest skip)"
   ],
-  "currentObjective": "TAB 08: assistance money scheduled, released, acknowledged, deferred and reconciled through the API, with idempotency on every state change, separation of duties enforced server-side, and an audit entry for every peso. Opens by reconciling the nouns \u2014 the console says disbursement, the API says release \u2014 and changing one side completely: URL, payload, screen and the words the disbursing officer is trained on. P0, public funds.",
+  "currentObjective": "TAB 09: upload, download grant, masking, versioning, object-storage posture.",
   "status": "IN_PROGRESS",
-  "lastCheckpointAt": "2026-08-19T00:20:00+08:00",
+  "lastCheckpointAt": "2026-08-19T02:20:00+08:00",
   "repositories": {
     "console": {
       "path": "/Users/user/development/taytay-admin-web",
@@ -44,17 +45,18 @@
     "console": {
       "verify": "PASS",
       "testFiles": 89,
-      "tests": 1566,
-      "repositoryChecks": 26,
+      "tests": 1569,
+      "repositoryChecks": 27,
       "dataSource": "mock in both environments",
       "permissions": 70,
-      "note": "After TAB 06. 24 of 43 guarded routes are unreachable against the real API (L-23)."
+      "note": "After TAB 08. Money vocabulary is now `release` on both sides (DL-132)."
     },
     "backend": {
-      "tests": 1015,
-      "assertions": 7484,
-      "routesApiV1": 284,
-      "note": "After TAB 07. Was 933 tests / 266 routes at the start of it."
+      "tests": 1026,
+      "assertions": 7595,
+      "skipped": 1,
+      "routesApiV1": 287,
+      "note": "After TAB 08. The skip is ReleaseConcurrencyTest \u2014 step 8 is unmet, not passing."
     },
     "note": "Current measured state, refreshed each TAB. The TAB 00 starting figures (console 71/1437/20 checks, backend 906 tests) live in the evidence ledgers. These supersede the sweep's stated 889 tests / 262 routes / 173 admin routes \u2014 ledger finding L-01."
   },
@@ -75,30 +77,29 @@
   "boundary": {
     "allowed": [
       "local commits",
+      "direct pushes to main (owner-authorised, no PR review)",
       "local branches",
-      "local file changes",
+      "file changes",
       "reading public HTTP"
     ],
     "forbidden": [
-      "push",
-      "remote administration",
-      "branch protection changes",
+      "force-push",
+      "history rewriting",
+      "committing CI workflow files (no Actions credit)",
       "deployment",
       "production access",
       "destructive production data operations",
-      "credential changes",
-      "merges to protected branches",
-      "force-push"
-    ]
+      "credential changes"
+    ],
+    "process": "A full sweep of BOTH repositories runs before every push \u2014 the only gate, since CI is deliberately not run."
   },
   "openOwnerActions": [
+    "PostgreSQL \u2014 now blocks a P0 acceptance criterion (TAB 08 step 8), not just convenience",
     "D-00-01: decide and record repository visibility for BOTH repositories (both currently public)",
-    "Add the `workflow` scope to the GitHub token \u2014 two CI files written, tested and unpushable",
     "TAB 04/07: ratify the case model (ADR 0044) \u2014 blocks 11 CaseRepository rows",
     "G-24: one family per person, or several? The API and the console disagree and both are coherent",
     "L-23: settle the permission vocabulary \u2014 24 of 43 console routes are unreachable",
-    "TAB 14: appoint a Data Protection Officer \u2014 longest lead time in the document",
-    "Provision PostgreSQL, Redis, object storage; everything so far is proven on SQLite only"
+    "TAB 14: appoint a Data Protection Officer \u2014 longest lead time in the document"
   ],
   "activeBlockers": [],
   "pendingQuestions": [],
