@@ -6,8 +6,8 @@
     "state": "../state.json",
     "summary": "26 TABs, all certified locally, console feature-complete on mock adapters. Preserved, not superseded."
   },
-  "currentTab": "TAB 16 \u2014 Accessibility and usability",
-  "currentTabIndex": 16,
+  "currentTab": "TAB 17 \u2014 End-to-end journeys",
+  "currentTabIndex": 17,
   "totalTabs": 20,
   "completedTabs": [
     "TAB 00 \u2014 Baseline, remotes and the evidence ledger (locally complete; environmentally blocked)",
@@ -25,11 +25,12 @@
     "TAB 12 \u2014 Cutover engineering (matrix, both build guards, seam split; dual-run/telemetry/rollback-rehearsal blocked on staging)",
     "TAB 13 \u2014 Console security hardening (style-src gap closed by changing the feature; step 6 blocked \u2014 nothing deployed)",
     "TAB 14 \u2014 Privacy and audit under RA 10173 (engineering half done; steps 1-6 are appointments, all three release blockers remain open)",
-    "TAB 15 \u2014 Performance, resilience and observability (query budgets extended and an N+1 fixed; log redaction widened to names; steps 11-14 blocked on infrastructure)"
+    "TAB 15 \u2014 Performance, resilience and observability (query budgets extended and an N+1 fixed; log redaction widened to names; steps 11-14 blocked on infrastructure)",
+    "TAB 16 \u2014 Accessibility, language and content (search term removed from the URL; field errors surfaced; contrast computed; Filipino decided. Manual audit steps blocked on a person and real data)"
   ],
-  "currentObjective": "TAB 16: WCAG 2.2 AA, keyboard paths, screen-reader flows, the office's actual hardware.",
+  "currentObjective": "TAB 17: six journeys through a real backend, plus adversarial and failure testing. On the critical path (00 -> 01 -> 02 -> 03 -> 04 -> 05 -> 12 -> 17 -> 19).",
   "status": "IN_PROGRESS",
-  "lastCheckpointAt": "2026-08-19T08:15:00+08:00",
+  "lastCheckpointAt": "2026-08-19T09:10:00+08:00",
   "repositories": {
     "console": {
       "path": "/Users/user/development/taytay-admin-web",
@@ -52,8 +53,8 @@
     "console": {
       "verify": "PASS",
       "testFiles": 91,
-      "tests": 1583,
-      "repositoryChecks": 32,
+      "tests": 1585,
+      "repositoryChecks": 33,
       "dataSource": "http in production/staging/local-api, mock in local-mock",
       "productionInitialBundle": "43 kB",
       "permissions": 70
