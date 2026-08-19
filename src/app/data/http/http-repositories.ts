@@ -4,6 +4,7 @@ import { catchError, map, of, switchMap, tap, throwError, type Observable } from
 
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import { AuthTokenHolder } from '@core/auth/auth-token.holder';
+import { WriteIntent } from '@domain/index';
 
 import {
   asId,
@@ -925,8 +926,12 @@ export class HttpReleaseRepository implements ReleaseRepository {
     return this.api.optionalItem<ReleaseBatch>(`${API_ENDPOINTS.releaseBatches}/${id}`);
   }
 
-  createBatch(draft: ReleaseBatchDraft): Observable<ReleaseBatch> {
-    return this.api.post<ReleaseBatch, ReleaseBatchDraft>(API_ENDPOINTS.releaseBatches, draft);
+  createBatch(draft: ReleaseBatchDraft, intent: WriteIntent): Observable<ReleaseBatch> {
+    return this.api.post<ReleaseBatch, ReleaseBatchDraft>(
+      API_ENDPOINTS.releaseBatches,
+      draft,
+      intent,
+    );
   }
 
   manifestFor(id: ReleaseBatchId): Observable<ReleaseManifest | null> {
@@ -941,20 +946,27 @@ export class HttpReleaseRepository implements ReleaseRepository {
     id: ReleaseId,
     instrumentReference: string | null,
     remarks: string | null,
+    intent: WriteIntent,
   ): Observable<Release> {
     return this.api.post<
       Release,
       { instrumentReference: string | null; remarks: string | null }
-    >(`${API_ENDPOINTS.releases}/${id}/release`, { instrumentReference, remarks });
+    >(
+      `${API_ENDPOINTS.releases}/${id}/release`,
+      { instrumentReference, remarks },
+      intent,
+    );
   }
 
   acknowledge(
     id: ReleaseId,
     acknowledgement: ReleaseAcknowledgementDraft,
+    intent: WriteIntent,
   ): Observable<Release> {
     return this.api.post<Release, ReleaseAcknowledgementDraft>(
       `${API_ENDPOINTS.releases}/${id}/acknowledgement`,
       acknowledgement,
+      intent,
     );
   }
 
@@ -962,10 +974,12 @@ export class HttpReleaseRepository implements ReleaseRepository {
     id: ReleaseId,
     reason: DeferralReason,
     remarks: string,
+    intent: WriteIntent,
   ): Observable<Release> {
     return this.api.post<Release, { reason: DeferralReason; remarks: string }>(
       `${API_ENDPOINTS.releases}/${id}/defer`,
       { reason, remarks },
+      intent,
     );
   }
 
@@ -973,10 +987,12 @@ export class HttpReleaseRepository implements ReleaseRepository {
     id: ReleaseId,
     to: ReleaseStatus,
     reason: string,
+    intent: WriteIntent,
   ): Observable<Release> {
     return this.api.post<Release, { to: ReleaseStatus; reason: string }>(
       `${API_ENDPOINTS.releases}/${id}/status`,
       { to, reason },
+      intent,
     );
   }
 }

@@ -63,8 +63,14 @@ one, stop and say so.
    allowed transition.
 8. **Every route is lazy and permission-guarded** and mirrors the permissions of
    its navigation entry, so a user is never shown a link that bounces them.
-9. **Do not push, force-push, merge protected branches, deploy, or touch
-   production.** Local commits only, unless a command explicitly says otherwise.
+9. **Pushing to `main` is authorised by the owner; production is not.**
+   Direct pushes to `main`, no pull request and no required review — the owner
+   asked for that explicitly. Still forbidden: force-push, history rewriting,
+   deployment, and any production access or data operation.
+   **No CI workflow files are committed** — the owner has no Actions credit, so
+   `.github/workflows/` stays out of every commit and the gates run locally
+   instead (`npm run verify` here, `phpunit` + `pint` in the backend). A full
+   sweep of both runs before any push.
 10. **Preserve existing architecture.** Migrations (state library, UI kit,
     styling approach) require an explicit instruction, not an inference.
 
@@ -102,9 +108,10 @@ npm run verify     # lint + typecheck + repository checks + test + build
 The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:vulnerability`, `check:case-audit`, `check:intake`, `check:programs`,
 `check:beneficiary`, `check:documents`, `check:referrals`, `check:visits`,
-`check:releases`, `check:work`, `check:reports`, `check:search` and
+`check:releases`, `check:money`, `check:work`, `check:reports`, `check:search` and
 `check:governance`, `check:hardening`, `check:community`, `check:newsfeed` and
-`check:events` and `check:contract`. Each enforces a rule a comment
+`check:events`, `check:contract`, `check:contract-drift`, `check:consumer-contract`,
+`check:mapper-adoption` and `check:permission-parity`. Each enforces a rule a comment
 could not, and each was validated against planted regressions. Do not weaken one
 to make a change pass.
 

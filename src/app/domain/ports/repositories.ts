@@ -1,6 +1,8 @@
 import { InjectionToken } from '@angular/core';
 import type { Observable } from 'rxjs';
 
+import type { WriteIntent } from '../shared/write-intent';
+
 import type {
   ReportDefinition,
   ReportId,
@@ -685,6 +687,14 @@ export const FIELD_VISIT_REPOSITORY = new InjectionToken<FieldVisitRepository>(
  * is what keeps "we could not pay you" from being recorded as "you did not
  * come".
  */
+/**
+ * Money.
+ *
+ * **Every write here takes a {@link WriteIntent}, and the type system is the enforcement.** The
+ * API refuses a money write without an idempotency key, and the key must be minted where the
+ * officer commits rather than inside the adapter — an adapter minting one per call would give a
+ * retry a new key, and a new key is a new intent (`TAB 08` step 3).
+ */
 export interface ReleaseRepository {
   list(
     filter: ReleaseFilter,
@@ -701,7 +711,7 @@ export interface ReleaseRepository {
   listBatches(): Observable<readonly ReleaseBatch[]>;
   getBatch(id: ReleaseBatchId): Observable<ReleaseBatch | null>;
   /** Schedules releases into a payout session. Each stays individually tracked. */
-  createBatch(draft: ReleaseBatchDraft): Observable<ReleaseBatch>;
+  createBatch(draft: ReleaseBatchDraft, intent: WriteIntent): Observable<ReleaseBatch>;
 
   /**
    * The printable payout list. Composed by the data layer from the batch, so a
@@ -715,12 +725,14 @@ export interface ReleaseRepository {
     id: ReleaseId,
     instrumentReference: string | null,
     remarks: string | null,
+    intent: WriteIntent,
   ): Observable<Release>;
 
   /** Records the beneficiary's receipt, and how it was evidenced. */
   acknowledge(
     id: ReleaseId,
     acknowledgement: ReleaseAcknowledgementDraft,
+    intent: WriteIntent,
   ): Observable<Release>;
 
   /**
@@ -732,6 +744,7 @@ export interface ReleaseRepository {
     id: ReleaseId,
     reason: DeferralReason,
     remarks: string,
+    intent: WriteIntent,
   ): Observable<Release>;
 
   /** Moves the release along. Every move takes a reason, as everywhere else. */
@@ -739,6 +752,7 @@ export interface ReleaseRepository {
     id: ReleaseId,
     to: ReleaseStatus,
     reason: string,
+    intent: WriteIntent,
   ): Observable<Release>;
 }
 

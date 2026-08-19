@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify": "npm run lint && npm run typecheck && npm run check:contract && npm run check:contract-drift && npm run check:consumer-contract && npm run check:mapper-adoption && npm run check:permission-parity && npm run check:auth && npm run check:brand && npm run check:shell && npm run check:access && npm run check:vulnerability && npm run check:case-audit && npm run check:intake && npm run check:programs && npm run check:beneficiary && npm run check:documents && npm run check:referrals && npm run check:visits && npm run check:releases && npm run check:work && npm run check:reports && npm run check:search && npm run check:governance && npm run check:hardening && npm run check:community && npm run check:newsfeed && npm run check:events && npm test && npm run build",
+    "verify": "npm run lint && npm run typecheck && npm run check:contract && npm run check:contract-drift && npm run check:consumer-contract && npm run check:mapper-adoption && npm run check:permission-parity && npm run check:auth && npm run check:brand && npm run check:shell && npm run check:access && npm run check:vulnerability && npm run check:case-audit && npm run check:intake && npm run check:programs && npm run check:beneficiary && npm run check:documents && npm run check:referrals && npm run check:visits && npm run check:releases && npm run check:money && npm run check:work && npm run check:reports && npm run check:search && npm run check:governance && npm run check:hardening && npm run check:community && npm run check:newsfeed && npm run check:events && npm test && npm run build",
     "check:brand": "node tools/check-brand-assets.mjs",
     "check:shell": "node tools/check-shell-a11y.mjs",
     "check:access": "node tools/check-access.mjs",
@@ -38,7 +38,8 @@
     "contract:emit": "node tools/emit-consumer-expectations.mjs",
     "check:consumer-contract": "node tools/emit-consumer-expectations.mjs --check",
     "check:mapper-adoption": "node tools/check-mapper-adoption.mjs",
-    "check:permission-parity": "node tools/check-permission-parity.mjs"
+    "check:permission-parity": "node tools/check-permission-parity.mjs",
+    "check:money": "node tools/check-money.mjs"
   },
   "private": true,
   "packageManager": "npm@11.12.1",

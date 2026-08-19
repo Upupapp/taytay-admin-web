@@ -76,6 +76,7 @@ export * from './views/saved-view';
 export * from './work/office-alert';
 export * from './work/work-item';
 export * from './work/work-queue';
+export * from './shared/write-intent';
 export * from './shared/audit';
 export * from './shared/ids';
 export * from './shared/money';

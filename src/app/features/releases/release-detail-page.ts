@@ -23,6 +23,7 @@ import {
   type Release,
   type ReleaseId,
   type StaffUserId,
+  WriteIntent,
 } from '@domain/index';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
@@ -159,12 +160,14 @@ export class ReleaseDetailPage {
         asId<ReleaseId>(this.id()),
         this.instrument().trim() || null,
         this.releaseRemarks().trim() || null,
+        this.intentFor('release'),
       ),
       this.copy.released,
       () => {
         this.instrument.set('');
         this.releaseRemarks.set('');
       },
+      'release',
     );
   }
 
@@ -206,16 +209,21 @@ export class ReleaseDetailPage {
       return;
     }
     await this.run(
-      this.repository.acknowledge(asId<ReleaseId>(this.id()), {
-        kind: this.ackKind(),
-        collectedBy: this.collectedBy().trim() || null,
-        authority: this.authority().trim() || null,
-      }),
+      this.repository.acknowledge(
+        asId<ReleaseId>(this.id()),
+        {
+          kind: this.ackKind(),
+          collectedBy: this.collectedBy().trim() || null,
+          authority: this.authority().trim() || null,
+        },
+        this.intentFor('acknowledge'),
+      ),
       this.copy.acknowledged,
       () => {
         this.collectedBy.set('');
         this.authority.set('');
       },
+      'acknowledge',
     );
   }
 
@@ -245,20 +253,50 @@ export class ReleaseDetailPage {
         asId<ReleaseId>(this.id()),
         this.deferReason(),
         this.deferRemarks(),
+        this.intentFor('defer'),
       ),
       this.copy.deferred,
       () => this.deferRemarks.set(''),
+      'defer',
     );
+  }
+
+  /**
+   * The intent behind each money act, held across retries (`TAB 08` step 3).
+   *
+   * Minted when the officer first commits and cleared **only on success**. A second press after a
+   * failure is the *same* intent, so it carries the same key and the API replays its answer rather
+   * than paying a second time. Minting inside the adapter would give every retry a new key, and a
+   * new key is a new intent.
+   */
+  private readonly intents = new Map<string, WriteIntent>();
+
+  private intentFor(action: string): WriteIntent {
+    const existing = this.intents.get(action);
+
+    if (existing !== undefined) {
+      return existing;
+    }
+
+    const intent = new WriteIntent();
+    this.intents.set(action, intent);
+
+    return intent;
   }
 
   private async run(
     call: ReturnType<typeof this.repository.markReleased>,
     message: string,
     onSuccess: () => void,
+    action?: string,
   ): Promise<void> {
     this.saving.set(true);
     try {
       await firstValueFrom(call);
+      // The act landed, so the next press is a new intent rather than a retry of this one.
+      if (action !== undefined) {
+        this.intents.delete(action);
+      }
       onSuccess();
       this.notifications.success(message);
       this.reloads.update((value) => value + 1);

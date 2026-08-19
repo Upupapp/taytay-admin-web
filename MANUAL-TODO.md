@@ -12,14 +12,17 @@ Last updated: 19 August 2026, after TAB 07.
 
 ## 🔴 Blocking right now
 
-- [ ] **Add `workflow` scope to the GitHub token**
-      Two CI files are written and tested and cannot be pushed without it. Classic token → tick
-      `workflow`. Fine-grained → *Workflows: Read and write*.
-      → Unblocks: the console's first CI pipeline, and the standing secret-scan gate in both repos.
+- [x] ~~**Add `workflow` scope to the GitHub token**~~ — **moot.** CI is deliberately not run
+      (no Actions credit), so the two workflow files stay uncommitted by design rather than by
+      blocker. `docs/` and the local gates carry what they would have enforced.
 
-- [ ] **Install Docker Desktop or OrbStack**
+- [ ] **Install Docker Desktop or OrbStack** — *now blocking a P0 acceptance criterion*
       Everything proven so far ran on SQLite. Nothing about concurrency, row locking or
       `lockForUpdate` is proven, and `migrate` has never run against real PostgreSQL.
+      → **TAB 08 step 8 is unmet because of this**: "two officers releasing the same payout
+      simultaneously must produce one success and one refusal", which the command says must be
+      proven on real PostgreSQL. On SQLite the test would pass for a reason unrelated to the code,
+      so `ReleaseConcurrencyTest` is an honest skip rather than a false green.
       → Unblocks: TAB 05 step 10 properly, all of TAB 06, TABs 08–11, release-gate blocker 4.
 
 ---
@@ -108,8 +111,11 @@ Last updated: 19 August 2026, after TAB 07.
 
 
 - [ ] **Decide repository visibility** — both are public today; recommendation is private for both
-- [ ] **Protect `main`** on both repos — no force-push, no deletion, required checks, one reviewer
-      → Do after the `workflow` scope, so the checks exist to require.
+- [x] ~~**Protect `main`** with required checks and a reviewer~~ — **declined by the owner,
+      19 August 2026.** Pushes go straight to `main` with no pull-request review, and no CI
+      workflow is committed because there is no Actions credit. The gates therefore run locally
+      before every push, and that is now the only thing standing between a mistake and `main`.
+      → Worth revisiting the day a second person commits to either repository.
 
 ---
 

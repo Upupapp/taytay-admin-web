@@ -1,3 +1,7 @@
+import { WriteIntent } from '@domain/index';
+
+// Re-exported so the transport seam's own callers need not reach past it for a domain type.
+export { WriteIntent };
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { catchError, map, of, throwError, type Observable } from 'rxjs';
@@ -108,23 +112,6 @@ export class ApiClient {
 
   private url(path: string): string {
     return `${this.baseUrl}/${path.replace(/^\/+/, '')}`;
-  }
-}
-
-/**
- * One user intent, carried across however many attempts it takes.
- *
- * Created by the caller at the moment the officer commits — pressing Release,
- * submitting an intake — and held while the request is retried. The API replays
- * the stored response for the same key and answers `409` if the same key
- * arrives with a different body, which is what makes a double-click, a flaky
- * connection and a browser retry all resolve to one act.
- */
-export class WriteIntent {
-  readonly key: string;
-
-  constructor(key?: string) {
-    this.key = key ?? crypto.randomUUID();
   }
 }
 
