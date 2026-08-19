@@ -36,7 +36,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = new URL('..', import.meta.url).pathname;
@@ -150,6 +150,90 @@ if (table === null) {
   }
 }
 
+/*
+ * ── 3. the composed paths, which is where the defects actually are ─────────
+ *
+ * `API_ENDPOINTS` holds base paths. The adapters compose the rest — `${releases}/${id}/release`,
+ * `${newsfeed}/${id}/publish` — and TAB 05 repointed the twenty base paths without bringing those
+ * composed paths in line with the 148-row mapping it produced in the same command.
+ *
+ * That mapping is CORRECT and the code does not follow it. `port-mapping.md` records
+ * `markReleased → POST admin/releases/{release}/status`; the adapter posts to
+ * `admin/releases/{id}/release`. Appendix A named this failure in advance: *"TAB 05 is estimated
+ * from the 146 call sites rather than from the 147-row mapping. The call sites are typing; the
+ * mapping is the work."*
+ *
+ * ## Why a baseline and not a hard failure
+ *
+ * There are 61 of them, including every money write. Failing the build outright would stop all
+ * other work behind a body of rework that belongs to TAB 05, and the realistic outcome of a check
+ * nobody can make pass is a check somebody removes.
+ *
+ * So the count is printed on **every** run, and the check fails when the list GROWS. The number is
+ * visible, it cannot quietly increase, and shrinking it is the work. It is a baseline, never an
+ * allow-list: nothing here is acceptable, and gate line 05/07 stays NO-GO until it is empty.
+ */
+const adapters = readFileSync(join(ROOT, 'src/app/data/http/http-repositories.ts'), 'utf8');
+const baseline = JSON.parse(readFileSync(join(CONTRACT, 'unwired-paths.json'), 'utf8'));
+
+const composed = new Set();
+
+if (table !== null) {
+  const body = table[1].replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  const lookup = Object.fromEntries([...body.matchAll(/(\w+):\s*'([^']+)'/g)].map(([, n, p]) => [n, p]));
+
+  for (const m of adapters.matchAll(/`\$\{API_ENDPOINTS\.(\w+)\}([^`]*)`/g)) {
+    const rest = m[2].replace(/\$\{[^}]+\}/g, '{}').split('?')[0];
+    if (lookup[m[1]] !== undefined) composed.add((lookup[m[1]] + rest).replace(/\/$/, ''));
+  }
+
+  for (const m of adapters.matchAll(/API_ENDPOINTS\.(\w+)(?![\w`])/g)) {
+    if (lookup[m[1]] !== undefined) composed.add(lookup[m[1]].replace(/\/$/, ''));
+  }
+}
+
+const normalisePath = (p) => p.replace(/\{[^}]+\}/g, '{}');
+const publishedPaths = new Set(published.map((r) => normalisePath(r.split(' ')[1].replace(/^\/api\/v1\//, ''))));
+
+const unwired = [...composed]
+  .filter((p) => !publishedPaths.has(p) && ![...publishedPaths].some((q) => q.startsWith(`${p}/`)))
+  .sort();
+
+if (process.argv.includes('--write-baseline')) {
+  writeFileSync(
+    join(CONTRACT, 'unwired-paths.json'),
+    `${JSON.stringify({ ...baseline, count: unwired.length, paths: unwired }, null, 2)}\n`,
+  );
+  console.log(`Baseline rewritten: ${unwired.length} unwired composed paths.`);
+  process.exit(0);
+}
+
+if (composed.size < 50) {
+  failures.push(`Only ${composed.size} composed paths were extracted from the adapters. The parser is broken, not the code.`);
+}
+
+const known = new Set(baseline.paths);
+const newlyUnwired = unwired.filter((p) => !known.has(p));
+
+if (newlyUnwired.length > 0) {
+  failures.push(
+    `${newlyUnwired.length} NEW composed path(s) the API does not publish:\n` +
+      newlyUnwired.map((p) => `      ${p}`).join('\n') +
+      `\n\n    Each is a 404 in the HTTP configuration. Check port-mapping.md — it very likely already\n` +
+      `    records the right route, because the mapping was done and the code did not follow it.`,
+  );
+}
+
+const fixed = [...known].filter((p) => !unwired.includes(p));
+
+if (fixed.length > 0) {
+  failures.push(
+    `${fixed.length} baseline path(s) are now published. Shrink the baseline:\n` +
+      fixed.map((p) => `      ${p}`).join('\n') +
+      `\n\n    Run: node tools/check-routes.mjs --write-baseline`,
+  );
+}
+
 if (failures.length > 0) {
   console.error('\nRoute check failed:\n');
   for (const failure of failures) console.error(`  ${failure}\n`);
@@ -158,4 +242,15 @@ if (failures.length > 0) {
 
 console.log(
   `Route check passed (every API_ENDPOINTS entry is published by ${provenance.repository}@${provenance.commitShort}, ${published.length} routes).`,
+);
+
+/*
+ * Printed on every run, in red, whether or not the check passed. A number in a file is a number
+ * nobody reads; a number on every build is one somebody eventually asks about.
+ */
+console.error(
+  `\n  \u001b[31m${unwired.length} composed request paths are still 404s\u001b[0m ` +
+    `(${composed.size} checked). Every money write is among them.\n` +
+    `  Gate line 05/07 — "no port method is unresolved" — is NO-GO until this reaches zero.\n` +
+    `  See docs/integration/release-engineering.md.\n`,
 );
