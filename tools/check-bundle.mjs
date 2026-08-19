@@ -102,10 +102,49 @@ if (!isProductionArtefact) {
   process.exit(1);
 }
 
+/**
+ * Secrets, in the artefact rather than in the source (TAB 13 step 8).
+ *
+ * The repository scanner at `docs/integration/tools/secret-scan.php` reads git history and
+ * **skips minified bundles** — reasonably, since a 1 MB line of transpiled JavaScript produces
+ * nothing but false positives against a generic entropy rule.
+ *
+ * That leaves the one case TAB 13 names: *"including anything a build variable could have baked
+ * in."* A static host's build variables are public, and a value read at build time is not in git
+ * at all — it appears for the first time in the artefact, which is precisely where nothing was
+ * looking.
+ *
+ * So these are **shaped** patterns rather than entropy: a bundle is full of high-entropy strings
+ * that are hashes, and a check that cries wolf on those is a check somebody turns off.
+ */
+const SECRET_PATTERNS = [
+  [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, 'a private key'],
+  [/\bAKIA[0-9A-Z]{16}\b/, 'an AWS access key id'],
+  [/\bAIza[0-9A-Za-z_-]{35}\b/, 'a Google API key'],
+  [/\bghp_[A-Za-z0-9]{36}\b/, 'a GitHub personal access token'],
+  [/\bgithub_pat_[A-Za-z0-9_]{20,}/, 'a GitHub fine-grained token'],
+  [/\bsk_(?:live|test)_[A-Za-z0-9]{16,}/, 'a Stripe secret key'],
+  [/\bxox[baprs]-[A-Za-z0-9-]{10,}/, 'a Slack token'],
+  [
+    /(?:api[_-]?key|client[_-]?secret|access[_-]?token|password)["']?\s*[:=]\s*["'][^"']{12,}["']/i,
+    'something assigned to a credential-shaped name',
+  ],
+];
+
 const failures = [];
 
 for (const file of files) {
   const source = readFileSync(file, 'utf8');
+
+  for (const [pattern, description] of SECRET_PATTERNS) {
+    if (pattern.test(source)) {
+      failures.push(
+        `${relative(ROOT, file)} contains ${description}.\n` +
+          `    Build variables on a static host are public, and a value baked in at build time is\n` +
+          `    not in git — so the repository scanner never sees it. This is the only place it shows.`,
+      );
+    }
+  }
 
   for (const marker of SEED_MARKERS) {
     if (source.includes(marker)) {
@@ -127,5 +166,6 @@ if (failures.length > 0) {
 const bytes = files.reduce((total, file) => total + statSync(file).size, 0);
 
 console.log(
-  `Bundle check passed (${files.length} files, ${(bytes / 1024).toFixed(0)} kB, no seed markers).`,
+  `Bundle check passed (${files.length} files, ${(bytes / 1024).toFixed(0)} kB, ` +
+    'no seed markers, no credential-shaped strings).',
 );

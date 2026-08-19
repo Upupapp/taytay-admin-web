@@ -59,7 +59,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; connect-src 'self' https://api.<approved-domain>; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; upgrade-insecure-requests"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://api.<approved-domain>; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; upgrade-insecure-requests"
 
     # A referrer carrying a case identifier to a third party is a personal-data leak.
     Referrer-Policy = "strict-origin-when-cross-origin"
@@ -120,7 +120,7 @@
 [[context.deploy-preview.headers]]
   for = "/*"
   [context.deploy-preview.headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; connect-src 'self' https://api-staging.<approved-domain>; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; upgrade-insecure-requests"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://api-staging.<approved-domain>; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; upgrade-insecure-requests"
 
     # Previews carry synthetic data and unreleased screens. Keeping them out of search
     # results is not secrecy, it is not publishing a half-built welfare console under the

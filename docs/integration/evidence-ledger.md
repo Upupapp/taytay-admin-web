@@ -1575,3 +1575,90 @@ production deploy before both are closed would put a blank console in front of t
   need a host and a dashboard, and there is neither.
 * **The rollback rehearsal.** Written up in [`rollback.md`](./rollback.md) and honestly marked as an
   estimate rather than a measurement — five minutes, from the hosting model, not from a run.
+
+---
+
+## TAB 13 — console security hardening
+
+*"The Content-Security-Policy is not hardening polish. Two accepted risks depend on it."*
+
+### Why the severity is real
+
+ADR 0005 and ADR 0006 chose a first-party bearer token held in a private field over a cookie, and
+that choice **accepted** a residual XSS risk on the stated basis that a strict CSP would contain it.
+A token in memory has no `HttpOnly` to fall back on: the thing between an injected script and a
+caseworker's session is `script-src 'self'`.
+
+### `style-src` was missing entirely
+
+The policy had `default-src`, `script-src`, `connect-src`, `object-src`, `base-uri`,
+`frame-ancestors`, `form-action` and `img-src` — and no `style-src`. So Angular's build-time
+critical-CSS block, **2,324 characters of inline `<style>` in `index.html`**, fell through to
+`default-src 'self'` and would have been blocked. The console would have rendered unstyled on its
+first deploy.
+
+The obvious fix is `style-src 'self' 'unsafe-inline'`, and the command names that exact move as
+*"the exact silent weakening the topology document warns about."*
+
+**Fixed by changing the feature.** `inlineCritical: false` in `angular.json` removes the inline
+block: the production `index.html` now carries **zero** inline `<style>` and one external
+stylesheet, so `style-src 'self'` needs no nonce, no hash and no exception.
+
+That is also why no per-response nonce was built. TAB 13 asks for one, and a nonce requires a
+dynamic response — an edge function rewriting `index.html` on a static host. With nothing inline
+there is nothing to nonce, which is a smaller system that is easier to keep correct. The app has no
+literal `style=` attribute anywhere, and Angular's `[style.x]` bindings go through the CSSOM rather
+than being parsed as inline attributes, so they are unaffected.
+
+### `check:headers`, mutation-tested
+
+| Planted regression | Result |
+| --- | --- |
+| `unsafe-inline` added to make the build work | **caught** |
+| `unsafe-eval` in `script-src` | **caught** |
+| a directive dropped entirely | **caught** |
+| a wildcard source | **caught** |
+| a companion header removed | **caught** |
+| HSTS enabled before the certificate chain is confirmed | **caught** |
+| `netlify.toml` and `public/_headers` drifting apart | **caught** |
+| `upgrade-insecure-requests` dropped | **caught** |
+
+The HSTS rule is a refusal rather than a requirement: it cannot be undone from the server, and a
+wrong `max-age` locks every browser out of the console for its duration. Its absence is documented
+in `netlify.toml`, and the first version of this check failed the build on that comment — telling
+somebody to delete the sentence explaining the decision.
+
+### Secrets in the artefact, not just in history
+
+`docs/integration/tools/secret-scan.php` reads git history and **skips minified bundles**,
+reasonably: a megabyte of transpiled JavaScript defeats a generic entropy rule.
+
+That left the case TAB 13 names — *"anything a build variable could have baked in."* A static
+host's build variables are public, and a value read at build time never appears in git at all. It
+appears for the first time in the artefact, which is where nothing was looking.
+
+`check:bundle` now scans the built files for **shaped** credentials rather than entropy — private
+keys, AWS/Google/GitHub/Stripe/Slack formats, and anything assigned to a credential-shaped name.
+Four planted secrets, four caught.
+
+### Already correct, and verified rather than changed
+
+* **CORS**: `allowed_origins` from an environment variable with an empty pattern list,
+  `supports_credentials => false`, and seven tests including *"the origin allow list is never a
+  wildcard"* and *"an unlisted origin is never echoed back"*.
+* **Trusted proxies**: read from `config('api.trusted_proxies')` and applied in
+  `SharedServiceProvider` — without which rate limiting collapses to one shared key and every audit
+  entry is attributed to the load balancer.
+* **Supply chain**: lockfile committed, `npm audit --omit=dev --audit-level=high` reports **0
+  vulnerabilities** and now runs in `verify`.
+
+### Blocked
+
+**Step 6 — verify by inspection.** *"Fetch the deployed console and the deployed API and read the
+response headers. A policy in a file is not a policy in production."* Nothing is deployed, so every
+claim above is about files. That distinction is the command's own, and it stands: this TAB has made
+the policy correct and unweakenable **in the repository**, and has proven nothing about what a
+browser will actually receive.
+
+**Step 9's CI half.** The checks exist and run in `npm run verify`; there is no CI to run them in,
+by the owner's decision. A header regression fails a local gate rather than a build.

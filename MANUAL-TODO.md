@@ -179,3 +179,22 @@ Last updated: 19 August 2026, after TAB 07.
       The configuration is now correct — `dataSource: 'http'` — and the console is not ready:
       45 adapter reads bypass the mappers, and 24 of 43 guarded routes ask for permissions the API
       never sends, including the dashboard. Before TAB 12 this was hidden behind mock data.
+
+---
+
+## 🟤 Added by TAB 13 — hardening
+
+- [ ] **Fetch the deployed headers and compare them to the table** — *the acceptance criterion*
+      Everything TAB 13 did is about files. *"A policy in a file is not a policy in production."*
+      Until somebody `curl -I`s the deployed console and API, the CSP is unverified.
+
+- [ ] **Enable HSTS — but only after the certificate chain is confirmed**
+      Deliberately absent, and `check:headers` fails the build if it appears. It cannot be undone
+      from the server: a wrong `max-age` locks every browser out of the console for its duration.
+      → Add `Strict-Transport-Security: max-age=31536000; includeSubDomains` once custom domains
+      and certificates are live, and remove the guard in the same change.
+
+- [ ] **Set `CORS_ALLOWED_ORIGINS` and `TRUSTED_PROXIES`** on the API
+      Exact origins, never a wildcard and never a `*.netlify.app` pattern — anybody can create a
+      site on that domain. `TRUSTED_PROXIES` to the private CIDR, or rate limiting collapses to one
+      shared key and every audit entry is attributed to the load balancer.
