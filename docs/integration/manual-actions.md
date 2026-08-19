@@ -233,3 +233,45 @@ invent.
 
 Everything on this page above that table is on it because a script cannot appoint a person, decide
 a policy, or agree what a case is.
+
+---
+
+## TAB 09 — the two things a repository cannot fix
+
+### 1. `client_max_body_size` must sit **above** the application limit
+
+The API accepts uploads up to **10 MB** (`AcceptedMediaType::MAX_BYTES`). nginx must allow more
+than that — 12 MB is a reasonable margin:
+
+```nginx
+client_max_body_size 12m;
+```
+
+**Why the margin matters, rather than matching exactly.** If nginx rejects the body first, it
+answers before Laravel ever sees the request, so the response carries **no CORS headers**. The
+browser then refuses to expose it and reports `status: 0` — which is indistinguishable from the
+server being unreachable.
+
+The console now handles that case: a `0` on an upload is reported as *too large*, with the real
+figures, rather than as a network failure. That is a deliberate guess and it is the right one —
+being wrong costs a retry, being wrong the other way sends somebody to check their wifi over a
+file that is simply too big. But it is a fallback. With the margin set, **Laravel answers first**,
+the message is precise, and the guess stops being reachable.
+
+Also raise `upload_max_filesize` and `post_max_size` in PHP above 10 MB, for the same reason: a
+PHP-level rejection produces a truncated body rather than a clean refusal.
+
+### 2. Object storage is still not provisioned
+
+TAB 09's own precondition: *"Object storage provisioned with separate private and public
+credentials."* It is not, so three things are **designed and unverified**:
+
+* **two buckets, one writer, least-privilege keys, neither key able to read the other's bucket** —
+  the code targets an `object-storage` disk and a `public` disk and never writes anything
+  citizen-derived to the second, but nothing has proven the keys are actually separate;
+* signed-URL issuance against a real store;
+* that a durable public URL genuinely cannot be constructed for a private object.
+
+Everything proven so far ran on the local disk. The access-grant model — opaque, single-use,
+expiring, issued after a server-side decision — does not depend on the store, so it holds. The
+*posture* does.

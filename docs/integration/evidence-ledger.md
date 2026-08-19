@@ -1390,3 +1390,92 @@ unreachable guard, and a guard reconciled without lowering the number. Both muta
 **Nothing is broken today**, because the console still runs on mock adapters where every route
 opens. It breaks the day TAB 12 flips `dataSource` — and it breaks as a blank console rather than
 an error, which is why it is recorded here at full size rather than left for that TAB to discover.
+
+---
+
+## TAB 09 — documents and files
+
+*"What the office read when it decided must stay readable, and reachable only by the people
+entitled to it."*
+
+### The console had no file transport at all
+
+The command says so, and it was accurate: the **domain** was well shaped — grant-based opening,
+append-only versions, conditional applicability, no URL on the model — and there was no way to
+move a byte. `data/http/file-transport.ts` is that, built once.
+
+| Requirement | How it is met |
+| --- | --- |
+| Multipart upload with progress | `HttpEventType.UploadProgress`, reported as bytes sent |
+| Cancellation | the subscription's — unsubscribe aborts, so there is no `cancel()` to forget |
+| Client-side size and type check | a **courtesy**, run before a byte leaves; the server re-checks leading bytes |
+| The policy | a **parameter**, read from the API's own `accepts` block — never a constant here |
+| 413 | including the `status: 0` case — see below |
+| Opening a granted file | `documents/${grant.handle}` and nothing else |
+| Browser storage | never written to; asserted with a spy on `Storage.prototype.setItem` |
+
+### The 413 that does not look like one
+
+If nginx rejects a body before Laravel sees it, the response carries **no CORS headers**, so the
+browser refuses to expose it and reports `status: 0` — indistinguishable, to naive code, from the
+server being down. A console that says *"could not reach the server"* there sends somebody to check
+their wifi over a file that is simply too big.
+
+So `status === 0` on an upload is reported as **too large**, carrying the real figures so a screen
+can say *"12 MB, and the limit is 10"*. It is a guess, and it is the right one: being wrong costs a
+retry, which the user would attempt anyway; being wrong the other way costs a support call. The
+deployment half — `client_max_body_size` above the application limit — is in
+[`manual-actions.md`](./manual-actions.md), because it cannot be fixed from a repository.
+
+### `check:documents-transport`
+
+The four guardrails plus the storage one, each mutation-tested:
+
+| Planted regression | Result |
+| --- | --- |
+| a code path that deletes a document version | **caught** |
+| a screen building a document byte URL from an identifier | **caught** |
+| a public object URL | **caught** |
+| a downloaded file written to browser storage | **caught** |
+| a domain field for an unmasked document number | **caught** |
+
+**Two rules of mine needed correcting rather than routing around.** The first version of the URL
+rule flagged the *grant-issuing* endpoint, which is legitimate — the console must build
+`.../documents/{version}/access` to ask for a grant, and that returns JSON after an authorization
+decision. A check that fires on correct code teaches somebody to weaken the check.
+
+And `check:contract` flagged the new spec for containing an API origin. Specs are now exempt from
+that **one** rule, narrowly: a test asserting the URL a request used proves the base was applied,
+which is the opposite of the defect the rule catches. Mutation-tested afterwards to confirm an
+adapter hand-building a URL is still caught — an exemption that blunts the rule is worse than the
+inconvenience it removed.
+
+### What TAB 09 asked the API for
+
+Only one thing was missing, and it was precise: **the grant did not say where the scanner got to.**
+The version listing had `scan_status` all along, and the listing is not the moment that matters —
+the grant is what a client holds at the instant it opens the file.
+
+The warning is now composed **on the server**, for the same reason the payout manifest is: a
+sentence assembled by a screen stops being true when a new case appears, and nobody notices because
+the screen still renders something. An unscanned file says so first: accountability is a fact about
+the record, risk is a fact that should change what somebody does next.
+
+Enforcement was already correct and untouched — an infected file is never served, and a pending one
+is viewable inside the office but cannot be shared.
+
+### Retention: access expires, disposal waits
+
+A person-level export becomes **unreachable** on schedule — expired, another person's, unknown and
+no-longer-permitted all answer NOT FOUND alike. The bytes are **not** deleted, and that is
+deliberate rather than an omission: `mayPurge()` refuses everything while the retention schedule is
+unapproved, because an office that believes it may delete after five years, and does, cannot undo
+it. Appointing the DPO and approving the schedule is the same manual item that has blocked this
+since TAB 07.
+
+### Unverified because the environment does not exist
+
+TAB 09's precondition — *"Object storage provisioned with separate private and public
+credentials"* — is unmet. Two buckets, least-privilege keys, and signed-URL issuance against a real
+store are **designed and unproven**. The access-grant model does not depend on the store, so it
+holds; the storage posture does not.
