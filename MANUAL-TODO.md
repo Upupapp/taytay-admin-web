@@ -315,3 +315,47 @@ these are the other two thirds.
 
 - [ ] **Console failure paths** — API down mid-journey, token expiring mid-form, a slow network, an
       upload interrupted at 80%. Each must fail legibly and lose nothing the user typed.
+
+---
+
+## 🟥 TAB 18 — release engineering: the parts that need infrastructure
+
+**Release-gate blocker 3 is here.** *"A backup that has never been restored is a hypothesis."*
+
+- [ ] **Perform the restore.** Restore a real backup into a clean environment, bring the
+      application up against it, verify integrity, and record the **observed** RPO and RTO — not
+      the target ones. The runbook has the empty table waiting.
+
+- [ ] **Set RPO and RTO with LGU management.** They are business decisions about how much welfare
+      data Taytay can afford to lose. A number invented by engineering gets quoted back as though
+      somebody had decided it.
+
+- [ ] **Verify migration rollback against real PostgreSQL.** The suite runs it on SQLite, which
+      structurally cannot report the two failures that actually happen: dropping a table something
+      still references, and dropping a column a constraint depends on. Four static rules cover
+      those by reading the SQL, which is not the same as SQL that ran.
+
+- [ ] **Rehearse and time rollback for both applications.** Record who may take the decision and
+      what evidence they need — decided calmly, in advance.
+
+- [ ] **Deployment pipelines with required gates.** Blocked: no Actions credit, so no workflow
+      files are committed. The gates run locally today. This is the item TAB 18 most wants, because
+      *"enforced by the pipeline, not by discipline"* is the whole point.
+
+- [ ] **Run `php artisan lguids:preflight` on the production host** once one exists. Eight items
+      report `unverifiable` because they are properties of the machine — nginx's body limit, the
+      six queue workers, whether the scheduler cron is on exactly one host. They are not passes.
+
+- [ ] **PHP upload limits on the deployed host.** The preflight already fails on this machine:
+      `upload_max_filesize` and `post_max_size` are 2M against the 10 MB this API advertises to
+      both clients. An upload between those sizes arrives with no file at all, and the error reads
+      as a client bug.
+
+- [ ] **Store secrets in a manager, not a file on a server, and rotate once as a rehearsal.**
+
+- [ ] **Decide the single-node question.** One API node means total outage on one host failure.
+      Permitted for an initial deployment *if documented as a conscious trade-off*. Document it, or
+      fund the second node — this is an owner decision, not an engineering one.
+
+- [ ] **Configure backups**: database-native with point-in-time recovery, plus independent off-site
+      copies, encrypted, with key custody recorded. Compute snapshots are not a DR plan.

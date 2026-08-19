@@ -196,7 +196,7 @@ export const API_ENDPOINTS = {
   dashboardSummary: 'admin/dashboard',
 
   /*
-   * NO COUNTERPART — do not wire these.
+   * NO COUNTERPART — do not wire this.
    *
    * `cases` is the continuing-involvement entity, which has no endpoint at all
    * and is blocked on ADR 0044's ratification. The value below is deliberately
@@ -205,11 +205,25 @@ export const API_ENDPOINTS = {
    * `admin/assistance-requests` — which is the "looks like success when wrong"
    * trap TAB 04 exists to prevent (ledger L-07).
    *
-   * `work` and `reports` are derived server-side surfaces TAB 07 builds.
+   * `check:routes` knows this one is intentional and asserts it stays absent;
+   * the day the API publishes it, that check fails and says to wire it.
    */
   cases: 'admin/cases',
-  work: 'work',
-  reports: 'reports',
+
+  /*
+   * REPOINTED IN TAB 18, and they were wrong from the day TAB 07 landed.
+   *
+   * This comment used to say `work` and `reports` were surfaces TAB 07 would
+   * build. It built them — at `admin/work/*` and `admin/reports` — and these two
+   * values were never moved, so the adapters called `/api/v1/work/mine` and
+   * `/api/v1/reports` and both 404. Every work-queue screen and every report.
+   *
+   * Nothing caught it. The mock served both happily, the types were right, the
+   * tests were green, and the only way to see it was to ask the API. That is
+   * what `check:routes` now does on every build.
+   */
+  work: 'admin/work',
+  reports: 'admin/reports',
 } as const;
 
 /**
