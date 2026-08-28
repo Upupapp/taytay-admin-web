@@ -19,6 +19,7 @@ import {
   type ResidentId,
   type StaffUserId,
   type VulnerabilityFactorCode,
+  type VulnerabilitySector,
 } from '@domain/index';
 
 import { MOCK_HOUSEHOLDS, MOCK_RESIDENTS } from './seed/residents.seed';
@@ -249,6 +250,25 @@ export class MockResidentStore {
 
   setActive(existing: Resident, isActive: boolean, actorId: StaffUserId | null): Resident {
     return this.write({ ...existing, isActive }, actorId);
+  }
+
+  /**
+   * Adds or removes one sectoral membership.
+   *
+   * Idempotent on both sides, matching the API: recording the same sector twice leaves one entry,
+   * because a duplicate would double every sectoral count the LGU reports.
+   */
+  setSector(
+    existing: Resident,
+    sector: VulnerabilitySector,
+    present: boolean,
+    actorId: StaffUserId | null,
+  ): Resident {
+    const sectors = present
+      ? [...new Set([...existing.sectors, sector])]
+      : existing.sectors.filter((entry) => entry !== sector);
+
+    return this.write({ ...existing, sectors }, actorId);
   }
 
   /**

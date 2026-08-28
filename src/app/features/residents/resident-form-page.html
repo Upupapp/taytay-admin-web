@@ -219,6 +219,29 @@
           @if (hasRestrictedSectors()) {
             <p class="form__hint">{{ copy.sectorsRestricted }}</p>
           }
+
+          <!--
+            Shown only once a sector is ticked. A field asking how something was established, on a
+            form where nothing has been claimed yet, is a field people learn to scroll past.
+          -->
+          @if (model().sectors.length > 0) {
+            <label class="field" for="sector-basis">
+              <span class="field__label">{{ copy.sectorBasisLabel }}</span>
+              <input
+                id="sector-basis"
+                class="field__control"
+                type="text"
+                [value]="model().sectorBasis"
+                (input)="onText('sectorBasis', $event)"
+                [attr.aria-describedby]="'sector-basis-hint'"
+                [attr.aria-invalid]="sectorBasisMissing() ? 'true' : null"
+              />
+              <span class="field__hint" id="sector-basis-hint">{{ copy.sectorBasisHint }}</span>
+            </label>
+            @if (sectorBasisMissing()) {
+              <p class="field__error" role="alert">{{ copy.sectorBasisRequired }}</p>
+            }
+          }
         </fieldset>
 
         <div class="form__actions">

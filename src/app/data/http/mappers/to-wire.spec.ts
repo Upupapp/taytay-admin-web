@@ -167,7 +167,18 @@ describe('outbound mappers', () => {
       const wire = toWireResidentDraft(draft) as Record<string, unknown>;
 
       expect(Object.keys(wire).length).toBe(12);
-      for (const absent of ['sectors', 'philsysLastFour', 'philsys_last_four', 'monthlyIncome', 'monthly_income', 'householdId', 'household_id', 'name', 'address', 'contact']) {
+      for (const absent of [
+        'sectors',
+        'philsysLastFour',
+        'philsys_last_four',
+        'monthlyIncome',
+        'monthly_income',
+        'householdId',
+        'household_id',
+        'name',
+        'address',
+        'contact',
+      ]) {
         expect(wire[absent]).toBeUndefined();
       }
     });

@@ -29,6 +29,9 @@ import {
   type ResidentRepository,
   type ResidentSortField,
   type ResidentView,
+
+  isSensitiveSector,
+  type VulnerabilitySector,
 } from '@domain/index';
 
 import { historySummaryFor } from './mock-assistance-history';
@@ -200,6 +203,52 @@ export class MockResidentRepository implements ResidentRepository {
       return throwError(() => new PermissionDeniedError('resident.deactivate'));
     }
     return this.latency.respond(this.store.setActive(existing, isActive, user?.id ?? null));
+  }
+
+  /**
+   * Recording a sector needs `resident.manage`, and a safeguarding one needs the sensitive grant.
+   *
+   * The mock refuses the same combination the API does. A stand-in that were more permissive would
+   * let a screen be built against a boundary the real server enforces — which is the failure the
+   * whole mock/HTTP seam exists to avoid.
+   */
+  recordSector(id: ResidentId, sector: VulnerabilitySector): Observable<void> {
+    return this.writeSector(id, sector, true);
+  }
+
+  /**
+   * The port's `reason` is **not accepted here**, and that is a real limitation of the mock rather
+   * than a tidy-up: `Resident.sectors` is a list of codes with nowhere to hold why each was
+   * recorded. The server keeps it on the audit trail, so this seam is thinner than the real one —
+   * worth knowing before trusting a screen built only against the mock.
+   */
+  endSector(id: ResidentId, sector: VulnerabilitySector): Observable<void> {
+    return this.writeSector(id, sector, false);
+  }
+
+  private writeSector(
+    id: ResidentId,
+    sector: VulnerabilitySector,
+    present: boolean,
+  ): Observable<void> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<void>(user, 'resident.update');
+    if (denied) {
+      return denied;
+    }
+
+    if (isSensitiveSector(sector) && !userHasPermission(user, 'request.view-sensitive')) {
+      return throwError(() => new PermissionDeniedError('request.view-sensitive'));
+    }
+
+    const existing = this.store.find(id);
+    if (!existing || !isWithinBarangayScope(user, existing.address.barangayId)) {
+      return throwError(() => new PermissionDeniedError('resident.update'));
+    }
+
+    this.store.setSector(existing, sector, present, user?.id ?? null);
+
+    return this.latency.respond(undefined);
   }
 
   private disclose(resident: Resident, user: AuthenticatedUser | null): ResidentView {

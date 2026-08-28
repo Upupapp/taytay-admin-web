@@ -51,6 +51,7 @@ import {
   type ReleaseStatus,
   type AcknowledgementKind,
   type ReleaseAcknowledgementDraft,
+  type VulnerabilitySector,
   type ReleaseBatch,
   type ReleaseBatchDraft,
   type ReleaseBatchId,
@@ -294,6 +295,34 @@ export class HttpResidentRepository implements ResidentRepository {
               );
       }),
     );
+  }
+
+  /**
+   * `POST admin/residents/{resident}/sectors`, which did not exist until TAB 19.
+   *
+   * `resident_sectors` was read by the eligibility facts and the vulnerability snapshot and
+   * written by nothing, so a resident enrolled through this API had no sectors at all — and every
+   * fact derived from them was absent rather than false.
+   */
+  recordSector(
+    id: ResidentId,
+    sector: VulnerabilitySector,
+    reason: string,
+  ): Observable<void> {
+    return this.api.postVoid<{ sector: VulnerabilitySector; reason: string }>(
+      `${API_ENDPOINTS.residents}/${id}/sectors`,
+      { sector, reason },
+    );
+  }
+
+  endSector(id: ResidentId, sector: VulnerabilitySector, reason: string): Observable<void> {
+    // A DELETE that carries its reason: the membership ends, the audit entry stays.
+    return this.api
+      .delete<unknown, { reason: string }>(
+        `${API_ENDPOINTS.residents}/${id}/sectors/${sector}`,
+        { reason },
+      )
+      .pipe(map(() => undefined));
   }
 
   create(draft: ResidentDraft): Observable<Resident> {

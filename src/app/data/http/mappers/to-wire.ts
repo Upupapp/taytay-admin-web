@@ -99,14 +99,18 @@ export function toWireVisitOutcome(outcome: VisitOutcomeDraft): {
  *
  * ## What is deliberately not sent
  *
- * `sectors`, `philsysLastFour`, `monthlyIncome` and `householdId` have **no counterpart on create**
- * and are dropped rather than serialised hopefully — Laravel ignores unknown keys, so sending them
- * would succeed and discard them, which reads to an intake officer as the office losing what they
- * typed.
+ * `sectors` is dropped **because it belongs elsewhere**, not because nothing accepts it. Each
+ * sector rests on something somebody checked — a Senior Citizen ID, a PWD card — and the server
+ * takes it as its own act with a reason, through `ResidentRepository.recordSector`. The form
+ * records them after the resident exists and reports any the server refused (`DL-87`).
  *
- * Three of those four are the sensitive tier (`DL-38`): PhilSys digits, means, and the sector flags
- * behind `resident.view-sensitive`. That they cannot be set at creation is a **gap to close
- * deliberately, in one place, with the permission asked for** — not by widening this payload.
+ * `philsysLastFour`, `monthlyIncome` and `householdId` have **no counterpart at all**, and are
+ * dropped rather than serialised hopefully — Laravel ignores unknown keys, so sending them would
+ * succeed and discard them, which reads to an intake officer as the office losing what they typed.
+ *
+ * The first two are the sensitive tier (`DL-38`), and where they belong is settled doctrine rather
+ * than an oversight: income is means-testing evidence and belongs to the assistance workflow;
+ * PhilSys digits belong to KYC. Neither is a field to widen this payload with.
  */
 export function toWireResidentDraft(draft: ResidentDraft): {
   first_name: string;

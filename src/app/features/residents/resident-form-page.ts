@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { of, switchMap } from 'rxjs';
+import { catchError, forkJoin, map, of, switchMap, type Observable } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
 import { NotificationStore } from '@core/notifications/notification.store';
@@ -64,6 +64,8 @@ interface FormModel {
   philsysLastFour: string;
   monthlyIncome: string;
   sectors: readonly VulnerabilitySector[];
+  /** How the office established these. Required once any sector is ticked. */
+  sectorBasis: string;
 }
 
 const BLANK: FormModel = {
@@ -82,6 +84,7 @@ const BLANK: FormModel = {
   philsysLastFour: '',
   monthlyIncome: '',
   sectors: [],
+  sectorBasis: '',
 };
 
 /**
@@ -128,6 +131,17 @@ export class ResidentFormPage {
     this.permissions.has('request.view-sensitive')
       ? VULNERABILITY_SECTORS
       : VULNERABILITY_SECTORS.filter((sector) => !isSensitiveSector(sector)),
+  );
+
+  /**
+   * A ticked sector with no basis blocks the save.
+   *
+   * Enforced here as well as by the server, which requires the reason on every sector act — this
+   * is the usability half, so a clerk finds out before they submit rather than after the resident
+   * has been created and the sectors refused.
+   */
+  protected readonly sectorBasisMissing = computed(
+    () => this.model().sectors.length > 0 && this.model().sectorBasis.trim().length === 0,
   );
 
   protected readonly hasRestrictedSectors = computed(
@@ -205,6 +219,7 @@ export class ResidentFormPage {
       philsysLastFour: draft.philsysLastFour ?? '',
       monthlyIncome: draft.monthlyIncome === null ? '' : String(toDecimal(draft.monthlyIncome)),
       sectors: draft.sectors,
+      sectorBasis: '',
     });
   }
 
@@ -256,7 +271,7 @@ export class ResidentFormPage {
     const draft = this.toDraft();
     const problems = validateResidentDraft(draft);
     this.problems.set(problems);
-    if (problems.length > 0) {
+    if (problems.length > 0 || this.sectorBasisMissing()) {
       return;
     }
 
@@ -267,12 +282,38 @@ export class ResidentFormPage {
         ? this.repository.create(draft)
         : this.repository.update(asId<ResidentId>(id), draft);
 
-    save$.subscribe({
-      next: (saved) => {
+    save$
+      .pipe(
+        /*
+         * ── sectors are recorded AFTER the record exists, one act at a time ──────────
+         *
+         * They are not part of the draft and never were on the wire: each sector rests on
+         * something somebody checked — a Senior Citizen ID, a PWD card — and the server takes it
+         * as its own act with a reason. Until TAB 19 there was no endpoint at all, so every
+         * sector ticked on this form was silently discarded.
+         *
+         * The failure mode is real and is reported rather than hidden (`DL-87`): the resident is
+         * saved either way, and a sector that did not record is named. A screen that said
+         * "saved" while a safeguarding flag was refused would be the worst possible lie.
+         */
+        switchMap((saved) =>
+          this.recordSectors(asId<ResidentId>(saved.id), draft.sectors).pipe(
+            map((refused) => ({ saved, refused })),
+          ),
+        ),
+      )
+      .subscribe({
+      next: ({ saved, refused }) => {
         this.submitting.set(false);
-        this.notifications.success(
-          id === undefined ? this.copy.savedCreate : this.copy.savedUpdate,
-        );
+
+        if (refused.length > 0) {
+          this.notifications.warning(this.copy.sectorsNotRecorded(refused));
+        } else {
+          this.notifications.success(
+            id === undefined ? this.copy.savedCreate : this.copy.savedUpdate,
+          );
+        }
+
         void this.router.navigate(['/residents', saved.id]);
       },
       error: (failure: unknown) => {
@@ -282,6 +323,37 @@ export class ResidentFormPage {
         );
       },
     });
+  }
+
+  /**
+   * Records each ticked sector and returns the ones that were refused.
+   *
+   * Sequential rather than concurrent, and it never fails the stream: the resident record is
+   * already saved by the time this runs, so an error here must degrade into a warning rather than
+   * into an error message about a save that actually succeeded.
+   *
+   * On edit this records what is ticked and does **not** end what was un-ticked — removing a
+   * sector is its own act with its own reason, and inferring a removal from a checkbox somebody
+   * cleared is exactly the silent protection change this design refuses.
+   */
+  private recordSectors(
+    id: ResidentId,
+    sectors: readonly VulnerabilitySector[],
+  ): Observable<readonly VulnerabilitySector[]> {
+    if (sectors.length === 0) {
+      return of([]);
+    }
+
+    const reason = this.model().sectorBasis.trim();
+
+    return forkJoin(
+      sectors.map((sector) =>
+        this.repository.recordSector(id, sector, reason).pipe(
+          map(() => null),
+          catchError(() => of(sector)),
+        ),
+      ),
+    ).pipe(map((results) => results.filter((entry): entry is VulnerabilitySector => entry !== null)));
   }
 
   private toDraft(): ResidentDraft {

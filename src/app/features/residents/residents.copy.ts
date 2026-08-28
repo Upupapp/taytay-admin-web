@@ -142,6 +142,19 @@ export const RESIDENTS_COPY = {
     sectorsHint: 'Tick every sector that applies. These drive programme eligibility.',
     sectorsRestricted:
       'Protected sectors are not offered here. Recording one requires the sensitive-records permission.',
+    sectorBasisLabel: 'How was this established?',
+    sectorBasisHint:
+      'Name what you saw — a Senior Citizen ID, a PWD card, a Solo Parent ID. This is recorded against your name with the sector.',
+    sectorBasisRequired: 'Say how these sectors were established before saving.',
+    /**
+     * Named individually rather than counted.
+     *
+     * "2 sectors could not be recorded" tells a clerk to check all of them; naming the two tells
+     * them which. A safeguarding sector refused for want of the sensitive grant is the likeliest
+     * case, and it is the one where a vague message costs the most.
+     */
+    sectorsNotRecorded: (sectors: readonly string[]): string =>
+      `The record was saved, but ${sectors.join(' and ')} could not be recorded. Nothing about those sectors was kept — record them from the resident's page.`,
 
     problemsHeading: 'Check these before saving',
     savedCreate: 'Resident registered.',

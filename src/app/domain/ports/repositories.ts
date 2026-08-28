@@ -96,6 +96,7 @@ import type {
   ResidentDraft,
   ResidentFilter,
   ResidentSortField,
+  VulnerabilitySector,
 } from '../residents/resident';
 import type {
   Household,
@@ -205,6 +206,33 @@ export interface ResidentRepository {
   update(id: ResidentId, draft: ResidentDraft): Observable<Resident>;
   /** Registry records are retired, never deleted: history must stay attributable. */
   setActive(id: ResidentId, isActive: boolean): Observable<Resident>;
+
+  /**
+   * Records that a resident belongs to a statutory sector.
+   *
+   * **A recorded act with a reason, not a field on the draft.** Each sector rests on something
+   * somebody checked — a Senior Citizen ID, a PWD card, a Solo Parent ID — and `create` carries no
+   * way to say what that was or who saw it. So sectors are not part of `ResidentDraft`'s round
+   * trip, and `toWireResidentDraft` deliberately drops them.
+   *
+   * `vawc-survivor` and `cicl` additionally need `request.view-sensitive`: recording somebody as a
+   * VAWC survivor is a protection decision, not a checkbox, and the server refuses it without the
+   * grant regardless of what this client offers.
+   */
+  recordSector(
+    id: ResidentId,
+    sector: VulnerabilitySector,
+    reason: string,
+  ): Observable<void>;
+
+  /**
+   * Ends a sectoral membership, with a reason.
+   *
+   * A solo parent whose child turns eighteen stops being one, and the office needs to say when and
+   * why. Removing a safeguarding sector is gated identically to adding one — it is the act that
+   * would hide a protection decision from everybody relying on it.
+   */
+  endSector(id: ResidentId, sector: VulnerabilitySector, reason: string): Observable<void>;
 }
 
 export const RESIDENT_REPOSITORY = new InjectionToken<ResidentRepository>('ResidentRepository');
