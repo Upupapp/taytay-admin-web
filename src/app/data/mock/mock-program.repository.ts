@@ -75,7 +75,7 @@ export class MockProgramRepository implements ProgramRepository {
     return this.latency.respond(this.programs.filter((program) => program.status === 'active'));
   }
 
-  listRequirementTemplates(): Observable<readonly RequirementTemplate[]> {
+  listRequirementTemplates(_id: ProgramId): Observable<readonly RequirementTemplate[]> {
     return this.latency.respond(MOCK_REQUIREMENT_TEMPLATES);
   }
 

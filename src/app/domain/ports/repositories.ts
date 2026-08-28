@@ -394,8 +394,14 @@ export interface ProgramRepository {
   getById(id: ProgramId): Observable<AssistanceProgram | null>;
   listActive(): Observable<readonly AssistanceProgram[]>;
 
-  /** The shared document sets a programme may start from. */
-  listRequirementTemplates(): Observable<readonly RequirementTemplate[]>;
+  /**
+   * The document sets this programme asks for.
+   *
+   * Programme-scoped rather than a global catalogue: the API serves them under the programme,
+   * and every caller already has one in hand. A global list would also invite a screen to show a
+   * template that this programme does not actually require.
+   */
+  listRequirementTemplates(id: ProgramId): Observable<readonly RequirementTemplate[]>;
 
   /**
    * Creates a programme, or updates the one at `id`. Idempotent on the

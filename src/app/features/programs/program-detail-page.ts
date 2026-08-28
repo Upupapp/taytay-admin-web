@@ -122,7 +122,7 @@ export class ProgramDetailPage {
                 program === null
                   ? of(null)
                   : combineLatest([
-                      this.repository.listRequirementTemplates(),
+                      this.repository.listRequirementTemplates(program.id),
                       this.repository.utilizationFor(program.id),
                     ]).pipe(
                       switchMap(([templates, utilization]) =>

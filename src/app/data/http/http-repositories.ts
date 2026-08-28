@@ -1,6 +1,15 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, map, of, switchMap, tap, throwError, type Observable } from 'rxjs';
+import {
+  catchError,
+  combineLatest,
+  map,
+  of,
+  switchMap,
+  tap,
+  throwError,
+  type Observable,
+} from 'rxjs';
 
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import { AuthTokenHolder } from '@core/auth/auth-token.holder';
@@ -229,8 +238,57 @@ export class HttpResidentRepository implements ResidentRepository {
     return this.api.optionalItem<Household>(`${API_ENDPOINTS.households}/${id}`);
   }
 
+  /**
+   * Composed from four published reads, because the API projects no profile.
+   *
+   * This asked for `/{id}/profile`, which 404s — there has never been such an endpoint, and
+   * `port-mapping.md` recorded the alternative it needed: *"assembled from resident + households +
+   * vulnerability + assistance-history — four calls or a TAB 07 projection."* TAB 07 built the
+   * pieces and not the projection, so the four calls are what exist.
+   *
+   * Composed **here, in the data layer**, and not in the screen. A page assembling this itself
+   * would be a second assembly of the same history, and `DL-71` is explicit that two assemblies
+   * eventually disagree — in front of the family.
+   *
+   * The cost is four round trips per profile view rather than one. That is a performance concern
+   * and not a correctness one, and it is the honest shape until a projection exists: each of the
+   * four is separately permission-checked server-side, which a single composite endpoint would
+   * have to reproduce anyway.
+   *
+   * A missing resident yields `null` for the whole profile; a missing household is a legitimate
+   * absence — `DL-47`, a family may have no household while it is between addresses — so the
+   * other three reads are allowed to come back empty without collapsing the profile.
+   */
   getProfile(id: ResidentId): Observable<ResidentProfile | null> {
-    return this.api.optionalItem<ResidentProfile>(`${API_ENDPOINTS.residents}/${id}/profile`);
+    const base = `${API_ENDPOINTS.residents}/${id}`;
+
+    return combineLatest([
+      this.api.optionalItem<ResidentView>(base),
+      this.api.collection<Household>(`${base}/households`),
+      this.api.item<ResidentProfile['history']>(`${base}/assistance-history`),
+    ]).pipe(
+      switchMap(([view, households, history]) => {
+        if (view === null) {
+          return of(null);
+        }
+
+        const household = households[0] ?? null;
+
+        // Members live on the household, so a resident between addresses simply has none.
+        return household === null
+          ? of({ view, household: null, householdMembers: [], history })
+          : this.api
+              .optionalItem<HouseholdDetail>(`${API_ENDPOINTS.households}/${household.id}`)
+              .pipe(
+                map((detail) => ({
+                  view,
+                  household,
+                  householdMembers: detail?.members ?? [],
+                  history,
+                })),
+              );
+      }),
+    );
   }
 
   create(draft: ResidentDraft): Observable<Resident> {
@@ -743,9 +801,9 @@ export class HttpProgramRepository implements ProgramRepository {
     return this.api.optionalItem<AssistanceProgram>(`${API_ENDPOINTS.programs}/${id}`);
   }
 
-  listRequirementTemplates(): Observable<readonly RequirementTemplate[]> {
+  listRequirementTemplates(id: ProgramId): Observable<readonly RequirementTemplate[]> {
     return this.api.collection<RequirementTemplate>(
-      `${API_ENDPOINTS.programs}/requirement-templates`,
+      `${API_ENDPOINTS.programsAdmin}/${id}/requirement-templates`,
     );
   }
 
@@ -760,12 +818,23 @@ export class HttpProgramRepository implements ProgramRepository {
       : this.api.patch<AssistanceProgram, ProgramDraft>(`${API_ENDPOINTS.programs}/${id}`, draft);
   }
 
+  /*
+   * Utilisation is an ADMIN read, not a public-catalog one.
+   *
+   * `programs` is the public surface a resident may browse; how much of a programme's funds have
+   * been drawn is office information, and the API places it under `admin/` accordingly. Reading it
+   * from the catalog path was both a 404 and, had it worked, a disclosure.
+   */
   utilizationFor(id: ProgramId): Observable<ProgramUtilization> {
-    return this.api.item<ProgramUtilization>(`${API_ENDPOINTS.programs}/${id}/utilization`);
+    return this.api.item<ProgramUtilization>(
+      `${API_ENDPOINTS.programsAdmin}/${id}/utilization`,
+    );
   }
 
   utilizationSummary(): Observable<readonly ProgramUtilization[]> {
-    return this.api.collection<ProgramUtilization>(`${API_ENDPOINTS.programs}/utilization`);
+    return this.api.collection<ProgramUtilization>(
+      `${API_ENDPOINTS.programsAdmin}/utilization`,
+    );
   }
 
   listActive(): Observable<readonly AssistanceProgram[]> {
@@ -797,10 +866,16 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
     to: AssistanceRequestStatus,
     reason: string | null,
   ): Observable<AssistanceRequest> {
-    return this.api.post<AssistanceRequest>(`${API_ENDPOINTS.assistanceRequests}/${id}/status`, {
-      status: to,
-      reason,
-    });
+    /*
+     * ONE transition endpoint, and the field is `to` (ADR 0007 §2).
+     *
+     * This posted `{ status, reason }` to a `/status` route that does not exist. Both halves were
+     * wrong, and the payload half is the one no path check can see.
+     */
+    return this.api.post<AssistanceRequest, { to: AssistanceRequestStatus; reason: string | null }>(
+      `${API_ENDPOINTS.assistanceRequests}/${id}/transitions`,
+      { to, reason },
+    );
   }
 
   /**
@@ -820,13 +895,19 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
    * second draft once the caller holds an id (`DL-63`).
    */
   saveDraft(draft: IntakeDraft, id: AssistanceRequestId | null): Observable<AssistanceRequest> {
+    /*
+     * An intake is its own resource; `assistance-requests/drafts` was never one.
+     *
+     * The update half has **no counterpart**: the API serves `POST admin/assistance-intakes` and
+     * no PATCH beside it, so re-saving a draft after the first save cannot round-trip. Left
+     * pointing at the intake resource rather than silently re-creating, because a PATCH to a route
+     * that does not exist fails loudly where a second POST would quietly produce a second draft —
+     * and `DL-63` exists precisely so a retried create cannot become two records.
+     */
     return id === null
-      ? this.api.post<AssistanceRequest, IntakeDraft>(
-          `${API_ENDPOINTS.assistanceRequests}/drafts`,
-          draft,
-        )
+      ? this.api.post<AssistanceRequest, IntakeDraft>(API_ENDPOINTS.assistanceIntakes, draft)
       : this.api.patch<AssistanceRequest, IntakeDraft>(
-          `${API_ENDPOINTS.assistanceRequests}/drafts/${id}`,
+          `${API_ENDPOINTS.assistanceIntakes}/${id}`,
           draft,
         );
   }
@@ -835,9 +916,22 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
     id: AssistanceRequestId,
     acknowledgement: AdvisoryAcknowledgement | null,
   ): Observable<AssistanceRequest> {
-    return this.api.post<AssistanceRequest, { acknowledgement: AdvisoryAcknowledgement | null }>(
-      `${API_ENDPOINTS.assistanceRequests}/${id}/submission`,
-      { acknowledgement },
+    /*
+     * Submitting is a transition, not a route of its own.
+     *
+     * The encoder's SENTENCE travels as the reason — not the acknowledgement object serialised.
+     * `DL-60` requires that a caution asks for a sentence before filing and that the sentence is
+     * kept, and a reason field is read by a person in a trail: JSON in it is a sentence nobody
+     * reads. The codes, actor and timestamp the object also carries are the server's own to
+     * record, and duplicating them into free text would put a second, unparsed copy of the trail
+     * inside the trail.
+     *
+     * It is not smuggled into `applicant_message`: that field is what the resident is told, and an
+     * internal acknowledgement is not a message to the applicant.
+     */
+    return this.api.post<AssistanceRequest, { to: 'submitted'; reason: string | null }>(
+      `${API_ENDPOINTS.assistanceRequests}/${id}/transitions`,
+      { to: 'submitted', reason: acknowledgement?.reason ?? null },
     );
   }
 
@@ -1115,9 +1209,10 @@ export class HttpReferralRepository implements ReferralRepository {
   }
 
   queue(filter: ReferralFilter): Observable<readonly Referral[]> {
-    // The ordering is the server's: overdue-first depends on today's date, and
-    // two clients in different time zones must not disagree about the queue.
-    return this.api.collection<Referral>(`${API_ENDPOINTS.referrals}/queue`, toParams(filter));
+    // The ordering is still the server's: overdue-first depends on today's date, and two clients
+    // in different time zones must not disagree about the queue. What changed is that the queue is
+    // a filter on the collection rather than a resource of its own.
+    return this.api.collection<Referral>(API_ENDPOINTS.referrals, toParams(filter));
   }
 
   createDraft(draft: ReferralDraft): Observable<Referral> {
@@ -1137,24 +1232,42 @@ export class HttpReferralRepository implements ReferralRepository {
     );
   }
 
+  /*
+   * ── the path was right and the payload was not ─────────────────────────────
+   *
+   * `changeStatus` already posted to `/status`, so no path check could see it — and it sent
+   * `{ to, reason }` where the API validates `{ status, outcome }`. Laravel would have refused it
+   * 422 with `status` missing, on every status change of every referral.
+   *
+   * That is a second class of defect underneath the wrong-path one, and nothing in this repository
+   * looks for it: the request body is a TypeScript literal the compiler happily accepts and the
+   * server has never seen.
+   */
   changeStatus(id: ReferralId, to: ReferralStatus, reason: string): Observable<Referral> {
-    return this.api.post<Referral, { to: ReferralStatus; reason: string }>(
+    return this.api.post<Referral, { status: ReferralStatus; outcome: string }>(
       `${API_ENDPOINTS.referrals}/${id}/status`,
-      { to, reason },
+      { status: to, outcome: reason },
     );
   }
 
+  /** The outcome is carried on the status transition; it was never its own route. */
   recordOutcome(id: ReferralId, outcome: string, status: ReferralStatus): Observable<Referral> {
-    return this.api.post<Referral, { outcome: string; status: ReferralStatus }>(
-      `${API_ENDPOINTS.referrals}/${id}/outcome`,
-      { outcome, status },
+    return this.api.post<Referral, { status: ReferralStatus; outcome: string }>(
+      `${API_ENDPOINTS.referrals}/${id}/status`,
+      { status, outcome },
     );
   }
 
-  reschedule(id: ReferralId, followUpOn: IsoDate, reason: string): Observable<Referral> {
-    return this.api.post<Referral, { followUpOn: IsoDate; reason: string }>(
-      `${API_ENDPOINTS.referrals}/${id}/follow-up`,
-      { followUpOn, reason },
+  /**
+   * The follow-up date is a field, not a route.
+   *
+   * `reason` has nowhere to go on the PATCH and is deliberately not smuggled into another field —
+   * rescheduling a follow-up is a change of date, and the trail records the field that moved.
+   */
+  reschedule(id: ReferralId, followUpOn: IsoDate, _reason: string): Observable<Referral> {
+    return this.api.patch<Referral, { follow_up_on: IsoDate }>(
+      `${API_ENDPOINTS.referrals}/${id}`,
+      { follow_up_on: followUpOn },
     );
   }
 

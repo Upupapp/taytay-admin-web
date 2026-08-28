@@ -2,13 +2,10 @@
   "$comment": "Composed request paths this console builds that the API does not publish. EVERY ONE OF THESE IS A 404 IN THE HTTP CONFIGURATION. This file is a BASELINE, not an allow-list: check:routes prints the count on every run and fails if the list grows. Shrinking it is the work — see docs/integration/release-engineering.md. Regenerate with `node tools/check-routes.mjs --write-baseline`.",
   "recordedBy": "TAB 19",
   "recordedOn": "2026-08-19",
-  "count": 33,
+  "count": 23,
   "paths": [
+    "admin/assistance-intakes/{}",
     "admin/assistance-requests/advisory",
-    "admin/assistance-requests/drafts",
-    "admin/assistance-requests/drafts/{}",
-    "admin/assistance-requests/{}/status",
-    "admin/assistance-requests/{}/submission",
     "admin/beneficiaries/{}/duplicates",
     "admin/beneficiaries/{}/enrollments",
     "admin/beneficiaries/{}/identity-findings",
@@ -26,16 +23,9 @@
     "admin/events/{}/registrants/export",
     "admin/families/transfers",
     "admin/privacy/corrections",
-    "admin/referrals/queue",
-    "admin/referrals/{}/follow-up",
-    "admin/referrals/{}/outcome",
     "admin/reports/{}/export",
     "admin/resident-duplicates/preview",
     "admin/residents/{}/end",
-    "admin/residents/{}/profile",
-    "programs/requirement-templates",
-    "programs/utilization",
-    "programs/{}/utilization",
     "staff/{}/status"
   ]
 }
