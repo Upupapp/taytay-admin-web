@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { of, switchMap } from 'rxjs';
+import { firstValueFrom, of, switchMap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
 import { NotificationStore } from '@core/notifications/notification.store';
@@ -45,6 +45,7 @@ import {
   type RequirementId,
   type RequirementStatus,
   type ResidentProfile,
+  type DocumentVersionDraft,
 } from '@domain/index';
 import { DocumentPanel } from '@shared/requirements/document-panel';
 import { REQUIREMENTS_COPY } from '@shared/requirements/requirements.copy';
@@ -270,10 +271,62 @@ export class AssessmentPage {
     this.permissions.has('document.download'),
   );
 
+  /**
+   * Recording a document is a **separate** grant from reading one.
+   *
+   * A clerk who receives paper at the counter may need to record it without being able to open
+   * what is already held, and an auditor may read everything and record nothing. Hiding the
+   * control is usability; the server refuses independently (`CLAUDE.md` rule 4).
+   */
+  protected readonly canRecordDocuments = computed(() => this.permissions.has('document.record'));
+
+  /** Set while an upload is in flight, so the panel's button cannot be pressed twice. */
+  protected readonly uploading = signal(false);
+
   private readonly applicabilityReasons = signal<Readonly<Record<string, string>>>({});
 
   /** The grant awaiting confirmation. A file never opens without a deliberate second act. */
   protected readonly pendingAccess = signal<DocumentAccessGrant | null>(null);
+
+  /**
+   * Records a version against one requirement.
+   *
+   * The bytes go over multipart through `FileTransport`; this screen never sees the transport, it
+   * hands the port a draft carrying the file. A refusal the office's own rule could have predicted
+   * — too large, wrong type — has already been shown by the panel before anything was sent.
+   */
+  protected async recordDocument(
+    request: AssistanceRequest,
+    requirementId: RequirementId,
+    draft: DocumentVersionDraft,
+  ): Promise<void> {
+    if (this.uploading()) {
+      return;
+    }
+
+    this.uploading.set(true);
+
+    try {
+      await firstValueFrom(
+        this.requests.recordDocument(asId<AssistanceRequestId>(request.id), requirementId, draft),
+      );
+      this.notifications.success(this.documentCopy.recorded);
+      this.reloads.update((n) => n + 1);
+    } catch (failure: unknown) {
+      /*
+       * Named plainly, and never as "saved".
+       *
+       * `DL-87`'s doctrine: a failed send must say that nothing was kept. A document the office
+       * believes it holds, and does not, is the failure this whole append-only model exists to
+       * make impossible.
+       */
+      this.notifications.error(
+        failure instanceof Error ? failure.message : this.documentCopy.notRecorded,
+      );
+    } finally {
+      this.uploading.set(false);
+    }
+  }
 
   protected obligationLabel(requirement: SubmittedRequirement): string {
     return REQUIREMENT_OBLIGATION_LABELS[requirement.obligation];

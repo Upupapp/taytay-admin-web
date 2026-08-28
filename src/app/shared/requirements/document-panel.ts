@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 
 import {
   DOCUMENT_SOURCE_LABELS,
@@ -11,6 +11,9 @@ import {
   supersededVersions,
   type DocumentVersion,
   type RequirementDocument,
+  DOCUMENT_UPLOAD_POLICY,
+  refusalFor,
+  type DocumentVersionDraft,
 } from '@domain/index';
 
 import { REQUIREMENTS_COPY } from './requirements.copy';
@@ -128,6 +131,51 @@ import { REQUIREMENTS_COPY } from './requirements.copy';
           </ol>
         </details>
       }
+
+      <!--
+        The upload sits BELOW the history, not above it.
+
+        Replacing a document is the act this whole model exists to make safe (DL-77), and the
+        person doing it should have read what is already there first. A file input at the top is
+        one somebody uses before they have seen the version they are about to supersede.
+      -->
+      @if (canUpload()) {
+        <form class="document__upload" (submit)="submit($event)">
+          <label class="field" [attr.for]="'document-file'">
+            <span class="field__label">{{ copy.uploadLabel }}</span>
+            <input
+              id="document-file"
+              class="field__control"
+              type="file"
+              [accept]="acceptAttribute"
+              (change)="onFile($event)"
+            />
+            <span class="field__hint">{{ copy.uploadHint }}</span>
+          </label>
+
+          @if (refusal() !== null) {
+            <p class="field__error" role="alert">{{ refusalMessage() }}</p>
+          }
+
+          @if (isReplacement()) {
+            <label class="field" [attr.for]="'document-because'">
+              <span class="field__label">{{ copy.replacesBecauseLabel }}</span>
+              <input
+                id="document-because"
+                class="field__control"
+                type="text"
+                [value]="replacesBecause()"
+                (input)="onReason($event)"
+              />
+              <span class="field__hint">{{ copy.replacesBecauseHint }}</span>
+            </label>
+          }
+
+          <button type="submit" class="btn btn--primary" [disabled]="!canSubmit()">
+            {{ uploading() ? copy.uploading : copy.uploadAction }}
+          </button>
+        </form>
+      }
     </section>
   `,
   styleUrl: './document-panel.scss',
@@ -138,9 +186,84 @@ export class DocumentPanel {
   readonly canDownload = input(false);
   readonly today = input<Date>(new Date());
 
+  /** Whether this reader may add a version. Hiding it is usability, never protection. */
+  readonly canUpload = input(false);
+  /** Set while the parent's request is in flight, so the button cannot be pressed twice. */
+  readonly uploading = input(false);
+
   readonly openRequested = output<DocumentVersion['id']>();
+  readonly versionSubmitted = output<DocumentVersionDraft>();
 
   protected readonly copy = REQUIREMENTS_COPY.document;
+  protected readonly acceptAttribute = DOCUMENT_UPLOAD_POLICY.mimeTypes.join(',');
+
+  protected readonly chosen = signal<File | null>(null);
+  protected readonly replacesBecause = signal('');
+
+  /**
+   * Refused **before** the request, by the transport's own rule.
+   *
+   * A caseworker on a slow connection should learn their scan is too large without waiting for the
+   * whole of it to arrive and be rejected. The server refuses independently; this is the courtesy,
+   * not the boundary.
+   */
+  protected readonly refusal = computed(() => {
+    const file = this.chosen();
+
+    return file === null ? null : refusalFor(file);
+  });
+
+  /** Replacing needs a reason; a first version does not (`DL-77`). */
+  protected readonly isReplacement = computed(() => this.current() !== null);
+
+  protected readonly canSubmit = computed(() => {
+    if (this.chosen() === null || this.refusal() !== null || this.uploading()) {
+      return false;
+    }
+
+    return !this.isReplacement() || this.replacesBecause().trim().length > 0;
+  });
+
+  protected refusalMessage(): string {
+    const refusal = this.refusal();
+
+    if (refusal === null) {
+      return '';
+    }
+
+    return refusal.reason === 'too-large'
+      ? this.copy.tooLarge(refusal.maxBytes, refusal.actualBytes)
+      : this.copy.wrongType(refusal.accepted);
+  }
+
+  protected onFile(event: Event): void {
+    this.chosen.set((event.target as HTMLInputElement).files?.item(0) ?? null);
+  }
+
+  protected onReason(event: Event): void {
+    this.replacesBecause.set((event.target as HTMLInputElement).value);
+  }
+
+  protected submit(event: Event): void {
+    event.preventDefault();
+
+    const file = this.chosen();
+
+    if (file === null || !this.canSubmit()) {
+      return;
+    }
+
+    this.versionSubmitted.emit({
+      file,
+      // `uploaded` is what this control does. A scan taken on a device, or a document seen and
+      // handed back, are different sources and are recorded by different acts.
+      source: 'uploaded',
+      documentNumber: null,
+      issuedOn: null,
+      expiresOn: null,
+      replacesBecause: this.isReplacement() ? this.replacesBecause().trim() : null,
+    });
+  }
 
   protected readonly current = computed(() => {
     const record = this.document();

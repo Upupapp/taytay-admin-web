@@ -20,10 +20,32 @@ export const REQUIREMENTS_COPY = {
 
     replacedCount: (count: number): string =>
       count === 1 ? '1 earlier version, kept on file' : `${count} earlier versions, kept on file`,
+    uploadLabel: 'Add a copy',
+    uploadHint: 'PDF, JPEG or PNG, up to 10 MB. The office keeps every version.',
+    uploadAction: 'Record this document',
+    uploading: 'Recording…',
+    replacesBecauseLabel: 'Why is this replacing the copy already held?',
+    replacesBecauseHint:
+      'The previous version is kept and marked superseded. This sentence is what explains it to whoever reads the file later.',
+    /**
+     * The figure the person can act on, in the unit they think in.
+     *
+     * "10485760 bytes" is the truth and tells a caseworker nothing. Megabytes to one decimal is
+     * what a scanner's settings dialogue shows.
+     */
+    tooLarge: (maxBytes: number, actualBytes: number): string =>
+      `That file is ${(actualBytes / 1048576).toFixed(1)} MB. The largest this office accepts is ` +
+      `${(maxBytes / 1048576).toFixed(0)} MB — rescan it at a lower resolution, or split it.`,
+    wrongType: (accepted: readonly string[]): string =>
+      `That kind of file cannot be recorded. Accepted: ${accepted
+        .map((type) => type.split('/')[1]?.toUpperCase() ?? type)
+        .join(', ')}.`,
     versionLabel: (version: number): string => `Version ${version}`,
   },
 
   checklist: {
+    recorded: 'That document was recorded. The previous version, if any, is kept and marked superseded.',
+    notRecorded: 'That document was NOT recorded. Nothing was kept — try again, or record it from the paper.',
     heading: 'Documents',
     completionHint:
       'Counts what has been settled. It is not a decision — eligibility is assessed by a caseworker.',

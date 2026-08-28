@@ -4,6 +4,7 @@ import { filter, map, Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
+import { refusalFor as domainRefusalFor } from '@domain/index';
 import type { DocumentAccessGrant } from '@domain/index';
 
 /**
@@ -62,15 +63,15 @@ export class FileTransport {
    * time the server's changes.
    */
   refusalFor(file: File, policy: UploadPolicy): UploadRefusal | null {
-    if (file.size > policy.maxBytes) {
-      return { reason: 'too-large', maxBytes: policy.maxBytes, actualBytes: file.size };
-    }
-
-    if (!policy.mimeTypes.includes(file.type)) {
-      return { reason: 'wrong-type', accepted: policy.mimeTypes, actual: file.type };
-    }
-
-    return null;
+    /*
+     * The pre-send rule now lives in the domain.
+     *
+     * "A document is a PDF, a JPEG or a PNG, and no more than ten megabytes" is a rule of the
+     * office rather than a fact about HTTP, and a screen needed to state it before anybody waited
+     * on an upload — which `shared/` cannot do by reaching into an adapter. This keeps the two
+     * post-hoc refusals, which genuinely are transport events.
+     */
+    return domainRefusalFor(file, policy);
   }
 
   /**

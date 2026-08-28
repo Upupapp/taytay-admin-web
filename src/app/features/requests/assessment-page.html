@@ -124,7 +124,10 @@
                 <app-document-panel
                   [document]="requirement.document"
                   [canDownload]="canDownloadDocuments()"
+                  [canUpload]="canRecordDocuments()"
+                  [uploading]="uploading()"
                   (openRequested)="askToOpen(requirement.id, $event)"
+                  (versionSubmitted)="recordDocument(request, requirement.id, $event)"
                 />
 
                 @if (requirement.remarks) {

@@ -514,7 +514,23 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       // Numbered from the length of the history, never from a count of the
       // live ones: version 3 stays version 3 forever.
       version: (existing?.versions.length ?? 0) + 1,
-      file: draft.file,
+      /*
+       * The stored shape is derived from the file, not the file itself.
+       *
+       * A `DocumentVersion` describes bytes the office holds; a draft carries the bytes being
+       * sent. The mock does here what the server does for real — records what it received.
+       * `pageCount` stays null: nothing in the browser counts the pages of a PDF, and a guess
+       * would appear on screen as though somebody had checked.
+       */
+      file:
+        draft.file === null
+          ? null
+          : {
+              fileName: draft.file.name,
+              mimeType: draft.file.type,
+              byteSize: draft.file.size,
+              pageCount: null,
+            },
       source: draft.source,
       documentNumber: draft.documentNumber,
       issuedOn: draft.issuedOn,

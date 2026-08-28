@@ -58,6 +58,13 @@ export function sourceHoldsAFile(source: DocumentSource): boolean {
   return source === 'uploaded' || source === 'scanned';
 }
 
+/**
+ * A file that has been **stored** — what a version carries once it exists.
+ *
+ * Distinct from `DocumentVersionDraft.file`, which is the browser `File` being sent. The two were
+ * the same type until TAB 19, which is how the console came to describe uploads it could not
+ * perform.
+ */
 export interface DocumentFile {
   readonly fileName: string;
   readonly mimeType: string;
@@ -189,7 +196,18 @@ export function maskDocumentNumber(value: string | null): string | null {
 
 /** What a replacement submits. Identity, ordering and time are the store's. */
 export interface DocumentVersionDraft {
-  readonly file: DocumentFile | null;
+  /**
+   * **The bytes**, not a description of them.
+   *
+   * This was a `DocumentFile` — `fileName`, `mimeType`, `byteSize`, `pageCount` — which is the
+   * shape of a version that has already been stored. As a *draft* field it meant the console could
+   * describe a file it had no way to send, and the API's endpoint reads a multipart upload. So
+   * document upload could not work, and did not: no screen had ever offered a file input.
+   *
+   * `null` where the source holds no file — see `sourceHoldsAFile`. A document seen at the counter
+   * and handed back is a real record with no bytes attached.
+   */
+  readonly file: File | null;
   readonly source: DocumentSource;
   readonly documentNumber: string | null;
   readonly issuedOn: IsoDate | null;
@@ -221,7 +239,7 @@ export function documentVersionProblems(
   if (!sourceHoldsAFile(draft.source) && draft.file !== null) {
     problems.push('file-on-a-sourceless-record');
   }
-  if (draft.file !== null && draft.file.fileName.trim().length === 0) {
+  if (draft.file !== null && draft.file.name.trim().length === 0) {
     problems.push('empty-file-name');
   }
   // Replacing is the operation this whole model exists to make safe. An

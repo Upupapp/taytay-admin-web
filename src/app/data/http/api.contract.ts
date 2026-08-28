@@ -247,6 +247,26 @@ export function toPage<TItem>(response: ApiListResponse<TItem>): Page<TItem> {
 }
 
 /**
+ * What this API accepts on an upload.
+ *
+ * **The server publishes these**, on the requirement read as `accepts.{mime_types,max_bytes}`, so
+ * that a client can give somebody a useful message before a slow upload rather than after it. Held
+ * here as the client-side copy of that published pair — the same figures, in the transport seam
+ * where a wire fact belongs.
+ *
+ * `FileTransport.refusalFor` checks against these **before** sending, which is the only way a
+ * caseworker on a slow connection learns their scan is too large without waiting for the whole of
+ * it to arrive and be refused.
+ *
+ * They are still the client's copy of a server rule. The server refuses independently, and
+ * `FileStore::store()` is the boundary that actually decides.
+ */
+export const UPLOAD_POLICY = {
+  mimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+  maxBytes: 10 * 1024 * 1024,
+} as const;
+
+/**
  * Flattens a `PageRequest` plus an arbitrary filter into the query parameters
  * this API accepts.
  *

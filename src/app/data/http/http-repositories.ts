@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import {
   catchError,
   combineLatest,
+  filter,
   map,
   of,
   switchMap,
@@ -205,7 +206,10 @@ import {
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
+import { UPLOAD_POLICY } from './api.contract';
+import { FileTransport, type UploadProgress } from './file-transport';
 import {
+  toWireDocumentVersion,
   toWireEventDraft,
   toWireFieldVisitDraft,
   toWirePostDraft,
@@ -978,6 +982,7 @@ export class HttpProgramRepository implements ProgramRepository {
 @Injectable()
 export class HttpAssistanceRequestRepository implements AssistanceRequestRepository {
   private readonly api = inject(ApiClient);
+  private readonly files = inject(FileTransport);
 
   list(
     filter: AssistanceRequestFilter,
@@ -1095,11 +1100,38 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
     requirementId: RequirementId,
     draft: DocumentVersionDraft,
   ): Observable<AssistanceRequest> {
-    // POST, never PUT: recording a document appends a version to a history and
-    // never replaces one (`DL-77`). The verb is part of the contract.
-    return this.api.post<AssistanceRequest, DocumentVersionDraft>(
-      `${API_ENDPOINTS.assistanceRequests}/${id}/requirements/${requirementId}/documents`,
-      draft,
+    /*
+     * ── the bytes go over multipart, not as JSON ────────────────────────────────
+     *
+     * This posted the draft as a JSON body. The endpoint reads `$request->file('file')`, and the
+     * draft carried file *metadata* rather than a file — so an upload could never have worked, and
+     * `FileTransport` (built for exactly this in TAB 09, with progress, cancellation and 413
+     * handling) was injected by nothing but its own spec.
+     *
+     * POST, never PUT: recording a document appends a version to a history and never replaces one
+     * (`DL-77`). The verb is part of the contract.
+     *
+     * Only the completed upload is surfaced here, because the port returns the updated request.
+     * The progress events `FileTransport` emits are for a screen that shows a bar; a screen that
+     * wants one calls the transport directly rather than having this method grow a second shape.
+     */
+    const path = `${API_ENDPOINTS.assistanceRequests}/${id}/requirements/${requirementId}/documents`;
+
+    if (draft.file === null) {
+      // A source that holds no file is a real record — a document seen at the counter and handed
+      // back. It needs no multipart request, and `documentProblems` has already refused the
+      // combinations that make no sense.
+      return this.api.post<AssistanceRequest, ReturnType<typeof toWireDocumentVersion>>(
+        path,
+        toWireDocumentVersion(draft),
+      );
+    }
+
+    return this.files.upload(path, draft.file, UPLOAD_POLICY, toWireDocumentVersion(draft)).pipe(
+      filter((progress): progress is Extract<UploadProgress, { kind: 'done' }> =>
+        progress.kind === 'done',
+      ),
+      map((progress) => (progress.response as ApiItemResponse<AssistanceRequest>).data),
     );
   }
 

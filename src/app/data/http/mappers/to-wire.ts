@@ -29,6 +29,7 @@
  */
 
 import type {
+  DocumentVersionDraft,
   EventDraft,
   FieldVisitDraft,
   SavedViewDraft,
@@ -343,6 +344,32 @@ export function toWireFieldVisitDraft(draft: FieldVisitDraft): {
     address_visited: draft.addressVisited,
     checklist: draft.checklist.map((item) => ({ code: item.code })),
   };
+}
+
+/**
+ * A document version, as multipart form fields.
+ *
+ * Everything here is a **string**, because these travel beside a file in a `FormData` body rather
+ * than as JSON. That is why the mapper returns `Record<string, string>` and not a typed shape: a
+ * multipart field has no other type.
+ *
+ * **Absent keys are omitted, never sent empty.** `document_number` missing and `document_number`
+ * blank are different claims about a piece of paper, and the server stores what it is given — a
+ * blank string would record that somebody looked and found no number, where the truth is that
+ * nobody was asked.
+ *
+ * The file itself is not here. `FileTransport` appends it under `file`, which is the name the
+ * endpoint reads.
+ */
+export function toWireDocumentVersion(draft: DocumentVersionDraft): Record<string, string> {
+  const fields: Record<string, string> = { source: draft.source };
+
+  if (draft.documentNumber !== null) fields['document_number'] = draft.documentNumber;
+  if (draft.issuedOn !== null) fields['issued_on'] = draft.issuedOn;
+  if (draft.expiresOn !== null) fields['expires_on'] = draft.expiresOn;
+  if (draft.replacesBecause !== null) fields['replaces_because'] = draft.replacesBecause;
+
+  return fields;
 }
 
 /*

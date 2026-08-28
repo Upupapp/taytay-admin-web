@@ -36,6 +36,7 @@ function version(overrides: Partial<DocumentVersion> = {}): DocumentVersion {
   return {
     id: asId<DocumentVersionId>('dv-1'),
     version: 1,
+    // A STORED version: metadata about bytes the office already holds.
     file: { fileName: 'indigency.pdf', mimeType: 'application/pdf', byteSize: 1024, pageCount: 1 },
     source: 'scanned',
     documentNumber: 'BC-2026-00817',
@@ -71,7 +72,8 @@ function requirement(overrides: Partial<SubmittedRequirement> = {}): SubmittedRe
 
 function draft(overrides: Partial<DocumentVersionDraft> = {}): DocumentVersionDraft {
   return {
-    file: { fileName: 'indigency.pdf', mimeType: 'application/pdf', byteSize: 1024, pageCount: 1 },
+    // A DRAFT: the bytes being sent, not a description of them.
+    file: new File(['%PDF-1.4'], 'indigency.pdf', { type: 'application/pdf' }),
     source: 'scanned',
     documentNumber: null,
     issuedOn: null,

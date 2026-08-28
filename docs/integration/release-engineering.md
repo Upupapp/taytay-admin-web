@@ -284,3 +284,42 @@ one somebody turns off — but the real count is at least this.
 
 Making it exact needs a type-aware pass that resolves each receiver to its injected token, and a
 wrong precise answer would be worse than a plain search nobody mistakes for exact.
+
+### Document upload, built
+
+The gap `check:port-adoption` was written to expose is closed for the first of its methods.
+
+**What had to change, and why none of it was a mapping problem:**
+
+* `DocumentVersionDraft.file` was a `DocumentFile` — `fileName`, `mimeType`, `byteSize`,
+  `pageCount`. That is the shape of a version **already stored**. As a draft field it meant the
+  console could describe a file it had no way to send. It is now a `File`: the bytes.
+* The endpoint reads a multipart `file`, so `recordDocument` goes through `FileTransport` — built
+  in TAB 09 with progress, cancellation and 413 handling, and until now injected by nothing but its
+  own spec.
+* `DocumentPanel` gained a file input. There had been **no `<input type="file">` anywhere in
+  `src/app`**.
+
+**The upload sits below the version history, not above it.** Replacing a document is the act the
+append-only model exists to make safe (`DL-77`), and a file input at the top is one somebody uses
+before they have seen the version they are about to supersede.
+
+**The accepted-document rule moved into the domain.** It lived in `data/http` while only the
+transport used it; the moment a screen needed to refuse a file *before* sending, that placement
+forced `shared/` to import from `data/`, which the architecture forbids. The constraint was pointing
+at something true — "a PDF, a JPEG or a PNG, and no more than ten megabytes" is a rule of the office,
+not a fact about HTTP. `FileTransport` now uses the same rule rather than its own copy.
+
+It is a courtesy, never the boundary: `FileStore::store()` still decides, and checks the
+classification's own limit as well as this ceiling. What the client-side check buys is that a
+caseworker on a slow connection learns their scan is too large **without waiting for all of it to
+arrive**.
+
+Two details the tests pin down. Size is reported **before** type, because somebody whose 40 MB scan
+is also a TIFF needs the thing they must act on first — rescanning smaller fixes both, and being
+told about the format sends them to convert a file that would still be refused. And a file of
+*exactly* the maximum is accepted, because the server's rule is `size > max`: refusing at `>=` would
+send a caseworker to rescan a document the office would have taken.
+
+A failed upload says so plainly and never says "saved" (`DL-87`). A document the office believes it
+holds, and does not, is the failure this whole model exists to prevent.

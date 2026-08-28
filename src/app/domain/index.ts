@@ -46,6 +46,7 @@ export * from './programs/requirement-template';
 export * from './requirements/document-request';
 export * from './requirements/requirement-completion';
 export * from './requirements/requirement-document';
+export * from './requirements/upload-policy';
 export * from './requirements/requirement-obligation';
 export * from './programs/review-window';
 export * from './referrals/referral';
