@@ -175,3 +175,32 @@ Two smaller findings came out of the fixes and are recorded rather than papered 
 * **`POST admin/families/{family}/head` accepts no reason**, while `DL-48` holds that family
   history is append-only *with* a reason. The act reaches the trail; the sentence explaining it
   does not.
+
+### Two shapes the wire mapping exposed
+
+**Retiring a resident is not a field correction.** `setActive` PATCHed the resident record with
+`{ isActive }`; the correction endpoint accepts neither the field nor the act. `POST
+admin/residents/{resident}/activation` is where it belongs, and it **requires a reason** — a record
+switched off is one whose history must stay attributable.
+
+The port has no `reason` parameter, so the adapter composes one. That is weaker than asking the
+person and is recorded as a gap: the honest fix is for the screen to ask, the way the sector basis
+now does. Sending a required field blank would be refused by the server and reported to the user as
+a failed save, which is worse than a generic reason and tells them nothing.
+
+**A relationship belongs to the resident it is about.** `recordRelationship` posted all four fields
+to the collection; the API scopes relationships under the subject, with the other person in the
+body. That shape is `DL-47` expressed as a route — recorded resident-to-resident so the record
+survives either person moving.
+
+### What is left, and why
+
+Fifteen writes remain unmapped. They divide into three kinds, and only the first is ordinary work:
+
+* **Live endpoints, ordinary mapping** — the programme draft, the assessment, the document
+  versions. Nothing blocks these but time.
+* **Shape mismatches needing a decision** — `setChecklist` sends an array of codes where the API
+  ticks one item per call; `AssessmentDraft` carries findings and an amount where the endpoint opens
+  a template and answers questions. Neither is a naming difference.
+* **Endpoints that do not exist at that verb** — counted separately by `check:routes`, and mapping
+  a payload against a handler nobody can read would be speculation.

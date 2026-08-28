@@ -30,6 +30,8 @@
 
 import type {
   EventDraft,
+  FieldVisitDraft,
+  SavedViewDraft,
   PostDraft,
   ReferralDraft,
   ReleaseBatchDraft,
@@ -280,6 +282,66 @@ export function toWireEventDraft(draft: EventDraft): {
     registration_closes_at: draft.registration.closesAt,
     capacity: draft.registration.capacity,
     waitlist_enabled: draft.registration.waitlistEnabled,
+  };
+}
+
+/**
+ * A saved list view.
+ *
+ * `params` is a flat record of the URL's filter state and lands in `filters` whole. The endpoint
+ * also takes `columns` and `sort`, which this console does not model separately — a saved view here
+ * is the filter state and nothing else — so neither is sent rather than being split out of `params`
+ * by guessing which keys are which.
+ *
+ * `isShared` matters more than its size suggests (`DL-111`): a personal view is a preference, and a
+ * shared one is office configuration whose **name** describes a population to every colleague and
+ * outlives whoever wrote it.
+ */
+export function toWireSavedViewDraft(draft: SavedViewDraft): {
+  entity: string;
+  name: string;
+  filters: Readonly<Record<string, string>>;
+  is_shared: boolean;
+} {
+  return {
+    entity: draft.resource,
+    name: draft.name,
+    filters: draft.params,
+    is_shared: draft.isShared,
+  };
+}
+
+/**
+ * A scheduled home visit.
+ *
+ * The checklist travels as `[{ code }]` — the endpoint takes the items at creation, and each is
+ * later ticked one at a time through `POST admin/visits/{visit}/checklist`.
+ *
+ * **No coordinate, no check-in, no route** (`DL-86`). `addressVisited` is the address the office
+ * already holds, written down; there is nothing here a tracking product would recognise, and this
+ * mapper is one of the places that would quietly become one if a field were added without thought.
+ */
+export function toWireFieldVisitDraft(draft: FieldVisitDraft): {
+  resident_id: string;
+  case_id: string | null;
+  household_id: string | null;
+  purpose: string;
+  assigned_to: string;
+  scheduled_for: string;
+  scheduled_window: string | null;
+  address_visited: string;
+  checklist: readonly { code: string }[];
+} {
+  return {
+    resident_id: draft.residentId,
+    case_id: draft.caseId,
+    household_id: draft.householdId,
+    purpose: draft.purpose,
+    assigned_to: draft.assignedTo,
+    scheduled_for: draft.scheduledFor,
+    scheduled_window: draft.scheduledWindow,
+    address_visited: draft.addressVisited,
+    checklist: draft.checklist.map((item) => ({ code: item.code })),
   };
 }
 

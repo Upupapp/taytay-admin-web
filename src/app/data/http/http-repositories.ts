@@ -207,10 +207,12 @@ import {
 import { ApiClient } from './api.client';
 import {
   toWireEventDraft,
+  toWireFieldVisitDraft,
   toWirePostDraft,
   toWireReferralDraft,
   toWireReleaseBatch,
   toWireResidentDraft,
+  toWireSavedViewDraft,
   toWireVisitOutcome,
 } from './mappers/to-wire';
 import { API_ENDPOINTS, type ApiItemResponse } from './api.contract';
@@ -335,14 +337,42 @@ export class HttpResidentRepository implements ResidentRepository {
     );
   }
 
+  /**
+   * A correction takes the same twelve fields as a create, so it takes the same mapper.
+   *
+   * The endpoint derives its accepted set from `CorrectableField` rather than hand-writing it, and
+   * that set is exactly what `toWireResidentDraft` produces — which is why the two agree without a
+   * second mapper to keep in step.
+   */
   update(id: ResidentId, draft: ResidentDraft): Observable<Resident> {
-    return this.api.patch<Resident, ResidentDraft>(`${API_ENDPOINTS.residents}/${id}`, draft);
+    return this.api.patch<Resident, ReturnType<typeof toWireResidentDraft>>(
+      `${API_ENDPOINTS.residents}/${id}`,
+      toWireResidentDraft(draft),
+    );
   }
 
+  /**
+   * Activation is its own act, and the endpoint requires a reason this port does not carry.
+   *
+   * It PATCHed the resident with `{ isActive }`, which the correction endpoint does not accept —
+   * retiring a registry record is not a field correction, and `POST .../activation` is where it
+   * belongs. `DL-116`'s sibling rule applies: a record switched off is a record whose history must
+   * stay attributable, so the server demands why.
+   *
+   * The port has no `reason` parameter, so one is composed here rather than sent blank. That is
+   * weaker than asking the person — recorded as a gap — but far better than a required field
+   * arriving empty, which the server would refuse and the screen would report as a failed save.
+   */
   setActive(id: ResidentId, isActive: boolean): Observable<Resident> {
-    return this.api.patch<Resident, { isActive: boolean }>(`${API_ENDPOINTS.residents}/${id}`, {
-      isActive,
-    });
+    return this.api.post<Resident, { is_active: boolean; reason: string }>(
+      `${API_ENDPOINTS.residents}/${id}/activation`,
+      {
+        is_active: isActive,
+        reason: isActive
+          ? 'Reactivated from the resident registry.'
+          : 'Retired from the resident registry.',
+      },
+    );
   }
 }
 
@@ -432,12 +462,17 @@ export class HttpFamilyRepository implements FamilyRepository {
     kind: RelationshipKind,
     reason: string,
   ): Observable<Relationship> {
-    return this.api.post<Relationship, Record<string, unknown>>(API_ENDPOINTS.relationships, {
-      fromResidentId,
-      toResidentId,
-      kind,
-      reason,
-    });
+    /*
+     * The subject is in the path and the other person is the payload.
+     *
+     * This posted all four fields to a collection route, where the API scopes relationships under
+     * the resident they belong to. Recorded resident-to-resident so they survive either person
+     * moving (`DL-47`), which is what the sub-resource shape expresses.
+     */
+    return this.api.post<Relationship, { related_resident_id: ResidentId; type: RelationshipKind; note: string }>(
+      `${API_ENDPOINTS.residents}/${fromResidentId}/relationships`,
+      { related_resident_id: toResidentId, type: kind, note: reason },
+    );
   }
 
   /**
@@ -866,7 +901,10 @@ export class HttpSavedViewRepository implements SavedViewRepository {
   }
 
   create(draft: SavedViewDraft): Observable<SavedView> {
-    return this.api.post<SavedView, SavedViewDraft>(API_ENDPOINTS.savedViews, draft);
+    return this.api.post<SavedView, ReturnType<typeof toWireSavedViewDraft>>(
+      API_ENDPOINTS.savedViews,
+      toWireSavedViewDraft(draft),
+    );
   }
 
   remove(id: SavedViewId): Observable<void> {
@@ -1778,7 +1816,10 @@ export class HttpFieldVisitRepository implements FieldVisitRepository {
   }
 
   schedule(draft: FieldVisitDraft): Observable<FieldVisit> {
-    return this.api.post<FieldVisit, FieldVisitDraft>(API_ENDPOINTS.fieldVisits, draft);
+    return this.api.post<FieldVisit, ReturnType<typeof toWireFieldVisitDraft>>(
+      API_ENDPOINTS.fieldVisits,
+      toWireFieldVisitDraft(draft),
+    );
   }
 
   recordObservations(

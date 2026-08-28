@@ -15,10 +15,12 @@ import type {
 
 import {
   toWireEventDraft,
+  toWireFieldVisitDraft,
   toWirePostDraft,
   toWireReferralDraft,
   toWireReleaseBatch,
   toWireResidentDraft,
+  toWireSavedViewDraft,
   toWireVisitOutcome,
 } from './to-wire';
 
@@ -341,6 +343,79 @@ describe('outbound mappers', () => {
 
       for (const absent of ['cover_file_id', 'cover_alt_text', 'image', 'reminders', 'barangay_id', 'venue_barangay_id']) {
         expect(wire[absent]).toBeUndefined();
+      }
+    });
+  });
+
+  describe('toWireSavedViewDraft', () => {
+    it('renames resource to entity and keeps the filter state whole', () => {
+      expect(
+        toWireSavedViewDraft({
+          resource: 'residents',
+          name: 'San Juan, unverified',
+          params: { barangayId: 'brgy-san-juan', tier: 'unverified' },
+          isShared: true,
+        }),
+      ).toEqual({
+        entity: 'residents',
+        name: 'San Juan, unverified',
+        filters: { barangayId: 'brgy-san-juan', tier: 'unverified' },
+        is_shared: true,
+      });
+    });
+
+    /**
+     * `columns` and `sort` are accepted by the endpoint and this console does not model them.
+     *
+     * Splitting them out of `params` would mean guessing which keys are filters and which are
+     * presentation, and a saved view whose name describes a population (`DL-111`) is not a place
+     * to guess.
+     */
+    it('invents neither columns nor sort', () => {
+      const wire = toWireSavedViewDraft({
+        resource: 'residents',
+        name: 'x',
+        params: { sort: 'name' },
+        isShared: false,
+      }) as Record<string, unknown>;
+
+      expect(wire['columns']).toBeUndefined();
+      expect(wire['sort']).toBeUndefined();
+    });
+  });
+
+  describe('toWireFieldVisitDraft', () => {
+    const draft = {
+      caseId: null,
+      residentId: asId<ResidentId>('res-1'),
+      householdId: null,
+      purpose: 'verification' as const,
+      assignedTo: asId<StaffUserId>('staff-1'),
+      scheduledFor: asIsoDate('2026-09-03'),
+      scheduledWindow: 'Morning',
+      addressVisited: '18 Rizal Street',
+      checklist: [
+        { code: 'roof', label: 'Roof condition', checked: false, note: null },
+        { code: 'water', label: 'Water access', checked: false, note: null },
+      ],
+    };
+
+    it('sends the checklist as codes only', () => {
+      expect(toWireFieldVisitDraft(draft).checklist).toEqual([{ code: 'roof' }, { code: 'water' }]);
+    });
+
+    /**
+     * **This is not a tracking product** (`DL-86`).
+     *
+     * There is no coordinate, no check-in and no route anywhere in the visit model, and an
+     * outbound mapper is one of the places that would quietly become one if a field were added
+     * without thought. Asserted here so the absence is deliberate rather than incidental.
+     */
+    it('carries nothing a tracking product would recognise', () => {
+      const wire = JSON.stringify(toWireFieldVisitDraft(draft));
+
+      for (const forbidden of ['lat', 'lng', 'latitude', 'longitude', 'coordinate', 'geo', 'checkin', 'check_in']) {
+        expect(wire.toLowerCase()).not.toContain(forbidden);
       }
     });
   });
