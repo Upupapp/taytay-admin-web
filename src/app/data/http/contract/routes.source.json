@@ -2,10 +2,10 @@
   "$comment": "Provenance for the vendored route snapshot. Same shape and same purpose as source.json: a vendored artefact that cannot say where it came from is one nobody can tell is stale.",
   "artefact": "docs/api/routes.published.json",
   "repository": "Upupapp/taytay-backend",
-  "commit": "5b764a91dde062f23d647837a5b408253e693981",
-  "commitShort": "5b764a9",
-  "sha256": "0edd6107697d818e89bf36b8a829c46423020a5e97f73a2a0a3cb1f9b0b9af28",
-  "routeCount": 291,
-  "vendoredOn": "2026-08-24",
-  "vendoredBy": "TAB 19 \u2014 re-vendored at push"
+  "commit": "f0049305aacc654138d6ddbf17711ac2d74a24b5",
+  "commitShort": "f004930",
+  "sha256": "ee7a56c68a42d18a879d70ee01f5cb6026f5546c4e3f5abf66e5d1e36a2c0997",
+  "routeCount": 293,
+  "vendoredOn": "2026-08-28",
+  "vendoredBy": "TAB 19 \u2014 re-vendored after the sector endpoints"
 }
