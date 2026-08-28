@@ -248,9 +248,20 @@ console.log(
  * Printed on every run, in red, whether or not the check passed. A number in a file is a number
  * nobody reads; a number on every build is one somebody eventually asks about.
  */
+const blocked = unwired.filter((p) => p.startsWith('admin/cases')).length;
+
+/*
+ * The breakdown is computed, not asserted.
+ *
+ * This line used to end "Every money write is among them", which was true when it was written and
+ * became false the moment the release cluster was wired — a hardcoded claim about a changing set,
+ * which is the same species of error as the stale port-mapping document this check exists to
+ * correct for.
+ */
 console.error(
   `\n  \u001b[31m${unwired.length} composed request paths are still 404s\u001b[0m ` +
-    `(${composed.size} checked). Every money write is among them.\n` +
-    `  Gate line 05/07 — "no port method is unresolved" — is NO-GO until this reaches zero.\n` +
+    `(${composed.size} checked)` +
+    (blocked > 0 ? `, of which ${blocked} are the case surface blocked on ADR 0044` : '') +
+    `.\n  Gate line 05/07 — "no port method is unresolved" — is NO-GO until this reaches zero.\n` +
     `  See docs/integration/release-engineering.md.\n`,
 );
