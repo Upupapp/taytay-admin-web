@@ -93,6 +93,37 @@
           }
         </section>
 
+        <!--
+          Members, and who heads them.
+
+          Listed here rather than inside the graph: the graph IS the list of relationships (DL-50),
+          and who holds the head role is a fact about the family rather than about any one edge.
+        -->
+        <section class="card panel panel--wide" aria-labelledby="members-heading">
+          <h2 class="panel__heading" id="members-heading">{{ copy.membersHeading }}</h2>
+
+          <ul class="panel__list">
+            @for (node of memberOptions(detail); track node.view.resident.id) {
+              <li class="panel__item">
+                <span>{{ node.view.resident.name.last }}, {{ node.view.resident.name.first }}</span>
+
+                @if (node.role === 'head') {
+                  <span class="panel__meta">{{ copy.isHead }}</span>
+                } @else if (canManage()) {
+                  <button
+                    type="button"
+                    class="btn"
+                    [disabled]="settingHead()"
+                    (click)="makeHead(detail, node)"
+                  >
+                    {{ copy.makeHead }}
+                  </button>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+
         <section class="card panel panel--wide">
           <app-relationship-graph
             [graph]="detail.graph"

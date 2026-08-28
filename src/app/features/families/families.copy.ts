@@ -33,6 +33,19 @@ export const FAMILIES_COPY = {
   },
 
   detail: {
+    membersHeading: 'Members',
+    makeHead: 'Make head',
+    isHead: 'Head of this family',
+    headChanged: 'The head of this family was changed.',
+    headNotChanged: 'The head was NOT changed. Nothing was saved.',
+    /**
+     * The endpoint records no reason, and this one is never sent.
+     *
+     * Kept so the port's contract is honoured rather than the call site quietly dropping an
+     * argument — DL-48 wants a reason on every family change, and that the API has nowhere to put
+     * it is recorded in release-engineering.md rather than hidden here.
+     */
+    headChangedReason: 'Recorded from the family record.',
     subtitle: 'Family record',
     notFoundHeading: 'That family is not available',
     notFoundMessage:

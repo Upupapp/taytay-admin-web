@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { switchMap } from 'rxjs';
+import { firstValueFrom, switchMap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { PermissionService } from '@core/access/permission.service';
@@ -122,6 +122,45 @@ export class FamilyDetailPage {
 
   protected memberOptions(detail: FamilyDetail): readonly GraphNode[] {
     return detail.graph.nodes.filter((node) => node.isCurrentMember);
+  }
+
+  /* ── who heads this family ──────────────────────────────────────────────── */
+
+  protected readonly settingHead = signal(false);
+
+  /**
+   * Only the head can be set from here, and the adapter refuses anything else.
+   *
+   * `POST admin/families/{family}/head` is the one family-role endpoint the API serves; the other
+   * roles have no counterpart. Offering a control for them would let a clerk record a change the
+   * office never makes, and offering one that silently made somebody the head instead would be
+   * worse — who heads a family is a claim about that family (`DL-47`).
+   */
+  protected async makeHead(detail: FamilyDetail, node: GraphNode): Promise<void> {
+    if (!this.canManage() || this.settingHead()) {
+      return;
+    }
+
+    this.settingHead.set(true);
+
+    try {
+      await firstValueFrom(
+        this.repository.changeMemberRole(
+          detail.family.id,
+          node.view.resident.id,
+          'head',
+          this.copy.headChangedReason,
+        ),
+      );
+      this.notifications.success(this.copy.headChanged);
+      this.reloads.update((n) => n + 1);
+    } catch (failure: unknown) {
+      this.notifications.error(
+        failure instanceof Error ? failure.message : this.copy.headNotChanged,
+      );
+    } finally {
+      this.settingHead.set(false);
+    }
   }
 
   protected roleLabel(role: FamilyRole): string {

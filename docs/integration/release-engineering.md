@@ -385,3 +385,29 @@ because "no caller" and "wrong path" have both been wrong conclusions in this co
 membership and kinship history, a request's notes, a payout session's detail, a resident's
 household, a person's referrals and visits, a staff account. None is blocked; each is a screen
 somebody has not built yet, and the gate now says so on every run.
+
+### The family cluster, closed
+
+All four `FamilyRepository` methods now reach a screen.
+
+* **`familiesOf` and `historyForResident`** on the resident record, in their own panel. A household
+  is an address and a family is a claim about who belongs to whom (`DL-47`), and one person may
+  belong to more than one — folding them into the household panel is the assumption that rule
+  exists to remove.
+* **`historyForResident` in particular was written and shown nowhere.** `DL-48` makes family history
+  append-only, and the office had been accumulating a record no screen could read.
+* **`changeMemberRole`** on the family record. Only the head is settable; the adapter refuses the
+  other roles loudly rather than quietly posting a head change for a role nobody asked for.
+* **`endRelationship`** had invented its route. The comment above it argued that ending a
+  relationship is a recorded act rather than a deletion, so it must be a POST — **the doctrine was
+  right and the verb was ours.** The API serves `DELETE` under the resident the relationship is
+  about, and the server records the event either way.
+
+That is the second time in this programme a correct principle produced an invented route; the
+vulnerability-factor `clear` was the first. The pattern is worth naming: *a rule about what the
+system must remember is not a rule about which HTTP verb carries it.*
+
+**One gap stays recorded rather than papered over.** `POST admin/families/{family}/head` accepts no
+reason, while `DL-48` requires one on every family change. The act reaches the trail; the sentence
+explaining it does not. The call site still passes a reason so the port's contract is honoured
+rather than the argument quietly disappearing at the one place a reader would look for it.
