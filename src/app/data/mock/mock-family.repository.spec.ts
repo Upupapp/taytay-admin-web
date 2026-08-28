@@ -292,7 +292,12 @@ describe('recording a relationship', () => {
   it('ends a relationship without deleting it, and writes the reason down', async () => {
     signedInAs(authenticated('social-worker'));
     const ended = await firstValueFrom(
-      repo().endRelationship(asId<RelationshipId>('rel-0004'), 'Recorded in error at intake'),
+      repo().endRelationship(
+        // The subject the relationship is about; the API scopes it under them (`DL-47`).
+        asId<ResidentId>('res-0001'),
+        asId<RelationshipId>('rel-0004'),
+        'Recorded in error at intake',
+      ),
     );
     expect(ended.until).not.toBeNull();
 

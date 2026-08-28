@@ -306,7 +306,21 @@ export interface FamilyRepository {
     reason: string,
   ): Observable<Relationship>;
   /** Ends a relationship without deleting it: a former guardian still was one. */
-  endRelationship(id: RelationshipId, reason: string): Observable<Relationship>;
+  /**
+   * Ends a relationship between two people, with a reason.
+   *
+   * Takes the **subject** as well as the relationship, because the API scopes relationships under
+   * the resident they are about — the same shape as recording one. A relationship is recorded
+   * resident-to-resident so it survives either person moving (`DL-47`), and the route says so.
+   *
+   * A DELETE that carries a reason: the standing ends and the event stays (`DL-48`). Nothing here
+   * removes what was true before.
+   */
+  endRelationship(
+    residentId: ResidentId,
+    id: RelationshipId,
+    reason: string,
+  ): Observable<Relationship>;
 
   /**
    * Moves a resident between families, and optionally the household with them.

@@ -162,7 +162,11 @@ export class MockFamilyRepository implements FamilyRepository {
     );
   }
 
-  endRelationship(id: RelationshipId, reason: string): Observable<Relationship> {
+  endRelationship(
+    _residentId: ResidentId,
+    id: RelationshipId,
+    reason: string,
+  ): Observable<Relationship> {
     const user = this.access.currentUser();
     const denied = denyUnless<Relationship>(user, 'family.manage');
     if (denied) {

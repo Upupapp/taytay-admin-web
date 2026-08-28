@@ -24,6 +24,9 @@ import {
   type ResidentId,
   type ResidentProfile,
   type VulnerabilitySector,
+  FAMILY_REPOSITORY,
+  type FamilySummary,
+  type RelationshipEvent,
 } from '@domain/index';
 import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -33,6 +36,7 @@ import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { ResidentSummaryCard } from '@shared/residents/resident-summary-card';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
+import { RELATIONSHIP_COPY } from '@shared/families/relationship.copy';
 import { RESIDENTS_COPY } from './residents.copy';
 
 /**
@@ -68,6 +72,7 @@ import { RESIDENTS_COPY } from './residents.copy';
 })
 export class ResidentDetailPage {
   private readonly repository = inject(RESIDENT_REPOSITORY);
+  private readonly families = inject(FAMILY_REPOSITORY);
   private readonly notifications = inject(NotificationStore);
 
   /** Bound from the route by `withComponentInputBinding()`. */
@@ -77,6 +82,43 @@ export class ResidentDetailPage {
   protected readonly requestStatuses = ASSISTANCE_STATUS_CATALOG;
   protected readonly payoutStatuses = RELEASE_STATUS_CATALOG;
   protected readonly referralStatuses = REFERRAL_STATUS_CATALOG;
+
+  /* ── family, and how it changed ─────────────────────────────────────────── */
+
+  protected readonly relationshipCopy = RELATIONSHIP_COPY;
+
+  /**
+   * Which families this person belongs to — plural, and that is the point.
+   *
+   * A household is an address and a family is a claim about who belongs to whom (`DL-47`). One
+   * person may belong to more than one family, and the profile's `householdMembers` answers a
+   * different question: who shares this address. Showing them together, labelled apart, is what
+   * stops a reader treating the second as the first.
+   */
+  protected readonly familiesOf = toSignal(
+    toObservable(computed(() => this.id())).pipe(
+      switchMap((id) => this.families.familiesOf(asId<ResidentId>(id))),
+    ),
+    { initialValue: [] as readonly FamilySummary[] },
+  );
+
+  /**
+   * Every recorded change to this person's family standing, newest first.
+   *
+   * Append-only (`DL-48`): ending a relationship or moving somebody records an event with actor,
+   * time and reason, and never deletes what was true before. This is where that record becomes
+   * readable — until now it was written and shown nowhere.
+   */
+  protected readonly kinshipHistory = toSignal(
+    toObservable(computed(() => this.id())).pipe(
+      switchMap((id) => this.families.historyForResident(asId<ResidentId>(id))),
+    ),
+    { initialValue: [] as readonly RelationshipEvent[] },
+  );
+
+  protected eventLabel(event: RelationshipEvent): string {
+    return RELATIONSHIP_COPY.eventLabel[event.kind];
+  }
 
   private readonly reloads = signal(0);
 

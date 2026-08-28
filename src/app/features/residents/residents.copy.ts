@@ -40,6 +40,13 @@ export const RESIDENTS_COPY = {
   },
 
   detail: {
+    familiesHeading: 'Families',
+    noFamilies: 'This person is not recorded in any family.',
+    headedBy: 'Headed by',
+    kinshipHeading: 'How this changed',
+    kinshipHint:
+      'Every recorded change, newest first, with who made it and why. Nothing here is ever removed — a relationship that ended is shown as ended, not deleted.',
+    noKinshipHistory: 'No changes have been recorded.',
     subtitleFallback: 'Resident record',
     edit: 'Edit record',
     retire: 'Retire record',

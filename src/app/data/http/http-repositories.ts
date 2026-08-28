@@ -484,12 +484,20 @@ export class HttpFamilyRepository implements FamilyRepository {
   }
 
   /**
-   * A POST, not a DELETE. Ending a relationship records that it ended; there is
-   * nothing to delete, and the server must keep the row (`DL-48`).
+   * `DELETE admin/residents/{resident}/relationships/{relationship}`, carrying its reason.
+   *
+   * This posted to `.../{id}/end`, a route the console invented. The comment above it argued that
+   * ending a relationship is a recorded act rather than a deletion and so must be a POST — the
+   * doctrine is right and the verb was ours. The server records the event either way, and it is
+   * the DELETE that exists.
    */
-  endRelationship(id: RelationshipId, reason: string): Observable<Relationship> {
-    return this.api.post<Relationship, { reason: string }>(
-      `${API_ENDPOINTS.relationships}/${id}/end`,
+  endRelationship(
+    residentId: ResidentId,
+    id: RelationshipId,
+    reason: string,
+  ): Observable<Relationship> {
+    return this.api.delete<Relationship, { reason: string }>(
+      `${API_ENDPOINTS.residents}/${residentId}/relationships/${id}`,
       { reason },
     );
   }

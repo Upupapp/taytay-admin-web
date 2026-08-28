@@ -168,6 +168,56 @@
           }
         </section>
 
+        <!--
+          ── Families, and how they changed ────────────────────────────────
+
+          Deliberately its own panel, below the household and above the casework.
+
+          A household is an address; a family is a claim about who belongs to whom (DL-47), and one
+          person may belong to more than one. Folding these into the household panel is exactly the
+          assumption that rule exists to remove.
+        -->
+        <section class="card panel panel--wide" aria-labelledby="families-heading">
+          <h2 class="panel__heading" id="families-heading">{{ copy.familiesHeading }}</h2>
+
+          @if (familiesOf().length === 0) {
+            <p class="panel__empty">{{ copy.noFamilies }}</p>
+          } @else {
+            <ul class="panel__list">
+              @for (summary of familiesOf(); track summary.family.id) {
+                <li class="panel__item">
+                  <a [routerLink]="['/families', summary.family.id]">{{ summary.family.name }}</a>
+                  <span class="panel__meta">
+                    {{ copy.headedBy }} {{ summary.headName }} · {{ summary.memberCount }}
+                  </span>
+                </li>
+              }
+            </ul>
+          }
+
+          <h3 class="panel__subheading">{{ copy.kinshipHeading }}</h3>
+          <p class="panel__hint">{{ copy.kinshipHint }}</p>
+
+          @if (kinshipHistory().length === 0) {
+            <p class="panel__empty">{{ copy.noKinshipHistory }}</p>
+          } @else {
+            <ol class="panel__timeline">
+              @for (event of kinshipHistory(); track event.id) {
+                <li class="panel__event">
+                  <span class="panel__event-kind">{{ eventLabel(event) }}</span>
+                  <span class="panel__event-when">{{ event.occurredAt | date: 'mediumDate' }}</span>
+                  <!--
+                    The reason is shown, not just the fact. An event nobody can account for is one
+                    a later reader treats as an unexplained change to a family (DL-48).
+                  -->
+                  <p class="panel__event-reason">{{ event.reason }}</p>
+                  <span class="panel__event-actor">{{ event.actorName }}</span>
+                </li>
+              }
+            </ol>
+          }
+        </section>
+
         <!-- ── Assistance history ───────────────────────────────────────── -->
         <section class="card panel panel--wide" aria-labelledby="cases-heading">
           <h2 class="panel__heading" id="cases-heading">{{ copy.casesHeading }}</h2>

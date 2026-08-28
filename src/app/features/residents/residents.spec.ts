@@ -8,6 +8,7 @@ import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
 import { MockResidentRepository } from '@data/mock/mock-resident.repository';
+import { MockFamilyRepository } from '@data/mock/mock-family.repository';
 import { MockSavedViewRepository } from '@data/mock/mock-saved-view.repository';
 import {
   ACCESS_CONTEXT,
@@ -26,6 +27,7 @@ import {
   type StaffUser,
   type StaffUserId,
   type SignInOutcome,
+  FAMILY_REPOSITORY,
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
 
@@ -96,6 +98,14 @@ async function configure(role: StaffRole, barangayId: BarangayId | null = null):
       { provide: ACCESS_CONTEXT, useExisting: SessionState },
       { provide: STAFF_REPOSITORY, useValue: staffRepository(staffUser(role, barangayId)) },
       { provide: RESIDENT_REPOSITORY, useClass: MockResidentRepository },
+      /*
+       * The record now shows which families this person belongs to, and how that changed.
+       *
+       * A household is an address and a family is a claim about who belongs to whom (`DL-47`), so
+       * they come from different repositories — which is the distinction the panel exists to keep
+       * visible rather than an incidental dependency.
+       */
+      { provide: FAMILY_REPOSITORY, useClass: MockFamilyRepository },
       { provide: SAVED_VIEW_REPOSITORY, useClass: MockSavedViewRepository },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
     ],
