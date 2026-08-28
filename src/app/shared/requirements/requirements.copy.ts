@@ -24,6 +24,13 @@ export const REQUIREMENTS_COPY = {
     uploadHint: 'PDF, JPEG or PNG, up to 10 MB. The office keeps every version.',
     uploadAction: 'Record this document',
     uploading: 'Recording…',
+    /**
+     * The figure, not just the bar.
+     *
+     * A caseworker on a slow connection is deciding whether to keep waiting, and "62%" answers
+     * that where a partly-filled bar does not.
+     */
+    uploadingPercent: (percent: number): string => `${percent}% sent`,
     replacesBecauseLabel: 'Why is this replacing the copy already held?',
     replacesBecauseHint:
       'The previous version is kept and marked superseded. This sentence is what explains it to whoever reads the file later.',

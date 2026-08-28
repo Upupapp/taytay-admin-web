@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { firstValueFrom, of, switchMap } from 'rxjs';
+import { firstValueFrom, of, switchMap, filter, tap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
 import { NotificationStore } from '@core/notifications/notification.store';
@@ -46,6 +46,7 @@ import {
   type RequirementStatus,
   type ResidentProfile,
   type DocumentVersionDraft,
+  uploadPercent as percentOf,
 } from '@domain/index';
 import { DocumentPanel } from '@shared/requirements/document-panel';
 import { REQUIREMENTS_COPY } from '@shared/requirements/requirements.copy';
@@ -283,6 +284,9 @@ export class AssessmentPage {
   /** Set while an upload is in flight, so the panel's button cannot be pressed twice. */
   protected readonly uploading = signal(false);
 
+  /** Whole percent while bytes are moving, `null` when nothing is in flight. */
+  protected readonly uploadPercent = signal<number | null>(null);
+
   private readonly applicabilityReasons = signal<Readonly<Record<string, string>>>({});
 
   /** The grant awaiting confirmation. A file never opens without a deliberate second act. */
@@ -305,10 +309,23 @@ export class AssessmentPage {
     }
 
     this.uploading.set(true);
+    this.uploadPercent.set(0);
 
     try {
+      /*
+       * Every emission is read, not just the last.
+       *
+       * `lastValueFrom` would give the result and throw the progress away, which is what the
+       * adapter used to do — and a 9 MB scan on a barangay connection then shows one unchanging
+       * label for as long as it takes.
+       */
       await firstValueFrom(
-        this.requests.recordDocument(asId<AssistanceRequestId>(request.id), requirementId, draft),
+        this.requests
+          .recordDocument(asId<AssistanceRequestId>(request.id), requirementId, draft)
+          .pipe(
+            tap((progress) => this.uploadPercent.set(percentOf(progress))),
+            filter((progress) => progress.kind === 'done'),
+          ),
       );
       this.notifications.success(this.documentCopy.recorded);
       this.reloads.update((n) => n + 1);
@@ -325,6 +342,7 @@ export class AssessmentPage {
       );
     } finally {
       this.uploading.set(false);
+      this.uploadPercent.set(null);
     }
   }
 

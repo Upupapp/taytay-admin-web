@@ -171,6 +171,20 @@ import { REQUIREMENTS_COPY } from './requirements.copy';
             </label>
           }
 
+          <!--
+            A real bar, with the figure beside it.
+
+            The progress element is the platform's own and is announced by a screen reader without
+            any ARIA of ours. The number is shown too: a bar communicates roughly, and somebody
+            deciding whether to keep waiting on a slow connection wants a figure.
+          -->
+          @if (percent() !== null) {
+            <p class="document__progress">
+              <progress [value]="percent()" max="100"></progress>
+              <span>{{ copy.uploadingPercent(percent() ?? 0) }}</span>
+            </p>
+          }
+
           <button type="submit" class="btn btn--primary" [disabled]="!canSubmit()">
             {{ uploading() ? copy.uploading : copy.uploadAction }}
           </button>
@@ -190,6 +204,8 @@ export class DocumentPanel {
   readonly canUpload = input(false);
   /** Set while the parent's request is in flight, so the button cannot be pressed twice. */
   readonly uploading = input(false);
+  /** Whole percent while bytes are moving; `null` when nothing is in flight. */
+  readonly percent = input<number | null>(null);
 
   readonly openRequested = output<DocumentVersion['id']>();
   readonly versionSubmitted = output<DocumentVersionDraft>();

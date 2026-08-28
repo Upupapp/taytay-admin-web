@@ -58,3 +58,37 @@ export function refusalFor(
 
   return null;
 }
+
+/**
+ * How far an upload has got.
+ *
+ * ## Why the port carries this and not just the result
+ *
+ * `FileTransport` emits it and the adapter used to discard everything but the completion, so a
+ * caseworker on a barangay connection sending a 9 MB scan saw "Recording…" and nothing else for as
+ * long as it took. `DL-87` is about being honest that something *has* been saved; this is the
+ * lesser half of the same idea — being honest that something is still happening.
+ *
+ * Neither `shared/` nor `features/` may import from `data/`, so a screen cannot ask the transport
+ * directly. The progress has to travel through the port, which is why it is a domain type rather
+ * than a transport one.
+ *
+ * `totalBytes` is the size of the file being sent, never zero — a bar that cannot move is worse
+ * than no bar, because it reads as a stall.
+ */
+export type DocumentUpload<T> =
+  | { readonly kind: 'uploading'; readonly sentBytes: number; readonly totalBytes: number }
+  | { readonly kind: 'done'; readonly result: T };
+
+/** Whole percent, clamped. Rendered as a number a person reads, not a ratio. */
+export function uploadPercent(progress: DocumentUpload<unknown>): number {
+  if (progress.kind === 'done') {
+    return 100;
+  }
+
+  if (progress.totalBytes <= 0) {
+    return 0;
+  }
+
+  return Math.min(100, Math.round((progress.sentBytes / progress.totalBytes) * 100));
+}

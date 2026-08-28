@@ -4,7 +4,6 @@ import {
   catchError,
   combineLatest,
   concatMap,
-  filter,
   from,
   map,
   of,
@@ -207,11 +206,12 @@ import {
   fromServerIdentity,
   type DataScope,
   type BarangayId,
+  type DocumentUpload,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
 import { UPLOAD_POLICY } from './api.contract';
-import { FileTransport, type UploadProgress } from './file-transport';
+import { FileTransport } from './file-transport';
 import {
   toWireDocumentVersion,
   toWireEventDraft,
@@ -1111,7 +1111,7 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
     id: AssistanceRequestId,
     requirementId: RequirementId,
     draft: DocumentVersionDraft,
-  ): Observable<AssistanceRequest> {
+  ): Observable<DocumentUpload<AssistanceRequest>> {
     /*
      * ── the bytes go over multipart, not as JSON ────────────────────────────────
      *
@@ -1133,17 +1133,35 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
       // A source that holds no file is a real record — a document seen at the counter and handed
       // back. It needs no multipart request, and `documentProblems` has already refused the
       // combinations that make no sense.
-      return this.api.post<AssistanceRequest, ReturnType<typeof toWireDocumentVersion>>(
-        path,
-        toWireDocumentVersion(draft),
-      );
+      return this.api
+        .post<AssistanceRequest, ReturnType<typeof toWireDocumentVersion>>(
+          path,
+          toWireDocumentVersion(draft),
+        )
+        .pipe(map((result) => ({ kind: 'done' as const, result })));
     }
 
+    /*
+     * Every event is passed on, not just the completion.
+     *
+     * The adapter used to filter to `done`, so a caseworker on a barangay connection sending a
+     * 9 MB scan saw one unchanging label for as long as it took. `totalBytes` falls back to the
+     * file's own size where the transport does not report one — that is the number we are sending,
+     * and a bar that cannot move reads as a stall.
+     */
     return this.files.upload(path, draft.file, UPLOAD_POLICY, toWireDocumentVersion(draft)).pipe(
-      filter((progress): progress is Extract<UploadProgress, { kind: 'done' }> =>
-        progress.kind === 'done',
+      map((progress): DocumentUpload<AssistanceRequest> =>
+        progress.kind === 'done'
+          ? {
+              kind: 'done',
+              result: (progress.response as { data: AssistanceRequest }).data,
+            }
+          : {
+              kind: 'uploading',
+              sentBytes: progress.sentBytes,
+              totalBytes: progress.totalBytes,
+            },
       ),
-      map((progress) => (progress.response as ApiItemResponse<AssistanceRequest>).data),
     );
   }
 

@@ -126,6 +126,7 @@
                   [canDownload]="canDownloadDocuments()"
                   [canUpload]="canRecordDocuments()"
                   [uploading]="uploading()"
+                  [percent]="uploadPercent()"
                   (openRequested)="askToOpen(requirement.id, $event)"
                   (versionSubmitted)="recordDocument(request, requirement.id, $event)"
                 />

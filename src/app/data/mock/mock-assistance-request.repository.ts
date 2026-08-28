@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { concat, filter, of, Observable, throwError } from 'rxjs';
 
 import {
   ACCESS_CONTEXT,
@@ -61,6 +61,7 @@ import {
   type StaffUserId,
   type StatusChange,
   type SubmittedRequirement,
+  type DocumentUpload,
 } from '@domain/index';
 
 import { MOCK_ASSISTANCE_REQUESTS, MOCK_REQUEST_NOTES } from './seed/assistance-requests.seed';
@@ -487,14 +488,18 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     id: AssistanceRequestId,
     requirementId: RequirementId,
     draft: DocumentVersionDraft,
-  ): Observable<AssistanceRequest> {
+  ): Observable<DocumentUpload<AssistanceRequest>> {
     const user = this.access.currentUser();
-    const denied = denyUnless<AssistanceRequest>(user, 'document.record');
+    const denied = denyUnless<DocumentUpload<AssistanceRequest>>(user, 'document.record');
     if (denied) {
       return denied;
     }
 
-    const found = this.locate<AssistanceRequest>(id, requirementId, 'document.record');
+    const found = this.locate<DocumentUpload<AssistanceRequest>>(
+      id,
+      requirementId,
+      'document.record',
+    );
     if ('error' in found) {
       return found.error;
     }
@@ -558,15 +563,32 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       versions: [...priorVersions, version],
     };
 
-    return this.latency.respond(
-      this.saveRequirement(request, requirementId, (entry) => ({
-        ...entry,
-        document,
-        // Presenting a document moves a pending requirement to submitted; it
-        // never marks it verified. Checking it is a separate act by a person.
-        status: entry.status === 'verified' ? entry.status : 'submitted',
-        submittedAt: entry.submittedAt ?? now,
-      })),
+    const saved = this.saveRequirement(request, requirementId, (entry) => ({
+      ...entry,
+      document,
+      // Presenting a document moves a pending requirement to submitted; it
+      // never marks it verified. Checking it is a separate act by a person.
+      status: entry.status === 'verified' ? entry.status : 'submitted',
+      submittedAt: entry.submittedAt ?? now,
+    }));
+
+    /*
+     * A halfway emission before the result, so the progress state is reachable in development.
+     *
+     * The real transport reports bytes as they leave; a mock that only ever emitted `done` would
+     * mean the bar was never seen by anybody building against the mock, and the first time it
+     * rendered would be in front of a caseworker. Not an invented behaviour — a stand-in for one
+     * the real adapter genuinely produces.
+     */
+    const bytes = draft.file?.size ?? 0;
+
+    return concat(
+      of<DocumentUpload<AssistanceRequest>>({
+        kind: 'uploading',
+        sentBytes: Math.round(bytes / 2),
+        totalBytes: bytes,
+      }).pipe(filter(() => bytes > 0)),
+      this.latency.respond<DocumentUpload<AssistanceRequest>>({ kind: 'done', result: saved }),
     );
   }
 

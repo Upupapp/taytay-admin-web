@@ -1,6 +1,8 @@
 import { InjectionToken } from '@angular/core';
 import type { Observable } from 'rxjs';
 
+import type { DocumentUpload } from '../requirements/upload-policy';
+
 import type { WriteIntent } from '../shared/write-intent';
 
 import type {
@@ -536,11 +538,17 @@ export interface AssistanceRequestRepository {
    * certificate that was replaced two months later must still be explicable a
    * year on (`DL-77`). A replacement carries a required reason.
    */
+  /**
+   * Appends a version, reporting how far the upload has got.
+   *
+   * Emits `uploading` while bytes are in flight and `done` once the server has the file. A screen
+   * that only wants the result takes the last emission; one showing a bar reads them all.
+   */
   recordDocument(
     id: AssistanceRequestId,
     requirementId: RequirementId,
     draft: DocumentVersionDraft,
-  ): Observable<AssistanceRequest>;
+  ): Observable<DocumentUpload<AssistanceRequest>>;
 
   /**
    * Rules on whether a conditional document applies to this applicant.
