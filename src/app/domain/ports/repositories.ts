@@ -1114,12 +1114,14 @@ export interface EventRepository {
    * rather than deciding in advance that a place was free.
    */
   actOnRegistration(
+    eventId: LguEventId,
     registrationId: EventRegistrationId,
     action: RegistrationAction,
     reason: string,
   ): Observable<RegistrantView>;
 
   markAttendance(
+    eventId: LguEventId,
     registrationId: EventRegistrationId,
     attendance: AttendanceStatus,
   ): Observable<RegistrantView>;

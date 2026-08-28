@@ -307,7 +307,7 @@
                                     type="button"
                                     class="btn btn--small"
                                     [disabled]="saving()"
-                                    (click)="mark(row, 'attended')"
+                                    (click)="mark(event, row, 'attended')"
                                   >
                                     {{ copy.markAttended }}
                                   </button>
@@ -315,7 +315,7 @@
                                     type="button"
                                     class="btn btn--small"
                                     [disabled]="saving()"
-                                    (click)="mark(row, 'no-show')"
+                                    (click)="mark(event, row, 'no-show')"
                                   >
                                     {{ copy.markNoShow }}
                                   </button>
@@ -325,7 +325,7 @@
                                     type="button"
                                     class="btn btn--small"
                                     [disabled]="!canAct()"
-                                    (click)="moveRegistration(row, 'promote')"
+                                    (click)="moveRegistration(event, row, 'promote')"
                                   >
                                     {{ copy.promote }}
                                   </button>
@@ -335,7 +335,7 @@
                                     type="button"
                                     class="btn btn--small"
                                     [disabled]="!canAct()"
-                                    (click)="moveRegistration(row, 'cancel')"
+                                    (click)="moveRegistration(event, row, 'cancel')"
                                   >
                                     {{ copy.cancelRegistration }}
                                   </button>
@@ -345,7 +345,7 @@
                                     type="button"
                                     class="btn btn--small"
                                     [disabled]="!canAct()"
-                                    (click)="moveRegistration(row, 'restore')"
+                                    (click)="moveRegistration(event, row, 'restore')"
                                   >
                                     {{ copy.restoreRegistration }}
                                   </button>

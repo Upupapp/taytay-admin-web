@@ -1558,72 +1558,118 @@ export class HttpEventRepository implements EventRepository {
   }
 
   saveDraft(draft: EventDraft, id: LguEventId | null): Observable<LguEvent> {
-    return this.api.post<LguEvent, { draft: EventDraft; id: LguEventId | null }>(
-      `${API_ENDPOINTS.events}/drafts`,
-      { draft, id },
-    );
+    return id === null
+      ? this.api.post<LguEvent, EventDraft>(API_ENDPOINTS.events, draft)
+      : this.api.patch<LguEvent, EventDraft>(`${API_ENDPOINTS.events}/${id}`, draft);
   }
 
+  /*
+   * Four invented verbs onto the one transition the API serves. `DL-131` holds either way:
+   * cancelling is one-way and an event that is back on is a new event naming the old, which is a
+   * rule about what the console offers rather than about the shape of the request.
+   */
   publish(id: LguEventId, reason: string): Observable<LguEvent> {
-    return this.api.post<LguEvent, { reason: string }>(
-      `${API_ENDPOINTS.events}/${id}/publish`,
-      { reason },
-    );
+    return this.transition(id, 'published', reason);
   }
 
   cancel(id: LguEventId, reason: string): Observable<LguEvent> {
-    return this.api.post<LguEvent, { reason: string }>(
-      `${API_ENDPOINTS.events}/${id}/cancel`,
-      { reason },
-    );
+    return this.transition(id, 'cancelled', reason);
   }
 
   complete(id: LguEventId, reason: string): Observable<LguEvent> {
-    return this.api.post<LguEvent, { reason: string }>(
-      `${API_ENDPOINTS.events}/${id}/complete`,
-      { reason },
-    );
+    return this.transition(id, 'completed', reason);
   }
 
   archive(id: LguEventId, reason: string): Observable<LguEvent> {
-    return this.api.post<LguEvent, { reason: string }>(
-      `${API_ENDPOINTS.events}/${id}/archive`,
-      { reason },
+    return this.transition(id, 'archived', reason);
+  }
+
+  private transition(id: LguEventId, status: string, reason: string): Observable<LguEvent> {
+    return this.api.post<LguEvent, { status: string; reason: string }>(
+      `${API_ENDPOINTS.events}/${id}/status`,
+      { status, reason },
     );
   }
 
   registrants(id: LguEventId, filter: RegistrantFilter): Observable<readonly RegistrantView[]> {
     return this.api.collection<RegistrantView>(
-      `${API_ENDPOINTS.events}/${id}/registrants`,
+      `${API_ENDPOINTS.events}/${id}/registrations`,
       toParams(filter),
     );
   }
 
+  /** `DL-129`: this carries the server's `asOf`, and the server decides who gets the last place. */
   capacity(id: LguEventId): Observable<EventCapacitySummary> {
-    return this.api.item<EventCapacitySummary>(`${API_ENDPOINTS.events}/${id}/capacity`);
+    return this.api.item<EventCapacitySummary>(
+      `${API_ENDPOINTS.events}/${id}/registration-summary`,
+    );
   }
 
   metrics(id: LguEventId): Observable<EventMetrics> {
     return this.api.item<EventMetrics>(`${API_ENDPOINTS.events}/${id}/metrics`);
   }
 
+  /**
+   * A registration belongs to an event, and the route says so.
+   *
+   * This used to post to `events/registrations/{id}` — a top-level collection that does not
+   * exist. The API scopes every registration under its event, which is also what lets it
+   * authorize the act against the event rather than against a bare identifier.
+   *
+   * Three routes rather than one action field: cancel, restore and promote are genuinely
+   * different acts, and promotion is **attempted** rather than predicted (`DL-129`) — the caller
+   * reads back what the server did instead of deciding in advance that a place was free.
+   */
   actOnRegistration(
+    eventId: LguEventId,
     registrationId: EventRegistrationId,
     action: RegistrationAction,
     reason: string,
   ): Observable<RegistrantView> {
-    return this.api.post<RegistrantView, { action: RegistrationAction; reason: string }>(
-      `${API_ENDPOINTS.events}/registrations/${registrationId}`,
-      { action, reason },
-    );
+    const base = `${API_ENDPOINTS.events}/${eventId}/registrations`;
+
+    switch (action) {
+      case 'promote':
+        return this.api.post<RegistrantView, { reason: string }>(`${base}/promote`, { reason });
+      case 'cancel':
+        return this.api.post<RegistrantView, { reason: string }>(
+          `${base}/${registrationId}/cancel`,
+          { reason },
+        );
+      case 'restore':
+        return this.api.post<RegistrantView, { reason: string }>(
+          `${base}/${registrationId}/restore`,
+          { reason },
+        );
+      case 'waitlist':
+        /*
+         * NO ENDPOINT, AND DELIBERATELY NOT COLLAPSED INTO `restore`.
+         *
+         * The API serves cancel, restore and promote. Moving somebody *onto* the waitlist has no
+         * route, and the tempting one-line version — a ternary treating anything that is not
+         * `cancel` as `restore` — would silently give a resident a confirmed place when the clerk
+         * asked to waitlist them. A person's place at an event is not a field to guess at.
+         *
+         * Refused loudly here and recorded as a gap, so the screen surfaces it rather than the
+         * office discovering it at the door.
+         */
+        return throwError(
+          () =>
+            new Error(
+              'Moving a registration onto the waitlist has no server counterpart yet. ' +
+                'Cancel the registration instead, or record the change on the day.',
+            ),
+        );
+    }
   }
 
   markAttendance(
+    eventId: LguEventId,
     registrationId: EventRegistrationId,
     attendance: AttendanceStatus,
   ): Observable<RegistrantView> {
     return this.api.post<RegistrantView, { attendance: AttendanceStatus }>(
-      `${API_ENDPOINTS.events}/registrations/${registrationId}/attendance`,
+      `${API_ENDPOINTS.events}/${eventId}/registrations/${registrationId}/attendance`,
       { attendance },
     );
   }

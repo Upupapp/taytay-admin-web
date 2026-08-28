@@ -288,6 +288,7 @@ export class EventDetailPage {
   }
 
   protected async moveRegistration(
+    event: LguEvent,
     row: RegistrantView,
     action: RegistrationAction,
   ): Promise<void> {
@@ -295,14 +296,23 @@ export class EventDetailPage {
       return;
     }
     await this.act(
-      this.repository.actOnRegistration(row.id, action, this.reason().trim()),
+      this.repository.actOnRegistration(
+        asId<LguEventId>(event.id),
+        row.id,
+        action,
+        this.reason().trim(),
+      ),
     );
   }
 
-  protected async mark(row: RegistrantView, attendance: AttendanceStatus): Promise<void> {
+  protected async mark(
+    event: LguEvent,
+    row: RegistrantView,
+    attendance: AttendanceStatus,
+  ): Promise<void> {
     // No reason required: marking somebody present is an observation, not a
     // decision about their place.
-    await this.act(this.repository.markAttendance(row.id, attendance));
+    await this.act(this.repository.markAttendance(asId<LguEventId>(event.id), row.id, attendance));
   }
 
   protected async exportList(event: LguEvent): Promise<void> {

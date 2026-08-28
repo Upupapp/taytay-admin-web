@@ -265,6 +265,7 @@ export class MockEventRepository implements EventRepository {
   }
 
   actOnRegistration(
+    _eventId: LguEventId,
     registrationId: EventRegistrationId,
     action: RegistrationAction,
     reason: string,
@@ -297,6 +298,7 @@ export class MockEventRepository implements EventRepository {
   }
 
   markAttendance(
+    _eventId: LguEventId,
     registrationId: EventRegistrationId,
     attendance: AttendanceStatus,
   ): Observable<RegistrantView> {
