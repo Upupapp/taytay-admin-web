@@ -28,7 +28,7 @@
  * shape here was read off the controller's `validate()` call.
  */
 
-import type { ReleaseBatchDraft, VisitOutcomeDraft } from '@domain/index';
+import type { ResidentDraft, ReleaseBatchDraft, VisitOutcomeDraft } from '@domain/index';
 
 /**
  * A payout session: a name, a date, a venue (`DL-90`).
@@ -80,5 +80,62 @@ export function toWireVisitOutcome(outcome: VisitOutcomeDraft): {
     outcome: outcome.outcome,
     service_needs: outcome.serviceNeeds,
     declined_reason: outcome.declinedReason,
+  };
+}
+
+/**
+ * A resident, flattened.
+ *
+ * This console nests `name`, `address` and `contact`; the API validates twelve **flat** fields.
+ * That is the clearest case in the codebase for why a generic case-converter could not have done
+ * this job, and why every mapper here is written out.
+ *
+ * ## The barangay travels as a code, not as a key
+ *
+ * `BarangayId` in this application is already the backend's `barangays.code` — `brgy-san-juan` on
+ * both sides — and until now the write endpoints accepted only the auto-increment `barangay_id`,
+ * which this console has never held and Article 4 keeps out of payloads anyway. The API now takes
+ * either (L-15), so the identifier a response hands over is the one a request may hand back.
+ *
+ * ## What is deliberately not sent
+ *
+ * `sectors`, `philsysLastFour`, `monthlyIncome` and `householdId` have **no counterpart on create**
+ * and are dropped rather than serialised hopefully — Laravel ignores unknown keys, so sending them
+ * would succeed and discard them, which reads to an intake officer as the office losing what they
+ * typed.
+ *
+ * Three of those four are the sensitive tier (`DL-38`): PhilSys digits, means, and the sector flags
+ * behind `resident.view-sensitive`. That they cannot be set at creation is a **gap to close
+ * deliberately, in one place, with the permission asked for** — not by widening this payload.
+ */
+export function toWireResidentDraft(draft: ResidentDraft): {
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
+  suffix: string | null;
+  sex: string;
+  birth_date: string;
+  civil_status: string;
+  barangay_code: string;
+  street_address: string | null;
+  purok_or_sitio: string | null;
+  mobile_number: string | null;
+  email: string | null;
+} {
+  return {
+    first_name: draft.name.first,
+    middle_name: draft.name.middle,
+    last_name: draft.name.last,
+    suffix: draft.name.suffix,
+    sex: draft.sex,
+    birth_date: draft.birthDate,
+    civil_status: draft.civilStatus,
+    barangay_code: draft.address.barangayId,
+    street_address: draft.address.streetAddress,
+    purok_or_sitio: draft.address.purokOrSitio,
+    // The API names this `mobile_number`; the domain calls it `mobile`. Neither is wrong and they
+    // are not the same word, which is the entire failure mode this file exists for.
+    mobile_number: draft.contact.mobile,
+    email: draft.contact.email,
   };
 }

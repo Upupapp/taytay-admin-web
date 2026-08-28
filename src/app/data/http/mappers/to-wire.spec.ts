@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { asId, asIsoDate } from '@domain/index';
-import type { ReleaseBatchDraft, ReleaseId, StaffUserId, VisitOutcomeDraft } from '@domain/index';
+import { asId, asIsoDate, centavos } from '@domain/index';
+import type {
+  BarangayId,
+  ReleaseBatchDraft,
+  ReleaseId,
+  ResidentDraft,
+  StaffUserId,
+  VisitOutcomeDraft,
+} from '@domain/index';
 
-import { toWireReleaseBatch, toWireVisitOutcome } from './to-wire';
+import { toWireReleaseBatch, toWireResidentDraft, toWireVisitOutcome } from './to-wire';
 
 /**
  * These assert what reaches the wire, which is the thing nothing else in this repository checks.
@@ -97,6 +104,79 @@ describe('outbound mappers', () => {
 
       expect(wire['next_action']).toBeUndefined();
       expect(wire['follow_up_on']).toBeUndefined();
+    });
+  });
+
+  describe('toWireResidentDraft', () => {
+    const draft: ResidentDraft = {
+      name: { first: 'Marilou', middle: 'Santos', last: 'Bautista', suffix: null },
+      sex: 'female',
+      birthDate: asIsoDate('1979-11-02'),
+      civilStatus: 'widowed',
+      address: {
+        barangayId: asId<BarangayId>('brgy-san-juan'),
+        streetAddress: '18 Rizal Street',
+        purokOrSitio: 'Purok 3',
+      },
+      contact: { mobile: '09171234567', email: null },
+      sectors: ['solo-parent'],
+      philsysLastFour: '4821',
+      monthlyIncome: centavos(850000),
+      householdId: null,
+    };
+
+    it('flattens the nested value objects the API does not have', () => {
+      expect(toWireResidentDraft(draft)).toEqual({
+        first_name: 'Marilou',
+        middle_name: 'Santos',
+        last_name: 'Bautista',
+        suffix: null,
+        sex: 'female',
+        birth_date: '1979-11-02',
+        civil_status: 'widowed',
+        barangay_code: 'brgy-san-juan',
+        street_address: '18 Rizal Street',
+        purok_or_sitio: 'Purok 3',
+        mobile_number: '09171234567',
+        email: null,
+      });
+    });
+
+    /**
+     * The barangay travels as the code, never as the auto-increment key.
+     *
+     * This console has only ever held the code, and Article 4 keeps the key out of payloads. The
+     * endpoint accepts either since L-15, and sending the one we actually hold is the point.
+     */
+    it('sends the barangay as a code', () => {
+      const wire = toWireResidentDraft(draft) as Record<string, unknown>;
+
+      expect(wire['barangay_code']).toBe('brgy-san-juan');
+      expect(wire['barangay_id']).toBeUndefined();
+    });
+
+    /**
+     * The sensitive tier is not smuggled through creation.
+     *
+     * `philsysLastFour`, `monthlyIncome` and `sectors` sit behind `resident.view-sensitive`
+     * (`DL-38`) and the create endpoint accepts none of them. Laravel ignores unknown keys, so
+     * sending them would look like it worked and quietly discard a PhilSys fragment — which is the
+     * worst of both: nothing recorded, and an intake officer believing otherwise.
+     */
+    it('sends no field the create endpoint does not accept', () => {
+      const wire = toWireResidentDraft(draft) as Record<string, unknown>;
+
+      expect(Object.keys(wire).length).toBe(12);
+      for (const absent of ['sectors', 'philsysLastFour', 'philsys_last_four', 'monthlyIncome', 'monthly_income', 'householdId', 'household_id', 'name', 'address', 'contact']) {
+        expect(wire[absent]).toBeUndefined();
+      }
+    });
+
+    /** No nested object survives; every one of the twelve keys is a scalar or null. */
+    it('leaves nothing nested', () => {
+      for (const value of Object.values(toWireResidentDraft(draft))) {
+        expect(typeof value === 'object' && value !== null).toBe(false);
+      }
     });
   });
 });

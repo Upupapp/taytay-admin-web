@@ -204,7 +204,11 @@ import {
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
-import { toWireReleaseBatch, toWireVisitOutcome } from './mappers/to-wire';
+import {
+  toWireReleaseBatch,
+  toWireResidentDraft,
+  toWireVisitOutcome,
+} from './mappers/to-wire';
 import { API_ENDPOINTS, type ApiItemResponse } from './api.contract';
 
 /**
@@ -293,7 +297,10 @@ export class HttpResidentRepository implements ResidentRepository {
   }
 
   create(draft: ResidentDraft): Observable<Resident> {
-    return this.api.post<Resident, ResidentDraft>(API_ENDPOINTS.residents, draft);
+    return this.api.post<Resident, ReturnType<typeof toWireResidentDraft>>(
+      API_ENDPOINTS.residents,
+      toWireResidentDraft(draft),
+    );
   }
 
   update(id: ResidentId, draft: ResidentDraft): Observable<Resident> {
