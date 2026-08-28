@@ -106,6 +106,40 @@ export class ApiClient {
     return this.http.delete<void>(this.url(path)).pipe(map(() => undefined));
   }
 
+  /**
+   * A DELETE that returns the record it changed, and may carry a reason.
+   *
+   * ## Why a body on a DELETE
+   *
+   * Several of this API's removals are **recorded acts, not erasures** — ending a relationship,
+   * withdrawing a vulnerability correction, removing a staff assignment. The row survives; what
+   * the request removes is the *standing*, and the server requires the reason in the same act so
+   * there is no window in which a removal exists without one (`DL-48`, `DL-54`).
+   *
+   * That reason has to travel in the body. Putting it in the query string would place a
+   * caseworker's sentence about a family into a URL, which is logged by every proxy on the path
+   * and is the failure `DL-109` already refused for search terms.
+   *
+   * ## Why this did not exist before
+   *
+   * There was only `deleteVoid`, which sends no body and returns nothing — so **every DELETE route
+   * the API serves was unreachable from this console**, and the adapters had quietly invented POST
+   * routes instead (`.../factors/{code}/clear`, `.../relationships/{id}/end`). Those 404. The verb
+   * was missing from the transport, so the mismatch could never surface as a type error.
+   */
+  delete<TItem, TBody = unknown>(
+    path: string,
+    body?: TBody,
+    intent?: WriteIntent,
+  ): Observable<TItem> {
+    return this.http
+      .delete<ApiItemResponse<TItem>>(this.url(path), {
+        body,
+        headers: idempotency(intent),
+      })
+      .pipe(map((r) => r.data));
+  }
+
   patch<TItem, TBody = unknown>(path: string, body: TBody): Observable<TItem> {
     return this.http.patch<ApiItemResponse<TItem>>(this.url(path), body).pipe(map((r) => r.data));
   }

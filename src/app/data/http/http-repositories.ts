@@ -272,8 +272,9 @@ export class HttpHouseholdRepository implements HouseholdRepository {
     changes: readonly MembershipChange[],
     reason: string,
   ): Observable<HouseholdDetail> {
+    // `members`, not `membership` — the API names the sub-resource being changed.
     return this.api.post<HouseholdDetail, { changes: readonly MembershipChange[]; reason: string }>(
-      `${API_ENDPOINTS.households}/${id}/membership`,
+      `${API_ENDPOINTS.households}/${id}/members`,
       { changes, reason },
     );
   }
@@ -284,9 +285,9 @@ export class HttpHouseholdRepository implements HouseholdRepository {
     state: FactorState,
     reason: string,
   ): Observable<HouseholdDetail> {
-    return this.api.post<HouseholdDetail, { state: FactorState; reason: string }>(
-      `${API_ENDPOINTS.households}/${id}/factors/${code}`,
-      { state, reason },
+    return this.api.post<HouseholdDetail, { code: VulnerabilityFactorCode; state: FactorState; reason: string }>(
+      `${API_ENDPOINTS.households}/${id}/vulnerability-factors`,
+      { code, state, reason },
     );
   }
 
@@ -295,10 +296,16 @@ export class HttpHouseholdRepository implements HouseholdRepository {
     code: VulnerabilityFactorCode,
     reason: string,
   ): Observable<HouseholdDetail> {
-    // A withdrawal is still a recorded act with a reason, so it is a POST and
-    // not a DELETE: there is nothing to delete, only something to say.
-    return this.api.post<HouseholdDetail, { reason: string }>(
-      `${API_ENDPOINTS.households}/${id}/factors/${code}/clear`,
+    /*
+     * A DELETE that carries a reason, which reads oddly and is what the API serves.
+     *
+     * The comment here used to argue that a withdrawal is a recorded act and therefore a POST:
+     * *"there is nothing to delete, only something to say."* The doctrine is right and the verb
+     * was the console's own invention — the server records the withdrawal as an event either way,
+     * and `DELETE .../vulnerability-factors/{factor}` is the route that exists.
+     */
+    return this.api.delete<HouseholdDetail, { reason: string }>(
+      `${API_ENDPOINTS.households}/${id}/vulnerability-factors/${code}`,
       { reason },
     );
   }
@@ -367,7 +374,7 @@ export class HttpFamilyRepository implements FamilyRepository {
 
   historyForResident(residentId: ResidentId): Observable<readonly RelationshipEvent[]> {
     return this.api.collection<RelationshipEvent>(
-      `${API_ENDPOINTS.residents}/${residentId}/relationship-history`,
+      `${API_ENDPOINTS.residents}/${residentId}/kinship-history`,
     );
   }
 }
@@ -590,8 +597,16 @@ export class HttpGovernanceRepository implements GovernanceRepository {
     return this.api.collection<AuditRow>(API_ENDPOINTS.audit, toParams(filter));
   }
 
+  /**
+   * The entry itself. There is no `/values` sub-resource and there must not be.
+   *
+   * `DL-114` splits the row from the recorded values, and this adapter asked for the second tier
+   * at a URL nobody serves. The API records **which fields moved and never what they became**
+   * (G-33), so the detail read is the entry — the split is achieved by the trail holding no
+   * values at all, which is stronger than a permission on a second endpoint.
+   */
   auditDetail(id: AuditEntryId): Observable<AuditEntryDetail | null> {
-    return this.api.optionalItem<AuditEntryDetail>(`${API_ENDPOINTS.audit}/${id}/values`);
+    return this.api.optionalItem<AuditEntryDetail>(`${API_ENDPOINTS.audit}/${id}`);
   }
 
   classifications(): Observable<readonly ClassifiedRecordType[]> {
@@ -1464,8 +1479,12 @@ export class HttpFieldVisitRepository implements FieldVisitRepository {
     return this.api.optionalItem<FieldVisit>(`${API_ENDPOINTS.fieldVisits}/${id}`);
   }
 
+  /** A scope on the collection, not a resource of its own. */
   mine(filter: FieldVisitFilter): Observable<readonly FieldVisit[]> {
-    return this.api.collection<FieldVisit>(`${API_ENDPOINTS.fieldVisits}/mine`, toParams(filter));
+    return this.api.collection<FieldVisit>(API_ENDPOINTS.fieldVisits, {
+      ...toParams(filter),
+      scope: 'mine',
+    });
   }
 
   forResident(id: ResidentId): Observable<readonly FieldVisit[]> {
@@ -1495,7 +1514,7 @@ export class HttpFieldVisitRepository implements FieldVisitRepository {
 
   close(id: FieldVisitId, outcome: VisitOutcomeDraft): Observable<FieldVisit> {
     return this.api.post<FieldVisit, VisitOutcomeDraft>(
-      `${API_ENDPOINTS.fieldVisits}/${id}/close`,
+      `${API_ENDPOINTS.fieldVisits}/${id}/conclusion`,
       outcome,
     );
   }
