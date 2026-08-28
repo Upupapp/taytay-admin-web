@@ -24,6 +24,12 @@ import {
   type ReferralStatus,
   type ReferralSummarySheet,
   type SharedFieldChoice,
+  DISCLOSURE_BASES,
+  DISCLOSURE_BASIS_DESCRIPTIONS,
+  SHARED_FIELDS,
+  SHARED_FIELDS_NEEDING_CARE,
+  type DisclosureBasis,
+  type SharedField,
 } from '@domain/index';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -148,6 +154,95 @@ export class ReferralDetailPage {
       !this.saving(),
   );
 
+  /* ── sending it out ─────────────────────────────────────────────────────── */
+
+  protected readonly basis = signal<DisclosureBasis>('client-consent');
+  protected readonly basisNote = signal('');
+  protected readonly shareField = signal<SharedField>('address');
+  protected readonly shareBecause = signal('');
+
+  protected readonly basisOptions = DISCLOSURE_BASES;
+  protected readonly basisLabels = DISCLOSURE_BASIS_LABELS;
+  protected readonly basisDescriptions = DISCLOSURE_BASIS_DESCRIPTIONS;
+  protected readonly shareableFields = SHARED_FIELDS;
+  protected readonly fieldLabels = SHARED_FIELD_LABELS;
+
+  protected readonly canRecordBasis = computed(
+    () => this.basisNote().trim().length > 0 && !this.saving(),
+  );
+
+  protected readonly canShareField = computed(
+    () => this.shareBecause().trim().length > 0 && !this.saving(),
+  );
+
+  /** A field whose sharing needs particular thought gets said so, next to the choice. */
+  protected needsCare(field: SharedField): boolean {
+    return SHARED_FIELDS_NEEDING_CARE.includes(field);
+  }
+
+  protected onBasis(event: Event): void {
+    this.basis.set((event.target as HTMLSelectElement).value as DisclosureBasis);
+  }
+
+  protected onBasisNote(event: Event): void {
+    this.basisNote.set((event.target as HTMLInputElement).value);
+  }
+
+  protected onShareField(event: Event): void {
+    this.shareField.set((event.target as HTMLSelectElement).value as SharedField);
+  }
+
+  protected onShareBecause(event: Event): void {
+    this.shareBecause.set((event.target as HTMLInputElement).value);
+  }
+
+  protected async recordBasis(): Promise<void> {
+    if (!this.canRecordBasis()) {
+      return;
+    }
+    await this.run(
+      this.repository.recordDisclosureBasis(
+        asId<ReferralId>(this.id()),
+        this.basis(),
+        this.basisNote(),
+      ),
+      this.copy.basisSaved,
+      () => this.basisNote.set(''),
+    );
+  }
+
+  protected async addSharedField(): Promise<void> {
+    if (!this.canShareField()) {
+      return;
+    }
+    await this.run(
+      this.repository.shareField(
+        asId<ReferralId>(this.id()),
+        this.shareField(),
+        this.shareBecause(),
+      ),
+      this.copy.fieldShared,
+      () => this.shareBecause.set(''),
+    );
+  }
+
+  /**
+   * Sends it. **The one irreversible act on this screen.**
+   *
+   * The warning is shown beside the button rather than as a confirmation after it — somebody
+   * deciding reads it, somebody who has decided dismisses it (the same reasoning as `DL-124`).
+   *
+   * No plan is passed: the basis and the fields are already on the record, and the server refuses
+   * the transition without a basis — checked inside its row lock, which is where the guarantee
+   * `DL-81` describes actually holds.
+   */
+  protected async send(): Promise<void> {
+    if (this.saving()) {
+      return;
+    }
+    await this.run(this.repository.send(asId<ReferralId>(this.id())), this.copy.sent);
+  }
+
   protected async recordOutcome(): Promise<void> {
     if (!this.canRecordOutcome()) {
       return;
@@ -200,7 +295,7 @@ export class ReferralDetailPage {
   private async run(
     call: ReturnType<typeof this.repository.addNote>,
     message: string,
-    onSuccess: () => void,
+    onSuccess: () => void = () => undefined,
   ): Promise<void> {
     this.saving.set(true);
     try {

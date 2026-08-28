@@ -3809,3 +3809,41 @@ answer is yes.
 its text from a `*.copy.ts` file rather than holding it inline. Adding a locale is a translation
 job and a lookup, not a rewrite — so this decision is cheap to reverse, which is why it can be
 taken now rather than deferred.
+
+---
+
+## DL-140 — the lawful basis is its own act; `DL-81`'s doctrine survives its mechanism
+
+**Supersedes the mechanism in `DL-81`, not the rule.**
+
+`DL-81` requires that a referral cannot be sent without a lawful basis *recorded in the same act as
+the sending*, "so there is no window in which a sendable referral has none". It implemented that as
+a signature: `ReferralRepository.send(id, plan)`, with `check:referrals` asserting the shape.
+
+**The mechanism guaranteed the mock and nothing else.** `POST admin/referrals/{referral}/send`
+accepts **no body at all** — the plan was being posted to an endpoint that never read it. Against
+the real API the guarantee did not exist, and could not have, however strictly the console typed it.
+
+Where it does exist is the server. `ReferralService::send` calls `blockersFor` **inside the row
+lock**, before the transition, and refuses `disclosure-basis-required`. Its own comment says why:
+
+> *"The lawful basis is what makes the disclosure lawful at all (RA 10173). A check that lives only
+> in a request validator is a check the next write path will not have."*
+
+So the port now mirrors the API: `recordDisclosureBasis` and `shareField` are their own recorded
+acts, and `send` takes only an id. A referral without a basis cannot be sent because **the server
+will not perform the transition**, which is stronger than a parameter a client could always have
+passed an empty object to.
+
+`check:referrals` now asserts the shape that carries the doctrine — the basis is its own act, `send`
+takes no plan, and the mock refuses a send without one — rather than the signature that expressed
+it. Both directions are validated against planted regressions.
+
+**One field at a time survives unchanged** (`DL-82`). `shareField` records one field with one stated
+need, because a batch would let a screen submit six fields under one sentence covering all six.
+
+**What is weaker, and named as such:** the console can now leave a referral with a basis recorded
+and no fields chosen, or fields chosen and no basis, between two requests. Neither state can be
+*sent*, which is the property that mattered — but the intermediate states exist where previously
+the composing screen held everything until one submit. That is the price of matching the API's
+shape, and it is paid on a draft nobody outside the office can see.

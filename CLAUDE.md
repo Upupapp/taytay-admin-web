@@ -365,9 +365,14 @@ name, the reference and the reason, and every field beyond that is chosen
 individually with a stated need (`DL-82`).
 
 **A referral cannot be sent without a lawful basis** — client consent, statutory
-mandate, or vital interest — recorded in the same act as the sending, so there
-is no window in which a sendable referral has none. `ReferralRepository.send`
-takes the disclosure plan as a parameter for exactly this reason.
+mandate, or vital interest. The basis is **its own recorded act**
+(`recordDisclosureBasis`), and every field beyond the minimum is chosen one at a
+time with a stated need (`shareField`); `send` takes only an id.
+
+The guarantee lives on the **server**, which refuses the transition without a
+basis *inside its row lock* — not in a parameter shape (`DL-140`, superseding
+`DL-81`'s mechanism). The old `send(id, plan)` posted a plan to an endpoint that
+accepts no body, so it guaranteed the mock and nothing else.
 
 The sheet comes from `summaryFor`, never from a screen assembling one out of a
 fuller record it happens to hold. `npm run check:referrals` fails the build if a

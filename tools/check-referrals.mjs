@@ -61,30 +61,57 @@ const adapter = read('src/app/data/mock/mock-referral.repository.ts');
 
 /* ── 1. A referral cannot be sent without a lawful basis ─────────────────── */
 
-if (!/send\(id: ReferralId, plan: DisclosurePlan\)/.test(port)) {
+/*
+ * ── SUPERSEDED MECHANISM, SAME DOCTRINE (`DL-140`) ───────────────────────────
+ *
+ * This used to assert `send(id: ReferralId, plan: DisclosurePlan)` — the basis travelling in the
+ * same call as the sending, so that no window could exist in which a referral was sendable without
+ * one.
+ *
+ * **That mechanism guaranteed the mock and nothing else.** `POST admin/referrals/{referral}/send`
+ * accepts **no body at all**: the plan was being posted to an endpoint that never read it. The
+ * basis is recorded by `POST .../authority`, and the server checks it in `ReferralService::send`
+ * **inside the row lock**, before the transition, with its own note that *"a check that lives only
+ * in a request validator is a check the next write path will not have."*
+ *
+ * So the doctrine holds more strongly than the old signature could deliver — a referral without a
+ * basis cannot be sent because the server refuses the transition, not because a TypeScript
+ * parameter was mandatory. What this rule asserts now is the shape that actually carries it: the
+ * basis is its own recorded act, and both the port and the mock refuse a send without one.
+ */
+if (!/recordDisclosureBasis\(/.test(port)) {
   problems.push(
-    'ReferralRepository.send no longer takes a disclosure plan. The basis and the sending must be ' +
-      'one act, or there is a window in which a referral is sendable without one (DL-81).',
+    'ReferralRepository has no recordDisclosureBasis. The lawful basis must be its own recorded ' +
+      'act before a referral can be sent (DL-81, DL-140).',
   );
 }
 
-const authorityBlock =
-  /export interface DisclosureAuthority\s*\{[\s\S]*?\n\}/.exec(disclosure)?.[0] ?? '';
-if (authorityBlock === '') {
-  problems.push('DisclosureAuthority has gone from referral-disclosure.ts.');
-} else if (!/readonly note: string;/.test(authorityBlock)) {
-  problems.push('A disclosure basis no longer requires a note explaining it.');
+if (!/shareField\(/.test(port)) {
+  problems.push(
+    'ReferralRepository has no shareField. Every field beyond the minimum is chosen one at a ' +
+      'time with a stated need (DL-82).',
+  );
 }
 
-const planValidator =
-  /export function disclosurePlanProblems[\s\S]*?\n\}/.exec(disclosure)?.[0] ?? '';
-if (!/problems\.push\('authority-note-required'\)/.test(planValidator)) {
-  problems.push('disclosurePlanProblems no longer refuses an unexplained lawful basis.');
+if (/send\(id: ReferralId, plan/.test(port)) {
+  problems.push(
+    'ReferralRepository.send takes a disclosure plan again. The endpoint accepts no body; a plan ' +
+      'sent there is read by nothing (DL-140).',
+  );
 }
-if (!/DisclosurePlanInvalidError/.test(adapter)) {
-  problems.push('The adapter no longer refuses an invalid disclosure plan at sending.');
+
+/*
+ * The mock must refuse the send, not merely offer the methods.
+ *
+ * A stand-in that sent without a basis would let a screen be built against a boundary only the
+ * real server enforces — which is the failure the whole mock/HTTP seam exists to avoid.
+ */
+if (!/authority-required/.test(adapter)) {
+  problems.push(
+    'The mock referral adapter does not refuse a send with no lawful basis recorded. The server ' +
+      'refuses it inside its row lock; a more permissive mock hides that boundary (DL-81).',
+  );
 }
-notes.push('basis: required, explained, and recorded in the same act as the sending');
 
 /* ── 2. Every shared field states a need ─────────────────────────────────── */
 

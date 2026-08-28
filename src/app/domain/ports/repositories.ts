@@ -129,7 +129,11 @@ import type {
   ReferralSortField,
   ReferralStatus,
 } from '../referrals/referral';
-import type { DisclosurePlan, ReferralSummarySheet } from '../referrals/referral-disclosure';
+import type {
+  DisclosureBasis,
+  ReferralSummarySheet,
+  SharedField,
+} from '../referrals/referral-disclosure';
 import type {
   FieldVisit,
   FieldVisitDraft,
@@ -808,10 +812,13 @@ export const RELEASE_REPOSITORY = new InjectionToken<ReleaseRepository>(
  * **a referral summary leaves the building.** Once it is printed or sent, the
  * MSWDO no longer controls who reads it.
  *
- * So `send` takes a `DisclosurePlan` and refuses without one (`DL-81`): a
- * lawful basis, and every field beyond the minimum chosen individually with a
- * stated need. `summaryFor` composes the sheet from that plan rather than from
- * the whole record, so a screen cannot print a field nobody authorised.
+ * So the basis and the shared fields are **recorded as their own acts** before a referral can be
+ * sent (`DL-81`): a lawful basis, and every field beyond the minimum chosen individually with a
+ * stated need. `send` then takes no plan, because the server refuses the transition when the basis
+ * is absent — checked inside the row lock rather than in a validator.
+ *
+ * `summaryFor` composes the sheet from what was authorised rather than from the whole record, so a
+ * screen cannot print a field nobody chose.
  *
  * There is deliberately **no method that returns a client's full profile for a
  * referral**. The temptation would be to fetch it and let the template pick;
@@ -837,7 +844,41 @@ export interface ReferralRepository {
    * and the chosen fields are recorded in the same act as the sending, so there
    * is no window in which a referral is sendable without them.
    */
-  send(id: ReferralId, plan: DisclosurePlan): Observable<Referral>;
+  /**
+   * Records the lawful basis for disclosing, with the sentence that explains it.
+   *
+   * Its own act, because the API records it as one — and because that is where the guarantee
+   * actually lives. `send` used to take a whole `DisclosurePlan` so that this client could not
+   * send without one; the server checks it **inside the row lock**, before the transition, with
+   * its own note that *"a check that lives only in a request validator is a check the next write
+   * path will not have."*
+   *
+   * That is stronger than a parameter shape, and it is why `DL-81`'s doctrine survives while its
+   * mechanism changes: the window in which a sendable referral has no basis does not exist,
+   * because the server will not perform the transition.
+   */
+  recordDisclosureBasis(
+    id: ReferralId,
+    basis: DisclosureBasis,
+    note: string,
+  ): Observable<Referral>;
+
+  /**
+   * Adds one field to what the summary will carry, with the need that justifies it.
+   *
+   * One call per field on purpose (`DL-82`): every field beyond the minimum is chosen individually
+   * with a stated need, and a batch would let a screen submit six of them with one sentence
+   * covering all six.
+   */
+  shareField(id: ReferralId, field: SharedField, because: string): Observable<Referral>;
+
+  /**
+   * Sends it. **The one irreversible act** — once it has left the building nothing brings it back.
+   *
+   * Takes no plan, because by this point the basis and the fields are already recorded against the
+   * referral. The server refuses the transition if the basis is missing.
+   */
+  send(id: ReferralId): Observable<Referral>;
 
   /** The sheet that will be printed or transmitted, composed from the plan. */
   summaryFor(id: ReferralId): Observable<ReferralSummarySheet | null>;

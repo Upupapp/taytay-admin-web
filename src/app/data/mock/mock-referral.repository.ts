@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { throwError, type Observable } from 'rxjs';
 
 import {
+  asIsoDate,
   ACCESS_CONTEXT,
   DisclosurePlanInvalidError,
   PermissionDeniedError,
@@ -23,7 +24,6 @@ import {
   todayAsIsoDate,
   userHasPermission,
   type AuthenticatedUser,
-  type DisclosurePlan,
   type IsoDate,
   type Page,
   type PageRequest,
@@ -43,6 +43,8 @@ import {
   type ServiceProviderFilter,
   type ServiceProviderId,
   type StaffUserId,
+  type DisclosureBasis,
+  type SharedField,
 } from '@domain/index';
 
 import { denyUnless } from './mock-access';
@@ -205,7 +207,17 @@ export class MockReferralRepository implements ReferralRepository {
     return this.latency.respond(referral);
   }
 
-  send(id: ReferralId, plan: DisclosurePlan): Observable<Referral> {
+  /**
+   * Records the lawful basis. The referral becomes sendable only once this exists.
+   *
+   * The mock keeps a `DisclosurePlan` on the record because that is the shape the summary is
+   * composed from; the two acts build it up rather than submitting it whole.
+   */
+  recordDisclosureBasis(
+    id: ReferralId,
+    basis: DisclosureBasis,
+    note: string,
+  ): Observable<Referral> {
     const user = this.access.currentUser();
     const denied = denyUnless<Referral>(user, 'referral.manage');
     if (denied) {
@@ -217,6 +229,104 @@ export class MockReferralRepository implements ReferralRepository {
       return found.error;
     }
 
+    if (note.trim().length === 0) {
+      return throwError(() => new Error('A lawful basis needs the sentence that explains it.'));
+    }
+
+    const existing = found.referral.disclosure;
+
+    return this.latency.respond(
+      this.save(found.referral, {
+        disclosure: {
+          authority: {
+            basis,
+            note: note.trim(),
+            recordedBy: user?.id ?? asId<StaffUserId>('unknown'),
+            recordedOn: asIsoDate(new Date().toISOString().slice(0, 10)),
+          },
+          extraFields: existing?.extraFields ?? [],
+          attachments: existing?.attachments ?? [],
+        },
+      }),
+    );
+  }
+
+  shareField(id: ReferralId, field: SharedField, because: string): Observable<Referral> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<Referral>(user, 'referral.manage');
+    if (denied) {
+      return denied;
+    }
+
+    const found = this.locate<Referral>(id, 'referral.manage');
+    if ('error' in found) {
+      return found.error;
+    }
+
+    const plan = found.referral.disclosure;
+    if (plan === null) {
+      return throwError(
+        () => new Error('Record the lawful basis before choosing what to share.'),
+      );
+    }
+
+    if (because.trim().length === 0) {
+      return throwError(() => new Error('Every field beyond the minimum needs a stated need.'));
+    }
+
+    /*
+     * A field the sender could not themselves read must not be shared onward.
+     *
+     * Enforced here rather than trusted to the form: the composing screen shows only what the user
+     * may see, but the request is what actually arrives.
+     */
+    const client = this.residents.find(found.referral.residentId);
+    if (client === undefined) {
+      return throwError(() => new PermissionDeniedError('referral.manage'));
+    }
+    if (this.disclose(client, user).withheld.length > 0) {
+      return throwError(() => new PermissionDeniedError('referral.manage'));
+    }
+
+    return this.latency.respond(
+      this.save(found.referral, {
+        disclosure: {
+          ...plan,
+          extraFields: [
+            ...plan.extraFields.filter((entry) => entry.field !== field),
+            { field, because: because.trim() },
+          ],
+        },
+      }),
+    );
+  }
+
+  /**
+   * Sends it, and refuses without a lawful basis.
+   *
+   * The refusal is the mock's copy of the server's, which performs the same check **inside its row
+   * lock** before the transition. `DL-81`'s window does not exist because the transition will not
+   * happen, not because a method signature demanded a parameter.
+   */
+  send(id: ReferralId): Observable<Referral> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<Referral>(user, 'referral.manage');
+    if (denied) {
+      return denied;
+    }
+
+    const found = this.locate<Referral>(id, 'referral.manage');
+    if ('error' in found) {
+      return found.error;
+    }
+
+    const plan = found.referral.disclosure;
+    if (plan === null) {
+      return throwError(
+        () => new DisclosurePlanInvalidError(['authority-required']),
+      );
+    }
+
     const problems = disclosurePlanProblems(plan);
     if (problems.length > 0) {
       return throwError(() => new DisclosurePlanInvalidError(problems));
@@ -226,22 +336,9 @@ export class MockReferralRepository implements ReferralRepository {
       return throwError(() => new Error('That referral has already been sent.'));
     }
 
-    // A field the sender could not themselves read must not be shared onward.
-    // Enforced here rather than trusted to the form: the composing screen shows
-    // only what the user may see, but the request is what actually arrives.
-    const client = this.residents.find(found.referral.residentId);
-    if (client === undefined) {
-      return throwError(() => new PermissionDeniedError('referral.manage'));
-    }
-    const withheld = this.disclose(client, user).withheld;
-    if (withheld.length > 0 && plan.extraFields.length > 0) {
-      return throwError(() => new PermissionDeniedError('referral.manage'));
-    }
-
     return this.latency.respond(
       this.save(found.referral, {
         status: 'sent',
-        disclosure: plan,
         referredAt: asIsoDateTime(new Date()),
       }),
     );

@@ -115,6 +115,98 @@
         </section>
 
         <!-- The sheet itself, exactly as the receiving office sees it. -->
+        <!--
+          Composing and sending. Only while it is still a draft: once it has left the office there
+          is nothing here that could change what was sent.
+        -->
+        @if (canManage() && referral.status === 'draft') {
+          <section class="card referral__panel" aria-labelledby="send-heading">
+            <h2 class="referral__heading" id="send-heading">{{ copy.sendHeading }}</h2>
+
+            <label class="field" for="basis">
+              <span class="field__label">{{ copy.basisLabel }}</span>
+              <select id="basis" class="field__control" (change)="onBasis($event)">
+                @for (option of basisOptions; track option) {
+                  <option [value]="option" [selected]="option === basis()">
+                    {{ basisLabels[option] }}
+                  </option>
+                }
+              </select>
+              <span class="field__hint">{{ basisDescriptions[basis()] }}</span>
+            </label>
+
+            <label class="field" for="basis-note">
+              <span class="field__label">{{ copy.basisNoteLabel }}</span>
+              <input
+                id="basis-note"
+                class="field__control"
+                type="text"
+                [value]="basisNote()"
+                (input)="onBasisNote($event)"
+              />
+              <span class="field__hint">{{ copy.basisNoteHint }}</span>
+            </label>
+
+            <button type="button" class="btn" [disabled]="!canRecordBasis()" (click)="recordBasis()">
+              {{ copy.basisLabel }}
+            </button>
+
+            <h3 class="referral__subheading">{{ copy.shareHeading }}</h3>
+            <p class="referral__hint">{{ copy.shareMinimum }}</p>
+
+            <label class="field" for="share-field">
+              <span class="field__label">{{ copy.shareFieldLabel }}</span>
+              <select id="share-field" class="field__control" (change)="onShareField($event)">
+                @for (option of shareableFields; track option) {
+                  <option [value]="option" [selected]="option === shareField()">
+                    {{ fieldLabels[option] }}
+                  </option>
+                }
+              </select>
+              @if (needsCare(shareField())) {
+                <span class="field__hint field__hint--caution">{{ copy.shareCare }}</span>
+              }
+            </label>
+
+            <label class="field" for="share-because">
+              <span class="field__label">{{ copy.shareBecauseLabel }}</span>
+              <input
+                id="share-because"
+                class="field__control"
+                type="text"
+                [value]="shareBecause()"
+                (input)="onShareBecause($event)"
+              />
+            </label>
+
+            <button
+              type="button"
+              class="btn"
+              [disabled]="!canShareField()"
+              (click)="addSharedField()"
+            >
+              {{ copy.shareFieldLabel }}
+            </button>
+
+            <!--
+              The warning sits BEFORE the button, not as a confirmation after it.
+
+              Somebody deciding reads it; somebody who has decided dismisses it. The same reasoning
+              as DL-124 for publishing a post, and this act is less recoverable still.
+            -->
+            <p class="referral__warning" role="note">{{ copy.sendWarning }}</p>
+
+            <button
+              type="button"
+              class="btn btn--primary"
+              [disabled]="saving()"
+              (click)="send()"
+            >
+              {{ copy.sendAction }}
+            </button>
+          </section>
+        }
+
         <section class="card referral__panel referral__panel--wide" aria-labelledby="sheet-heading">
           <div class="sheet__header">
             <div>

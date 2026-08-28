@@ -46,6 +46,22 @@ export const REFERRALS_COPY = {
   },
 
   detail: {
+    sendHeading: 'Send this referral',
+    sendWarning:
+      'Once this is sent it has left the office. Nothing here can recall it, and the receiving organisation keeps whatever it was given.',
+    basisLabel: 'On what lawful basis?',
+    basisNoteLabel: 'What makes that true here?',
+    basisNoteHint: 'Recorded against your name with the basis. A reader six months from now sees this sentence, not the checkbox.',
+    basisSaved: 'The lawful basis was recorded.',
+    shareHeading: 'What may be shared beyond the minimum',
+    shareMinimum:
+      'The name, the reference and the reason always travel. Everything else is chosen one field at a time, with the need that justifies it.',
+    shareFieldLabel: 'Field',
+    shareBecauseLabel: 'Why does the receiving organisation need it?',
+    shareCare: 'This one needs particular thought before it leaves the office.',
+    fieldShared: 'That field was added to the summary.',
+    sendAction: 'Send referral',
+    sent: 'The referral was sent. It cannot be recalled.',
     back: 'Back to referrals',
     notFoundHeading: 'That referral is not available',
     notFoundMessage:

@@ -37,7 +37,6 @@ import {
   type IdentityResolutionDraft,
   type MergePreview,
   type ProgramEnrollment,
-  type DisclosurePlan,
   type IsoDate,
   type IsoDateTime,
   type ReferralDraft,
@@ -51,7 +50,9 @@ import {
   type ReleaseSortField,
   type ReleaseStatus,
   type AcknowledgementKind,
+  type DisclosureBasis,
   type ReleaseAcknowledgementDraft,
+  type SharedField,
   type VulnerabilitySector,
   type ReleaseBatch,
   type ReleaseBatchDraft,
@@ -1387,10 +1388,35 @@ export class HttpReferralRepository implements ReferralRepository {
     );
   }
 
-  send(id: ReferralId, plan: DisclosurePlan): Observable<Referral> {
-    return this.api.post<Referral, DisclosurePlan>(
+  recordDisclosureBasis(
+    id: ReferralId,
+    basis: DisclosureBasis,
+    note: string,
+  ): Observable<Referral> {
+    return this.api.post<Referral, { basis: DisclosureBasis; note: string }>(
+      `${API_ENDPOINTS.referrals}/${id}/authority`,
+      { basis, note },
+    );
+  }
+
+  shareField(id: ReferralId, field: SharedField, because: string): Observable<Referral> {
+    return this.api.post<Referral, { field: SharedField; because: string }>(
+      `${API_ENDPOINTS.referrals}/${id}/shared-fields`,
+      { field, because },
+    );
+  }
+
+  /**
+   * No body, because there is nothing left to say.
+   *
+   * This posted a whole `DisclosurePlan` to an endpoint that **accepts none** — the basis and the
+   * fields are recorded before this point, and the server checks the basis inside the row lock
+   * before performing the transition.
+   */
+  send(id: ReferralId): Observable<Referral> {
+    return this.api.post<Referral, Record<string, never>>(
       `${API_ENDPOINTS.referrals}/${id}/send`,
-      plan,
+      {},
     );
   }
 

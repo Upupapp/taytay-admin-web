@@ -32,6 +32,13 @@ import type { Referral } from './referral';
  */
 export type DisclosureBasis = 'client-consent' | 'statutory-mandate' | 'vital-interest';
 
+/** Every lawful basis, in the order a caseworker should consider them. */
+export const DISCLOSURE_BASES: readonly DisclosureBasis[] = [
+  'client-consent',
+  'statutory-mandate',
+  'vital-interest',
+];
+
 export const DISCLOSURE_BASIS_LABELS: Readonly<Record<DisclosureBasis, string>> = {
   'client-consent': 'The client agreed to the referral',
   'statutory-mandate': 'Required or authorised by law',
@@ -71,6 +78,17 @@ export type SharedField =
   | 'income'
   | 'vulnerability-sectors'
   | 'assistance-history';
+
+/** Every field that may be added beyond the minimum, each chosen individually (`DL-82`). */
+export const SHARED_FIELDS: readonly SharedField[] = [
+  'birth-date',
+  'address',
+  'contact-number',
+  'household-composition',
+  'income',
+  'vulnerability-sectors',
+  'assistance-history',
+];
 
 export const SHARED_FIELD_LABELS: Readonly<Record<SharedField, string>> = {
   'birth-date': 'Date of birth',
@@ -230,6 +248,14 @@ function valueFor(field: SharedField, client: ResidentView): string | null {
 /* ── Validation ───────────────────────────────────────────────────────────── */
 
 export type DisclosureProblem =
+  /**
+   * No lawful basis has been recorded at all.
+   *
+   * Distinct from a basis whose note is missing: one is a referral nobody has authorised, the
+   * other is one authorised without saying why. The first cannot be sent by anyone; the second is
+   * a sentence away.
+   */
+  | 'authority-required'
   | 'authority-note-required'
   | 'field-needs-a-reason'
   | 'attachment-needs-a-reason'
