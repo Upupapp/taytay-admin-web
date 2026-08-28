@@ -494,31 +494,42 @@ export class HttpNewsfeedRepository implements NewsfeedRepository {
     return this.api.optionalItem<Post>(`${API_ENDPOINTS.newsfeed}/${id}`);
   }
 
+  /** POST to create, PATCH to update. There is no `drafts` sub-resource; a draft is a status. */
   saveDraft(draft: PostDraft, id: PostId | null): Observable<Post> {
-    return this.api.post<Post, { draft: PostDraft; id: PostId | null }>(
-      `${API_ENDPOINTS.newsfeed}/drafts`,
-      { draft, id },
-    );
+    return id === null
+      ? this.api.post<Post, PostDraft>(API_ENDPOINTS.newsfeed, draft)
+      : this.api.patch<Post, PostDraft>(`${API_ENDPOINTS.newsfeed}/${id}`, draft);
   }
 
+  /*
+   * ── one transition endpoint, not a verb per act ────────────────────────────
+   *
+   * `publish`, `schedule` and `archive` were three invented routes. The API serves one
+   * `POST .../status` carrying the target, which is the same shape as every other lifecycle in
+   * this system — and the reason each of these screens *requires* now reaches the trail, which it
+   * would not have done had these been wired without it.
+   */
   publish(id: PostId, reason: string): Observable<Post> {
-    return this.api.post<Post, { reason: string }>(
-      `${API_ENDPOINTS.newsfeed}/${id}/publish`,
-      { reason },
-    );
+    return this.transition(id, 'published', reason);
   }
 
   schedule(id: PostId, at: IsoDateTime, reason: string): Observable<Post> {
-    return this.api.post<Post, { at: IsoDateTime; reason: string }>(
-      `${API_ENDPOINTS.newsfeed}/${id}/schedule`,
-      { at, reason },
-    );
+    return this.transition(id, 'scheduled', reason, at);
   }
 
   archive(id: PostId, reason: string): Observable<Post> {
-    return this.api.post<Post, { reason: string }>(
-      `${API_ENDPOINTS.newsfeed}/${id}/archive`,
-      { reason },
+    return this.transition(id, 'archived', reason);
+  }
+
+  private transition(
+    id: PostId,
+    status: 'published' | 'scheduled' | 'archived' | 'draft',
+    reason: string,
+    publishAt?: IsoDateTime,
+  ): Observable<Post> {
+    return this.api.post<Post, { status: string; reason: string; publish_at?: IsoDateTime }>(
+      `${API_ENDPOINTS.newsfeed}/${id}/status`,
+      publishAt === undefined ? { status, reason } : { status, reason, publish_at: publishAt },
     );
   }
 
@@ -529,18 +540,25 @@ export class HttpNewsfeedRepository implements NewsfeedRepository {
     );
   }
 
-  setCommentsEnabled(id: PostId, enabled: boolean, reason: string): Observable<Post> {
-    return this.api.post<Post, { enabled: boolean; reason: string }>(
-      `${API_ENDPOINTS.newsfeed}/${id}/comments-enabled`,
-      { enabled, reason },
+  /**
+   * A field on the post, not a status.
+   *
+   * `reason` has nowhere to go on a PATCH and is deliberately not smuggled into one: turning
+   * comments off is a setting, and the trail records the change of the field itself.
+   */
+  setCommentsEnabled(id: PostId, enabled: boolean, _reason: string): Observable<Post> {
+    return this.api.patch<Post, { comments_enabled: boolean }>(
+      `${API_ENDPOINTS.newsfeed}/${id}`,
+      { comments_enabled: enabled },
     );
   }
 
+  /** The moderation queue is one global collection, filtered by post. */
   comments(postId: PostId, filter: CommentFilter): Observable<readonly Comment[]> {
-    return this.api.collection<Comment>(
-      `${API_ENDPOINTS.newsfeed}/${postId}/comments`,
-      toParams(filter),
-    );
+    return this.api.collection<Comment>(API_ENDPOINTS.newsfeedComments, {
+      ...toParams(filter),
+      post: postId,
+    });
   }
 
   moderate(
@@ -548,9 +566,9 @@ export class HttpNewsfeedRepository implements NewsfeedRepository {
     action: ModerationAction,
     text: string,
   ): Observable<Comment> {
-    return this.api.post<Comment, { action: ModerationAction; text: string }>(
-      `${API_ENDPOINTS.newsfeed}/comments/${commentId}/moderate`,
-      { action, text },
+    return this.api.post<Comment, { moderation_state: ModerationAction; reason: string }>(
+      `${API_ENDPOINTS.newsfeedComments}/${commentId}/moderation`,
+      { moderation_state: action, reason: text },
     );
   }
 
