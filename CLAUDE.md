@@ -112,12 +112,12 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:governance`, `check:hardening`, `check:community`, `check:newsfeed` and
 `check:events`, `check:contract`, `check:contract-drift`, `check:consumer-contract`,
 `check:mapper-adoption`, `check:permission-parity`, `check:environments`,
-`check:bundle`, `check:routes` and `check:wire-adoption`. Each enforces a rule a
-comment could not, and each was validated against planted regressions. Do not
-weaken one to make a change pass.
+`check:bundle`, `check:routes`, `check:wire-adoption` and `check:port-adoption`.
+Each enforces a rule a comment could not, and each was validated against planted
+regressions. Do not weaken one to make a change pass.
 
-**Two of them are ratcheted baselines rather than pass/fail rules**, because they
-count a body of pre-existing debt too large to fail the build on:
+**Three of them are ratcheted baselines rather than pass/fail rules**, because
+they count a body of pre-existing debt too large to fail the build on:
 
 - `check:routes` compares every composed request path against the backend's own
   published route snapshot, vendored here with its commit and sha256. It found
@@ -129,9 +129,21 @@ count a body of pre-existing debt too large to fail the build on:
   API wants them flat, which is why the generic converter this file forbids could
   never bridge it.
 
-Both print their count on every run and **fail when the number grows**. A
-baseline is never an allow-list: nothing in either is acceptable, and gate line
-05/07 stays NO-GO until both reach zero.
+- `check:port-adoption` counts port methods **no screen calls**. A method can be
+  declared, implemented on both adapters, tested on both, and pass every other
+  gate while being reachable from nowhere — because none of the others runs it.
+  It found that a document cannot be uploaded, a payout session cannot be
+  created, and **a referral cannot be sent**. Its number is a *floor*: the search
+  is textual and under-reports, which is the safe direction for a ratchet.
+
+All three print their count on every run and **fail when the number grows**. A
+baseline is never an allow-list: nothing in any of them is acceptable, and gate
+line 05/07 stays NO-GO until they reach zero.
+
+The three answer different questions, and a green answer to one says nothing
+about the others. `check:routes` asks whether a request would reach a real
+endpoint at that verb; `check:wire-adoption` asks whether its body would be
+understood; `check:port-adoption` asks whether anybody makes the request at all.
 
 ---
 

@@ -253,3 +253,34 @@ is real but currently academic: **nothing sends a referral**, because nothing ca
 The caveat on the number: it is a textual search for `.method(` and could miss a dynamic dispatch.
 It is a measurement, not a gate. A gate would be the honest next step, on the pattern
 `check:wire-adoption` and `check:routes` already follow.
+
+### `check:port-adoption`, and the question the other two assume
+
+`check:routes` asks whether a request would reach a real endpoint at that verb. `check:wire-adoption`
+asks whether its body would be understood. **Both assume somebody makes the request.**
+
+This asks the prior question, and it is the one that had no gate. A port method can be declared,
+implemented on both adapters, covered by tests on both, and pass every check in this repository —
+while being reachable from no screen. Every check stays green, because none of them runs it.
+
+**25 of 149 port methods are in that state**, and the grouping is where the meaning is:
+
+| Port | Unreached | What that means |
+| --- | --- | --- |
+| `AssistanceRequestRepository` | 4 | a document cannot be uploaded or asked for |
+| `FamilyRepository` | 4 | relationships cannot be ended, family history is unread |
+| `ReferralRepository` | 4 | **a referral cannot be drafted or sent** |
+| `ReleaseRepository` | 3 | a payout session cannot be created |
+| `BeneficiaryRepository` | 3 | the duplicate and enrollment views are unbuilt |
+
+Four unreached methods on one port is a **missing screen**, where the same four scattered across a
+list read as four unrelated oversights. That is why the output groups them.
+
+**The number is a floor.** A call is found by searching for `.methodName(` in `features/`,
+`shared/` and `core/`, which is textual: a method named `list` or `remove` will match something
+eventually whether or not it is the port's. So the check can call a method adopted when it is not,
+and will never invent an orphan. For a ratchet that is the safe direction — one that cries wolf is
+one somebody turns off — but the real count is at least this.
+
+Making it exact needs a type-aware pass that resolves each receiver to its injected token, and a
+wrong precise answer would be worse than a plain search nobody mistakes for exact.
