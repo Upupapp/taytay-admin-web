@@ -103,6 +103,31 @@ export const RELEASES_COPY = {
     manifest: 'Open the payout list',
     print: 'Print',
 
+    openHeading: 'Open a payout session',
+    openHint:
+      'A date, a place and an officer. Releases are added to it afterwards, one at a time, so each family\u2019s scheduling is its own recorded act.',
+    nameLabel: 'What is this session called?',
+    nameHint: 'How the office will refer to it — "San Juan, second Saturday" rather than a code.',
+    venueLabel: 'Where is it being held?',
+    whenLabel: 'When',
+    membersLabel: 'Which releases are scheduled into it?',
+    membersHint:
+      'Only releases that are ready. A session opens whether or not any are chosen; you can add them later.',
+    openAction: 'Open the session',
+    opening: 'Opening…',
+    opened: 'The session is open.',
+    /**
+     * Named, not counted.
+     *
+     * "3 releases could not be added" tells a disbursing officer to check all of them. Naming which
+     * ones tells them who is not on the list — and on a payout day that is the difference between
+     * a family being expected and a family being turned away.
+     */
+    partiallyOpened: (added: number, total: number): string =>
+      `The session is open with ${added} of ${total} releases. The rest were not added — check the ` +
+      `list before the payout, because anybody missing from it will not be expected at the table.`,
+    notOpened: 'That session was NOT opened. Nothing was saved.',
+
     manifestHeading: 'Payout list',
     manifestHint: 'Take this to the table. Names and vouchers only — nothing else about anybody.',
     columnRow: '#',

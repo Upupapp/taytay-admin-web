@@ -323,3 +323,34 @@ send a caseworker to rescan a document the office would have taken.
 
 A failed upload says so plainly and never says "saved" (`DL-87`). A document the office believes it
 holds, and does not, is the failure this whole model exists to prevent.
+
+### A payout session can be opened
+
+`createBatch` was implemented on both adapters and called by no screen. The payout-session page
+listed sessions and printed their manifests; **nothing in the console could create one.**
+
+**The session is created, then each release is added as its own act.** The API takes the session
+alone and members through `POST admin/release-batches/{batch}/releases`, one at a time. That shape
+is right rather than merely imposed: a batch arriving with its membership baked in would make *"when
+did this family get scheduled"* unanswerable, because there would be no separate act to record.
+
+**A member that fails does not lose the session.** The chain stops and returns the batch as it
+stands, and the screen says *which* state it is in — `DL-90` already holds that a batch has no
+status of its own and what it amounts to is derived by counting its members, so a half-filled
+session is a countable, visible thing rather than an error.
+
+The message names the shortfall rather than counting it. *"3 releases could not be added"* tells a
+disbursing officer to check all of them; saying how many of how many, and warning that anybody
+missing will not be expected at the table, tells them what to do on the day.
+
+**Only releases that are ready are offered.** A session is a plan for a table on a day; offering one
+already paid, or one nobody has approved, would put a name on a payout list that should not be
+there.
+
+**The idempotency key is held on the component**, not made per attempt. A retry must carry the same
+key or the server treats it as a second, genuine session — which on a payout is a second table
+expecting the same families.
+
+The officer is whoever opens it. The API sets `opened_by` from the authenticated actor and ignores
+what a client sends, so the console agrees with the server rather than asserting something it could
+get wrong.

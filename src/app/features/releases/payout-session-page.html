@@ -2,6 +2,71 @@
   <a page-actions class="btn" routerLink="/releases">{{ copy.back }}</a>
 </app-page-header>
 
+<!--
+  Opening a session comes before the list of them.
+
+  This is the one act on the page; the list below is what it produces. A form under a list is one
+  somebody scrolls past on a page that already looks complete.
+-->
+<section class="card sessions__open" aria-labelledby="open-heading">
+  <h2 class="sessions__heading" id="open-heading">{{ copy.openHeading }}</h2>
+  <p class="sessions__hint">{{ copy.openHint }}</p>
+
+  <label class="field" for="session-title">
+    <span class="field__label">{{ copy.nameLabel }}</span>
+    <input
+      id="session-title"
+      class="field__control"
+      type="text"
+      [value]="draftTitle()"
+      (input)="onTitle($event)"
+    />
+    <span class="field__hint">{{ copy.nameHint }}</span>
+  </label>
+
+  <label class="field" for="session-venue">
+    <span class="field__label">{{ copy.venueLabel }}</span>
+    <input
+      id="session-venue"
+      class="field__control"
+      type="text"
+      [value]="draftVenue()"
+      (input)="onVenue($event)"
+    />
+  </label>
+
+  <label class="field" for="session-date">
+    <span class="field__label">{{ copy.whenLabel }}</span>
+    <input
+      id="session-date"
+      class="field__control"
+      type="date"
+      [value]="draftDate()"
+      (input)="onDate($event)"
+    />
+  </label>
+
+  <fieldset class="field">
+    <legend class="field__label">{{ copy.membersLabel }}</legend>
+    <p class="field__hint">{{ copy.membersHint }}</p>
+
+    @for (release of schedulable(); track release.id) {
+      <label class="check">
+        <input
+          type="checkbox"
+          [checked]="isMember(release.id)"
+          (change)="toggleMember(release.id, $event)"
+        />
+        <span>{{ release.referenceNumber }}</span>
+      </label>
+    }
+  </fieldset>
+
+  <button type="button" class="btn btn--primary" [disabled]="!canOpen()" (click)="open()">
+    {{ opening() ? copy.opening : copy.openAction }}
+  </button>
+</section>
+
 <div class="sessions">
   <app-async-content [state]="state()" [content]="sessionContent" [skeletonLines]="5">
     <ng-template #sessionContent>

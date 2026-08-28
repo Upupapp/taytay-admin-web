@@ -3,12 +3,15 @@ import { inject, Injectable } from '@angular/core';
 import {
   catchError,
   combineLatest,
+  concatMap,
   filter,
+  from,
   map,
   of,
   switchMap,
   tap,
   throwError,
+  toArray,
   type Observable,
 } from 'rxjs';
 
@@ -1229,12 +1232,47 @@ export class HttpReleaseRepository implements ReleaseRepository {
     return this.api.optionalItem<ReleaseBatch>(`${API_ENDPOINTS.releaseBatches}/${id}`);
   }
 
+  /**
+   * Opens a payout session, then adds each release to it as its own act.
+   *
+   * The API takes the session on its own and members through
+   * `POST admin/release-batches/{batch}/releases`, one at a time. That is the API's shape and it is
+   * the right one: a batch arriving with its membership baked in would make "when did this family
+   * get scheduled" unanswerable, because there would be no separate act to record.
+   *
+   * **The session survives a member that fails.** `concatMap` adds them in order and a failure
+   * stops the chain, returning the batch as it stands — so an officer sees a session holding the
+   * families that made it rather than losing the session entirely. `DL-90` already says a batch
+   * has no status of its own and what it amounts to is derived by counting its members; a
+   * half-filled session is a countable, visible state rather than an error.
+   *
+   * The idempotency key covers the session itself. Adding a member is naturally idempotent — the
+   * server sets `release_batch_id`, so a replay writes the same value.
+   */
   createBatch(draft: ReleaseBatchDraft, intent: WriteIntent): Observable<ReleaseBatch> {
-    return this.api.post<ReleaseBatch, ReturnType<typeof toWireReleaseBatch>>(
-      API_ENDPOINTS.releaseBatches,
-      toWireReleaseBatch(draft),
-      intent,
-    );
+    return this.api
+      .post<ReleaseBatch, ReturnType<typeof toWireReleaseBatch>>(
+        API_ENDPOINTS.releaseBatches,
+        toWireReleaseBatch(draft),
+        intent,
+      )
+      .pipe(
+        switchMap((batch) =>
+          draft.releaseIds.length === 0
+            ? of(batch)
+            : from(draft.releaseIds).pipe(
+                concatMap((releaseId) =>
+                  this.api.post<unknown, { release_id: ReleaseId }>(
+                    `${API_ENDPOINTS.releaseBatches}/${batch.id}/releases`,
+                    { release_id: releaseId },
+                  ),
+                ),
+                toArray(),
+                map(() => batch),
+                catchError(() => of(batch)),
+              ),
+        ),
+      );
   }
 
   manifestFor(id: ReleaseBatchId): Observable<ReleaseManifest | null> {
