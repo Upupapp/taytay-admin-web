@@ -206,6 +206,9 @@ import {
 
 import { ApiClient } from './api.client';
 import {
+  toWireEventDraft,
+  toWirePostDraft,
+  toWireReferralDraft,
   toWireReleaseBatch,
   toWireResidentDraft,
   toWireVisitOutcome,
@@ -593,8 +596,14 @@ export class HttpNewsfeedRepository implements NewsfeedRepository {
   /** POST to create, PATCH to update. There is no `drafts` sub-resource; a draft is a status. */
   saveDraft(draft: PostDraft, id: PostId | null): Observable<Post> {
     return id === null
-      ? this.api.post<Post, PostDraft>(API_ENDPOINTS.newsfeed, draft)
-      : this.api.patch<Post, PostDraft>(`${API_ENDPOINTS.newsfeed}/${id}`, draft);
+      ? this.api.post<Post, ReturnType<typeof toWirePostDraft>>(
+          API_ENDPOINTS.newsfeed,
+          toWirePostDraft(draft),
+        )
+      : this.api.patch<Post, ReturnType<typeof toWirePostDraft>>(
+          `${API_ENDPOINTS.newsfeed}/${id}`,
+          toWirePostDraft(draft),
+        );
   }
 
   /*
@@ -1264,7 +1273,10 @@ export class HttpReferralRepository implements ReferralRepository {
   }
 
   createDraft(draft: ReferralDraft): Observable<Referral> {
-    return this.api.post<Referral, ReferralDraft>(API_ENDPOINTS.referrals, draft);
+    return this.api.post<Referral, ReturnType<typeof toWireReferralDraft>>(
+      API_ENDPOINTS.referrals,
+      toWireReferralDraft(draft),
+    );
   }
 
   send(id: ReferralId, plan: DisclosurePlan): Observable<Referral> {
@@ -1777,8 +1789,14 @@ export class HttpEventRepository implements EventRepository {
 
   saveDraft(draft: EventDraft, id: LguEventId | null): Observable<LguEvent> {
     return id === null
-      ? this.api.post<LguEvent, EventDraft>(API_ENDPOINTS.events, draft)
-      : this.api.patch<LguEvent, EventDraft>(`${API_ENDPOINTS.events}/${id}`, draft);
+      ? this.api.post<LguEvent, ReturnType<typeof toWireEventDraft>>(
+          API_ENDPOINTS.events,
+          toWireEventDraft(draft),
+        )
+      : this.api.patch<LguEvent, ReturnType<typeof toWireEventDraft>>(
+          `${API_ENDPOINTS.events}/${id}`,
+          toWireEventDraft(draft),
+        );
   }
 
   /*

@@ -28,7 +28,14 @@
  * shape here was read off the controller's `validate()` call.
  */
 
-import type { ResidentDraft, ReleaseBatchDraft, VisitOutcomeDraft } from '@domain/index';
+import type {
+  EventDraft,
+  PostDraft,
+  ReferralDraft,
+  ReleaseBatchDraft,
+  ResidentDraft,
+  VisitOutcomeDraft,
+} from '@domain/index';
 
 /**
  * A payout session: a name, a date, a venue (`DL-90`).
@@ -143,3 +150,159 @@ export function toWireResidentDraft(draft: ResidentDraft): {
     email: draft.contact.email,
   };
 }
+
+/**
+ * A referral out of the office.
+ *
+ * The one draft in this file whose shape nearly matches the endpoint, so what is worth recording is
+ * the two fields that do **not** travel.
+ *
+ * **`followUpOn` has no counterpart on create.** The endpoint takes it on the PATCH instead, which
+ * is where `reschedule` sends it. Dropped rather than sent hopefully.
+ *
+ * **`requestId` has no counterpart either.** The API links a referral to a `case_id` and knows
+ * nothing about the assistance request behind it, which is the same case/request distinction
+ * `DL-52` draws — one is the office's continuing involvement, the other one intervention inside it.
+ */
+export function toWireReferralDraft(draft: ReferralDraft): {
+  resident_id: string;
+  case_id: string | null;
+  provider_id: string | null;
+  destination_name: string;
+  destination_type: string;
+  destination_contact: string | null;
+  urgency: string;
+  service_requested: string;
+  reason: string;
+} {
+  return {
+    resident_id: draft.residentId,
+    case_id: draft.caseId,
+    provider_id: draft.providerId,
+    destination_name: draft.destinationName,
+    // The console's `destination` is the KIND of organisation; the API calls it the type.
+    destination_type: draft.destination,
+    destination_contact: draft.destinationContact,
+    urgency: draft.urgency,
+    service_requested: draft.serviceRequested,
+    reason: draft.reason,
+  };
+}
+
+/**
+ * A newsfeed post, on create or update.
+ *
+ * ## Three fields that are not part of this payload, and none of them by accident
+ *
+ * **`image`** is uploaded to `POST admin/newsfeed/{post}/media` after the post exists — publication
+ * is the only route to a public object (ADR 0033 §3), and the server re-encodes a rendition rather
+ * than moving the upload. A URL in this payload would be asking the server to trust a client's link.
+ *
+ * **`scheduledFor`** travels on the status transition, not here. Scheduling is a lifecycle move
+ * with a target state, and putting a date in the draft would let a post acquire a publish time
+ * without ever passing through the transition that checks it is in the future.
+ *
+ * **`linkUrl`** has no counterpart at all. Recorded as a gap rather than serialised.
+ *
+ * ## Audience
+ *
+ * `all-residents` is the API's `municipality`; a targeted post is `barangay` plus one id. The
+ * console models a **list** of barangays and the API takes one, so a post aimed at several is
+ * currently unrepresentable — recorded here rather than silently sending the first, which would
+ * publish to one barangay while the composer showed three.
+ */
+export function toWirePostDraft(draft: PostDraft): {
+  headline: string | null;
+  body: string;
+  category: string;
+  audience: 'municipality' | 'barangay';
+  comments_enabled: boolean;
+} {
+  return {
+    headline: draft.headline,
+    body: draft.body,
+    category: draft.category,
+    audience: draft.audience.scope === 'all-residents' ? 'municipality' : 'barangay',
+    comments_enabled: draft.commentsEnabled,
+  };
+}
+
+/**
+ * An event, with its venue, contact and registration policy flattened.
+ *
+ * Three nested value objects become fourteen flat fields. `EventVenue.barangayId` and
+ * `PostDraft`'s audience list share the same problem — the console holds a barangay identifier the
+ * event endpoint has no field for — so it is dropped rather than guessed at.
+ *
+ * **`reminders` has no counterpart**, and neither does the image: a cover is referenced by
+ * `cover_file_id`, an identifier produced by an upload this draft has not performed. Sending a URL
+ * where the server expects a file id would fail validation, and sending nothing is honest.
+ *
+ * `startsAt` and `endsAt` are required by the endpoint and nullable here, because the composer lets
+ * somebody save a half-written event. The caller checks before submitting; this mapper does not
+ * invent a date, because an event with a made-up start time is worse than one that fails to save.
+ */
+export function toWireEventDraft(draft: EventDraft): {
+  title: string;
+  summary: string;
+  description: string;
+  category: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  venue_name: string;
+  venue_address: string;
+  map_url: string | null;
+  contact_office: string | null;
+  contact_person: string | null;
+  contact_number: string | null;
+  registration_required: boolean;
+  registration_opens_at: string | null;
+  registration_closes_at: string | null;
+  capacity: number | null;
+  waitlist_enabled: boolean;
+} {
+  return {
+    title: draft.title,
+    summary: draft.summary,
+    // The console calls the long text `details`; the API calls it the description.
+    description: draft.details,
+    category: draft.category,
+    starts_at: draft.startsAt,
+    ends_at: draft.endsAt,
+    venue_name: draft.venue.name,
+    venue_address: draft.venue.address,
+    map_url: draft.venue.mapUrl,
+    contact_office: draft.contact.office,
+    contact_person: draft.contact.name,
+    contact_number: draft.contact.phone,
+    registration_required: draft.registration.isRequired,
+    registration_opens_at: draft.registration.opensAt,
+    registration_closes_at: draft.registration.closesAt,
+    capacity: draft.registration.capacity,
+    waitlist_enabled: draft.registration.waitlistEnabled,
+  };
+}
+
+/*
+ * ── `IntakeDraft` has no mapper here, deliberately ──────────────────────────────────────
+ *
+ * Two things stop it, and neither is a naming difference a mapper could absorb.
+ *
+ * **`category` is required by the endpoint and the draft has no field for it.** It is what decides
+ * the `CaseType` — medical, educational, relief, livelihood — and an unrecognised value falls
+ * through to generic assistance. The console holds a `programId`, and the category lives on the
+ * *programme*, which this mapper cannot reach without a lookup. Defaulting it would classify every
+ * walk-in as generic assistance: a silent misclassification of a family's situation, on the record,
+ * from the first screen.
+ *
+ * **`channel` and `source` are different vocabularies.** The console offers `walk-in`,
+ * `barangay-referral`, `encoded` and `online`; the endpoint accepts `walk-in`,
+ * `barangay-referral` and `legacy-import`. Two console values have no counterpart and would be
+ * refused; the third API value has no console equivalent.
+ *
+ * `requestedAmount`, `referredBy` and the requirement entries have no counterpart at all.
+ *
+ * So the intake write stays counted by `check:wire-adoption` rather than mapped. It needs a
+ * decision about where the category comes from — the programme, or a field the intake form starts
+ * asking for — and that is a question about what the office is recording, not about field names.
+ */

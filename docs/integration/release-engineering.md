@@ -120,3 +120,25 @@ which a sendable referral has none"* — and `ReferralRepository.send` takes the
 parameter for exactly that reason. Across three separate calls that window exists. Either the API
 needs to accept the plan on `send`, or `DL-81` needs superseding with the weaker guarantee the
 sequence can actually offer. **It is an open decision, not a wiring detail.**
+
+### The intake write, and why it has no mapper
+
+`IntakeDraft` is the one draft in the console that cannot be mapped as a naming exercise, and both
+reasons are worth stating because neither is a field name.
+
+**`category` is required by `POST admin/assistance-intakes` and the draft has no field for it.** It
+decides the `CaseType` — medical, educational, relief, livelihood — and an unrecognised value falls
+through to generic assistance. The console holds a `programId`; the category lives on the
+*programme*, which the mapper cannot reach without a lookup.
+
+Defaulting it would classify **every walk-in as generic assistance**: a silent misclassification of
+a family's situation, on the record, from the first screen. So nothing is sent.
+
+**`channel` and `source` are different vocabularies.** The console offers `walk-in`,
+`barangay-referral`, `encoded` and `online`; the endpoint accepts `walk-in`, `barangay-referral`
+and `legacy-import`. Two console values would be refused outright; one API value has no console
+equivalent. `requestedAmount`, `referredBy` and the requirement entries have no counterpart at all.
+
+It stays counted by `check:wire-adoption`. Closing it needs a decision about where the intake
+category comes from — the programme, or a question the intake form starts asking — and that is a
+question about what the office is recording, not about field names.

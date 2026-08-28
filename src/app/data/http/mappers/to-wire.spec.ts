@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { asId, asIsoDate, centavos } from '@domain/index';
+import { asId, asIsoDate, asIsoDateTime, centavos } from '@domain/index';
 import type {
+  AssistanceRequestId,
   BarangayId,
+  PostDraft,
+  ResidentId,
   ReleaseBatchDraft,
   ReleaseId,
   ResidentDraft,
@@ -10,7 +13,14 @@ import type {
   VisitOutcomeDraft,
 } from '@domain/index';
 
-import { toWireReleaseBatch, toWireResidentDraft, toWireVisitOutcome } from './to-wire';
+import {
+  toWireEventDraft,
+  toWirePostDraft,
+  toWireReferralDraft,
+  toWireReleaseBatch,
+  toWireResidentDraft,
+  toWireVisitOutcome,
+} from './to-wire';
 
 /**
  * These assert what reaches the wire, which is the thing nothing else in this repository checks.
@@ -187,6 +197,150 @@ describe('outbound mappers', () => {
     it('leaves nothing nested', () => {
       for (const value of Object.values(toWireResidentDraft(draft))) {
         expect(typeof value === 'object' && value !== null).toBe(false);
+      }
+    });
+  });
+
+  describe('toWireReferralDraft', () => {
+    it('drops the two fields the create endpoint does not take', () => {
+      const wire = toWireReferralDraft({
+        residentId: asId<ResidentId>('res-1'),
+        requestId: asId<AssistanceRequestId>('req-1'),
+        caseId: null,
+        providerId: null,
+        destination: 'hospital-msw',
+        destinationName: 'Taytay District Hospital MSW',
+        destinationContact: '8-555-0101',
+        urgency: 'priority',
+        serviceRequested: 'Medical social work assessment',
+        reason: 'Admitted 3 September; family cannot meet the deposit.',
+        followUpOn: asIsoDate('2026-09-10'),
+      }) as Record<string, unknown>;
+
+      // `followUpOn` belongs on the PATCH; `requestId` has no counterpart at all.
+      expect(wire['follow_up_on']).toBeUndefined();
+      expect(wire['request_id']).toBeUndefined();
+      expect(wire['destination_type']).toBe('hospital-msw');
+      expect(wire['service_requested']).toBe('Medical social work assessment');
+    });
+  });
+
+  describe('toWirePostDraft', () => {
+    const base: Omit<PostDraft, 'audience'> = {
+      headline: 'Relief distribution, Saturday',
+      body: 'Distribution begins at 8am at the covered court.',
+      category: 'public-advisory' as const,
+      image: null,
+      linkUrl: null,
+      commentsEnabled: true,
+      scheduledFor: null,
+    };
+
+    it('translates the audience scope to the API vocabulary', () => {
+      expect(
+        toWirePostDraft({ ...base, audience: { scope: 'all-residents', barangayIds: [] } }).audience,
+      ).toBe('municipality');
+
+      expect(
+        toWirePostDraft({
+          ...base,
+          audience: { scope: 'selected-barangays', barangayIds: [asId<BarangayId>('brgy-muzon')] },
+        }).audience,
+      ).toBe('barangay');
+    });
+
+    /**
+     * Publication is the only route to a public object (ADR 0033 §3), and a schedule is a
+     * lifecycle move rather than a field. Putting either in this payload would let a post acquire
+     * a publish time, or a public image, without passing the step that checks it.
+     */
+    it('carries neither the image nor the schedule', () => {
+      const wire = toWirePostDraft({
+        ...base,
+        image: { url: 'https://example.test/a.jpg', altText: 'Residents queueing' },
+        linkUrl: 'https://example.test/notice',
+        scheduledFor: asIsoDateTime('2026-09-05T08:00:00Z'),
+        audience: { scope: 'all-residents', barangayIds: [] },
+      }) as Record<string, unknown>;
+
+      expect(Object.keys(wire).sort()).toEqual([
+        'audience',
+        'body',
+        'category',
+        'comments_enabled',
+        'headline',
+      ]);
+    });
+  });
+
+  describe('toWireEventDraft', () => {
+    it('flattens venue, contact and registration into the endpoint fields', () => {
+      const wire = toWireEventDraft({
+        title: 'Feeding programme',
+        summary: 'Weekly feeding for under-fives.',
+        details: 'Held every Saturday at the covered court.',
+        category: 'feeding-programme',
+        image: null,
+        startsAt: asIsoDateTime('2026-09-05T00:00:00Z'),
+        endsAt: asIsoDateTime('2026-09-05T04:00:00Z'),
+        venue: {
+          name: 'Barangay San Juan covered court',
+          address: 'Rizal Street',
+          mapUrl: null,
+          barangayId: asId<BarangayId>('brgy-san-juan'),
+        },
+        contact: { name: 'Ana Cruz', office: 'MSWDO', phone: '8-555-0199' },
+        registration: {
+          isRequired: true,
+          opensAt: asIsoDateTime('2026-08-30T00:00:00Z'),
+          closesAt: asIsoDateTime('2026-09-04T00:00:00Z'),
+          capacity: 60,
+          waitlistEnabled: true,
+          participationNote: null,
+        },
+        reminders: 'Bring the child health card.',
+      }) as Record<string, unknown>;
+
+      expect(wire['venue_name']).toBe('Barangay San Juan covered court');
+      expect(wire['contact_person']).toBe('Ana Cruz');
+      expect(wire['contact_office']).toBe('MSWDO');
+      expect(wire['capacity']).toBe(60);
+      expect(wire['waitlist_enabled']).toBe(true);
+      // `details` is the console's word; the endpoint calls it the description.
+      expect(wire['description']).toBe('Held every Saturday at the covered court.');
+    });
+
+    /**
+     * The barangay, the reminders and the cover image have no field on this endpoint.
+     *
+     * A cover is referenced by `cover_file_id` — an identifier produced by an upload this draft
+     * has not performed — so sending a URL would fail validation, and guessing an id would be
+     * worse.
+     */
+    it('sends nothing it cannot name honestly', () => {
+      const wire = toWireEventDraft({
+        title: 'x',
+        summary: '',
+        details: 'y',
+        category: 'feeding-programme',
+        image: { url: 'https://example.test/c.jpg', altText: 'Cover' },
+        startsAt: null,
+        endsAt: null,
+        venue: { name: 'v', address: 'a', mapUrl: null, barangayId: asId<BarangayId>('brgy-muzon') },
+        contact: { name: 'n', office: 'o', phone: null },
+        registration: {
+          isRequired: false,
+          opensAt: null,
+          closesAt: null,
+          capacity: null,
+          waitlistEnabled: false,
+          participationNote: null,
+        },
+        reminders: 'bring id',
+      }) as Record<string, unknown>;
+
+      for (const absent of ['cover_file_id', 'cover_alt_text', 'image', 'reminders', 'barangay_id', 'venue_barangay_id']) {
+        expect(wire[absent]).toBeUndefined();
       }
     });
   });
