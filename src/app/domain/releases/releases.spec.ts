@@ -44,6 +44,7 @@ function release(overrides: Partial<Release> = {}): Release {
     inKindDescription: null,
     fundingSourceLabel: 'Municipal social welfare fund',
     approvingReference: 'MSWDO-APR-2026-0311',
+    approvedBy: HEAD,
     batchId: null,
     scheduledFor: asIsoDate('2026-08-10'),
     releasedAt: null,

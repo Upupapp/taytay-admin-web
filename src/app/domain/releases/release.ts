@@ -208,6 +208,14 @@ export interface Release {
   readonly fundingSourceLabel: string | null;
   /** The approval this release rests on — a document reference, not a link. */
   readonly approvingReference: string | null;
+  /**
+   * Who approved the request behind this release, snapshotted when it was created.
+   *
+   * Deliberately not read through to the case at release time: a later reassignment or a second
+   * approval must not rewrite who authorised **this** payment. It is what `isSelfRelease` compares
+   * against, so `DL-91` can warn before the money moves rather than after.
+   */
+  readonly approvedBy: StaffUserId | null;
   readonly batchId: ReleaseBatchId | null;
   readonly scheduledFor: IsoDate | null;
   readonly releasedAt: IsoDateTime | null;

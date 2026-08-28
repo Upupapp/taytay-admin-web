@@ -40,6 +40,7 @@ import {
   type DeferralReason,
   type ReleaseSortField,
   type ReleaseStatus,
+  type AcknowledgementKind,
   type ReleaseAcknowledgementDraft,
   type ReleaseBatch,
   type ReleaseBatchDraft,
@@ -940,15 +941,24 @@ export class HttpReleaseRepository implements ReleaseRepository {
     return this.api.collection<Release>(API_ENDPOINTS.releases, { requestId: id });
   }
 
+  /** A filter on the collection, not a resource of its own. */
   queue(filter: ReleaseFilter): Observable<readonly Release[]> {
-    return this.api.collection<Release>(
-      `${API_ENDPOINTS.releases}/queue`,
-      toParams(filter),
-    );
+    return this.api.collection<Release>(API_ENDPOINTS.releases, toParams(filter));
   }
 
+  /**
+   * Read off the release itself, because there is no approver endpoint and there should not be.
+   *
+   * This asked for `/{id}/approver`, which 404s. The API snapshots `approved_by` onto the release
+   * at creation — deliberately not read through to the case at release time, so a later
+   * reassignment cannot rewrite who authorised this specific payment (ADR 0023 §3). That makes the
+   * approver a **field of the record**, and a second endpoint returning it would be a second
+   * answer that could disagree with the first.
+   *
+   * `DL-91` needs it to warn before a self-release, and one read is enough.
+   */
   approverFor(id: ReleaseId): Observable<StaffUserId | null> {
-    return this.api.optionalItem<StaffUserId>(`${API_ENDPOINTS.releases}/${id}/approver`);
+    return this.getById(id).pipe(map((release) => release?.approvedBy ?? null));
   }
 
   listBatches(): Observable<readonly ReleaseBatch[]> {
@@ -981,12 +991,19 @@ export class HttpReleaseRepository implements ReleaseRepository {
     remarks: string | null,
     intent: WriteIntent,
   ): Observable<Release> {
+    /*
+     * `/confirmation` IS THE MONEY WRITE — this posted to `/release`, which does not exist.
+     *
+     * The endpoint carries the segregation-of-duties check, the row lock and the idempotency
+     * contract together, which is why the API refuses to reach `released` through the generic
+     * status route at all.
+     */
     return this.api.post<
       Release,
-      { instrumentReference: string | null; remarks: string | null }
+      { instrument_reference: string | null; remarks: string | null }
     >(
-      `${API_ENDPOINTS.releases}/${id}/release`,
-      { instrumentReference, remarks },
+      `${API_ENDPOINTS.releases}/${id}/confirmation`,
+      { instrument_reference: instrumentReference, remarks },
       intent,
     );
   }
@@ -996,9 +1013,41 @@ export class HttpReleaseRepository implements ReleaseRepository {
     acknowledgement: ReleaseAcknowledgementDraft,
     intent: WriteIntent,
   ): Observable<Release> {
-    return this.api.post<Release, ReleaseAcknowledgementDraft>(
-      `${API_ENDPOINTS.releases}/${id}/acknowledgement`,
-      acknowledgement,
+    /*
+     * The receipt is the move to `completed`, and the two vocabularies do not line up.
+     *
+     * The console's `kind` mixes **how** the receipt was evidenced with **who** gave it —
+     * `representative` is a relationship, not a method. The API keeps those apart, which is the
+     * better model, so the mapping splits them: a representative's collection is recorded as
+     * witnessed, with the authority they presented in `acknowledged_relationship`.
+     *
+     * Lossy in one direction and recorded as such: a representative who signed is stored as
+     * witnessed rather than signed. The console cannot currently express both, and inventing a
+     * method the clerk did not choose would be worse than a coarser true one.
+     */
+    const method: Readonly<Record<AcknowledgementKind, string>> = {
+      signature: 'signature',
+      thumbprint: 'thumbmark',
+      digital: 'digital-confirmation',
+      representative: 'witnessed',
+    };
+
+    return this.api.post<
+      Release,
+      {
+        status: 'completed';
+        acknowledged_by_name: string | null;
+        acknowledged_relationship: string | null;
+        acknowledgement_method: string;
+      }
+    >(
+      `${API_ENDPOINTS.releases}/${id}/status`,
+      {
+        status: 'completed',
+        acknowledged_by_name: acknowledgement.collectedBy,
+        acknowledged_relationship: acknowledgement.authority,
+        acknowledgement_method: method[acknowledgement.kind],
+      },
       intent,
     );
   }
@@ -1009,9 +1058,16 @@ export class HttpReleaseRepository implements ReleaseRepository {
     remarks: string,
     intent: WriteIntent,
   ): Observable<Release> {
-    return this.api.post<Release, { reason: DeferralReason; remarks: string }>(
-      `${API_ENDPOINTS.releases}/${id}/defer`,
-      { reason, remarks },
+    /*
+     * Deferral is a status, and the reason is one string on the wire.
+     *
+     * `DL-94` still holds where it matters: every `DeferralReason` the console offers is the
+     * office's own failing, and non-attendance is `unclaimed`, which maps to the API's `failed`.
+     * Collapsing the code and the remarks into one sentence loses no distinction the server draws.
+     */
+    return this.api.post<Release, { status: 'deferred'; reason: string }>(
+      `${API_ENDPOINTS.releases}/${id}/status`,
+      { status: 'deferred', reason: `${reason}: ${remarks}` },
       intent,
     );
   }
