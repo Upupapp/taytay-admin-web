@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify": "npm run lint && npm run typecheck && npm run check:environments && npm run check:headers && npm run check:deps && npm run check:contract && npm run check:contract-drift && npm run check:routes && npm run check:consumer-contract && npm run check:mapper-adoption && npm run check:permission-parity && npm run check:auth && npm run check:brand && npm run check:shell && npm run check:access && npm run check:vulnerability && npm run check:case-audit && npm run check:intake && npm run check:programs && npm run check:beneficiary && npm run check:documents && npm run check:documents-transport && npm run check:referrals && npm run check:visits && npm run check:releases && npm run check:money && npm run check:work && npm run check:reports && npm run check:search && npm run check:governance && npm run check:hardening && npm run check:contrast && npm run check:community && npm run check:newsfeed && npm run check:events && npm test && npm run build && npm run check:bundle",
+    "verify": "npm run lint && npm run typecheck && npm run check:environments && npm run check:headers && npm run check:deps && npm run check:contract && npm run check:contract-drift && npm run check:routes && npm run check:wire-adoption && npm run check:consumer-contract && npm run check:mapper-adoption && npm run check:permission-parity && npm run check:auth && npm run check:brand && npm run check:shell && npm run check:access && npm run check:vulnerability && npm run check:case-audit && npm run check:intake && npm run check:programs && npm run check:beneficiary && npm run check:documents && npm run check:documents-transport && npm run check:referrals && npm run check:visits && npm run check:releases && npm run check:money && npm run check:work && npm run check:reports && npm run check:search && npm run check:governance && npm run check:hardening && npm run check:contrast && npm run check:community && npm run check:newsfeed && npm run check:events && npm test && npm run build && npm run check:bundle",
     "check:brand": "node tools/check-brand-assets.mjs",
     "check:shell": "node tools/check-shell-a11y.mjs",
     "check:access": "node tools/check-access.mjs",
@@ -46,7 +46,8 @@
     "check:headers": "node tools/check-headers.mjs",
     "check:deps": "npm audit --omit=dev --audit-level=high",
     "check:contrast": "node tools/check-contrast.mjs",
-    "check:routes": "node tools/check-routes.mjs"
+    "check:routes": "node tools/check-routes.mjs",
+    "check:wire-adoption": "node tools/check-wire-adoption.mjs"
   },
   "private": true,
   "packageManager": "npm@11.12.1",

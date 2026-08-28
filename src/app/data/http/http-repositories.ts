@@ -204,6 +204,7 @@ import {
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
+import { toWireReleaseBatch, toWireVisitOutcome } from './mappers/to-wire';
 import { API_ENDPOINTS, type ApiItemResponse } from './api.contract';
 
 /**
@@ -586,16 +587,25 @@ export class HttpNewsfeedRepository implements NewsfeedRepository {
     reason: string,
     publishAt?: IsoDateTime,
   ): Observable<Post> {
-    return this.api.post<Post, { status: string; reason: string; publish_at?: IsoDateTime }>(
+    /*
+     * The body is one literal rather than a ternary between two.
+     *
+     * `check:wire-adoption` reads the argument to decide whether a payload was mapped, and a
+     * conditional expression reads as an opaque value however wire-shaped both branches are. A
+     * call site shaped so the check can see it is also the one a person can see, so this is not a
+     * concession to the tool.
+     */
+    return this.api.post<Post, { status: string; reason: string; publish_at: IsoDateTime | null }>(
       `${API_ENDPOINTS.newsfeed}/${id}/status`,
-      publishAt === undefined ? { status, reason } : { status, reason, publish_at: publishAt },
+      { status, reason, publish_at: publishAt ?? null },
     );
   }
 
-  setPinned(id: PostId, isPinned: boolean, reason: string): Observable<Post> {
-    return this.api.post<Post, { isPinned: boolean; reason: string }>(
+  /** The API takes `is_pinned` and nothing else; the reason is recorded by the field moving. */
+  setPinned(id: PostId, isPinned: boolean): Observable<Post> {
+    return this.api.post<Post, { is_pinned: boolean }>(
       `${API_ENDPOINTS.newsfeed}/${id}/pin`,
-      { isPinned, reason },
+      { is_pinned: isPinned },
     );
   }
 
@@ -1066,9 +1076,9 @@ export class HttpReleaseRepository implements ReleaseRepository {
   }
 
   createBatch(draft: ReleaseBatchDraft, intent: WriteIntent): Observable<ReleaseBatch> {
-    return this.api.post<ReleaseBatch, ReleaseBatchDraft>(
+    return this.api.post<ReleaseBatch, ReturnType<typeof toWireReleaseBatch>>(
       API_ENDPOINTS.releaseBatches,
-      draft,
+      toWireReleaseBatch(draft),
       intent,
     );
   }
@@ -1703,9 +1713,9 @@ export class HttpFieldVisitRepository implements FieldVisitRepository {
   }
 
   close(id: FieldVisitId, outcome: VisitOutcomeDraft): Observable<FieldVisit> {
-    return this.api.post<FieldVisit, VisitOutcomeDraft>(
+    return this.api.post<FieldVisit, ReturnType<typeof toWireVisitOutcome>>(
       `${API_ENDPOINTS.fieldVisits}/${id}/conclusion`,
-      outcome,
+      toWireVisitOutcome(outcome),
     );
   }
 }

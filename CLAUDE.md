@@ -111,10 +111,27 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:releases`, `check:money`, `check:work`, `check:reports`, `check:search` and
 `check:governance`, `check:hardening`, `check:community`, `check:newsfeed` and
 `check:events`, `check:contract`, `check:contract-drift`, `check:consumer-contract`,
-`check:mapper-adoption`, `check:permission-parity`, `check:environments` and
-`check:bundle`. Each enforces a rule a comment
-could not, and each was validated against planted regressions. Do not weaken one
-to make a change pass.
+`check:mapper-adoption`, `check:permission-parity`, `check:environments`,
+`check:bundle`, `check:routes` and `check:wire-adoption`. Each enforces a rule a
+comment could not, and each was validated against planted regressions. Do not
+weaken one to make a change pass.
+
+**Two of them are ratcheted baselines rather than pass/fail rules**, because they
+count a body of pre-existing debt too large to fail the build on:
+
+- `check:routes` compares every composed request path against the backend's own
+  published route snapshot, vendored here with its commit and sha256. It found
+  61 paths that 404 — including, at the time, every money write.
+- `check:wire-adoption` counts write bodies sent **without an explicit
+  `toWire…` mapper**. The API validates `snake_case` and this console posts
+  camelCase domain objects, so each is a 422 nobody has ever seen. It is not a
+  casing problem: `ResidentDraft` nests `name`, `address` and `contact` where the
+  API wants them flat, which is why the generic converter this file forbids could
+  never bridge it.
+
+Both print their count on every run and **fail when the number grows**. A
+baseline is never an allow-list: nothing in either is acceptable, and gate line
+05/07 stays NO-GO until both reach zero.
 
 ---
 
