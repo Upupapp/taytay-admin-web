@@ -602,10 +602,12 @@ export class HttpNewsfeedRepository implements NewsfeedRepository {
   /**
    * A field on the post, not a status.
    *
-   * `reason` has nowhere to go on a PATCH and is deliberately not smuggled into one: turning
-   * comments off is a setting, and the trail records the change of the field itself.
+   * The port's `reason` is deliberately **not accepted here**. Turning comments off is a setting,
+   * the PATCH has no field for it, and the trail records the field that moved. An implementation
+   * may take fewer parameters than its interface, which says that more honestly than a parameter
+   * named to look ignored.
    */
-  setCommentsEnabled(id: PostId, enabled: boolean, _reason: string): Observable<Post> {
+  setCommentsEnabled(id: PostId, enabled: boolean): Observable<Post> {
     return this.api.patch<Post, { comments_enabled: boolean }>(
       `${API_ENDPOINTS.newsfeed}/${id}`,
       { comments_enabled: enabled },
@@ -1261,10 +1263,11 @@ export class HttpReferralRepository implements ReferralRepository {
   /**
    * The follow-up date is a field, not a route.
    *
-   * `reason` has nowhere to go on the PATCH and is deliberately not smuggled into another field —
-   * rescheduling a follow-up is a change of date, and the trail records the field that moved.
+   * The port's `reason` is deliberately **not accepted here**, and specifically not written to the
+   * PATCH's own `reason` field — that one is why the *client* is being referred, and overwriting it
+   * with why a follow-up moved would corrupt the referral itself.
    */
-  reschedule(id: ReferralId, followUpOn: IsoDate, _reason: string): Observable<Referral> {
+  reschedule(id: ReferralId, followUpOn: IsoDate): Observable<Referral> {
     return this.api.patch<Referral, { follow_up_on: IsoDate }>(
       `${API_ENDPOINTS.referrals}/${id}`,
       { follow_up_on: followUpOn },
