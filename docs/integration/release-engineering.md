@@ -142,3 +142,36 @@ equivalent. `requestedAmount`, `referredBy` and the requirement entries have no 
 It stays counted by `check:wire-adoption`. Closing it needs a decision about where the intake
 category comes from — the programme, or a question the intake form starts asking — and that is a
 question about what the office is recording, not about field names.
+
+### The verb is part of the contract
+
+`check:routes` originally compared paths alone, and that let a whole class of defect through
+reporting a clean result: **a request sent to a real path with the wrong method.**
+
+The programme composer wrote to `POST /programs` — the public catalog a resident may browse, which
+the API serves `GET`-only. The path existed, so nothing objected. The request would have been
+refused by a router that never reached the application, on the one screen that creates the
+programmes everything else references.
+
+Comparing `VERB path` instead found **five more**, none of them visible before:
+
+| The console sent | The API serves |
+| --- | --- |
+| `POST programs` | `POST admin/programs` — writes are an office act, reads are public |
+| `PATCH programs/{}` | `PATCH admin/programs/{}` |
+| `PATCH admin/families/{}/members/{}` | `DELETE` only; the head is set by `POST .../head` |
+| `POST admin/assistance-requests/{}/document-requests` | `GET` there; `POST` is under the requirement |
+| `POST admin/resident-duplicates` | `GET`; a decision goes to `.../{pair}/decide` |
+
+The first three are fixed. The last two need identifiers the console does not hold — a requirement
+id, and the API's own pair id where the console models a pair by its two residents — so they stay
+counted.
+
+Two smaller findings came out of the fixes and are recorded rather than papered over:
+
+* **Only the head of a family is settable.** Other family roles have no endpoint, so the adapter
+  refuses loudly instead of quietly posting a head change for a role nobody asked for. Who heads a
+  family is a claim about that family (`DL-47`).
+* **`POST admin/families/{family}/head` accepts no reason**, while `DL-48` holds that family
+  history is append-only *with* a reason. The act reaches the trail; the sentence explaining it
+  does not.

@@ -178,25 +178,85 @@ const baseline = JSON.parse(readFileSync(join(CONTRACT, 'unwired-paths.json'), '
 
 const composed = new Set();
 
+/*
+ * ── the METHOD is part of the contract ─────────────────────────────────────
+ *
+ * The first version compared paths alone, and a `POST` to a path the API serves `GET`-only passed
+ * cleanly. That is how the programme composer came to write to `/programs` — the public catalog a
+ * resident may browse — while `POST admin/programs` sat unused. The path existed, so nothing
+ * objected, and the request would have been refused by a router that never reached the application.
+ *
+ * A path-only check is the more dangerous half-measure, because it reports a clean result.
+ *
+ * Each call is walked to its own closing paren and its FIRST ARGUMENT taken as the path. An earlier
+ * attempt scanned for `API_ENDPOINTS.x` and looked backwards for the nearest verb; that
+ * mis-attributed verbs across call boundaries and reported a `DELETE admin/households` that nothing
+ * performs. Only the call being examined knows which verb owns its path.
+ */
+const VERBS = {
+  post: 'POST',
+  postVoid: 'POST',
+  patch: 'PATCH',
+  delete: 'DELETE',
+  deleteVoid: 'DELETE',
+  page: 'GET',
+  collection: 'GET',
+  item: 'GET',
+  optionalItem: 'GET',
+};
+
 if (table !== null) {
   const body = table[1].replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
   const lookup = Object.fromEntries([...body.matchAll(/(\w+):\s*'([^']+)'/g)].map(([, n, p]) => [n, p]));
 
-  for (const m of adapters.matchAll(/`\$\{API_ENDPOINTS\.(\w+)\}([^`]*)`/g)) {
-    const rest = m[2].replace(/\$\{[^}]+\}/g, '{}').split('?')[0];
-    if (lookup[m[1]] !== undefined) composed.add((lookup[m[1]] + rest).replace(/\/$/, ''));
-  }
+  for (const call of apiCalls(adapters)) {
+    const verb = VERBS[call.verb];
 
-  for (const m of adapters.matchAll(/API_ENDPOINTS\.(\w+)(?![\w`])/g)) {
-    if (lookup[m[1]] !== undefined) composed.add(lookup[m[1]].replace(/\/$/, ''));
+    if (verb === undefined) continue;
+
+    const argument = firstArgument(call.args);
+    const template = /^`\$\{API_ENDPOINTS\.(\w+)\}([^`]*)`$/.exec(argument);
+    const bare = /^API_ENDPOINTS\.(\w+)$/.exec(argument);
+
+    let path = null;
+
+    if (template !== null && lookup[template[1]] !== undefined) {
+      path = lookup[template[1]] + template[2].replace(/\$\{[^}]+\}/g, '{}').split('?')[0];
+    } else if (bare !== null && lookup[bare[1]] !== undefined) {
+      path = lookup[bare[1]];
+    }
+
+    if (path !== null) composed.add(`${verb} ${path.replace(/\/$/, '')}`);
   }
 }
 
 const normalisePath = (p) => p.replace(/\{[^}]+\}/g, '{}');
-const publishedPaths = new Set(published.map((r) => normalisePath(r.split(' ')[1].replace(/^\/api\/v1\//, ''))));
+
+const publishedMethods = new Map();
+
+for (const route of published) {
+  const [method, path] = route.split(' ');
+  const key = normalisePath(path.replace(/^\/api\/v1\//, ''));
+  publishedMethods.set(key, (publishedMethods.get(key) ?? new Set()).add(method));
+}
+
+const publishedPaths = new Set(publishedMethods.keys());
 
 const unwired = [...composed]
-  .filter((p) => !publishedPaths.has(p) && ![...publishedPaths].some((q) => q.startsWith(`${p}/`)))
+  .filter((entry) => {
+    const [verb, path] = entry.split(' ');
+    const serves = publishedMethods.get(path);
+
+    /*
+     * A base path with no published route of its own is legitimate when something extends it.
+     * A path that IS published is judged on its verbs, which is the point of this pass.
+     */
+    if (serves === undefined) {
+      return ![...publishedPaths].some((q) => q.startsWith(`${path}/`));
+    }
+
+    return !serves.has(verb);
+  })
   .sort();
 
 if (process.argv.includes('--write-baseline')) {
@@ -248,7 +308,7 @@ console.log(
  * Printed on every run, in red, whether or not the check passed. A number in a file is a number
  * nobody reads; a number on every build is one somebody eventually asks about.
  */
-const blocked = unwired.filter((p) => p.startsWith('admin/cases')).length;
+const blocked = unwired.filter((entry) => entry.split(' ')[1]?.startsWith('admin/cases')).length;
 
 /*
  * The breakdown is computed, not asserted.
@@ -265,3 +325,61 @@ console.error(
     `.\n  Gate line 05/07 — "no port method is unresolved" — is NO-GO until this reaches zero.\n` +
     `  See docs/integration/release-engineering.md.\n`,
 );
+
+
+/** Walk each `this.api.<verb>(` to its matching close paren, counting depth. */
+function apiCalls(text) {
+  const out = [];
+  const start = /this\.api\.(\w+)\s*[<(]/g;
+  let m;
+
+  while ((m = start.exec(text)) !== null) {
+    let i = m.index + m[0].length - 1;
+
+    if (text[i] === '<') {
+      let angle = 1;
+      i++;
+      while (i < text.length && angle > 0) {
+        if (text[i] === '<') angle++;
+        else if (text[i] === '>') angle--;
+        i++;
+      }
+      while (i < text.length && text[i] !== '(') i++;
+    }
+
+    let depth = 0;
+    const open = i;
+
+    for (; i < text.length; i++) {
+      if (text[i] === '(') depth++;
+      else if (text[i] === ')') {
+        depth--;
+        if (depth === 0) break;
+      }
+    }
+
+    out.push({ verb: m[1], args: text.slice(open + 1, i) });
+  }
+
+  return out;
+}
+
+/** The first top-level argument of a call — its path expression. */
+function firstArgument(args) {
+  let depth = 0;
+  let tick = false;
+
+  for (let i = 0; i < args.length; i++) {
+    const ch = args[i];
+
+    if (ch === '`') tick = !tick;
+
+    if (!tick) {
+      if ('([{'.includes(ch)) depth++;
+      else if (')]}'.includes(ch)) depth--;
+      else if (ch === ',' && depth === 0) return args.slice(0, i).trim();
+    }
+  }
+
+  return args.trim();
+}

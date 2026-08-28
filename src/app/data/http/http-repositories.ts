@@ -459,15 +459,43 @@ export class HttpFamilyRepository implements FamilyRepository {
     );
   }
 
+  /**
+   * The port's `reason` is **not accepted here**, because the endpoint has no field for it.
+   *
+   * `DL-48` holds that family history is append-only with a reason on every change, and
+   * `POST admin/families/{family}/head` validates `resident_id` alone. The act is recorded on the
+   * server's trail; the sentence explaining it is not. Recorded as a gap rather than smuggled into
+   * a field that means something else.
+   */
   changeMemberRole(
     familyId: FamilyId,
     residentId: ResidentId,
     role: FamilyRole,
-    reason: string,
   ): Observable<Family> {
-    return this.api.patch<Family, { role: FamilyRole; reason: string }>(
-      `${API_ENDPOINTS.families}/${familyId}/members/${residentId}`,
-      { role, reason },
+    /*
+     * ONLY THE HEAD IS SETTABLE, and the route says which act it is.
+     *
+     * This PATCHed `families/{}/members/{}`, where the API serves DELETE and nothing else — a
+     * mismatch a path-only check cannot see, because the path is real. What exists is
+     * `POST admin/families/{family}/head`, and the other family roles have no endpoint at all.
+     *
+     * Refused loudly rather than silently posting a head change for a role the caller did not ask
+     * for. Who heads a family is a claim about that family (`DL-47`); quietly making somebody the
+     * head because there was no route for "child" would be a worse answer than none.
+     */
+    if (role !== 'head') {
+      return throwError(
+        () =>
+          new Error(
+            'Only the head of a family can be set from here. Other family roles have no server ' +
+              'counterpart yet.',
+          ),
+      );
+    }
+
+    return this.api.post<Family, { resident_id: ResidentId }>(
+      `${API_ENDPOINTS.families}/${familyId}/head`,
+      { resident_id: residentId },
     );
   }
 
@@ -870,9 +898,19 @@ export class HttpProgramRepository implements ProgramRepository {
    * municipally owned must still be refused.
    */
   save(draft: ProgramDraft, id: ProgramId | null): Observable<AssistanceProgram> {
+    /*
+     * WRITES GO TO `admin/programs`, READS TO THE PUBLIC CATALOG.
+     *
+     * Both of these posted to `programs` — the surface a resident may browse, which the API serves
+     * GET-only. The path existed, so the route check passed it until the check learned to compare
+     * verbs; the request would have been refused by a router that never reached the application.
+     */
     return id === null
-      ? this.api.post<AssistanceProgram, ProgramDraft>(API_ENDPOINTS.programs, draft)
-      : this.api.patch<AssistanceProgram, ProgramDraft>(`${API_ENDPOINTS.programs}/${id}`, draft);
+      ? this.api.post<AssistanceProgram, ProgramDraft>(API_ENDPOINTS.programsAdmin, draft)
+      : this.api.patch<AssistanceProgram, ProgramDraft>(
+          `${API_ENDPOINTS.programsAdmin}/${id}`,
+          draft,
+        );
   }
 
   /*
