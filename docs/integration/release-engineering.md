@@ -204,3 +204,52 @@ Fifteen writes remain unmapped. They divide into three kinds, and only the first
   a template and answers questions. Neither is a naming difference.
 * **Endpoints that do not exist at that verb** — counted separately by `check:routes`, and mapping
   a payload against a handler nobody can read would be speculation.
+
+### The three "ordinary" mappings were not ordinary, and looking found something larger
+
+Three writes were left as straightforward mapping work. All three turned out to be blocked, and the
+blockers matter more than the mapping would have.
+
+**`ProgramDraft` cannot satisfy the create endpoint.** `POST admin/programs` requires `code`,
+`owner_office`, `service_type` and `benefit_type`. The console's draft has **none of them** — it
+carries a `category` and a `responsibility`, whose vocabularies are not those fields. This is the
+same shape as the intake `category`: a required field with no console source, and a decision about
+what the office records rather than a naming exercise.
+
+**A document cannot be uploaded at all**, and this is the sharp one.
+
+* `DocumentVersionDraft.file` is `DocumentFile` — `fileName`, `mimeType`, `byteSize`, `pageCount`.
+  **Metadata. There are no bytes.**
+* The endpoint reads `$request->file('file')` — a multipart upload.
+* `FileTransport`, built in TAB 09 for exactly this, with progress, cancellation and 413 handling,
+  and fully tested, is **injected by nothing but its own spec**.
+* There is **no `<input type="file">` anywhere in `src/app`**.
+
+So it is not that the payload is unmapped. **No screen has ever offered a file**, and the transport
+built to carry one has never been connected.
+
+`check:documents-transport` passes throughout, and correctly: every rule it enforces is a
+prohibition — nothing deletes a version, nothing builds its own URL, nothing writes a file to
+browser storage — and prohibitions hold trivially where the feature is absent. A green transport
+check says nothing about whether an upload works.
+
+### 24 of 113 port methods are reachable from no screen
+
+Measured by searching `features/`, `shared/` and `core/` for a call to each port method. Four were
+spot-checked by hand, because "no caller" has been a wrong conclusion in this codebase before.
+
+Three of the twenty-four are consequential:
+
+| Port method | What cannot be done from any screen |
+| --- | --- |
+| `recordDocument` / `requestDocument` | upload a document, or ask an applicant for one |
+| `send` | **send a referral** — the one irreversible outward act |
+| `createBatch` | create a payout session |
+
+That last group reframes an open question. The `DL-81` concern — that a referral's lawful basis
+cannot be recorded in the same act as the sending, because the API takes it through three calls —
+is real but currently academic: **nothing sends a referral**, because nothing calls `send`.
+
+The caveat on the number: it is a textual search for `.method(` and could miss a dynamic dispatch.
+It is a measurement, not a gate. A gate would be the honest next step, on the pattern
+`check:wire-adoption` and `check:routes` already follow.
