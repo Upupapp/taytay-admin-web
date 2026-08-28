@@ -1543,10 +1543,21 @@ export class HttpBeneficiaryRepository implements BeneficiaryRepository {
     return this.api.optionalItem<BeneficiaryDetail>(`${API_ENDPOINTS.beneficiaries}/${id}`);
   }
 
+  /*
+   * ── a beneficiary has no sub-resources, because a beneficiary is not a record ──────
+   *
+   * These three asked for `admin/beneficiaries/{id}/…`, and none of those paths exists. The API
+   * serves each as a **filtered collection of the thing itself** — enrollments, duplicate pairs,
+   * findings — which is the wire expressing `DL-71`: there is no `Beneficiary` entity and no
+   * `BeneficiaryId`. The registry is a projection over residents, keyed on `ResidentId` throughout.
+   *
+   * Reading them as sub-resources of a beneficiary was the console asserting an entity the whole
+   * model denies, and every one of the three 404s.
+   */
   enrollmentsFor(id: ResidentId): Observable<readonly ProgramEnrollment[]> {
-    return this.api.collection<ProgramEnrollment>(
-      `${API_ENDPOINTS.beneficiaries}/${id}/enrollments`,
-    );
+    return this.api.collection<ProgramEnrollment>(API_ENDPOINTS.enrollments, {
+      residentId: id,
+    });
   }
 
   duplicateQueue(page: PageRequest): Observable<Page<DuplicateCandidate>> {
@@ -1554,9 +1565,9 @@ export class HttpBeneficiaryRepository implements BeneficiaryRepository {
   }
 
   duplicatesFor(id: ResidentId): Observable<readonly DuplicateCandidate[]> {
-    return this.api.collection<DuplicateCandidate>(
-      `${API_ENDPOINTS.beneficiaries}/${id}/duplicates`,
-    );
+    return this.api.collection<DuplicateCandidate>(API_ENDPOINTS.identityReview, {
+      residentId: id,
+    });
   }
 
   previewResolution(
@@ -1576,9 +1587,15 @@ export class HttpBeneficiaryRepository implements BeneficiaryRepository {
     );
   }
 
+  /**
+   * The findings recorded against **this resident**, which is where the API keeps them.
+   *
+   * `admin/residents/{resident}/duplicate-findings` — the per-record history TAB 07 added so that
+   * a decided pair stops resurfacing in the queue while staying readable on the record it concerns.
+   */
   resolutionsFor(id: ResidentId): Observable<readonly IdentityResolution[]> {
     return this.api.collection<IdentityResolution>(
-      `${API_ENDPOINTS.beneficiaries}/${id}/identity-findings`,
+      `${API_ENDPOINTS.residents}/${id}/duplicate-findings`,
     );
   }
 }

@@ -354,3 +354,34 @@ expecting the same families.
 The officer is whoever opens it. The API sets `opened_by` from the authenticated actor and ignores
 what a client sends, so the console agrees with the server rather than asserting something it could
 get wrong.
+
+### The 20 unreached ports, categorised
+
+One pass over what `check:port-adoption` counts, so that twenty items become a handful of decisions.
+
+| Category | Count | What it needs |
+| --- | --- | --- |
+| **Live endpoint, no screen** | 11 | building — nothing blocks them |
+| **Wrong path or verb** | 5 | a mapping fix, mostly already recorded in `port-mapping.md` |
+| **No endpoint at all** | 2 | a backend decision |
+| **Blocked on ADR 0044** | 2 | the case-model session |
+
+**A pattern worth naming, and fixed here.** Three `BeneficiaryRepository` methods asked for
+`admin/beneficiaries/{id}/enrollments`, `/duplicates` and `/identity-findings`. **None of those
+paths exists.** The API serves each as a filtered collection of the thing itself, which is the wire
+expressing `DL-71`: there is no `Beneficiary` entity and no `BeneficiaryId`, the registry is a
+projection over residents keyed on `ResidentId`.
+
+Reading them as sub-resources of a beneficiary was the console asserting an entity its own model
+denies — and all three 404'd. They now read `admin/enrollments?residentId=`,
+`admin/resident-duplicates?residentId=` and `admin/residents/{resident}/duplicate-findings`.
+
+**One apparent finding was my own tooling.** The categorising script reported
+`FieldVisitRepository.forResident` pointing at `admin/referrals`; two ports declare a method of
+that name and the script matched the first. The adapter is correct. Checked before reporting,
+because "no caller" and "wrong path" have both been wrong conclusions in this codebase before.
+
+**What is left is mostly ordinary.** Eleven methods have a live endpoint and no screen: a family's
+membership and kinship history, a request's notes, a payout session's detail, a resident's
+household, a person's referrals and visits, a staff account. None is blocked; each is a screen
+somebody has not built yet, and the gate now says so on every run.
