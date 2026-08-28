@@ -68,3 +68,55 @@ somebody needs telling.
   enforced by discipline is what TAB 18 explicitly asks to replace, and this one is.
 * **The previous build is not proven redeployable**, because nothing is deployed.
 * **Rollback is not rehearsed or timed**, for the same reason.
+
+---
+
+## The write side: `check:wire-adoption` (TAB 19)
+
+`check:routes` finds requests sent to a path that does not exist. This finds requests sent to a path
+that does, **with a body the endpoint cannot read**.
+
+`this.api.post<Resident, ResidentDraft>(…)` sends the domain object verbatim. The generic is an
+assertion, not a conversion — it tells TypeScript the domain object *is* the request body, and the
+compiler has no way to disagree. So the request carries `birthDate` where the API validates
+`birth_date`, and every field is rejected at once with a 422 nobody has ever seen, because this
+console has never run against the API.
+
+**26 of 62 write bodies are in that state.**
+
+### It is not a casing problem
+
+`ResidentDraft` nests `name`, `address` and `contact`. The API wants `first_name`, `middle_name`,
+`last_name`, `suffix`, `barangay_id`, `street_address`, `purok_or_sitio`, `mobile_number` and
+`email` — **flat**. `ReleaseBatchDraft` has a `title` and a `venue`; the endpoint validates `name`
+and `location`.
+
+No transformation could be inferred from either, which is why `CLAUDE.md` forbids a generic
+recursive converter and why every mapper in `data/http/mappers/to-wire.ts` is written out by hand.
+
+### Laravel makes the failure quieter, not louder
+
+Unknown keys are **ignored**, not rejected. So sending `title` to an endpoint that wants `name` does
+not error — the request succeeds, the value is discarded, and a payout session is created with no
+name. To the office that reads as their own mistake.
+
+That is why each mapper names the fields it does *not* send, with the reason. A field silently
+dropped by an outbound mapper is indistinguishable from a field nobody filled in.
+
+### Write against the handler, never the document
+
+The first draft of `to-wire.ts` mapped three payloads from what the domain types and
+`port-mapping.md` implied. **All three were wrong** — it invented a `followUpOn` the visit draft does
+not have, a `basis` the disclosure plan does not have, and a body for
+`POST admin/referrals/{referral}/send`, which accepts none.
+
+### A gap that finding exposed
+
+`POST admin/referrals/{referral}/send` takes **no body**. The lawful basis and the shared fields are
+recorded through `POST .../authority` and `POST .../shared-fields` beforehand.
+
+`DL-81` requires the basis recorded **in the same act as the sending**, *"so there is no window in
+which a sendable referral has none"* — and `ReferralRepository.send` takes the disclosure plan as a
+parameter for exactly that reason. Across three separate calls that window exists. Either the API
+needs to accept the plan on `send`, or `DL-81` needs superseding with the weaker guarantee the
+sequence can actually offer. **It is an open decision, not a wiring detail.**
