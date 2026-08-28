@@ -1,3 +1,96 @@
+@if (canCompose()) {
+  <!--
+    Composing sits above the list. The list is what the office has already done; this is the act.
+  -->
+  <section class="card referrals__compose" aria-labelledby="compose-heading">
+    <h2 class="referrals__heading" id="compose-heading">{{ copy.composeHeading }}</h2>
+    <p class="referrals__hint">{{ copy.composeHint }}</p>
+
+    <app-person-picker [label]="copy.clientLabel" (chosen)="onClient($event)" />
+
+    <label class="field" for="compose-provider">
+      <span class="field__label">{{ copy.providerLabel }}</span>
+      <select id="compose-provider" class="field__control" (change)="chooseProvider($event)">
+        <option value="">{{ copy.providerNone }}</option>
+        @for (provider of providers(); track provider.id) {
+          <option [value]="provider.id">{{ provider.name }}</option>
+        }
+      </select>
+      <span class="field__hint">{{ copy.providerHint }}</span>
+    </label>
+
+    <label class="field" for="compose-destination">
+      <span class="field__label">{{ copy.destinationLabel }}</span>
+      <select id="compose-destination" class="field__control" (change)="onComposeDestination($event)">
+        @for (option of destinationOptions; track option) {
+          <option [value]="option" [selected]="option === destination()">
+            {{ destinationLabels[option] }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="field" for="compose-destination-name">
+      <span class="field__label">{{ copy.destinationNameLabel }}</span>
+      <input
+        id="compose-destination-name"
+        class="field__control"
+        type="text"
+        [value]="destinationName()"
+        (input)="onDestinationName($event)"
+      />
+    </label>
+
+    <label class="field" for="compose-contact">
+      <span class="field__label">{{ copy.destinationContactLabel }}</span>
+      <input
+        id="compose-contact"
+        class="field__control"
+        type="text"
+        [value]="destinationContact()"
+        (input)="onDestinationContact($event)"
+      />
+    </label>
+
+    <label class="field" for="compose-urgency">
+      <span class="field__label">{{ copy.urgencyLabel }}</span>
+      <select id="compose-urgency" class="field__control" (change)="onComposeUrgency($event)">
+        @for (option of urgencyOptions; track option) {
+          <option [value]="option" [selected]="option === urgency()">
+            {{ urgencyLabels[option] }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="field" for="compose-service">
+      <span class="field__label">{{ copy.serviceLabel }}</span>
+      <input
+        id="compose-service"
+        class="field__control"
+        type="text"
+        [value]="serviceRequested()"
+        (input)="onService($event)"
+      />
+    </label>
+
+    <label class="field" for="compose-reason">
+      <span class="field__label">{{ copy.reasonLabel }}</span>
+      <input
+        id="compose-reason"
+        class="field__control"
+        type="text"
+        [value]="reason()"
+        (input)="onReason($event)"
+      />
+    </label>
+
+    <button type="button" class="btn btn--primary" [disabled]="!canCreate()" (click)="create()">
+      {{ composing() ? copy.creating : copy.createAction }}
+    </button>
+  </section>
+}
+
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
   <a page-actions *appHasPermission="'referral.view'" class="btn" routerLink="/referrals/providers">
     {{ copy.directory }}

@@ -9,6 +9,23 @@
  */
 export const REFERRALS_COPY = {
   list: {
+    composeHeading: 'Refer somebody out',
+    composeHint:
+      'This creates a DRAFT. Nothing leaves the office until the lawful basis is recorded and the referral is sent from its own page.',
+    clientLabel: 'Who is being referred?',
+    providerLabel: 'Choose from the directory',
+    providerHint: 'Choosing one fills the name and contact from the directory record.',
+    providerNone: 'Not in the directory',
+    destinationLabel: 'What kind of organisation?',
+    destinationNameLabel: 'Which organisation?',
+    destinationContactLabel: 'Contact, if the office has one',
+    urgencyLabel: 'How urgent?',
+    serviceLabel: 'What are they being referred for?',
+    reasonLabel: 'Why?',
+    createAction: 'Create the draft',
+    creating: 'Creating…',
+    draftCreated: 'The draft was created. Nothing has been sent.',
+    draftNotCreated: 'That draft was NOT created. Nothing was saved.',
     title: 'Referrals',
     subtitle: 'People routed to offices that can do what this one cannot.',
     directory: 'Service providers',

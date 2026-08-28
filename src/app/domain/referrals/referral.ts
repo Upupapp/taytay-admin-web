@@ -28,6 +28,18 @@ export type ReferralDestination =
   | 'other-lgu-office'
   | 'ngo-partner';
 
+/** Every kind of organisation the office refers into, in the order a caseworker scans them. */
+export const REFERRAL_DESTINATIONS: readonly ReferralDestination[] = [
+  'dswd-field-office',
+  'hospital-msw',
+  'philhealth',
+  'peso',
+  'barangay-vaw-desk',
+  'women-and-children-protection-desk',
+  'other-lgu-office',
+  'ngo-partner',
+];
+
 export const REFERRAL_DESTINATION_LABELS: Readonly<Record<ReferralDestination, string>> = {
   'dswd-field-office': 'DSWD field office',
   'hospital-msw': 'Hospital medical social worker',
@@ -131,6 +143,8 @@ export function isReferralOpen(status: ReferralStatus): boolean {
  * over another office's work, and the screens must not imply otherwise.
  */
 export type ReferralUrgency = 'routine' | 'priority' | 'urgent';
+
+export const REFERRAL_URGENCIES: readonly ReferralUrgency[] = ['routine', 'priority', 'urgent'];
 
 export const REFERRAL_URGENCY_LABELS: Readonly<Record<ReferralUrgency, string>> = {
   routine: 'Routine',

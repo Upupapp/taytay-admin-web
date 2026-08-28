@@ -8,6 +8,7 @@ import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
 import { MockReferralRepository } from '@data/mock/mock-referral.repository';
+import { MockResidentRepository } from '@data/mock/mock-resident.repository';
 import {
   ACCESS_CONTEXT,
   NOTIFICATION_REPOSITORY,
@@ -23,6 +24,7 @@ import {
   type StaffUser,
   type StaffUserId,
   type SignInOutcome,
+  RESIDENT_REPOSITORY,
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
 
@@ -97,6 +99,12 @@ async function configure(role: StaffRole): Promise<void> {
       { provide: ACCESS_CONTEXT, useExisting: SessionState },
       { provide: STAFF_REPOSITORY, useValue: staffRepository(staffUser(role)) },
       { provide: REFERRAL_REPOSITORY, useClass: MockReferralRepository },
+      /*
+       * The list page composes a referral, and composing one asks who it is for — so it now
+       * mounts `PersonPicker`, which reads the resident registry. A screen that can create a
+       * referral without naming a person would be the more interesting defect.
+       */
+      { provide: RESIDENT_REPOSITORY, useClass: MockResidentRepository },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
     ],
   });
