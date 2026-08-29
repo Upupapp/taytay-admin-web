@@ -5,6 +5,7 @@ import {
   combineLatest,
   concatMap,
   from,
+  last,
   map,
   of,
   switchMap,
@@ -206,6 +207,7 @@ import {
   type DataScope,
   type BarangayId,
   type DocumentUpload,
+  type VisitChecklistSelection,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -1962,10 +1964,42 @@ export class HttpFieldVisitRepository implements FieldVisitRepository {
     );
   }
 
-  setChecklist(id: FieldVisitId, checkedCodes: readonly string[]): Observable<FieldVisit> {
-    return this.api.post<FieldVisit, { checkedCodes: readonly string[] }>(
-      `${API_ENDPOINTS.fieldVisits}/${id}/checklist`,
-      { checkedCodes },
+  /**
+   * One call per line, in order, because that is how the API records a checklist.
+   *
+   * This posted `{ checkedCodes: [...] }` in one request to an endpoint that validates a single
+   * `{ code, checked, note }`. Every save was refused.
+   *
+   * Sequential rather than concurrent: the server writes each line, and the last response is the
+   * visit as it now stands. An empty list is a legitimate save — a worker clearing every tick — so
+   * it returns the visit unchanged rather than skipping the write.
+   */
+  setChecklist(
+    id: FieldVisitId,
+    items: readonly VisitChecklistSelection[],
+  ): Observable<FieldVisit> {
+    const path = `${API_ENDPOINTS.fieldVisits}/${id}/checklist`;
+
+    if (items.length === 0) {
+      return this.getById(id).pipe(
+        map((visit) => {
+          if (visit === null) {
+            throw new Error('That visit could not be read back.');
+          }
+
+          return visit;
+        }),
+      );
+    }
+
+    return from(items).pipe(
+      concatMap((item) =>
+        this.api.post<FieldVisit, { code: string; checked: boolean }>(path, {
+          code: item.code,
+          checked: item.checked,
+        }),
+      ),
+      last(),
     );
   }
 

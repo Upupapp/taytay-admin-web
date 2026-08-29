@@ -140,6 +140,7 @@ import type {
   FieldVisitFilter,
   FieldVisitSortField,
   VisitOutcomeDraft,
+  VisitChecklistSelection,
 } from '../visits/field-visit';
 import type { VisitObservationDraft } from '../visits/visit-observation';
 import type {
@@ -709,7 +710,16 @@ export interface FieldVisitRepository {
     observations: readonly VisitObservationDraft[],
   ): Observable<FieldVisit>;
 
-  setChecklist(id: FieldVisitId, checkedCodes: readonly string[]): Observable<FieldVisit>;
+  /**
+   * The checklist as it should stand, line by line.
+   *
+   * Every item is sent with its state, not just the ticked ones: the API records one line per call,
+   * so a list of ticks alone cannot express a line somebody cleared.
+   */
+  setChecklist(
+    id: FieldVisitId,
+    items: readonly VisitChecklistSelection[],
+  ): Observable<FieldVisit>;
 
   /**
    * Closes the visit. Terminal in every outcome: a second attempt is a second

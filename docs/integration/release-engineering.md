@@ -449,3 +449,40 @@ panel headings stay visible so nobody reads a missing panel as a missing record.
 **The port-adoption count is optimistic by one.** Two ports declare `forResident`, and the check's
 search is textual, so calling `FieldVisitRepository.forResident` also credits
 `ReferralRepository.forResident`. That is the under-reporting the check names in its own output.
+
+### The twelve remaining unmapped writes are not twelve pieces of mapping
+
+Working through them showed that only one was a mapping job. The rest divide into three kinds, and
+**none of the other eleven can be closed from this repository**:
+
+| Kind | Count | What it needs |
+| --- | --- | --- |
+| Blocked on ADR 0044 | 3 | `assign`, `assignTask`, `rescheduleTask` — the case surface |
+| No endpoint at that verb | 4 | `transferResident`, `setAccountActive`, `requestDocument`, `resolveIdentity` |
+| A required field the console does not collect | 4 | the programme draft and the intake draft |
+| **Ordinary mapping** | **1** | the visit checklist — done |
+
+**`ProgramDraft`** cannot satisfy `POST admin/programs`, which requires `code`, `owner_office`,
+`service_type` and `benefit_type`. The console holds a `category` and a `responsibility`, and those
+are not those fields. **`IntakeDraft`** is the `category` question already recorded above.
+
+**`AssessmentDraft` is a shape mismatch, not a missing field.** The console models an assessment as
+free-text findings plus a recommended amount; the API models it as a template that is opened,
+answered question by question, and completed with a **required `recommendation`**. That the console
+has no recommendation is not an oversight — `DL-60` and `DL-78` hold that the assessment advises and
+never decides, and the decision is a status transition made by a person. Reconciling the two is a
+doctrine conversation, not a mapper.
+
+### The checklist could not express an unticking
+
+`setChecklist` sent `{ checkedCodes: [...] }` in one request to an endpoint that validates a single
+`{ code, checked, note }`, so every save was refused. That much was a plain mismatch.
+
+The interesting half is what the fix required. The API records **one line at a time and touches
+nothing else**, so a list of ticks alone cannot say which lines were *cleared* — a worker who
+removed a tick would have found it back. The port now carries every line with the state it should
+end in, and the adapter sends one call per line in order.
+
+The mock had been hiding it: it rebuilt the whole list from the ticked codes, so absent meant
+unticked. That is a different rule from the server's, and a mock that is more convenient than the
+thing it stands in for is one a screen gets built against.

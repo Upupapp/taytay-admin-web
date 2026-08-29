@@ -35,6 +35,7 @@ import {
   type VisitObservationDraft,
   type VisitObservationId,
   type VisitOutcomeDraft,
+  type VisitChecklistSelection,
 } from '@domain/index';
 
 import { denyUnless } from './mock-access';
@@ -226,7 +227,10 @@ export class MockFieldVisitRepository implements FieldVisitRepository {
     );
   }
 
-  setChecklist(id: FieldVisitId, checkedCodes: readonly string[]): Observable<FieldVisit> {
+  setChecklist(
+    id: FieldVisitId,
+    items: readonly VisitChecklistSelection[],
+  ): Observable<FieldVisit> {
     const user = this.access.currentUser();
     const denied = denyUnless<FieldVisit>(user, 'case.manage');
     if (denied) {
@@ -238,12 +242,21 @@ export class MockFieldVisitRepository implements FieldVisitRepository {
       return found.error;
     }
 
-    const checked = new Set(checkedCodes);
+    /*
+     * Applies each line's stated value, and leaves alone any line the caller did not mention.
+     *
+     * The old shape took only the ticked codes and rebuilt the whole list from them, so anything
+     * absent became unticked. That is a different rule from the API's, which records one line at a
+     * time and touches nothing else — and a mock that silently clears lines nobody named would
+     * hide the difference until a worker lost a tick against the real server.
+     */
+    const stated = new Map(items.map((item) => [item.code, item.checked]));
+
     return this.latency.respond(
       this.save(found.visit, {
         checklist: found.visit.checklist.map((item) => ({
           ...item,
-          checked: checked.has(item.code),
+          checked: stated.get(item.code) ?? item.checked,
         })),
       }),
     );

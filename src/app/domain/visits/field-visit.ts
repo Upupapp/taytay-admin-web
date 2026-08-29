@@ -127,6 +127,18 @@ export function wasAttended(status: VisitStatus): boolean {
  * the observations a person writes, and nothing derives an eligibility or a
  * vulnerability rating from them (`DL-42`).
  */
+/**
+ * One line of the checklist as the screen wishes it to stand.
+ *
+ * `setChecklist` used to take only the **ticked** codes, which cannot express an *unticking*: the
+ * API records one item at a time, so an adapter given only the ticks has no way to say which lines
+ * were cleared, and a worker who removed a tick would have found it back on their next visit.
+ */
+export interface VisitChecklistSelection {
+  readonly code: string;
+  readonly checked: boolean;
+}
+
 export interface VisitChecklistItem {
   readonly code: string;
   readonly label: string;

@@ -175,11 +175,25 @@ export class VisitDetailPage {
 
   protected async saveChecklist(): Promise<void> {
     const codes = this.ticked();
-    if (codes === null || this.saving()) {
+    const visit = this.visit();
+
+    if (codes === null || visit === null || this.saving()) {
       return;
     }
+
+    /*
+     * Every line, with the state it should end in — not just the ticks.
+     *
+     * The API records one line per call and touches nothing else, so sending only the ticked codes
+     * could never clear one. A worker who removed a tick would have found it still there.
+     */
+    const items = visit.checklist.map((item) => ({
+      code: item.code,
+      checked: codes.includes(item.code),
+    }));
+
     await this.run(
-      this.repository.setChecklist(asId<FieldVisitId>(this.id()), codes),
+      this.repository.setChecklist(asId<FieldVisitId>(this.id()), items),
       this.copy.checklistSaved,
       () => this.ticked.set(null),
     );
