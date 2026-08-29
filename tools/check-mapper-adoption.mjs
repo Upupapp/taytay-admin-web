@@ -39,12 +39,39 @@ const ADAPTERS = 'src/app/data/http/http-repositories.ts';
  * Recorded 18 August 2026, TAB 06. LOWER THIS when you repoint an adapter through a mapper;
  * never raise it. Raising it is the change this file exists to make somebody argue for.
  */
-const CEILING = 44;
+/*
+ * 44 → 45 when the scanner learned to see a chained call, and it is not new debt.
+ *
+ * `optionalItem<HouseholdDetail>` was always an unmapped read; it was simply written across two
+ * lines, which the old contiguous `this\.api\.` pattern did not match. Three further reads became
+ * visible at the same time and are excluded above as wire-typed — they are the pattern this check
+ * asks for, not the one it forbids.
+ */
+const CEILING = 45;
 
 const source = readFileSync(join(ROOT, ADAPTERS), 'utf8');
 
 // A read that hands a domain type straight to the transport: `api.page<ResidentView>(…)`.
-const casts = [...source.matchAll(/\bthis\.api\.(page|item|optionalItem|list)<([^>]+)>/g)];
+const generics = [
+  ...source.matchAll(/\bthis\s*\.\s*api\s*\.\s*(page|item|optionalItem|list)<([^>]+)>/g),
+];
+
+/*
+ * A read typed as a **wire** shape is the pattern this check is asking for, not the one it forbids.
+ *
+ * The rule is that a generic is an assertion, not a conversion: `api.page<ResidentView>` tells
+ * TypeScript a snake_case payload is a domain object, and nothing at run time makes that true. But
+ * `api.item<MeWire>(…).pipe(map(toMe))` asserts only that the payload is the wire shape it really
+ * is, and then converts it. Counting that as debt would mark the fix as the defect.
+ *
+ * Two forms qualify, and neither can be an escape hatch. A name ending `Wire` is this repository's
+ * convention for a payload shape, declared beside its mapper. `Record<string, unknown>` asserts
+ * nothing at all — a template cannot read a camelCase property off it, because TypeScript refuses,
+ * which is exactly the failure this check exists to prevent.
+ */
+const isWireShape = (type) => /Wire\b/.test(type) || /^Record\s*</.test(type.trim());
+
+const casts = generics.filter((match) => !isWireShape(match[2]));
 
 if (casts.length > CEILING) {
   const added = casts.length - CEILING;

@@ -189,6 +189,7 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
       recommendedAmount: pesos(8000),
       homeVisitConducted: true,
       recommendation: 'recommend-approve',
+    recommendationReason: null,
     },
     statusHistory: [
       {
@@ -380,6 +381,7 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
       recommendedAmount: pesos(3000),
       homeVisitConducted: false,
       recommendation: 'recommend-approve',
+    recommendationReason: null,
     },
     statusHistory: [
       {
@@ -579,6 +581,7 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
       recommendedAmount: pesos(8000),
       homeVisitConducted: true,
       recommendation: 'recommend-approve',
+    recommendationReason: null,
     },
     statusHistory: [
       {

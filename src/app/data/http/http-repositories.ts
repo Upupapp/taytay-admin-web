@@ -86,6 +86,9 @@ import {
   type CaseTaskId,
   type CaseWorkspace,
   type AdvisoryAcknowledgement,
+  type AssessmentAnswers,
+  type AssessmentTemplate,
+  type OpenAssessment,
   type AssessmentDraft,
   type IntakeAdvisory,
   type IntakeDraft,
@@ -213,6 +216,7 @@ import {
 import { ApiClient } from './api.client';
 import { UPLOAD_POLICY } from './api.contract';
 import { FileTransport } from './file-transport';
+import { toAssessmentTemplates, toOpenAssessment } from './mappers/assessment.mapper';
 import {
   toWireAssessment,
   toWireDocumentVersion,
@@ -1082,6 +1086,56 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
       `${API_ENDPOINTS.assistanceRequests}/${id}/transitions`,
       { to: 'submitted', reason: acknowledgement?.reason ?? null },
     );
+  }
+
+  /**
+   * An unreadable assessment payload is refused, never substituted.
+   *
+   * Every other mapper in this file is total — a missing field yields the domain's "absent" — and
+   * that is right for a read: a blank cell is better than a blank screen. This is a **write**, and
+   * the value it returns is the screen's evidence that an assessment now exists on the server. A
+   * fabricated one would tell an assessor their form was open and let them write findings into
+   * nothing.
+   */
+  private assessmentOrRefuse(wire: unknown): Observable<OpenAssessment> {
+    const assessment = toOpenAssessment(wire);
+
+    return assessment === null
+      ? throwError(
+          () =>
+            new Error(
+              'The server did not return an assessment. Nothing has been opened, and nothing you ' +
+                'write here would be saved.',
+            ),
+        )
+      : of(assessment);
+  }
+
+  listAssessmentTemplates(): Observable<readonly AssessmentTemplate[]> {
+    return this.api
+      .item<Record<string, unknown>>(API_ENDPOINTS.assessmentTemplates)
+      .pipe(map((wire) => toAssessmentTemplates(wire)));
+  }
+
+  openAssessment(id: AssistanceRequestId, templateCode: string): Observable<OpenAssessment> {
+    return this.api
+      .post<Record<string, unknown>, { template_code: string }>(
+        `${API_ENDPOINTS.assistanceRequests}/${id}/assessment`,
+        { template_code: templateCode },
+      )
+      .pipe(switchMap((wire) => this.assessmentOrRefuse(wire)));
+  }
+
+  answerAssessment(
+    id: AssistanceRequestId,
+    answers: AssessmentAnswers,
+  ): Observable<OpenAssessment> {
+    return this.api
+      .patch<Record<string, unknown>, { answers: AssessmentAnswers }>(
+        `${API_ENDPOINTS.assistanceRequests}/${id}/assessment`,
+        { answers },
+      )
+      .pipe(switchMap((wire) => this.assessmentOrRefuse(wire)));
   }
 
   /**

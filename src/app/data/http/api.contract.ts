@@ -157,6 +157,8 @@ export const API_ENDPOINTS = {
    */
   assistanceRequests: 'admin/assistance-requests',
   assistanceIntakes: 'admin/assistance-intakes',
+  /** The published assessment forms, with their versions. Read before opening an assessment. */
+  assessmentTemplates: 'admin/assessment-templates',
   enrollments: 'admin/enrollments',
   releases: 'admin/releases',
   releaseBatches: 'admin/release-batches',

@@ -330,7 +330,23 @@ console.error(
 /** Walk each `this.api.<verb>(` to its matching close paren, counting depth. */
 function apiCalls(text) {
   const out = [];
-  const start = /this\.api\.(\w+)\s*[<(]/g;
+  /*
+   * Whitespace is allowed around the dot, and finding that out cost three adapter methods.
+   *
+   * The pattern was `this\.api\.(\w+)`, contiguous. Every call written as
+   *
+   *     return this.api
+   *       .item<Foo>(API_ENDPOINTS.bar)
+   *       .pipe(...)
+   *
+   * — the shape Prettier produces the moment a chain is long enough to wrap — was invisible to
+   * this check. It did not report them as unwired; it never saw them at all, which is worse: the
+   * count looked healthy because the paths were absent from both sides of the comparison.
+   *
+   * A ratchet that silently stops watching part of the surface is the failure mode this whole file
+   * exists to prevent elsewhere.
+   */
+  const start = /this\s*\.\s*api\s*\.\s*(\w+)\s*[<(]/g;
   let m;
 
   while ((m = start.exec(text)) !== null) {

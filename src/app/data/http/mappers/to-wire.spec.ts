@@ -428,6 +428,7 @@ describe('outbound mappers', () => {
       recommendedAmount: centavos(500_000),
       homeVisitConducted: true,
       recommendation: 'recommend-approve',
+      reason: null,
     };
 
     it('sends the recommendation the endpoint requires, and trims the findings', () => {

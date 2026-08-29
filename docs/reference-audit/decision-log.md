@@ -3898,3 +3898,73 @@ already open, which only `open` creates from a published `template_code` — a v
 console has never read. The save therefore still fails, but it now fails against the endpoint that
 could succeed, which is the half of the fix that does not require choosing templates on the
 office's behalf. Both are recorded in `docs/integration/release-engineering.md`.
+
+## DL-142 — an assessment is opened from a published form, and the form says it is provisional
+
+`DL-141` pointed `recordAssessment` at `POST .../assessment/complete` and recorded that the save
+still failed, because `complete` requires an assessment already open and nothing in this console
+opened one. This closes that: the console reads `GET admin/assessment-templates`, opens an
+assessment from a chosen template, answers its questions, and only then completes.
+
+### The version travels with the assessment, and is shown
+
+The server reads a template's version **once**, at open, and pins it on the row — deliberately, and
+its own comment says why: reading it again at completion would let a mid-assessment change to the
+form alter what an assessment appears to have asked, and the recorded answers would then be
+attributed to questions that were not the ones put to that family. It matters most precisely when
+somebody is disputing a decision made two years ago.
+
+So `OpenAssessment` carries `templateVersion` and the screen prints it. A version nobody can see is
+one nobody notices has changed.
+
+### A form the office has not adopted says so
+
+Both published templates are `placeholder-pending-lgu-approval`, and the config file is blunt about
+it: "a plausible AICS-style intake assessment, not Taytay's instrument". The screen carries that
+sentence, in the pattern `DL-68` set for the review windows and `DL-105` for the small-cell
+threshold — a provisional instrument states that it is provisional until somebody records the check,
+rather than being quietly presented as settled office policy.
+
+The mapper reads **any unrecognised status as provisional**. The safe direction for an unknown value
+is the one that keeps the caveat up.
+
+### The mock now refuses what the server refuses
+
+`MockAssistanceRequestRepository.recordAssessment` used to complete a case study from nothing. The
+server never would: it requires an open assessment, every required question answered, and a stated
+reason for a recommendation to refuse. The mock holds all three now, and one existing spec started
+failing immediately — it had been filing an assessment against no form at all and passing.
+
+That is the same lesson the requirements checklist taught this repository once already: *a mock more
+convenient than the thing it stands in for is one a screen gets built against*. It is also how
+`recordAssessment` sat on the wrong endpoint for a whole programme without a single test noticing.
+
+### `reason` is required for exactly one recommendation
+
+The server requires it when recommending refusal, and gives the ground: the applicant will be told a
+decision followed from this, and "the assessor recommended refusal" with no stated basis is not
+something anybody can appeal or a supervisor can review. `assessmentProblems` says the same thing in
+the same words, before the button is pressed.
+
+It is deliberately **not** required for the other three. A reason demanded on every recommendation
+becomes a sentence typed to get past the form, and the one place it must mean something is the one
+place it would then not. `insufficient-information` in particular asks for nothing extra: it is a
+first-class answer precisely so that an incomplete file does not become a denial, and taxing it
+would push assessors towards the recommendation that asks fewer questions.
+
+### What the screen refuses, it explains
+
+`canSaveStudy` is false while the form is unopened, a required question is unanswered, or a refusal
+has no reason — and every one of those is named on screen beside the disabled button, in the form's
+own wording. A disabled control with no stated cause is what `DL-60` and `DL-98` each refuse in
+their own domains: software that declines and does not say why. Nothing here is invented — the
+server checks all of it again inside its own transaction, which is where the guarantee lives
+(`DL-140`). Saying it earlier only saves the assessor from writing findings a failed save would
+strand.
+
+### The checks that were not watching
+
+See `docs/integration/release-engineering.md`: four scanners matched `this.api.` contiguously and
+so never saw a call whose chain had wrapped across lines. Thirteen calls were invisible, two of them
+real pre-existing debt. The counts went **up** because the checks got better, which is the only
+reason a ratchet may move that way.

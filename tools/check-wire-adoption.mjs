@@ -55,7 +55,9 @@ const wireShaped = (key) => /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/.test(key);
  */
 function callsIn(text) {
   const out = [];
-  const start = /this\.api\.(post|patch|delete|postVoid)\s*</g;
+  // Whitespace around the dot, for the reason `check:routes` records: a chained call that Prettier
+  // wrapped was invisible to this scan, so its body was never counted either way.
+  const start = /this\s*\.\s*api\s*\.\s*(post|patch|delete|postVoid)\s*</g;
   let m;
 
   while ((m = start.exec(text)) !== null) {

@@ -28,6 +28,7 @@ export * from './families/family-graph';
 export * from './families/relationship';
 export * from './families/relationship-event';
 export * from './geography/barangay';
+export * from './intake/assessment-template';
 export * from './intake/assessment';
 export * from './intake/intake-advisory';
 export * from './intake/intake-draft';

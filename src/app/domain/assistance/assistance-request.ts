@@ -272,6 +272,8 @@ export interface SocialWorkerAssessment {
    * information", which somebody chose.
    */
   readonly recommendation: AssessmentRecommendation | null;
+  /** Why, when the recommendation was refusal. The server requires it for that one value. */
+  readonly recommendationReason: string | null;
 }
 
 export interface AssistanceRequest {

@@ -202,3 +202,47 @@
   color: var(--c-text-muted);
   font-size: 12.5px;
 }
+
+.assessment__subheading {
+  margin: var(--space-5) 0 var(--space-2);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.assessment__pinned {
+  margin: 0 0 var(--space-3);
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+/*
+ * A form the office has not adopted says so, in the same visual register as the review windows
+ * and the small-cell threshold (`DL-68`, `DL-105`). Deliberately not styled as an error: nothing
+ * is wrong, and a caveat that looks like a failure is one people learn to dismiss.
+ */
+.assessment__provisional {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  border-left: 3px solid var(--tone-warning-fg);
+  background: var(--tone-warning-bg);
+  color: var(--tone-warning-fg);
+  font-size: 13px;
+}
+
+.assessment__blockers {
+  margin: var(--space-4) 0;
+  padding: var(--space-3);
+  border-left: 3px solid var(--c-border-strong);
+  background: var(--c-surface-muted);
+  font-size: 13px;
+
+  p {
+    margin: 0 0 var(--space-2);
+    font-weight: 600;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: var(--space-5);
+  }
+}

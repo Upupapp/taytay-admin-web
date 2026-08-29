@@ -40,7 +40,11 @@ import {
   toAssessmentDraft,
   ASSESSMENT_RECOMMENDATIONS,
   ASSESSMENT_RECOMMENDATION_LABELS,
+  assessmentProblems as assessmentProblemsFor,
+  unansweredRequired,
   type AssessmentRecommendation,
+  type AssessmentTemplate,
+  type OpenAssessment,
   type AssessmentReadinessCode,
   type AssistanceRequest,
   type AssistanceRequestId,
@@ -176,7 +180,101 @@ export class AssessmentPage {
   protected readonly recommendation = signal<AssessmentRecommendation>('insufficient-information');
   protected readonly recommendationChoices = ASSESSMENT_RECOMMENDATIONS;
   protected readonly recommendationLabels = ASSESSMENT_RECOMMENDATION_LABELS;
+  protected readonly reason = signal('');
   private hydrated = false;
+
+  /* ── the form the office asks ────────────────────────────────────────────
+   *
+   * An assessment is opened *from* a published template and pins its version at that moment, so
+   * the catalogue is read before anything can be opened. The templates are marked
+   * `placeholder-pending-lgu-approval` and the screen says so — the `DL-68`/`DL-105` pattern: a
+   * provisional instrument states that it is provisional until somebody records the check.
+   */
+  protected readonly templates = toSignal(this.requests.listAssessmentTemplates(), {
+    initialValue: [] as readonly AssessmentTemplate[],
+  });
+
+  protected readonly chosenTemplate = signal<string>('');
+  protected readonly openAssessment = signal<OpenAssessment | null>(null);
+  protected readonly answers = signal<Record<string, string | null>>({});
+
+  protected readonly template = computed(
+    () =>
+      this.templates().find((candidate) => candidate.code === this.openAssessment()?.templateCode) ??
+      null,
+  );
+
+  /**
+   * The required questions still unanswered, named in the form's own words.
+   *
+   * The server refuses to complete without them, and it is right to. But a save that fails after
+   * the findings are written tells the assessor nothing about where to go back to, so they are
+   * named here before the button is pressed. This states; it does not decide — the server checks
+   * the same thing again inside its own transaction, which is where the guarantee lives.
+   */
+  protected readonly unanswered = computed(() => {
+    const template = this.template();
+    return template === null ? [] : unansweredRequired(template, this.answers());
+  });
+
+  protected readonly assessmentProblems = computed(() =>
+    assessmentProblemsFor({
+      findings: this.findings(),
+      recommendedAmount: null,
+      homeVisitConducted: this.homeVisit(),
+      recommendation: this.recommendation(),
+      reason: this.reason(),
+    }),
+  );
+
+  protected openForm(): void {
+    const code = this.chosenTemplate();
+    if (code === '' || this.submitting()) {
+      return;
+    }
+    this.submitting.set(true);
+    this.requests.openAssessment(asId<AssistanceRequestId>(this.id()), code).subscribe({
+      next: (assessment) => {
+        this.openAssessment.set(assessment);
+        this.answers.set({ ...assessment.answers });
+        this.submitting.set(false);
+      },
+      error: (error: unknown) => {
+        this.notifications.error(error instanceof Error ? error.message : this.copy.failed);
+        this.submitting.set(false);
+      },
+    });
+  }
+
+  protected onAnswer(code: string, event: Event): void {
+    const target = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    const value = target.value;
+    // '' is recorded as null: "asked and left blank" rather than an empty answer nobody typed.
+    this.answers.update((current) => ({ ...current, [code]: value === '' ? null : value }));
+  }
+
+  protected saveAnswers(): void {
+    if (this.openAssessment() === null || this.submitting()) {
+      return;
+    }
+    this.submitting.set(true);
+    this.requests.answerAssessment(asId<AssistanceRequestId>(this.id()), this.answers()).subscribe({
+      next: (assessment) => {
+        this.openAssessment.set(assessment);
+        this.answers.set({ ...assessment.answers });
+        this.notifications.success(this.copy.answersSaved);
+        this.submitting.set(false);
+      },
+      error: (error: unknown) => {
+        this.notifications.error(error instanceof Error ? error.message : this.copy.failed);
+        this.submitting.set(false);
+      },
+    });
+  }
+
+  protected onReason(event: Event): void {
+    this.reason.set((event.target as HTMLTextAreaElement).value);
+  }
 
   constructor() {
     // Fills the form from the record once, then leaves the worker's typing
@@ -194,6 +292,7 @@ export class AssessmentPage {
         draft.recommendedAmount === null ? null : draft.recommendedAmount.centavos / 100,
       );
       this.recommendation.set(draft.recommendation);
+      this.reason.set(draft.reason ?? '');
     });
   }
 
@@ -207,7 +306,22 @@ export class AssessmentPage {
   }
 
   protected readonly findingsOk = computed(() => isValidFindings(this.findings()));
-  protected readonly canSaveStudy = computed(() => this.findingsOk() && !this.submitting());
+  /**
+   * The button is disabled by what is *missing*, and every reason is on screen beside it.
+   *
+   * A disabled control with no stated cause is the thing `DL-60` and `DL-98` both refuse in their
+   * own domains: software that declines and does not say why. Here the causes are the form's
+   * unanswered required questions and a refusal with no reason — both of which the server would
+   * refuse anyway, so nothing is invented, only said earlier.
+   */
+  protected readonly canSaveStudy = computed(
+    () =>
+      this.findingsOk() &&
+      !this.submitting() &&
+      this.openAssessment() !== null &&
+      this.unanswered().length === 0 &&
+      this.assessmentProblems().length === 0,
+  );
 
   protected onFindings(event: Event): void {
     this.findings.set((event.target as HTMLTextAreaElement).value);
@@ -243,6 +357,7 @@ export class AssessmentPage {
         recommendedAmount: amount === null ? null : pesos(amount),
         homeVisitConducted: this.homeVisit(),
         recommendation: this.recommendation(),
+        reason: this.reason().trim() === '' ? null : this.reason().trim(),
       }),
       this.copy.studySaved,
     );

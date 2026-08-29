@@ -98,7 +98,7 @@ for (const file of walk(DOMAIN)) {
 
 // ── 2. keys hand-written at a call site ──────────────────────────────────────
 const adapters = readFileSync(join(ROOT, ADAPTERS), 'utf8');
-for (const call of adapters.matchAll(/this\.api\.(?:page|collection|item|optionalItem)<[\s\S]*?>\(([\s\S]*?)\);/g)) {
+for (const call of adapters.matchAll(/this\s*\.\s*api\s*\.\s*(?:page|collection|item|optionalItem)<[\s\S]*?>\(([\s\S]*?)\);/g)) {
   const args = call[1];
   const line = adapters.slice(0, call.index).split('\n').length;
   for (const literal of args.matchAll(/\{([^{}]*)\}/g)) {
@@ -108,7 +108,15 @@ for (const call of adapters.matchAll(/this\.api\.(?:page|collection|item|optiona
   }
 }
 
-const CEILING = 54;
+/*
+ * 54 → 55 when the scanner learned to see a chained call.
+ *
+ * The extra key is not new debt: it was always sent and always ignored, on a read written as
+ * `this.api\n  .page<…>(…)` — a shape the contiguous `this\.api\.` pattern never matched. See
+ * `check:routes` for the same blind spot and what it hid there. The number went up because the
+ * check got better, which is the one direction a ratchet is allowed to move for that reason.
+ */
+const CEILING = 55;
 
 if (offenders.length > CEILING) {
   const shown = offenders.slice(0, 12).map((o) => `    ${o.key}  (${o.where})`).join('\n');

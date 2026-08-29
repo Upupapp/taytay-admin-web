@@ -1,4 +1,5 @@
 import {
+  assessmentProblems,
   ASSISTANCE_LOOKBACK_MONTHS,
   EMPTY_ADVISORY,
   EMPTY_INTAKE_DRAFT,
@@ -439,6 +440,7 @@ describe('the case study', () => {
         recommendedAmount: pesos(5000),
         homeVisitConducted: true,
         recommendation: 'recommend-approve',
+        recommendationReason: null,
       },
     };
     expect(assessmentReadiness(assessed)).toEqual([]);
@@ -467,5 +469,60 @@ describe('the case study', () => {
       ],
     };
     expect(assessmentReadiness(withDocument)).toContain('outstanding-requirements');
+  });
+});
+
+describe('what stops an assessment being filed', () => {
+  const draft = {
+    findings: 'Home visit on 12 August. Household of two in one rented room.',
+    recommendedAmount: null,
+    homeVisitConducted: true,
+    recommendation: 'recommend-approve' as const,
+    reason: null,
+  };
+
+  it('finds nothing wrong with a recommendation to approve and no reason', () => {
+    expect(assessmentProblems(draft)).toEqual([]);
+  });
+
+  /**
+   * A recommendation to refuse needs a stated reason, and only that one does.
+   *
+   * The server enforces it and gives the ground: the applicant will be told a decision followed
+   * from this, and "the assessor recommended refusal" with no basis is not something anybody can
+   * appeal or a supervisor can review. Demanding a reason on all four would turn it into a
+   * sentence typed to get past the form — and the one place it must mean something is the one
+   * place it would then not.
+   */
+  it('refuses a recommendation to refuse with no stated reason', () => {
+    expect(assessmentProblems({ ...draft, recommendation: 'recommend-deny' })).toHaveLength(1);
+    expect(assessmentProblems({ ...draft, recommendation: 'recommend-deny' })[0]).toMatch(/appeal/);
+  });
+
+  it('accepts a refusal that says why', () => {
+    expect(
+      assessmentProblems({
+        ...draft,
+        recommendation: 'recommend-deny',
+        reason: 'The household is already enrolled in a programme covering this cost.',
+      }),
+    ).toEqual([]);
+  });
+
+  it('does not accept whitespace as a stated reason', () => {
+    expect(
+      assessmentProblems({ ...draft, recommendation: 'recommend-deny', reason: '   ' }),
+    ).toHaveLength(1);
+  });
+
+  /**
+   * `insufficient-information` needs no reason, and that is deliberate.
+   *
+   * It is a first-class answer rather than a soft refusal — the enum makes it one precisely so
+   * that an incomplete file does not become a denial. Requiring a justification for it would push
+   * assessors towards the recommendation that asks fewer questions.
+   */
+  it('asks nothing extra of "not enough information"', () => {
+    expect(assessmentProblems({ ...draft, recommendation: 'insufficient-information' })).toEqual([]);
   });
 });

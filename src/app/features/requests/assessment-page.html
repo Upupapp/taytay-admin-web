@@ -187,6 +187,115 @@
             <h2 class="assessment__heading" id="study-heading">{{ copy.studyHeading }}</h2>
             <p class="assessment__note">{{ copy.studyNote }}</p>
 
+            <h3 class="assessment__subheading">{{ copy.formHeading }}</h3>
+            <p class="assessment__note">{{ copy.formIntro }}</p>
+
+            @if (openAssessment(); as opened) {
+              <p class="assessment__pinned">
+                {{ template()?.label ?? opened.templateCode }} &middot; version
+                {{ opened.templateVersion }}
+              </p>
+
+              @if (template(); as form) {
+                @if (form.status === 'placeholder-pending-lgu-approval') {
+                  <p class="assessment__provisional" role="note">{{ copy.formProvisional }}</p>
+                }
+
+                @for (question of form.questions; track question.code) {
+                  <!--
+                    Associated by `for`/`id` rather than by wrapping alone. The control sits inside
+                    an `@switch`, which the a11y lint cannot see through — and an explicit
+                    association is the stronger guarantee anyway: it survives the markup being
+                    rearranged, which implicit nesting does not.
+                  -->
+                  <label class="field" [attr.for]="'answer-' + question.code">
+                    <span class="field__label">
+                      {{ question.label }}@if (question.required) {<span aria-hidden="true">&nbsp;*</span>}
+                    </span>
+                    @switch (question.kind) {
+                      @case ('choice') {
+                        <select
+                          class="field__input"
+                          [id]="'answer-' + question.code"
+                          [attr.aria-required]="question.required"
+                          (change)="onAnswer(question.code, $event)"
+                        >
+                          <option value="">{{ copy.notSet }}</option>
+                          @for (choice of question.choices; track choice) {
+                            <option [value]="choice" [selected]="answers()[question.code] === choice">
+                              {{ choice }}
+                            </option>
+                          }
+                        </select>
+                      }
+                      @case ('integer') {
+                        <input
+                          type="number"
+                          [id]="'answer-' + question.code"
+                          min="0"
+                          step="1"
+                          class="field__input"
+                          [attr.aria-required]="question.required"
+                          [value]="answers()[question.code] ?? ''"
+                          (input)="onAnswer(question.code, $event)"
+                        />
+                      }
+                      @default {
+                        <textarea
+                          class="field__input"
+                          [id]="'answer-' + question.code"
+                          rows="2"
+                          [attr.aria-required]="question.required"
+                          [value]="answers()[question.code] ?? ''"
+                          (input)="onAnswer(question.code, $event)"
+                        ></textarea>
+                      }
+                    }
+                  </label>
+                }
+
+                <div class="assessment__actions">
+                  <button
+                    type="button"
+                    class="btn"
+                    [disabled]="submitting()"
+                    (click)="saveAnswers()"
+                  >
+                    {{ copy.saveAnswers }}
+                  </button>
+                </div>
+              }
+            } @else {
+              <p class="assessment__note">{{ copy.notOpened }}</p>
+
+              <label class="field field--narrow">
+                <span class="field__label">{{ copy.chooseTemplate }}</span>
+                <select
+                  class="field__input"
+                  [value]="chosenTemplate()"
+                  (change)="chosenTemplate.set($any($event.target).value)"
+                >
+                  <option value="">{{ copy.notSet }}</option>
+                  @for (candidate of templates(); track candidate.code) {
+                    <option [value]="candidate.code">
+                      {{ candidate.label }} ({{ candidate.version }})
+                    </option>
+                  }
+                </select>
+              </label>
+
+              <div class="assessment__actions">
+                <button
+                  type="button"
+                  class="btn"
+                  [disabled]="chosenTemplate() === '' || submitting()"
+                  (click)="openForm()"
+                >
+                  {{ copy.openForm }}
+                </button>
+              </div>
+            }
+
             <label class="field">
               <span class="field__label">{{ copy.findings }}</span>
               <textarea
@@ -230,6 +339,33 @@
               </select>
               <span class="field__hint">{{ copy.recommendationNote }}</span>
             </label>
+
+            @if (recommendation() === 'recommend-deny') {
+              <label class="field">
+                <span class="field__label">{{ copy.recommendationReason }}</span>
+                <textarea
+                  class="field__input"
+                  rows="3"
+                  [placeholder]="copy.recommendationReasonPlaceholder"
+                  [value]="reason()"
+                  (input)="onReason($event)"
+                ></textarea>
+              </label>
+            }
+
+            @if (unanswered().length > 0 || assessmentProblems().length > 0) {
+              <div class="assessment__blockers" role="status">
+                <p>{{ copy.stillNeeded }}</p>
+                <ul>
+                  @for (question of unanswered(); track question.code) {
+                    <li>{{ question.label }}</li>
+                  }
+                  @for (problem of assessmentProblems(); track problem) {
+                    <li>{{ problem }}</li>
+                  }
+                </ul>
+              </div>
+            }
 
             <div class="assessment__actions">
               <button

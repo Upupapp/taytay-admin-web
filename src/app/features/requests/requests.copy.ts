@@ -127,6 +127,21 @@ export const REQUESTS_COPY = {
     homeVisit: 'A home visit was conducted',
     recommendedAmount: 'Recommended amount (₱)',
     recommendation: 'What you recommend',
+    formHeading: 'The assessment form',
+    formIntro:
+      'An assessment is opened from a published form and pins that form\u2019s version, so the answers stay attached to the questions that were actually asked.',
+    formProvisional:
+      'This form has not been adopted by the MSWDO. It is a plausible AICS-style instrument awaiting the office\u2019s own, and it is recorded as provisional until somebody confirms it.',
+    chooseTemplate: 'Assessment form',
+    openForm: 'Open the assessment',
+    saveAnswers: 'Save the answers',
+    answersSaved: 'The answers have been recorded.',
+    notOpened:
+      'No assessment is open on this case yet. Open one above \u2014 the findings below cannot be filed until the form exists.',
+    stillNeeded: 'Still needed before this can be filed:',
+    recommendationReason: 'Why you recommend this',
+    recommendationReasonPlaceholder:
+      'Required when recommending refusal. The applicant will be told a decision followed from this.',
     recommendationNote:
       'A recommendation advises the decision; it does not make it. Approving, refusing and referring are each a separate act by somebody holding that authority.',
     saveStudy: 'Save the case study',

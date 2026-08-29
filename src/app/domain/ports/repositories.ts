@@ -69,6 +69,11 @@ import type {
 } from '../requirements/document-request';
 import type { DocumentVersionDraft } from '../requirements/requirement-document';
 import type { ConditionalApplicability } from '../requirements/requirement-obligation';
+import type {
+  AssessmentAnswers,
+  AssessmentTemplate,
+  OpenAssessment,
+} from '../intake/assessment-template';
 import type { AssessmentDraft } from '../intake/assessment';
 import type { AdvisoryAcknowledgement, IntakeAdvisory } from '../intake/intake-advisory';
 import type { IntakeDraft } from '../intake/intake-draft';
@@ -511,6 +516,38 @@ export interface AssistanceRequestRepository {
     id: AssistanceRequestId,
     acknowledgement: AdvisoryAcknowledgement | null,
   ): Observable<AssistanceRequest>;
+
+  /**
+   * The assessment forms the office publishes, with their versions.
+   *
+   * Read before opening one, because an assessment is opened *from* a template and pins its
+   * version at that moment. The console cannot invent a code: an unknown one is refused.
+   */
+  listAssessmentTemplates(): Observable<readonly AssessmentTemplate[]>;
+
+  /**
+   * Opens an assessment against a case from a published template.
+   *
+   * **Idempotent per case**, and the server says why: two open assessments on one case are two
+   * competing sets of findings, and nothing says which the approver should read. So an
+   * in-progress assessment is returned rather than a second one opened, and a screen may call
+   * this without first checking whether one exists.
+   */
+  openAssessment(
+    id: AssistanceRequestId,
+    templateCode: string,
+  ): Observable<OpenAssessment>;
+
+  /**
+   * Records answers to the form's questions. Repeatable while the assessment is in progress.
+   *
+   * Only the codes passed are written — this is a patch, not the whole set — so a screen saving
+   * one answer does not erase the others.
+   */
+  answerAssessment(
+    id: AssistanceRequestId,
+    answers: AssessmentAnswers,
+  ): Observable<OpenAssessment>;
 
   /** Records or replaces the social worker's case study. */
   recordAssessment(

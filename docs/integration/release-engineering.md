@@ -527,3 +527,48 @@ field names.
 this console never reads `GET admin/assessment-templates` — it has no notion of a template at all.
 So the save still fails; it now fails against the endpoint that could succeed, which is the half of
 the fix that does not require choosing a template vocabulary the office has not published.
+
+### Four checks had stopped watching part of the surface
+
+Adding three adapter methods should have moved `check:routes` from 120 composed paths to 123. It
+moved it by nothing at all — the new calls were not reported as unwired, they were not seen.
+
+The extractor walked `/this\.api\.(\w+)\s*[<(]/`, contiguous. Every call written as
+
+```ts
+return this.api
+  .item<Record<string, unknown>>(API_ENDPOINTS.assessmentTemplates)
+  .pipe(map(toAssessmentTemplates));
+```
+
+— the shape Prettier produces the moment a chain wraps — matched nothing. That is worse than an
+unwired path being reported, because the count *looked healthy*: the paths were absent from both
+sides of the comparison, so the ratchet was green about a surface it was not reading.
+
+The same contiguous pattern was in three more tools. Widening all four to allow whitespace around
+the dots:
+
+| check                | scanned before | scanned after | debt found |
+| -------------------- | -------------- | ------------- | ---------- |
+| `check:routes`       | 120 paths      | **127**       | 0 new 404s |
+| `check:wire-adoption`| 64 writes      | **70**        | 0 new unmapped |
+| `check:mapper-adoption` | 44 reads    | **48**        | 1 real, 3 wire-typed |
+| `check:query-params` | 77 calls       | **81**        | 1 unreadable key |
+
+Thirteen calls were invisible. Eleven of them turn out to be fine, which is luck rather than
+design — the point is that nothing was checking. Two were real, pre-existing debt hidden by the
+blind spot rather than introduced by this change: an unmapped `optionalItem<HouseholdDetail>` and
+one more camelCase filter key the API silently ignores. Both ceilings were raised by exactly one,
+and each records why.
+
+`check:mapper-adoption` also gained a distinction it needed. Its rule is that a generic is an
+assertion rather than a conversion — `api.page<ResidentView>` tells TypeScript a snake_case payload
+is a domain object and nothing at run time makes that true. But `api.item<MeWire>(…).pipe(map(toMe))`
+asserts only that the payload is the wire shape it really is, and then converts it. Counting that as
+debt marks the fix as the defect. Reads typed `…Wire` or `Record<string, unknown>` are now excluded,
+and neither can be an escape hatch: the first is this repository's declared convention for a payload
+shape, and the second asserts nothing a template could read a camelCase property off.
+
+**A ratchet that silently stops watching part of the surface is the failure this whole class of
+tooling exists to prevent.** All four widened scanners were mutation-tested — a domain type on a
+chained read, a camelCase body on a chained write, and a renamed body key each fail the check.

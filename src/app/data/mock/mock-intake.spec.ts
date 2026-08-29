@@ -327,15 +327,38 @@ describe('filing a request', () => {
 describe('the case study', () => {
   const REQ = asId<AssistanceRequestId>('req-0001');
 
+  /**
+   * An assessment is opened from a published form before anything can be filed against it.
+   *
+   * This spec used to call `recordAssessment` on its own and pass, because the mock let it. The
+   * server never would: `complete` requires an assessment already in progress, and it checks that
+   * every required question has an answer. The mock now holds both rules, so a spec that skips the
+   * form fails here rather than in production.
+   */
+  const openAndAnswer = async (): Promise<void> => {
+    await firstValueFrom(repo().openAssessment(REQ, 'aics-general'));
+    await firstValueFrom(
+      repo().answerAssessment(REQ, {
+        household_income_bracket: 'below-5000',
+        income_earners: '1',
+        presenting_problem: 'Pension does not cover the maintenance medicines.',
+        immediate_risk: 'none',
+      }),
+    );
+  };
+
   it('records findings, a home visit and a recommendation', async () => {
     signedInAs(authenticated('social-worker'));
+    await openAndAnswer();
     const updated = await firstValueFrom(
       repo().recordAssessment(REQ, {
         findings:
           'Home visit on 12 August. Household of two; pension does not cover the medicines.',
         recommendedAmount: pesos(6000),
         homeVisitConducted: true,
-        recommendation: 'recommend-approve',      }),
+        recommendation: 'recommend-approve',
+        reason: null,
+      }),
     );
     expect(updated.assessment?.homeVisitConducted).toBe(true);
     expect(updated.assessment?.recommendedAmount?.centavos).toBe(600_000);
@@ -346,13 +369,16 @@ describe('the case study', () => {
 
   it('refuses findings too short to stand as a case study', async () => {
     signedInAs(authenticated('social-worker'));
+    await openAndAnswer();
     await expect(
       firstValueFrom(
         repo().recordAssessment(REQ, {
           findings: 'OK',
           recommendedAmount: null,
           homeVisitConducted: false,
-          recommendation: 'recommend-approve',        }),
+          recommendation: 'recommend-approve',
+          reason: null,
+        }),
       ),
     ).rejects.toThrow(/findings/);
   });
@@ -366,6 +392,7 @@ describe('the case study', () => {
           recommendedAmount: null,
           homeVisitConducted: true,
           recommendation: 'recommend-approve',
+          reason: null,
         }),
       ),
     ).rejects.toThrow(PermissionDeniedError);

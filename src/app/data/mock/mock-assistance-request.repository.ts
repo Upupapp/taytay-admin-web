@@ -15,6 +15,12 @@ import {
   documentVersionProblems,
   DocumentVersionInvalidError,
   assessIntake,
+  assessmentProblems,
+  acceptsAnswer,
+  unansweredRequired,
+  type AssessmentAnswers,
+  type AssessmentTemplate,
+  type OpenAssessment,
   canTransition,
   isCaseOpen,
   isTerminalAssistanceStatus,
@@ -63,6 +69,8 @@ import {
   type SubmittedRequirement,
   type DocumentUpload,
 } from '@domain/index';
+
+import { ASSESSMENT_TEMPLATE_SEED } from './seed/assessment-templates.seed';
 
 import { MOCK_ASSISTANCE_REQUESTS, MOCK_REQUEST_NOTES } from './seed/assistance-requests.seed';
 import { MOCK_DOCUMENT_REQUESTS } from './seed/document-requests.seed';
@@ -399,6 +407,100 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     return this.latency.respond(filed);
   }
 
+  /*
+   * ── The assessment form ─────────────────────────────────────────────────────────────────
+   *
+   * The seed mirrors `config/assessment.php` on the server, `placeholder-pending-lgu-approval`
+   * and all. Marking them adopted here would be the more convenient mock — and a mock that is
+   * more convenient than the thing it stands in for is one a screen gets built against, which is
+   * how the checklist came to think an absent line meant an unticked one.
+   */
+  listAssessmentTemplates(): Observable<readonly AssessmentTemplate[]> {
+    const denied = denyUnless<readonly AssessmentTemplate[]>(
+      this.access.currentUser(),
+      'request.assess',
+    );
+
+    return denied ?? of(ASSESSMENT_TEMPLATE_SEED);
+  }
+
+  /**
+   * Opens an assessment, or returns the one already open.
+   *
+   * **Idempotent per case, like the server**, and for the server's stated reason: two open
+   * assessments on one case are two competing sets of findings, and nothing says which the
+   * approver should read. A mock that opened a second one would let a screen be written that
+   * quietly discards answers.
+   */
+  openAssessment(id: AssistanceRequestId, templateCode: string): Observable<OpenAssessment> {
+    const denied = denyUnless<OpenAssessment>(this.access.currentUser(), 'request.assess');
+    if (denied) {
+      return denied;
+    }
+
+    const template = ASSESSMENT_TEMPLATE_SEED.find(
+      (candidate) => candidate.code === templateCode,
+    );
+    if (template === undefined) {
+      return throwError(() => new Error('Unknown assessment template.'));
+    }
+
+    const existing = this.assessments.get(id);
+    if (existing !== undefined && !existing.completed) {
+      return of(existing);
+    }
+
+    const opened: OpenAssessment = {
+      templateCode: template.code,
+      // Pinned now, read once. A later change to the form must not appear to have altered what
+      // this assessment asked.
+      templateVersion: template.version,
+      completed: false,
+      answers: {},
+    };
+    this.assessments.set(id, opened);
+
+    return of(opened);
+  }
+
+  /**
+   * Records answers. A patch, never the whole set — saving one answer must not erase the others.
+   */
+  answerAssessment(
+    id: AssistanceRequestId,
+    answers: AssessmentAnswers,
+  ): Observable<OpenAssessment> {
+    const denied = denyUnless<OpenAssessment>(this.access.currentUser(), 'request.assess');
+    if (denied) {
+      return denied;
+    }
+
+    const existing = this.assessments.get(id);
+    if (existing === undefined || existing.completed) {
+      return throwError(() => new Error('No assessment is in progress for that case.'));
+    }
+
+    const template = ASSESSMENT_TEMPLATE_SEED.find(
+      (candidate) => candidate.code === existing.templateCode,
+    );
+
+    for (const [code, value] of Object.entries(answers)) {
+      const question = template?.questions.find((candidate) => candidate.code === code);
+      if (question === undefined || !acceptsAnswer(question, value)) {
+        return throwError(
+          () => new Error(`\`${code}\` is not a valid answer for this assessment template.`),
+        );
+      }
+    }
+
+    const updated: OpenAssessment = { ...existing, answers: { ...existing.answers, ...answers } };
+    this.assessments.set(id, updated);
+
+    return of(updated);
+  }
+
+  private readonly assessments = new Map<AssistanceRequestId, OpenAssessment>();
+
   /**
    * Records the case study. Held apart from any status move: writing findings
    * and endorsing on them are two acts, and the second one is what `DL-08`
@@ -417,6 +519,39 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       return throwError(() => new Error('A case study needs findings somebody else could act on.'));
     }
 
+    /*
+     * The server's three preconditions, held here too.
+     *
+     * A mock that completes what the server would refuse is worse than no mock: every screen and
+     * every spec is written against the permissive version, and the failure only appears against
+     * a real API — which is exactly how `recordAssessment` came to be pointed at the wrong
+     * endpoint for the whole programme without one test noticing.
+     */
+    const open = this.assessments.get(id);
+    if (open === undefined || open.completed) {
+      return throwError(() => new Error('No assessment is in progress for that case.'));
+    }
+
+    const template = ASSESSMENT_TEMPLATE_SEED.find(
+      (candidate) => candidate.code === open.templateCode,
+    );
+    const missing = template === undefined ? [] : unansweredRequired(template, open.answers);
+    if (missing.length > 0) {
+      return throwError(
+        () =>
+          new Error(
+            `The form still needs an answer to: ${missing.map((question) => question.label).join(', ')}.`,
+          ),
+      );
+    }
+
+    const problems = assessmentProblems(assessment);
+    if (problems.length > 0) {
+      return throwError(() => new Error(problems[0]));
+    }
+
+    this.assessments.set(id, { ...open, completed: true });
+
     const current = this.requests.find((request) => request.id === id);
     if (current === undefined || !isWithinBarangayScope(user, current.barangayId)) {
       return throwError(() => new PermissionDeniedError('request.assess'));
@@ -432,6 +567,7 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
         recommendedAmount: assessment.recommendedAmount,
         homeVisitConducted: assessment.homeVisitConducted,
         recommendation: assessment.recommendation,
+        recommendationReason: assessment.reason,
       },
       audit: { ...current.audit, updatedAt: now, updatedBy: user?.id ?? null },
     };
