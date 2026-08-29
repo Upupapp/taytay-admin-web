@@ -17,7 +17,6 @@ import {
   type AuthenticatedUser,
   type HouseholdMemberView,
   type Household,
-  type HouseholdId,
   type Page,
   type PageRequest,
   type Permission,
@@ -109,16 +108,6 @@ export class MockResidentRepository implements ResidentRepository {
     return this.latency.respond(this.disclose(resident, user));
   }
 
-  getHousehold(id: HouseholdId): Observable<Household | null> {
-    const household = this.store.findHousehold(id);
-    if (
-      !household ||
-      !canReadRecord(this.access.currentUser(), 'resident.view', household.address.barangayId)
-    ) {
-      return this.latency.respond(null);
-    }
-    return this.latency.respond(household);
-  }
 
   getProfile(id: ResidentId): Observable<ResidentProfile | null> {
     const user = this.access.currentUser();

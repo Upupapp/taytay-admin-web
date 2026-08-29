@@ -40,6 +40,9 @@ export const RESIDENTS_COPY = {
   },
 
   detail: {
+    visitsHeading: 'Home visits',
+    noVisits: 'No home visit has been recorded for this person.',
+    visitPurpose: 'Purpose',
     familiesHeading: 'Families',
     noFamilies: 'This person is not recorded in any family.',
     headedBy: 'Headed by',

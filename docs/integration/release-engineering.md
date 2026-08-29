@@ -411,3 +411,41 @@ system must remember is not a rule about which HTTP verb carries it.*
 reason, while `DL-48` requires one on every family change. The act reaches the trail; the sentence
 explaining it does not. The call site still passes a reason so the port's contract is honoured
 rather than the argument quietly disappearing at the one place a reader would look for it.
+
+### Not every unreached port is a missing screen
+
+Building the "9 live-endpoint screens" turned up a distinction the earlier categorisation missed:
+**some unreached methods duplicate a composite the screen already fetches.**
+
+* `ResidentRepository.getHousehold(householdId)` returned a bare `Household` by id, while
+  `HouseholdRepository.getById` returns the fuller `HouseholdDetail` for the same record — a
+  second read of one thing, from a port that does not own it. **Zero callers anywhere. Removed.**
+* `BeneficiaryRepository.enrollmentsFor` returned what `BeneficiaryDetail.enrollments` already
+  carries. **Removed**, and the mock spec that used it now reads the detail — the rule it asserts is
+  unchanged, only the door it comes through.
+
+Building screens for those would have created exactly what `DL-71` warns about: *two assemblies of
+the same history eventually disagree, in front of the family.* Deleting them lowers the count
+honestly, which building a duplicate screen would not have.
+
+`duplicatesFor` is the same shape and was **kept**: its mock spec asserts a real withholding rule
+(candidates are empty for a viewer without `beneficiary.review-duplicates`), and losing that
+coverage is not worth one point on a counter.
+
+**One genuinely missing read was built.** `FieldVisitRepository.forResident` — home visits on the
+resident record. No composite carries them, and a visit is often the only record of what the office
+actually saw.
+
+### A panel a role may not read is absent, never fatal
+
+Adding that panel broke the whole record for a role without visit access: the refusal propagated
+and the page rendered nothing. An intake officer looking up an address would have seen a blank
+screen because they cannot read home visits.
+
+The three side panels now degrade to empty. That makes the refused state look like the empty state,
+which is the one thing `DL-112` argues against — it is accepted here as the lesser harm, and the
+panel headings stay visible so nobody reads a missing panel as a missing record.
+
+**The port-adoption count is optimistic by one.** Two ports declare `forResident`, and the check's
+search is textual, so calling `FieldVisitRepository.forResident` also credits
+`ReferralRepository.forResident`. That is the under-reporting the check names in its own output.

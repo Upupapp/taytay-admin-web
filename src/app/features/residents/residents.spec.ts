@@ -9,6 +9,7 @@ import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
 import { MockResidentRepository } from '@data/mock/mock-resident.repository';
 import { MockFamilyRepository } from '@data/mock/mock-family.repository';
+import { MockFieldVisitRepository } from '@data/mock/mock-field-visit.repository';
 import { MockSavedViewRepository } from '@data/mock/mock-saved-view.repository';
 import {
   ACCESS_CONTEXT,
@@ -28,6 +29,7 @@ import {
   type StaffUserId,
   type SignInOutcome,
   FAMILY_REPOSITORY,
+  FIELD_VISIT_REPOSITORY,
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
 
@@ -106,6 +108,11 @@ async function configure(role: StaffRole, barangayId: BarangayId | null = null):
        * visible rather than an incidental dependency.
        */
       { provide: FAMILY_REPOSITORY, useClass: MockFamilyRepository },
+      /*
+       * The record now lists home visits, which no composite carries — a visit is often the only
+       * record of what the office actually saw, and it was reachable from no screen at all.
+       */
+      { provide: FIELD_VISIT_REPOSITORY, useClass: MockFieldVisitRepository },
       { provide: SAVED_VIEW_REPOSITORY, useClass: MockSavedViewRepository },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
     ],

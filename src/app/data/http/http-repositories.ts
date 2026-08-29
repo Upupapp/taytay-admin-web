@@ -38,7 +38,6 @@ import {
   type IdentityResolution,
   type IdentityResolutionDraft,
   type MergePreview,
-  type ProgramEnrollment,
   type IsoDate,
   type IsoDateTime,
   type ReferralDraft,
@@ -253,9 +252,6 @@ export class HttpResidentRepository implements ResidentRepository {
     return this.api.optionalItem<ResidentView>(`${API_ENDPOINTS.residents}/${id}`);
   }
 
-  getHousehold(id: HouseholdId): Observable<Household | null> {
-    return this.api.optionalItem<Household>(`${API_ENDPOINTS.households}/${id}`);
-  }
 
   /**
    * Composed from four published reads, because the API projects no profile.
@@ -1580,11 +1576,6 @@ export class HttpBeneficiaryRepository implements BeneficiaryRepository {
    * Reading them as sub-resources of a beneficiary was the console asserting an entity the whole
    * model denies, and every one of the three 404s.
    */
-  enrollmentsFor(id: ResidentId): Observable<readonly ProgramEnrollment[]> {
-    return this.api.collection<ProgramEnrollment>(API_ENDPOINTS.enrollments, {
-      residentId: id,
-    });
-  }
 
   duplicateQueue(page: PageRequest): Observable<Page<DuplicateCandidate>> {
     return this.api.page<DuplicateCandidate>(API_ENDPOINTS.identityReview, page);

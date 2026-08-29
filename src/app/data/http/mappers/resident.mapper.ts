@@ -64,7 +64,7 @@ export function toResident(wire: unknown): Resident | null {
   return {
     id: residentId,
     // Absent from this payload — see the table above. `null` is the honest
-    // answer, and `ResidentRepository.getHousehold` is how a screen asks.
+    // answer, and `HouseholdRepository.getById` is how a screen asks.
     householdId: null as HouseholdId | null,
     name: toPersonName(wire),
     sex: (str(field(wire, 'sex')) ?? 'unspecified') as Sex,

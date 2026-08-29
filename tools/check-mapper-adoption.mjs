@@ -39,7 +39,7 @@ const ADAPTERS = 'src/app/data/http/http-repositories.ts';
  * Recorded 18 August 2026, TAB 06. LOWER THIS when you repoint an adapter through a mapper;
  * never raise it. Raising it is the change this file exists to make somebody argue for.
  */
-const CEILING = 45;
+const CEILING = 44;
 
 const source = readFileSync(join(ROOT, ADAPTERS), 'utf8');
 

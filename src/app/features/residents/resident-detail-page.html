@@ -169,6 +169,31 @@
         </section>
 
         <!--
+          ── Home visits ───────────────────────────────────────────────────
+
+          Not on the profile, and not a duplicate of anything: a visit is often the only record of
+          what the office actually saw, and it was reachable from no screen at all.
+        -->
+        <section class="card panel panel--wide" aria-labelledby="visits-heading">
+          <h2 class="panel__heading" id="visits-heading">{{ copy.visitsHeading }}</h2>
+
+          @if (visitsFor().length === 0) {
+            <p class="panel__empty">{{ copy.noVisits }}</p>
+          } @else {
+            <ul class="panel__list">
+              @for (visit of visitsFor(); track visit.id) {
+                <li class="panel__item">
+                  <a [routerLink]="['/visits', visit.id]">{{ visit.referenceNumber }}</a>
+                  <span class="panel__meta">
+                    {{ visit.scheduledFor | date: 'mediumDate' }} · {{ visit.purpose }}
+                  </span>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+
+        <!--
           ── Families, and how they changed ────────────────────────────────
 
           Deliberately its own panel, below the household and above the casework.

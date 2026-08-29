@@ -31,7 +31,6 @@ import {
   type Page,
   type PageRequest,
   type Permission,
-  type ProgramEnrollment,
   type Resident,
   type ResidentId,
   type ResidentView,
@@ -151,18 +150,6 @@ export class MockBeneficiaryRepository implements BeneficiaryRepository {
     });
   }
 
-  enrollmentsFor(id: ResidentId): Observable<readonly ProgramEnrollment[]> {
-    const user = this.access.currentUser();
-    const denied = denyUnless<readonly ProgramEnrollment[]>(user, 'beneficiary.view');
-    if (denied) {
-      return denied;
-    }
-    const resident = this.residents.find(id);
-    if (!resident || !canReadRecord(user, 'resident.view', resident.address.barangayId)) {
-      return this.latency.respond([]);
-    }
-    return this.latency.respond(this.store.enrollmentsFor(id));
-  }
 
   duplicateQueue(page: PageRequest): Observable<Page<DuplicateCandidate>> {
     const user = this.access.currentUser();

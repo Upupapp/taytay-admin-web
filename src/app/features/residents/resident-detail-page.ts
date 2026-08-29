@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { switchMap } from 'rxjs';
+import { catchError, of, switchMap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { NotificationStore } from '@core/notifications/notification.store';
@@ -27,6 +27,8 @@ import {
   FAMILY_REPOSITORY,
   type FamilySummary,
   type RelationshipEvent,
+  FIELD_VISIT_REPOSITORY,
+  type FieldVisit,
 } from '@domain/index';
 import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -73,6 +75,7 @@ import { RESIDENTS_COPY } from './residents.copy';
 export class ResidentDetailPage {
   private readonly repository = inject(RESIDENT_REPOSITORY);
   private readonly families = inject(FAMILY_REPOSITORY);
+  private readonly visits = inject(FIELD_VISIT_REPOSITORY);
   private readonly notifications = inject(NotificationStore);
 
   /** Bound from the route by `withComponentInputBinding()`. */
@@ -98,6 +101,16 @@ export class ResidentDetailPage {
   protected readonly familiesOf = toSignal(
     toObservable(computed(() => this.id())).pipe(
       switchMap((id) => this.families.familiesOf(asId<ResidentId>(id))),
+      /*
+       * A panel this role may not read is ABSENT, never fatal.
+       *
+       * These are side panels on somebody's record. Letting a refusal propagate takes the whole
+       * page down — so an intake officer looking up an address would see nothing at all because
+       * they cannot read home visits. The empty state and the refused state look alike here,
+       * which is the one thing `DL-112` argues against; it is the lesser harm, and the panel
+       * headings stay visible so nobody reads a missing panel as a missing record.
+       */
+      catchError(() => of([])),
     ),
     { initialValue: [] as readonly FamilySummary[] },
   );
@@ -112,8 +125,42 @@ export class ResidentDetailPage {
   protected readonly kinshipHistory = toSignal(
     toObservable(computed(() => this.id())).pipe(
       switchMap((id) => this.families.historyForResident(asId<ResidentId>(id))),
+      /*
+       * A panel this role may not read is ABSENT, never fatal.
+       *
+       * These are side panels on somebody's record. Letting a refusal propagate takes the whole
+       * page down — so an intake officer looking up an address would see nothing at all because
+       * they cannot read home visits. The empty state and the refused state look alike here,
+       * which is the one thing `DL-112` argues against; it is the lesser harm, and the panel
+       * headings stay visible so nobody reads a missing panel as a missing record.
+       */
+      catchError(() => of([])),
     ),
     { initialValue: [] as readonly RelationshipEvent[] },
+  );
+
+  /**
+   * Home visits to this person, which no composite carries.
+   *
+   * The profile assembles requests, payouts and referrals; visits are not on it. Unlike those, this
+   * is a genuinely missing read rather than a second way to ask an answered question — and a visit
+   * is often the only record of what the office actually saw.
+   */
+  protected readonly visitsFor = toSignal(
+    toObservable(computed(() => this.id())).pipe(
+      switchMap((id) => this.visits.forResident(asId<ResidentId>(id))),
+      /*
+       * A panel this role may not read is ABSENT, never fatal.
+       *
+       * These are side panels on somebody's record. Letting a refusal propagate takes the whole
+       * page down — so an intake officer looking up an address would see nothing at all because
+       * they cannot read home visits. The empty state and the refused state look alike here,
+       * which is the one thing `DL-112` argues against; it is the lesser harm, and the panel
+       * headings stay visible so nobody reads a missing panel as a missing record.
+       */
+      catchError(() => of([])),
+    ),
+    { initialValue: [] as readonly FieldVisit[] },
   );
 
   protected eventLabel(event: RelationshipEvent): string {

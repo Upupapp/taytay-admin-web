@@ -63,7 +63,6 @@ import type {
   IdentityResolutionDraft,
   MergePreview,
 } from '../beneficiaries/duplicate-review';
-import type { ProgramEnrollment } from '../beneficiaries/program-enrollment';
 import type {
   DocumentRequest,
   DocumentRequestDraft,
@@ -101,7 +100,6 @@ import type {
   VulnerabilitySector,
 } from '../residents/resident';
 import type {
-  Household,
   HouseholdFilter,
   HouseholdSortField,
   MembershipChange,
@@ -201,7 +199,6 @@ export interface ResidentRepository {
     page: PageRequest<ResidentSortField>,
   ): Observable<Page<ResidentView>>;
   getById(id: ResidentId): Observable<ResidentView | null>;
-  getHousehold(id: HouseholdId): Observable<Household | null>;
   /**
    * Resident, household, family and assistance history in one call — the
    * traceability guarantee of the registry. `null` for "not found *or* not
@@ -641,8 +638,6 @@ export interface BeneficiaryRepository {
   /** `null` for "not found *or* not yours", deliberately indistinguishable (`DL-31`). */
   getByResidentId(id: ResidentId): Observable<BeneficiaryDetail | null>;
 
-  /** Every enrollment, standing and past. Exits are history, not deletions. */
-  enrollmentsFor(id: ResidentId): Observable<readonly ProgramEnrollment[]>;
 
   /**
    * The duplicate-review queue. Candidates report *agreement between fields*,

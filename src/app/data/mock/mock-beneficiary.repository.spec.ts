@@ -281,7 +281,16 @@ describe('MockBeneficiaryRepository — the record it assembles', () => {
 
   it('keeps a past enrollment beside the current one for somebody who returned', async () => {
     const repository = signedInAs(authenticated('mswdo-head'));
-    const enrollments = await firstValueFrom(repository.enrollmentsFor(RETURNER));
+
+    /*
+     * Read from the detail, which is where a screen gets it.
+     *
+     * `enrollmentsFor` was removed: `BeneficiaryDetail` already carries `enrollments`, and a second
+     * way to ask the same question is a second answer that can disagree with the first (`DL-71`).
+     * The rule this test asserts is unchanged — only the door it comes through.
+     */
+    const detail = await firstValueFrom(repository.getByResidentId(RETURNER));
+    const enrollments = detail?.enrollments ?? [];
 
     expect(enrollments.length).toBe(2);
     expect(enrollments.some((enrollment) => enrollment.status === 'exited')).toBe(true);
