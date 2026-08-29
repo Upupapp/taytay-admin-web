@@ -1749,3 +1749,150 @@ issues; the rest need a person**, and that person needs a running console agains
 
 Step 7, the string review with the MSWDO, and step 12, the print paths, are the same: they need the
 office.
+
+### L-24 — the filter panel narrows nothing, and the list it returns is complete
+
+Swept 2026-08-29 against a green `npm run verify` (all 38 checks, 93 spec files, production
+build clean). `L-22` recorded the inbound half of this expression; this is the outbound half of
+the same line, and it is the more serious of the two.
+
+```ts
+return this.api.page<ResidentView>(API_ENDPOINTS.residents, page, filter);
+```
+
+`toQueryParams` (`api.contract.ts`) and `toParams` (`http-repositories.ts:1901`) copy every
+filter key **verbatim**. Neither converts case. `per_page` is hand-written `snake_case` two
+lines above `toQueryParams`' copy loop — the convention is stated and then not applied to
+anything that came from the domain.
+
+**Measured on the API side, not assumed.** Across every `V1` controller the accepted query
+parameters are `snake_case` exclusively — `barangay_id`, `assigned_to`, `resident_id`,
+`program_id`, `overdue_only`, `open_only`, `as_of`, `verification_tier` — and a grep for a
+camelCase parameter returns **nothing, in any module**.
+
+**The failure mode is 200, not 4xx.** `ReferralController::index`:
+
+```php
+foreach (['status', 'urgency', 'destination_type', 'resident_id'] as $filter) {
+    $value = $request->query($filter);
+    if (is_string($value) && $value !== '') { $query->where($filter, $value); }
+}
+```
+
+`?residentId=…` leaves `$request->query('resident_id')` null, the `where` never runs, and the
+endpoint answers with the whole queue under a heading that says it was narrowed.
+
+**What this is not.** It is not an authorisation bypass and it must not be reported as one.
+Every list controller scopes before it filters; `ResidentController` says so in a comment —
+`barangay_id` is *"narrowing only … asking for a barangay outside it yields nothing rather than
+widening anything"*. The actor's barangay scope holds throughout. What is lost is the
+narrowing, inside that scope: for a barangay clerk, their own barangay; for a
+municipality-scoped supervisor, every resident of a municipality of 397,111.
+
+**Why every gate stayed green.** The single-word keys need no conversion, so `status`,
+`search`, `category`, `q` and `scope` work — and a filter panel that half works demonstrates
+itself with the half that does. `check:routes` compares path and verb, and the path is right at
+that verb. `check:wire-adoption` reads `args[1]`, the request **body**, and returns early on a
+read. `check:contract` governs the envelope. **Query parameters were covered by nothing.**
+
+**Counted: 54 keys** — 40 across 13 `*Filter` interfaces, 14 hand-written at call sites
+(`{ residentId: id }` at `:1434` and five more like it). Both halves are counted because both
+are places somebody must edit.
+
+`check:query-params` is the counter, and it is a ratchet on the same terms as
+`check:mapper-adoption`: it fails when the number grows **and** when it shrinks without the
+ceiling being lowered in the same commit. Proven red in both directions before it was trusted —
+at ceiling 46 against 54 found, and against a planted `barangay_id` rename that made it report
+53 and demand the ceiling move.
+
+**What the counter does not cover, stated so a green run is not over-read.** It compares
+**shape**, not existence: a key passes if the wire could carry it as written. Whether the
+endpoint has that filter at all is a different question, and one instance is already known —
+`http-repositories.ts:664` sends `{ view, ... }` to `admin/newsfeed` and **no `view` parameter
+is read anywhere in the Content module**. It is lowercase, so it passes the check, and it is
+discarded by the API. It is in neither number. A green run means *no new key was added in a
+case the API cannot read*; it does not mean the filters work. **54 is a floor.** The claim that
+the filters work needs the recorded consumer expectations replayed against the real router,
+which is TAB 06's backend half and has never run.
+
+**Not fixed here, deliberately.** The conversion belongs at the transport seam, in
+`toQueryParams` and `toParams`, and converting there changes what forty-odd screens send in one
+commit against an API this console has never once talked to. That is a change to make when
+there is a staging deployment to watch it against — the same condition lines 02, 13, 16 and 17
+of the launch gate are waiting on. Recorded, counted, and held.
+
+### L-25 — the console does not model the case type the API restricts
+
+The API's `CaseType` (`modules/Welfare/Domain/CaseType.php`) has seven values and says of one:
+
+> `Protective` … a protection case concerns a VAWC survivor, a child at risk or a trafficking
+> survivor, and **its very existence is sensitive**. It is gated by `request.view-sensitive`
+> **everywhere — list, detail and count** … knowing a protection case exists for a named person
+> is most of the disclosure.
+
+The console has no `CaseType`. `SocialCase.category` is a `CaseCategory`, a **different**
+seven-value vocabulary — `crisis-intervention`, `child-protection`, `family-welfare`,
+`older-persons`, `disability-support`, `gender-based-violence`, `livelihood` — which shares
+exactly **one** member with the API's set (`livelihood`), and whose own doc comment says it
+*"Drives nothing — it is how a supervisor finds the child protection files."*
+
+`WelfareCaseType` is present in the vendored contract and referenced by nothing, which is
+correct: `check:contract-drift` rule 3 forbids importing wire vocabulary outside the transport
+seam. That is the point worth recording rather than the unused type. The vendored contract's
+stated purpose is that *"a change to the API's vocabulary becomes a TypeScript error here"* —
+a mechanism that can only fire for a type something imports, and rule 3 means almost nothing
+does. **Three of the fifty-six published vocabularies are referenced; a parity checker exists
+for exactly one** (`check:permission-parity`, L-23), and the one time anybody compared a second
+by hand it found two seven-value sets sharing one member.
+
+No leak is claimed and none is demonstrated: the admin case surface is among the paths
+`check:routes` already counts as absent, so nothing renders a protective case today. The
+finding is that **when that surface is built, the restriction the API states three times has no
+counterpart on this side**, and nothing in the repository would notice. It belongs with ADR
+0044, which is where the case model is being decided.
+
+### L-26 — every sortable column in the console is inert against the API
+
+Found while measuring L-24, and it is the same shape one layer along: a parameter the console
+sends carefully and the API does not read.
+
+`docs/api/conventions.md` §5 **declares** sorting:
+
+> Sorting: `?sort=field` / `?sort=-field` (leading `-` = descending), restricted to an
+> endpoint-declared allow-list.
+
+`toQueryParams` implements the console's half faithfully, `-` prefix and all. Seven list pages
+wire a real `(sortChanged)` handler through `SortSpec` into `PageRequest.sort` — residents,
+cases, requests, referrals, beneficiaries, households and releases — so a caseworker clicking a
+column header produces a request that is correct by the published convention.
+
+**Nothing reads it.** `PaginationParams::fromRequest` takes `page` and `per_page` and nothing
+else. No list controller reads `sort` in any module. The single hit for `'sort'` across the
+API's controllers is `SearchController`, where it is a **column stored on a `SavedView` row**,
+not an ordering applied to a query. Each list applies its own fixed order instead —
+`ResidentRegistry::query()` is `orderBy('last_name')->orderBy('first_name')`,
+`ReferralRepository::inWorkingOrder()` is overdue-then-urgency-then-age.
+
+**Corrected against myself while writing this:** the first reading of `ResidentController::index`
+looked like an unordered paginated query, which would have made pagination unstable — rows
+appearing on two pages or none. It is not: the ordering is on the registry's builder rather than
+in the controller, one call up. Pagination is stable. The finding is the ignored parameter and
+nothing worse, and the larger claim is withdrawn rather than left standing in a weaker form.
+
+**Why it looks like it works.** The mock sorts in memory — `mock-resident.repository.ts:83`
+calls `sortItems(...)` with the requested field and direction — so every column header behaves
+correctly in development and in all 93 spec files. This is the launch gate's own caveat
+reaching a specific feature: *green against a mock*.
+
+**No checker is added for this, deliberately**, and the reason matters. Ten of the console's
+sort fields are camelCase (`updatedAt`, `nextAction`, `submittedAt`, `referenceNumber`,
+`scheduledFor`, `followUpOn`, `lastAssistanceAt`, `referredAt`, `birthDate`, `totalReleased`),
+so a check in the shape of `check:query-params` would fire on them — and converting them to
+`snake_case` would change nothing, because the parameter is discarded whatever it says. A check
+that can be satisfied without fixing the defect is worse than no check: it converts an open
+finding into a closed one. This belongs to the API.
+
+**Hand-off recorded in `docs/integration/manual-actions.md` §2.8.** Either the API implements
+the allow-list §5 already promises, or §5 is amended to say sorting is not offered and the seven
+column headers come out of the console. Both are small; the current state — a documented feature,
+a faithful client and no server — is the only option that misleads a caseworker.

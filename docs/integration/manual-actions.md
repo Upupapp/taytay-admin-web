@@ -275,3 +275,25 @@ credentials."* It is not, so three things are **designed and unverified**:
 Everything proven so far ran on the local disk. The access-grant model — opaque, single-use,
 expiring, issued after a server-side decision — does not depend on the store, so it holds. The
 *posture* does.
+
+### 2.8 Sorting is published and unimplemented (L-26) — backend, and it decides a console change
+
+`docs/api/conventions.md` §5 promises `?sort=field` / `?sort=-field` against an
+endpoint-declared allow-list. `PaginationParams::fromRequest` reads `page` and `per_page` only,
+and **no list controller in any module reads `sort`**. The console sends it on every paged read
+and offers a working column header on seven list screens; against the mock they sort, against
+the API they cannot.
+
+Two ways to close it, and somebody has to pick:
+
+* **Implement §5.** An allow-list per list endpoint — residents, assistance requests, referrals,
+  releases, visits, households, beneficiaries — mapping a published field name to a column. Small
+  and mechanical, and it makes the console's existing UI correct with no console change.
+* **Amend §5** to say sorting is not offered, and the seven `(sortChanged)` handlers and their
+  column affordances come out of the console.
+
+Not a console decision either way: the console cannot implement server-side ordering, and it
+should not remove a working affordance while the published contract still promises it.
+
+**Do not "fix" this by snake_casing the ten camelCase sort fields.** That makes the parameter
+well-formed and still ignored, and closes the finding without changing the behaviour.
