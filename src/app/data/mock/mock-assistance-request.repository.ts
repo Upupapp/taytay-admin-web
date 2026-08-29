@@ -431,6 +431,7 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
         findings: assessment.findings.trim(),
         recommendedAmount: assessment.recommendedAmount,
         homeVisitConducted: assessment.homeVisitConducted,
+        recommendation: assessment.recommendation,
       },
       audit: { ...current.audit, updatedAt: now, updatedBy: user?.id ?? null },
     };

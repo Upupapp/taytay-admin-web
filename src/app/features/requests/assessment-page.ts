@@ -38,6 +38,9 @@ import {
   permissionForTransition,
   pesos,
   toAssessmentDraft,
+  ASSESSMENT_RECOMMENDATIONS,
+  ASSESSMENT_RECOMMENDATION_LABELS,
+  type AssessmentRecommendation,
   type AssessmentReadinessCode,
   type AssistanceRequest,
   type AssistanceRequestId,
@@ -170,6 +173,9 @@ export class AssessmentPage {
   protected readonly findings = signal('');
   protected readonly homeVisit = signal(false);
   protected readonly recommended = signal<number | null>(null);
+  protected readonly recommendation = signal<AssessmentRecommendation>('insufficient-information');
+  protected readonly recommendationChoices = ASSESSMENT_RECOMMENDATIONS;
+  protected readonly recommendationLabels = ASSESSMENT_RECOMMENDATION_LABELS;
   private hydrated = false;
 
   constructor() {
@@ -187,6 +193,7 @@ export class AssessmentPage {
       this.recommended.set(
         draft.recommendedAmount === null ? null : draft.recommendedAmount.centavos / 100,
       );
+      this.recommendation.set(draft.recommendation);
     });
   }
 
@@ -204,6 +211,10 @@ export class AssessmentPage {
 
   protected onFindings(event: Event): void {
     this.findings.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  protected onRecommendation(event: Event): void {
+    this.recommendation.set((event.target as HTMLSelectElement).value as AssessmentRecommendation);
   }
 
   protected onHomeVisit(event: Event): void {
@@ -231,6 +242,7 @@ export class AssessmentPage {
         findings: this.findings().trim(),
         recommendedAmount: amount === null ? null : pesos(amount),
         homeVisitConducted: this.homeVisit(),
+        recommendation: this.recommendation(),
       }),
       this.copy.studySaved,
     );

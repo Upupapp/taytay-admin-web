@@ -486,3 +486,44 @@ end in, and the adapter sends one call per line in order.
 The mock had been hiding it: it rebuilt the whole list from the ticked codes, so absent meant
 unticked. That is a different rule from the server's, and a mock that is more convenient than the
 thing it stands in for is one a screen gets built against.
+
+### The case study was posted to the endpoint that starts one
+
+`recordAssessment` posted the whole `AssessmentDraft` to
+`POST admin/assistance-requests/{case}/assessment`. That path is the server's **`open`** action: it
+takes one field, `template_code`, and starts a blank assessment from a published template. It does
+not take findings, an amount or a home visit, and it would have refused the console's body for a
+missing `template_code` before reading any of it.
+
+The endpoint that signs findings is `POST .../assessment/complete`, and `check:routes` never saw
+the difference because both paths exist and both take `POST`. A verb-aware path check answers
+"is there an endpoint here"; it cannot answer "is it *this* endpoint", and nothing in the suite
+does.
+
+Three things follow, and only the first is fixed.
+
+**The recommendation was missing entirely.** `complete` requires it — `in:recommend-approve,
+recommend-deny,recommend-refer,insufficient-information` — and `AssessmentDraft` had no field for
+it, so the console could not have completed an assessment even against the right path. The four
+values are now in the domain (`domain/intake/assessment.ts`) with the backend enum's own wording
+preserved: they are advisory verbs, and `insufficient-information` is a first-class answer rather
+than an absence, which is why it is the empty draft's default. Defaulting to `recommend-approve`
+would put a recommendation on a form nobody has filled in.
+
+This is `DL-60` and `DL-78` doctrine, not an exception to it. The enum's docblock is explicit —
+"A RECOMMENDATION IS NOT A DECISION… A human with approval authority decides" — and completing an
+assessment moves a case to `endorsed` at most. The console was not holding the line by omitting the
+field; it was failing to record the assessor's advice at all.
+
+**Two of the draft's fields have nowhere to go.** `recommendedAmount` and `homeVisitConducted` have
+no counterpart on `complete`, and `toWireAssessment` sends neither. A caseworker fills both in and
+the office record keeps neither. Folding the amount into `findings` would put a figure in free text
+where no report can find it; inventing keys would 422 the save. This needs a decision about where
+the office records a recommended amount, which is a question about the record rather than about
+field names.
+
+**`complete` requires an assessment already open, and nothing opens one.** The server refuses with
+"No assessment is in progress for that case." unless `open` ran first with a `template_code`, and
+this console never reads `GET admin/assessment-templates` — it has no notion of a template at all.
+So the save still fails; it now fails against the endpoint that could succeed, which is the half of
+the fix that does not require choosing a template vocabulary the office has not published.

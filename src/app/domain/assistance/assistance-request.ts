@@ -1,4 +1,5 @@
 import type { AuditStamp } from '../shared/audit';
+import type { AssessmentRecommendation } from '../intake/assessment';
 import type {
   AssistanceRequestId,
   BarangayId,
@@ -265,6 +266,12 @@ export interface SocialWorkerAssessment {
   readonly findings: string;
   readonly recommendedAmount: Money | null;
   readonly homeVisitConducted: boolean;
+  /**
+   * What the assessor advised. Nullable because assessments recorded before the console asked for
+   * one carry none — and an absent recommendation is not the same claim as "insufficient
+   * information", which somebody chose.
+   */
+  readonly recommendation: AssessmentRecommendation | null;
 }
 
 export interface AssistanceRequest {

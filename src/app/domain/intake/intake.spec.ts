@@ -438,6 +438,7 @@ describe('the case study', () => {
         findings: 'Home visit on 12 August; household of five in one rented room.',
         recommendedAmount: pesos(5000),
         homeVisitConducted: true,
+        recommendation: 'recommend-approve',
       },
     };
     expect(assessmentReadiness(assessed)).toEqual([]);

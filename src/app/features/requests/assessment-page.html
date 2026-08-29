@@ -215,6 +215,22 @@
               />
             </label>
 
+            <label class="field field--narrow">
+              <span class="field__label">{{ copy.recommendation }}</span>
+              <select
+                class="field__input"
+                [value]="recommendation()"
+                (change)="onRecommendation($event)"
+              >
+                @for (choice of recommendationChoices; track choice) {
+                  <option [value]="choice" [selected]="choice === recommendation()">
+                    {{ recommendationLabels[choice] }}
+                  </option>
+                }
+              </select>
+              <span class="field__hint">{{ copy.recommendationNote }}</span>
+            </label>
+
             <div class="assessment__actions">
               <button
                 type="button"

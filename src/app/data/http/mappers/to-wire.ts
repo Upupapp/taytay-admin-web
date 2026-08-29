@@ -29,6 +29,7 @@
  */
 
 import type {
+  AssessmentDraft,
   DocumentVersionDraft,
   EventDraft,
   FieldVisitDraft,
@@ -395,3 +396,28 @@ export function toWireDocumentVersion(draft: DocumentVersionDraft): Record<strin
  * decision about where the category comes from — the programme, or a field the intake form starts
  * asking for — and that is a question about what the office is recording, not about field names.
  */
+
+/**
+ * Completing an assessment: `POST admin/assistance-requests/{case}/assessment/complete`.
+ *
+ * ## Two of the draft's four fields have nowhere to go
+ *
+ * The endpoint takes `recommendation` (required), `reason` and `findings`. It has **no field**
+ * for `recommendedAmount` and none for `homeVisitConducted`, so this mapper sends neither.
+ * Inventing keys for them would be a 422 on every save; folding the amount into `findings` would
+ * put a figure in a free-text note where no report can find it and no reviewer can trust it.
+ * Both are recorded in `docs/integration/release-engineering.md` rather than smuggled
+ * through.
+ *
+ * `reason` is omitted rather than sent empty: it is the assessor's note on *why* this
+ * recommendation, and this console has never asked for one. A blank string would record that the
+ * question was asked and answered with nothing.
+ */
+export function toWireAssessment(draft: AssessmentDraft): Record<string, unknown> {
+  const fields: Record<string, unknown> = { recommendation: draft.recommendation };
+
+  const findings = draft.findings.trim();
+  if (findings !== '') fields['findings'] = findings;
+
+  return fields;
+}

@@ -3847,3 +3847,54 @@ and no fields chosen, or fields chosen and no basis, between two requests. Neith
 *sent*, which is the property that mattered — but the intermediate states exist where previously
 the composing screen held everything until one submit. That is the price of matching the API's
 shape, and it is paid on a draft nobody outside the office can see.
+
+## DL-141 — an assessor's recommendation is a record, not a decision; the console was missing it
+
+`AssessmentDraft` carried findings, a recommended amount and a home-visit flag, and no
+recommendation. That looked like `DL-60` being honoured — intake advises and never decides — and it
+was not. `DL-60` is about what the **software** may conclude from a duplicate check. What a social
+worker advises after reading a file is the substance of their professional judgement, and leaving
+it off the form does not stop the decision being made; it stops the office recording who advised
+what before somebody made it.
+
+The backend has held the distinction all along, in the enum's own words:
+
+> A RECOMMENDATION IS NOT A DECISION. … `recommend-approve` — The assessor recommends the case be
+> approved. **A human with approval authority decides.** … Completing an assessment therefore moves
+> a case to `endorsed` at most.
+
+`POST admin/assistance-requests/{case}/assessment/complete` validates `recommendation` as
+`required, in:Recommendation::values()`. The console could not have completed an assessment without
+it, and was not trying to: `recordAssessment` posted to `POST .../assessment`, which is the
+server's **`open`** action — it takes a `template_code`, starts a blank assessment, and accepts no
+findings at all. `check:routes` passed it because both paths are published and both take `POST`; a
+verb-aware path check answers "is there an endpoint here", never "is it *this* endpoint".
+
+So the four values now live in `domain/intake/assessment.ts` with the enum's reasoning preserved.
+`insufficient-information` is the empty draft's default because it is a first-class answer rather
+than an absence — putting `recommend-approve` on a form nobody has filled in is exactly the
+collapse this entry is about — and `SocialWorkerAssessment.recommendation` is **nullable** where
+the draft's is not: an assessment recorded before the console asked carries none, and "nobody was
+asked" is a different claim from "the assessor could not form a view".
+
+### The check had to be narrowed, and narrowing it is not weakening it
+
+`check:intake` rule 1 forbids a decision-shaped field anywhere under `domain/intake`, and
+`recommendation` is on its list. Its scope was wider than its doctrine: the rule exists so that no
+applicant is approved or denied by a frontend score, and a field a person types is not a score.
+
+The carve-out is one file and one field, and it is paid for by a new rule 1b: **nothing may derive
+a recommendation** — no function under `domain/intake` may return `AssessmentRecommendation`. A
+human may record one; no code may compute one. Four planted regressions confirm the pair still
+bites: `eligible` on `AssessmentDraft`, `recommendation` on `IntakeAdvisory`, a function returning
+a recommendation, and `score` declared beside the permitted field. All four fail the check.
+
+### Two fields of the draft have nowhere to go, and one precondition is unmet
+
+`complete` takes `recommendation`, `reason` and `findings`. There is no field for
+`recommendedAmount` and none for `homeVisitConducted`, so `toWireAssessment` sends neither and the
+loss is written down rather than smuggled into free text. And `complete` requires an assessment
+already open, which only `open` creates from a published `template_code` — a vocabulary this
+console has never read. The save therefore still fails, but it now fails against the endpoint that
+could succeed, which is the half of the fix that does not require choosing templates on the
+office's behalf. Both are recorded in `docs/integration/release-engineering.md`.

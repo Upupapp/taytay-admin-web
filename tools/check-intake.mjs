@@ -59,10 +59,34 @@ if (intakeFiles.length === 0) {
 const DECISION_FIELD =
   /^\s*readonly\s+(eligible|isEligible|entitled|qualifies|qualified|approved|isApproved|denied|isDenied|decision|verdict|score|points|rating|risk|riskLevel|recommendation|autoApproved)\b/;
 
+/*
+ * The one field a person is allowed to record.
+ *
+ * `AssessmentDraft.recommendation` is what the **social worker** advises, typed into a form by
+ * them, and the API requires it: `POST .../assessment/complete` validates
+ * `recommendation` as `required, in:Recommendation::values()`. Omitting it does not hold the
+ * `DL-60` line — it drops the assessor's professional judgement from the office record while the
+ * decision still gets made somewhere else.
+ *
+ * The doctrine this rule enforces is that **software** must not decide. A field a human fills in
+ * is not that, and the backend's own enum says so in as many words: "A RECOMMENDATION IS NOT A
+ * DECISION… A human with approval authority decides." Completing an assessment reaches `endorsed`
+ * at most.
+ *
+ * So the carve-out is exactly one type and exactly one field, and rule 1b below closes the hole it
+ * would otherwise open: nothing may *derive* a recommendation. A human may record one; no function
+ * may return one.
+ */
+const RECORDED_BY_A_PERSON = new Map([
+  ['src/app/domain/intake/assessment.ts', new Set(['recommendation'])],
+]);
+
 for (const file of intakeFiles) {
   const text = read(file);
+  const allowed = RECORDED_BY_A_PERSON.get(file) ?? new Set();
   for (const [index, line] of text.split(/\r?\n/).entries()) {
-    if (DECISION_FIELD.test(line)) {
+    const found = DECISION_FIELD.exec(line);
+    if (found !== null && !allowed.has(found[1])) {
       problems.push(
         `${file}:${index + 1} declares a decision-shaped field on an advisory type: ` +
           `"${line.trim().slice(0, 80)}". The duplicate check reports evidence; it decides nothing.`,
@@ -71,6 +95,29 @@ for (const file of intakeFiles) {
   }
 }
 notes.push(`advisory types: ${intakeFiles.length} files scanned for decision fields`);
+
+/* ── 1b. Nothing derives a recommendation ────────────────────────────────── */
+
+/*
+ * The carve-out above says a person may record one. This says nothing may compute one.
+ *
+ * A function returning `AssessmentRecommendation` — from an advisory, a readiness list, a
+ * vulnerability snapshot, an amount — is the frontend scoring engine TAB 11's third acceptance
+ * criterion forbids, wearing the one field name that is now permitted to exist.
+ */
+const DERIVES_RECOMMENDATION = /\)\s*:\s*AssessmentRecommendation\b/;
+
+for (const file of intakeFiles) {
+  for (const [index, line] of read(file).split(/\r?\n/).entries()) {
+    if (DERIVES_RECOMMENDATION.test(line)) {
+      problems.push(
+        `${file}:${index + 1} derives a recommendation: "${line.trim().slice(0, 80)}". ` +
+          'An assessor records one; nothing computes one.',
+      );
+    }
+  }
+}
+notes.push('derivation: no function returns a recommendation');
 
 /* ── 2. No blocking tone ─────────────────────────────────────────────────── */
 

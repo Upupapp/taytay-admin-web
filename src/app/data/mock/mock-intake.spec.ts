@@ -335,7 +335,7 @@ describe('the case study', () => {
           'Home visit on 12 August. Household of two; pension does not cover the medicines.',
         recommendedAmount: pesos(6000),
         homeVisitConducted: true,
-      }),
+        recommendation: 'recommend-approve',      }),
     );
     expect(updated.assessment?.homeVisitConducted).toBe(true);
     expect(updated.assessment?.recommendedAmount?.centavos).toBe(600_000);
@@ -352,7 +352,7 @@ describe('the case study', () => {
           findings: 'OK',
           recommendedAmount: null,
           homeVisitConducted: false,
-        }),
+          recommendation: 'recommend-approve',        }),
       ),
     ).rejects.toThrow(/findings/);
   });
@@ -365,6 +365,7 @@ describe('the case study', () => {
           findings: 'Home visit on 12 August. Household of two.',
           recommendedAmount: null,
           homeVisitConducted: true,
+          recommendation: 'recommend-approve',
         }),
       ),
     ).rejects.toThrow(PermissionDeniedError);

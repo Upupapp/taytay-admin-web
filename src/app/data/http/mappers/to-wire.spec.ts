@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { asId, asIsoDate, asIsoDateTime, centavos } from '@domain/index';
 import type {
+  AssessmentDraft,
   AssistanceRequestId,
   BarangayId,
   PostDraft,
@@ -14,6 +15,7 @@ import type {
 } from '@domain/index';
 
 import {
+  toWireAssessment,
   toWireEventDraft,
   toWireFieldVisitDraft,
   toWirePostDraft,
@@ -417,6 +419,63 @@ describe('outbound mappers', () => {
       for (const forbidden of ['lat', 'lng', 'latitude', 'longitude', 'coordinate', 'geo', 'checkin', 'check_in']) {
         expect(wire.toLowerCase()).not.toContain(forbidden);
       }
+    });
+  });
+
+  describe('toWireAssessment', () => {
+    const draft: AssessmentDraft = {
+      findings: '  Household of five in one rented room.  ',
+      recommendedAmount: centavos(500_000),
+      homeVisitConducted: true,
+      recommendation: 'recommend-approve',
+    };
+
+    it('sends the recommendation the endpoint requires, and trims the findings', () => {
+      expect(toWireAssessment(draft)).toEqual({
+        recommendation: 'recommend-approve',
+        findings: 'Household of five in one rented room.',
+      });
+    });
+
+    /**
+     * `insufficient-information` is a recommendation, not an absence.
+     *
+     * The backend enum makes it a first-class case for the reason its docblock gives: forcing a
+     * view out of an incomplete file is how "insufficient information" becomes "denied" in the
+     * record. A mapper that dropped it as falsy would 422 the save and teach the assessor that the
+     * honest answer is the one that does not work.
+     */
+    it('sends "insufficient information" as a recommendation like any other', () => {
+      expect(toWireAssessment({ ...draft, recommendation: 'insufficient-information' })).toEqual({
+        recommendation: 'insufficient-information',
+        findings: 'Household of five in one rented room.',
+      });
+    });
+
+    /**
+     * Empty findings are omitted rather than sent as ''.
+     *
+     * The field is `nullable` on the endpoint, and a blank string records that the assessor was
+     * asked and wrote nothing — which is a different claim from not having reached that part yet.
+     */
+    it('omits findings nobody has written', () => {
+      expect(toWireAssessment({ ...draft, findings: '   ' })).toEqual({
+        recommendation: 'recommend-approve',
+      });
+    });
+
+    /**
+     * The two fields the endpoint has no home for are dropped, deliberately.
+     *
+     * `complete` takes `recommendation`, `reason` and `findings` and nothing else. Inventing a key
+     * for the amount is a 422 on every save; folding it into `findings` puts a figure in free text
+     * where no report can find it. The loss is recorded in
+     * `docs/integration/release-engineering.md` rather than papered over here.
+     */
+    it('sends no amount and no home-visit flag, because the endpoint has neither', () => {
+      const wire = toWireAssessment(draft);
+
+      expect(Object.keys(wire).sort()).toEqual(['findings', 'recommendation']);
     });
   });
 });

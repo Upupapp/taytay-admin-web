@@ -126,6 +126,9 @@ export const REQUESTS_COPY = {
       'e.g. Home visit on 12 August. Household of five in a rented room; sole earner out of work since June; two children in public school.',
     homeVisit: 'A home visit was conducted',
     recommendedAmount: 'Recommended amount (₱)',
+    recommendation: 'What you recommend',
+    recommendationNote:
+      'A recommendation advises the decision; it does not make it. Approving, refusing and referring are each a separate act by somebody holding that authority.',
     saveStudy: 'Save the case study',
     studySaved: 'The case study has been saved.',
 

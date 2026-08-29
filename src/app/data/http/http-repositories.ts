@@ -214,6 +214,7 @@ import { ApiClient } from './api.client';
 import { UPLOAD_POLICY } from './api.contract';
 import { FileTransport } from './file-transport';
 import {
+  toWireAssessment,
   toWireDocumentVersion,
   toWireEventDraft,
   toWireFieldVisitDraft,
@@ -1083,13 +1084,27 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
     );
   }
 
+  /**
+   * `POST .../assessment/complete`, not `POST .../assessment`.
+   *
+   * The path this used to call is `open`, which starts an assessment from a **template code** and
+   * takes no findings at all — so every case study this console has ever saved was posted to an
+   * endpoint that would refuse it for a missing `template_code` and record nothing if it did not.
+   *
+   * The server's own precondition is not met either: `complete` requires an assessment already
+   * open on the case, and nothing in this console opens one, because the console has no notion of
+   * an assessment template (`GET admin/assessment-templates` is unread). Until it does, this call
+   * answers "No assessment is in progress for that case." That is recorded in
+   * `docs/integration/release-engineering.md` and stated here rather than hidden behind a retry: pointing at the right endpoint is the half of the fix
+   * that can be made without inventing a template vocabulary the office has not chosen.
+   */
   recordAssessment(
     id: AssistanceRequestId,
     assessment: AssessmentDraft,
   ): Observable<AssistanceRequest> {
-    return this.api.post<AssistanceRequest, AssessmentDraft>(
-      `${API_ENDPOINTS.assistanceRequests}/${id}/assessment`,
-      assessment,
+    return this.api.post<AssistanceRequest, Record<string, unknown>>(
+      `${API_ENDPOINTS.assistanceRequests}/${id}/assessment/complete`,
+      toWireAssessment(assessment),
     );
   }
 

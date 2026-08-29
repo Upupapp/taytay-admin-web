@@ -10,16 +10,62 @@ import type { Money } from '../shared/money';
  * reads it as a decision. Approval is a separate act by a different role, which
  * is what keeps `DL-08` true — the worker who assessed does not also approve.
  */
+/**
+ * What the assessor recommends — **advisory, and the vocabulary says so**.
+ *
+ * Every value is a verb about what somebody *suggests*, never a state a case reaches. Completing an
+ * assessment moves a case to `endorsed` at most; approval is a separate act by a different role,
+ * which is what keeps `DL-08` true.
+ *
+ * The console had no field for this at all, and that was the gap rather than a principled absence:
+ * a recommendation *is* the output of a case study, and the API requires one to complete an
+ * assessment. Leaving it out meant a social worker could write findings that reached nobody.
+ */
+export type AssessmentRecommendation =
+  | 'recommend-approve'
+  | 'recommend-deny'
+  | 'recommend-refer'
+  | 'insufficient-information';
+
+export const ASSESSMENT_RECOMMENDATIONS: readonly AssessmentRecommendation[] = [
+  'recommend-approve',
+  'recommend-deny',
+  'recommend-refer',
+  'insufficient-information',
+];
+
+/**
+ * Worded as recommendations, never as outcomes.
+ *
+ * "Approve" on a button is what turns professional judgement into a commitment of public money
+ * nobody with approval authority ever made. The labels say *recommend* every time.
+ */
+export const ASSESSMENT_RECOMMENDATION_LABELS: Readonly<
+  Record<AssessmentRecommendation, string>
+> = {
+  'recommend-approve': 'Recommend approval',
+  'recommend-deny': 'Recommend refusal',
+  'recommend-refer': 'Recommend referral elsewhere',
+  'insufficient-information': 'Not enough information to recommend',
+};
+
 export interface AssessmentDraft {
   readonly findings: string;
   readonly recommendedAmount: Money | null;
   readonly homeVisitConducted: boolean;
+  /** What the assessor advises. The head decides; this never does. */
+  readonly recommendation: AssessmentRecommendation;
 }
 
 export const EMPTY_ASSESSMENT: AssessmentDraft = {
   findings: '',
   recommendedAmount: null,
   homeVisitConducted: false,
+  /*
+   * The honest default: nothing has been assessed yet, so nothing is recommended. Defaulting to
+   * `recommend-approve` would put a recommendation on a form nobody has filled in.
+   */
+  recommendation: 'insufficient-information',
 };
 
 /**
@@ -43,6 +89,9 @@ export function toAssessmentDraft(request: AssistanceRequest): AssessmentDraft {
         findings: existing.findings,
         recommendedAmount: existing.recommendedAmount,
         homeVisitConducted: existing.homeVisitConducted,
+        // A recorded assessment that predates this field reads as "not enough information",
+        // which is truthful: nobody was ever asked.
+        recommendation: existing.recommendation ?? 'insufficient-information',
       };
 }
 

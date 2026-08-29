@@ -188,6 +188,7 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         'Widowed senior citizen living with an out-of-school grandson. No regular income beyond the social pension. Assistance is warranted.',
       recommendedAmount: pesos(8000),
       homeVisitConducted: true,
+      recommendation: 'recommend-approve',
     },
     statusHistory: [
       {
@@ -378,6 +379,7 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
       findings: 'Registered solo parent and 4Ps household member. Eligible for the full grant.',
       recommendedAmount: pesos(3000),
       homeVisitConducted: false,
+      recommendation: 'recommend-approve',
     },
     statusHistory: [
       {
@@ -576,6 +578,7 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
       findings: 'Bedridden senior citizen with no other source of support. Full grant recommended.',
       recommendedAmount: pesos(8000),
       homeVisitConducted: true,
+      recommendation: 'recommend-approve',
     },
     statusHistory: [
       {
