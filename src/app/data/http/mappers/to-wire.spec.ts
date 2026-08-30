@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { asId, asIsoDate, asIsoDateTime, centavos } from '@domain/index';
 import type {
   AssessmentDraft,
+  DuplicatePairId,
   AssistanceRequestId,
   BarangayId,
   PostDraft,
@@ -16,6 +17,7 @@ import type {
 
 import {
   toWireAssessment,
+  toWireIdentityResolution,
   toWireEventDraft,
   toWireFieldVisitDraft,
   toWirePostDraft,
@@ -478,5 +480,54 @@ describe('outbound mappers', () => {
 
       expect(Object.keys(wire).sort()).toEqual(['findings', 'recommendation']);
     });
+  });
+});
+
+describe('toWireIdentityResolution', () => {
+  const draft = {
+    pairId: asId<DuplicatePairId>('pair-1'),
+    verdict: 'same-person' as const,
+    pair: [asId<ResidentId>('r-1'), asId<ResidentId>('r-2')] as const,
+    canonicalResidentId: asId<ResidentId>('r-1'),
+    reason: '  Same PhilSys digits; confirmed at the counter.  ',
+  };
+
+  it('sends the decision the endpoint validates, and trims the note', () => {
+    expect(toWireIdentityResolution(draft)).toEqual({
+      decision: 'same-person',
+      note: 'Same PhilSys digits; confirmed at the counter.',
+    });
+  });
+
+  /**
+   * `distinct-people` becomes `different-person`, and neither wording is a mistake.
+   *
+   * The console says *these are two people* — a statement about the records — where the API says
+   * *this one differs*, which reads as a comparison that could be redone. `DL-74` chose the first
+   * deliberately, so the domain keeps its word and the seam carries the translation. A rename in
+   * either direction would lose an argument nobody would remember having had.
+   */
+  it('translates the console’s verdict into the API’s vocabulary', () => {
+    expect(toWireIdentityResolution({ ...draft, verdict: 'distinct-people' })['decision']).toBe(
+      'different-person',
+    );
+  });
+
+  /**
+   * The canonical record is not sent, because `decide` has no field for it.
+   *
+   * Which record survives is settled by `merge`, and this console never calls merge (`DL-74`).
+   * Smuggling the id into `note` would put an identifier in a free-text field where no query could
+   * find it and no reviewer could rely on it.
+   */
+  it('sends no canonical record, because the endpoint has no field for one', () => {
+    expect(Object.keys(toWireIdentityResolution(draft)).sort()).toEqual(['decision', 'note']);
+  });
+
+  /** The endpoint caps `note` at 255, so a longer reason is cut rather than 422'd. */
+  it('fits the note inside the column', () => {
+    const wire = toWireIdentityResolution({ ...draft, reason: 'x'.repeat(400) });
+
+    expect((wire['note'] as string).length).toBe(255);
   });
 });

@@ -107,6 +107,21 @@ export const BENEFICIARIES_COPY = {
     emptyHeading: 'Nothing waiting',
     emptyMessage: 'Every pair the office has surfaced has been answered.',
 
+    detect: 'Look for duplicates now',
+    detecting: 'Looking\u2026',
+    /*
+     * A count, and a sentence saying it decides nothing.
+     *
+     * "12 pairs found" beside a queue invites the reading that the software has identified twelve
+     * duplicates. It has identified twelve pairs somebody has to look at, which is a different
+     * claim, and the fifth surface where a signal could quietly become a verdict (`DL-42`,
+     * `DL-60`, `DL-66`, `DL-78`, `DL-98`).
+     */
+    detected: (open: number): string =>
+      open === 0
+        ? 'Nothing to review. No pair in the registry resembles another closely enough to ask about.'
+        : `${open} pair${open === 1 ? '' : 's'} open for review. Each is a question for a person, not a finding.`,
+    detectFailed: 'The registry could not be checked. Nothing has changed.',
     strengthHint:
       'Resemblance orders this queue. It decides nothing — a person makes the finding, and records why.',
     sensitiveNotice:

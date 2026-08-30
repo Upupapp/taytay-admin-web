@@ -1,4 +1,13 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <button
+    page-actions
+    type="button"
+    class="btn"
+    [disabled]="detecting()"
+    (click)="detect()"
+  >
+    {{ detecting() ? copy.detecting : copy.detect }}
+  </button>
   <a page-actions class="btn" routerLink="/beneficiaries">{{ copy.back }}</a>
 </app-page-header>
 

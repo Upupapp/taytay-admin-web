@@ -19,6 +19,7 @@ import {
   resolutionProblems,
   type AssistanceRequestStatus,
   type ReleaseStatus,
+  type DuplicatePairId,
   type IdentityResolutionDraft,
   type MatchSignal,
   type ProgramEnrollment,
@@ -464,6 +465,7 @@ describe('duplicate review', () => {
 describe('recording an identity finding', () => {
   function draft(overrides: Partial<IdentityResolutionDraft> = {}): IdentityResolutionDraft {
     return {
+      pairId: asId<DuplicatePairId>('pair-ana-bea'),
       verdict: 'same-person',
       pair: [ANA, BEA],
       canonicalResidentId: ANA,

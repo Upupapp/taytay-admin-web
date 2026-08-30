@@ -12,6 +12,7 @@ import {
   type AccessContext,
   type AuthenticatedUser,
   type BarangayId,
+  type DuplicatePairId,
   type IdentityResolutionDraft,
   type Permission,
   type ResidentId,
@@ -72,6 +73,7 @@ function signedInAs(user: AuthenticatedUser | null): MockBeneficiaryRepository {
 
 function resolution(overrides: Partial<IdentityResolutionDraft> = {}): IdentityResolutionDraft {
   return {
+    pairId: asId<DuplicatePairId>([AURORA, AURORA_AGAIN].slice().sort().join('~')),
     verdict: 'same-person',
     pair: [AURORA, AURORA_AGAIN],
     canonicalResidentId: AURORA,
@@ -258,7 +260,13 @@ describe('MockBeneficiaryRepository — resolving an identity is a finding, not 
 
   it('previews what a finding would carry across without changing anything', async () => {
     const repository = signedInAs(authenticated('mswdo-head'));
-    const preview = await firstValueFrom(repository.previewResolution(AURORA, AURORA_AGAIN));
+    const preview = await firstValueFrom(
+      repository.previewResolution(
+        asId<DuplicatePairId>('pair-aurora'),
+        AURORA,
+        AURORA_AGAIN,
+      ),
+    );
 
     expect(preview.canonicalResidentId).toBe(AURORA);
     expect(preview.supersededResidentId).toBe(AURORA_AGAIN);

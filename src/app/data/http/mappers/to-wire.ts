@@ -30,6 +30,7 @@
 
 import type {
   AssessmentDraft,
+  IdentityResolutionDraft,
   DocumentVersionDraft,
   EventDraft,
   FieldVisitDraft,
@@ -425,6 +426,42 @@ export function toWireAssessment(draft: AssessmentDraft): Record<string, unknown
 
   const findings = draft.findings.trim();
   if (findings !== '') fields['findings'] = findings;
+
+  return fields;
+}
+
+/**
+ * Recording a finding on a duplicate pair: `POST admin/resident-duplicates/{pair}/decide`.
+ *
+ * ## One value differs, and it is not a synonym
+ *
+ * The API accepts `same-person` or `different-person`. This console says `same-person` or
+ * **`distinct-people`**, and the wording is deliberate: `DL-74` records that resolving a pair
+ * asserts *these are two people*, a statement about the records, rather than *this one differs*,
+ * which reads as a comparison that could be redone. The domain keeps its wording and this mapper
+ * carries the translation, which is what a transport seam is for.
+ *
+ * ## `canonicalResidentId` has nowhere to go, and that is the important half
+ *
+ * `decide` takes `decision` and `note` and nothing else. Which record survives is settled by
+ * `merge`, and **this console never calls merge** — `DL-74`: "There is no merge." So a `same-person`
+ * finding recorded from here says the two records are one person and does *not* say which is
+ * canonical, even though the reviewer chose one on screen to see the preview.
+ *
+ * That is a real gap, not a mapping detail: superseding is what stops the second record being used
+ * again. It is recorded in `docs/integration/release-engineering.md` rather than smuggled into
+ * `note`, where no query could find it and no reviewer could rely on it.
+ */
+export function toWireIdentityResolution(draft: IdentityResolutionDraft): Record<string, unknown> {
+  const fields: Record<string, unknown> = {
+    decision: draft.verdict === 'same-person' ? 'same-person' : 'different-person',
+  };
+
+  const note = draft.reason.trim();
+  // `note` is nullable on the endpoint and capped at 255. The domain requires a reason, so this is
+  // never empty in practice — the guard is here so a shortened draft cannot post `''` and record
+  // that the reviewer was asked and said nothing (`DL-144`'s distinction).
+  if (note !== '') fields['note'] = note.slice(0, 255);
 
   return fields;
 }

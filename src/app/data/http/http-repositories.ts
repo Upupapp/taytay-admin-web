@@ -86,6 +86,7 @@ import {
   type CaseTaskId,
   HOUSEHOLD_COMPOSITION_UNREADABLE,
   type CaseWorkspace,
+  type DuplicatePairId,
   type AdvisoryAcknowledgement,
   type AssessmentAnswers,
   type AssessmentTemplate,
@@ -217,9 +218,11 @@ import {
 import { ApiClient } from './api.client';
 import { UPLOAD_POLICY } from './api.contract';
 import { FileTransport } from './file-transport';
+import { int } from './mappers/wire';
 import { toAssessmentTemplates, toOpenAssessment } from './mappers/assessment.mapper';
 import {
   toWireAssessment,
+  toWireIdentityResolution,
   toWireDocumentVersion,
   toWireEventDraft,
   toWireFieldVisitDraft,
@@ -1708,20 +1711,52 @@ export class HttpBeneficiaryRepository implements BeneficiaryRepository {
     });
   }
 
+  /**
+   * `POST admin/resident-duplicates/detect`.
+   *
+   * The queue was read and never filled. A pair is a row the office is holding — created by a
+   * detection pass, carrying a decision and a note — so a console that never ran one displayed an
+   * empty queue over a registry full of duplicates, and looked right doing it.
+   */
+  detectDuplicates(): Observable<number> {
+    return this.api
+      .post<Record<string, unknown>, Record<string, never>>(
+        `${API_ENDPOINTS.identityReview}/detect`,
+        {},
+      )
+      .pipe(map((wire) => int(wire['pairs_open']) ?? int(wire['created']) ?? 0));
+  }
+
+  /**
+   * `POST admin/resident-duplicates/{pair}/preview`, not `GET .../preview`.
+   *
+   * Wrong verb, wrong shape and wrong subject: the console asked a collection-level URL to compare
+   * two resident ids, and the API previews **one open pair** and takes the survivor in the body.
+   * The old call was a 404 at any verb, so nothing on the confirmation screen has ever been read
+   * from the server.
+   *
+   * Calling it still changes nothing — `DL-74` stands, and this console never calls
+   * `.../{pair}/merge`. A preview of what superseding would carry across is what a reviewer is
+   * owed before recording a finding, and it is not the act itself.
+   */
   previewResolution(
+    pairId: DuplicatePairId,
     canonicalResidentId: ResidentId,
     supersededResidentId: ResidentId,
   ): Observable<MergePreview> {
-    return this.api.item<MergePreview>(`${API_ENDPOINTS.identityReview}/preview`, {
-      canonicalResidentId,
-      supersededResidentId,
-    });
+    void supersededResidentId;
+
+    return this.api.post<MergePreview, { survivor_resident_id: ResidentId }>(
+      `${API_ENDPOINTS.identityReview}/${pairId}/preview`,
+      { survivor_resident_id: canonicalResidentId },
+    );
   }
 
+  /** `POST admin/resident-duplicates/{pair}/decide`, through an explicit mapper. */
   resolveIdentity(draft: IdentityResolutionDraft): Observable<IdentityResolution> {
-    return this.api.post<IdentityResolution, IdentityResolutionDraft>(
-      API_ENDPOINTS.identityReview,
-      draft,
+    return this.api.post<IdentityResolution, Record<string, unknown>>(
+      `${API_ENDPOINTS.identityReview}/${draft.pairId}/decide`,
+      toWireIdentityResolution(draft),
     );
   }
 

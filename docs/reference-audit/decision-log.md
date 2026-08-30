@@ -4261,3 +4261,68 @@ behind them**, the twenty split four ways, and only this one was a wrong URL:
 Triaged in full in `docs/integration/release-engineering.md`. Routes 21 → 20, wire-adoption 11 → 10.
 Gate line 05/07 stays NO-GO: nine of the ten non-case paths need a backend route or a decision about
 which model wins.
+
+## DL-148 — a duplicate pair is a record the office is holding, not a resemblance it recomputes
+
+`DL-147` triaged the unwired paths and put the duplicate queue in the "right idea, different model"
+column. This adopts the API's model, and the model is the whole of it — the URLs were a symptom.
+
+### The console was computing what the office is supposed to be holding
+
+Two records resemble each other from the moment they both exist. A **pair** exists only once
+somebody has run a detection and the office has taken it on: the API persists a row with its own
+uuid, a `decision`, a `decision_note` and a `decided_at`, and addresses every act on it by that id.
+
+This console had no pair id at all. It addressed a pair by its two resident ids, which cannot name
+the same thing, and the consequences ran deeper than two 404s:
+
+- `POST admin/resident-duplicates` and `GET admin/resident-duplicates/preview` are served at no
+  verb, so **no finding has ever been recorded and no preview has ever been read**.
+- `POST admin/resident-duplicates/detect` was never called, so **the queue was read and never
+  filled**. An empty screen meant "nobody has looked" and read as "there are no duplicates" — the
+  `DL-112` failure, a wrong answer delivered with confidence, on the surface that decides whether
+  two files are one person.
+
+`DuplicateCandidate` and `IdentityResolutionDraft` now carry a `DuplicatePairId`, the adapter posts
+to `{pair}/decide` and `{pair}/preview`, and the review page has a **Look for duplicates now**
+action that reports a count.
+
+### The count states a number and refuses a verdict
+
+"12 pairs found" beside a queue invites the reading that the software has identified twelve
+duplicates. It has identified twelve pairs somebody has to look at. The message says so — *"Each is
+a question for a person, not a finding"* — and zero says *"No pair in the registry resembles another
+closely enough to ask about"* rather than a bare nought. This is the sixth surface where a signal
+could quietly become a decision engine, after `DL-42`, `DL-60`, `DL-66`, `DL-78` and `DL-98`.
+
+### One value translates, and the domain keeps its wording
+
+The API accepts `same-person | different-person`; this console says `same-person |
+**distinct-people**`. `DL-74` chose the second deliberately: *these are two people* is a statement
+about the records, where *this one differs* reads as a comparison that could be redone. So the
+domain keeps its word and `toWireIdentityResolution` carries the translation. Renaming either side
+would lose an argument nobody would remember having had, which is what a transport seam exists to
+prevent.
+
+### What a finding recorded from here does not say
+
+`decide` takes `decision` and `note` and nothing else. **Which record survives is settled by
+`merge`, and this console never calls merge** (`DL-74`: "There is no merge"). So a `same-person`
+finding recorded from here says the two records are one person and does *not* say which is
+canonical — even though the reviewer picks one on screen to see the preview.
+
+That is a real gap and not a mapping detail: superseding is what stops the second record being used
+again, and `IdentityResolution.canonicalResidentId` is a field this console can display from its
+mock and never from the server. It is **not** smuggled into `note`, where no query could find it and
+no reviewer could rely on it. Recorded in `docs/integration/release-engineering.md`.
+
+The mock keeps computing pairs, because it has no detection run to persist one, and names each pair
+from its two resident ids **ordered** — the API stores `lower_resident_id` and `higher_resident_id`
+for the same reason. A mock that minted a different id per direction would let a screen record two
+findings about one pair and pass.
+
+### Four ratchets moved
+
+Routes 20 → **18**, wire-adoption 10 → **9**, query-params 54 → **53**, mapper-adoption 45 → **44**.
+The last two are ground gained by *deleting* a call: the old preview sent two camelCase keys to a
+URL nobody serves and cast the answer to `MergePreview`.

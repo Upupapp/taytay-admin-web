@@ -686,3 +686,23 @@ and out of scope until that ADR is settled.
 
 **Gate line 05/07 stays NO-GO.** Nine of the ten non-case paths need either a backend route or a
 decision about which model wins; only one was a wrong URL.
+
+### A `same-person` finding cannot say which record survives
+
+`decide` accepts `decision` and `note`. There is no field for the canonical record, because the API
+settles that in `merge` — and this console never calls merge (`DL-74`).
+
+So a reviewer picks a survivor on screen, sees a preview of what superseding would carry across, and
+records a finding that says *these two records are one person* without saying *and this is the one
+to use*. `IdentityResolution.canonicalResidentId` and `supersededResidentId` are fields the mock
+fills and the server never will.
+
+It matters because superseding is the part that stops the second record being used again. A pair
+marked `same-person` with no canonical record still has two live entries, and the next clerk to
+search will find both. Either the API grows a canonical field on `decide`, or the office accepts
+that `merge` is the act that supersedes and this console must be allowed to call it — which
+`DL-74` currently forbids, for reasons that were about **deleting** a record rather than pointing one
+at another. That distinction is the decision to make, and it is the office's.
+
+Not smuggled into `note`: an identifier in a free-text field is one no query can find and no
+reviewer can rely on.

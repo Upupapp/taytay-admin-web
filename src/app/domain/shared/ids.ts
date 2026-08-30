@@ -63,6 +63,16 @@ export type ReferralNoteId = Branded<string, 'ReferralNoteId'>;
  * registry keys on `ResidentId` throughout.
  */
 export type IdentityResolutionId = Branded<string, 'IdentityResolutionId'>;
+/**
+ * A pair the office is holding open for review.
+ *
+ * The pair is a **record**, not a computation. Detection persists a row with its own identity, a
+ * decision and a note, and the API addresses every act on the pair by that id — decide, preview,
+ * merge. This console used to address a pair by its two resident ids, which cannot name the same
+ * thing: two records resemble each other from the moment they both exist, and the pair only exists
+ * once somebody has run a detection and the office has taken it on (`DL-148`).
+ */
+export type DuplicatePairId = Branded<string, 'DuplicatePairId'>;
 
 /**
  * The single sanctioned way to turn an untyped string (route param, API payload)

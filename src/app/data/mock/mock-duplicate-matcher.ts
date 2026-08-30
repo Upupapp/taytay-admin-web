@@ -1,8 +1,10 @@
 import {
+  asId,
   formatProtectedName,
   gradeDuplicate,
   hasSensitiveSector,
   type DuplicateCandidate,
+  type DuplicatePairId,
   type MatchAttribute,
   type MatchOutcome,
   type MatchSignal,
@@ -183,6 +185,16 @@ export function candidatesFor(
     }
 
     candidates.push({
+      /*
+       * The mock has no detection run to persist a pair, so it names one deterministically from
+       * the two records, ordered. Ordered because the pair is the same pair read from either side
+       * — the API stores `lower_resident_id` and `higher_resident_id` for exactly that reason —
+       * and a mock that minted a different id per direction would let a screen record two findings
+       * about one pair and pass.
+       */
+      pairId: asId<DuplicatePairId>(
+        [subject.id, other.id].slice().sort().join('~'),
+      ),
       residentId: subject.id,
       otherResidentId: other.id,
       residentLabel: formatProtectedName(subject.name),

@@ -1,17 +1,16 @@
 {
   "$comment": "Write bodies sent to the API without an explicit toWire mapper. BASELINE, not an allow-list: each is a 422 against the real API. check:wire-adoption fails if the list grows. Regenerate with node tools/check-wire-adoption.mjs --write-baseline",
   "recordedBy": "TAB 19",
-  "count": 10,
+  "count": 9,
   "writes": [
-    "530: sends transfer verbatim",
-    "621: inline literal sends staffUserId",
-    "659: inline literal sends staffUserId",
-    "671: inline literal sends dueOn",
-    "1016: sends draft verbatim",
-    "1017: sends draft verbatim",
-    "1111: sends draft verbatim",
-    "1112: sends draft verbatim",
-    "1304: sends draft verbatim",
-    "1722: sends draft verbatim"
+    "533: sends transfer verbatim",
+    "624: inline literal sends staffUserId",
+    "662: inline literal sends staffUserId",
+    "674: inline literal sends dueOn",
+    "1019: sends draft verbatim",
+    "1020: sends draft verbatim",
+    "1114: sends draft verbatim",
+    "1115: sends draft verbatim",
+    "1307: sends draft verbatim"
   ]
 }

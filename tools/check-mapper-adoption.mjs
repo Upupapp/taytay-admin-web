@@ -47,7 +47,12 @@ const ADAPTERS = 'src/app/data/http/http-repositories.ts';
  * visible at the same time and are excluded above as wire-typed — they are the pattern this check
  * asks for, not the one it forbids.
  */
-const CEILING = 45;
+/*
+ * 45 → 44 when `previewResolution` stopped casting a `GET` response to `MergePreview` at a URL the
+ * API does not serve. The `optionalItem<HouseholdDetail>` pair remains and cannot be mapped —
+ * `household_memberships` has no role column (`DL-145`).
+ */
+const CEILING = 44;
 
 const source = readFileSync(join(ROOT, ADAPTERS), 'utf8');
 

@@ -175,7 +175,13 @@ for (const call of callArguments(adapters)) {
  *
  * A ratchet number that goes up is not self-evidently a finding. It has to be read.
  */
-const CEILING = 54;
+const CEILING = 53;
+
+/*
+ * 54 → 53 when `previewResolution` stopped sending `canonicalResidentId` and `supersededResidentId`
+ * as query keys. They were never read: the URL they were sent to is served at no verb (`DL-148`).
+ * Ground gained by deleting a call, which is the cheapest kind.
+ */
 
 if (offenders.length > CEILING) {
   const shown = offenders.slice(0, 12).map((o) => `    ${o.key}  (${o.where})`).join('\n');

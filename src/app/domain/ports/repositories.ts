@@ -110,6 +110,7 @@ import type {
   MembershipChange,
 } from '../households/household';
 import type { HouseholdDetail, HouseholdSummary } from '../households/household-profile';
+import type { DuplicatePairId } from '../shared/ids';
 import type {
   Family,
   FamilyFilter,
@@ -690,9 +691,23 @@ export interface BeneficiaryRepository {
    * recorded. A preview only: calling it changes nothing.
    */
   previewResolution(
+    pairId: DuplicatePairId,
     canonicalResidentId: ResidentId,
     supersededResidentId: ResidentId,
   ): Observable<MergePreview>;
+
+  /**
+   * Runs a detection pass and returns how many pairs are now open for review.
+   *
+   * **The queue does not fill itself.** A pair is a record the office is holding, created by a
+   * detection run — not a resemblance recomputed on every read — so a console that never runs one
+   * shows an empty queue on a registry full of duplicates and looks correct doing it (`DL-148`).
+   *
+   * It is a read of the registry followed by a write of what it found, so it takes the same grant
+   * as the queue itself. It states a count and nothing else: what to do about each pair remains a
+   * person's judgement, recorded one at a time (`DL-74`).
+   */
+  detectDuplicates(): Observable<number>;
 
   /**
    * Records the reviewer's finding. Idempotent on the pair: re-submitting the

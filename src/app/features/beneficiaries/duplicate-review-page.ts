@@ -83,6 +83,33 @@ export class DuplicateReviewPage {
   protected readonly canonicalId = signal<ResidentId | null>(null);
   protected readonly reason = signal('');
   protected readonly submitting = signal(false);
+  protected readonly detecting = signal(false);
+
+  /**
+   * Runs a detection pass, then reloads the queue.
+   *
+   * A pair is a record the office is holding, created by a run — not a resemblance recomputed on
+   * every read. Without this the queue was read and never filled, so an empty screen meant "nobody
+   * has looked" and read as "there are no duplicates" (`DL-148`).
+   *
+   * It reports a count and stops there. What to do about each pair stays a person's judgement,
+   * recorded one at a time with a reason (`DL-74`).
+   */
+  protected async detect(): Promise<void> {
+    if (this.detecting()) {
+      return;
+    }
+    this.detecting.set(true);
+    try {
+      const open = await firstValueFrom(this.repository.detectDuplicates());
+      this.notifications.success(this.copy.detected(open));
+      this.reloadToken.update((token) => token + 1);
+    } catch {
+      this.notifications.error(this.copy.detectFailed);
+    } finally {
+      this.detecting.set(false);
+    }
+  }
 
   protected readonly problems = computed(() => {
     const candidate = this.openCandidate();
@@ -108,7 +135,11 @@ export class DuplicateReviewPage {
     // A preview changes nothing; it is safe to fetch on open.
     this.preview.set(
       await firstValueFrom(
-        this.repository.previewResolution(candidate.residentId, candidate.otherResidentId),
+        this.repository.previewResolution(
+          candidate.pairId,
+          candidate.residentId,
+          candidate.otherResidentId,
+        ),
       ),
     );
   }
@@ -182,6 +213,7 @@ export class DuplicateReviewPage {
 
   private draftFrom(candidate: DuplicateCandidate): IdentityResolutionDraft {
     return {
+      pairId: candidate.pairId,
       verdict: this.verdict(),
       pair: [candidate.residentId, candidate.otherResidentId],
       canonicalResidentId: this.verdict() === 'same-person' ? this.canonicalId() : null,
@@ -196,6 +228,10 @@ export class DuplicateReviewPage {
     }
     const superseded =
       canonical === candidate.residentId ? candidate.otherResidentId : candidate.residentId;
-    this.preview.set(await firstValueFrom(this.repository.previewResolution(canonical, superseded)));
+    this.preview.set(
+      await firstValueFrom(
+        this.repository.previewResolution(candidate.pairId, canonical, superseded),
+      ),
+    );
   }
 }

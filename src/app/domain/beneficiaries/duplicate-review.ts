@@ -1,4 +1,10 @@
-import type { IsoDateTime, IdentityResolutionId, ResidentId, StaffUserId } from '../shared/ids';
+import type {
+  DuplicatePairId,
+  IdentityResolutionId,
+  IsoDateTime,
+  ResidentId,
+  StaffUserId,
+} from '../shared/ids';
 
 /**
  * Reviewing whether two registry records are the same person.
@@ -106,6 +112,15 @@ export const DUPLICATE_STRENGTH_LABELS: Readonly<Record<DuplicateStrength, strin
 };
 
 export interface DuplicateCandidate {
+  /**
+   * The pair the office is holding open, as the system of record names it.
+   *
+   * Every act on a pair — recording a finding, previewing what superseding would do — is addressed
+   * by this id, because the pair is a row with a decision and a note rather than a resemblance
+   * recomputed on each read. Without it the console can display a queue and act on nothing
+   * (`DL-148`).
+   */
+  readonly pairId: DuplicatePairId;
   /** The record being reviewed. */
   readonly residentId: ResidentId;
   /** The record it resembles. */
@@ -188,6 +203,8 @@ export interface IdentityResolution {
  * that could state who decided something could state the wrong name.
  */
 export interface IdentityResolutionDraft {
+  /** Which open pair this finding is about. The API accepts a finding no other way. */
+  readonly pairId: DuplicatePairId;
   readonly verdict: IdentityVerdict;
   readonly pair: readonly [ResidentId, ResidentId];
   /** Which record survives as canonical. Required for `same-person` only. */

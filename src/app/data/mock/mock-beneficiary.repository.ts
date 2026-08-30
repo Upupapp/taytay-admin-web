@@ -32,6 +32,7 @@ import {
   type PageRequest,
   type Permission,
   type Resident,
+  type DuplicatePairId,
   type ResidentId,
   type ResidentView,
   type StaffUserId,
@@ -158,6 +159,11 @@ export class MockBeneficiaryRepository implements BeneficiaryRepository {
       return denied;
     }
 
+    return this.latency.respond(paginate(this.openPairs(user), page));
+  }
+
+  /** Every open pair once, ordered so A-against-B and B-against-A are one row. */
+  private openPairs(user: AuthenticatedUser | null): DuplicateCandidate[] {
     const seen = new Set<string>();
     const queue: DuplicateCandidate[] = [];
 
@@ -177,7 +183,7 @@ export class MockBeneficiaryRepository implements BeneficiaryRepository {
       }
     }
 
-    return this.latency.respond(paginate(queue, page));
+    return queue;
   }
 
   duplicatesFor(id: ResidentId): Observable<readonly DuplicateCandidate[]> {
@@ -193,10 +199,30 @@ export class MockBeneficiaryRepository implements BeneficiaryRepository {
     return this.latency.respond(this.openCandidatesFor(resident, user));
   }
 
+  /**
+   * The mock recomputes the queue on every read, so a detection pass has nothing to persist.
+   *
+   * It reports the count it can already see rather than pretending to have done work. Returning a
+   * fabricated number of "new" pairs would let a screen be built around an event the mock invents
+   * and the server measures.
+   */
+  detectDuplicates(): Observable<number> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<number>(user, 'beneficiary.review-duplicates');
+
+    return denied ?? this.latency.respond(this.openPairs(user).length);
+  }
+
   previewResolution(
+    pairId: DuplicatePairId,
     canonicalResidentId: ResidentId,
     supersededResidentId: ResidentId,
   ): Observable<MergePreview> {
+    // The mock computes a pair rather than storing one, so the id identifies nothing here. It is
+    // still in the signature because the API accepts a preview no other way, and a port that
+    // omitted it would let a screen be written that cannot call the real thing.
+    void pairId;
+
     const user = this.access.currentUser();
     const denied = denyUnless<MergePreview>(user, 'beneficiary.review-duplicates');
     if (denied) {
