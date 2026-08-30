@@ -553,13 +553,18 @@ the dots:
 | `check:routes`       | 120 paths      | **127**       | 0 new 404s |
 | `check:wire-adoption`| 64 writes      | **70**        | 0 new unmapped |
 | `check:mapper-adoption` | 44 reads    | **48**        | 1 real, 3 wire-typed |
-| `check:query-params` | 77 calls       | **81**        | 1 unreadable key |
+| `check:query-params` | 77 calls       | **81**        | 1 key — later shown to be the tool's own defect |
 
 Thirteen calls were invisible. Eleven of them turn out to be fine, which is luck rather than
-design — the point is that nothing was checking. Two were real, pre-existing debt hidden by the
-blind spot rather than introduced by this change: an unmapped `optionalItem<HouseholdDetail>` and
-one more camelCase filter key the API silently ignores. Both ceilings were raised by exactly one,
-and each records why.
+design — the point is that nothing was checking.
+
+**One was real, not two.** The unmapped `optionalItem<HouseholdDetail>` is genuine pre-existing
+debt: a second call site casting to a type no mapper builds. The extra "unreadable filter key" was
+not debt at all, and the correction is recorded as `DL-145` — it was `householdMembers`, a key in a
+**mapped result**, picked up because the call-site scan bounded a call at the next `);` instead of
+at its own closing paren, so a `.pipe(map(…))` chain fell inside the argument span. Widening the
+scan did not find debt; it exposed a second defect in the same tool. That ceiling has gone back to
+54; the mapper-adoption ceiling of 45 stands, and the reason it cannot come down is below.
 
 `check:mapper-adoption` also gained a distinction it needed. Its rule is that a generic is an
 assertion rather than a conversion — `api.page<ResidentView>` tells TypeScript a snake_case payload
@@ -572,3 +577,40 @@ shape, and the second asserts nothing a template could read a camelCase property
 **A ratchet that silently stops watching part of the surface is the failure this whole class of
 tooling exists to prevent.** All four widened scanners were mutation-tested — a domain type on a
 chained read, a camelCase body on a chained write, and a renamed body key each fail the check.
+
+### `toHouseholdDetail` cannot be written, and the cast is doing visible harm
+
+The mapper-adoption ceiling stays at 45 because the two `optionalItem<HouseholdDetail>` casts
+cannot be replaced with a mapper. `HouseholdDetail` needs four things and the API supplies one and
+a half:
+
+| Domain field | Wire |
+| --- | --- |
+| `household` | present — `toHousehold` already maps it |
+| `members[].view` | a brief: `{id, name, birth_date, verification_tier}`, not a `ResidentView` |
+| `members[].role` | **absent — `household_memberships` has no role column at all** |
+| `members[].isHead` | derivable, by comparing against the payload's `head.id` |
+| `snapshot` | absent — behind its own permission at `/vulnerability` |
+| `audit` | absent — a separate resource |
+
+`role` is the one that settles it. `HouseholdRole` is `head | spouse | child | parent | relative |
+non-relative`, and the resident profile renders it as a relationship label beside a person's name.
+The membership table is effective-dated and carries `effective_from`, `effective_to` and
+`end_reason` — no relationship to the head, because in this schema relationships are recorded
+resident-to-resident, which is `DL-47`'s model and a *different* thing from a household role.
+
+So a mapper would have to choose a relationship for every member of every household, and print it
+beside their name. That is the `L-14` refusal again — *"never render an empty record where the truth
+is 'we could not ask'"* — with a sharper edge, because a wrong relationship is a claim about who
+belongs to whom rather than a missing one.
+
+**Meanwhile the cast is not inert.** Against the real API, `detail?.members` yields the wire's
+`{membership_id, resident, effective_from}` rows typed as `HouseholdMemberView`, so the template
+reads `member.view.resident.id` and `member.role` and gets `undefined` for both. The household
+panel on the resident profile renders **a list of blank cards** — the exact `L-22` failure mode,
+"undefined renders blank rather than raising anything", on a screen that names a family.
+
+Rendering nothing instead is not the fix: an empty list reads as "this person has no household
+members", a positive claim about a family made from data nobody sent. This needs the same treatment
+as the assessment's missing amount (`DL-144`) — the panel says what it could not read — and it needs
+the backend to publish a household role before it can say anything else. Recorded, not patched.

@@ -97,9 +97,64 @@ for (const file of walk(DOMAIN)) {
 }
 
 // ── 2. keys hand-written at a call site ──────────────────────────────────────
+
+/*
+ * The call's OWN parentheses, counted — not everything up to the next `);`.
+ *
+ * The old bound swallowed whole pipelines. A read written as
+ *
+ *     this.api.optionalItem<HouseholdDetail>(path)
+ *       .pipe(map((detail) => ({ view, household, householdMembers: …, history })))
+ *
+ * put `householdMembers` — a key in the **mapped result**, not a query parameter — on the
+ * unreadable-filter list, and the ceiling carried it as debt. `check:routes` was fixed the same way
+ * for the same reason: read each call's own arguments, never a span delimited by punctuation that
+ * a chain can move.
+ */
+function callArguments(text) {
+  const out = [];
+  const start = /this\s*\.\s*api\s*\.\s*(?:page|collection|item|optionalItem)\s*[<(]/g;
+  let m;
+
+  while ((m = start.exec(text)) !== null) {
+    let i = m.index + m[0].length - 1;
+
+    if (text[i] === '<') {
+      let angle = 1;
+      i++;
+      while (i < text.length && angle > 0) {
+        if (text[i] === '<') angle++;
+        else if (text[i] === '>') angle--;
+        i++;
+      }
+      while (i < text.length && text[i] !== '(') i++;
+    }
+
+    const open = i;
+    let depth = 0;
+    for (; i < text.length; i++) {
+      if (text[i] === '(') depth++;
+      else if (text[i] === ')') {
+        depth--;
+        if (depth === 0) break;
+      }
+    }
+
+    out.push({ args: text.slice(open + 1, i), index: m.index });
+  }
+
+  return out;
+}
+
 const adapters = readFileSync(join(ROOT, ADAPTERS), 'utf8');
-for (const call of adapters.matchAll(/this\s*\.\s*api\s*\.\s*(?:page|collection|item|optionalItem)<[\s\S]*?>\(([\s\S]*?)\);/g)) {
-  const args = call[1];
+
+if (callArguments(adapters).length < 50) {
+  console.error('\nThe call-site scan found almost nothing. The parser is broken, not the code.\n');
+  process.exit(1);
+}
+
+for (const call of callArguments(adapters)) {
+  const args = call.args;
   const line = adapters.slice(0, call.index).split('\n').length;
   for (const literal of args.matchAll(/\{([^{}]*)\}/g)) {
     for (const [, key] of literal[1].matchAll(/(?:^|,)\s*([A-Za-z_]\w*)\s*(?::|,|$)/g)) {
@@ -109,14 +164,18 @@ for (const call of adapters.matchAll(/this\s*\.\s*api\s*\.\s*(?:page|collection|
 }
 
 /*
- * 54 → 55 when the scanner learned to see a chained call.
+ * 54 → 55 → 54, and the round trip is the lesson (`DL-145`).
  *
- * The extra key is not new debt: it was always sent and always ignored, on a read written as
- * `this.api\n  .page<…>(…)` — a shape the contiguous `this\.api\.` pattern never matched. See
- * `check:routes` for the same blind spot and what it hid there. The number went up because the
- * check got better, which is the one direction a ratchet is allowed to move for that reason.
+ * Teaching the scanner to see a chained call raised this to 55, and that extra key was recorded as
+ * real pre-existing debt. It was not. It was `householdMembers`, a key in a **mapped result** —
+ * `.pipe(map((detail) => ({ view, household, householdMembers: … })))` — that the argument scan
+ * swallowed because it bounded a call at the next `);` rather than at the call's own closing paren.
+ * Widening the scan did not find debt; it exposed a second defect in the same tool, and the debt
+ * was the tool's arithmetic.
+ *
+ * A ratchet number that goes up is not self-evidently a finding. It has to be read.
  */
-const CEILING = 55;
+const CEILING = 54;
 
 if (offenders.length > CEILING) {
   const shown = offenders.slice(0, 12).map((o) => `    ${o.key}  (${o.where})`).join('\n');

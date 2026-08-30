@@ -4093,3 +4093,65 @@ Nobody has to remember to delete a notice that has become untrue — which is th
 every warning written as a fixed assertion, and the reason this one is wired to the omission it
 describes. Mutation-tested four ways: deleting the notice fails, gutting its explanation fails,
 moving it below the controls fails, and sending both fields lifts the requirement.
+
+## DL-145 — a ratchet number that goes up is not self-evidently a finding
+
+`DL-142` widened four scanners and recorded that two pieces of real pre-existing debt fell out. One
+of them was not debt. It was the tool's own arithmetic, and the correction matters more than the
+number.
+
+### What the extra key actually was
+
+`check:query-params` went from 54 unreadable filter keys to 55 when its call-site scan learned to
+see a chained call. That was read as a key that had always been sent and always ignored, hidden by
+the blind spot — a plausible reading, consistent with what the other three scanners had just turned
+up, and wrong.
+
+The 55th key was `householdMembers`, at the resident-profile composition:
+
+```ts
+this.api
+  .optionalItem<HouseholdDetail>(`${API_ENDPOINTS.households}/${household.id}`)
+  .pipe(map((detail) => ({ view, household, householdMembers: detail?.members ?? [], history })));
+```
+
+`householdMembers` is a key in the **mapped result**. It is not a query parameter and never reaches
+a URL. It was counted because the scan bounded a call at the next `);` rather than at the call's own
+closing paren, so the whole `.pipe(map(…))` chain fell inside what the tool believed were the call's
+arguments — and the object literal in the mapping function was read as a bag of filter keys.
+
+Widening the scanner did not find debt. It made a **second, older defect in the same tool** visible
+for the first time, because until then the tool could not see chained calls at all, and a chain is
+the only shape that puts a pipeline inside the argument span.
+
+### The general lesson, which is the reason this has its own entry
+
+`DL-142` and `DL-143` are about scanners that go quiet. This is the opposite failure and it is
+easier to get wrong, because the number moved in the direction that looks like diligence. A ratchet
+that ticks up is not self-evidently a finding — it is a prompt to go and read the thing it counted.
+Recording it as debt would have left a permanent false entry against `L-24` and sent somebody to
+"fix" a filter key that does not exist.
+
+The bound is now depth-counted, the same repair `check:routes` had for the same reason: read each
+call's own arguments, never a span delimited by punctuation that a chain can move. The scan also
+refuses to run if it finds fewer than 50 calls, so a future parser breakage fails loudly instead of
+reporting an encouraging zero. Mutation-tested: a camelCase key added at an ordinary call site fails
+the check, and so does one added to a chained call.
+
+Ceiling back to **54**. `L-24`'s real figure was never 55.
+
+### The other ceiling stands, and why it cannot come down
+
+`check:mapper-adoption` remains at 45. The debt is genuine — two call sites cast to
+`HouseholdDetail`, a type no mapper builds — and it cannot be cleared here, because
+`household_memberships` carries **no role column**. `HouseholdRole` is `head | spouse | child |
+parent | relative | non-relative` and the resident profile prints it beside a person's name; the
+schema records relationships resident-to-resident instead (`DL-47`), which is a different claim.
+A mapper would have to invent a relationship for every member of every household.
+
+That is `L-14`'s refusal with a sharper edge: a missing relationship is a gap, an invented one is a
+false statement about a family. The cast is meanwhile not inert — against the real API the panel
+renders a list of blank cards, the `L-22` failure mode on a screen that names people — and rendering
+an empty list instead would assert the household has no members. It needs the backend to publish a
+role, and until then it needs what `DL-144` gave the missing amount: the panel saying what it could
+not read. Recorded in `docs/integration/release-engineering.md`, not patched.
