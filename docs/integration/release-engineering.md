@@ -735,3 +735,31 @@ one line and would let the screen state the fact instead of inheriting it.
 `cancelledCount` needs a decision before a field: the summary is built for a registration screen,
 where withdrawals do not belong. If the office wants cancellations reported, they belong on an
 insights endpoint rather than widening this one.
+
+### 29 of 70 reads would misread the answer
+
+`check:response-shape` (`DL-156`) compares each adapter read's helper against the envelope its route
+actually answers with, vendored from the controller behind it.
+
+| console helper | needs `data` to be | routes answering that |
+| --- | --- | --- |
+| `item` / `optionalItem` | an object | 242 |
+| `page` | an array plus `meta.pagination` | 43 |
+| `collection` | a bare array | **0 — there is no such envelope** |
+
+**5 read an object as an array** and show nothing: `admin/saved-views`, `admin/privacy/retention`,
+`admin/privacy/classifications`, `admin/programs/utilization`, `admin/assistance-requests/{}/notes`.
+
+**22 read a paginated route as a plain list** and show its first 25 rows as the whole of it:
+referrals, releases, release batches, visits, events, registrations, event history, audit entries,
+notifications, families, kinship history, newsfeed, comments, newsfeed history, staff, reports,
+requirement templates, programmes, service providers, the duplicate queue, duplicate findings, work
+alerts.
+
+**2 read a paginated route with `item`** — `admin/work/mine` and `admin/work/team` — so an array
+arrives typed as an object and every field reads `undefined`.
+
+Fixing one is not a repoint. An `item`-wrapped list needs a mapper that unwraps its key — the
+`listDocumentRequests` shape — and a paginated one needs the page request the route expects, plus a
+decision about what the screen does when there is a second page. Both are per-endpoint work, and the
+count is recorded rather than half-fixed.

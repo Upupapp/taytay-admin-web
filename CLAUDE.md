@@ -112,8 +112,8 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:governance`, `check:hardening`, `check:community`, `check:newsfeed` and
 `check:events`, `check:contract`, `check:contract-drift`, `check:consumer-contract`,
 `check:mapper-adoption`, `check:permission-parity`, `check:environments`,
-`check:bundle`, `check:routes`, `check:wire-adoption`, `check:port-adoption` and
-`check:scanners`.
+`check:bundle`, `check:routes`, `check:response-shape`, `check:wire-adoption`,
+`check:port-adoption` and `check:scanners`.
 Each enforces a rule a comment could not, and each was validated against planted
 regressions. Do not weaken one to make a change pass.
 
@@ -150,10 +150,19 @@ assertions that a mutator still appends to its audit trail. A scanner regex that
 reads a call on an object must tolerate whitespace around its dots, and this
 fails the build when one does not.
 
-The three answer different questions, and a green answer to one says nothing
+**`check:response-shape` asks the fourth question** (`DL-156`): would the
+*answer* be understood? It compares each read's helper against the envelope its
+route actually answers with, vendored from the controller behind it. **There is
+no `ApiResponse::collection`** in that API — every list is a `page` or an `item`
+wrapping an array — so `collection<T>` is wrong wherever it appears, and 29 of
+70 reads disagree with their route. Five show nothing; twenty-two show the first
+25 rows as the whole list, which is the failure that looks like working software.
+
+The four answer different questions, and a green answer to one says nothing
 about the others. `check:routes` asks whether a request would reach a real
 endpoint at that verb; `check:wire-adoption` asks whether its body would be
-understood; `check:port-adoption` asks whether anybody makes the request at all.
+understood; `check:port-adoption` asks whether anybody makes the request at all;
+`check:response-shape` asks whether what comes back would be read correctly.
 
 ---
 

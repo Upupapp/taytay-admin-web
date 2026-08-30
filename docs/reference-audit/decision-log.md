@@ -4748,3 +4748,65 @@ fields. That is the trap this repository has recorded before — a gate failing 
 — and the comment was reworded rather than the gate loosened.
 
 Routes 16 → **15**.
+
+## DL-156 — the fourth question: would the answer be understood?
+
+Three ratchets ask three things about a request. `check:routes` asks whether it reaches a real
+endpoint at that verb; `check:wire-adoption` whether its body would be understood;
+`check:port-adoption` whether anybody makes it at all. **None asks whether the answer would be
+understood**, and all three can be green about a read that hands a screen nothing.
+
+`DL-151` found one: `listDocumentRequests` called `collection<DocumentRequest>` on a path that *is*
+published, at a verb that *is* served, answering `{ "requests": [...] }` — `data` an object, the
+helper handing back a non-array, the screen an empty list. It was found by reading a controller,
+which does not scale to 70 reads.
+
+### There is no `ApiResponse::collection`
+
+That is the root of it. The backend answers with `item` (data is an object), `page` (data is an
+array plus `meta.pagination`), or nothing. **No envelope produces a bare array**, and the console's
+`collection<T>` helper — which returns `response.data` untouched and expects rows — is therefore
+wrong wherever it appears.
+
+**29 of 70 reads disagree with the envelope their route answers with.** Not a handful: 41% of the
+console's read surface, on a question nothing was asking.
+
+### Two failures, and the quiet one is worse
+
+- **5 read an object as an array.** `data` is `{ … }`, the helper hands back a non-array, the screen
+  shows nothing. Loud, once anybody looks — `admin/saved-views`, `admin/privacy/retention`,
+  `admin/programs/utilization`, `admin/privacy/classifications`, and the notes on a request.
+
+- **22 read a paginated route as a plain list.** `data` *is* an array, so rows appear and the screen
+  looks correct. It has read **the first 25 rows and presented them as the whole list**, because 25
+  is the default page size and nothing asked for more. Referrals, releases, visits, events,
+  registrations, the audit trail, notifications, the duplicate queue.
+
+The second is `DL-112`'s failure — a wrong answer delivered with confidence — on the queues where a
+caseworker counts what is outstanding. A referral list showing 25 of 200 does not look broken. It
+looks like an office with 25 referrals.
+
+### The envelope is vendored, because the console has no server to ask
+
+`response-envelopes.json` is derived from `ApiResponse::` in the controller behind each route, and
+written down with the backend commit it came from — the same treatment as the route list, for the
+same reason: a snapshot that cannot say where it came from is one nobody can tell is stale.
+
+**The extraction was measured before it was trusted**, which after a session of scans that quietly
+under-reported felt like the minimum. 286 of 288 routes resolve to exactly one envelope and **none
+resolves to two**; the two that do not are a raw CSV stream and a preference write, recorded as
+`none` rather than guessed at. Four spot checks against endpoints already read by hand all agreed.
+
+One thing the vendoring exposed on its own: the envelope snapshot is from backend `1907847` and the
+route snapshot from `f004930`. **The backend has moved since the routes were vendored**, which is the
+staleness `check:routes` says in its own docblock that it cannot see.
+
+### Mutation-tested in both directions
+
+A new `collection`-on-`page` read fails it; an `item` route read as a `page` fails it; and fixing a
+baselined read **also** fails it until the baseline is shrunk. A ratchet that only tightens one way
+slips back.
+
+Nothing is fixed by this commit and that is deliberate: each of the 29 needs the wrapping key or the
+page request that route expects, which is a mapper apiece. The number is recorded the way
+`check:routes` recorded 61.
