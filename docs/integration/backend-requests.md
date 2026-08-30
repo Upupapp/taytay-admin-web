@@ -47,7 +47,55 @@ not about pointing one at another.
 
 **Blocks:** duplicate resolution does not resolve anything.
 
-### 1.3 `PATCH admin/assistance-intakes/{intake}` — no counterpart of any kind
+### 1.3 The server's export file carries none of its own conditions — `DL-106`, `DL-154`
+
+`BuildReportExport::toCsv()` writes **one column-header row and then data**. Nothing precedes it: no
+report name, no question, no filter, no requester, no timestamp, no row count, no statement that the
+file names individuals, and **no RA 10173 handling notice** — including on `release-manifest` and
+`event-registrants`, the two reports that name people. A downloaded payout manifest is a bare CSV of
+`reference_number, resident_id, program_code, amount_centavos, …` with nothing saying what it is,
+who took it, when, or how it must be handled.
+
+`DL-106` exists because *a spreadsheet found on a laptop in eight months has no context except what
+it carries*. The console composes that preamble today, client-side, and it is the reason this
+console has not adopted the server's export.
+
+Everything a manifest needs is already in `ReportCatalog` — `title()`, `question()`, `area()`,
+`isPersonLevel()` — and already published on `catalogue()` and `run()`. The export path references
+none of them. `toCsv()` receives only `$rows`, so it could not emit a preamble without a signature
+change.
+
+**Ask:** compose the manifest in the file, from the catalogue entries that already exist.
+
+### 1.4 Three defects that would make an adopted export fail or leak
+
+Found while assessing the switch. Each is independently verifiable and none is a matter of taste.
+
+**`stored_file_id` is a `uuid` column receiving a path.** The migration declares
+`$table->uuid('stored_file_id')->nullable();` and the job writes
+`exports/2026/08/<uuid7>.csv`. SQLite accepts it, so the suite is green; **PostgreSQL will reject
+it, and every export lands in `failed`** with a driver error surfaced verbatim in `failure_reason`.
+This is the same class as the `audit_entries.entity_id` bug already noted in `ReportController`, and
+the same class this console's own PostgreSQL run turned up 41 of.
+
+**Three catalogue entries have no row-builder.** `requestExport` validates against
+`ReportCatalog::values()`, which includes `case-aging`, `field-workload` and `data-completeness`;
+the `match ($report)` in the job covers only the other six. Requesting any of the three throws
+`UnhandledMatchError` and the export always fails — an input the API accepts and cannot serve.
+
+**No CSV-injection defence.** Cells are written with `fputcsv` and no leading-character guard, so a
+value beginning `=`, `+`, `-`, `@`, tab or CR is written as-is and evaluated when the file is
+opened. It reaches user-supplied data: `event-registrants` writes each registrant's name from
+`first_name`/`last_name`, and that file is designed to be opened and printed by volunteers.
+*(This console had the same hole in its own composer and it is fixed — `DL-154`.)*
+
+**Also worth a look, lower stakes:** `PurgeExpiredExports` never sets `purged_at`, which
+`isDownloadable()` checks; and `referralOutcomes()` runs `COUNT(*) GROUP BY status` over the whole
+`referrals` table with no barangay scoping, so a `barangay-link` account requesting it receives
+municipality-wide figures. No identities are disclosed — it is an aggregate — but it is wider than
+the account's scope.
+
+### 1.5 `PATCH admin/assistance-intakes/{intake}` — no counterpart of any kind
 
 `POST admin/assistance-intakes` creates; nothing amends. The console assumes a counter intake can be
 corrected before filing. Of the seven non-case unwired paths, this is the only one with no published
@@ -133,13 +181,12 @@ candidates; the **payload** decides.
 
 ### The three that are not repoints, and what each needs
 
-**Exports are asynchronous, and the console assumes they are not.** `POST admin/exports` answers a
-record — `id`, `status: 'queued'`, `is_downloadable: false`, `expires_at` — and the file arrives
-later at `GET admin/exports/{id}/download`. There is deliberately **no URL in the payload**: the
-storage key is withheld so nothing can fetch from anywhere but the gated endpoint. Adopting it means
-a screen that says an export was asked for, polls or is re-read, and offers a download when it is
-ready — plus `expires_at` shown, because a download that stops working is worth warning about.
-Nothing is blocked on the backend here; the work is this console's.
+**Exports are asynchronous, and adopting them today would lose more than it gains — see §1.4.**
+`POST admin/exports` answers a record — `id`, `status: 'queued'`, `is_downloadable: false`,
+`expires_at` — and the file arrives later at `GET admin/exports/{id}/download`, with deliberately
+**no URL in the payload** so nothing can fetch from outside the gated endpoint. That design is
+right. The file it produces is not yet, and the console's own export honours a guarantee the
+server's does not.
 
 **A correction request carries many changed fields, not one.** The console's `CorrectionRequest` has
 a single `field` and a `claim`; the API's has `note`, `review_note`, a nested `resident`, and

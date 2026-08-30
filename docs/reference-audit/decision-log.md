@@ -4612,3 +4612,68 @@ never to the clock, on `DL-149`'s distinction between reporting a fact and inher
 
 Port adoption 143/154 → **144/155**. Routes unchanged at 16, and §4 of
 `docs/integration/backend-requests.md` is corrected.
+
+## DL-154 — the async export is not adopted, and quoting a CSV cell is not escaping it
+
+The task was to adopt `POST admin/exports` and clear two unwired paths. **It is not adopted, and the
+paths stay** — because the switch would trade a working guarantee for two green numbers.
+
+### What the server's file does not carry
+
+`BuildReportExport::toCsv()` writes one column-header row and then data. Nothing precedes it: no
+report name, no question, no filter, no requester, no timestamp, no row count, no statement that the
+file names individuals, and **no RA 10173 handling notice** — including on `release-manifest` and
+`event-registrants`, the two reports that name people.
+
+`DL-106` requires an export to carry its conditions **inside** the file, *"because a spreadsheet
+found on a laptop in eight months has no context except what it carries"*, and requires a
+person-level export to be warned about before the file exists. The console composes that preamble
+today from `run()`'s result and hands the user a file that honours it.
+
+Adopting the server's export would mean a payout manifest — `reference_number`, `resident_id`,
+`amount_centavos` — leaving the building as a bare CSV with nothing saying what it is or how it must
+be handled. Two ratchet numbers would improve. A rule that exists to protect the people in the file
+would stop being true.
+
+Everything a manifest needs is already in `ReportCatalog` — `title()`, `question()`, `isPersonLevel()`
+— and already published on two other endpoints. The export path references none of them, and
+`toCsv()` receives only `$rows`, so it could not emit one without a signature change. That is the
+ask, recorded in `docs/integration/backend-requests.md` §1.3.
+
+### Three defects that would have shipped with the switch
+
+Found while assessing it, each verified directly rather than taken on trust:
+
+- **`stored_file_id` is a `uuid` column receiving a path** (`exports/2026/08/<uuid7>.csv`). SQLite
+  accepts it; **PostgreSQL rejects it, so every export fails.** The same class this console's own
+  PostgreSQL run turned up 41 of, and the same class already noted in `ReportController` for
+  `audit_entries.entity_id`.
+- **Three catalogue entries have no row-builder.** `requestExport` validates against
+  `ReportCatalog::values()`, which includes `case-aging`, `field-workload` and `data-completeness`;
+  the job's `match` covers six of nine. An input the API accepts and cannot serve.
+- **No CSV-injection defence**, on a file whose registrant names are typed by a clerk and which is
+  designed to be opened and printed by volunteers.
+
+### And the console had the third hole itself
+
+`csvCell` was `"${value.replace(/"/g, '""')}"` — correct CSV escaping, and **no defence at all**
+against formula injection. Quoting solves the parsing problem and does nothing for the other one:
+Excel, LibreOffice and Sheets strip the quotes while parsing and evaluate what is left, so
+`"=HYPERLINK(…)"` arrives as a live formula.
+
+That is the more useful half of this turn. The defect was found by auditing somebody else's export
+path and looking back at ours, and it was in the one file in this repository whose entire premise is
+that its output **leaves the building** — opened on somebody else's laptop, months later, in a
+spreadsheet nobody here configured, carrying names a clerk typed at intake.
+
+A leading `'` now marks the rest as text on any cell starting `=`, `+`, `-`, `@`, tab or CR. Only
+those; ordinary text is untouched and numbers never come through `csvCell` at all. The realistic
+case is not `=cmd` in a name field — it is a placeholder `-`, or a filter description that begins
+with one, and `-1+1` is a formula to a spreadsheet exactly as much as `=1+1` is.
+
+### Why "not adopted" is the finding rather than a failure
+
+Two ratchets did not move, and a session spent moving ratchets can make that feel like a loss. The
+numbers count paths this console composes that the API does not serve; they do not count whether the
+file at the end of one is safe to hand somebody. Adopting a worse export to improve a counter is the
+same failure as widening a check to make a change pass, wearing different clothes.

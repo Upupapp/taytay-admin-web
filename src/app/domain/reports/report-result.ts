@@ -222,7 +222,30 @@ export function manifestHeaderLines(manifest: ExportManifest): readonly string[]
   return lines;
 }
 
-/** Quotes a CSV cell. A comma or a quote in a barangay name must not shift a column. */
+/**
+ * Quotes a CSV cell, and stops a spreadsheet reading one as a formula.
+ *
+ * Quoting alone handles the parsing problem — a comma or a quote in a barangay name must not shift
+ * a column — and does **nothing** for the other one. Excel, LibreOffice and Sheets strip the quotes
+ * while parsing and then evaluate the resulting value, so `"=HYPERLINK(...)"` arrives as a live
+ * formula in the cell. The defence has to be in the value, not in the quoting.
+ *
+ * A leading `'` marks the rest as text in every spreadsheet that would otherwise evaluate it, and
+ * is the OWASP-recommended defence. It is added only to a cell that would actually be evaluated —
+ * one starting `=`, `+`, `-`, `@`, a tab or a carriage return — so ordinary text is untouched and
+ * the file still reads as the office wrote it.
+ *
+ * This matters here more than in most places. `DL-106` exists because an export **leaves the
+ * building**: it is opened on somebody else's laptop, months later, in a spreadsheet nobody in this
+ * office configured. The cells carry names a clerk typed at intake, which is user-supplied text
+ * reaching a program that executes some of it.
+ *
+ * Numbers do not come through here — a total is written unquoted by the composer — so nothing
+ * numeric is turned into text by this.
+ */
+const EVALUATED_BY_SPREADSHEETS = /^[=+\-@\t\r]/;
+
 export function csvCell(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`;
+  const guarded = EVALUATED_BY_SPREADSHEETS.test(value) ? `'${value}` : value;
+  return `"${guarded.replace(/"/g, '""')}"`;
 }
