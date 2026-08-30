@@ -5082,5 +5082,57 @@ than the work justified, which is `DL-145`'s rule — **a ratchet that moves is 
 it counted** — and it now cannot recur: the check reads `ApiClient` and fails if a read helper is
 missing from the table.
 
-**19 paginated reads remain**, and they are the browsable ones. Each needs a page control on its
-screen, which is where that work belongs. 24 → **21**.
+**19 paginated reads remain.** ~~They are the browsable ones.~~ **That claim is wrong — see
+`DL-162`.** About half turn out to be per-record reads: a resident's families, a request's releases,
+one post's history. Those need `everyPage`, not a page control, and the classification was made from
+endpoint names rather than from the methods behind them.
+
+24 → **21**.
+
+## DL-162 — half the "browsable lists" were not lists, and three checks did not know a new helper
+
+`DL-161` said the 19 remaining paginated reads were browsable lists needing a page control. Doing
+the work showed otherwise, and the reason the claim was wrong is worth more than the claim.
+
+### It was classified from endpoint names, not from the methods behind them
+
+`admin/families`, `admin/visits`, `admin/referrals`, `admin/releases` read like office-wide lists.
+The methods are `familiesOf(residentId)`, `forResident(id)`, `listForRequest(requestId)`,
+`duplicatesFor(id)` — **everything about one record**. `DataTable` already has a pager, so the UI
+was never the obstacle; the obstacle was that a page control is the wrong answer for a resident's
+kinship history. Twelve of those went to `everyPage`, alongside `accounts` and `alerts`, which the
+office's own size bounds.
+
+Ten remain and are genuinely office-wide streams — the audit trail, notifications, referrals,
+releases, release batches, visits, events, registrations, the newsfeed and its comments. Each needs
+its **port** to return a `Page<T>` before a screen can page it, which is why none of them was a
+one-line change and why the count did not fall further.
+
+Two more are the `item ← page` pair on the work queues, where an array arrives typed as an object.
+That is a different defect and still open.
+
+### Three checks reported progress for surfaces they had stopped reading
+
+Adding one helper to `ApiClient` broke three tools, each in the same way: they enumerate helper
+names, and a name they do not know is skipped rather than checked.
+
+- `check:response-shape` **skipped** the three reads that adopted `everyPage`, so its count fell by
+  three for work that had not been done. Fixed in `DL-161`, and it now fails if `ApiClient` grows a
+  read helper missing from its table.
+- `check:query-params` reported **seven fewer unreadable keys**. The calls had not changed — the
+  same camelCase keys are still sent — they had simply stopped being seen.
+- `check:mapper-adoption` had never counted `collection<T>` **at all**. Adding it and `everyPage`
+  took the figure from 43 to **71**: twenty-eight casts, in the one file the check is pointed at,
+  that it had never looked at. `collection<Referral>` asserts a snake_case array is a `Referral[]`
+  exactly as much as `page<Referral>` does.
+
+The first two were caught because **the number moved by more than the work justified** — `DL-145`'s
+rule that a ratchet which moves is a prompt to read what it counted. The third was caught by
+checking whether the same hole existed elsewhere once two had been found.
+
+**A check that enumerates the names of things it inspects has a hole shaped like the next name.**
+That is now four instances in three turns (`DL-142`, `DL-156`, `DL-161`, this one), and the pattern
+is not "these particular tools were sloppy" — it is that an allow-list of helper names is a scan
+that under-reports the moment the code grows one.
+
+21 → **12**; mapper-adoption 43 → **71**, which is debt made visible rather than debt added.

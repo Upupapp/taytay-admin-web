@@ -501,7 +501,7 @@ export class HttpFamilyRepository implements FamilyRepository {
   }
 
   familiesOf(residentId: ResidentId): Observable<readonly FamilySummary[]> {
-    return this.api.collection<FamilySummary>(API_ENDPOINTS.families, { residentId });
+    return this.api.everyPage<FamilySummary>(API_ENDPOINTS.families, { residentId });
   }
 
   recordRelationship(
@@ -591,7 +591,7 @@ export class HttpFamilyRepository implements FamilyRepository {
   }
 
   historyForResident(residentId: ResidentId): Observable<readonly RelationshipEvent[]> {
-    return this.api.collection<RelationshipEvent>(
+    return this.api.everyPage<RelationshipEvent>(
       `${API_ENDPOINTS.residents}/${residentId}/kinship-history`,
     );
   }
@@ -624,7 +624,7 @@ export class HttpCaseRepository implements CaseRepository {
   }
 
   casesForResident(residentId: ResidentId): Observable<readonly CaseSummary[]> {
-    return this.api.collection<CaseSummary>(API_ENDPOINTS.cases, { residentId });
+    return this.api.everyPage<CaseSummary>(API_ENDPOINTS.cases, { residentId });
   }
 
   changeStatus(id: CaseId, to: CaseStatus, reason: string): Observable<CaseWorkspace> {
@@ -808,7 +808,7 @@ export class HttpNewsfeedRepository implements NewsfeedRepository {
   }
 
   history(id: PostId): Observable<readonly AuditRow[]> {
-    return this.api.collection<AuditRow>(`${API_ENDPOINTS.newsfeed}/${id}/history`);
+    return this.api.everyPage<AuditRow>(`${API_ENDPOINTS.newsfeed}/${id}/history`);
   }
 }
 
@@ -828,7 +828,7 @@ export class HttpGovernanceRepository implements GovernanceRepository {
   private readonly api = inject(ApiClient);
 
   accounts(): Observable<readonly StaffAccount[]> {
-    return this.api.collection<StaffAccount>(API_ENDPOINTS.staffAccounts);
+    return this.api.everyPage<StaffAccount>(API_ENDPOINTS.staffAccounts);
   }
 
   accountById(id: StaffUserId): Observable<StaffAccount | null> {
@@ -999,7 +999,7 @@ export class HttpWorkRepository implements WorkRepository {
   }
 
   alerts(): Observable<readonly OfficeAlert[]> {
-    return this.api.collection<OfficeAlert>(`${API_ENDPOINTS.work}/alerts`);
+    return this.api.everyPage<OfficeAlert>(`${API_ENDPOINTS.work}/alerts`);
   }
 }
 
@@ -1043,7 +1043,7 @@ export class HttpProgramRepository implements ProgramRepository {
   }
 
   listRequirementTemplates(id: ProgramId): Observable<readonly RequirementTemplate[]> {
-    return this.api.collection<RequirementTemplate>(
+    return this.api.everyPage<RequirementTemplate>(
       `${API_ENDPOINTS.programsAdmin}/${id}/requirement-templates`,
     );
   }
@@ -1447,7 +1447,7 @@ export class HttpReleaseRepository implements ReleaseRepository {
   }
 
   listForRequest(id: AssistanceRequestId): Observable<readonly Release[]> {
-    return this.api.collection<Release>(API_ENDPOINTS.releases, { requestId: id });
+    return this.api.everyPage<Release>(API_ENDPOINTS.releases, { requestId: id });
   }
 
   /** A filter on the collection, not a resource of its own. */
@@ -1655,7 +1655,7 @@ export class HttpReferralRepository implements ReferralRepository {
   }
 
   forResident(id: ResidentId): Observable<readonly Referral[]> {
-    return this.api.collection<Referral>(API_ENDPOINTS.referrals, { residentId: id });
+    return this.api.everyPage<Referral>(API_ENDPOINTS.referrals, { residentId: id });
   }
 
   queue(filter: ReferralFilter): Observable<readonly Referral[]> {
@@ -1811,7 +1811,7 @@ export class HttpBeneficiaryRepository implements BeneficiaryRepository {
   }
 
   duplicatesFor(id: ResidentId): Observable<readonly DuplicateCandidate[]> {
-    return this.api.collection<DuplicateCandidate>(API_ENDPOINTS.identityReview, {
+    return this.api.everyPage<DuplicateCandidate>(API_ENDPOINTS.identityReview, {
       residentId: id,
     });
   }
@@ -1872,7 +1872,7 @@ export class HttpBeneficiaryRepository implements BeneficiaryRepository {
    * a decided pair stops resurfacing in the queue while staying readable on the record it concerns.
    */
   resolutionsFor(id: ResidentId): Observable<readonly IdentityResolution[]> {
-    return this.api.collection<IdentityResolution>(
+    return this.api.everyPage<IdentityResolution>(
       `${API_ENDPOINTS.residents}/${id}/duplicate-findings`,
     );
   }
@@ -2203,7 +2203,7 @@ export class HttpFieldVisitRepository implements FieldVisitRepository {
   }
 
   forResident(id: ResidentId): Observable<readonly FieldVisit[]> {
-    return this.api.collection<FieldVisit>(API_ENDPOINTS.fieldVisits, { residentId: id });
+    return this.api.everyPage<FieldVisit>(API_ENDPOINTS.fieldVisits, { residentId: id });
   }
 
   schedule(draft: FieldVisitDraft): Observable<FieldVisit> {
@@ -2419,6 +2419,6 @@ export class HttpEventRepository implements EventRepository {
   }
 
   history(id: LguEventId): Observable<readonly AuditRow[]> {
-    return this.api.collection<AuditRow>(`${API_ENDPOINTS.events}/${id}/history`);
+    return this.api.everyPage<AuditRow>(`${API_ENDPOINTS.events}/${id}/history`);
   }
 }

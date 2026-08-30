@@ -54,13 +54,28 @@ const ADAPTERS = 'src/app/data/http/http-repositories.ts';
  * The `optionalItem<HouseholdDetail>` pair remains and cannot be mapped — `household_memberships`
  * has no role column (`DL-145`).
  */
-const CEILING = 43;
+/*
+ * 43 → 71 when `collection` and `everyPage` were added to the helper list. Not new debt: 28 casts
+ * this check had never looked at, in a file it was pointed straight at (`DL-162`).
+ */
+const CEILING = 71;
 
 const source = readFileSync(join(ROOT, ADAPTERS), 'utf8');
 
 // A read that hands a domain type straight to the transport: `api.page<ResidentView>(…)`.
 const generics = [
-  ...source.matchAll(/\bthis\s*\.\s*api\s*\.\s*(page|item|optionalItem|list)<([^>]+)>/g),
+  /*
+   * `collection` and `everyPage` belong here and were missing, which cost 28 reads.
+   *
+   * The rule is that a generic on a read is an assertion rather than a conversion — and
+   * `collection<Referral>` asserts a snake_case array is a `Referral[]` exactly as much as
+   * `page<Referral>` does. Only four helper names were listed, so more than a third of the
+   * unmapped reads in this file were never counted. Fourth instance in two turns of a check that
+   * enumerates helper names and misses one (`DL-162`).
+   */
+  ...source.matchAll(
+    /\bthis\s*\.\s*api\s*\.\s*(page|everyPage|collection|item|optionalItem|list)<([^>]+)>/g,
+  ),
 ];
 
 /*

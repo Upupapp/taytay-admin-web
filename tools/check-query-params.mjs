@@ -113,7 +113,15 @@ for (const file of walk(DOMAIN)) {
  */
 function callArguments(text) {
   const out = [];
-  const start = /this\s*\.\s*api\s*\.\s*(?:page|collection|item|optionalItem)\s*[<(]/g;
+  /*
+ * `everyPage` is in this list because leaving it out made the count fall by seven.
+ *
+ * The calls had not changed — they still send the same keys — they had simply stopped being seen,
+ * and the tool reported ground gained for a surface it had stopped reading. Third instance of that
+ * class in two turns (`DL-142`, `DL-156`, `DL-161`), and the reason it was caught is that the
+ * number moved by more than the work justified (`DL-145`).
+ */
+const start = /this\s*\.\s*api\s*\.\s*(?:page|everyPage|collection|item|optionalItem)\s*[<(]/g;
   let m;
 
   while ((m = start.exec(text)) !== null) {
