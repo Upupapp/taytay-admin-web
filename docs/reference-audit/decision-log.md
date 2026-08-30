@@ -4677,3 +4677,74 @@ Two ratchets did not move, and a session spent moving ratchets can make that fee
 numbers count paths this console composes that the API does not serve; they do not count whether the
 file at the end of one is safe to hand somebody. Adopting a worse export to improve a counter is the
 same failure as widening a check to make a change pass, wearing different clothes.
+
+## DL-155 — one request, many fields; and a list names them without valuing them
+
+`GET admin/governance/corrections` is served at no verb. The resource exists as
+`GET admin/resident-corrections`, and `API_ENDPOINTS.residentCorrections` **was already in the
+contract table** — reconciled at some point and never wired up, which is precisely what
+`check:routes` counts and what no reviewer would spot in a file this size.
+
+The model differs in four ways, and each one changed something.
+
+### One request carries many changed fields
+
+The console modelled a single `field`. The office record carries `changes[]`. A resident correcting
+their surname and their address in one visit was two requests to this console and one to the office,
+and the two could be answered differently.
+
+### The values arrive, and the list must not show them
+
+`changes[]` carries `current_value` and `proposed_value`, and the correctable set includes a birth
+date, a mobile number and a street address. A list printing `current → proposed` on every row hands
+a reviewer a birth date for every pending request **without opening one** — the disclosure `DL-114`
+splits an audit row from its values to prevent, on the screen most designed to be scrolled through
+other people's records.
+
+A correction is not an audit row, though, and the difference decides the design rather than the
+answer: **the reviewer's job is to judge whether the proposed value is right**, which cannot be done
+without seeing both. So it is the same split, not the same refusal — the list names the fields, the
+values are read on the one being decided.
+
+The **claim** is shown in full, and that is not an inconsistency. "Surname is spelled Sarmiento on
+every document the family holds, not Sarmento" quotes both values, and withholding it would leave a
+reviewer a request they cannot understand. What stays off the list is the *structured* pair — the
+part a screen can render for every row at once, which is what turns a list into a disclosure.
+
+### Four states, and `under-review` had to go
+
+The API has `pending | approved | rejected | withdrawn`; the console had five, including
+`under-review`, and **no endpoint could produce it**. It was removed rather than kept for symmetry:
+modelling a state no act can reach is the defect `DL-151` found on a document request's `withdrawn`,
+and it would have meant a badge no request can ever wear.
+
+The office's wording is kept for the other four and translated at the seam, as a duplicate verdict
+is (`DL-148`). `applied` says the record was corrected and the previous value stayed in the trail;
+"approved" says only that somebody agreed. An unrecognised status reads as `raised` — the one that
+keeps the request in front of somebody.
+
+### A correction is about a resident, and the console pretended otherwise
+
+`entityType`/`entityId` described a generality the API does not have: corrections are resident-scoped
+and `CorrectableField` lists twelve resident attributes and nothing else. **Nothing about means or
+sector is correctable** — no `monthlyIncome`, no `philsysLastFour` — which is the right answer:
+those are assessed or evidenced rather than asserted.
+
+The seed had used the generality. `cor-0003` was a dispute about an approved amount on an assistance
+request, and it is gone, because the office record cannot hold it. That is a real loss rather than a
+tidy-up — *"the applicant says the amount approved was different"* is a dispute an MSWDO will get —
+and it is filed as a gap.
+
+### `check:contract` caught the mistake I made fixing it
+
+The first draft typed `CorrectionChange.field` as a `string` and let `birth_date` into the domain and
+onto a template. The seam rule refused it, and the better answer was not an escape hatch but a
+**closed union in the console's own casing with labels**: a screen rendering a column name tells a
+caseworker `street_address` where a person would say "Street address". The union bought the label as
+well as the boundary, and a field the console has no label for is now dropped rather than shown raw.
+
+The gate then failed a second time against the *comment* explaining all this, which named the wire
+fields. That is the trap this repository has recorded before — a gate failing on its own explanation
+— and the comment was reworded rather than the gate loosened.
+
+Routes 16 → **15**.

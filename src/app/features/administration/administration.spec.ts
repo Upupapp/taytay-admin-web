@@ -338,7 +338,34 @@ describe('data governance', () => {
   it('shows a refused correction with the reason it was refused', async () => {
     const element = html(await open('/administration/settings', GovernancePage));
 
-    expect(element.textContent).toContain('The approval minute and the voucher both show');
+    expect(element.textContent).toContain('could not be verified against any document presented');
+  });
+
+  /**
+   * The corrections list names the fields and shows none of their values.
+   *
+   * `birth_date`, `mobile_number` and `street_address` are all correctable, so a row printing
+   * `current → proposed` would hand a reviewer a birth date for every pending request without
+   * opening one — the disclosure `DL-114` splits an audit row from its values to prevent, on the
+   * screen that is designed to be scrolled through other people's records.
+   */
+  it('names the fields a correction would change and shows none of their values', async () => {
+    const element = html(await open('/administration/settings', GovernancePage));
+    const text = element.textContent ?? '';
+
+    expect(text).toContain('Birth date');
+    // The seeded values on that request, neither of which belongs on a list.
+    expect(text).not.toContain('1997-03-14');
+    expect(text).not.toContain('1979-03-14');
+    /*
+     * The *claim* is a different matter and is shown in full.
+     *
+     * "Surname is spelled Sarmiento on every document the family holds, not Sarmento" quotes both
+     * values, and withholding it would leave a reviewer a request they cannot understand. What
+     * stays off the list is the **structured** `currentValue` / `proposedValue` pair — the part a
+     * screen could render for every row at once, which is what turns a list into a disclosure.
+     */
+    expect(text).toContain('not Sarmento');
   });
 
   it('says the correction form is not built rather than offering one', async () => {

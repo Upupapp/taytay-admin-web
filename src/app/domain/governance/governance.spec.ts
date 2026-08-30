@@ -3,7 +3,7 @@ import {
   READ_ONLY_PERMISSIONS,
   rolesBreachingSeparationOfDuties,
 } from '../access/permission-matrix';
-import { asId, type AuditEntryId, type StaffUserId } from '../shared/ids';
+import { asId, type AuditEntryId, type ResidentId, type StaffUserId } from '../shared/ids';
 import type { AuditEntry } from '../shared/audit';
 import {
   AUDIT_DETAIL_RATIONALE,
@@ -22,6 +22,7 @@ import {
 } from './data-classification';
 import {
   CORRECTION_TRANSITIONS,
+  fieldsNamed,
   correctionProblems,
   type CorrectionRequest,
 } from './correction-request';
@@ -287,11 +288,11 @@ describe('retention', () => {
 function correction(overrides: Partial<CorrectionRequest> = {}): CorrectionRequest {
   return {
     id: 'cor-test',
-    entityType: 'resident',
-    entityId: 'res-0001',
-    field: 'birthDate',
+    residentId: asId<ResidentId>('res-0001'),
+    residentName: 'Bautista, R.',
+    changes: [{ field: 'birthDate', currentValue: '1997-03-14', proposedValue: '1979-03-14' }],
     claim: 'The PSA certificate shows a different year.',
-    status: 'under-review',
+    status: 'raised',
     raisedBy: asId<StaffUserId>('staff-intake'),
     raisedByName: 'Liezl Padilla',
     raisedAt: '2026-08-01T02:00:00.000Z' as CorrectionRequest['raisedAt'],
@@ -335,8 +336,36 @@ describe('a correction request', () => {
     );
   });
 
+  /**
+   * The fields are named for a list; the values are read on the one being decided.
+   *
+   * `birth_date`, `mobile_number` and `street_address` are all correctable, so a list printing
+   * `current → proposed` would hand a reviewer a birth date for every pending request without
+   * opening one — `DL-114`'s split, applied to the screen that scrolls other people's records.
+   */
+  it('names the fields it would change without carrying their values', () => {
+    const request = correction({
+      changes: [
+        { field: 'lastName', currentValue: 'Sarmento', proposedValue: 'Sarmiento' },
+        { field: 'birthDate', currentValue: '1997-03-14', proposedValue: '1979-03-14' },
+      ],
+    });
+
+    expect(fieldsNamed(request)).toEqual(['Last name', 'Birth date']);
+    expect(fieldsNamed(request).join(' ')).not.toMatch(/1997|1979|Sarmento/);
+  });
+
+  it('carries every field one request would change, not just the first', () => {
+    expect(
+      fieldsNamed(correction({ changes: [
+        { field: 'lastName', currentValue: null, proposedValue: 'Sarmiento' },
+        { field: 'streetAddress', currentValue: null, proposedValue: '18-B Rizal Extension' },
+      ] })),
+    ).toHaveLength(2);
+  });
+
   it('needs a claim to exist at all', () => {
-    expect(correctionProblems(correction({ claim: '   ' }), 'under-review')).toContain(
+    expect(correctionProblems(correction({ claim: '   ' }), 'applied')).toContain(
       'claim-required',
     );
   });

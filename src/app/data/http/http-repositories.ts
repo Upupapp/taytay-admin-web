@@ -21,6 +21,7 @@ import { WriteIntent } from '@domain/index';
 
 import {
   asId,
+  DEFAULT_PAGE_REQUEST,
   type AppNotification,
   type AssistanceProgram,
   type AssistanceRequest,
@@ -222,6 +223,7 @@ import { FileTransport } from './file-transport';
 import { int } from './mappers/wire';
 import { toAssessmentTemplates, toOpenAssessment } from './mappers/assessment.mapper';
 import { toIntakeAdvisory } from './mappers/advisory.mapper';
+import { toCorrectionRequests } from './mappers/correction.mapper';
 import { toDocumentRequests } from './mappers/document-request.mapper';
 import { toEventMetrics } from './mappers/event-metrics.mapper';
 import {
@@ -893,8 +895,25 @@ export class HttpGovernanceRepository implements GovernanceRepository {
     return this.api.collection<RetentionRule>(`${API_ENDPOINTS.governance}/retention`);
   }
 
+  /**
+   * `GET admin/resident-corrections` — published, and not where this console was looking.
+   *
+   * `admin/governance/corrections` is served at no verb. The resource exists under another name and
+   * a different model: resident-scoped, many changed fields per request, and four states where the
+   * console had five (`DL-155`).
+   *
+   * `API_ENDPOINTS.residentCorrections` was already in the contract table. The adapter was not using
+   * it — the endpoint had been reconciled and the call was never repointed, which is the failure
+   * `check:routes` counts and no reviewer would spot in a file this size.
+   *
+   * Paginated, so this reads a page and hands back its items. The port answers a list because
+   * nothing yet pages this screen; when something does, the page belongs in the signature rather
+   * than being silently truncated here.
+   */
   corrections(): Observable<readonly CorrectionRequest[]> {
-    return this.api.collection<CorrectionRequest>(`${API_ENDPOINTS.governance}/corrections`);
+    return this.api
+      .page<Record<string, unknown>>(API_ENDPOINTS.residentCorrections, DEFAULT_PAGE_REQUEST)
+      .pipe(map((page) => toCorrectionRequests(page.items)));
   }
 }
 

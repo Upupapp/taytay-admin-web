@@ -1,5 +1,5 @@
 import type { AuditStamp } from '../shared/audit';
-import type { IsoDateTime, StaffUserId } from '../shared/ids';
+import type { IsoDateTime, ResidentId, StaffUserId } from '../shared/ids';
 import type { StatusCatalog } from '../shared/status';
 
 /**
@@ -23,7 +23,23 @@ import type { StatusCatalog } from '../shared/status';
  * offering a form that goes nowhere.
  */
 
-export type CorrectionStatus = 'raised' | 'under-review' | 'applied' | 'refused' | 'withdrawn';
+/**
+ * Four states, and `under-review` is deliberately not one of them.
+ *
+ * The console modelled five — `raised`, `under-review`, `applied`, `refused`, `withdrawn` — and the
+ * system of record has four: `pending`, `approved`, `rejected`, `withdrawn`. There is no state for
+ * "somebody is looking at it", and no endpoint that could produce one (`DL-155`).
+ *
+ * The wording here stays the office's, because it is more precise than the API's and describes what
+ * actually happened to the record: `applied` says the record was corrected and the previous value
+ * stayed in the trail, where "approved" says only that somebody agreed. The transport carries the
+ * translation, as it does for a duplicate verdict (`DL-148`).
+ *
+ * `under-review` was removed rather than kept as a state nothing can reach. Modelling a state no
+ * act produces is the defect `DL-151` found on a document request's `withdrawn`, and keeping it for
+ * symmetry would have meant a badge no request can ever wear.
+ */
+export type CorrectionStatus = 'raised' | 'applied' | 'refused' | 'withdrawn';
 
 export const CORRECTION_STATUS_CATALOG: StatusCatalog<CorrectionStatus> = {
   raised: {
@@ -31,12 +47,6 @@ export const CORRECTION_STATUS_CATALOG: StatusCatalog<CorrectionStatus> = {
     label: 'Raised',
     tone: 'neutral',
     description: 'Somebody has said a record is wrong. Nobody has looked yet.',
-  },
-  'under-review': {
-    value: 'under-review',
-    label: 'Under review',
-    tone: 'progress',
-    description: 'The office is checking the record against what was presented.',
   },
   applied: {
     value: 'applied',
@@ -68,20 +78,97 @@ export const CORRECTION_STATUS_CATALOG: StatusCatalog<CorrectionStatus> = {
  */
 export const CORRECTION_TRANSITIONS: Readonly<Record<CorrectionStatus, readonly CorrectionStatus[]>> =
   {
-    raised: ['under-review', 'withdrawn'],
-    'under-review': ['applied', 'refused', 'withdrawn'],
+    raised: ['applied', 'refused', 'withdrawn'],
     applied: [],
     refused: [],
     withdrawn: [],
   };
 
+/**
+ * One field somebody says is wrong, and what they say it should be.
+ *
+ * ## The values are here and the list must not show them
+ *
+ * `birth_date`, `mobile_number` and `street_address` are all correctable, so a corrections list
+ * rendering `currentValue` and `proposedValue` on every row hands a reviewer a birth date for every
+ * pending request — without opening a single record. That is exactly the disclosure `DL-114` splits
+ * an audit row from its values to prevent: *"an audit list is the one screen designed to be scrolled
+ * and filtered by somebody reviewing other people's work"*.
+ *
+ * A correction is not an audit row, though, and the difference matters: **the reviewer's job is to
+ * decide whether the proposed value is right**, which cannot be done without seeing both. So the
+ * rule is the same split rather than the same refusal — the list names the fields, and the values
+ * are read when somebody opens the one they are deciding.
+ *
+ * They are nullable because a field can be corrected *into* existence, and because the office may
+ * hold nothing where a resident says something belongs.
+ */
+/**
+ * The attributes a resident may ask to have corrected.
+ *
+ * A closed union rather than a string, and in the console's own casing rather than the wire's.
+ * `check:contract` refused the first draft for carrying `birth_date` into the domain, and it was
+ * right for a reason beyond the seam: a screen rendering a column name tells a caseworker
+ * `street_address` where a person would say "Street address". The union buys the label as well as
+ * the boundary.
+ *
+ * Twelve, matching the office record exactly. **Nothing about means or sector is correctable** —
+ * `monthlyIncome`, `philsysLastFour` and the sensitive sectors are absent from both sides, which is
+ * the right answer: those are assessed or evidenced rather than asserted, and a correction request
+ * is not the route to change one.
+ */
+export type CorrectableField =
+  | 'firstName'
+  | 'middleName'
+  | 'lastName'
+  | 'suffix'
+  | 'birthDate'
+  | 'sex'
+  | 'civilStatus'
+  | 'barangayId'
+  | 'streetAddress'
+  | 'purokOrSitio'
+  | 'mobileNumber'
+  | 'email';
+
+export const CORRECTABLE_FIELD_LABELS: Readonly<Record<CorrectableField, string>> = {
+  firstName: 'First name',
+  middleName: 'Middle name',
+  lastName: 'Last name',
+  suffix: 'Suffix',
+  birthDate: 'Birth date',
+  sex: 'Sex',
+  civilStatus: 'Civil status',
+  barangayId: 'Barangay',
+  streetAddress: 'Street address',
+  purokOrSitio: 'Purok or sitio',
+  mobileNumber: 'Mobile number',
+  email: 'Email address',
+};
+
+export interface CorrectionChange {
+  /** Named, not quoted, wherever a list shows it. */
+  readonly field: CorrectableField;
+  readonly currentValue: string | null;
+  readonly proposedValue: string | null;
+}
+
 export interface CorrectionRequest {
   readonly id: string;
-  /** Which record is said to be wrong. */
-  readonly entityType: string;
-  readonly entityId: string;
-  /** The field in question, named rather than quoted. */
-  readonly field: string;
+  /**
+   * The record said to be wrong. Always a resident: the API publishes corrections for residents and
+   * nothing else, and the console's old `entityType`/`entityId` pair described a generality that
+   * does not exist (`DL-155`).
+   */
+  readonly residentId: ResidentId | null;
+  /** Already disclosed by the data layer, under the same policy as everywhere else (`DL-38`). */
+  readonly residentName: string;
+  /**
+   * Every field this request would change. **One request, many fields** — the console modelled a
+   * single `field` and the office record carries a set, so a resident correcting their name and
+   * their address in one visit was three separate requests to this console and one to the office.
+   */
+  readonly changes: readonly CorrectionChange[];
   /** What the requester says is wrong, in their words. */
   readonly claim: string;
   readonly status: CorrectionStatus;
@@ -89,11 +176,21 @@ export interface CorrectionRequest {
   readonly raisedBy: StaffUserId | null;
   readonly raisedByName: string;
   readonly raisedAt: IsoDateTime;
-  /** The office's answer. Required before `applied` or `refused`. */
+  /** The office's answer. Required before `refused`, optional on `applied`. */
   readonly outcome: string | null;
   readonly decidedBy: StaffUserId | null;
   readonly decidedAt: IsoDateTime | null;
   readonly audit: AuditStamp;
+}
+
+/**
+ * The fields a request would change, **labelled** and never valued. What a list may show.
+ *
+ * Labels rather than identifiers, because the person reading this list is deciding whether to
+ * correct somebody's record and "Birth date" is what they would call it.
+ */
+export function fieldsNamed(request: CorrectionRequest): readonly string[] {
+  return request.changes.map((change) => CORRECTABLE_FIELD_LABELS[change.field]);
 }
 
 export type CorrectionProblem =

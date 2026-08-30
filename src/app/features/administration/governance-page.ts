@@ -7,6 +7,7 @@ import {
   CLASSIFICATION_CATALOG,
   CORRECTION_CAPTURE_IS_NOT_BUILT,
   CORRECTION_STATUS_CATALOG,
+  fieldsNamed,
   GOVERNANCE_REPOSITORY,
   RETENTION_NOTICE,
   describeRetention,
@@ -54,6 +55,8 @@ export class GovernancePage {
   protected readonly copy = ADMIN_COPY.governance;
   protected readonly classificationCatalog = CLASSIFICATION_CATALOG;
   protected readonly correctionCatalog = CORRECTION_STATUS_CATALOG;
+  /** Names the fields a request would change. Never their values — see the template. */
+  protected readonly fieldsNamed = fieldsNamed;
   protected readonly retentionNotice = RETENTION_NOTICE;
   protected readonly correctionNotBuilt = CORRECTION_CAPTURE_IS_NOT_BUILT;
 

@@ -103,6 +103,19 @@ route that could serve it.
 
 **Blocks:** a clerk who mistypes at the counter has no way back.
 
+### 1.6 A correction can only be about a resident — `DL-155`
+
+`CorrectableField` lists twelve resident attributes. There is no way to record *"the applicant says
+the amount approved was ₱10,000, not ₱8,000"* — a dispute about an assistance request rather than
+about an identity — and the console's seed carried exactly that case until this model was adopted.
+
+RA 10173 gives a data subject the right to have inaccurate personal information corrected, and an
+amount recorded against their name is personal information about them.
+
+**Ask:** either widen the correction record beyond residents, or state that disputes about a
+decision are handled by another route — and name it, so the console can point somebody at it
+instead of offering nothing.
+
 ---
 
 ## 2. One line each, and each removes a client-side approximation
@@ -161,6 +174,27 @@ of two identities at once.
 
 **Ask:** send what the queue displays — a masked label and the signals — and put the values behind
 the same grant the comparison already costs.
+
+### 3.2 The corrections list carries every proposed value — `DL-114`, `DL-155`
+
+`GET admin/resident-corrections` sends `changes[]` with `current_value` and `proposed_value` on
+every row of a paginated list, and the correctable set includes a birth date, a mobile number and a
+street address.
+
+So a reviewer opening the list receives a birth date for **every pending request**, without opening
+one. The console renders field names in the list and reads values on the request being decided
+(`DL-114`'s split), but rendering is not protection — the payload reaches the browser either way,
+exactly as with the duplicate-pair projection above.
+
+**Ask:** the list sends the field names; `GET admin/resident-corrections/{correction}` sends the
+values. The detail endpoint already exists and already returns the same projection, so this is a
+narrowing of the list rather than new work.
+
+### 3.3 Smaller: a corrections row names no requester — `DL-155`
+
+`requested_by` and `reviewed_by` are subject ids with no accompanying name, so a screen saying
+"raised by" has a uuid or nothing. The console shows nothing. The resident is disclosed properly on
+the same row, so the shape for a staff name is already there.
 
 ---
 

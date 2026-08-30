@@ -104,8 +104,15 @@
                     [catalog]="correctionCatalog"
                     [status]="request.status"
                   />
-                  <span class="corrections__field">{{ request.field }}</span>
-                  <span class="corrections__entity">{{ request.entityType }}</span>
+                  <!--
+                    The fields, NAMED and never valued.
+                    A birth date, a mobile number and a street address are all correctable, so
+                    printing `current → proposed` on every row would hand a reviewer a birth date
+                    for every pending request without opening one. `DL-114`'s split: the list names
+                    what moved, and the values are read on the request being decided.
+                  -->
+                  <span class="corrections__field">{{ fieldsNamed(request).join(', ') }}</span>
+                  <span class="corrections__entity">{{ request.residentName }}</span>
                 </p>
                 <p class="corrections__claim">{{ request.claim }}</p>
                 <p class="corrections__meta">

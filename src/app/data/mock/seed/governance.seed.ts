@@ -7,6 +7,7 @@ import {
   type AuditValueChange,
   type CorrectionRequest,
   type StaffProfile,
+  type ResidentId,
   type StaffUserId,
 } from '@domain/index';
 
@@ -242,13 +243,15 @@ export const MOCK_AUDIT_DETAILS: Readonly<Record<string, readonly AuditValueChan
 export const MOCK_CORRECTION_REQUESTS: readonly CorrectionRequest[] = [
   {
     id: 'cor-0001',
-    entityType: 'resident',
-    entityId: 'res-0004',
-    field: 'birthDate',
+    residentId: asId<ResidentId>('res-0004'),
+    residentName: 'Bautista, R.',
+    changes: [
+      { field: 'birthDate', currentValue: '1997-03-14', proposedValue: '1979-03-14' },
+    ],
     claim:
       'The applicant brought a PSA birth certificate showing 14 March 1979. The registry has ' +
       '14 March 1997.',
-    status: 'under-review',
+    status: 'raised',
     raisedBy: asId<StaffUserId>('staff-intake'),
     raisedByName: 'Liezl Padilla',
     raisedAt: daysBeforeAnchor(9, 10),
@@ -258,10 +261,24 @@ export const MOCK_CORRECTION_REQUESTS: readonly CorrectionRequest[] = [
     audit: stamp(9, 9),
   },
   {
+    /*
+     * Two fields, one request — the shape the office record actually holds.
+     *
+     * The console modelled one field per request, so a resident correcting their surname and their
+     * address in a single visit became two requests here and one at the office. This entry exists
+     * so a screen cannot be written against the simpler shape by accident (`DL-155`).
+     */
     id: 'cor-0002',
-    entityType: 'resident',
-    entityId: 'res-0007',
-    field: 'name',
+    residentId: asId<ResidentId>('res-0007'),
+    residentName: 'Sarmiento, J.',
+    changes: [
+      { field: 'lastName', currentValue: 'Sarmento', proposedValue: 'Sarmiento' },
+      {
+        field: 'streetAddress',
+        currentValue: '18 Rizal Extension',
+        proposedValue: '18-B Rizal Extension',
+      },
+    ],
     claim: 'Surname is spelled Sarmiento on every document the family holds, not Sarmento.',
     status: 'applied',
     raisedBy: asId<StaffUserId>('staff-sw-1'),
@@ -275,23 +292,40 @@ export const MOCK_CORRECTION_REQUESTS: readonly CorrectionRequest[] = [
     audit: stamp(30, 27),
   },
   {
+    /*
+     * A field corrected INTO existence: the office holds nothing, the resident says there is
+     * something. `currentValue` is null, which is why it is nullable rather than an empty string —
+     * "we hold no mobile number" and "we hold a blank one" are different records.
+     */
     id: 'cor-0003',
-    entityType: 'assistance-request',
-    entityId: 'req-0005',
-    field: 'approvedAmount',
-    claim: 'Applicant says the amount approved was ₱10,000, not ₱8,000.',
+    residentId: asId<ResidentId>('res-0011'),
+    residentName: 'Molina, A.',
+    changes: [{ field: 'mobileNumber', currentValue: null, proposedValue: '09XXXXXXXXX' }],
+    claim: 'No contact number on file; the household gave one at the counter on 12 August.',
     status: 'refused',
     raisedBy: asId<StaffUserId>('staff-intake'),
     raisedByName: 'Liezl Padilla',
     raisedAt: daysBeforeAnchor(50, 11),
     outcome:
-      'The approval minute and the voucher both show ₱8,000. The applicant was shown both and ' +
-      'the difference explained. Nothing was changed.',
+      'The number given could not be verified against any document presented, and a contact ' +
+      'number is added at intake rather than by correction. The household was told how.',
     decidedBy: asId<StaffUserId>('staff-head'),
     decidedAt: daysBeforeAnchor(48, 9),
     audit: stamp(50, 48),
   },
 ];
+
+/*
+ * ── The `assistance-request` correction that used to be here ────────────────────────────────
+ *
+ * `cor-0003` was a dispute about an approved amount on an assistance request. It is gone because
+ * the office record cannot hold it: `admin/resident-corrections` is resident-scoped and
+ * `CorrectableField` lists twelve resident attributes and nothing else.
+ *
+ * That is a real loss, not a tidy-up — "the applicant says the amount approved was different" is a
+ * dispute an MSWDO will get. It is recorded in `docs/integration/backend-requests.md` as a gap
+ * rather than kept here as a shape no adapter could produce (`DL-155`).
+ */
 
 /** Which entries have recorded values behind them. */
 export function hasAuditDetail(id: AuditEntryId): boolean {
