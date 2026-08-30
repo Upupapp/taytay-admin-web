@@ -818,15 +818,45 @@ export class HttpGovernanceRepository implements GovernanceRepository {
     return this.api.optionalItem<StaffAccount>(`${API_ENDPOINTS.staffAccounts}/${id}`);
   }
 
+  /**
+   * `DELETE staff/{staff}`, and **only for switching an account off**.
+   *
+   * This posted `{ isActive, reason }` to `staff/{id}/status`, a path the API does not serve at any
+   * verb, so no account has ever been switched off or on from this console. What the API publishes
+   * is `DELETE staff/{staff}` → `deactivate`, and the asymmetry is the finding: **there is no
+   * reactivation endpoint at all.** Switching an account back on is not a route somebody forgot to
+   * call; it does not exist.
+   *
+   * So reactivation is refused here with a sentence naming what to do instead, on the same pattern
+   * as `setFamilyHead` — a console that quietly fails an administrator who believes they have just
+   * restored a colleague's access is worse than one that says it cannot.
+   *
+   * `reason` is **not sent**, because `deactivate` accepts no body. It is still required by the
+   * port and still shown on the confirmation, because the office asks for it and the screen says
+   * plainly where it goes. `DL-116`'s guarantee is unaffected: the server ends the live session
+   * either way, and it enforces the same self-deactivation guard this console does.
+   */
   setAccountActive(
     id: StaffUserId,
     isActive: boolean,
     reason: string,
   ): Observable<StaffAccount> {
-    return this.api.post<StaffAccount, { isActive: boolean; reason: string }>(
-      `${API_ENDPOINTS.staffAccounts}/${id}/status`,
-      { isActive, reason },
-    );
+    if (isActive) {
+      return throwError(
+        () =>
+          new Error(
+            'An account cannot be switched back on from this console — the API has no route for ' +
+              'it. Accounts are provisioned and restored by an administrator outside this system.',
+          ),
+      );
+    }
+
+    // No body: `deactivate` validates nothing and reads nothing. Sending `reason` anyway would
+    // put a field on the wire that the server discards, which is the shape of dishonesty this
+    // whole mapper layer exists to remove.
+    void reason;
+
+    return this.api.delete<StaffAccount>(`${API_ENDPOINTS.staffAccounts}/${id}`);
   }
 
   auditRows(filter: AuditFilter): Observable<readonly AuditRow[]> {

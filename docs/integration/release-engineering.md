@@ -614,3 +614,75 @@ Rendering nothing instead is not the fix: an empty list reads as "this person ha
 members", a positive claim about a family made from data nobody sent. This needs the same treatment
 as the assessment's missing amount (`DL-144`) — the panel says what it could not read — and it needs
 the backend to publish a household role before it can say anything else. Recorded, not patched.
+
+### The 20 unwired paths, triaged against the published routes
+
+"Attack the 404s" was one instruction and the paths turn out to be four different problems. Each was
+read against `routes.published.json` **and** against the controller behind it, because `DL-141`
+already showed that two paths sharing a verb can mean entirely different things.
+
+#### A. Wrong endpoint — fixable here (1 of 1 done)
+
+| Composed | Published | Status |
+| --- | --- | --- |
+| `POST staff/{}/status` | `DELETE staff/{staff}` → `deactivate` | **fixed** |
+
+No account has ever been switched off or on from this console: `staff/{id}/status` is served at no
+verb. What the API has is `DELETE staff/{staff}`, and the asymmetry is the finding — **there is no
+reactivation route at all**, so switching an account back on is not a call somebody forgot to make.
+It is refused with a sentence naming what to do instead, on the `setFamilyHead` pattern.
+
+`deactivate` also **accepts no body**, so the `reason` the office asks for is not sent. It is still
+required by the port and still captured, and the screen says where it goes. `DL-116` is unaffected:
+the server ends the live session and enforces the same self-deactivation guard.
+
+#### B. Right idea, different model — needs a domain decision, not a repoint
+
+| Composed | Published | What actually differs |
+| --- | --- | --- |
+| `POST admin/resident-duplicates` | `POST admin/resident-duplicates/{pair}/decide` | a pair is a **record**, not a computation |
+| `GET admin/resident-duplicates/preview` | `POST admin/resident-duplicates/{pair}/preview` | same, plus verb and body |
+| `GET admin/events/{}/metrics` | `GET admin/events/{event}/registration-summary` | two fields have no counterpart |
+
+**The duplicate pair is the sharp one.** This console treats a candidate as a resemblance computed
+on demand and addresses it by its two resident ids; the API persists a `resident_duplicate_pairs`
+row with its own uuid, a `decision`, a `decision_note` and a `decided_at`, created by
+`POST admin/resident-duplicates/detect` — **which this console never calls**, so the queue would be
+empty even if the paths matched. `DuplicateCandidate` carries no pair id, and the verdict
+vocabularies differ by one value: the console says `distinct-people` where the API says
+`different-person`. `DL-74`'s doctrine survives all of this untouched — the console still records a
+finding and still never merges — but adopting the API's model is a domain change, not a URL edit.
+
+**Also recorded, and not this lane's to fix:** the pair projection sends each resident's `name` and
+`birth_date` in full. `DL-73` exists so that "the review panel cannot leak a birth date it was never
+handed", and the API hands it one.
+
+`registration-summary` carries `registered_count`, `waitlisted_count` and an `attendance` block of
+`attended` / `no_show` / `not_checked_in` — six of `EventMetrics`' eight fields. `cancelledCount`
+and `asOf` have no counterpart, and `asOf` is not cosmetic: `DL-129` requires it precisely so a
+screen states the moment its counts were true.
+
+#### C. Genuinely absent — the console is not calling the wrong thing
+
+| Composed | Nearest published | Why it is not a repoint |
+| --- | --- | --- |
+| `POST admin/reports/{}/export` | `POST admin/reports/{report}/run` | `run` **404s a person-level report by design** |
+| `POST admin/assistance-requests/{}/document-requests` | `.../requirements/{requirement}/document-requests` | the API raises a request against a **requirement**, not a case |
+| `GET admin/events/{}/registrants/export` | `GET admin/events/{event}/registrations` | no export route exists |
+| `GET admin/assistance-requests/advisory` | — | nothing |
+| `GET admin/privacy/corrections` | — | nothing; the capture screen is unbuilt anyway (`DL-117`) |
+| `PATCH admin/assistance-intakes/{}` | `POST admin/assistance-intakes` | create only; no amendment route |
+| `POST admin/families/transfers` | — | nothing |
+
+`reports/{}/export` deserves its own line. `run` is the **aggregate** runner and refuses
+`isPersonLevel()` with a 404 — so the one report that names people (`DL-104`) and the export notice
+that must travel inside the file (`DL-106`) have no endpoint whatsoever. Pointing `export` at `run`
+would silently turn a person-level export into "report not found".
+
+#### D. The case surface — 10 paths, blocked on ADR 0044
+
+`admin/cases`, `admin/cases/queues`, `admin/cases/{}`, and the seven acts beneath them. Unchanged,
+and out of scope until that ADR is settled.
+
+**Gate line 05/07 stays NO-GO.** Nine of the ten non-case paths need either a backend route or a
+decision about which model wins; only one was a wrong URL.

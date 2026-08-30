@@ -2,7 +2,7 @@
   "$comment": "Composed request paths this console builds that the API does not publish AT THAT VERB. EVERY ONE IS A 404 OR 405 IN THE HTTP CONFIGURATION. This file is a BASELINE, not an allow-list: check:routes prints the count on every run and fails if the list grows. Entries are 'VERB path' — the verb is part of the contract, and comparing paths alone passed a POST to a GET-only route. Regenerate with `node tools/check-routes.mjs --write-baseline`.",
   "recordedBy": "TAB 19",
   "recordedOn": "2026-08-19",
-  "count": 21,
+  "count": 20,
   "paths": [
     "GET admin/assistance-requests/advisory",
     "GET admin/cases",
@@ -23,7 +23,6 @@
     "POST admin/cases/{}/tasks/{}/schedule",
     "POST admin/families/transfers",
     "POST admin/reports/{}/export",
-    "POST admin/resident-duplicates",
-    "POST staff/{}/status"
+    "POST admin/resident-duplicates"
   ]
 }

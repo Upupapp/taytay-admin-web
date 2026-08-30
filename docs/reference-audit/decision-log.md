@@ -4216,3 +4216,48 @@ This makes the console honest; it does not make the panel work. `household_membe
 role, or the API needs to publish the resident-to-resident relationships it already stores
 (`DL-47`), before the composition can be read at all. `check:mapper-adoption` stays at 45 for the
 same reason. Recorded in `docs/integration/release-engineering.md`.
+
+## DL-147 — an account cannot be switched back on, and the console now says so
+
+`setAccountActive` posted `{ isActive, reason }` to `staff/{id}/status`, a path the API serves at no
+verb. **No account has ever been switched off or on from this console.**
+
+`DELETE staff/{staff}` is what exists, and the asymmetry it exposes is the reason this has an entry
+rather than a line in a commit message: **there is no reactivation route at all.** Switching an
+account back on is not a call somebody forgot to wire — it does not exist on the server.
+
+So the adapter deactivates through `DELETE` and **refuses reactivation with a sentence naming what
+to do instead**, on the `setFamilyHead` pattern already in this file. An administrator who clicks
+"switch on", sees a success toast, and tells a colleague their access is restored has been failed
+twice over — and the colleague finds out at the counter. This is `DL-32`'s rule again, which already
+settled that accounts are provisioned outside this console and that a form which cannot work is
+worse than none.
+
+### The reason is captured and not sent, and the screen says so
+
+`deactivate` validates nothing and reads no body. Sending `reason` anyway would put a field on the
+wire the server discards — the exact dishonesty the mapper layer exists to remove, and the same
+shape as the assessment's recommended amount (`DL-144`). It stays required by the port and stays on
+the confirmation, because the office asks for it.
+
+`DL-116` is untouched. The server ends the live session itself and enforces the same
+self-deactivation guard the console does, so the guarantee never depended on this call.
+
+### One of twenty, and that is the finding
+
+The instruction was "attack the 404s". Read against the published routes **and the controllers
+behind them**, the twenty split four ways, and only this one was a wrong URL:
+
+- **1 wrong endpoint** — this.
+- **3 right idea, different model.** The duplicate pair is the sharp one: this console computes a
+  resemblance and addresses it by two resident ids, while the API persists a pair row with its own
+  uuid, a decision and a note, created by a `detect` run this console never calls. The queue would
+  be empty even if the paths matched. Adopting that is a domain change, not a URL edit.
+- **6 genuinely absent.** `POST admin/reports/{}/export` is the one to watch: the nearest published
+  route, `.../run`, **404s a person-level report by design**, so pointing `export` at it would turn
+  the one report that names people into "report not found" (`DL-104`, `DL-106`).
+- **10 the case surface**, blocked on ADR 0044.
+
+Triaged in full in `docs/integration/release-engineering.md`. Routes 21 → 20, wire-adoption 11 → 10.
+Gate line 05/07 stays NO-GO: nine of the ten non-case paths need a backend route or a decision about
+which model wins.
