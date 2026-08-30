@@ -5,6 +5,9 @@ import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import {
   ACCESS_CONTEXT,
   asId,
+  membersOf,
+  type HouseholdComposition,
+  type HouseholdMemberView,
   asIsoDate,
   DEFAULT_PAGE_REQUEST,
   isResidentDraftInvalid,
@@ -180,13 +183,23 @@ describe('the registry is large enough to need paging', () => {
   });
 });
 
+/*
+ * A stand-in for a profile that was not returned, so a null profile fails an *assertion* rather
+ * than the call. `!` is forbidden here (`CLAUDE.md` §2.2) and `?? []` would not typecheck against
+ * a union — this keeps the narrowing honest and the failure legible.
+ */
+const EMPTY_COMPOSITION: HouseholdComposition = { kind: 'read', members: [] };
+
 describe('one call answers "who is this, and what have we done for them?"', () => {
   it('returns household, family and history together', async () => {
     signedInAs(authenticated('mswdo-head'));
     const profile = await firstValueFrom(repo().getProfile(FAMILY_HEAD));
     expect(profile).not.toBeNull();
     expect(profile?.household?.referenceNumber).toBe('HH-DL-2024-0088');
-    expect(profile?.householdMembers.map((member) => member.role)).toEqual(['spouse', 'child']);
+    expect(membersOf(profile?.householdMembers ?? EMPTY_COMPOSITION).map((m: HouseholdMemberView) => m.role)).toEqual([
+      'spouse',
+      'child',
+    ]);
     expect(profile?.history.cases.length).toBeGreaterThan(0);
   });
 
@@ -194,14 +207,16 @@ describe('one call answers "who is this, and what have we done for them?"', () =
     signedInAs(authenticated('mswdo-head'));
     const profile = await firstValueFrom(repo().getProfile(FAMILY_HEAD));
     expect(
-      profile?.householdMembers.some((member) => member.view.resident.id === FAMILY_HEAD),
+      membersOf(profile?.householdMembers ?? EMPTY_COMPOSITION).some(
+        (member: HouseholdMemberView) => member.view.resident.id === FAMILY_HEAD,
+      ),
     ).toBe(false);
   });
 
   it('discloses family members under the same policy as the subject', async () => {
     signedInAs(authenticated('release-officer'));
     const profile = await firstValueFrom(repo().getProfile(FAMILY_HEAD));
-    for (const member of profile?.householdMembers ?? []) {
+    for (const member of membersOf(profile?.householdMembers ?? EMPTY_COMPOSITION)) {
       expect(member.view.resident.monthlyIncome).toBeNull();
     }
   });

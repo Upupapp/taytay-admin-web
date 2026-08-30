@@ -260,6 +260,66 @@ if (intakeBlock.includes("'beneficiary.review-duplicates'")) {
 }
 notes.push('permission: reading the registry does not imply ruling on identity');
 
+
+/* ── Who else lives at this address: three answers, never two ────────────── */
+
+/*
+ * `HouseholdComposition` exists so a screen cannot render "we could not read it" as "nobody else
+ * lives here" (`DL-146`). That only holds while every screen actually distinguishes them.
+ *
+ * The failure this guards is one edit deep and invisible in review: `membersOf(x).length > 0` reads
+ * naturally, does the right thing for both `read` states, and silently turns `unavailable` into
+ * "no household members" — a positive claim about a family, made from data nobody sent. So a
+ * template that reaches the members must also branch on `kind`.
+ */
+const composition = read('src/app/domain/residents/resident-profile.ts');
+
+for (const shape of ['kind: \'read\'', 'kind: \'unavailable\'']) {
+  if (!composition.includes(shape)) {
+    problems.push(`HouseholdComposition no longer carries \`${shape}\`. The three answers about a household have collapsed back into two.`);
+  }
+}
+
+/*
+ * Joined before matching. The sentence is written as a `'…' + '…'` concatenation to stay inside
+ * the line limit, so a naive search for a phrase spanning the join finds nothing — which would make
+ * this rule pass for a constant that no longer says anything at all.
+ */
+const joined = composition.replace(/'\s*\+\s*'/g, '');
+
+if (!/not a statement that nobody does/i.test(joined)) {
+  problems.push(
+    'HOUSEHOLD_COMPOSITION_UNREADABLE no longer refuses the reading it exists to prevent. It has ' +
+      'to say, in words, that it is not a claim that nobody else lives at the address.',
+  );
+}
+
+const COMPOSITION_TEMPLATES = [
+  'src/app/features/residents/resident-detail-page.html',
+  'src/app/features/requests/intake-page.html',
+];
+
+for (const file of COMPOSITION_TEMPLATES) {
+  const template = read(file);
+  if (!template.includes('householdMembers')) continue;
+
+  if (!/householdMembers\.kind/.test(template)) {
+    problems.push(
+      `${file} reaches householdMembers without branching on \`kind\`. An unavailable composition ` +
+        'would render as an empty household, which says nobody else lives there.',
+    );
+  }
+
+  if (!/householdMembers\.because/.test(template)) {
+    problems.push(
+      `${file} branches on \`kind\` but never shows \`because\`. A screen that knows it could not ` +
+        'read something and does not say so is the failure this type exists to prevent.',
+    );
+  }
+}
+
+notes.push(`household composition: read | unavailable, distinguished on ${COMPOSITION_TEMPLATES.length} screens`);
+
 /* ── Report ──────────────────────────────────────────────────────────────── */
 
 for (const note of notes) console.log(`  ${note}`);

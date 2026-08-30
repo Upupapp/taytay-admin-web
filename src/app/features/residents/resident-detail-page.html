@@ -150,21 +150,33 @@
           }
 
           <h3 class="panel__subheading">{{ copy.familyHeading }}</h3>
-          @if (profile.householdMembers.length > 0) {
-            <ul class="family">
-              @for (member of profile.householdMembers; track member.view.resident.id) {
-                <li>
-                  <app-resident-summary-card
-                    compact
-                    [view]="member.view"
-                    [relationship]="relationshipLabel(member)"
-                    [routerLink]="memberLink(member.view.resident.id)"
-                  />
-                </li>
+          @switch (profile.householdMembers.kind) {
+            @case ('unavailable') {
+              <!--
+                Three different answers, and the screen must not collapse them:
+                somebody else lives here, nobody else does, and we could not read it.
+                `{{ copy.noFamily }}` is the second; this is the third (`DL-146`).
+              -->
+              <p class="panel__unread" role="note">{{ profile.householdMembers.because }}</p>
+            }
+            @default {
+              @if (membersOf(profile.householdMembers).length > 0) {
+                <ul class="family">
+                  @for (member of membersOf(profile.householdMembers); track member.view.resident.id) {
+                    <li>
+                      <app-resident-summary-card
+                        compact
+                        [view]="member.view"
+                        [relationship]="relationshipLabel(member)"
+                        [routerLink]="memberLink(member.view.resident.id)"
+                      />
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="panel__empty">{{ copy.noFamily }}</p>
               }
-            </ul>
-          } @else {
-            <p class="panel__empty">{{ copy.noFamily }}</p>
+            }
           }
         </section>
 

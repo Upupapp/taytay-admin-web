@@ -84,6 +84,7 @@ import {
   type CaseSummary,
   type CaseTaskDraft,
   type CaseTaskId,
+  HOUSEHOLD_COMPOSITION_UNREADABLE,
   type CaseWorkspace,
   type AdvisoryAcknowledgement,
   type AssessmentAnswers,
@@ -298,14 +299,33 @@ export class HttpResidentRepository implements ResidentRepository {
 
         // Members live on the household, so a resident between addresses simply has none.
         return household === null
-          ? of({ view, household: null, householdMembers: [], history })
+          ? of({
+              view,
+              household: null,
+              // No household, so nobody else lives at this address by definition — an answer, not
+              // an absence. A resident between addresses simply has none (`DL-47`).
+              householdMembers: { kind: 'read' as const, members: [] },
+              history,
+            })
           : this.api
               .optionalItem<HouseholdDetail>(`${API_ENDPOINTS.households}/${household.id}`)
               .pipe(
-                map((detail) => ({
+                map(() => ({
                   view,
                   household,
-                  householdMembers: detail?.members ?? [],
+                  /*
+                   * Not read, and said so rather than guessed.
+                   *
+                   * The payload's membership rows carry `effective_from` and no role, and the
+                   * profile prints a member's relationship to the head beside their name. Passing
+                   * the wire rows through as `HouseholdMemberView` renders blank cards; passing an
+                   * empty list asserts nobody else lives here. Both are answers this console cannot
+                   * support, so it gives neither (`DL-146`).
+                   */
+                  householdMembers: {
+                    kind: 'unavailable' as const,
+                    because: HOUSEHOLD_COMPOSITION_UNREADABLE,
+                  },
                   history,
                 })),
               );

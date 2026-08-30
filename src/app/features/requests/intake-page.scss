@@ -248,3 +248,12 @@
   flex-wrap: wrap;
   gap: var(--space-base);
 }
+
+/* See `.panel__unread` on the resident profile — the same third answer, said the same way. */
+.intake__unread {
+  margin: var(--space-2) 0 0;
+  padding: var(--space-3);
+  border-left: 3px solid var(--c-border-strong);
+  background: var(--c-surface-muted);
+  font-size: 13px;
+}

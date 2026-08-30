@@ -124,7 +124,11 @@ export class MockResidentRepository implements ResidentRepository {
     return this.latency.respond({
       view: this.disclose(resident, user),
       household,
-      householdMembers: this.householdMembersOf(resident, household, user),
+      // The mock holds a role for every membership, so it can always answer.
+      householdMembers: {
+        kind: 'read',
+        members: this.householdMembersOf(resident, household, user),
+      },
       history: historySummaryFor(resident.id),
     });
   }

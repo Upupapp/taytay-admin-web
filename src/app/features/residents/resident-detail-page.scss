@@ -173,3 +173,18 @@
 .detail__back {
   margin-block-start: var(--space-base);
 }
+
+/*
+ * "We could not read this", not "this is empty" and not "something is broken".
+ *
+ * Set apart from `.panel__empty` on purpose: the two say different things about the same family,
+ * and rendering them identically is the collapse this style exists to prevent.
+ */
+.panel__unread {
+  margin: 0;
+  padding: var(--space-3);
+  border-left: 3px solid var(--c-border-strong);
+  background: var(--c-surface-muted);
+  color: var(--c-text);
+  font-size: 13px;
+}

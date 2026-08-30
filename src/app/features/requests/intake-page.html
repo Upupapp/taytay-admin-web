@@ -287,10 +287,12 @@
           <p class="intake__fact">
             <a [routerLink]="'/households/' + household.id">{{ household.referenceNumber }}</a>
           </p>
-          @if (profile.householdMembers.length > 0) {
+          @if (profile.householdMembers.kind === 'unavailable') {
+            <p class="intake__unread" role="note">{{ profile.householdMembers.because }}</p>
+          } @else if (membersOf(profile.householdMembers).length > 0) {
             <h4 class="intake__subheading">{{ copy.membersLabel }}</h4>
             <ul class="intake__members">
-              @for (member of profile.householdMembers; track member.view.resident.id) {
+              @for (member of membersOf(profile.householdMembers); track member.view.resident.id) {
                 <li>
                   <app-resident-summary-card
                     compact

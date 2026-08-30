@@ -4155,3 +4155,64 @@ renders a list of blank cards, the `L-22` failure mode on a screen that names pe
 an empty list instead would assert the household has no members. It needs the backend to publish a
 role, and until then it needs what `DL-144` gave the missing amount: the panel saying what it could
 not read. Recorded in `docs/integration/release-engineering.md`, not patched.
+
+## DL-146 — "we could not read it" is a third answer, and a screen must not have two
+
+`DL-145` recorded that the resident profile's household panel renders **a list of blank cards**
+against the real API: the household payload's membership rows carry `effective_from` and no role,
+they were typed straight through as `HouseholdMemberView`, and every property the template reads —
+`member.view.resident.id`, `member.role` — comes back `undefined`. This fixes it, and the fix is not
+the obvious one.
+
+### Rendering nothing would have been the wrong repair
+
+The reflex is to map what exists and leave the members empty. An empty list renders "No household
+members recorded", and that is a **positive claim about a family** made from data nobody sent — the
+same trap `L-14` refused for the vulnerability band, where the only available value for a household
+nobody had assessed was `'none'`, which reads on screen as "no vulnerability factors present".
+
+There are three answers about who else lives at an address: somebody does, nobody does, and the
+office could not read it. The type carried two, so the third had to become one of the others.
+
+### The absence is now a state, not a value
+
+`ResidentProfile.householdMembers` is a `HouseholdComposition` — `{ kind: 'read'; members }` or
+`{ kind: 'unavailable'; because }` — on the same principle as `ViewState` making "still loading"
+unmistakable for "no results", and `CaseNoteView.body: null` keeping a withheld note listed so
+nobody reads a partial file as a complete one (`DL-58`).
+
+The mock answers `read`, because it holds a role for every membership and genuinely can. The HTTP
+adapter answers `unavailable` and stops pretending. That divergence is the point: the two adapters
+now differ where the *systems* differ, instead of the mock's competence masking the API's gap —
+which is how this panel shipped looking fine for the whole programme.
+
+`membersOf()` exists so a caller that only needs a count is not forced to repeat the narrowing, and
+it is **deliberately lossy**: it returns `[]` for `unavailable` too. That is why `check:beneficiary`
+requires a template reaching the members to branch on `kind` as well. `membersOf(x).length > 0`
+reads naturally, does the right thing for both `read` states, and silently reintroduces the whole
+defect — one edit deep, invisible in review.
+
+### The sentence names the record, not the software
+
+*"Who else lives at this address could not be read from the office record. This is not a statement
+that nobody does — the household register is there, but it does not yet say how each person is
+related to the head, and this console will not guess. Open the household record for the address
+itself."*
+
+Three things it does deliberately. It **refuses the misreading in as many words**, because the
+whole failure is a reader concluding the family is alone. It **says where to look instead**, so the
+caseworker is not left holding a dead end. And it says nothing about APIs, payloads or nulls: a
+caseworker reading "the endpoint omits household roles" learns about this office's procurement,
+where "could not be read" tells them something about the family in front of them.
+
+It lives in the domain rather than in feature copy because the **data layer** is what decides the
+answer is unavailable — the same reason a payout manifest and an export notice are composed there
+(`DL-92`, `DL-106`). The sentence and the fact travel together, or the second screen states the
+absence differently from the first.
+
+### What is still owed
+
+This makes the console honest; it does not make the panel work. `household_memberships` needs a
+role, or the API needs to publish the resident-to-resident relationships it already stores
+(`DL-47`), before the composition can be read at all. `check:mapper-adoption` stays at 45 for the
+same reason. Recorded in `docs/integration/release-engineering.md`.

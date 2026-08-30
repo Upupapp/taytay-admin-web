@@ -29,6 +29,7 @@ import {
   type RelationshipEvent,
   FIELD_VISIT_REPOSITORY,
   type FieldVisit,
+  membersOf,
 } from '@domain/index';
 import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -73,6 +74,7 @@ import { RESIDENTS_COPY } from './residents.copy';
   styleUrl: './resident-detail-page.scss',
 })
 export class ResidentDetailPage {
+  protected readonly membersOf = membersOf;
   private readonly repository = inject(RESIDENT_REPOSITORY);
   private readonly families = inject(FAMILY_REPOSITORY);
   private readonly visits = inject(FIELD_VISIT_REPOSITORY);

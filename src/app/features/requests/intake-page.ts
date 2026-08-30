@@ -43,6 +43,7 @@ import {
   type ResidentId,
   type ResidentProfile,
   type ResidentView,
+  membersOf,
 } from '@domain/index';
 import { AdvisoryPanel } from '@shared/intake/advisory-panel';
 import { INTAKE_COPY } from '@shared/intake/intake.copy';
@@ -90,6 +91,7 @@ import { REQUESTS_COPY } from './requests.copy';
   styleUrl: './intake-page.scss',
 })
 export class IntakePage {
+  protected readonly membersOf = membersOf;
   private readonly requests = inject(ASSISTANCE_REQUEST_REPOSITORY);
   private readonly residents = inject(RESIDENT_REPOSITORY);
   private readonly programs = inject(PROGRAM_REPOSITORY);

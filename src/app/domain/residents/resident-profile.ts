@@ -80,8 +80,57 @@ export interface ResidentProfile {
    * the assumption `DL-47` exists to remove. Which families a person belongs to
    * is `FamilyRepository.familiesOf`, and the answer can be more than one.
    */
-  readonly householdMembers: readonly HouseholdMemberView[];
+  readonly householdMembers: HouseholdComposition;
   readonly history: ResidentAssistanceHistory;
+}
+
+/**
+ * What the office could establish about who else lives at this address.
+ *
+ * ## Why this is a union and not an array
+ *
+ * An empty array says "nobody else lives here", which is a positive claim about a family. The
+ * console cannot always make it: the household detail payload carries membership rows with
+ * `effective_from` and **no role**, so a member's relationship to the head — the thing the profile
+ * prints beside their name — has no wire counterpart at all (`DL-145`). Typed as an array, that
+ * arrives as rows whose every domain property is `undefined`, and the panel renders a list of blank
+ * cards on a screen that names a family.
+ *
+ * Rendering nothing instead only swaps one wrong answer for another. `L-14` settled the principle
+ * for the vulnerability band and `DL-112` for an unsearched record type: **never render an empty
+ * record where the truth is "we could not ask"**, and name what was not read rather than omitting
+ * it silently.
+ *
+ * So the absence is a state a screen has to handle rather than a value it can mistake for an
+ * answer, in the same way `ViewState` makes "still loading" unmistakable for "no results" and
+ * `CaseNoteView.body: null` keeps a withheld note listed (`DL-58`).
+ */
+export type HouseholdComposition =
+  | { readonly kind: 'read'; readonly members: readonly HouseholdMemberView[] }
+  /** `because` is shown to the reader, so it says what is missing rather than naming a defect. */
+  | { readonly kind: 'unavailable'; readonly because: string };
+
+/**
+ * Why the composition could not be read, in words a caseworker can act on.
+ *
+ * It lives in the domain rather than in feature copy because the **data layer** decides that the
+ * answer is unavailable, and it is the same reason a payout manifest and an export notice are
+ * composed there (`DL-92`, `DL-106`): the sentence and the fact have to travel together, or a
+ * second screen states the absence differently from the first.
+ *
+ * It names what is missing, not the defect. "The API omits household roles" is a sentence about
+ * this office's software; "who else lives at this address could not be read" is a sentence about
+ * the record in front of them.
+ */
+export const HOUSEHOLD_COMPOSITION_UNREADABLE =
+  'Who else lives at this address could not be read from the office record. This is not a ' +
+  'statement that nobody does — the household register is there, but it does not yet say how each ' +
+  'person is related to the head, and this console will not guess. Open the household record for ' +
+  'the address itself.';
+
+/** The members, or none — for callers that only count. Never mistakes unavailable for empty. */
+export function membersOf(composition: HouseholdComposition): readonly HouseholdMemberView[] {
+  return composition.kind === 'read' ? composition.members : [];
 }
 
 /** Latest first, with an unknown date sorted last rather than treated as old. */
