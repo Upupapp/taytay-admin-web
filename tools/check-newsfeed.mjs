@@ -371,7 +371,7 @@ for (const mutator of MUTATORS) {
 const moveBody = /\n  private move\([\s\S]*?\n  \}\n/.exec(mock)?.[0] ?? '';
 if (moveBody === '') {
   problems.push('`MockNewsfeedRepository.move` has gone; three status changes went through it.');
-} else if (!/this\.record\(/.test(moveBody)) {
+} else if (!/this\s*\.\s*record\s*\(/.test(moveBody)) {
   problems.push(
     '`MockNewsfeedRepository.move` no longer appends to the trail, and every status change goes ' +
       'through it. The record and the change are one act (`DL-54`).',
@@ -388,7 +388,7 @@ for (const mutator of MUTATORS) {
   const body = next < 0 ? rest : rest.slice(0, next);
   // Recording inline, or delegating to `move`, which records. Doing neither
   // means a post changed and nothing anywhere says who changed it.
-  if (!/this\.record\(|this\.move\(/.test(body)) {
+  if (!/this\s*\.\s*record\s*\(|this\s*\.\s*move\s*\(/.test(body)) {
     problems.push(
       `\`MockNewsfeedRepository.${mutator}\` changes a post without appending to the trail. The ` +
         'record and the change are one act, or the trail is a best effort (`DL-54`).',

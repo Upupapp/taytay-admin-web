@@ -130,7 +130,7 @@ const validatorBody =
 if (validatorBody === '') {
   problems.push('documentVersionProblems has gone from requirement-document.ts.');
 }
-if (!/problems\.push\('replacement-needs-a-reason'\)/.test(validatorBody)) {
+if (!/problems\s*\.\s*push\s*\('replacement-needs-a-reason'\)/.test(validatorBody)) {
   problems.push(
     'documentVersionProblems no longer refuses an unexplained replacement. A superseded version ' +
       'nobody accounted for is a gap in the record of a decision (DL-77).',

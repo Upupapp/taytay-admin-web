@@ -108,7 +108,7 @@ for (const [index, line] of storeText.split(/\r?\n/).entries()) {
     .split(/\r?\n/)
     .slice(index, index + 3)
     .join(' ');
-  if (!/this\.events\s*=\s*\[\s*(\.\.\.this\.events|\.\.\.MOCK_CASE_EVENTS)/.test(window)) {
+  if (!/this\s*\.\s*events\s*=\s*\[\s*(\.\.\.this\s*\.\s*events|\.\.\.MOCK_CASE_EVENTS)/.test(window)) {
     problems.push(
       `mock-case.store.ts:${index + 1} assigns \`this.events\` without appending to it. The only ` +
         'way a case history may change is by growing (DL-54).',
@@ -135,7 +135,7 @@ for (const mutator of MUTATORS) {
   }
   const end = storeText.indexOf('\n  }', start);
   const body = end === -1 ? storeText.slice(start) : storeText.slice(start, end);
-  if (!/this\.append\(/.test(body)) {
+  if (!/this\s*\.\s*append\s*\(/.test(body)) {
     problems.push(
       `mock-case.store.ts \`${mutator}\` changes a case without calling \`append\`. The change ` +
         'and the event it produces are one act, not two (DL-54).',

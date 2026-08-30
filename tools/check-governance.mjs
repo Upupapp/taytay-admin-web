@@ -352,7 +352,7 @@ for (const method of [
 const setActiveBody =
   new RegExp('\\n  setAccountActive\\(([\\s\\S]*?)\\n  \\}').exec(adapter)?.[1] ?? '';
 if (setActiveBody !== '') {
-  if (!/reason\.trim\(\)\.length === 0/.test(setActiveBody)) {
+  if (!/reason\s*\.\s*trim\s*\(\)\s*\.\s*length === 0/.test(setActiveBody)) {
     problems.push(
       'Turning an account on or off no longer requires a reason. Every mutation in this ' +
         'application carries one (DL-54).',

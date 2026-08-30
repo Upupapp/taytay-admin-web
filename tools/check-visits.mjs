@@ -126,7 +126,7 @@ if (!/readonly kind: ObservationKind;/.test(observationBlock)) {
 
 const validatorBody =
   /export function observationProblems[\s\S]*?\n\}/.exec(observation)?.[0] ?? '';
-if (!/problems\.push\('attribution-required'\)/.test(validatorBody)) {
+if (!/problems\s*\.\s*push\s*\('attribution-required'\)/.test(validatorBody)) {
   problems.push(
     'observationProblems no longer requires an attribution on a third-party account. "A neighbour ' +
       'said" with no neighbour named is a rumour the office cannot check.',

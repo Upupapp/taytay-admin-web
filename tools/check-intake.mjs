@@ -240,7 +240,7 @@ for (const field of ['rule', 'finding', 'references']) {
 }
 
 // Every constructed signal supplies all three, so none can ship half-stated.
-const constructions = [...advisoryText.matchAll(/signals\.push\(\{([\s\S]*?)\}\);/g)];
+const constructions = [...advisoryText.matchAll(/signals\s*\.\s*push\s*\(\{([\s\S]*?)\}\);/g)];
 if (constructions.length === 0) {
   problems.push('No signal constructions found in intake-advisory.ts — this check is blind.');
 }

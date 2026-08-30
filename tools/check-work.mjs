@@ -398,7 +398,7 @@ const visibleBody =
   /private visibleWork\([\s\S]*?\n  \}/.exec(adapter)?.[0] ?? '';
 if (visibleBody === '') {
   problems.push('MockWorkRepository.visibleWork has gone.');
-} else if (!/userHasPermission\(user, item\.permission\)/.test(visibleBody)) {
+} else if (!/userHasPermission\s*\(user, item\s*\.\s*permission\)/.test(visibleBody)) {
   problems.push(
     'The queue no longer drops work this user could not act on. Showing an intake officer a ' +
       'payout is how a queue becomes something people scroll past.',

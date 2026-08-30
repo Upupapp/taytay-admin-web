@@ -165,7 +165,7 @@ if (!/export function promotionExceedsCapacity/.test(registration)) {
 }
 
 const remaining = fn(registration, 'placesRemaining');
-if (remaining !== '' && !/Math\.max\(0/.test(remaining)) {
+if (remaining !== '' && !/Math\s*\.\s*max\s*\(0/.test(remaining)) {
   problems.push(
     '`placesRemaining` can report a negative number. A backend that accepted more than capacity ' +
       'has told the office something true; "-3 remaining" turns that into an apparent bug.',
@@ -293,7 +293,7 @@ if (!/discloseResident\(/.test(mock)) {
 }
 
 const registrantsMethod = /registrants\([\s\S]*?\n  \}/.exec(mock)?.[0] ?? '';
-if (registrantsMethod !== '' && !/this\.compose\(/.test(registrantsMethod)) {
+if (registrantsMethod !== '' && !/this\s*\.\s*compose\s*\(/.test(registrantsMethod)) {
   problems.push(
     '`MockEventRepository.registrants` no longer composes each row. Returning the stored ' +
       'registration would put a `residentId` on a screen that has no business with one.',
@@ -513,7 +513,7 @@ for (const [method, permission] of PERMISSIONS) {
   // `[^]` rather than `[\s\S]`: inside a template literal the backslash is
   // eaten before the RegExp ever sees it, and `[sS]` matches almost nothing.
   const guarded = new RegExp(`denyUnless[^]{0,120}?'${permission}'`).test(body);
-  if (!guarded && !/this\.move\(/.test(body)) {
+  if (!guarded && !/this\s*\.\s*move\s*\(/.test(body)) {
     problems.push(
       `\`MockEventRepository.${method}\` no longer calls \`denyUnless\` with \`${permission}\`. ` +
         'The adapter is where a permission is enforced; hiding a button is not protection, and ' +
@@ -525,13 +525,13 @@ for (const [method, permission] of PERMISSIONS) {
 const moveBody = /\n  private move\([\s\S]*?\n  \}\n/.exec(mock)?.[0] ?? '';
 if (moveBody === '') {
   problems.push('`MockEventRepository.move` has gone; every status change went through it.');
-} else if (!/this\.record\(/.test(moveBody)) {
+} else if (!/this\s*\.\s*record\s*\(/.test(moveBody)) {
   problems.push(
     '`MockEventRepository.move` no longer appends to the trail. The record and the change are ' +
       'one act (`DL-54`).',
   );
 }
-const registrationRecordings = (mockCode.match(/this\.recordRegistration\(/g) ?? []).length;
+const registrationRecordings = (mockCode.match(/this\s*\.\s*recordRegistration\s*\(/g) ?? []).length;
 if (registrationRecordings < 2) {
   problems.push(
     `Only ${registrationRecordings} of the two registration mutators append to the trail. ` +

@@ -162,7 +162,7 @@ if (!/routerLink: undefined/.test(suppressBody)) {
   );
 }
 // Rounding would put a number in a report that is not true.
-if (/Math\.(round|max|ceil)\s*\(/.test(suppressBody)) {
+if (/Math\s*\.\s*(round|max|ceil)\s*\(/.test(suppressBody)) {
   problems.push(
     'Suppression rounds a small count. Rounding 2 up to the threshold puts a figure in a report ' +
       'that is not true, and somebody will act on it (DL-105).',
@@ -337,7 +337,7 @@ if (!/recall/i.test(prose(warningBlock))) {
 // Composed by the data layer, never by a screen (`DL-92` restated).
 for (const file of viewFiles) {
   const text = read(file);
-  if (/manifestHeaderLines|csvCell|Blob\(|URL\.createObjectURL/.test(text)) {
+  if (/manifestHeaderLines|csvCell|Blob\s*\(|URL\s*\.\s*createObjectURL/.test(text)) {
     problems.push(
       `${file} composes an export. The file comes from the data layer, which holds the disclosed ` +
         'record — a template is one binding away from writing a name into it (DL-106).',
@@ -439,7 +439,7 @@ notes.push('staff workload: counted to move work, ordered by name, cautioned on 
 for (const file of viewFiles) {
   if (!file.endsWith('.ts')) continue;
   const text = read(file);
-  if (/\.reduce\(|\.filter\([^)]*\)\.length/.test(text.replace(/^\s*[/*].*$/gm, ''))) {
+  if (/\s*\.\s*reduce\s*\(|\s*\.\s*filter\s*\([^)]*\)\s*\.\s*length/.test(text.replace(/^\s*[/*].*$/gm, ''))) {
     // Filtering empty series for display is fine; arithmetic on figures is not.
     if (/reduce\(/.test(text)) {
       problems.push(

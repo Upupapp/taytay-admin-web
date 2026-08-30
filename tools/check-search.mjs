@@ -220,7 +220,7 @@ if (!/discloseResident\(/.test(adapter)) {
 }
 const residentBody =
   /private residentHits\([\s\S]*?\n  \}/.exec(adapter)?.[0] ?? '';
-if (residentBody !== '' && !/this\.disclose\(/.test(residentBody)) {
+if (residentBody !== '' && !/this\s*\.\s*disclose\s*\(/.test(residentBody)) {
   problems.push('The resident producer matches on an undisclosed name.');
 }
 const rendersWithheld = viewFiles.some(
@@ -281,7 +281,7 @@ if (!/export const MIN_SEARCH_LENGTH/.test(result)) {
 const searchPage = 'src/app/features/search/search-page.ts';
 if (existsSync(join(root, searchPage))) {
   const text = read(searchPage);
-  if (/queryParams:\s*\{[^}]*\bq\b/.test(text) || /params\.get\('q'\)/.test(text)) {
+  if (/queryParams:\s*\{[^}]*\bq\b/.test(text) || /params\s*\.\s*get\s*\('q'\)/.test(text)) {
     problems.push(
       'The search term is written to the URL. That puts a resident\'s name in the address bar — ' +
         'in every screenshot, in every pasted link, and in browser history, which outlives the ' +

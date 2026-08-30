@@ -3968,3 +3968,68 @@ See `docs/integration/release-engineering.md`: four scanners matched `this.api.`
 so never saw a call whose chain had wrapped across lines. Thirteen calls were invisible, two of them
 real pre-existing debt. The counts went **up** because the checks got better, which is the only
 reason a ratchet may move that way.
+
+## DL-143 — a scanner that welds a call is one wrapped line from going blind
+
+`DL-142` recorded four checks that had stopped watching part of the surface: their patterns matched
+`this\.api\.` with the dots contiguous, so any call whose chain wrapped across lines was invisible.
+They were found by accident — three adapter methods were added and a count did not move. This
+audits the rest and closes the class.
+
+### The audit, and the two methods that did not work
+
+**First method: widen every scanner's patterns and diff the output.** Widening is monotonic — a
+`\s*` also matches nothing — so a rewritten pattern can never report *less*, and a changed verdict
+would mean the original had been blind. Result across 37 tools: **27 carried the assumption, none
+behaved differently.**
+
+That is a weaker result than it sounds, and mistaking it for "no blind spots" would have ended the
+audit one step early. It says the assumption costs nothing *on today's source*. The four defects in
+`DL-142` were latent for the whole programme and became real the moment somebody wrote a call that
+wrapped. An output diff cannot see a risk that has not fired yet.
+
+**Second method, abandoned: mass-rewrite the lot.** All 118 occurrences across 27 tools were
+mechanically widened and every tool's output came back byte-identical. That looked like proof and
+was not, for the same reason: monotonic rewrites cannot change a verdict, so identical output
+demonstrated only that nothing was *lost*. What it hid was that several patterns had stopped meaning
+what they said. `127\.0\.0\.1` came out as `127\s*\.\s*0.0\s*\.\s*1` — with an **unescaped** dot in
+the middle, now matching any character — and `psa\.gov\.ph`, `chart\.js` and a CSS `0\.01ms` were
+all rewritten to tolerate whitespace inside literals that can never contain any.
+
+None of those is a member access. **A dot in a regex is a member access because of what the pattern
+is for, and no amount of looking at the character can tell you.** The rewrite was reverted.
+
+A third rule was tried and is recorded because it was actively wrong rather than merely useless:
+rewriting a literal space to `\s+`. In a pattern ending `\n  \}` it catches only the first of two
+spaces and yields `\n\s+ \}`, demanding *three* whitespace characters where the source has two —
+**stricter, not looser**. It turned five passing checks into confident false failures before the
+arithmetic was checked. A widening rule that is not monotonic is not a widening rule.
+
+### What was actually wrong, and what now holds it
+
+Reduced to what could be defended: a pattern that reads **a call on an object** — a receiver, a
+dotted hop, and a paren or a generic. Those are the only ones a wrapped chain can reach, because
+Prettier breaks a method chain and does not put a newline between an object and a plain property.
+
+**Eighteen more were found**, in exactly the places where a silent miss is worst: `this\.append\(`,
+`this\.record\(`, `this\.move\(`, `this\.compose\(`, `this\.disclose\(` — the assertions that a
+mutator still appends to its audit trail (`DL-54`), that a registrant row is still composed rather
+than returned whole (`DL-130`), that a resident name still goes through `discloseResident`
+(`DL-38`). Each would have gone green while the behaviour it guards was gone. Two more were found
+after the detector learned that `\)\.length` is also a member access.
+
+All twenty were widened, and every other tool's output was re-run and diffed: **identical**.
+
+`npm run check:scanners` now fails the build on a welded call in any tool. It counts 24 patterns
+reading a call on an object and asserts all of them tolerate whitespace. Mutation-tested: restoring
+a welded call fails it, adding a new one fails it, and a hostname or an IP literal does not trip it.
+
+One shape slips past by design — `/this\.disclose(/`, welded with an *unescaped* paren. It cannot
+ship silently: an unterminated group is not a valid regex and Node refuses to load the file. That
+was verified rather than assumed, and the interpreter is a stronger guarantee than this check.
+
+### Why a bare `(` is not a call marker
+
+Accepting one fired on ten property reads whose paren is an alternation —
+`meta\.(pageSize|totalItems)`, `API_ENDPOINTS\.(\w+)`, `{{[^}]*\.(birthDate|…)`. A property read is
+not what wraps, and a template interpolation never wraps at all. The narrow marker stands.

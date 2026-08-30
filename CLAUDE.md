@@ -112,7 +112,8 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:governance`, `check:hardening`, `check:community`, `check:newsfeed` and
 `check:events`, `check:contract`, `check:contract-drift`, `check:consumer-contract`,
 `check:mapper-adoption`, `check:permission-parity`, `check:environments`,
-`check:bundle`, `check:routes`, `check:wire-adoption` and `check:port-adoption`.
+`check:bundle`, `check:routes`, `check:wire-adoption`, `check:port-adoption` and
+`check:scanners`.
 Each enforces a rule a comment could not, and each was validated against planted
 regressions. Do not weaken one to make a change pass.
 
@@ -139,6 +140,15 @@ they count a body of pre-existing debt too large to fail the build on:
 All three print their count on every run and **fail when the number grows**. A
 baseline is never an allow-list: nothing in any of them is acceptable, and gate
 line 05/07 stays NO-GO until they reach zero.
+
+**`check:scanners` is the one that watches the watchers** (`DL-143`). Four of
+these tools matched `this\.api\.` with the dots contiguous, so a call whose
+chain wrapped across lines was invisible — not reported as unwired, *never
+seen*, which is the worst failure a ratchet has: a green number about a surface
+nothing is reading. Eighteen more welded patterns were found by audit, in the
+assertions that a mutator still appends to its audit trail. A scanner regex that
+reads a call on an object must tolerate whitespace around its dots, and this
+fails the build when one does not.
 
 The three answer different questions, and a green answer to one says nothing
 about the others. `check:routes` asks whether a request would reach a real
