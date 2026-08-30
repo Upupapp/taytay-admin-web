@@ -119,6 +119,75 @@ for (const file of intakeFiles) {
 }
 notes.push('derivation: no function returns a recommendation');
 
+/* ── 1c. A field the mapper drops is declared on screen ──────────────────── */
+
+/*
+ * `toWireAssessment` omits `recommendedAmount` and `homeVisitConducted`, because
+ * `POST .../assessment/complete` has no field for either — and the welfare schema has no amount
+ * column anywhere outside `releases.amount_centavos`, which is money actually handed over. It is
+ * the same gap as `L-17` (`docs/integration/manual-actions.md` §2.4), not a new one: the console
+ * models money on the request, the API models it only on the release, and TAB 08 owns the choice.
+ *
+ * `welfare_cases.needs_home_visit` is the tempting wrong home for the second one. It is a
+ * different claim — a plan, not a fact — and writing "the office intends to visit" into the record
+ * as "a visit was made" is a misrecording that outlives whoever made it. It is also read-only: no
+ * endpoint writes it. Both roads are closed.
+ *
+ * So a caseworker types two figures that never leave the screen, and this office's own doctrine
+ * settles what that requires: "a half-built invite form is worse than none, because whoever fills
+ * it in reasonably believes an account now exists" (`DL-32`). The belief is the harm. The screen
+ * therefore says so, before the controls rather than after (`DL-124`'s ordering).
+ *
+ * **The rule is conditional on the omission**, which is the point of enforcing it here rather than
+ * asserting a string exists. The day the mapper starts sending either field, this rule stops
+ * applying on its own — nobody has to remember to delete a notice that has become untrue.
+ */
+
+const wireText = read('src/app/data/http/mappers/to-wire.ts');
+const assessmentMapper = /export function toWireAssessment\s*\([\s\S]*?\n\}/.exec(wireText);
+
+if (assessmentMapper === null) {
+  problems.push('`toWireAssessment` could not be found — the not-recorded rule is blind.');
+} else {
+  const sends = (field) => new RegExp(`['\"\`]${field}['\"\`]`).test(assessmentMapper[0]);
+  const dropped = ['recommended_amount', 'home_visit_conducted'].filter((field) => !sends(field));
+
+  if (dropped.length > 0) {
+    const template = read('src/app/features/requests/assessment-page.html');
+    const copy = read('src/app/features/requests/requests.copy.ts');
+
+    if (!/copy\.notRecorded\b/.test(template)) {
+      problems.push(
+        `toWireAssessment drops ${dropped.join(' and ')}, and the assessment screen does not say ` +
+          'so. A caseworker who fills in a field that is silently discarded reasonably believes ' +
+          'the office record has it (`DL-32`).',
+      );
+    }
+
+    if (!/one amount anywhere/.test(copy)) {
+      problems.push(
+        'The not-recorded notice no longer says what the system of record actually holds. A ' +
+          'notice that states no reason is one an office learns to dismiss (`DL-98`).',
+      );
+    }
+
+    const noticeAt = template.indexOf('copy.notRecorded');
+    const visitAt = template.indexOf('onHomeVisit');
+    if (noticeAt >= 0 && visitAt >= 0 && noticeAt > visitAt) {
+      problems.push(
+        'The not-recorded notice sits after the controls it is about. Somebody deciding reads a ' +
+          'notice above the box; somebody who has already typed dismisses one below it (`DL-124`).',
+      );
+    }
+  }
+
+  notes.push(
+    dropped.length === 0
+      ? 'not-recorded: the mapper now sends both fields — the notice is no longer required'
+      : `not-recorded: ${dropped.length} dropped field(s), declared on screen above the controls`,
+  );
+}
+
 /* ── 2. No blocking tone ─────────────────────────────────────────────────── */
 
 const advisoryText = read('src/app/domain/intake/intake-advisory.ts');

@@ -4033,3 +4033,63 @@ was verified rather than assumed, and the interpreter is a stronger guarantee th
 Accepting one fired on ten property reads whose paren is an alternation —
 `meta\.(pageSize|totalItems)`, `API_ENDPOINTS\.(\w+)`, `{{[^}]*\.(birthDate|…)`. A property read is
 not what wraps, and a template interpolation never wraps at all. The narrow marker stands.
+
+## DL-144 — a field that is silently discarded is worse than a field that is absent
+
+`DL-141` recorded that `POST .../assessment/complete` has no field for `recommendedAmount` or
+`homeVisitConducted`, and left it as a gap to settle. Settling it turned up two corrections.
+
+### It is not a new gap
+
+The welfare schema holds **one amount column anywhere**: `releases.amount_centavos`, money actually
+handed over. `welfare_cases` has none. `assessments` has none. The recorded detail response carries
+twenty-one keys and not one of them is an amount, which `check:contract`'s own spec has asserted
+since TAB 08 — *"There is no money on this resource at all; it lives on releases."*
+
+So `recommendedAmount` is the third field in `L-17`, alongside `requestedAmount` and
+`approvedAmount`, and recording it separately was a mistake that would have had TAB 08 solve the
+same problem twice. The console models money on the request; the API models money only on the
+release. That is one decision, and it is the office's and the backend's, not this lane's.
+
+### The tempting wrong home is closed twice over
+
+`welfare_cases.needs_home_visit` exists, and it is not where a conducted visit goes. *Needs* is a
+plan and *conducted* is a fact, and a plan written into the record as a fact is a misrecording that
+outlives whoever made it — the same confusion `DL-85` keeps out of a visit narrative, where an
+observation, a report and a judgement must each say whose claim it is. It is also **read-only**: the
+case controller projects it and no endpoint writes it. Both roads are shut, which is a cleaner
+outcome than one road being merely inadvisable.
+
+### What this lane can decide, and did
+
+Not where the amount goes — that is TAB 08's. What a caseworker is told while it goes nowhere.
+
+This repository has already settled the principle three times in other domains. Retention invents
+nothing and the screen says "No schedule recorded" rather than a zero (`DL-113`). The correction
+capture screen is not built and the governance page says so rather than offering a form that goes
+nowhere (`DL-117`). And most directly: *"a half-built invite form is worse than none, because
+whoever fills it in reasonably believes an account now exists"* (`DL-32`).
+
+**The belief is the harm.** A social worker who writes "₱6,000 recommended", and learns at approval
+that nobody downstream can see it, has been failed the same way — worse, because the family is in
+the room for the second conversation. So the assessment screen states plainly that the two figures
+stay on the screen, says what the record actually holds instead, and tells the assessor to write
+anything an approver must see into the findings, which *is* sent.
+
+The notice sits **above** the two controls, not below. Somebody deciding whether to type an amount
+reads a notice above the box; somebody who has already typed one dismisses a notice below it. Same
+ordering as the publish warning, for the same reason (`DL-124`). It is styled as a note rather than
+an error, because nothing has gone wrong and a caveat dressed as a failure is one people learn to
+dismiss (`DL-98`).
+
+### The rule is conditional, so it retires itself
+
+`check:intake` does not assert that a string exists. It reads `toWireAssessment`, and **only if**
+the mapper is still dropping `recommended_amount` or `home_visit_conducted` does it require the
+notice, require it to say what the record holds, and require it to precede the controls. The day
+the backend gains the fields and the mapper sends them, the rule stops applying on its own.
+
+Nobody has to remember to delete a notice that has become untrue — which is the failure mode of
+every warning written as a fixed assertion, and the reason this one is wired to the omission it
+describes. Mutation-tested four ways: deleting the notice fails, gutting its explanation fails,
+moving it below the controls fails, and sending both fields lifts the requirement.

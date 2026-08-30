@@ -126,6 +126,9 @@ export const REQUESTS_COPY = {
       'e.g. Home visit on 12 August. Household of five in a rented room; sole earner out of work since June; two children in public school.',
     homeVisit: 'A home visit was conducted',
     recommendedAmount: 'Recommended amount (₱)',
+    notRecordedHeading: 'These two are not saved to the office record',
+    notRecorded:
+      'The system of record holds one amount anywhere \u2014 money actually released \u2014 and no field for a recommended amount or for whether a home visit was made. Both stay on this screen while the case is open and neither reaches the record an approver or an auditor reads. Write anything an approver must see into the findings.',
     recommendation: 'What you recommend',
     formHeading: 'The assessment form',
     formIntro:

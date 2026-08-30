@@ -112,6 +112,23 @@ Two fields the console's model requires do not exist on the API side at all:
 - **Any amount.** `requestedAmount` and `approvedAmount` have no counterpart; money lives on
   releases. That may be the better model, but it is a *different* model, and TAB 08 must settle it.
 
+  **`recommendedAmount` is the third field in this same gap, not a separate one.** It was recorded
+  as its own item when `toWireAssessment` was written, and that was wrong: the welfare schema holds
+  exactly one amount column anywhere — `releases.amount_centavos`, money actually handed over — and
+  the `assessments` table has none. There is no requested amount, no approved amount and no
+  recommended amount on a case or an assessment. One decision covers all three.
+
+  **`homeVisitConducted` is a fourth casualty with a different shape.** `welfare_cases` does carry
+  `needs_home_visit`, and it is the tempting wrong home: "the office intends to visit" and "a visit
+  was made" are different claims, and writing the first into the record as the second is a
+  misrecording that outlives whoever made it. It is also **read-only** — projected by
+  `CaseController` and written by no endpoint — so the wrong road is closed as well as the right
+  one being absent.
+
+  Until TAB 08 settles it, the assessment screen states the absence above the two controls
+  (`DL-144`), and `check:intake` fails the build if that notice goes while the mapper is still
+  dropping the fields.
+
 **Blocks:** `AssistanceRequestRepository` — the console's busiest surface. Both gaps are pinned by
 test, so they fail the day they are closed.
 

@@ -246,3 +246,27 @@
     padding-left: var(--space-5);
   }
 }
+
+/*
+ * Not an error, and styled so it cannot read as one.
+ *
+ * Nothing has gone wrong: the office asked for these two figures and the system of record has
+ * nowhere to put them. A notice dressed as a failure is one people learn to dismiss, which is the
+ * opposite of what this has to achieve.
+ */
+.assessment__notrecorded {
+  margin: var(--space-4) 0;
+  padding: var(--space-3);
+  border-left: 3px solid var(--c-border-strong);
+  background: var(--c-surface-muted);
+  font-size: 13px;
+
+  p {
+    margin: 0;
+  }
+}
+
+.assessment__notrecorded-heading {
+  margin-bottom: var(--space-2) !important;
+  font-weight: 600;
+}

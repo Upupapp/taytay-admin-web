@@ -307,6 +307,17 @@
               ></textarea>
             </label>
 
+            <!--
+              Stated before the two controls, not after.
+              Somebody deciding whether to type an amount reads a notice above the box; somebody
+              who has already typed one dismisses a notice below it. The same ordering the publish
+              warning uses (`DL-124`), for the same reason.
+            -->
+            <div class="assessment__notrecorded" role="note">
+              <p class="assessment__notrecorded-heading">{{ copy.notRecordedHeading }}</p>
+              <p>{{ copy.notRecorded }}</p>
+            </div>
+
             <label class="check">
               <input type="checkbox" [checked]="homeVisit()" (change)="onHomeVisit($event)" />
               <span>{{ copy.homeVisit }}</span>

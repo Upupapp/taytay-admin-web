@@ -406,8 +406,15 @@ export function toWireDocumentVersion(draft: DocumentVersionDraft): Record<strin
  * for `recommendedAmount` and none for `homeVisitConducted`, so this mapper sends neither.
  * Inventing keys for them would be a 422 on every save; folding the amount into `findings` would
  * put a figure in a free-text note where no report can find it and no reviewer can trust it.
- * Both are recorded in `docs/integration/release-engineering.md` rather than smuggled
- * through.
+ *
+ * This is `L-17`, not a gap of its own (`DL-144`). The welfare schema holds one amount column
+ * anywhere — `releases.amount_centavos`, money actually handed over — so `recommendedAmount` sits
+ * beside `requestedAmount` and `approvedAmount` in the single decision TAB 08 owns. And
+ * `welfare_cases.needs_home_visit` is not a home for the second field: a plan is not a fact, and
+ * the column is read-only in any case.
+ *
+ * `check:intake` requires the assessment screen to say so above the two controls **for as long as
+ * this mapper drops them**, and stops requiring it the day the fields are sent.
  *
  * `reason` is omitted rather than sent empty: it is the assessor's note on *why* this
  * recommendation, and this console has never asked for one. A blank string would record that the
