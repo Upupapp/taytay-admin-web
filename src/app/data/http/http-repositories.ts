@@ -954,8 +954,14 @@ export class HttpSearchRepository implements SearchRepository {
 export class HttpReportRepository implements ReportRepository {
   private readonly api = inject(ApiClient);
 
+  /**
+   * Every report, because this is the catalogue a person picks from.
+   *
+   * A page of it would hide reports the office runs, and a hub showing nine of fourteen looks
+   * exactly like a hub showing all nine (`DL-161`).
+   */
   catalogue(): Observable<readonly ReportDefinition[]> {
-    return this.api.collection<ReportDefinition>(API_ENDPOINTS.reports);
+    return this.api.everyPage<ReportDefinition>(API_ENDPOINTS.reports);
   }
 
   run(id: ReportId, filter: ReportFilter): Observable<ReportResult | null> {
@@ -1082,8 +1088,15 @@ export class HttpProgramRepository implements ProgramRepository {
       .pipe(map((wire) => toProgramUtilization(wire)));
   }
 
+  /**
+   * Every active programme, because three screens put this in a picker.
+   *
+   * An intake officer who cannot see a programme in the dropdown concludes the office does not run
+   * it and files the request under something else — and nothing on the screen looks wrong
+   * (`DL-161`).
+   */
   listActive(): Observable<readonly AssistanceProgram[]> {
-    return this.api.collection<AssistanceProgram>(API_ENDPOINTS.programs, { status: 'active' });
+    return this.api.everyPage<AssistanceProgram>(API_ENDPOINTS.programs, { status: 'active' });
   }
 }
 
@@ -1745,7 +1758,12 @@ export class HttpReferralRepository implements ReferralRepository {
   }
 
   listProviders(filter: ServiceProviderFilter): Observable<readonly ServiceProvider[]> {
-    return this.api.collection<ServiceProvider>(API_ENDPOINTS.serviceProviders, { ...filter });
+    /*
+     * Every provider: this fills the destination filter on the referral list and the directory.
+     * A truncated list of places to refer somebody to is one that quietly stops offering a
+     * protection desk (`DL-161`).
+     */
+    return this.api.everyPage<ServiceProvider>(API_ENDPOINTS.serviceProviders, { ...filter });
   }
 
   getProvider(id: ServiceProviderId): Observable<ServiceProvider | null> {

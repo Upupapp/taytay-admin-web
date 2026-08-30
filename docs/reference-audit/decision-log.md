@@ -5035,3 +5035,52 @@ open**, and now say so with the commit they were checked at.
 The `stored_file_id` entry is struck through rather than deleted, because the **class** is not
 closed: a column whose declared type disagrees with what every writer puts in it, invisible to a
 SQLite-backed suite. This console's own PostgreSQL run turned up 41 failures of that family.
+
+## DL-161 — a list somebody picks from is read in full; a list somebody browses is read a page at a time
+
+`DL-156` counted 22 reads calling `collection<T>` on a paginated route. They return the first 25
+rows and present them as the whole list, and the question left open was what a screen should do
+about page two. There is no single answer, because they are not one kind of list.
+
+### Three kinds, and only one of them is a UI problem
+
+**A picker.** Programmes on the intake and assessment screens, service providers on the referral
+filter, the report catalogue on the hub. Truncation here is not a missing page — it is a **wrong
+answer**. An intake officer who cannot see a programme in the dropdown concludes the office does not
+run it and files the request under something else, and nothing on the screen looks wrong. That is
+`DL-112`'s failure arriving through a scrollbar instead of a search box.
+
+**A list somebody browses.** Referrals, releases, visits, events, families, the newsfeed, the audit
+trail, the duplicate queue. A page is fine here *provided the screen says which page*, and that is
+real per-screen work rather than an adapter change.
+
+**A count.** The notifications badge and the work alerts. `meta.pagination.total` is the answer and
+counting rows gives 25.
+
+### `everyPage` refuses rather than truncating
+
+`ApiClient.everyPage` asks for the largest page the server allows — `toQueryParams` already clamps
+to the API's `MAX_PER_PAGE`, so one request usually suffices — and follows the rest.
+
+Past `PAGE_CEILING` it **throws**. Stopping quietly there would be the defect this method exists to
+remove, reintroduced at a higher number; fetching without bound hangs a screen on a registry-sized
+answer. Refusing says plainly that nothing is shown, and why. A catalogue past 2,000 entries is not
+something a dropdown should be rendering.
+
+Three reads adopted it: the programme picker, the provider list and the report catalogue.
+
+### The check skipped them instead of approving them
+
+Adding `everyPage` to the client made three reads **disappear** from `check:response-shape` rather
+than count as correct — its `NEEDS` table maps helper names to envelopes, and a helper it does not
+know is skipped. The disagreement count fell by three and the tool was reporting progress for a
+surface it had stopped watching.
+
+That is precisely the failure this whole file has spent the session cataloguing (`DL-142`, `DL-143`,
+`DL-156`), committed while fixing an instance of it. It surfaced because the count moved by more
+than the work justified, which is `DL-145`'s rule — **a ratchet that moves is a prompt to read what
+it counted** — and it now cannot recur: the check reads `ApiClient` and fails if a read helper is
+missing from the table.
+
+**19 paginated reads remain**, and they are the browsable ones. Each needs a page control on its
+screen, which is where that work belongs. 24 → **21**.

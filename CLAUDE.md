@@ -154,9 +154,18 @@ fails the build when one does not.
 *answer* be understood? It compares each read's helper against the envelope its
 route actually answers with, vendored from the controller behind it. **There is
 no `ApiResponse::collection`** in that API — every list is a `page` or an `item`
-wrapping an array — so `collection<T>` is wrong wherever it appears, and 29 of
-70 reads disagree with their route. Five show nothing; twenty-two show the first
-25 rows as the whole list, which is the failure that looks like working software.
+wrapping an array — so `collection<T>` is wrong wherever it appears. It started
+at 29 of 70; the reads that showed **nothing** are all fixed, and 21 remain,
+nineteen of them showing the first 25 rows as the whole list — the failure that
+looks like working software.
+
+**A list somebody picks from is read in full** (`DL-161`). `ApiClient.everyPage`
+follows the pages and **refuses past a ceiling rather than truncating**, because
+a picker missing a programme is not a missing page: an intake officer concludes
+the office does not run it. A browsable list is different and takes a `Page<T>`
+with the page said on screen. A helper missing from `check:response-shape`'s
+table is *skipped*, so the check now fails if `ApiClient` grows a read helper it
+does not know.
 
 The four answer different questions, and a green answer to one says nothing
 about the others. `check:routes` asks whether a request would reach a real

@@ -4,12 +4,26 @@ import { WriteIntent } from '@domain/index';
 export { WriteIntent };
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, map, of, throwError, type Observable } from 'rxjs';
+import { catchError, map, of, switchMap, throwError, type Observable } from 'rxjs';
 
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import type { Page, PageRequest } from '@domain/index';
 
-import { toPage, toQueryParams, type ApiItemResponse, type ApiListResponse } from './api.contract';
+import {
+  MAX_PER_PAGE,
+  toPage,
+  toQueryParams,
+  type ApiItemResponse,
+  type ApiListResponse,
+} from './api.contract';
+
+/**
+ * How many pages `everyPage` will read before refusing.
+ *
+ * 20 × the API's maximum page size. A catalogue past that is not something a dropdown should be
+ * rendering, and the number exists so the refusal is a decision rather than a hang.
+ */
+const PAGE_CEILING = 20;
 
 /**
  * Thin transport helper shared by every HTTP adapter. It owns the base URL and
@@ -28,6 +42,63 @@ export class ApiClient {
     return this.http
       .get<ApiListResponse<TItem>>(this.url(path), { params: toQueryParams(request, filter) })
       .pipe(map(toPage));
+  }
+
+  /**
+   * Every page of a paginated route, or an error — **never a partial list**.
+   *
+   * ## Why this exists
+   *
+   * Every list this API serves is a `page`, and 25 rows is what it gives an unasked-for request
+   * (`DL-156`). For a screen somebody browses that is a missing page. For a **picker** it is a
+   * wrong answer: an intake officer who cannot see a programme in a dropdown concludes the office
+   * does not run it, and files the request under something else. Nothing on the screen looks
+   * broken. That is `DL-112`'s failure — a wrong answer delivered with confidence — arriving
+   * through a scrollbar rather than a search box.
+   *
+   * ## It refuses rather than truncating
+   *
+   * Reading stops at `PAGE_CEILING` pages and **throws**. A catalogue that large is not something a
+   * dropdown should be rendering anyway, and the alternatives are worse: fetching without bound
+   * hangs a screen on a registry-sized answer, and stopping quietly is the defect this method
+   * exists to remove, reintroduced at a higher number.
+   *
+   * ## It asks for the largest page the server allows
+   *
+   * `toQueryParams` already clamps to the API's `MAX_PER_PAGE`, so one request usually suffices and
+   * the loop is the exception rather than the plan.
+   */
+  everyPage<TItem>(
+    path: string,
+    filter: Record<string, unknown> = {},
+  ): Observable<readonly TItem[]> {
+    const size = MAX_PER_PAGE;
+
+    const readFrom = (page: number, seen: readonly TItem[]): Observable<readonly TItem[]> =>
+      this.page<TItem>(path, { page, pageSize: size }, filter).pipe(
+        switchMap((answer) => {
+          const gathered = [...seen, ...answer.items];
+
+          if (page >= answer.totalPages || answer.items.length === 0) {
+            return of(gathered);
+          }
+
+          if (page >= PAGE_CEILING) {
+            return throwError(
+              () =>
+                new Error(
+                  `That list is longer than this screen can read in one go (${answer.totalItems} ` +
+                    `entries). Nothing is shown rather than part of it, because a partial list ` +
+                    `here reads as the whole of it.`,
+                ),
+            );
+          }
+
+          return readFrom(page + 1, gathered);
+        }),
+      );
+
+    return readFrom(1, []);
   }
 
   collection<TItem>(

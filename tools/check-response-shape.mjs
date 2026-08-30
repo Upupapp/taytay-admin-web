@@ -79,8 +79,22 @@ const lookup =
 
 /* ── the reads ────────────────────────────────────────────────────────────── */
 
-/** Which envelope each console helper requires. */
-const NEEDS = { item: 'item', optionalItem: 'item', page: 'page', collection: 'collection' };
+/**
+ * Which envelope each console helper requires.
+ *
+ * **A helper missing from this table is not checked** — it is skipped, and its reads disappear from
+ * the comparison rather than counting as wrong. `everyPage` was added to the client and three reads
+ * went quiet instead of green, which is the failure this whole file exists to catch, committed
+ * while fixing it. The guard below is why that surfaced.
+ */
+const NEEDS = {
+  item: 'item',
+  optionalItem: 'item',
+  page: 'page',
+  /** Reads every page of a paginated route, so it needs the same envelope `page` does. */
+  everyPage: 'page',
+  collection: 'collection',
+};
 
 const adapters = read(ADAPTERS);
 const reads = [];
@@ -142,6 +156,25 @@ while ((match = start.exec(adapters)) !== null) {
 
 if (reads.length < 40) {
   failures.push(`Only ${reads.length} reads were extracted from the adapters. The parser is broken, not the code.`);
+}
+
+/*
+ * Every read helper the client offers must appear in NEEDS.
+ *
+ * Otherwise adding one silently narrows what this check covers: the new reads are skipped, the
+ * count of disagreements falls, and the ratchet reports progress for a surface it stopped watching.
+ */
+const client = read('src/app/data/http/api.client.ts');
+const declared = [...client.matchAll(/^  (\w+)<T\w*>\(/gm)].map((match) => match[1]);
+const READ_HELPERS = /^(item|optionalItem|page|everyPage|collection)$/;
+
+for (const helper of declared) {
+  if (READ_HELPERS.test(helper) && NEEDS[helper] === undefined) {
+    failures.push(
+      `ApiClient.${helper} is a read helper and is not in NEEDS, so its reads are skipped rather ` +
+        `than checked. Add it, or this check quietly stops covering them.`,
+    );
+  }
 }
 
 /* ── compare ──────────────────────────────────────────────────────────────── */
