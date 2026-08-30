@@ -4243,6 +4243,14 @@ the confirmation, because the office asks for it.
 `DL-116` is untouched. The server ends the live session itself and enforces the same
 self-deactivation guard the console does, so the guarantee never depended on this call.
 
+### One of twenty — and the triage below it was wrong, see `DL-150`
+
+**The classification in this section is superseded.** It was produced by grepping the published
+route list for substrings guessed from each composed path, and four of the seven "genuinely absent"
+entries turned out to have published counterparts that did not share the substring searched for.
+`DL-150` records the corrected triage and the tooling that now does the comparison. The `staff`
+finding above stands; the counts and the "genuinely absent" list do not.
+
 ### One of twenty, and that is the finding
 
 The instruction was "attack the 404s". Read against the published routes **and the controllers
@@ -4375,3 +4383,64 @@ that file**. A stale copy means it is proving the wrong thing — a green backen
 request this console no longer makes.
 
 Routes 18 → **17**, mapper-adoption 44 → **43**.
+
+## DL-150 — I triaged the 404s by guessing substrings, and got four of seven wrong
+
+`DL-147` classified the unwired paths and reported six or seven as "genuinely absent — the console
+is not calling the wrong thing". That was produced by grepping the published route list for
+substrings guessed from each composed path — `'reports/'`, `'privacy/'`, `'families/transfers'` —
+and concluding nothing covered them when nothing came back.
+
+Four had published counterparts that share no such substring:
+
+| Composed | Actually published | What I searched for |
+| --- | --- | --- |
+| `POST admin/reports/{}/export` | `POST admin/exports`, report in the **body** | `reports/` |
+| `GET admin/events/{}/registrants/export` | the same generic `POST admin/exports` | `events/` |
+| `GET admin/privacy/corrections` | `GET admin/resident-corrections` | `privacy/` |
+| `POST admin/families/transfers` | `POST admin/households/{household}/transfers` | `families/transfers` |
+
+A fifth was wrong in the other direction: `GET admin/assistance-requests/advisory` is served as
+`GET admin/assistance-requests/{case}/advisory` — per case, not per collection — which I had listed
+as nothing at all.
+
+### The export claim was the damaging one
+
+`DL-147` said *"there is no export endpoint whatsoever"* and warned that pointing `export` at
+`.../run` would turn the one person-level report into "report not found". The warning about `/run`
+was right and beside the point, because `/run` was never the candidate. `POST admin/exports` is the
+export endpoint, and it handles the person-level case **better than the console asked for**:
+
+> The permission comes from the REPORT, not the route. A person-level export costs
+> `report.export-person-level`; an aggregate costs `report.view`. One endpoint, two prices, decided
+> by what is actually being copied out of the database.
+
+That is `DL-104`'s doctrine implemented server-side. Filed as a backend request, it would have had
+somebody build a route the API already serves, and `DL-106`'s export notice would have been recorded
+as blocked when it is not.
+
+### A guessed substring is a scan that under-reports
+
+Which is the finding this file already carries twice. `DL-142` and `DL-143` are both about scanners
+that stopped seeing part of the surface and stayed green about it; `DL-145` is about reading a number
+that moved without checking what it counted. This is the same error committed by hand, in the
+analysis rather than the tooling, one turn after writing the check that forbids it in code.
+
+So the comparison is no longer done by eye. `node tools/check-routes.mjs --nearest` prints, for every
+unwired path, the published routes that share the most path segments. Whoever reads the list is
+looking at candidates rather than remembering to search for them.
+
+It **suggests and never decides**, and that limit is load-bearing: `POST .../assessment` and
+`POST .../assessment/complete` score identically and mean entirely different things (`DL-141`). A
+match is a prompt to read the controller.
+
+### The corrected picture
+
+Of the seven non-case paths, **five are console-side repoints** — the four above plus the advisory —
+and `POST admin/assistance-requests/{}/document-requests` is a shape mismatch the original triage got
+right (the API raises a request against a **requirement**, not a case). Only
+`PATCH admin/assistance-intakes/{}` has no counterpart of any kind: intakes are created and never
+amended.
+
+**One genuine backend absence out of seven**, where `DL-147` reported six. The corrected list and
+the real backend asks are in `docs/integration/backend-requests.md`.

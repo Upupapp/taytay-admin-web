@@ -662,7 +662,17 @@ handed", and the API hands it one.
 and `asOf` have no counterpart, and `asOf` is not cosmetic: `DL-129` requires it precisely so a
 screen states the moment its counts were true.
 
-#### C. Genuinely absent — the console is not calling the wrong thing
+#### C. ~~Genuinely absent~~ — **this section was wrong; see `DL-150`**
+
+Four of the seven below have published counterparts that share none of the substrings the original
+search guessed at: `POST admin/exports` serves both export rows (and prices person-level exports by
+the report rather than the route, which is `DL-104` implemented server-side);
+`GET admin/resident-corrections` serves the corrections row; `POST admin/households/{household}/transfers`
+serves the transfer row; and the advisory is published per case. **One of the seven is genuinely
+absent** — `PATCH admin/assistance-intakes/{}`. The corrected list is in `backend-requests.md`, and
+`node tools/check-routes.mjs --nearest` now prints the candidates so this is not done by eye again.
+
+The original text follows, uncorrected, because the reasoning it records is the mistake.
 
 | Composed | Nearest published | Why it is not a repoint |
 | --- | --- | --- |

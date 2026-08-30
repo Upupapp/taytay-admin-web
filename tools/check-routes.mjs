@@ -259,6 +259,68 @@ const unwired = [...composed]
   })
   .sort();
 
+/*
+ * ── Nearest published routes, printed with every unwired path ────────────────
+ *
+ * Written after a triage done by hand got four of seven entries wrong.
+ *
+ * The method was to grep the published list for a substring guessed from the composed path —
+ * `'reports/'`, `'privacy/'`, `'families/transfers'` — and conclude "nothing published covers this"
+ * when nothing came back. But `POST admin/reports/{}/export` is served by `POST admin/exports`
+ * with the report in the body; `GET admin/privacy/corrections` by `GET admin/resident-corrections`;
+ * `POST admin/families/transfers` by `POST admin/households/{household}/transfers`. None of them
+ * shares the substring that was searched for, and each was filed as a backend request that would
+ * have had somebody build a route the API already serves.
+ *
+ * A guessed substring is a scan that under-reports, and this file already carries two entries about
+ * exactly that failure (`DL-142`, `DL-143`). So the comparison is no longer done by eye: every
+ * unwired path prints its closest published routes, scored on shared path segments, and whoever
+ * reads the list is looking at candidates rather than remembering to search for them.
+ *
+ * It suggests and never decides. `POST .../assessment` and `POST .../assessment/complete` score
+ * identically and mean different things (`DL-141`), so a match here is a prompt to read the
+ * controller, never a repoint.
+ */
+const SEGMENT_NOISE = new Set(['admin', 'api', 'v1', '{}', 'me']);
+
+const segmentsOf = (path) =>
+  path
+    .split(/[/{}]/)
+    .map((part) => part.trim().toLowerCase().replace(/s$/, ''))
+    .filter((part) => part.length > 3 && !SEGMENT_NOISE.has(part));
+
+function nearestPublished(entry, limit = 3) {
+  const [, path] = entry.split(' ');
+  const wanted = segmentsOf(path);
+  if (wanted.length === 0) return [];
+
+  return published
+    .map((route) => {
+      const [, candidate] = route.split(' ');
+      const shared = segmentsOf(candidate.replace(/^\/api\/v1\//, ''));
+      const score = wanted.filter((part) => shared.includes(part)).length;
+      return { route: route.replace('/api/v1/', ''), score };
+    })
+    .filter((match) => match.score > 0)
+    .sort((a, b) => b.score - a.score || a.route.length - b.route.length)
+    .slice(0, limit);
+}
+
+if (process.argv.includes('--nearest')) {
+  for (const entry of unwired) {
+    console.log(`\n${entry}`);
+    const matches = nearestPublished(entry, 4);
+    if (matches.length === 0) {
+      console.log('   (no published route shares a path segment)');
+    }
+    for (const match of matches) console.log(`   [${match.score}] ${match.route}`);
+  }
+  console.log(
+    `\n${unwired.length} unwired paths. A match is a prompt to read the controller, never a repoint.\n`,
+  );
+  process.exit(0);
+}
+
 if (process.argv.includes('--write-baseline')) {
   writeFileSync(
     join(CONTRACT, 'unwired-paths.json'),
