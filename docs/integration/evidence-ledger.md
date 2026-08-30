@@ -174,11 +174,46 @@ creation dialog.
 
 Changing visibility is a GitHub account action and lies outside the boundary set for this work
 (no push, no remote administration, no deployment). **This entry records the recommendation and
-the evidence; it does not execute it.** Until it is settled:
+the evidence; it does not execute it.**
 
-- The secret scan in this command becomes a **standing pre-push gate**, not a one-off. Every
-  push to a public repository is a publication.
-- No environment file, fixture or seed may carry a real value. Confirmed true today.
+---
+
+#### RESOLVED 2026-08-29 — the owner has decided: the repositories stay **PUBLIC**.
+
+The recommendation above stood on the record for eleven days and was not accepted. That is the
+correct shape for a decision of this kind — it was made deliberately, by the party entitled to
+make it, against a written recommendation — and it is recorded here as taken, not as
+outstanding. Nothing in the reasoning above is withdrawn; it was argued, considered and
+overruled, which is different from being wrong or from being ignored.
+
+Measured at the time of the decision: `GET https://api.github.com/repos/Upupapp/{repo}` returns
+**HTTP 200** for `taytay-admin-web`, `taytay-backend` **and** `taytay-mobile-app` — three
+repositories, not the two this entry originally named.
+
+**The consequence that matters: the two controls below were written as temporary, holding only
+"until it is settled". It is now settled the other way, so they do not lapse — they become
+permanent, and they are the whole of the compensating control.** A decision to remain public
+converts them from a stopgap into the standing mitigation, and anyone reading this entry later
+must not read "resolved" as "the controls can relax".
+
+- The secret scan is a **permanent pre-push gate**. Every push to a public repository is a
+  publication, and there is no second opinion after one.
+- No environment file, fixture or seed may **ever** carry a real value. Confirmed true again on
+  2026-08-29.
+
+**Stated honestly: the first control is not mechanically enforced in this repository.**
+`npm run verify` does not run `docs/integration/tools/secret-scan.php`, and adding a PHP
+dependency to a Node gate is a change worth deciding rather than slipping in. What *is*
+mechanical is `check:bundle`, which fails on credential-shaped strings and seed markers in the
+built output — that covers the artefact, not the source and not the history. The gap between
+"the built bundle is clean" and "nothing secret has ever been committed" is real, and it is
+discipline that closes it today. Recorded as a known limit of the mitigation rather than left
+to be discovered.
+
+**Under RA 10173 this remains a decision the office should be able to point to.** The
+recommendation, the evidence, the reasoning and the decision are all in this file, which is what
+"made on the record" means. The equivalent entry belongs in `taytay-backend` and
+`taytay-mobile-app`; neither is this repository's to write.
 
 *Open action, owner: repository owner. Blocks the TAB 19 gate line for TAB 00.*
 

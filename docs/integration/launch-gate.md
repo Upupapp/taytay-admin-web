@@ -29,10 +29,27 @@ audit.
 ## The lines
 
 ### 00 — Repositories remoted, `main` protected, visibility decided, restorable from a clean clone
-**NO-GO.** Both repositories are remoted. Both are **public on GitHub**, and the recommendation to
-make them private is an open owner decision — this is a system that processes indigent residents'
-personal data, and every push publishes every commit. `main` is not protected; the owner
-deliberately requires direct pushes with no review. Restorability from a clean clone is untested.
+**NO-GO, on one count fewer. Re-measured 2026-08-29.**
+
+**Visibility is now decided.** The owner has ruled that the repositories stay **public**, against
+the written recommendation in D-00-01, which stood for eleven days. Three repositories are public,
+not the two originally counted — `taytay-admin-web`, `taytay-backend` and `taytay-mobile-app` all
+return HTTP 200 unauthenticated. This clause of the line is **satisfied**: it asks that visibility
+be *decided*, and it has been, deliberately and on the record. It does not ask that the answer be
+"private".
+
+What that decision costs is stated in D-00-01 rather than here: the two controls written as
+temporary — the secret scan as a pre-push gate, and no real value in any environment file, fixture
+or seed — **become permanent**, because they are now the whole of the compensating mitigation. The
+honest limit is recorded there too: `npm run verify` does not run the secret scanner, so that half
+is discipline rather than machinery. `check:bundle` covers the built artefact, not the source and
+not the history.
+
+**Still NO-GO, on the two clauses that remain.** `main` is not protected — the owner deliberately
+requires direct pushes with no review, which is a decision rather than a gap, but the line as
+written asks for protection and does not get it. **Restorability from a clean clone is untested**,
+and that one is nobody's decision to make: it is simply unproven, and it is the cheapest
+outstanding item on this whole gate.
 
 ### 01 — Published error vocabulary correct; the gate that catches it watched failing
 **Evidence exists.** The vocabulary was corrected in TAB 01 and `check:contract-drift` compares the
@@ -140,6 +157,15 @@ sign-offs**, which need six members of staff on office hardware with the trainer
 ---
 
 ## What this assessment is worth
+
+> **Unresolved discrepancy, noticed 2026-08-29 and deliberately not papered over.** This
+> paragraph says five; the summary table above says four; counting the verdicts on the lines
+> themselves gives four (three "Evidence exists" plus line 09 awaiting the DPO). Line 02 is the
+> likely fifth — it reads "Evidence exists for the second and third" of three clauses, which is
+> a partial that has to be counted one way or the other. **Whoever knows which is intended
+> should settle it; a gate document whose own totals disagree is the thing this file exists to
+> prevent.** Flagged rather than corrected, because guessing which number is right would hide
+> the question instead of answering it.
 
 **Five lines now have evidence, up from four.** Ten do not, and **eight of those cannot be closed by
 engineering at all** — they need an appointment, a decision, a room with three people in it, or a
