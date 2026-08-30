@@ -306,11 +306,30 @@ export interface EventMetrics {
   readonly eventId: LguEventId;
   readonly registeredCount: number;
   readonly waitlistedCount: number;
-  readonly cancelledCount: number;
+  /**
+   * Cancellations, or `null` where the office record does not report them.
+   *
+   * Nullable rather than zero. `registration-summary` publishes registered, waitlisted and the
+   * three attendance states, and nothing about cancellations — and a `0` there is a claim that
+   * nobody withdrew, which is precisely the kind of positive statement `DL-146` refuses to make
+   * from data nobody sent. A screen shows the absence; it does not report a quiet nought.
+   */
+  readonly cancelledCount: number | null;
   readonly attendedCount: number;
   readonly noShowCount: number;
   readonly unmarkedCount: number;
   readonly attendanceRate: number | null;
+  /**
+   * When this console **read** the counts — not when the office record computed them.
+   *
+   * `DL-129` requires the moment to travel with the numbers, because "38 registered" without a
+   * timestamp is a claim about now that was true at some point. The server does not stamp its own
+   * summary, so the closest true statement this console can make is when it asked, and every
+   * screen must word it that way: *read at*, never *as of*. The difference is small and it is the
+   * whole difference between reporting a fact and inheriting one.
+   *
+   * The gap is recorded rather than closed here: only the server can say when it counted.
+   */
   readonly asOf: IsoDateTime;
 }
 

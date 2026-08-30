@@ -220,6 +220,7 @@ import { UPLOAD_POLICY } from './api.contract';
 import { FileTransport } from './file-transport';
 import { int } from './mappers/wire';
 import { toAssessmentTemplates, toOpenAssessment } from './mappers/assessment.mapper';
+import { toEventMetrics } from './mappers/event-metrics.mapper';
 import {
   toWireAssessment,
   toWireIdentityResolution,
@@ -2239,7 +2240,9 @@ export class HttpEventRepository implements EventRepository {
   }
 
   metrics(id: LguEventId): Observable<EventMetrics> {
-    return this.api.item<EventMetrics>(`${API_ENDPOINTS.events}/${id}/metrics`);
+    return this.api
+      .item<Record<string, unknown>>(`${API_ENDPOINTS.events}/${id}/registration-summary`)
+      .pipe(map((wire) => toEventMetrics(id, wire, new Date())));
   }
 
   /**

@@ -49,10 +49,12 @@ const ADAPTERS = 'src/app/data/http/http-repositories.ts';
  */
 /*
  * 45 → 44 when `previewResolution` stopped casting a `GET` response to `MergePreview` at a URL the
- * API does not serve. The `optionalItem<HouseholdDetail>` pair remains and cannot be mapped —
- * `household_memberships` has no role column (`DL-145`).
+ * API does not serve; 44 → 43 when `metrics` gained `toEventMetrics` (`DL-149`).
+ *
+ * The `optionalItem<HouseholdDetail>` pair remains and cannot be mapped — `household_memberships`
+ * has no role column (`DL-145`).
  */
-const CEILING = 44;
+const CEILING = 43;
 
 const source = readFileSync(join(ROOT, ADAPTERS), 'utf8');
 

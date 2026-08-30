@@ -706,3 +706,22 @@ at another. That distinction is the decision to make, and it is the office's.
 
 Not smuggled into `note`: an identifier in a free-text field is one no query can find and no
 reviewer can rely on.
+
+### Event metrics: two fields the office record does not report
+
+`GET admin/events/{event}/registration-summary` replaces the unserved `/metrics` (`DL-149`), and two
+of `EventMetrics`' fields have no counterpart.
+
+| Field | Wire | Handling |
+| --- | --- | --- |
+| `cancelledCount` | absent | `null` — never `0`, which would assert nobody withdrew |
+| `asOf` | absent | the console's **read** time, and every screen words it "read at" |
+
+`asOf` is the one to close. The counts are computed server-side and answered without a timestamp, so
+this console can only report when it asked — which is *later* than when the numbers were true, and
+therefore an overclaim if it is ever labelled "as of". Adding an `as_of` to `summaryFor` would cost
+one line and would let the screen state the fact instead of inheriting it.
+
+`cancelledCount` needs a decision before a field: the summary is built for a registration screen,
+where withdrawals do not belong. If the office wants cancellations reported, they belong on an
+insights endpoint rather than widening this one.

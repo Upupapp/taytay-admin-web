@@ -4326,3 +4326,52 @@ findings about one pair and pass.
 Routes 20 → **18**, wire-adoption 10 → **9**, query-params 54 → **53**, mapper-adoption 45 → **44**.
 The last two are ground gained by *deleting* a call: the old preview sent two camelCase keys to a
 URL nobody serves and cast the answer to `MergePreview`.
+
+## DL-149 — the counts are read at a time, not as of one
+
+`metrics()` asked for `admin/events/{event}/metrics`. The API publishes
+`admin/events/{event}/registration-summary`, and the two are not a rename apart: the summary is
+built for a registration screen, carries capacity and availability alongside the counts, and nests
+attendance under its own key. Six of `EventMetrics`' eight fields map exactly; the other two are
+the reason this is a mapper.
+
+### `cancelledCount` is `null`, never `0`
+
+`summaryFor` publishes registered, waitlisted, seats remaining, and attendance as `attended` /
+`no_show` / `not_checked_in`. Nothing about withdrawals.
+
+A `0` there says **nobody withdrew** — a claim about a list of real people made from a field the
+server never sent. It is `DL-146`'s failure with a number in place of an empty list, and it takes
+the same answer: the type carries the absence, and a screen shows it rather than reporting a quiet
+nought. The mock keeps a real count, because it genuinely tracks cancellations; the adapters differ
+where the systems differ.
+
+### `asOf` is when the console read them, and the wording has to say so
+
+`DL-129` requires the moment to travel with the counts, because "38 registered" without a timestamp
+is a claim about *now* that was true at some point. The summary carries no timestamp at all.
+
+The closest true statement available is when this console asked, so that is what the field holds —
+and the domain says it in as many words: screens word it **read at**, never *as of*. A server stamp
+would be the better number, and asserting one the server did not make would be the worse lie: read
+time is *later* than count time, so labelling it "as of" claims the data is fresher than it is. The
+difference is small and it is the whole difference between reporting a fact and inheriting one.
+
+Only the server can say when it counted. That it does not is recorded as a gap rather than closed
+with a stamp that implies otherwise.
+
+### The rate is derived, and withheld while anyone is unmarked
+
+`attendanceRate` is `null` while any registrant is `not_checked_in`. `DL-131` keeps "not checked in"
+and "no-show" apart precisely so that nothing turns an unmarked registrant into an absent one, and a
+rate taken mid-marking does exactly that — it reads as a poor turnout and is really an unfinished
+afternoon. Being unable to state a rate is the correct answer until somebody has finished marking.
+
+### The tooling caught what a reviewer would not
+
+Adding `@consumes GET admin/events/{event}/registration-summary` made `check:consumer-contract` fail:
+the committed expectations file still described the old shape, and **the backend verifies against
+that file**. A stale copy means it is proving the wrong thing — a green backend suite about a
+request this console no longer makes.
+
+Routes 18 → **17**, mapper-adoption 44 → **43**.

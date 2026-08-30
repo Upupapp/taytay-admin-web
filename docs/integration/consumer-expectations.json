@@ -24,6 +24,13 @@
     },
     {
       "method": "GET",
+      "path": "admin/events/{event}/registration-summary",
+      "consumer": "event-metrics.mapper.ts#toEventMetrics",
+      "required": [],
+      "optional": []
+    },
+    {
+      "method": "GET",
       "path": "admin/households",
       "consumer": "household.mapper.ts#toHousehold",
       "required": [
