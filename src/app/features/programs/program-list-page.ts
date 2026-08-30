@@ -120,11 +120,19 @@ export class ProgramListPage {
     { key: 'run', header: this.copy.columnRun, cell: this.runCell() },
     { key: 'status', header: this.copy.columnStatus, cell: this.statusCell() },
     {
-      key: 'filed',
+      /*
+       * Releases, not requests filed. The office record reports what a programme delivered and
+       * carries no count of what was asked of it (`DL-159`) — and a withheld cell prints the em
+       * dash rather than a zero, because "too few to report" is not "none" (`DL-105`).
+       */
+      key: 'releases',
       header: this.copy.columnUsage,
       align: 'end',
       width: '90px',
-      value: (row) => String(row.utilization?.filedCount ?? 0),
+      value: (row) =>
+        row.utilization === null || row.utilization.releaseCount === null
+          ? '—'
+          : String(row.utilization.releaseCount),
     },
     { key: 'released', header: this.copy.columnReleased, align: 'end', cell: this.releasedCell() },
   ]);

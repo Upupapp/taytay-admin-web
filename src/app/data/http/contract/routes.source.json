@@ -1,5 +1,5 @@
 {
-  "$comment": "Provenance for the vendored route snapshot. Same shape and same purpose as source.json: a vendored artefact that cannot say where it came from is one nobody can tell is stale.",
+  "$comment": "Provenance for the vendored route snapshot. Same shape and same purpose as source.json: a vendored artefact that cannot say where it came from is one nobody can tell is stale. `commit` is where the snapshot was TAKEN; `reverifiedAt` is the latest backend commit the surface was checked against and found identical — the staleness check:routes says in its own docblock that it cannot see.",
   "artefact": "docs/api/routes.published.json",
   "repository": "Upupapp/taytay-backend",
   "commit": "f0049305aacc654138d6ddbf17711ac2d74a24b5",
@@ -7,5 +7,9 @@
   "sha256": "ee7a56c68a42d18a879d70ee01f5cb6026f5546c4e3f5abf66e5d1e36a2c0997",
   "routeCount": 293,
   "vendoredOn": "2026-08-28",
-  "vendoredBy": "TAB 19 \u2014 re-vendored after the sector endpoints"
+  "vendoredBy": "TAB 19 — re-vendored after the sector endpoints",
+  "reverifiedAt": "1aef8d688e16aa8c7b2f5d5a2221ba5e31af3495",
+  "reverifiedAtShort": "1aef8d6",
+  "reverifiedOn": "2026-08-30",
+  "reverifiedBy": "DL-159 — `php artisan lguids:routes` run read-only against the backend at that commit and diffed against this artefact: 293 routes, none added, none removed. The snapshot is unchanged and its sha256 still matches; only the record of what it was checked against moved."
 }

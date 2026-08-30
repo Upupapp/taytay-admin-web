@@ -1,8 +1,8 @@
 {
   "$comment": "The response envelope each published route answers with, derived from ApiResponse:: in the controller behind it. `item` = data is an object; `page` = data is an array plus meta.pagination; `none` = no envelope (a stream, or a write returning nothing). THERE IS NO `collection` — this API has no such envelope, so a console `collection<T>` read is wrong wherever it appears. Regenerate with `node tools/vendor-response-envelopes.mjs`; never edit by hand to make a check pass.",
   "repository": "Upupapp/taytay-backend",
-  "commit": "19078471799a43149ab65f2f2a4eca9354a5afdd",
-  "commitShort": "1907847",
+  "commit": "1aef8d688e16aa8c7b2f5d5a2221ba5e31af3495",
+  "commitShort": "1aef8d6",
   "routeCount": 287,
   "envelopes": {
     "DELETE admin/assistance-requests/{case}/assignment": "item",

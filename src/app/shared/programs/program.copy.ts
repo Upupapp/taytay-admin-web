@@ -106,16 +106,24 @@ export const PROGRAM_COPY = {
     heading: 'How much this has been used',
     description:
       'A description of what has happened, not a budget position. This front end does not hold the appropriation and does not compute a remaining balance.',
-    filed: 'Requests filed',
-    open: 'Still open',
-    completed: 'Completed',
-    rejected: 'Rejected',
-    approvedTotal: 'Approved',
+    releaseCount: 'Payouts',
     releasedTotal: 'Handed over',
-    releases: 'Payouts',
-    lastFiled: 'Last filed',
-    lastReleased: 'Last handed over',
-    unused: 'Nothing has been filed under this programme yet.',
+    unused: 'Nothing has been handed over under this programme yet.',
+    withheldValue: 'Withheld',
+    /*
+     * Says what was done and why, not "no data".
+     *
+     * `DL-105`: a small count is withheld because reporting it could identify a household, and the
+     * reader needs to know a figure exists and was held back — not that none was measured.
+     */
+    withheld:
+      'The figures for this programme are withheld. Too few households were served for a count to be reported without identifying them, so the office record states that rather than a number.',
+    /*
+     * The seven fields that used to be here said what the mock computed, not what the office
+     * record holds (`DL-159`). Naming the absence beats printing a blank beside a label.
+     */
+    notReported:
+      'Requests filed, still open, completed and rejected, and the total approved, are not reported by the office record. This shows what was handed over.',
     never: '—',
   },
 } as const;

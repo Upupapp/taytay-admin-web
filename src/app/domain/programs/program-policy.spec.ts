@@ -265,27 +265,33 @@ describe('programme utilization', () => {
     ...overrides,
   });
 
-  it('counts what was filed and excludes drafts, because a draft is not a request', () => {
-    const summary = summariseUtilization({
-      programId: MEDICAL,
-      requests: [request(), request({ status: 'draft' })],
-      releases: [],
-      now: NOW,
-    });
-    expect(summary.filedCount).toBe(1);
-    expect(summary.completedCount).toBe(1);
-  });
-
-  it('totals what was approved and what actually reached somebody, separately', () => {
+  /**
+   * Requests are not counted here any more, and that is the office record's shape rather than a
+   * simplification: it reports what a programme **delivered** and carries no count of what was
+   * asked of it (`DL-159`). What was filed, open, completed or rejected is a gap, not a field.
+   */
+  it('totals what actually reached somebody', () => {
     const summary = summariseUtilization({
       programId: MEDICAL,
       requests: [request(), request({ approvedAmount: pesos(1000) })],
       releases: [{ requestId: asId('req-1'), programId: MEDICAL, amount: pesos(4000), releasedAt: NOW }],
       now: NOW,
     });
-    expect(summary.approvedTotal.centavos).toBe(500_000);
-    expect(summary.releasedTotal.centavos).toBe(400_000);
+    expect(summary.releasedTotal?.centavos).toBe(400_000);
     expect(summary.releaseCount).toBe(1);
+  });
+
+  /**
+   * Nothing computed here is ever withheld.
+   *
+   * Suppression is the office record's decision — it holds the population and knows when a cell is
+   * too small to report. A client suppressing figures it was already handed would be hiding data it
+   * has in its hands, which protects nobody (`DL-105`).
+   */
+  it('never withholds a figure it computed itself', () => {
+    const summary = summariseUtilization({ programId: MEDICAL, requests: [], releases: [], now: NOW });
+
+    expect(summary.isWithheld).toBe(false);
   });
 
   it('ignores another programme’s activity', () => {
@@ -295,15 +301,26 @@ describe('programme utilization', () => {
       releases: [],
       now: NOW,
     });
-    expect(summary.filedCount).toBe(0);
+    expect(summary.releaseCount).toBe(0);
     expect(isUnused(summary)).toBe(true);
+  });
+
+  /**
+   * A withheld programme is not an unused one.
+   *
+   * "We are not telling you how many" and "nobody has used this" are different statements, and the
+   * second is the one that gets a programme closed (`DL-105`).
+   */
+  it('does not call a withheld programme unused', () => {
+    expect(
+      isUnused({ programId: MEDICAL, releaseCount: null, releasedTotal: null, isWithheld: true }),
+    ).toBe(false);
   });
 
   it('returns zeros for an unused programme rather than being absent', () => {
     const summary = summariseUtilization({ programId: MEDICAL, requests: [], releases: [], now: NOW });
-    expect(summary.filedCount).toBe(0);
-    expect(summary.releasedTotal.centavos).toBe(0);
-    expect(summary.lastFiledAt).toBeNull();
+    expect(summary.releaseCount).toBe(0);
+    expect(summary.releasedTotal?.centavos).toBe(0);
   });
 
   it('never reports a remaining balance, because this front end does not hold one', () => {

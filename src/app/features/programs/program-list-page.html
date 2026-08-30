@@ -78,7 +78,12 @@
 </ng-template>
 
 <ng-template #releasedCell let-row>
-  @if (row.utilization) {
+  <!--
+    An em dash for a withheld figure as well as for an absent one. `DL-105`: a small cell is
+    withheld, never rounded and never shown as zero — an absence of service is the finding, and a
+    nought here would state one that was not measured.
+  -->
+  @if (row.utilization && row.utilization.releasedTotal) {
     {{ row.utilization.releasedTotal | peso }}
   } @else {
     —

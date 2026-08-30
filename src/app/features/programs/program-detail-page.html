@@ -160,21 +160,41 @@
         <section class="card program__block" aria-labelledby="usage-heading">
           <h2 class="program__heading" id="usage-heading">{{ shared.utilization.heading }}</h2>
           <p class="program__note">{{ shared.utilization.description }}</p>
+          <!--
+            Two figures, because two is what the office record reports (`DL-159`). The counts of
+            what was filed, open, completed and rejected, and the total approved, were rendered
+            here from numbers the mock computed and no endpoint publishes.
+          -->
           <dl class="program__facts">
-            <dt>{{ shared.utilization.filed }}</dt>
-            <dd>{{ view.utilization.filedCount }}</dd>
-            <dt>{{ shared.utilization.open }}</dt>
-            <dd>{{ view.utilization.openCount }}</dd>
-            <dt>{{ shared.utilization.completed }}</dt>
-            <dd>{{ view.utilization.completedCount }}</dd>
-            <dt>{{ shared.utilization.approvedTotal }}</dt>
-            <dd>{{ view.utilization.approvedTotal | peso }}</dd>
+            <dt>{{ shared.utilization.releaseCount }}</dt>
+            <dd>
+              {{
+                view.utilization.releaseCount === null
+                  ? shared.utilization.withheldValue
+                  : view.utilization.releaseCount
+              }}
+            </dd>
             <dt>{{ shared.utilization.releasedTotal }}</dt>
-            <dd>{{ view.utilization.releasedTotal | peso }}</dd>
+            <dd>
+              @if (view.utilization.releasedTotal) {
+                {{ view.utilization.releasedTotal | peso }}
+              } @else {
+                {{ shared.utilization.withheldValue }}
+              }
+            </dd>
           </dl>
-          @if (view.utilization.filedCount === 0) {
+
+          <!--
+            Withheld is not nothing, and the screen must not let a reader take it for nothing.
+            `DL-105`: a small cell is withheld rather than dropped, rounded or zeroed, because an
+            absence of service is itself the finding.
+          -->
+          @if (view.utilization.isWithheld) {
+            <p class="program__note" role="note">{{ shared.utilization.withheld }}</p>
+          } @else if (view.utilization.releaseCount === 0) {
             <p class="program__note">{{ shared.utilization.unused }}</p>
           }
+          <p class="program__note">{{ shared.utilization.notReported }}</p>
         </section>
       </aside>
     </div>

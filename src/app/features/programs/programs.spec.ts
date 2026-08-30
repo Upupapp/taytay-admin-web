@@ -285,10 +285,28 @@ describe('the data layer refuses a misrepresentation the form hid', () => {
     ).rejects.toThrow();
   });
 
-  it('reports utilization for a programme that has been used', async () => {
+  it('reports utilization for the programme it was asked about', async () => {
     await configure('mswdo-head');
     const usage = await firstValueFrom(repo().utilizationFor(asId<ProgramId>(AICS_MEDICAL)));
+
     expect(usage.programId).toBe(AICS_MEDICAL);
-    expect(usage.filedCount).toBeGreaterThan(0);
+    expect(usage.isWithheld).toBe(false);
+  });
+
+  /**
+   * "Used" now means money handed over, not requests filed.
+   *
+   * The office record reports what a programme **delivered** and carries no count of what was
+   * asked of it (`DL-159`), so a programme with forty pending requests and no payout reads as
+   * unused — which is a narrower claim than the console used to make, and a true one.
+   *
+   * The assertion finds a programme with a payout rather than naming one, so a change to which
+   * seeded household was paid does not fail a test about whether the figure is reported at all.
+   */
+  it('counts what a programme handed over, somewhere in the catalogue', async () => {
+    await configure('mswdo-head');
+    const summary = await firstValueFrom(repo().utilizationSummary());
+
+    expect(summary.some((row) => (row.releaseCount ?? 0) > 0)).toBe(true);
   });
 });

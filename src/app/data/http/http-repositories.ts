@@ -225,6 +225,7 @@ import { toAssessmentTemplates, toOpenAssessment } from './mappers/assessment.ma
 import { toIntakeAdvisory } from './mappers/advisory.mapper';
 import { toCorrectionRequests } from './mappers/correction.mapper';
 import { toRequestNotes } from './mappers/request-note.mapper';
+import { toProgramUtilization } from './mappers/utilization.mapper';
 import {
   toClassifiedRecordTypes,
   toRetentionRules,
@@ -1076,9 +1077,9 @@ export class HttpProgramRepository implements ProgramRepository {
   }
 
   utilizationSummary(): Observable<readonly ProgramUtilization[]> {
-    return this.api.collection<ProgramUtilization>(
-      `${API_ENDPOINTS.programsAdmin}/utilization`,
-    );
+    return this.api
+      .item<Record<string, unknown>>(`${API_ENDPOINTS.programsAdmin}/utilization`)
+      .pipe(map((wire) => toProgramUtilization(wire)));
   }
 
   listActive(): Observable<readonly AssistanceProgram[]> {

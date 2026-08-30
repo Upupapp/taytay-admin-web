@@ -4953,3 +4953,85 @@ handling it cannot reason about, and reading it as `routine` would show a body t
 meant to hold back.
 
 "Shows nothing" tier 2 → **1**; total 26 → **25**.
+
+## DL-159 — a programme reports what it delivered, and a withheld figure is not a zero
+
+`ProgramUtilization` had ten fields. The office record publishes three, and could not have been read
+into the type at all: it suppresses a small cell by **nulling the numbers and keeping the row**, and
+every count on the type was a non-null `number`.
+
+That is the same defect a withheld note had (`DL-158`) — a type that cannot represent the protective
+case forces a screen to invent one — and here the invention would have been a **zero**. `DL-105` is
+explicit that a suppressed count is never dropped (a missing row reads as "none"), never rounded
+(that puts an untrue figure in a report) and **never zeroed**, because an absence of service is
+itself the finding. A programme reported as having served nobody is a programme somebody closes.
+
+So `releaseCount` and `releasedTotal` are nullable, `isWithheld` sits beside them, and the screens
+print "Withheld" with a sentence saying a figure exists and was held back — not a dash a reader
+takes for none.
+
+### Seven fields went, and the screens with them
+
+`filedCount`, `openCount`, `completedCount`, `rejectedCount`, `approvedTotal`, `lastFiledAt` and
+`lastReleasedAt` have **no counterpart anywhere in the office record**. The mock computed all seven,
+so the programme detail screen rendered a full picture that existed only here — and the same screen
+against the API would have shown blanks beside five labels.
+
+`approvedTotal` could not have survived in any case: `L-17` records that the schema holds one amount
+column anywhere, money actually handed over, so there is no approved total to report.
+
+They are filed as an ask rather than kept as fields nothing fills. A programme's open and completed
+counts are worth having; a mock computing them is not how the office gets them. The screen now names
+the absence — *"Requests filed, still open, completed and rejected, and the total approved, are not
+reported by the office record"* — rather than leaving five blanks.
+
+### "Used" now means money handed over
+
+`isUnused` counted filed requests and counts payouts. A programme with forty pending requests and no
+payout reads as unused, which is a narrower claim than the console used to make and a true one — and
+the copy follows the meaning: *"Nothing has been handed over under this programme yet."*
+
+A test asserting "utilization for a programme that has been used" failed on exactly this, because
+the seeded medical programme has requests and no released payout. It was pointed at the catalogue
+rather than at a named programme, so a change to which household was paid does not fail a test about
+whether the figure is reported at all.
+
+### Suppression is the server's to decide
+
+`summariseUtilization` always reports `isWithheld: false`. A client suppressing figures it was
+already handed would be hiding data it has in its hands, which protects nobody. The mapper reads
+`suppressed` from the payload rather than inferring it from the nulls, because a null could also
+mean the office genuinely has no figure — and reading suppression off an absence would report a
+withholding nobody performed.
+
+**The "shows nothing" tier is now 0.** Total 25 → **24**; the 22 paginated reads remain.
+
+## DL-160 — the snapshots disagreed about a commit, and one of the asks had been fixed
+
+The route snapshot cited backend `f004930` and the envelope snapshot `1907847`. `check:routes` says
+in its own docblock that the staleness it cannot see is the backend having moved since — so it was
+measured rather than assumed: `php artisan lguids:routes` run **read-only** against the backend and
+diffed against the vendored artefact. **293 routes, none added, none removed.**
+
+The surface had not drifted; only the record of what it had been checked against. `routes.source.json`
+now carries `reverifiedAt` beside `commit` — where the snapshot was taken, and the latest commit it
+was checked against and found identical. The artefact is untouched and its sha256 still matches.
+
+### The backend had moved twice more, and had fixed one of the asks
+
+Between two commands in the same session it went `1907847` → `1aef8d6`, carrying
+`926c396 fix(reporting): the export feature could not work in production` — **the `stored_file_id`
+defect filed in `DL-154`**. A new migration changes the column to `string(255)`, the original
+migration untouched, and the commit records the measurement: *"SQLite: 1129 tests, 1128 passing.
+PostgreSQL: 1125 passing, three failures remaining"*, including the same defect class in the import
+batch.
+
+`backend-requests.md` is updated to say so. **A filed ask that has been fixed and still reads as open
+is a false record**, and the one thing a document like that cannot afford is to be wrong in the
+direction of asking for work already done. The other two export defects — three catalogue entries
+with no row-builder, and no CSV-injection defence — were re-checked at `1aef8d6` and are **still
+open**, and now say so with the commit they were checked at.
+
+The `stored_file_id` entry is struck through rather than deleted, because the **class** is not
+closed: a column whose declared type disagrees with what every writer puts in it, invisible to a
+SQLite-backed suite. This console's own PostgreSQL run turned up 41 failures of that family.

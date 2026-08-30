@@ -71,21 +71,24 @@ change.
 
 Found while assessing the switch. Each is independently verifiable and none is a matter of taste.
 
-**`stored_file_id` is a `uuid` column receiving a path.** The migration declares
-`$table->uuid('stored_file_id')->nullable();` and the job writes
-`exports/2026/08/<uuid7>.csv`. SQLite accepts it, so the suite is green; **PostgreSQL will reject
-it, and every export lands in `failed`** with a driver error surfaced verbatim in `failure_reason`.
-This is the same class as the `audit_entries.entity_id` bug already noted in `ReportController`, and
-the same class this console's own PostgreSQL run turned up 41 of.
+**~~`stored_file_id` is a `uuid` column receiving a path.~~ FIXED — backend `926c396`, 2026-08-30.**
+A new migration changes the column to `string(255)` (append-only, the original migration untouched),
+and the backend's own note records the measurement: *"SQLite: 1129 tests, 1128 passing. PostgreSQL:
+1125 passing, three failures remaining"* — including the same defect class in the import batch.
 
-**Three catalogue entries have no row-builder.** `requestExport` validates against
-`ReportCatalog::values()`, which includes `case-aging`, `field-workload` and `data-completeness`;
-the `match ($report)` in the job covers only the other six. Requesting any of the three throws
-`UnhandledMatchError` and the export always fails — an input the API accepts and cannot serve.
+Left here rather than deleted, because the **class** is the finding and it is not closed: a column
+whose declared type disagrees with what every writer puts in it, invisible to a SQLite-backed suite.
+This console's own PostgreSQL run turned up 41 failures of that family.
 
-**No CSV-injection defence.** Cells are written with `fputcsv` and no leading-character guard, so a
-value beginning `=`, `+`, `-`, `@`, tab or CR is written as-is and evaluated when the file is
-opened. It reaches user-supplied data: `event-registrants` writes each registrant's name from
+**Three catalogue entries have no row-builder — still open at `1aef8d6`.** `requestExport`
+validates against `ReportCatalog::values()`, which includes `case-aging`, `field-workload` and
+`data-completeness`; the `match ($report)` in the job covers only the other six. Requesting any of
+the three throws `UnhandledMatchError` and the export always fails — an input the API accepts and
+cannot serve.
+
+**No CSV-injection defence — still open at `1aef8d6`.** Cells are written with `fputcsv` and no
+leading-character guard, so a value beginning `=`, `+`, `-`, `@`, tab or CR is written as-is and
+evaluated when the file is opened. It reaches user-supplied data: `event-registrants` writes each registrant's name from
 `first_name`/`last_name`, and that file is designed to be opened and printed by volunteers.
 *(This console had the same hole in its own composer and it is fixed — `DL-154`.)*
 

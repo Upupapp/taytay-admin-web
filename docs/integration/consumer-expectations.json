@@ -75,6 +75,13 @@
     },
     {
       "method": "GET",
+      "path": "admin/programs/utilization",
+      "consumer": "utilization.mapper.ts#toProgramUtilization",
+      "required": [],
+      "optional": []
+    },
+    {
+      "method": "GET",
       "path": "admin/residents",
       "consumer": "resident.mapper.ts#toResident",
       "required": [
