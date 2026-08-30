@@ -160,7 +160,9 @@ export class AssessmentPage {
       switchMap((request) =>
         request === null
           ? of(EMPTY_ADVISORY)
-          : this.requests.advisoryFor(request.residentId, request.programId),
+          : // The case exists here, so the advisory is read at the path the API publishes.
+            // Intake cannot do the same: it needs the advisory before a case exists (`DL-153`).
+            this.requests.advisoryForCase(request.id),
       ),
     ),
     { initialValue: EMPTY_ADVISORY },

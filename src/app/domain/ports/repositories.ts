@@ -505,6 +505,21 @@ export interface AssistanceRequestRepository {
    */
   advisoryFor(residentId: ResidentId, programId: ProgramId | null): Observable<IntakeAdvisory>;
 
+  /**
+   * The same advisory, for a case that already exists.
+   *
+   * Two methods rather than one because the API publishes the advisory **per case** and the intake
+   * screen needs it **before a case exists** — an encoder picking a resident and a programme is
+   * exactly who the advisory is for, and `DL-60` puts it in front of them before filing rather
+   * than after. `IntakeDraft` carries no id, so there is nothing to address a case-scoped read
+   * with.
+   *
+   * So a request already filed reads through here and actually works; intake keeps
+   * `advisoryFor`, whose collection-level path the API does not serve. The gap is recorded rather
+   * than papered over by sending a case id that does not exist (`DL-153`).
+   */
+  advisoryForCase(id: AssistanceRequestId): Observable<IntakeAdvisory>;
+
   /** Creates a `draft` request, or updates the draft already at `id`. */
   saveDraft(draft: IntakeDraft, id: AssistanceRequestId | null): Observable<AssistanceRequest>;
 

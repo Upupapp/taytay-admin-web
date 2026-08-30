@@ -56,6 +56,16 @@ export const INTAKE_SIGNAL_CODES: readonly IntakeSignalCode[] = [
  */
 export type IntakeSignalTone = 'note' | 'caution';
 
+/**
+ * Both tones, and there will never be a third that blocks.
+ *
+ * A caution asks the encoder for a sentence before filing and the sentence is kept; neither tone
+ * refuses anybody (`DL-60`). `check:intake` fails the build on a blocking tone, and this list is
+ * what a mapper checks an incoming tone against — an unrecognised one is dropped rather than
+ * rendered, because a signal the console cannot explain is one it should not show.
+ */
+export const INTAKE_SIGNAL_TONES: readonly IntakeSignalTone[] = ['note', 'caution'];
+
 export interface IntakeSignal {
   readonly code: IntakeSignalCode;
   readonly tone: IntakeSignalTone;

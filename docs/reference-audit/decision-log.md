@@ -4545,3 +4545,70 @@ type system — so `run<T>(call: Observable<T>, message: string)` is generic now
 gone.
 
 Port adoption 140/153 → **143/154**; unreached 13 → **11**.
+
+## DL-153 — matching a path is not matching a model
+
+`DL-150` replaced a guessed-substring triage with `check:routes --nearest`, which prints the
+published routes sharing the most path segments with each unwired path. Four candidates came back
+and were recorded as repoints the console would simply adopt.
+
+**Two of the four were repoints. The other two are different operations wearing similar URLs**, and
+so are the two export rows beside them. `--nearest` answered the question it was built for — *what
+might this be?* — and I read its answer as *what this is*. The tool's own warning says a match is a
+prompt to read the controller; reading the route list is not reading the controller.
+
+### The advisory, which was a repoint, and only half of one
+
+`GET admin/assistance-requests/{case}/advisory` maps field for field: six codes, two tones, and
+`rule` / `finding` / `references` on every signal. The two sides agree because both were written to
+`DL-60` — the server's class carries no score, no total and no recommendation, which is
+`check:intake`'s rule stated from the other end.
+
+But the console asks for the advisory in **two** places, and only one of them has a case. The
+assessment screen holds a filed request and now reads the published path, so that advisory works for
+the first time. **The intake screen needs it before a case exists** — an encoder picking a resident
+and a programme is exactly who `DL-60` puts the evidence in front of, before filing rather than
+after — and `IntakeDraft` carries no id to address a case-scoped read with.
+
+So the port has two methods. `advisoryForCase` is the one that works; `advisoryFor` keeps the
+collection-level path the API does not serve, and the gap is recorded rather than papered over by
+sending a case id that does not exist. `GET admin/assistance-requests/advisory` therefore stays in
+the unwired baseline, and that number not moving is the honest outcome.
+
+### The three that are not repoints
+
+**An export is asynchronous.** `POST admin/exports` answers `{id, status: 'queued',
+is_downloadable: false, expires_at, …}` and the file arrives later at
+`GET admin/exports/{id}/download`. There is deliberately no URL in the payload — the storage key is
+withheld so nothing can fetch from anywhere but the gated endpoint. The console models a file coming
+back from one call. `event-registrants` **is** in `ReportCatalog`, person-level, priced at
+`event.export-registrants` and needing `filters.event_id`, so both export rows are the same work.
+
+**A correction request carries many changed fields.** The console models one `field` and a `claim`;
+the API carries `note`, `review_note`, a nested `resident` and `changes[]` of `{field,
+current_value, proposed_value}` — and is resident-scoped where the console is generic over
+`entityType`/`entityId`.
+
+**A family transfer is not a household transfer.** `ResidentTransfer` carries `toFamilyId`,
+`fromFamilyId`, `role` and `moveHousehold`; the published endpoint moves a resident between
+addresses and nothing else. This is the one that needs the backend: the family half would be two
+further calls, and the adapter's own comment records why that is not free — *"One request, because
+the move must be one transaction on the server too."* A partial failure leaves somebody in neither
+family, or in a new family at the old address.
+
+### What the mapper does that is worth keeping
+
+An unrecognised **code** is dropped rather than rendered: showing it would put a bare identifier in
+front of a caseworker as though it meant something, and `recordsRead` still reports how much was
+examined so a shorter list cannot be mistaken for a quieter file.
+
+An unrecognised **tone** is dropped for a sharper reason. `check:intake` fails the build on a
+blocking tone. If the server ever grew one, rendering it as a `note` would silently import the thing
+the rule forbids, and rendering it verbatim would put an unknown tone on a control. Dropping it
+loses a signal and imports no policy.
+
+An advisory the server did not stamp is dated to the epoch — `EMPTY_ADVISORY`'s "nothing read yet" —
+never to the clock, on `DL-149`'s distinction between reporting a fact and inheriting one.
+
+Port adoption 143/154 → **144/155**. Routes unchanged at 16, and §4 of
+`docs/integration/backend-requests.md` is corrected.

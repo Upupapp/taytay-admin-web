@@ -116,18 +116,47 @@ the same grant the comparison already costs.
 
 ---
 
-## 4. Where the API's model wins, and this console will change instead
+## 4. Published under another name — and only two of six were a repoint
 
-Recorded so nobody files them as requests.
+**This table said all six were repoints. It was wrong** (`DL-153`): matching a path is not matching a
+model, and four of them turn out to be different operations wearing similar URLs. `--nearest` finds
+candidates; the **payload** decides.
 
-| Console | API | Verdict |
+| Console | API | What it actually is |
 | --- | --- | --- |
-| `GET admin/assistance-requests/advisory` | `.../{case}/advisory` | per-case is right; advisory is *about* a case |
-| `POST admin/reports/{}/export` | `POST admin/exports` | **better**: the permission comes from the report, not the route — `DL-104` server-side |
-| `GET admin/events/{}/registrants/export` | the same `POST admin/exports` | one export resource beats one per surface |
-| `GET admin/privacy/corrections` | `GET admin/resident-corrections` | naming only |
-| `POST admin/families/transfers` | `POST admin/households/{household}/transfers` | a transfer is between **addresses**; `DL-47` says the console is the one confusing household with family |
-| `POST .../{case}/document-requests` | `.../{case}/requirements/{requirement}/document-requests` | **adopted** (`DL-151`) — a document is asked for against the **requirement** that needs it |
+| `POST .../{case}/document-requests` | `.../{case}/requirements/{requirement}/document-requests` | **repoint, adopted** (`DL-151`) |
+| `GET admin/assistance-requests/advisory` | `.../{case}/advisory` | **repoint, adopted where a case exists** (`DL-153`) — intake needs it *before* one does, and cannot |
+| `POST admin/reports/{}/export` | `POST admin/exports` | **model difference**: the API export is **asynchronous** — `queued → ready`, then a separate download. The console models a file coming back |
+| `GET admin/events/{}/registrants/export` | the same `POST admin/exports` | same, and `event-registrants` **is** in `ReportCatalog` — person-level, priced at `event.export-registrants`, needing `filters.event_id` |
+| `GET admin/privacy/corrections` | `GET admin/resident-corrections` | **model difference**: the console models **one field per request**; the API carries `changes[]` — many fields, with `current_value` and `proposed_value` |
+| `POST admin/families/transfers` | `POST admin/households/{household}/transfers` | **model difference**: the console moves somebody between **families** (`toFamilyId`, `role`, `moveHousehold`); this endpoint moves them between **addresses** |
+
+### The three that are not repoints, and what each needs
+
+**Exports are asynchronous, and the console assumes they are not.** `POST admin/exports` answers a
+record — `id`, `status: 'queued'`, `is_downloadable: false`, `expires_at` — and the file arrives
+later at `GET admin/exports/{id}/download`. There is deliberately **no URL in the payload**: the
+storage key is withheld so nothing can fetch from anywhere but the gated endpoint. Adopting it means
+a screen that says an export was asked for, polls or is re-read, and offers a download when it is
+ready — plus `expires_at` shown, because a download that stops working is worth warning about.
+Nothing is blocked on the backend here; the work is this console's.
+
+**A correction request carries many changed fields, not one.** The console's `CorrectionRequest` has
+a single `field` and a `claim`; the API's has `note`, `review_note`, a nested `resident`, and
+`changes[]` of `{field, current_value, proposed_value}`. It is also **resident-scoped**, where the
+console's is generic over `entityType`/`entityId`. Adopting it is a domain change, and `DL-117`
+already records that the capture screen is not built — the list is all that would change.
+
+**A family transfer is not a household transfer.** `ResidentTransfer` carries `toFamilyId`,
+`fromFamilyId`, `role` and `moveHousehold`; the published endpoint moves a resident between
+households and nothing else. The family half would be `POST admin/families/{family}/members` plus
+`DELETE admin/families/{family}/members/{resident}` — so one console operation becomes two or three
+calls, and the adapter's own comment says why that is not a free change: *"One request, because the
+move must be one transaction on the server too."* A partial failure leaves somebody in neither
+family, or in a new family at the old address.
+
+**Ask:** a single `POST admin/families/transfers` that moves family membership and, optionally, the
+household, in one transaction. This is the only one of the three that needs the backend.
 
 ---
 

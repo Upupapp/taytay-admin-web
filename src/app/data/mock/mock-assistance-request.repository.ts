@@ -15,6 +15,7 @@ import {
   documentVersionProblems,
   DocumentVersionInvalidError,
   assessIntake,
+  EMPTY_ADVISORY,
   assessmentProblems,
   acceptsAnswer,
   unansweredRequired,
@@ -227,6 +228,15 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
    * sharper disclosure than browsing the request list, and only the roles that
    * actually file a request need it (minimisation, `DL-60`).
    */
+  /** A filed request already names its resident and programme, so this is the same advisory. */
+  advisoryForCase(id: AssistanceRequestId): Observable<IntakeAdvisory> {
+    const request = this.requests.find((entry) => entry.id === id);
+
+    return request === undefined
+      ? this.latency.respond(EMPTY_ADVISORY)
+      : this.advisoryFor(request.residentId, request.programId);
+  }
+
   advisoryFor(residentId: ResidentId, programId: ProgramId | null): Observable<IntakeAdvisory> {
     const user = this.access.currentUser();
     const denied = denyUnless<IntakeAdvisory>(user, 'request.create');

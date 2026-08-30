@@ -221,6 +221,7 @@ import { UPLOAD_POLICY } from './api.contract';
 import { FileTransport } from './file-transport';
 import { int } from './mappers/wire';
 import { toAssessmentTemplates, toOpenAssessment } from './mappers/assessment.mapper';
+import { toIntakeAdvisory } from './mappers/advisory.mapper';
 import { toDocumentRequests } from './mappers/document-request.mapper';
 import { toEventMetrics } from './mappers/event-metrics.mapper';
 import {
@@ -1098,6 +1099,20 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
       residentId,
       ...(programId === null ? {} : { programId }),
     });
+  }
+
+  /**
+   * `GET admin/assistance-requests/{case}/advisory` — published, and read through a mapper.
+   *
+   * Every field lines up: six codes, two tones, and `rule` / `finding` / `references` on each
+   * signal. The two sides agree because both were written to `DL-60`, not by luck — the server's
+   * own class carries no score, no total and no recommendation, which is `check:intake`'s rule
+   * stated from the other end.
+   */
+  advisoryForCase(id: AssistanceRequestId): Observable<IntakeAdvisory> {
+    return this.api
+      .item<Record<string, unknown>>(`${API_ENDPOINTS.assistanceRequests}/${id}/advisory`)
+      .pipe(map((wire) => toIntakeAdvisory(wire)));
   }
 
   /**

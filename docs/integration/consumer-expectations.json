@@ -4,6 +4,13 @@
   "interactions": [
     {
       "method": "GET",
+      "path": "admin/assistance-requests/{case}/advisory",
+      "consumer": "advisory.mapper.ts#toIntakeAdvisory",
+      "required": [],
+      "optional": []
+    },
+    {
+      "method": "GET",
       "path": "admin/audit-entries",
       "consumer": "audit.mapper.ts#toAuditRow",
       "required": [
