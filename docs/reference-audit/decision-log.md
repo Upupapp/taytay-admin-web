@@ -5136,3 +5136,89 @@ is not "these particular tools were sloppy" — it is that an allow-list of help
 that under-reports the moment the code grows one.
 
 21 → **12**; mapper-adoption 43 → **71**, which is debt made visible rather than debt added.
+
+## DL-163 — the work queues: a clock nobody sent, and a screen the record cannot fill
+
+Recorded without the code. The two `item ← page` reads on `admin/work/mine` and `admin/work/team`
+were investigated in full and the fix was written and then lost to a concurrent checkout in a shared
+working tree; a second agent is working in this repository and has its own changes in flight, so
+this entry is the finding rather than the change. What follows was read from the controllers at
+backend `1aef8d6` and is directly verifiable.
+
+### `asOf` is accepted by none of the three routes
+
+The adapter sends `asOf` as a query parameter, and its own comment says why: *"`asOf` travels as a
+parameter rather than being taken from the server's clock so the heading a user reads and the
+urgencies underneath it cannot disagree."*
+
+`WorkController::mine`, `::team` and `::alerts` each compute `CarbonImmutable::now()`, derive
+`is_overdue` against it, and echo it back as `meta.as_of`. **None of them reads a parameter.** So
+the heading showed the console's date and the urgencies were computed against the server's — which
+is the disagreement the comment was written to prevent.
+
+The intent was right and the mechanism was backwards. Both should come from the echo. It is the same
+shape as `DL-149`: the console cannot state a moment the server did not give it, and the closest
+true statement is the one the server stamped.
+
+### The team queue is aggregates; the screen renders items
+
+`byAssignee` runs one grouped query and answers `{assigned_to, total, overdue_count}` per person,
+unassigned first, with `meta.unassigned_count` reported separately — *"rather than leaving it to be
+inferred from a row a client might page past"*, in its own words.
+
+`TeamMemberLoad` carries `items: readonly WorkItem[]` and the screen renders every person's task
+list inline. **The endpoint returns no tasks at all.** The server's model is better — shipping every
+row to a client so it can count them is what this console does — and it is `DL-107`'s doctrine
+stated from the other end: a workload screen **counts what people carry**.
+
+Two consequences follow. `items` cannot be filled and the per-person list has to go. And `name`
+cannot be filled either: the record groups by subject id and publishes no staff name, so a
+supervision screen cannot say whose queue it is looking at. That is a gap to file, not a uuid to
+render (`DL-155` settled the same question for a correction's requester).
+
+### `buildTeamQueue` sorts into a league table
+
+> Whoever is most behind comes first; unassigned sorts last so it reads as a gap rather than as
+> somebody's caseload.
+
+`DL-107` refuses exactly this: *"No rate, no score, no index, and rows ordered alphabetically —
+sorting by volume is what turns a workload table into a league table."* The entry was written about
+the workload **report**, and the reasoning does not stop at the report's edge — a supervision screen
+that puts the person with the most overdue work at the top ranks them every time it is opened.
+
+The office record sorts unassigned first, then by assignee. Adopting that order settles the
+contradiction and makes the two agree.
+
+### Four fields the projection does not carry
+
+`itemProjection` publishes `id`, `source`, `type`, `title`, `subject_type`, `subject_id`,
+`assigned_to`, `team`, `priority`, `due_on`, `is_overdue`, `waiting_since`, `raised_by_event`.
+
+`WorkItem.subject` and `WorkItem.preview` have no counterpart — the backend records this as a known
+divergence rather than an oversight. A queue without them is one somebody has to open every row of.
+`assignedToName` and the team `name` are the third and fourth, both for the same reason.
+
+`waiting_since` is set **only when there is no due date**, which is `DL-101` implemented server-side:
+an undated item reports waiting, never lateness, because no service standard was supplied.
+
+### Two vocabularies for the same twelve things
+
+`TaskType` and `WorkKind` name the same work and disagree on four spellings — `verify-resident` /
+`verify-household`, `referral-follow-up` / `follow-up-referral`, `field-visit` / `conduct-visit`,
+`recommendation` / `review-recommendation`. A seam translation, as `DL-148` and `DL-155` already do.
+
+`resolve-duplicate` and `general` have **no console counterpart at all**. A row carrying one has no
+honest home: `WorkKind` is a closed union of work the office recognises, and rendering an item under
+a kind it is not puts the wrong label on somebody's work. Dropping it shows fewer items, which is
+recoverable; mislabelling is not.
+
+### And the reason this entry has no code
+
+A second agent committed `33ddff5` into this working tree and reverted every tracked file this turn
+had touched. The `servana-shared-tree-hazard` note is about exactly this, and the cost here was
+about forty minutes of work in six files.
+
+The one piece worth knowing for next time: **the loss was silent.** `npm run typecheck` passed
+afterwards, because reverting a coherent set of edits leaves a coherent tree. What surfaced it was a
+check reporting a state that could not follow from the code as written — the same instinct as
+`DL-145`, applied to a working tree instead of a ratchet.
