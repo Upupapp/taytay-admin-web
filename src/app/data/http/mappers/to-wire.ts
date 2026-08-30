@@ -30,6 +30,7 @@
 
 import type {
   AssessmentDraft,
+  DocumentRequestDraft,
   IdentityResolutionDraft,
   DocumentVersionDraft,
   EventDraft,
@@ -464,4 +465,25 @@ export function toWireIdentityResolution(draft: IdentityResolutionDraft): Record
   if (note !== '') fields['note'] = note.slice(0, 255);
 
   return fields;
+}
+
+/**
+ * Asking an applicant for a document:
+ * `POST admin/assistance-requests/{case}/requirements/{requirement}/document-requests`.
+ *
+ * `requirementId` is **absent from the body on purpose** — it is in the path. The API raises a
+ * request against the requirement that needs it rather than against the case, which is the model
+ * and not a URL preference: a request exists because a particular slot on the checklist is
+ * unfilled, and one naming only the case could not say which.
+ *
+ * `needed_by` is sent as `null` rather than omitted when there is no date. The field is
+ * `sometimes|nullable`, and an explicit null records that nobody set a deadline — different from a
+ * field the client did not think about, which is the distinction `DL-144` turns on.
+ */
+export function toWireDocumentRequest(draft: DocumentRequestDraft): Record<string, unknown> {
+  return {
+    channel: draft.channel,
+    message: draft.message.trim().slice(0, 500),
+    needed_by: draft.neededBy,
+  };
 }

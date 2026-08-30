@@ -608,6 +608,7 @@ export interface AssistanceRequestRepository {
 
   listDocumentRequests(id: AssistanceRequestId): Observable<readonly DocumentRequest[]>;
 
+
   /**
    * Opens a document for viewing or saving.
    *

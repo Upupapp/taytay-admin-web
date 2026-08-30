@@ -80,7 +80,16 @@ it already stores (`DL-47`'s model, and the better one).
 
 **Blocks:** `check:mapper-adoption` cannot come below 43; the household panel shows nothing.
 
-### 2.3 `deactivate` accepts no reason — `DL-147`
+### 2.3 `requested_by` on a document request — `DL-151`
+
+The document-request projection carries `id`, `requirement_id`, `state`, `channel`, `message`,
+`needed_by`, `requested_at`, `closed_at`, `withdrawn_reason` and `is_applicant_overdue` — and no
+requester. The console holds the field as `null` rather than inventing one.
+
+The record exists so that an applicant who says they were never told can be checked against
+something. "The office asked" without "and this is who" is a weaker record than it looks.
+
+### 2.4 `deactivate` accepts no reason — `DL-147`
 
 `DELETE staff/{staff}` takes no body. The office asks its administrators why an account is being
 switched off, and the answer is captured and discarded.
@@ -118,7 +127,7 @@ Recorded so nobody files them as requests.
 | `GET admin/events/{}/registrants/export` | the same `POST admin/exports` | one export resource beats one per surface |
 | `GET admin/privacy/corrections` | `GET admin/resident-corrections` | naming only |
 | `POST admin/families/transfers` | `POST admin/households/{household}/transfers` | a transfer is between **addresses**; `DL-47` says the console is the one confusing household with family |
-| `POST .../{case}/document-requests` | `.../{case}/requirements/{requirement}/document-requests` | a document is asked for against the **requirement** that needs it |
+| `POST .../{case}/document-requests` | `.../{case}/requirements/{requirement}/document-requests` | **adopted** (`DL-151`) — a document is asked for against the **requirement** that needs it |
 
 ---
 

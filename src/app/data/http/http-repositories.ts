@@ -220,10 +220,12 @@ import { UPLOAD_POLICY } from './api.contract';
 import { FileTransport } from './file-transport';
 import { int } from './mappers/wire';
 import { toAssessmentTemplates, toOpenAssessment } from './mappers/assessment.mapper';
+import { toDocumentRequests } from './mappers/document-request.mapper';
 import { toEventMetrics } from './mappers/event-metrics.mapper';
 import {
   toWireAssessment,
   toWireIdentityResolution,
+  toWireDocumentRequest,
   toWireDocumentVersion,
   toWireEventDraft,
   toWireFieldVisitDraft,
@@ -1301,20 +1303,37 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
     });
   }
 
+  /**
+   * `POST .../requirements/{requirement}/document-requests`, and it answers with **one row**.
+   *
+   * The old call posted the whole draft — `requirementId` included — to a case-level path nobody
+   * serves, and typed the answer as a list. The API nests the write under the requirement that
+   * needs the document and returns the single request it created, so the console re-reads the list
+   * rather than inventing one from a row.
+   */
   requestDocument(
     id: AssistanceRequestId,
     draft: DocumentRequestDraft,
   ): Observable<readonly DocumentRequest[]> {
-    return this.api.post<readonly DocumentRequest[], DocumentRequestDraft>(
-      `${API_ENDPOINTS.assistanceRequests}/${id}/document-requests`,
-      draft,
-    );
+    return this.api
+      .post<Record<string, unknown>, Record<string, unknown>>(
+        `${API_ENDPOINTS.assistanceRequests}/${id}/requirements/${draft.requirementId}` +
+          `/document-requests`,
+        toWireDocumentRequest(draft),
+      )
+      .pipe(switchMap(() => this.listDocumentRequests(id)));
   }
 
+  /**
+   * The list answers `{ requests: [...] }`, so `data` is an object and `collection` handed back a
+   * non-array. Every screen reading it would have found no rows and shown an empty list.
+   */
   listDocumentRequests(id: AssistanceRequestId): Observable<readonly DocumentRequest[]> {
-    return this.api.collection<DocumentRequest>(
-      `${API_ENDPOINTS.assistanceRequests}/${id}/document-requests`,
-    );
+    return this.api
+      .item<Record<string, unknown>>(
+        `${API_ENDPOINTS.assistanceRequests}/${id}/document-requests`,
+      )
+      .pipe(map((wire) => toDocumentRequests(id, wire)));
   }
 
   openDocument(

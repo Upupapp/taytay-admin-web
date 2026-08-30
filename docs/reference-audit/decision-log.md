@@ -4444,3 +4444,60 @@ amended.
 
 **One genuine backend absence out of seven**, where `DL-147` reported six. The corrected list and
 the real backend asks are in `docs/integration/backend-requests.md`.
+
+## DL-151 — a document is asked for against the requirement that needs it
+
+`POST admin/assistance-requests/{case}/document-requests` is served at no verb. The API raises a
+request against the **requirement** — `.../{case}/requirements/{requirement}/document-requests` —
+and that nesting is the model rather than a URL preference: a request exists because a particular
+slot on the checklist is unfilled, and one naming only the case could not say which. The console
+already held the `requirementId` on the draft, so the change is which side of the request it
+travels on.
+
+### The read was broken in a way no gate could see
+
+`listDocumentRequests` called `collection<DocumentRequest>`, which hands back `response.data`
+untouched as an array. This endpoint answers `{ "requests": [...] }`, so `data` is an **object** —
+every screen reading it would find no rows and show an empty list.
+
+`check:routes` could not catch it: `GET .../{case}/document-requests` **is** published, at that verb,
+and the check answers whether a request reaches an endpoint. `check:mapper-adoption` counted the cast
+as debt but says nothing about which shape came back. Three ratchets were green about a read that
+returns nothing, which is the case for the fourth question none of them asks: *would the answer be
+understood*.
+
+### Two fields the projection does not carry
+
+**`requestedBy` is `null`, never invented.** The row publishes no requester. The point of recording
+a request is that an applicant who says they were never told can be checked against something, and
+"the office asked" without "and this is who" is a weaker record than it looks — but a fabricated id
+would be worse, because it would name somebody.
+
+**`is_applicant_overdue` is published and deliberately not read.** `DL-83` settled that overdue is
+derived from the date and never stored: a stored flag needs a nightly job to stay true and is wrong
+every morning until it runs. Taking the server's copy would import exactly the staleness the rule
+exists to avoid. The console computes it from `neededBy`.
+
+An unrecognised `state` reads as **`open`** — the one that keeps the row in front of somebody.
+Defaulting to `answered` or `withdrawn` would quietly close a request the office still owes an
+applicant, and nothing downstream would ask again.
+
+### A method was added and then removed, because the gate was right
+
+The domain has modelled a `withdrawn` state and a `withdrawnReason` since TAB 08, and **nothing can
+produce either**: the API publishes `POST .../document-requests/{documentRequest}/withdraw` and the
+port has no method for it, so a document asked for in error stays open against the applicant
+indefinitely — counted as outstanding, and shown to them as something they still owe.
+
+`withdrawDocumentRequest` was written on all three layers, and `check:port-adoption` failed it:
+*"declared, implemented on both adapters and reachable from no screen. Either wire it to the feature
+that needs it, or remove it."* Adding it to the unreached baseline would have been weakening a
+ratchet to make a change pass, which this repository forbids in as many words.
+
+It was removed. The real finding is larger than the missing method and is recorded instead:
+**`requestDocument` and `listDocumentRequests` are themselves unreached** — the whole
+document-request feature is built, mapped, routed, tested, and reachable from no screen. Withdrawal
+is one act of a feature nobody can open, and it should be built with the rest of it rather than
+bolted on to satisfy a count.
+
+Routes 17 → **16**, wire-adoption 9 → **8**.

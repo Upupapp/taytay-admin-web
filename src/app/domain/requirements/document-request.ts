@@ -48,7 +48,16 @@ export interface DocumentRequest {
   /** What the applicant was actually told, in the words used. */
   readonly message: string;
   readonly neededBy: IsoDate | null;
-  readonly requestedBy: StaffUserId;
+  /**
+   * Who asked, or `null` where the office record does not say.
+   *
+   * Nullable because the API's projection carries no requester. The whole point of recording a
+   * request is that an applicant who says they were never told can be checked against something —
+   * and "the office asked" without "and this is who" is a weaker record than it looks. A fabricated
+   * id would be worse: it would name somebody. The gap is in
+   * `docs/integration/backend-requests.md`.
+   */
+  readonly requestedBy: StaffUserId | null;
   readonly requestedAt: IsoDateTime;
   /** Set when the state leaves `open`. Never unset. */
   readonly closedAt: IsoDateTime | null;
