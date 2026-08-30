@@ -4810,3 +4810,68 @@ slips back.
 Nothing is fixed by this commit and that is deliberate: each of the 29 needs the wrapping key or the
 page request that route expects, which is a mapper apiece. The number is recorded the way
 `check:routes` recorded 61.
+
+## DL-157 — three of the five reads that showed nothing, and one screen that was already right
+
+`DL-156` counted five reads calling `collection<T>` on an endpoint answering `ApiResponse::item` —
+`data` an object, the helper handing back a non-array, the screen showing nothing. Three are fixed.
+
+None was purely an envelope fix. Each endpoint wraps its list under a key and carries fields beside
+it, so each needed a mapper, and each mapper turned up something.
+
+### An unclassified record series is read as the most protective thing it could be
+
+`/classifications` sends `classification: null` with `unclassified: true` for a category nobody has
+ruled on, and the server's own comment says it is "named rather than left as a null somebody reads
+as public". The console reads it as **`sensitive-personal`** and keeps the row.
+
+Both halves matter. Reading it as `public` or `internal` would relax handling on a record type the
+office has not thought about; **dropping** it would say there is no such record series at all, which
+is `DL-105`'s reason for withholding rather than omitting.
+
+### The retention screen was already right, and I nearly "fixed" it
+
+`/retention` sends real periods — 2555 days for an account, 3650 for a resident — with
+`approved: false` and a notice calling them placeholders pending review, adding that no scheduled
+deletion occurs while that is true.
+
+My first reading was that the console's "No schedule recorded" had become a false statement, because
+the server plainly has a schedule. It has not. `describeRetention` returns "No schedule recorded"
+whenever provenance is `awaiting-office-policy`, **even when a period is present**, and that guard is
+exactly the protection needed against an unapproved draft: printing "Kept for 10 years" beside a
+record series is the invented policy `DL-113` refuses — *the one an office cannot undo once it has
+acted on it.*
+
+So the mapper carries `periodInYears` from the server and `provenance` from `approved`, and the
+domain withholds the number. The data layer reports what exists; the domain decides what may be
+said. The day the DPO approves it, the same payload reads as a schedule with no code change — which
+is what makes carrying the numbers now correct rather than premature.
+
+The correction is recorded because I was one edit from making a correct screen wrong, and the thing
+that stopped it was reading `describeRetention` before changing anything.
+
+### Nobody owns a shared view, and that is the API being careful
+
+`/saved-views` publishes `is_shared` and `is_mine` and **withholds `owner_subject_id`**, so a reader
+cannot see *who* owns a shared view they do not own. `ownerId` is `null` for every view and stays
+that way. `DL-111` makes sharing a view a separate grant because its *name* describes a population
+to every colleague; not naming its author is the same instinct, and this console does not
+reconstruct it.
+
+The endpoint also reads **no query parameters** — it answers every view the caller may see — so the
+`resource` filter happens in the adapter rather than pretending the server applied it.
+
+### The two left, and why they are not this piece of work
+
+`admin/programs/utilization` sends five fields per row where `ProgramUtilization` has ten, and keys
+them by `program_code` rather than a programme id. `admin/assistance-requests/{case}/notes` sends a
+case note — `sensitivity`, `is_withheld`, a nullable `body` — where `RequestNote` carries
+`from`/`to`/`reason`, which is a status-transition record. Both are model differences of the kind
+`DL-153` catalogued, not envelopes.
+
+The notes one is worth naming precisely: the API implements `DL-58` exactly — a protected note
+returns `body: null` and `is_withheld: true`, listed rather than hidden, with a `withheld_count`
+beside it — and the console's `RequestNote.body` is a non-null `string`, so it **cannot represent a
+withheld note**. The doctrine matches and the type does not.
+
+29 → **26**; the "shows nothing" tier 5 → **2**.

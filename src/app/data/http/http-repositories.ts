@@ -224,6 +224,11 @@ import { int } from './mappers/wire';
 import { toAssessmentTemplates, toOpenAssessment } from './mappers/assessment.mapper';
 import { toIntakeAdvisory } from './mappers/advisory.mapper';
 import { toCorrectionRequests } from './mappers/correction.mapper';
+import {
+  toClassifiedRecordTypes,
+  toRetentionRules,
+  toSavedViews,
+} from './mappers/governance.mapper';
 import { toDocumentRequests } from './mappers/document-request.mapper';
 import { toEventMetrics } from './mappers/event-metrics.mapper';
 import {
@@ -886,13 +891,15 @@ export class HttpGovernanceRepository implements GovernanceRepository {
   }
 
   classifications(): Observable<readonly ClassifiedRecordType[]> {
-    return this.api.collection<ClassifiedRecordType>(
-      `${API_ENDPOINTS.governance}/classifications`,
-    );
+    return this.api
+      .item<Record<string, unknown>>(`${API_ENDPOINTS.governance}/classifications`)
+      .pipe(map((wire) => toClassifiedRecordTypes(wire)));
   }
 
   retention(): Observable<readonly RetentionRule[]> {
-    return this.api.collection<RetentionRule>(`${API_ENDPOINTS.governance}/retention`);
+    return this.api
+      .item<Record<string, unknown>>(`${API_ENDPOINTS.governance}/retention`)
+      .pipe(map((wire) => toRetentionRules(wire)));
   }
 
   /**
@@ -993,7 +1000,14 @@ export class HttpSavedViewRepository implements SavedViewRepository {
   private readonly api = inject(ApiClient);
 
   listFor(resource: SavedViewResource): Observable<readonly SavedView[]> {
-    return this.api.collection<SavedView>(API_ENDPOINTS.savedViews, { resource });
+    /*
+     * `resource` is still sent and the endpoint reads no query parameters at all — it answers every
+     * view the caller may see, ordered by entity then name. Filtering happens here rather than
+     * pretending the server did it.
+     */
+    return this.api
+      .item<Record<string, unknown>>(API_ENDPOINTS.savedViews)
+      .pipe(map((wire) => toSavedViews(wire).filter((view) => view.resource === resource)));
   }
 
   create(draft: SavedViewDraft): Observable<SavedView> {
