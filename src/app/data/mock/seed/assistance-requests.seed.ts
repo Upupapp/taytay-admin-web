@@ -782,7 +782,8 @@ export const MOCK_REQUEST_NOTES: readonly RequestNote[] = [
     authorId: staff('sw-1'),
     authorName: 'Grace Ocampo',
     body: 'Home visit conducted. Household confirmed at the declared address. Grandson is out of school and may qualify for educational assistance next cycle.',
-    visibility: 'internal',
+    sensitivity: 'routine',
+    isWithheld: false,
     createdAt: daysBeforeAnchor(8, 14),
   },
   {
@@ -791,7 +792,8 @@ export const MOCK_REQUEST_NOTES: readonly RequestNote[] = [
     authorId: staff('intake'),
     authorName: 'Liezl Padilla',
     body: 'Applicant advised that the release schedule will be texted to the registered mobile number.',
-    visibility: 'shared-with-applicant',
+    sensitivity: 'routine',
+    isWithheld: false,
     createdAt: daysBeforeAnchor(7, 10),
   },
   {
@@ -800,7 +802,26 @@ export const MOCK_REQUEST_NOTES: readonly RequestNote[] = [
     authorId: staff('sw-2'),
     authorName: 'Jomar Villanueva',
     body: 'Returned for a costing breakdown. Programme is also suspended pending funds; applicant informed of the wait.',
-    visibility: 'shared-with-applicant',
+    sensitivity: 'routine',
+    isWithheld: false,
     createdAt: daysBeforeAnchor(33, 11),
+  },
+  {
+    /*
+     * A protected note, so the withheld path exists in the mock at all.
+     *
+     * Without one, every screen and every spec is written against a file where nothing is ever
+     * held back, and `isWithheld` is a field nobody has seen true. The body is here because the
+     * seed is what a cleared reader would receive; `MockAssistanceRequestRepository` is what
+     * withholds it, in the data layer, for a reader who is not (`DL-58`).
+     */
+    id: asId<RequestNoteId>('note-0004'),
+    requestId: asId<AssistanceRequestId>('req-0001'),
+    authorId: staff('sw-1'),
+    authorName: 'Grace Ocampo',
+    body: 'Safety planning discussed. Details held apart from the running record at the household\u2019s request.',
+    sensitivity: 'protected',
+    isWithheld: false,
+    createdAt: daysBeforeAnchor(6, 15),
   },
 ];

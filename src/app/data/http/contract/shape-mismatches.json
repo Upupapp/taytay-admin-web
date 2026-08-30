@@ -2,9 +2,8 @@
   "$comment": "Reads whose helper disagrees with the envelope their route actually answers with. A BASELINE, not an allow-list: every entry is a screen that shows nothing, or a list silently truncated to its first page. check:response-shape fails when the list grows AND when it shrinks without being recorded. Regenerate with `node tools/check-response-shape.mjs --write-baseline`.",
   "recordedBy": "DL-156",
   "recordedOn": "2026-08-30",
-  "count": 26,
+  "count": 25,
   "mismatches": [
-    "collection admin/assistance-requests/{}/notes <- item",
     "collection admin/audit-entries <- page",
     "collection admin/events <- page",
     "collection admin/events/{}/history <- page",

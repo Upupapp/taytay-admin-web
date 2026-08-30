@@ -224,6 +224,7 @@ import { int } from './mappers/wire';
 import { toAssessmentTemplates, toOpenAssessment } from './mappers/assessment.mapper';
 import { toIntakeAdvisory } from './mappers/advisory.mapper';
 import { toCorrectionRequests } from './mappers/correction.mapper';
+import { toRequestNotes } from './mappers/request-note.mapper';
 import {
   toClassifiedRecordTypes,
   toRetentionRules,
@@ -1102,7 +1103,9 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
   }
 
   listNotes(id: AssistanceRequestId): Observable<readonly RequestNote[]> {
-    return this.api.collection<RequestNote>(`${API_ENDPOINTS.assistanceRequests}/${id}/notes`);
+    return this.api
+      .item<Record<string, unknown>>(`${API_ENDPOINTS.assistanceRequests}/${id}/notes`)
+      .pipe(map((wire) => toRequestNotes(id, wire)));
   }
 
   changeStatus(

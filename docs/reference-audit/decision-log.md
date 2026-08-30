@@ -4874,4 +4874,82 @@ returns `body: null` and `is_withheld: true`, listed rather than hidden, with a 
 beside it — and the console's `RequestNote.body` is a non-null `string`, so it **cannot represent a
 withheld note**. The doctrine matches and the type does not.
 
+**Correction (`DL-158`): this section also said `RequestNote` carries `from`/`to`/`reason`, "which is
+a status-transition record". It does not.** Those fields belong to `StatusChange`, the interface
+declared immediately after it, and a grep that read a fixed number of lines past the type name ran
+over the boundary. `RequestNote` was `{id, requestId, authorId, authorName, body, visibility,
+createdAt}` — a clean note type. The real divergence was `visibility`, not a conflation.
+
 29 → **26**; the "shows nothing" tier 5 → **2**.
+
+## DL-158 — a note the reader may not see is still a note
+
+`DL-157` left `admin/assistance-requests/{case}/notes` as a model difference. It was less of one
+than that entry claimed, and the claim needs correcting first.
+
+### What I got wrong
+
+`DL-157` said `RequestNote` carries `from`/`to`/`reason`, "which is a status-transition record".
+**It does not.** Those belong to `StatusChange`, declared immediately after it, and a grep printing a
+fixed number of lines past the type name ran across the boundary. `RequestNote` was a clean note
+type. The section is corrected in place.
+
+The divergence that is real is narrower and sharper: `body` was a non-null `string`, so the type
+**could not represent a withheld note at all** — on the one record where this application's own
+doctrine says a withheld entry must still appear.
+
+### The two sides already agreed on the hard part
+
+`DL-58`: a withheld note returns `body: null`, stays listed, and keeps its author and its time, so
+nobody reads a partial file as a complete one. The API does exactly that — `body: null`,
+`is_withheld: true`, the row present, a `withheld_count` beside the list. Nothing had to be argued;
+only the console's type was behind.
+
+`body` is nullable now, `isWithheld` is beside it, and the tier is `CaseNoteSensitivity` — **the
+union `domain/cases/case-note.ts` already declares**, not a second copy. `DL-122` refuses a second
+vocabulary for permissions because the checker that generates the office reference would not see it;
+two sensitivity unions would need two permission maps and would drift.
+
+### It is still not `CaseNoteView`, and that is `DL-52`
+
+The two are now the same shape. They are deliberately not the same type: a case is the office's
+continuing involvement with a household and an assistance request is one intervention inside it, so
+a note keyed on `AssistanceRequestId` cannot be typed as one keyed on `CaseId` without asserting the
+thing `DL-52` exists to deny. What they share — the disclosure rule and its vocabulary — is shared
+properly.
+
+### `visibility` is gone, because nothing could produce it
+
+It was `internal | shared-with-applicant`, and the office record has **one axis** — how closely a
+note is held — with no notion of a note shown to the applicant. A value a screen could set and no
+system of record carries is the defect `DL-151` found on a document request's `withdrawn` state.
+
+Two of the three seeded notes were marked `shared-with-applicant`, so the mock was demonstrating a
+capability that does not exist anywhere else. Recorded as a gap, not modelled.
+
+### The mock was showing a file where nothing is ever held back
+
+`listNotes` handed every note back whole, so `isWithheld` was a field nobody had ever seen true, and
+any screen or spec written against it would have been written against a fiction. The mock now
+withholds in the **data layer** for a reader without `case-note.view-protected`, and the seed has a
+protected note so the path exists at all.
+
+That is the same lesson as the requirements checklist and the assessment endpoint: a mock more
+convenient than the thing it stands in for is one a screen gets built against.
+
+### Two things read by nothing
+
+`withheld_count` is **not mapped** — `withheldRequestNoteCount` derives it from the rows, this
+endpoint does not paginate, so the two cannot disagree, and a count read from the wire is a number a
+screen can show while the list beneath it says something else (`DL-83`).
+
+`is_withdrawn` and `withdrawn_reason` are not modelled. The API keeps a withdrawn note rather than
+deleting it, with its reason — the shape `DL-127` settled for a comment, where the act is
+append-only so a reader can see something was taken back and why. Adding the fields without a screen
+that shows them would add something nothing renders; it is filed as work this console owes.
+
+An unrecognised sensitivity reads as **`protected`**. A tier this console does not know is one whose
+handling it cannot reason about, and reading it as `routine` would show a body the office may have
+meant to hold back.
+
+"Shows nothing" tier 2 → **1**; total 26 → **25**.

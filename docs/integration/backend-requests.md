@@ -190,11 +190,25 @@ exactly as with the duplicate-pair projection above.
 values. The detail endpoint already exists and already returns the same projection, so this is a
 narrowing of the list rather than new work.
 
-### 3.3 Smaller: a corrections row names no requester — `DL-155`
+### 3.3 Smaller: a corrections row and a case note both name no author — `DL-155`, `DL-158`
 
 `requested_by` and `reviewed_by` are subject ids with no accompanying name, so a screen saying
 "raised by" has a uuid or nothing. The console shows nothing. The resident is disclosed properly on
 the same row, so the shape for a staff name is already there.
+
+The same on `admin/assistance-requests/{case}/notes`: `author_subject_id` and no name, on a record
+whose whole purpose is that somebody can be asked about it later.
+
+### 3.4 What this console owes, not the API — `DL-158`
+
+`is_withdrawn` and `withdrawn_reason` on a case note are published and read by nothing here. The API
+keeps a withdrawn note rather than deleting it, with its reason, which is the shape `DL-127` settled
+for a comment. The console has no such state and no screen for it. **Recorded so it is not mistaken
+for a backend gap.**
+
+Likewise `visibility: 'shared-with-applicant'`, which this console modelled and removed (`DL-158`):
+the office record holds one axis, how closely a note is held. Whether a note can be shown to an
+applicant is a question for the office before it is a question for either codebase.
 
 ---
 

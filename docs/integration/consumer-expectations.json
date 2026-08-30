@@ -11,6 +11,13 @@
     },
     {
       "method": "GET",
+      "path": "admin/assistance-requests/{case}/notes",
+      "consumer": "request-note.mapper.ts#toRequestNotes",
+      "required": [],
+      "optional": []
+    },
+    {
+      "method": "GET",
       "path": "admin/audit-entries",
       "consumer": "audit.mapper.ts#toAuditRow",
       "required": [

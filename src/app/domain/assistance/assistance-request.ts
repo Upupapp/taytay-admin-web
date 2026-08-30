@@ -1,5 +1,6 @@
 import type { AuditStamp } from '../shared/audit';
 import type { AssessmentRecommendation } from '../intake/assessment';
+import type { CaseNoteSensitivity } from '../cases/case-note';
 import type {
   AssistanceRequestId,
   BarangayId,
@@ -238,16 +239,52 @@ export interface SubmittedRequirement {
   readonly document: RequirementDocument | null;
 }
 
-export type RequestNoteVisibility = 'internal' | 'shared-with-applicant';
-
+/**
+ * A note on an assistance request, as a particular viewer is allowed to see it.
+ *
+ * ## Why this is not `CaseNoteView`
+ *
+ * The two are the same shape and deliberately not the same type. `DL-52` is explicit that **a case
+ * is not an assistance request** — a case is the office's continuing involvement with a household
+ * and a request is one intervention inside it — so a note keyed on `AssistanceRequestId` cannot be
+ * typed as one keyed on `CaseId` without asserting the thing that entry exists to deny.
+ *
+ * What they *do* share is the disclosure rule, and that is shared properly: the `sensitivity` union
+ * and its permission map come from `domain/cases/case-note.ts` rather than being restated here. A
+ * second vocabulary for the same tier is what `DL-122` refuses for permissions, for the same
+ * reason — the checker that generates the office reference would not see it.
+ *
+ * ## `body` is nullable, and the entry is still listed
+ *
+ * `DL-58`. A withheld note is **removed by the data layer, not hidden by a template** (`DL-38`), so
+ * a screen cannot leak a paragraph it never received. Its existence, its author and its time are
+ * still disclosed: a caseworker who cannot see that three restricted entries exist will read the
+ * file as complete and act as though nothing happened. Knowing a record is there, and that it is
+ * not yours to read, is what makes it possible to ask the right person.
+ *
+ * ## `visibility` is gone
+ *
+ * It was `internal | shared-with-applicant`, and **nothing could produce the second value**: the
+ * office record holds one axis, how closely a note is held, and no notion of a note shown to the
+ * applicant. A field a screen could set and no system of record carries is the defect `DL-151`
+ * found on a document request's `withdrawn` state. The capability is recorded as a gap rather than
+ * modelled here (`DL-158`).
+ */
 export interface RequestNote {
   readonly id: RequestNoteId;
   readonly requestId: AssistanceRequestId;
-  readonly authorId: StaffUserId;
+  readonly authorId: StaffUserId | null;
   readonly authorName: string;
-  readonly body: string;
-  readonly visibility: RequestNoteVisibility;
+  /** `null` when this viewer may not read it. The row is still here. */
+  readonly body: string | null;
+  readonly isWithheld: boolean;
+  readonly sensitivity: CaseNoteSensitivity;
   readonly createdAt: IsoDateTime;
+}
+
+/** Derived, never read from the wire — the same rule as every other count (`DL-83`). */
+export function withheldRequestNoteCount(notes: readonly RequestNote[]): number {
+  return notes.filter((note) => note.isWithheld).length;
 }
 
 /** One recorded move through the lifecycle. Append-only. */

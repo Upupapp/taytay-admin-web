@@ -160,8 +160,26 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     return this.latency.respond(request);
   }
 
+  /**
+   * Withheld in the data layer, and the entry is still listed (`DL-58`, `DL-38`).
+   *
+   * The mock used to hand every note back whole, so `isWithheld` was a field nobody had seen true
+   * and any screen written against it was written against a file where nothing is ever held back.
+   * A protected note now comes back with `body: null` for a reader without
+   * `case-note.view-protected`, and stays in the list — because a caseworker who cannot see that a
+   * restricted entry exists reads the file as complete and acts as though nothing happened.
+   */
   listNotes(id: AssistanceRequestId): Observable<readonly RequestNote[]> {
-    const notes = MOCK_REQUEST_NOTES.filter((note) => note.requestId === id);
+    const user = this.access.currentUser();
+    const mayReadProtected = user?.permissions.has('case-note.view-protected') ?? false;
+
+    const notes = MOCK_REQUEST_NOTES.filter((note) => note.requestId === id).map(
+      (note): RequestNote => {
+        const cleared = note.sensitivity === 'routine' || mayReadProtected;
+        return cleared ? note : { ...note, body: null, isWithheld: true };
+      },
+    );
+
     return this.latency.respond(sortItems(notes, (note) => note.createdAt, 'desc'));
   }
 
