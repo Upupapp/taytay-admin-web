@@ -814,6 +814,56 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     return this.latency.respond(this.documentRequestsFor(id));
   }
 
+  /**
+   * Withdrawing closes the row; it never removes it.
+   *
+   * The record stays so that "we no longer need this" is distinguishable from "we never asked" —
+   * an applicant who is told the office has stopped asking should be able to see when and why.
+   */
+  withdrawDocumentRequest(
+    id: AssistanceRequestId,
+    documentRequestId: DocumentRequestId,
+    reason: string,
+  ): Observable<readonly DocumentRequest[]> {
+    const denied = denyUnless<readonly DocumentRequest[]>(
+      this.access.currentUser(),
+      'document.record',
+    );
+    if (denied) {
+      return denied;
+    }
+
+    if (reason.trim().length === 0) {
+      return throwError(
+        () => new Error('Withdrawing a request needs a reason. The applicant was told something.'),
+      );
+    }
+
+    const existing = this.documentRequests.find(
+      (entry) => entry.id === documentRequestId && entry.assistanceRequestId === id,
+    );
+
+    if (existing === undefined) {
+      return throwError(() => new Error('That request was not found.'));
+    }
+    if (existing.state !== 'open') {
+      return throwError(() => new Error('That request is already closed.'));
+    }
+
+    this.documentRequests = this.documentRequests.map((entry) =>
+      entry === existing
+        ? {
+            ...entry,
+            state: 'withdrawn' as const,
+            withdrawnReason: reason.trim(),
+            closedAt: asIsoDateTime(new Date()),
+          }
+        : entry,
+    );
+
+    return this.latency.respond(this.documentRequestsFor(id));
+  }
+
   openDocument(
     id: AssistanceRequestId,
     requirementId: RequirementId,

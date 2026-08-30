@@ -4501,3 +4501,47 @@ is one act of a feature nobody can open, and it should be built with the rest of
 bolted on to satisfy a count.
 
 Routes 17 → **16**, wire-adoption 9 → **8**.
+
+## DL-152 — the office records what it verified; now it records what it asked for
+
+`DL-151` removed `withdrawDocumentRequest` because `check:port-adoption` refused a method no screen
+called, and recorded the larger finding: **the whole document-request feature was built, mapped,
+routed, tested and reachable from nowhere.** This builds the screen, and the withdraw method comes
+back with somewhere to be called from.
+
+### It sits beside the requirement, not on a page of its own
+
+A request exists because a particular slot on the checklist is unfilled — which is why the API
+nests the write under `requirements/{requirement}` (`DL-151`). A separate "requests" page would have
+to be read alongside the checklist to mean anything, and the two would drift the first time somebody
+verified a document without looking at the other tab.
+
+So the asked-for block renders inside the requirement loop on the assessment screen, under the panel
+showing what was received. What the office asked for and what it got are one question.
+
+### Three states, said in words
+
+`Waiting on the applicant`, `Provided`, `No longer needed` — a sentence rather than a coloured pill,
+because a clerk reads this line out loud to somebody standing at the counter. The channel is beside
+it (`Told at the counter`, `Text message`, `Phone call`, `Relayed through the barangay`), because
+"we told you" and "we texted you" are different claims when an applicant says they never heard.
+
+### Withdrawing closes the row and never removes it
+
+"We no longer need this" has to stay distinguishable from "we never asked". An applicant told the
+office has stopped asking should be able to see when it stopped and why; a deleted row makes the
+office's own follow-up unprovable, which is the failure the whole record exists to prevent.
+
+The reason is required — `DL-54`'s rule that a mutation carries why — and the message is never
+rewritten: it is what the applicant was actually told. Withdrawing twice is a conflict rather than a
+no-op, because the second reason would overwrite the first.
+
+### `run()` was too narrow, and a cast was the wrong fix
+
+The page's helper was typed to `changeStatus`'s observable, so every other act had to be cast into
+shape at the call site. The first draft here did exactly that. **A cast to make a helper accept a
+caller is a helper that was too narrow** — `CLAUDE.md` §2.2 forbids reaching for one to get past the
+type system — so `run<T>(call: Observable<T>, message: string)` is generic now and the casts are
+gone.
+
+Port adoption 140/153 → **143/154**; unreached 13 → **11**.

@@ -86,6 +86,7 @@ import {
   type CaseTaskId,
   HOUSEHOLD_COMPOSITION_UNREADABLE,
   type CaseWorkspace,
+  type DocumentRequestId,
   type DuplicatePairId,
   type AdvisoryAcknowledgement,
   type AssessmentAnswers,
@@ -1334,6 +1335,20 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
         `${API_ENDPOINTS.assistanceRequests}/${id}/document-requests`,
       )
       .pipe(map((wire) => toDocumentRequests(id, wire)));
+  }
+
+  /** `POST .../document-requests/{documentRequest}/withdraw`, then a re-read of the list. */
+  withdrawDocumentRequest(
+    id: AssistanceRequestId,
+    documentRequestId: DocumentRequestId,
+    reason: string,
+  ): Observable<readonly DocumentRequest[]> {
+    return this.api
+      .post<Record<string, unknown>, { reason: string }>(
+        `${API_ENDPOINTS.assistanceRequests}/${id}/document-requests/${documentRequestId}/withdraw`,
+        { reason },
+      )
+      .pipe(switchMap(() => this.listDocumentRequests(id)));
   }
 
   openDocument(

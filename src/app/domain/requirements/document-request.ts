@@ -22,6 +22,14 @@ import type {
 
 export type DocumentRequestChannel = 'in-person' | 'sms' | 'phone-call' | 'barangay-relay';
 
+/** The channels the office actually uses. No email: the LGU supplied no relay (`DL-96`). */
+export const DOCUMENT_REQUEST_CHANNELS: readonly DocumentRequestChannel[] = [
+  'in-person',
+  'sms',
+  'phone-call',
+  'barangay-relay',
+];
+
 export const DOCUMENT_REQUEST_CHANNEL_LABELS: Readonly<
   Record<DocumentRequestChannel, string>
 > = {

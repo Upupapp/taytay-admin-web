@@ -75,6 +75,33 @@ export const REQUIREMENTS_COPY = {
     reject: 'Reject',
     waive: 'Waive',
     markExpired: 'Mark expired',
+
+    /* ── asking the applicant for a document ──────────────────────────────── */
+    askHeading: 'Asked for',
+    ask: 'Ask the applicant for this',
+    askIntro:
+      'Record what the applicant was told, in the words used. A note that something was asked for without saying what is worse than no note: it looks like the office followed up when it cannot show that.',
+    askChannel: 'How they were told',
+    askMessage: 'What they were told',
+    askMessagePlaceholder: 'e.g. Bring the barangay certificate of indigency, original and one copy.',
+    askNeededBy: 'Needed by (optional)',
+    askSend: 'Record the request',
+    askCancel: 'Cancel',
+    requestSent: 'The request has been recorded.',
+    noRequests: 'Nothing has been asked for against this requirement.',
+    withdraw: 'No longer needed',
+    withdrawHeading: 'Why is this no longer needed?',
+    withdrawHint:
+      'The request stays on the record and is marked withdrawn. The applicant was told something, and the office has to be able to show what changed.',
+    withdrawConfirm: 'Withdraw the request',
+    requestWithdrawn: 'The request has been withdrawn.',
+    requestedOn: 'Asked',
+    neededByLabel: 'Needed by',
+    requestProblems: {
+      'message-required':
+        'Say what the applicant was told. A request with no message records that something was asked for without saying what.',
+      'needed-by-in-the-past': 'That date has already passed.',
+    } as const,
   },
 
   access: {

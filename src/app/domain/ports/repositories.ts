@@ -110,7 +110,7 @@ import type {
   MembershipChange,
 } from '../households/household';
 import type { HouseholdDetail, HouseholdSummary } from '../households/household-profile';
-import type { DuplicatePairId } from '../shared/ids';
+import type { DocumentRequestId, DuplicatePairId } from '../shared/ids';
 import type {
   Family,
   FamilyFilter,
@@ -607,6 +607,22 @@ export interface AssistanceRequestRepository {
   ): Observable<readonly DocumentRequest[]>;
 
   listDocumentRequests(id: AssistanceRequestId): Observable<readonly DocumentRequest[]>;
+
+  /**
+   * Withdraws a request the office no longer needs, with a required reason.
+   *
+   * The domain has modelled a `withdrawn` state and a `withdrawnReason` since TAB 08 and nothing
+   * could produce either, so a document asked for in error stayed open against the applicant
+   * indefinitely — counted as outstanding, and shown to them as something they still owe.
+   *
+   * The reason is required by the server and by `DL-54`: a mutation carries why. The row is closed,
+   * never removed — "we no longer need this" has to stay distinguishable from "we never asked".
+   */
+  withdrawDocumentRequest(
+    id: AssistanceRequestId,
+    documentRequestId: DocumentRequestId,
+    reason: string,
+  ): Observable<readonly DocumentRequest[]>;
 
 
   /**

@@ -131,6 +131,153 @@
                   (versionSubmitted)="recordDocument(request, requirement.id, $event)"
                 />
 
+                <!--
+                  What the office ASKED FOR, beside what it received.
+                  Kept next to the requirement it belongs to: a request exists because this slot is
+                  unfilled, and a list somewhere else would need reading alongside this one
+                  (`DL-151`).
+                -->
+                <div class="asked">
+                  <p class="asked__heading">{{ documentCopy.askHeading }}</p>
+
+                  @let asked = requestsFor(requirement.id);
+                  @if (asked.length === 0) {
+                    <p class="asked__none">{{ documentCopy.noRequests }}</p>
+                  } @else {
+                    <ul class="asked__list">
+                      @for (entry of asked; track entry.id) {
+                        <li class="asked__item">
+                          <p class="asked__message">{{ entry.message }}</p>
+                          <p class="asked__meta">
+                            {{ requestStateLabels[entry.state] }} &middot;
+                            {{ channelLabels[entry.channel] }}
+                            @if (entry.neededBy) {
+                              &middot; {{ documentCopy.neededByLabel }}
+                              {{ entry.neededBy | date: 'd MMM y' }}
+                            }
+                          </p>
+                          @if (entry.withdrawnReason) {
+                            <p class="asked__meta">{{ entry.withdrawnReason }}</p>
+                          }
+                          @if (entry.state === 'open' && canRecordDocuments()) {
+                            @if (withdrawing() === entry.id) {
+                              <div class="asked__form">
+                                <label class="field">
+                                  <span class="field__label">
+                                    {{ documentCopy.withdrawHeading }}
+                                  </span>
+                                  <input
+                                    type="text"
+                                    class="field__input"
+                                    [value]="withdrawReason()"
+                                    (input)="withdrawReason.set($any($event.target).value)"
+                                  />
+                                  <span class="field__hint">{{ documentCopy.withdrawHint }}</span>
+                                </label>
+                                <div class="asked__actions">
+                                  <button type="button" class="btn" (click)="closeWithdraw()">
+                                    {{ documentCopy.askCancel }}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    class="btn btn--primary"
+                                    [disabled]="withdrawReason().trim() === '' || submitting()"
+                                    (click)="confirmWithdraw()"
+                                  >
+                                    {{ documentCopy.withdrawConfirm }}
+                                  </button>
+                                </div>
+                              </div>
+                            } @else {
+                              <button
+                                type="button"
+                                class="btn btn--small"
+                                (click)="openWithdraw(entry.id)"
+                              >
+                                {{ documentCopy.withdraw }}
+                              </button>
+                            }
+                          }
+                        </li>
+                      }
+                    </ul>
+                  }
+
+                  @if (canRecordDocuments()) {
+                    @if (askingFor() === requirement.id) {
+                      <div class="asked__form">
+                        <p class="asked__intro">{{ documentCopy.askIntro }}</p>
+
+                        <label class="field field--narrow">
+                          <span class="field__label">{{ documentCopy.askChannel }}</span>
+                          <select
+                            class="field__input"
+                            [value]="askChannel()"
+                            (change)="askChannel.set($any($event.target).value)"
+                          >
+                            @for (channel of channels; track channel) {
+                              <option [value]="channel" [selected]="channel === askChannel()">
+                                {{ channelLabels[channel] }}
+                              </option>
+                            }
+                          </select>
+                        </label>
+
+                        <label class="field">
+                          <span class="field__label">{{ documentCopy.askMessage }}</span>
+                          <textarea
+                            class="field__input"
+                            rows="2"
+                            [placeholder]="documentCopy.askMessagePlaceholder"
+                            [value]="askMessage()"
+                            (input)="askMessage.set($any($event.target).value)"
+                          ></textarea>
+                        </label>
+
+                        <label class="field field--narrow">
+                          <span class="field__label">{{ documentCopy.askNeededBy }}</span>
+                          <input
+                            type="date"
+                            class="field__input"
+                            [value]="askNeededBy()"
+                            (input)="askNeededBy.set($any($event.target).value)"
+                          />
+                        </label>
+
+                        @if (askProblems().length > 0) {
+                          <ul class="asked__problems" role="status">
+                            @for (problem of askProblems(); track problem) {
+                              <li>{{ documentCopy.requestProblems[problem] }}</li>
+                            }
+                          </ul>
+                        }
+
+                        <div class="asked__actions">
+                          <button type="button" class="btn" (click)="closeAsk()">
+                            {{ documentCopy.askCancel }}
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn--primary"
+                            [disabled]="askProblems().length > 0 || submitting()"
+                            (click)="sendAsk()"
+                          >
+                            {{ documentCopy.askSend }}
+                          </button>
+                        </div>
+                      </div>
+                    } @else {
+                      <button
+                        type="button"
+                        class="btn btn--small"
+                        (click)="openAsk(requirement.id)"
+                      >
+                        {{ documentCopy.ask }}
+                      </button>
+                    }
+                  }
+                </div>
+
                 @if (requirement.remarks) {
                   <p class="assessment__note">{{ requirement.remarks }}</p>
                 }

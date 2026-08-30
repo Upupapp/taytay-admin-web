@@ -9,8 +9,9 @@ import {
   signal,
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import type { Observable } from 'rxjs';
 import { RouterLink } from '@angular/router';
-import { firstValueFrom, of, switchMap, filter, tap } from 'rxjs';
+import { catchError, firstValueFrom, of, switchMap, filter, tap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
 import { NotificationStore } from '@core/notifications/notification.store';
@@ -37,6 +38,16 @@ import {
   nextStatuses,
   permissionForTransition,
   pesos,
+  documentRequestProblems,
+  asIsoDate,
+  DOCUMENT_REQUEST_CHANNELS,
+  DOCUMENT_REQUEST_CHANNEL_LABELS,
+  DOCUMENT_REQUEST_STATE_LABELS,
+  type DocumentRequest,
+  type DocumentRequestChannel,
+  type DocumentRequestDraft,
+  type DocumentRequestId,
+  type IsoDate,
   toAssessmentDraft,
   ASSESSMENT_RECOMMENDATIONS,
   ASSESSMENT_RECOMMENDATION_LABELS,
@@ -365,6 +376,120 @@ export class AssessmentPage {
 
   /* ── documents ──────────────────────────────────────────────────────────── */
 
+  /* ── asking the applicant for a document ─────────────────────────────────
+   *
+   * The office already records what it verified. This records what it **asked for**, which is the
+   * half that fails an applicant when it is missing: they are asked again on their next visit by a
+   * different clerk, and if they say they were never told, the office has nothing to check.
+   *
+   * Every method here existed, mapped and routed, and was reachable from no screen (`DL-151`).
+   */
+
+  protected readonly documentRequests = toSignal(
+    toObservable(this.reloads).pipe(
+      switchMap(() =>
+        this.requests
+          .listDocumentRequests(asId<AssistanceRequestId>(this.id()))
+          .pipe(catchError(() => of([] as readonly DocumentRequest[]))),
+      ),
+    ),
+    { initialValue: [] as readonly DocumentRequest[] },
+  );
+
+  /** Open first — what the applicant still owes is what a clerk needs to see. */
+  protected requestsFor(requirementId: RequirementId): readonly DocumentRequest[] {
+    return this.documentRequests()
+      .filter((entry) => entry.requirementId === requirementId)
+      .slice()
+      .sort((a, b) => Number(b.state === 'open') - Number(a.state === 'open'));
+  }
+
+  protected readonly channels = DOCUMENT_REQUEST_CHANNELS;
+  protected readonly channelLabels = DOCUMENT_REQUEST_CHANNEL_LABELS;
+  protected readonly requestStateLabels = DOCUMENT_REQUEST_STATE_LABELS;
+
+  protected readonly askingFor = signal<RequirementId | null>(null);
+  protected readonly askChannel = signal<DocumentRequestChannel>('in-person');
+  protected readonly askMessage = signal('');
+  protected readonly askNeededBy = signal<string>('');
+
+  protected readonly askProblems = computed(() => {
+    const requirementId = this.askingFor();
+    if (requirementId === null) {
+      return [];
+    }
+    return documentRequestProblems(this.askDraft(requirementId), this.todayIso());
+  });
+
+  private askDraft(requirementId: RequirementId): DocumentRequestDraft {
+    const neededBy = this.askNeededBy().trim();
+    return {
+      requirementId,
+      channel: this.askChannel(),
+      message: this.askMessage(),
+      // Blank means nobody set a deadline, which is a different record from a date in the past.
+      neededBy: neededBy === '' ? null : asIsoDate(neededBy),
+    };
+  }
+
+  private todayIso(): IsoDate {
+    return asIsoDate(new Date().toISOString().slice(0, 10));
+  }
+
+  protected openAsk(requirementId: RequirementId): void {
+    this.askingFor.set(requirementId);
+    this.askChannel.set('in-person');
+    this.askMessage.set('');
+    this.askNeededBy.set('');
+  }
+
+  protected closeAsk(): void {
+    this.askingFor.set(null);
+  }
+
+  protected sendAsk(): void {
+    const requirementId = this.askingFor();
+    if (requirementId === null || this.askProblems().length > 0 || this.submitting()) {
+      return;
+    }
+    this.run(
+      this.requests.requestDocument(
+        asId<AssistanceRequestId>(this.id()),
+        this.askDraft(requirementId),
+      ),
+      this.documentCopy.requestSent,
+    );
+    this.closeAsk();
+  }
+
+  protected readonly withdrawing = signal<DocumentRequestId | null>(null);
+  protected readonly withdrawReason = signal('');
+
+  protected openWithdraw(requestId: DocumentRequestId): void {
+    this.withdrawing.set(requestId);
+    this.withdrawReason.set('');
+  }
+
+  protected closeWithdraw(): void {
+    this.withdrawing.set(null);
+  }
+
+  protected confirmWithdraw(): void {
+    const requestId = this.withdrawing();
+    if (requestId === null || this.withdrawReason().trim() === '' || this.submitting()) {
+      return;
+    }
+    this.run(
+      this.requests.withdrawDocumentRequest(
+        asId<AssistanceRequestId>(this.id()),
+        requestId,
+        this.withdrawReason().trim(),
+      ),
+      this.documentCopy.requestWithdrawn,
+    );
+    this.closeWithdraw();
+  }
+
   protected readonly remarksFor = signal<Record<string, string>>({});
 
   protected onRemarks(requirementId: string, event: Event): void {
@@ -567,7 +692,14 @@ export class AssessmentPage {
     );
   }
 
-  private run(call: ReturnType<typeof this.requests.changeStatus>, message: string): void {
+  /**
+   * Generic over what the call returns.
+   *
+   * It was typed to `changeStatus`'s observable, which meant every other act had to be cast into
+   * shape at the call site. A cast to make a helper accept a caller is a helper that was too
+   * narrow, and `CLAUDE.md` §2.2 forbids reaching for one to get past the type system.
+   */
+  private run<T>(call: Observable<T>, message: string): void {
     this.submitting.set(true);
     call.subscribe({
       next: () => {

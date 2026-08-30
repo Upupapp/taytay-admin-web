@@ -1,11 +1,9 @@
 {
   "$comment": "Port methods declared and implemented but called by no feature, shared or core file. BASELINE, not an allow-list: each is a feature nobody can reach, and it passes every other gate because none of them runs it. The count is a FLOOR — the textual search under-reports. Regenerate with node tools/check-port-adoption.mjs --write-baseline",
   "recordedBy": "TAB 19",
-  "count": 13,
+  "count": 11,
   "methods": [
-    "AssistanceRequestRepository.listDocumentRequests",
     "AssistanceRequestRepository.listNotes",
-    "AssistanceRequestRepository.requestDocument",
     "BeneficiaryRepository.duplicatesFor",
     "BeneficiaryRepository.resolutionsFor",
     "CaseRepository.assignTask",
