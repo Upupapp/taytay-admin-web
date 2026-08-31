@@ -78,6 +78,57 @@ const DOMAIN = join(ROOT, 'src/app/domain');
 const TRANSPORT_KEYS = new Set(['page', 'per_page', 'sort']);
 const wireShaped = (key) => TRANSPORT_KEYS.has(key) || /^[a-z][a-z0-9_]*$/.test(key);
 
+/*
+ * ── Which ApiClient helpers this check inspects, and why the list is asserted ─────────
+ *
+ * `everyPage` was added to ApiClient and this tool did not know the name, so it SKIPPED
+ * those calls rather than checking them: the count fell by seven for work nobody had done
+ * (DL-162). Adding the name fixes that instance. It does not fix the class, and the commit
+ * that fixed it said so — *"a check that enumerates the names of things it inspects has a
+ * hole shaped like the next name."*
+ *
+ * So the names are no longer trusted. Both sets below are asserted against ApiClient's
+ * actual public surface, and **anything it grows that is in neither set fails this check**.
+ * A new helper cannot be silently skipped; somebody has to classify it, which is the only
+ * point at which a human knows whether its arguments carry query parameters.
+ *
+ * Fail-closed on purpose: an unknown method is treated as an error, not as a write.
+ */
+const READ_HELPERS = new Set(['page', 'everyPage', 'collection', 'item', 'optionalItem']);
+
+/* Writes. Excluded because their arguments are a BODY, which `check:wire-adoption` owns —
+ * not because they are safe. The exclusion is a floor, not a dismissal. */
+const WRITE_HELPERS = new Set(['post', 'postVoid', 'delete', 'deleteVoid', 'patch']);
+
+{
+  const client = readFileSync(join(ROOT, 'src/app/data/http/api.client.ts'), 'utf8');
+  const declared = new Set(
+    [...client.matchAll(/\n  ([a-zA-Z]\w*)\s*[<(]/g)]
+      .map((m) => m[1])
+      .filter((n) => !['constructor', 'if', 'for', 'while', 'switch', 'catch', 'return'].includes(n)),
+  );
+  const unclassified = [...declared].filter((n) => !READ_HELPERS.has(n) && !WRITE_HELPERS.has(n));
+  const vanished = [...READ_HELPERS, ...WRITE_HELPERS].filter((n) => !declared.has(n));
+
+  if (unclassified.length > 0 || vanished.length > 0) {
+    console.error(
+      `\nQuery parameter check cannot run: its view of ApiClient is out of date.\n\n` +
+        (unclassified.length
+          ? `  ApiClient declares ${unclassified.length} method(s) this check has never heard of:\n` +
+            unclassified.map((n) => `    ${n}`).join('\n') +
+            `\n\n  A name this tool does not know is a name it SKIPS, and a skipped call reports\n` +
+            `  ground gained for a surface nobody inspected. Add each to READ_HELPERS if its\n` +
+            `  arguments carry query parameters, or to WRITE_HELPERS if they are a body.\n\n`
+          : '') +
+        (vanished.length
+          ? `  These are classified here but no longer exist on ApiClient: ${vanished.join(', ')}\n` +
+            `  Remove them, so the sets keep describing something real.\n\n`
+          : ''),
+    );
+    process.exit(1);
+  }
+}
+
 const offenders = [];
 
 // ── 1. filter interfaces in the domain ───────────────────────────────────────
@@ -113,15 +164,7 @@ for (const file of walk(DOMAIN)) {
  */
 function callArguments(text) {
   const out = [];
-  /*
- * `everyPage` is in this list because leaving it out made the count fall by seven.
- *
- * The calls had not changed — they still send the same keys — they had simply stopped being seen,
- * and the tool reported ground gained for a surface it had stopped reading. Third instance of that
- * class in two turns (`DL-142`, `DL-156`, `DL-161`), and the reason it was caught is that the
- * number moved by more than the work justified (`DL-145`).
- */
-const start = /this\s*\.\s*api\s*\.\s*(?:page|everyPage|collection|item|optionalItem)\s*[<(]/g;
+  const start = new RegExp(String.raw`this\s*\.\s*api\s*\.\s*(?:${[...READ_HELPERS].join('|')})\s*[<(]`, 'g');
   let m;
 
   while ((m = start.exec(text)) !== null) {
