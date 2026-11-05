@@ -37,12 +37,27 @@ next signs in the console tells them they are not assigned (`DL-168` part 1). St
 server refuses an office for any other role, so the picker is offered only for staff, and a leftover
 link on a non-staff account is shown as unused.
 
+### 3. The office role is the one change that asks why (`DL-173`)
+
+A staff account is also given one of the MSWDO's office roles — MSWDO head, social worker, intake
+officer, release officer, barangay link or auditor — through `PATCH admin/users/{id}/office-role`.
+The role decides the casework permissions and the data scope the server publishes on `/me`; the
+console reads both and computes neither. The section (`AccountOfficeRole`) is offered for a staff
+account only, never the reader's own, under `user.change-role`. Choosing a role shows its
+description and scope, then what the server does (`OFFICE_ROLE_EFFECTS`, `OFFICE_ROLE_ALWAYS`), then a
+**required reason** — the server keeps it with the change in a history nobody edits — and only then
+the button. A barangay link is offered the API's own barangays (`GET barangays`). The system
+administrator is not offered: it is the administrator account role, and on a staff account it would
+hold approval and release together. Changing an account's role away from staff clears its office
+role, and it does not come back.
+
 ## What is not offered
 
 - **One's own role.** The server refuses it whoever asks; the panel says another administrator can
   make the change, rather than offering a button certain to be refused.
-- **A reason box.** Both changes are audited against the administrator's account with no reason; a
-  box whose words go nowhere is a record somebody believes exists.
+- **A reason box for the role or the office.** Both changes are audited against the administrator's
+  account with no reason; a box whose words go nowhere is a record somebody believes exists. The office
+  role asks for one because its reason is kept.
 - **A record by address.** The API cannot read one account, so an account is managed in a drawer
   beside the list, as an ID review is, and after a change the list is read again rather than patched.
 - **Search or a role filter.** The API's list takes a cursor and nothing else; a filter the console
@@ -73,7 +88,11 @@ each change's effects between its choice and its one button; the port and the ad
 change and nothing else, no free text in the panel, the effects saying no reason is kept; a demotion
 saying the digital ID is revoked and `verified` saying it skips the ID review; one's own role checked
 before the form and in the method; the three keys the administrator's alone, the changes mutating,
-the route and the menu asking for `user.view`. Twenty-one planted regressions, each caught.
+the route and the menu asking for `user.view`. Twenty-one planted regressions, each caught. Rule 8
+(`DL-173`): the office role asks about one's own account first and refuses it in `save`, puts its
+effects, then the reason, then one button, sends the change through `toWireOfficeRoleChange`, never
+offers the system administrator, and says the reason is kept; `scopeBarangayId` is the one barangay
+the model may carry. Nine more plants, each caught.
 
 ## Known gaps
 
@@ -82,4 +101,6 @@ the route and the menu asking for `user.view`. Twenty-one planted regressions, e
   which is also why the ID review cannot name the account it reviews (owner decision 7 in
   `node-api-migration.md`).
 - **Closed accounts are listed like any other.** The list item carries no `closed` flag.
+- **The office role's reasons cannot be read back.** The server keeps them; it has no route that
+  returns them yet.
 - **Not run against a live API.** Built and tested against the vendored spec and composed fixtures.

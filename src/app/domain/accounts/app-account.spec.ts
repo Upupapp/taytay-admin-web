@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import { asId } from '../shared/ids';
-import type { AppAccountId, OfficeId } from '../shared/ids';
+import type { AppAccountId, BarangayId, OfficeId } from '../shared/ids';
+import { permissionsForRole, ROLE_DEFINITIONS, STAFF_ROLES } from '../access/permission';
 import {
+  ASSIGNABLE_OFFICE_ROLES,
+  OFFICE_ROLE_ALWAYS,
+  OFFICE_ROLE_EFFECTS,
+  OFFICE_ROLE_REASON_MAX,
+  officeRoleChangeProblems,
+  takesAnOfficeRole,
   ACCOUNT_ROLE_CATALOG,
   ACCOUNT_ROLE_TRANSITIONS,
   ACCOUNT_ROLES,
@@ -20,11 +27,22 @@ const account: AppAccount = {
   email: 'someone@accounts.example.test',
   role: 'staff',
   officeId: asId<OfficeId>('office-1'),
+  officeRole: null,
+  scopeBarangayId: null,
 };
 
 describe('an app account (DL-168)', () => {
-  it('carries the minimum: no mobile, barangay, birth date or address', () => {
-    expect(Object.keys(account).sort()).toEqual(['email', 'id', 'name', 'officeId', 'role']);
+  it('carries the minimum: no mobile, home barangay, birth date or address', () => {
+    // `scopeBarangayId` is the barangay a barangay link may see (DL-173), not where anybody lives.
+    expect(Object.keys(account).sort()).toEqual([
+      'email',
+      'id',
+      'name',
+      'officeId',
+      'officeRole',
+      'role',
+      'scopeBarangayId',
+    ]);
   });
 
   it('defines every role once, and lets any role become any other', () => {
@@ -59,5 +77,57 @@ describe('an app account (DL-168)', () => {
     expect(ROLE_CHANGE_ALWAYS.join(' ')).toMatch(/next request/);
     expect(ROLE_CHANGE_ALWAYS.join(' ')).toMatch(/keeps no reason/);
     expect(OFFICE_ASSIGNMENT_EFFECTS.clear.join(' ')).toMatch(/office inbox/);
+  });
+});
+
+describe('the office role (DL-173)', () => {
+  const barangay = asId<BarangayId>('barangay-1');
+
+  it('names the same seven roles as the role map', () => {
+    expect([...STAFF_ROLES].sort()).toEqual(Object.keys(ROLE_DEFINITIONS).sort());
+  });
+
+  it('offers every role but the system administrator, and none that both approves and releases', () => {
+    expect(ASSIGNABLE_OFFICE_ROLES).toEqual(STAFF_ROLES.filter((role) => role !== 'system-administrator'));
+    for (const role of ASSIGNABLE_OFFICE_ROLES) {
+      const held = permissionsForRole(role);
+      expect(held.includes('request.approve') && held.includes('release.release'), role).toBe(false);
+    }
+  });
+
+  it('is given to staff only', () => {
+    expect(takesAnOfficeRole(account)).toBe(true);
+    for (const role of ['registered', 'verified', 'admin'] as const) {
+      expect(takesAnOfficeRole({ ...account, role })).toBe(false);
+    }
+  });
+
+  it('says why the server would refuse a change, before it is sent', () => {
+    expect(officeRoleChangeProblems({ role: 'auditor', barangayId: null, reason: 'Oversight.' })).toEqual([]);
+    expect(officeRoleChangeProblems({ role: null, barangayId: null, reason: 'Left the office.' })).toEqual([]);
+    expect(
+      officeRoleChangeProblems({ role: 'barangay-link', barangayId: barangay, reason: 'Encoder.' }),
+    ).toEqual([]);
+
+    expect(officeRoleChangeProblems({ role: 'auditor', barangayId: null, reason: '   ' })).toHaveLength(1);
+    const long = 'x'.repeat(OFFICE_ROLE_REASON_MAX + 1);
+    expect(officeRoleChangeProblems({ role: 'auditor', barangayId: null, reason: long })).toHaveLength(1);
+    expect(
+      officeRoleChangeProblems({ role: 'system-administrator', barangayId: null, reason: 'All.' }),
+    ).toHaveLength(1);
+    expect(
+      officeRoleChangeProblems({ role: 'barangay-link', barangayId: null, reason: 'Encoder.' }),
+    ).toHaveLength(1);
+    expect(
+      officeRoleChangeProblems({ role: 'intake-officer', barangayId: barangay, reason: 'Counter.' }),
+    ).toHaveLength(1);
+  });
+
+  it('says what the server does, and that it keeps the reason', () => {
+    expect(OFFICE_ROLE_EFFECTS.assign.join(' ')).toMatch(/next request/);
+    expect(OFFICE_ROLE_EFFECTS.clear.join(' ')).toMatch(/every casework permission/);
+    expect(OFFICE_ROLE_ALWAYS.join(' ')).toMatch(/keeps your reason/);
+    expect(OFFICE_ROLE_ALWAYS.join(' ')).toMatch(/approve a request and release its money/);
+    expect(ROLE_CHANGE_ALWAYS.join(' ')).toMatch(/office role is not kept/);
   });
 });

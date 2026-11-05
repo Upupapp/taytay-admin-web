@@ -1,0 +1,142 @@
+<section class="panel__block" aria-labelledby="account-office-role">
+  <h3 id="account-office-role" class="panel__heading">{{ copy.heading }}</h3>
+
+  @if (current(); as role) {
+    <p class="panel__note">{{ copy.now(label(role)) }}</p>
+  } @else if (takesOne()) {
+    <p class="panel__note">{{ copy.nowNone }}</p>
+  }
+  @if (currentBarangay(); as confined) {
+    <p class="panel__note">{{ confined }}</p>
+  }
+
+  @if (account().role === 'admin') {
+    <p class="panel__note">{{ copy.administrator }}</p>
+  } @else if (!takesOne()) {
+    <p class="panel__note">{{ copy.notStaff }}</p>
+  } @else if (own()) {
+    <p class="panel__note">{{ copy.ownAccount }}</p>
+  } @else if (!canChange()) {
+    <p class="panel__note">{{ copy.noGrant }}</p>
+  } @else {
+    <fieldset class="panel__choices">
+      <legend>{{ copy.legend }}</legend>
+      @for (role of roles; track role) {
+        <label class="panel__choice">
+          <input
+            type="radio"
+            name="account-office-role"
+            [value]="role"
+            [checked]="chosen() === role"
+            [disabled]="role === current() || busy()"
+            (change)="choose(role)"
+          />
+          {{ label(role) }}
+          @if (role === current()) {
+            {{ copy.current }}
+          }
+          <span class="panel__hint">{{ description(role) }} {{ scopeOf(role) }}</span>
+        </label>
+      }
+      <label class="panel__choice">
+        <input
+          type="radio"
+          name="account-office-role"
+          value="none"
+          [checked]="chosen() === 'none'"
+          [disabled]="current() === null || busy()"
+          (change)="choose('none')"
+        />
+        {{ copy.none }}
+        <span class="panel__hint">{{ copy.noneHint }}</span>
+      </label>
+    </fieldset>
+
+    @if (chosen(); as choice) {
+      @if (choice === barangayRole) {
+        @if (barangays().kind === 'error') {
+          <p class="panel__problem" role="alert">{{ copy.barangaysFailed }}</p>
+        } @else if (barangays().kind !== 'ready') {
+          <p class="panel__note" role="status">{{ copy.barangaysLoading }}</p>
+        } @else {
+          <div class="field">
+            <label class="field__label" for="account-office-role-barangay">
+              {{ copy.barangayLabel }}
+            </label>
+            <select
+              id="account-office-role-barangay"
+              class="field__input"
+              [disabled]="busy()"
+              (change)="chooseBarangay($event)"
+            >
+              <option value="" [selected]="barangay() === null">{{ copy.barangayChoose }}</option>
+              @for (option of barangayOptions(); track option.id) {
+                <option [value]="option.id" [selected]="barangay() === option.id">
+                  {{ option.name }}
+                </option>
+              }
+            </select>
+          </div>
+        }
+      }
+
+      <!-- What the server does, between the choice and the button that does it. -->
+      <div class="panel__effects">
+        @if (choice === 'none') {
+          <p>{{ copy.leadNone }}</p>
+        } @else {
+          <p>{{ copy.lead(label(choice)) }}</p>
+        }
+        <ul>
+          @for (effect of choice === 'none' ? effects.clear : effects.assign; track $index) {
+            <li>{{ effect }}</li>
+          }
+          @if (choice !== 'none') {
+            <li>{{ description(choice) }} {{ scopeOf(choice) }}</li>
+          }
+        </ul>
+        <p>{{ copy.always }}</p>
+        <ul>
+          @for (effect of always; track $index) {
+            <li>{{ effect }}</li>
+          }
+        </ul>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="account-office-role-reason">{{ copy.reasonLabel }}</label>
+        <textarea
+          id="account-office-role-reason"
+          class="field__input"
+          rows="3"
+          aria-describedby="account-office-role-reason-hint"
+          [attr.maxlength]="reasonMax"
+          [value]="reason()"
+          [disabled]="busy()"
+          (input)="typeReason($event)"
+        ></textarea>
+        <span id="account-office-role-reason-hint" class="panel__hint">
+          {{ copy.reasonHint(reasonMax) }}
+        </span>
+      </div>
+
+      @if (attempted() && problems().length > 0) {
+        <ul class="panel__problem" role="alert">
+          @for (problem of problems(); track $index) {
+            <li>{{ problem }}</li>
+          }
+        </ul>
+      }
+
+      <button type="button" class="btn btn--primary" [disabled]="busy()" (click)="save()">
+        @if (busy()) {
+          {{ copy.saving }}
+        } @else if (choice === 'none') {
+          {{ copy.confirmNone }}
+        } @else {
+          {{ copy.confirm(label(choice)) }}
+        }
+      </button>
+    }
+  }
+</section>

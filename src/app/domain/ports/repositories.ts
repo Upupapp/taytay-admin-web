@@ -131,7 +131,12 @@ import type {
   ThreadMessage,
 } from '../inbox/office-thread';
 import type { Office } from '../offices/office';
-import type { AccountRole, AppAccount } from '../accounts/app-account';
+import type {
+  AccountBarangay,
+  AccountRole,
+  AppAccount,
+  OfficeRoleChange,
+} from '../accounts/app-account';
 import type { DirectoryOffice, OfficeChanges, OfficeDraft } from '../directory/directory-office';
 import type { Hotline, HotlineChanges, HotlineDraft } from '../directory/hotline';
 import type { ServiceChanges, ServiceDraft, TulongService } from '../directory/tulong-service';
@@ -1492,6 +1497,16 @@ export interface AppAccountRepository {
 
   /** Links a staff account to an office, or clears the link with `null`. Staff only, on the server. */
   assignOffice(id: AppAccountId, office: OfficeId | null): Observable<AppAccount>;
+
+  /**
+   * Gives a staff account an office role, or takes it away (`DL-173`). Unlike the two changes above,
+   * this one takes a reason: the server keeps it with the change. Staff only, never the caller's own
+   * account, never `system-administrator` — on the server.
+   */
+  assignOfficeRole(id: AppAccountId, change: OfficeRoleChange): Observable<AppAccount>;
+
+  /** The barangays as the API lists them, whole, for choosing a barangay link's barangay. */
+  barangays(): Observable<readonly AccountBarangay[]>;
 }
 
 export const APP_ACCOUNT_REPOSITORY = new InjectionToken<AppAccountRepository>(

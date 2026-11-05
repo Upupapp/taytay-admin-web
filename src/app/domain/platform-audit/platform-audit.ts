@@ -60,6 +60,7 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'session.revoked': 'Signed out everywhere',
   'thread.closed': 'Closed a conversation with a resident',
   'user.office_assigned': 'Changed a staff account’s office',
+  'user.office_role_changed': 'Changed a staff account’s office role',
   'user.role_changed': 'Changed an account’s role',
   'verification.approved': 'Approved a resident’s ID verification',
   'verification.rejected': 'Rejected a resident’s ID verification',

@@ -124,4 +124,27 @@ describe('MockAppAccountRepository (DL-168)', () => {
     ).rejects.toThrow(/not found/);
     expect((await firstValueFrom(repository.assignOffice(staff.id, null))).officeId).toBeNull();
   });
+
+  it('gives a staff account an office role, and clears it when the account leaves staff (DL-173)', async () => {
+    const repository = signedInAs('system-administrator');
+    const resident = await find(repository, (account) => account.role === 'registered');
+    const staff = await find(repository, (account) => account.role === 'staff');
+
+    await expect(
+      firstValueFrom(repository.assignOfficeRole(resident.id, { role: 'auditor', barangayId: null, reason: 'x' })),
+    ).rejects.toThrow(/Only a staff account/);
+    await expect(
+      firstValueFrom(repository.assignOfficeRole(staff.id, { role: 'auditor', barangayId: null, reason: ' ' })),
+    ).rejects.toThrow(/Say why/);
+
+    const given = await firstValueFrom(
+      repository.assignOfficeRole(staff.id, { role: 'auditor', barangayId: null, reason: 'Oversight.' }),
+    );
+    expect(given.officeRole).toBe('auditor');
+
+    const demoted = await firstValueFrom(repository.changeRole(staff.id, 'verified'));
+    expect(demoted.officeRole).toBeNull();
+    const promoted = await firstValueFrom(repository.changeRole(staff.id, 'staff'));
+    expect(promoted.officeRole).toBeNull();
+  });
 });

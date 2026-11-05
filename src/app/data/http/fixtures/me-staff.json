@@ -18,7 +18,15 @@
     "rejection_reason": null,
     "role": "staff",
     "office_id": "3c9a7e21-5b84-4d1f-a0c6-1e2f3a4b5c66",
-    "permissions": ["household.view-counts", "digital-id.verify", "news.write", "office-inbox.manage"],
+    "office_role": null,
+    "scope": "assigned-cases",
+    "scope_barangay_id": null,
+    "permissions": [
+      "household.view-counts",
+      "digital-id.verify",
+      "news.write",
+      "office-inbox.manage"
+    ],
     "closed": false,
     "closed_at": null,
     "created_at": "2026-10-21T01:00:00.000Z",

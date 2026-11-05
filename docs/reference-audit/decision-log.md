@@ -6306,3 +6306,90 @@ carries `<base href="/">`, which `'none'` refuses, so a reload on a deep path re
 script URLs relative to that path and fetched the shell instead of JavaScript. `'self'` admits
 the app's own base and still refuses a base pointing anywhere else — which is what the directive
 is for. `check:headers` requires the directive, not a value, and still passes.
+
+## DL-173 — the server decides the office's roles: casework keys and a scope on `/me`, an office role on Users and roles
+
+Phase 1a of the casework the owner's delegate decided on 6 November 2026
+(`docs/integration/node-api-migration.md`, "Decided 2026-11-06"). Until now the Node API had two
+staff roles, `staff` and `admin`, and fifteen platform capabilities; the console's casework screens
+are written against seven office roles and 69 more keys that nobody could hold. Client checks are
+never the boundary (CLAUDE.md §2.4), so the roles had to be decided where they are enforced. The
+backend was changed first, at `taytay-backend` `7996668`, and that spec is the one vendored here.
+
+### What the server now decides
+
+- **An office role, beside the tier.** `users.office_role` holds one of this console's role ids for a
+  `staff` account, and `scope_barangay_id` names a barangay link's barangay. `role` stays the
+  authentication tier. The database refuses an office role off the staff tier, a stored
+  `system-administrator`, and a barangay on any role but `barangay-link`.
+- **The role table is the server's.** `src/auth/casework.ts` is a deliberate copy of
+  `ROLE_DEFINITIONS` less the fifteen platform keys, which keep their own rule (tier and office).
+  Its test parses this repository's `permission.ts` when the two are checked out side by side and
+  fails on any difference in a role, a key or a scope. **A change to `ROLE_DEFINITIONS` is therefore
+  a change to the backend as well**, or the backend's suite goes red. Here the table stays what it
+  was before `DL-165` said it was: documentation, the mock's fixture, and the office's reference.
+- **`GET /me`** carries `permissions` = the tier's platform capabilities + the office role's casework
+  keys (the spec's new `Permission` enum, 84 keys), `office_role` (`system-administrator` for an
+  administrator), and `scope` with `scope_barangay_id`. An administrator holds every key and
+  `all-barangays`; a staff account with no office role holds no casework key and `assigned-cases`.
+- **`PATCH admin/users/{id}/office-role`**, administrators alone, never one's own account. The reason
+  is required and kept with the change in an append-only `office_role_changes` table, in the same
+  transaction; the audit trail gets `user.office_role_changed`, which the platform audit screen now
+  says in words. Refused: a non-staff or closed account, `system-administrator`, a barangay rule,
+  and any role whose keys would hold both `request.approve` and `release.release`.
+- **Separation of duties is the server's too.** The backend asserts the same pair as
+  `permission.spec.ts` against every assignable role, the route re-checks it, and a test proves no
+  assignment through the route produces an account holding both.
+- **Leaving the staff tier clears the office role** in the same act, and records the cause; it does
+  not come back if the account becomes staff again. Approval rights do not return on their own.
+- `requirePermission(key)` beside `requireRole`, for the casework routes phases 2–6 will add.
+
+### What the console now does
+
+- **The scope is read, never computed** (`me.mapper.ts`). `scope` and `scope_barangay_id` are taken as
+  sent; a missing or unknown scope, or `own-barangay` naming no barangay, reads as `assigned-cases` —
+  failing closed, as `DL-133` does with keys. `AuthenticatedUser.barangayId` is the barangay the
+  account may *see*; the home `barangay_id` is still not read.
+- **The office role labels the account.** `roles` carries the office role first, so a Node
+  administrator is now shown as "System administrator". This supersedes `DL-166`'s `null` for
+  administrators: that was right while the server named no console role, and it now names one.
+  Nothing decides from it.
+- **Users and roles gains an office role section** (`AccountOfficeRole`), its own component because
+  it is the one change on that screen that asks why. Offered only for a staff account, never the
+  reader's own, under `user.change-role` (the server guards it as it guards the account role, so no
+  new key). It lists the six assignable roles with each role's description and scope, then what the
+  server does (`OFFICE_ROLE_EFFECTS`, `OFFICE_ROLE_ALWAYS`), then the reason box, then the one button.
+  A barangay link is offered the API's own barangays (`GET barangays`, read whole), not
+  `TAYTAY_BARANGAYS`, whose ids are this console's. Its outcome is said in the panel's existing live
+  region, so `check:hardening`'s cap of twelve holds.
+- **The role change's effects were read again**: becoming staff grants no casework permission until an
+  office role is given; leaving staff clears the office role and it does not come back.
+
+### Choices made here, each the easiest to reverse
+
+1. **`system-administrator` is never given to a staff account.** The console exempts it from the
+   separation-of-duties test because it is the administrator; given to a staff account it would hold
+   approval and release together. It is the `admin` tier, and `/me` says so.
+2. **An office role does not narrow the platform keys.** A staff account at an office still holds
+   `news.write` and `office-inbox.manage` whatever its office role, as before. The console's table
+   withholds both from the auditor and the barangay link; the server's platform rule does not. **For
+   the owner to decide** whether an office role should narrow them.
+3. **`audit.view` stays the platform audit trail, administrators alone.** The head and the auditor
+   hold it in this table for the governance page (`DL-114`, `DL-171`), which has no server; against
+   the API they hold `audit.view-detail` and not `audit.view`.
+4. **Every casework key is published now, before its routes exist.** A guard asking for one is
+   holdable from today; its screen stays closed by `servedGuard` until its phase serves it, and
+   `check:unserved` is unchanged.
+5. **An unchanged assignment records nothing**, and the reasons have no read route yet: they are
+   kept for accountability and are not shown to the account holder.
+
+### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:permission-parity` | re-pointed from `StaffCapability` to `Permission`, which `/me` now carries; also fails if `Permission` drifts from `StaffCapability` + `CaseworkPermission` | **42 → 0** of 53 guards unreachable, against 84 keys; three plants, each caught |
+| `check:accounts` | rule 1 admits `scopeBarangayId` and nothing else; rule 8 new — own account asked first and refused by `save`, effects then reason then one button, the change sent through `toWireOfficeRoleChange`, no `system-administrator`, the reason said to be kept | nine plants, each caught, every file restored |
+| `check:consumer-contract` | regenerated | 53 interactions, 265 required fields |
+| `check:hardening` | the office role speaks through the panel's live region | 12 live regions, the cap held |
+| `fixtures.spec.ts` | reads `oneOf` as `anyOf`, so `office_role` and `scope` are held to their schema rather than waved through | — |
+| `check:routes`, `check:wire-adoption`, `check:response-shape` | none | the two new requests served at their verbs, the body declared, `barangays` read with `list` |

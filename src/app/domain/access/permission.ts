@@ -281,6 +281,21 @@ export type StaffRole =
   | 'barangay-link'
   | 'auditor';
 
+/**
+ * The seven roles as a list, for reading a role id the server sends (`DL-173`: the API's
+ * `OfficeRole` names the same ids). Reading one is not deciding from it — authorization asks about
+ * the permissions the server resolved.
+ */
+export const STAFF_ROLES: readonly StaffRole[] = [
+  'system-administrator',
+  'mswdo-head',
+  'social-worker',
+  'intake-officer',
+  'release-officer',
+  'barangay-link',
+  'auditor',
+];
+
 export interface RoleDefinition {
   readonly role: StaffRole;
   readonly label: string;

@@ -171,3 +171,9 @@ check green (the server enforces what the console only displays):
 4. **Releases** — integer centavos, batches as plans (`DL-90`), self-release warning (`DL-91`).
 5. **Referrals and field visits** — lawful basis inside the row lock (`DL-140`), observation kinds (`DL-85`).
 6. **Dashboard, work queues, reports, search, saved views, events.**
+
+**Phase 1a done** (`DL-173`, `taytay-backend` `7996668`): office roles on staff accounts, the casework
+keys and the data scope on `/me` decided by the server from a table its test compares with
+`ROLE_DEFINITIONS`, separation of duties enforced there, `requirePermission` for the routes to come,
+and the office role given on Users and roles with a reason the server keeps. The registry,
+households and programmes of phase 1 are next.

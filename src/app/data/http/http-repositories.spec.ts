@@ -10,8 +10,10 @@ import { apiHeadersInterceptor } from '@core/http/api.interceptors';
 import {
   asId,
   HOTLINE_LIST_CAP,
+  PERMISSIONS,
   SignInError,
   type AppAccountId,
+  type BarangayId,
   type BalitaArticleId,
   type DigitalIdId,
   type HomeBannerId,
@@ -42,6 +44,7 @@ import THREAD_MESSAGES_PAGE from './fixtures/thread-messages-page.json';
 import THREAD_REPLY from './fixtures/thread-reply.json';
 import THREADS_PAGE from './fixtures/threads-page.json';
 import USER_OFFICE_ASSIGNED from './fixtures/user-office-assigned.json';
+import USER_OFFICE_ROLE_CHANGED from './fixtures/user-office-role-changed.json';
 import USER_ROLE_CHANGED from './fixtures/user-role-changed.json';
 import USERS_PAGE from './fixtures/users-page.json';
 import DELETED from './fixtures/deleted.json';
@@ -151,29 +154,15 @@ describe('the Node adapters', () => {
       http.expectOne({ method: 'GET', url: `${BASE}/me` }).flush(ME_ADMIN);
       const identity = await user;
 
-      // `audit.view`, `verification.review` (DL-167), `office-inbox.manage` and the three `user.*`
-      // keys (DL-168), the directory's three, `home.manage` and `app-config.manage` (DL-170), and the
-      // two `digital-id.*` keys and `news.write` (DL-171) are the capabilities with a console key of the same name;
-      // the rest are kept aside as unknown.
-      expect([...(identity?.permissions ?? [])].sort()).toEqual([
-        'app-config.manage',
-        'audit.view',
-        'digital-id.manage',
-        'digital-id.verify',
-        'home.manage',
-        'hotline.manage',
-        'news.write',
-        'office-inbox.manage',
-        'office.manage',
-        'service.manage',
-        'user.assign-office',
-        'user.change-role',
-        'user.view',
-        'verification.review',
-      ]);
-      expect(identity?.unknownPermissions).not.toContain('user.view');
-      expect(identity?.unknownPermissions).toContain('household.view-counts');
-      expect(identity?.roleLabel).toBe('Administrator');
+      // An administrator holds every key the server has (DL-173): fourteen platform capabilities
+      // with a console key of the same name, and the 69 casework keys. `household.view-counts` has no
+      // console key, so it is kept aside as unknown and grants nothing.
+      expect([...(identity?.permissions ?? [])].sort()).toEqual([...PERMISSIONS].sort());
+      expect(identity?.unknownPermissions).toEqual(['household.view-counts']);
+      // The server names the office role now, so the console's own label is the one shown.
+      expect(identity?.role).toBe('system-administrator');
+      expect(identity?.roleLabel).toBe('System administrator');
+      expect(identity?.scope).toBe('all-barangays');
       // An administrator acts for every office, so it is never waiting for one.
       expect(identity?.awaitingOffice).toBe(false);
     });
@@ -368,7 +357,7 @@ describe('the Node adapters', () => {
         expect(me.request.headers.get('Authorization')).toBe('Bearer id-token-mfa');
         me.flush(ME_ADMIN);
 
-        expect((await user).roleLabel).toBe('Administrator');
+        expect((await user).roleLabel).toBe('System administrator');
       });
 
       it('makes the identity provider forget the refresh token at sign-out', async () => {
@@ -807,6 +796,47 @@ describe('the Node adapters', () => {
       expect(clearRequest.request.body).toEqual({ office_id: null });
       clearRequest.flush(USER_ROLE_CHANGED);
       expect((await cleared).officeId).toBeNull();
+    });
+
+    it('gives an office role with its barangay and the reason, trimmed, as the API reads them (DL-173)', async () => {
+      const barangay = asId<BarangayId>(USER_OFFICE_ROLE_CHANGED.data.scope_barangay_id);
+      const given = firstValueFrom(
+        accounts.assignOfficeRole(accountId, {
+          role: 'barangay-link',
+          barangayId: barangay,
+          reason: '  Encodes for San Juan.  ',
+        }),
+      );
+
+      const request = http.expectOne({
+        method: 'PATCH',
+        url: `${BASE}/admin/users/${accountId}/office-role`,
+      });
+      expect(request.request.body).toEqual({
+        office_role: 'barangay-link',
+        scope_barangay_id: barangay,
+        reason: 'Encodes for San Juan.',
+      });
+      request.flush(USER_OFFICE_ROLE_CHANGED);
+
+      const account = await given;
+      expect(account.officeRole).toBe('barangay-link');
+      expect(account.scopeBarangayId).toBe(barangay);
+    });
+
+    it('reads the barangays whole, as the API keys them, and refuses a list it cannot read', async () => {
+      const listed = firstValueFrom(accounts.barangays());
+      http.expectOne({ method: 'GET', url: `${BASE}/barangays` }).flush({
+        data: [{ id: '7d1e0c55-2f6a-4b8e-9c3d-5a6b7c8d9e01', code: 'SJ', name: 'San Juan' }],
+        meta: {},
+      });
+      expect(await listed).toEqual([{ id: '7d1e0c55-2f6a-4b8e-9c3d-5a6b7c8d9e01', name: 'San Juan' }]);
+
+      const broken = firstValueFrom(accounts.barangays());
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/barangays` })
+        .flush({ data: [{ id: null, code: 'X', name: 'Nowhere' }], meta: {} });
+      await expect(broken).rejects.toThrow(/could not be read/);
     });
   });
 

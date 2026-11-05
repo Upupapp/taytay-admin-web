@@ -8,6 +8,8 @@
     "verification_status": "unverified",
     "role": "staff",
     "office_id": "3c9a7e21-5b84-4d1f-a0c6-1e2f3a4b5c66",
+    "office_role": null,
+    "scope_barangay_id": null,
     "created_at": "2026-10-29T02:00:00.000Z"
   },
   "meta": {}

@@ -84,4 +84,47 @@ export const ACCOUNTS_COPY = {
     notDone: (why: string): string => `That was not done. ${why}`,
     failed: 'The server refused it or could not be reached.',
   },
+
+  /** The office role (`DL-173`): which of the office's jobs a staff account does. */
+  officeRole: {
+    heading: 'Office role',
+    now: (role: string): string => `Now: ${role}.`,
+    nowNone: 'Now: none. The account holds no casework permission.',
+    confinedTo: (barangay: string): string => `Confined to ${barangay}.`,
+    confinedUnnamed: 'Confined to one barangay, which the list could not name.',
+    administrator:
+      'An administrator is the system administrator: it holds every permission by holding the ' +
+      'Administrator role. That is the account role, above, not an office role.',
+    notStaff: 'Only a staff account holds an office role. Change the role to Staff first.',
+    ownAccount:
+      'This is your own account. The server refuses a change to your own office role; another ' +
+      'administrator can make it.',
+    noGrant: 'Your account may see office roles but not change them.',
+    legend: 'Give the account the office role',
+    current: '(current)',
+    none: 'No office role',
+    noneHint: 'Withdraws every casework permission. The account stays staff.',
+    scope: {
+      'all-barangays': 'Sees every barangay.',
+      'own-barangay': 'Sees one barangay only, chosen below.',
+      'assigned-cases': 'Sees only the cases assigned to it.',
+    },
+    barangayLabel: 'The barangay this barangay link works in',
+    barangayChoose: 'Choose a barangay',
+    barangaysLoading: 'Loading the barangays…',
+    barangaysFailed: 'The barangays could not be loaded, so a barangay link cannot be given yet.',
+    lead: (role: string): string => `What the server does if you give the account ${role}:`,
+    leadNone: 'What the server does if you take the office role away:',
+    always: 'Whichever you choose:',
+    reasonLabel: 'Why (required)',
+    reasonHint: (max: number): string =>
+      `Kept by the server with the change, with your name and the time. Up to ${max} characters.`,
+    confirm: (role: string): string => `Give the office role ${role}`,
+    confirmNone: 'Take the office role away',
+    saving: 'Saving…',
+    saved: (role: string): string => `Office role changed to ${role}.`,
+    cleared: 'The office role was taken away.',
+    notDone: (why: string): string => `That was not done. ${why}`,
+    failed: 'The server refused it or could not be reached.',
+  },
 } as const;

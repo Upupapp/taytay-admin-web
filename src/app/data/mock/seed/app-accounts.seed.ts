@@ -4,6 +4,7 @@ import {
   type AppAccount,
   type AppAccountId,
   type OfficeId,
+  type StaffRole,
 } from '@domain/index';
 
 import { MOCK_OFFICE_HEALTH, MOCK_OFFICE_MSWDO } from './offices.seed';
@@ -21,12 +22,19 @@ interface SeedRow {
   readonly name: string | null;
   readonly role: AccountRole;
   readonly office?: OfficeId;
+  readonly officeRole?: StaffRole;
 }
 
 const HAND_WRITTEN: readonly SeedRow[] = [
   // The mock administrator's own account, so the screen has one row it must not offer to change.
   { key: 'staff-admin', name: 'Marisol Alcantara', role: 'admin' },
-  { key: 'app-account-0001', name: 'Teresita Valdez', role: 'staff', office: MOCK_OFFICE_MSWDO },
+  {
+    key: 'app-account-0001',
+    name: 'Teresita Valdez',
+    role: 'staff',
+    office: MOCK_OFFICE_MSWDO,
+    officeRole: 'intake-officer',
+  },
   { key: 'app-account-0002', name: 'Rogelio Manalo', role: 'staff' },
   { key: 'app-account-0003', name: 'Jocelyn Pascual', role: 'staff', office: MOCK_OFFICE_HEALTH },
   { key: 'app-account-0004', name: 'Danilo Ferrer', role: 'verified' },
@@ -58,6 +66,9 @@ function toAccount(row: SeedRow): AppAccount {
     email: `${handle}@${SAMPLE_ACCOUNT_DOMAIN}`,
     role: row.role,
     officeId: row.office ?? null,
+    // As the server says it: an administrator is the system administrator, staff hold what was given.
+    officeRole: row.role === 'admin' ? 'system-administrator' : (row.officeRole ?? null),
+    scopeBarangayId: null,
   };
 }
 

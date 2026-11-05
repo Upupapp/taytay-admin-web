@@ -29,6 +29,14 @@
  *   7. `user.view`, `user.change-role` and `user.assign-office` are in `PERMISSIONS`, named by no role
  *      (the administrator holds them by holding every key), the two changes are mutating, and the
  *      route and the menu entry ask for `user.view`.
+ * ## The office role (`DL-173`): the one change that asks why
+ *   8. In `AccountOfficeRole`, the reader's own account is asked about before the form and refused
+ *      by `save` too; the effects come between the choice and the reason box, and the reason box
+ *      before the one button; the port takes the change and the adapter sends it through
+ *      `toWireOfficeRoleChange` to `office-role`; `system-administrator` is not offered; and the
+ *      effects say the server keeps the reason. `scopeBarangayId` is the one barangay `AppAccount`
+ *      may carry: the barangay a barangay link may see, which the server decides — not where the
+ *      person lives, which rule 1 still keeps out.
  *
  * Each rule was validated against a planted regression before being trusted.
  */
@@ -48,6 +56,8 @@ const DOMAIN = join(APP, 'domain', 'accounts', 'app-account.ts');
 const FEATURE = join(APP, 'features', 'accounts');
 const PANEL = join(FEATURE, 'account-panel.ts');
 const PANEL_TEMPLATE = join(FEATURE, 'account-panel.html');
+const ROLE_PANEL = join(FEATURE, 'account-office-role.ts');
+const ROLE_TEMPLATE = join(FEATURE, 'account-office-role.html');
 const PAGE_TEMPLATE = join(FEATURE, 'accounts-page.html');
 const MAPPER = join(APP, 'data', 'http', 'mappers', 'app-account.mapper.ts');
 const MOCK = join(APP, 'data', 'mock', 'mock-app-account.repository.ts');
@@ -55,7 +65,7 @@ const SEED = join(APP, 'data', 'mock', 'seed', 'app-accounts.seed.ts');
 const ADAPTERS = join(APP, 'data', 'http', 'http-repositories.ts');
 const PORTS = join(APP, 'domain', 'ports', 'repositories.ts');
 
-for (const file of [DOMAIN, PANEL, PANEL_TEMPLATE, PAGE_TEMPLATE, MAPPER, MOCK, SEED]) {
+for (const file of [DOMAIN, PANEL, PANEL_TEMPLATE, ROLE_PANEL, ROLE_TEMPLATE, PAGE_TEMPLATE, MAPPER, MOCK, SEED]) {
   if (!existsSync(file)) failures.push(`${shown(file)} is missing, so nothing about it was checked.`);
 }
 if (failures.length > 0) report();
@@ -108,7 +118,7 @@ if (httpAccounts === '') failures.push('HttpAppAccountRepository was not found, 
 /* ── 1. the minimum ──────────────────────────────────────────────────────── */
 
 const model = block(domain, domain.search(/export interface AppAccount\b/));
-const PERSONAL = /\b(\w*(?:mobile|phone|barangay|birth|address|street|purok|verification|sex)\w*)\??\s*:/i;
+const PERSONAL = /\b(?!scopeBarangayId\b)(\w*(?:mobile|phone|barangay|birth|address|street|purok|verification|sex)\w*)\??\s*:/i;
 const extra = PERSONAL.exec(model);
 if (model === '') failures.push('AppAccount was not found in the accounts model.');
 else if (extra !== null) {
@@ -242,6 +252,57 @@ if (!/route:\s*'\/users',[\s\S]{0,120}permissions:\s*\['user\.view'\]/.test(read
   failures.push("The menu's Users and roles entry does not ask for 'user.view'.");
 }
 
+/* ── 8. the office role: effects first, a reason kept, never one's own ──── */
+
+const rolePanelCode = code(read(ROLE_PANEL));
+const roleTemplate = code(read(ROLE_TEMPLATE));
+
+const roleOwn = roleTemplate.indexOf('@else if (own())');
+const roleFieldset = roleTemplate.indexOf('<fieldset');
+if (roleOwn === -1 || roleFieldset === -1 || roleOwn > roleFieldset) {
+  failures.push("The office role form is offered before asking whether it is the reader's own account.");
+}
+if (!/this\s*\.\s*own\(\)/.test(methodBody(rolePanelCode, 'save'))) {
+  failures.push("AccountOfficeRole.save no longer refuses the reader's own account.");
+}
+
+const officeRoleChoice = roleTemplate.indexOf('@if (chosen(); as choice)');
+const roleEffectsAt = roleTemplate.indexOf('effects.', officeRoleChoice);
+const roleAlwaysAt = roleTemplate.indexOf('of always', officeRoleChoice);
+const roleReason = roleTemplate.indexOf('<textarea', officeRoleChoice);
+const officeRoleButton = roleTemplate.indexOf('(click)="save()"');
+if (
+  officeRoleChoice === -1 ||
+  roleEffectsAt === -1 ||
+  roleAlwaysAt === -1 ||
+  roleReason === -1 ||
+  officeRoleButton === -1 ||
+  !(officeRoleChoice < roleEffectsAt && roleEffectsAt < roleReason && roleAlwaysAt < roleReason && roleReason < officeRoleButton) ||
+  [...roleTemplate.matchAll(/save\(\)/g)].length !== 1
+) {
+  failures.push("The office role's effects and reason no longer come between the choice and the one button that makes it.");
+}
+
+if (!/\n\s+assignOfficeRole\(id: AppAccountId, change: OfficeRoleChange\): Observable<AppAccount>;/.test(ports)) {
+  failures.push('AppAccountRepository.assignOfficeRole no longer takes the change, reason included.');
+}
+if (
+  !/this\s*\.\s*api\s*\.\s*patch\(\s*`\$\{API_ENDPOINTS\.adminUsers\}\/\$\{id\}\/office-role`\s*,\s*toWireOfficeRoleChange\(change\)\s*\)/.test(
+    httpAccounts,
+  )
+) {
+  failures.push('HttpAppAccountRepository must send the office role through toWireOfficeRoleChange to office-role.');
+}
+
+const assignableAt = domain.indexOf('export const ASSIGNABLE_OFFICE_ROLES');
+const assignable = assignableAt === -1 ? '' : domain.slice(assignableAt, domain.indexOf('];', assignableAt));
+if (assignable === '' || assignable.includes("'system-administrator'")) {
+  failures.push('ASSIGNABLE_OFFICE_ROLES offers the system administrator, which is the administrator account role.');
+}
+if (!/keeps your reason/.test(domain.slice(domain.indexOf('export const OFFICE_ROLE_ALWAYS')))) {
+  failures.push('OFFICE_ROLE_ALWAYS no longer says the server keeps the reason it asks for.');
+}
+
 report();
 
 function report() {
@@ -252,6 +313,6 @@ function report() {
   }
   console.log(
     `Accounts check passed (${moduleFiles.length} files: the minimum shown, effects before every button, ` +
-      'no reason collected, not one’s own role, the keys the administrator’s).',
+      'no reason collected but for the office role, which keeps it; not one’s own role; the keys the administrator’s).',
   );
 }

@@ -18,18 +18,55 @@ describe('toServerIdentity', () => {
 
   it('labels the account by its role and nothing more', () => {
     expect(toServerIdentity(ME_STAFF.data)).toMatchObject({ roles: ['staff'], roleLabel: 'Staff' });
+    // The server names an administrator's office role (DL-173); the tier stays beside it.
     expect(toServerIdentity(ME_ADMIN.data)).toMatchObject({
-      roles: ['admin'],
+      roles: ['system-administrator', 'admin'],
       roleLabel: 'Administrator',
     });
   });
 
-  it('takes the narrowest scope and never the home barangay', () => {
-    const identity = toServerIdentity(ME_STAFF.data);
+  it('puts the office role the server names first, and ignores one it does not know', () => {
+    expect(toServerIdentity({ ...ME_STAFF.data, office_role: 'release-officer' })?.roles).toEqual([
+      'release-officer',
+      'staff',
+    ]);
+    expect(toServerIdentity({ ...ME_STAFF.data, office_role: 'treasurer' })?.roles).toEqual([
+      'staff',
+    ]);
+  });
 
-    expect(identity?.scope).toBe('assigned-cases');
-    expect(identity?.barangayId).toBeNull();
-    expect(identity?.position).toBe('');
+  it('reads the scope the server decided, and never the home barangay (DL-173)', () => {
+    const staff = toServerIdentity(ME_STAFF.data);
+    expect(staff?.scope).toBe('assigned-cases');
+    expect(staff?.barangayId).toBeNull();
+    expect(staff?.position).toBe('');
+
+    expect(toServerIdentity(ME_ADMIN.data)?.scope).toBe('all-barangays');
+
+    const link = toServerIdentity({
+      ...ME_STAFF.data,
+      barangay_id: 'where-they-live',
+      office_role: 'barangay-link',
+      scope: 'own-barangay',
+      scope_barangay_id: 'barangay-they-serve',
+    });
+    expect(link?.scope).toBe('own-barangay');
+    expect(link?.barangayId).toBe('barangay-they-serve');
+
+    // A scope wider than one barangay names none, whatever else the answer carries.
+    const wide = { ...ME_STAFF.data, scope: 'all-barangays', scope_barangay_id: 'stray' };
+    expect(toServerIdentity(wide)?.barangayId).toBeNull();
+  });
+
+  it('fails closed to the narrowest scope on an answer it cannot trust', () => {
+    expect(toServerIdentity({ ...ME_STAFF.data, scope: undefined })?.scope).toBe('assigned-cases');
+    expect(toServerIdentity({ ...ME_STAFF.data, scope: 'everything' })?.scope).toBe(
+      'assigned-cases',
+    );
+    // own-barangay with no barangay would be a scope confined to nowhere in particular.
+    const unnamed = { ...ME_STAFF.data, scope: 'own-barangay', scope_barangay_id: null };
+    expect(toServerIdentity(unnamed)?.scope).toBe('assigned-cases');
+    expect(toServerIdentity(unnamed)?.barangayId).toBeNull();
   });
 
   it('refuses a resident account', () => {

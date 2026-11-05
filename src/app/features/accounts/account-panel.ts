@@ -32,6 +32,7 @@ import { failureReason } from '@shared/state/failure-reason';
 import { valueOf, type ViewState } from '@shared/state/view-state';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
+import { AccountOfficeRole } from './account-office-role';
 import { ACCOUNTS_COPY } from './accounts.copy';
 
 /**
@@ -47,7 +48,9 @@ import { ACCOUNTS_COPY } from './accounts.copy';
  * ## No reason is asked for
  *
  * The server audits both changes against the administrator's account and keeps no reason, so there
- * is nowhere for one to go; the effects say so rather than offering a box whose words vanish.
+ * is nowhere for one to go; the effects say so rather than offering a box whose words vanish. The
+ * office role, below them, is different — the server keeps its reason — and is its own component,
+ * `AccountOfficeRole` (`DL-173`).
  *
  * ## Not one's own role
  *
@@ -58,7 +61,7 @@ import { ACCOUNTS_COPY } from './accounts.copy';
 @Component({
   selector: 'app-account-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [StatusBadge],
+  imports: [AccountOfficeRole, StatusBadge],
   templateUrl: './account-panel.html',
   styleUrl: './account-panel.scss',
 })

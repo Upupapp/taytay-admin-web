@@ -223,7 +223,7 @@
       "patch": {
         "operationId": "changeUserRole",
         "summary": "Change a user's role",
-        "description": "Cannot target the caller. verified and registered also update verification_status.",
+        "description": "Cannot target the caller. verified and registered also update verification_status. Any role but staff clears the office role.",
         "security": [{ "firebaseIdToken": [] }],
         "parameters": [
           { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
@@ -486,6 +486,28 @@
         "responses": {
           "200": { "description": "Assignment saved.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserListItemEnvelope" } } } },
           "422": { "description": "Target is not staff, or the office does not exist.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/admin/users/{id}/office-role": {
+      "patch": {
+        "operationId": "assignUserOfficeRole",
+        "summary": "Give a staff account an office role, or take it away",
+        "description": "Admin only; changing your own is 403. office_role null clears it. reason is required and is kept with the change in an append-only history; audit user.office_role_changed. A barangay-link needs scope_barangay_id, and no other role takes one. system-administrator is the admin account role and is refused here. A role whose casework keys would hold both request.approve and release.release is refused. An unchanged assignment answers 200 and records nothing. Changing the account role away from staff clears the office role.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeRoleChange" } } }
+        },
+        "responses": {
+          "200": { "description": "Office role saved, or already as asked.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserListItemEnvelope" } } } },
+          "403": { "description": "Not an admin, or the caller's own account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "User not found.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "The account is closed.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "Not a staff account, system-administrator asked for, a barangay rule broken, or separation of duties broken.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
         }
       }
     },
@@ -2576,13 +2598,16 @@
           "rejection_reason": null,
           "role": "registered",
           "office_id": null,
+          "office_role": null,
+          "scope": null,
+          "scope_barangay_id": null,
           "permissions": [],
           "closed": false,
           "closed_at": null,
           "created_at": "2026-10-20T08:00:00.000Z",
           "updated_at": "2026-10-20T08:00:00.000Z"
         },
-        "required": ["id", "firebase_uid", "email_verified", "verification_status", "verification_decided_at", "rejection_reason", "role", "permissions", "closed", "created_at", "updated_at"],
+        "required": ["id", "firebase_uid", "email_verified", "verification_status", "verification_decided_at", "rejection_reason", "role", "office_role", "scope", "scope_barangay_id", "permissions", "closed", "created_at", "updated_at"],
         "properties": {
           "id": { "type": "string", "format": "uuid" },
           "firebase_uid": { "type": "string" },
@@ -2602,10 +2627,19 @@
           "rejection_reason": { "type": ["string", "null"], "description": "Notes from the latest rejection. Null unless verification_status is rejected." },
           "role": { "type": "string", "enum": ["registered", "verified", "staff", "admin"] },
           "office_id": { "type": ["string", "null"], "format": "uuid" },
+          "office_role": {
+            "oneOf": [{ "$ref": "#/components/schemas/OfficeRole" }, { "type": "null" }],
+            "description": "Which of the office's roles this account works in: system-administrator for admin, the stored role or null for staff, null for residents."
+          },
+          "scope": {
+            "oneOf": [{ "$ref": "#/components/schemas/DataScope" }, { "type": "null" }],
+            "description": "How much of the municipality the account may see, decided by the server: all-barangays for admin, the office role's scope for staff (assigned-cases while it has none), null for residents."
+          },
+          "scope_barangay_id": { "type": ["string", "null"], "format": "uuid", "description": "The barangay an own-barangay scope is confined to. Null for every other scope." },
           "permissions": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/StaffCapability" },
-            "description": "What the route guards allow this account, so a staff client can hide what would be refused. Empty for residents. Staff hold news.write and office-inbox.manage only while assigned to an office. Describes enforcement; the routes still decide."
+            "items": { "$ref": "#/components/schemas/Permission" },
+            "description": "What this account may do, so a staff client can hide what would be refused. Empty for residents. Platform capabilities come from the account role (staff hold news.write and office-inbox.manage only while assigned to an office); casework keys come from the office role, and a staff account without one holds none. Admin holds every key. Describes enforcement; the routes still decide."
           },
           "closed": { "type": "boolean" },
           "closed_at": { "type": ["string", "null"], "format": "date-time" },
@@ -2615,7 +2649,27 @@
       },
       "StaffCapability": {
         "type": "string",
+        "description": "Platform capabilities, decided by the account role and, for staff, whether an office is assigned.",
         "enum": ["household.view-counts", "digital-id.verify", "news.write", "office-inbox.manage", "user.view", "user.change-role", "user.assign-office", "verification.review", "digital-id.manage", "office.manage", "service.manage", "home.manage", "hotline.manage", "app-config.manage", "audit.view"]
+      },
+      "CaseworkPermission": {
+        "type": "string",
+        "description": "The MSWDO office's keys, in the staff console's vocabulary. Decided by the office role (src/auth/casework.ts). Admin holds every one.",
+        "enum": ["dashboard.view", "resident.view", "resident.view-sensitive", "resident.create", "resident.update", "resident.deactivate", "resident.export", "beneficiary.view", "beneficiary.review-duplicates", "beneficiary.export", "household.view", "household.manage", "household.correct-vulnerability", "family.view", "family.manage", "case.view", "case.manage", "case.note", "case-note.view-protected", "case.close", "program.view", "program.manage", "request.view", "request.create", "request.intake", "request.assess", "request.endorse", "request.approve", "request.reject", "request.schedule", "request.close", "request.view-sensitive", "document.record", "document.download", "document.view-full-number", "release.view", "release.schedule", "release.release", "release.void", "referral.view", "referral.manage", "report.view", "report.export-person-level", "audit.view-detail", "staff.view", "staff.manage", "saved-view.share", "visit.view", "visit.manage", "newsfeed.view", "newsfeed.create", "newsfeed.edit", "newsfeed.publish", "newsfeed.schedule", "newsfeed.archive", "newsfeed.pin", "newsfeed.moderate", "newsfeed.view-insights", "event.view", "event.create", "event.edit", "event.publish", "event.cancel", "event.archive", "event.manage-registrations", "event.export-registrants", "event.mark-attendance", "event.view-insights", "settings.manage"]
+      },
+      "Permission": {
+        "type": "string",
+        "description": "Every key GET /me may carry: StaffCapability, then CaseworkPermission.",
+        "enum": ["household.view-counts", "digital-id.verify", "news.write", "office-inbox.manage", "user.view", "user.change-role", "user.assign-office", "verification.review", "digital-id.manage", "office.manage", "service.manage", "home.manage", "hotline.manage", "app-config.manage", "audit.view", "dashboard.view", "resident.view", "resident.view-sensitive", "resident.create", "resident.update", "resident.deactivate", "resident.export", "beneficiary.view", "beneficiary.review-duplicates", "beneficiary.export", "household.view", "household.manage", "household.correct-vulnerability", "family.view", "family.manage", "case.view", "case.manage", "case.note", "case-note.view-protected", "case.close", "program.view", "program.manage", "request.view", "request.create", "request.intake", "request.assess", "request.endorse", "request.approve", "request.reject", "request.schedule", "request.close", "request.view-sensitive", "document.record", "document.download", "document.view-full-number", "release.view", "release.schedule", "release.release", "release.void", "referral.view", "referral.manage", "report.view", "report.export-person-level", "audit.view-detail", "staff.view", "staff.manage", "saved-view.share", "visit.view", "visit.manage", "newsfeed.view", "newsfeed.create", "newsfeed.edit", "newsfeed.publish", "newsfeed.schedule", "newsfeed.archive", "newsfeed.pin", "newsfeed.moderate", "newsfeed.view-insights", "event.view", "event.create", "event.edit", "event.publish", "event.cancel", "event.archive", "event.manage-registrations", "event.export-registrants", "event.mark-attendance", "event.view-insights", "settings.manage"]
+      },
+      "OfficeRole": {
+        "type": "string",
+        "description": "The staff console's role ids. system-administrator is the admin account role and is never stored on a staff account.",
+        "enum": ["system-administrator", "mswdo-head", "social-worker", "intake-officer", "release-officer", "barangay-link", "auditor"]
+      },
+      "DataScope": {
+        "type": "string",
+        "enum": ["all-barangays", "own-barangay", "assigned-cases"]
       },
       "SignedOutEnvelope": {
         "type": "object",
@@ -2782,6 +2836,11 @@
           "verification_status": { "type": "string" },
           "role": { "type": "string" },
           "office_id": { "type": ["string", "null"], "format": "uuid" },
+          "office_role": {
+            "oneOf": [{ "$ref": "#/components/schemas/OfficeRole" }, { "type": "null" }],
+            "description": "system-administrator for admin, the stored role or null for staff, null for residents."
+          },
+          "scope_barangay_id": { "type": ["string", "null"], "format": "uuid", "description": "Set only for a barangay-link." },
           "created_at": { "type": "string", "format": "date-time" }
         }
       },
@@ -3007,6 +3066,16 @@
         "type": "object",
         "required": ["office_id"],
         "properties": { "office_id": { "type": ["string", "null"], "format": "uuid" } }
+      },
+      "OfficeRoleChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["office_role", "reason"],
+        "properties": {
+          "office_role": { "oneOf": [{ "$ref": "#/components/schemas/OfficeRole" }, { "type": "null" }] },
+          "scope_barangay_id": { "type": ["string", "null"], "format": "uuid", "description": "Required for barangay-link; refused for any other role." },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 500, "description": "Why, in words. Kept with the change." }
+        }
       },
       "NewsItem": {
         "type": "object",

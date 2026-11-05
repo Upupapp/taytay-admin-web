@@ -41,11 +41,13 @@ import {
   type OfficeThread,
   type OfficeThreadId,
   type ThreadMessage,
+  type AccountBarangay,
   type AccountRole,
   type AppAccount,
   type AppAccountId,
   type AppAccountRepository,
   type OfficeId,
+  type OfficeRoleChange,
   HOTLINE_LIST_CAP,
   type DirectoryOffice,
   type DirectoryOfficeRepository,
@@ -95,7 +97,11 @@ import { IdentityProvider } from './identity/identity.provider';
 import { invalidCredentials, signInUnavailable } from './identity/sign-in-messages';
 import { toServerIdentity } from './mappers/me.mapper';
 import { toNotification } from './mappers/notification.mapper';
-import { toAppAccount } from './mappers/app-account.mapper';
+import {
+  toAccountBarangay,
+  toAppAccount,
+  toWireOfficeRoleChange,
+} from './mappers/app-account.mapper';
 import {
   toDigitalIdCard,
   toDigitalIdHolder,
@@ -532,6 +538,31 @@ export class HttpAppAccountRepository implements AppAccountRepository {
     return this.api
       .patch(`${API_ENDPOINTS.adminUsers}/${id}/office`, { office_id: office })
       .pipe(map(readAccount));
+  }
+
+  /** The reason travels with the change; the server keeps it in the office-role history (`DL-173`). */
+  assignOfficeRole(id: AppAccountId, change: OfficeRoleChange): Observable<AppAccount> {
+    return this.api
+      .patch(`${API_ENDPOINTS.adminUsers}/${id}/office-role`, toWireOfficeRoleChange(change))
+      .pipe(map(readAccount));
+  }
+
+  /**
+   * Whole or not at all: a barangay missing from the picker is one nobody can confine a barangay
+   * link to, and the absence would read as the municipality not having it.
+   */
+  barangays(): Observable<readonly AccountBarangay[]> {
+    return this.api.list(API_ENDPOINTS.barangays).pipe(
+      map((rows) =>
+        rows.map((row) => {
+          const barangay = toAccountBarangay(row);
+          if (barangay === null) {
+            throw new Error('A barangay from the server could not be read, so none is offered.');
+          }
+          return barangay;
+        }),
+      ),
+    );
   }
 }
 

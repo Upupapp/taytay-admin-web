@@ -4,7 +4,11 @@ import { throwError, type Observable } from 'rxjs';
 import {
   ACCESS_CONTEXT,
   isOwnAccount,
+  officeRoleChangeProblems,
   takesAnOffice,
+  takesAnOfficeRole,
+  TAYTAY_BARANGAYS,
+  type AccountBarangay,
   type AccountRole,
   type AppAccount,
   type AppAccountId,
@@ -12,6 +16,7 @@ import {
   type CursorPage,
   type CursorRequest,
   type OfficeId,
+  type OfficeRoleChange,
 } from '@domain/index';
 
 import { denyUnless } from './mock-access';
@@ -69,7 +74,15 @@ export class MockAppAccountRepository implements AppAccountRepository {
     if (isOwnAccount(account, user === null ? null : String(user.id))) {
       return throwError(() => new Error('You cannot change your own role.'));
     }
-    return this.save({ ...account, role });
+    // As the server does (`DL-173`): leaving the staff tier clears an office role, and arriving at
+    // it starts with none. An administrator is the system administrator.
+    const unchanged = role === account.role;
+    return this.save({
+      ...account,
+      role,
+      officeRole: role === 'admin' ? 'system-administrator' : unchanged ? account.officeRole : null,
+      scopeBarangayId: unchanged ? account.scopeBarangayId : null,
+    });
   }
 
   assignOffice(id: AppAccountId, office: OfficeId | null): Observable<AppAccount> {
@@ -88,6 +101,34 @@ export class MockAppAccountRepository implements AppAccountRepository {
       return throwError(() => new Error('That office was not found.'));
     }
     return this.save({ ...account, officeId: office });
+  }
+
+  assignOfficeRole(id: AppAccountId, change: OfficeRoleChange): Observable<AppAccount> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<AppAccount>(user, 'user.change-role');
+    if (denied) {
+      return denied;
+    }
+    const account = this.accounts.find((candidate) => candidate.id === id);
+    if (account === undefined) {
+      return throwError(() => new Error('That user was not found.'));
+    }
+    if (isOwnAccount(account, user === null ? null : String(user.id))) {
+      return throwError(() => new Error('You cannot change your own office role.'));
+    }
+    if (!takesAnOfficeRole(account)) {
+      return throwError(() => new Error('Only a staff account holds an office role.'));
+    }
+    const problem = officeRoleChangeProblems(change)[0];
+    if (problem !== undefined) {
+      return throwError(() => new Error(problem));
+    }
+    return this.save({ ...account, officeRole: change.role, scopeBarangayId: change.barangayId });
+  }
+
+  /** The console's own five barangays stand in for the API's list, which keys them differently. */
+  barangays(): Observable<readonly AccountBarangay[]> {
+    return this.latency.respond(TAYTAY_BARANGAYS.map(({ id, name }) => ({ id, name })));
   }
 
   private save(account: AppAccount): Observable<AppAccount> {

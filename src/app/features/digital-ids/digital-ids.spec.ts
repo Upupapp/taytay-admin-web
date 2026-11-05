@@ -11,6 +11,7 @@ import {
   asIsoDateTime,
   DIGITAL_ID_EFFECTS,
   DIGITAL_ID_REPOSITORY,
+  type AccountBarangay,
   type AccountRole,
   type AppAccount,
   type AppAccountId,
@@ -36,6 +37,8 @@ function account(key: string, role: AccountRole): AppAccount {
     email: `${key}@ids.example.test`,
     role,
     officeId: null,
+    officeRole: null,
+    scopeBarangayId: null,
   };
 }
 
@@ -111,6 +114,12 @@ class Accounts implements AppAccountRepository {
     throw new Error('not used');
   }
   assignOffice(): Observable<AppAccount> {
+    throw new Error('not used');
+  }
+  assignOfficeRole(): Observable<AppAccount> {
+    throw new Error('not used');
+  }
+  barangays(): Observable<readonly AccountBarangay[]> {
     throw new Error('not used');
   }
 }

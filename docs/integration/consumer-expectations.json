@@ -360,7 +360,9 @@
       "optional": [
         "email",
         "name",
-        "office_id"
+        "office_id",
+        "office_role",
+        "scope_barangay_id"
       ]
     },
     {
@@ -402,7 +404,25 @@
       "optional": [
         "email",
         "name",
-        "office_id"
+        "office_id",
+        "office_role",
+        "scope_barangay_id"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "admin/users/{id}/office-role",
+      "consumer": "app-account.mapper.ts#toAppAccount",
+      "required": [
+        "id",
+        "role"
+      ],
+      "optional": [
+        "email",
+        "name",
+        "office_id",
+        "office_role",
+        "scope_barangay_id"
       ]
     },
     {
@@ -416,7 +436,9 @@
       "optional": [
         "email",
         "name",
-        "office_id"
+        "office_id",
+        "office_role",
+        "scope_barangay_id"
       ]
     },
     {
@@ -497,6 +519,16 @@
       ]
     },
     {
+      "method": "GET",
+      "path": "barangays",
+      "consumer": "app-account.mapper.ts#toAccountBarangay",
+      "required": [],
+      "optional": [
+        "id",
+        "name"
+      ]
+    },
+    {
       "method": "POST",
       "path": "digital-id/verify",
       "consumer": "digital-id.mapper.ts#toDigitalIdHolder",
@@ -536,7 +568,10 @@
         "email",
         "name",
         "office_id",
-        "permissions"
+        "office_role",
+        "permissions",
+        "scope",
+        "scope_barangay_id"
       ]
     },
     {

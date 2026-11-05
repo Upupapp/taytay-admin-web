@@ -1,4 +1,10 @@
-import type { ServerIdentity, StaffUserId } from '@domain/index';
+import {
+  STAFF_ROLES,
+  type BarangayId,
+  type DataScope,
+  type ServerIdentity,
+  type StaffUserId,
+} from '@domain/index';
 
 import { field, id, list, oneOf, str } from './wire';
 
@@ -12,6 +18,8 @@ const ROLE_LABELS: Readonly<Record<ConsoleRole, string>> = {
   admin: 'Administrator',
 };
 
+const SCOPES: readonly DataScope[] = ['all-barangays', 'own-barangay', 'assigned-cases'];
+
 /**
  * `GET me` → the identity the console decides from, or `null` when this account may not hold a
  * console session at all.
@@ -19,7 +27,8 @@ const ROLE_LABELS: Readonly<Record<ConsoleRole, string>> = {
  * ## What it takes from the server, and only from the server
  *
  * `permissions` is the API's own answer about what its route guards will allow this account — a
- * list of `StaffCapability` keys built from the table the guards themselves read. It is passed on
+ * list of `Permission` keys: the platform capabilities of its tier and the casework keys of its office
+ * role (`DL-173`), built from the tables the server itself enforces. It is passed on
  * as sent, and `fromServerIdentity` keeps the keys this console knows and grants nothing else
  * (`DL-133`). **Nothing here computes a permission from `role`.** Two staff roles cannot express
  * what the console's seven do, and deriving a grant from one would be a second authority one
@@ -31,8 +40,15 @@ const ROLE_LABELS: Readonly<Record<ConsoleRole, string>> = {
  * sex, mobile number, home address, street, purok and home barangay. None of it is mapped: the
  * console has no operational need for any of it (CLAUDE.md §6.1). `barangay_id` in particular is
  * where somebody **lives**, not what they may see — reading it as a data scope would confine an
- * officer to their own neighbourhood, or, worse, open it to them. The scope is therefore the
- * narrowest one, `assigned-cases`, until the server publishes a scope of its own.
+ * officer to their own neighbourhood, or, worse, open it to them.
+ *
+ * ## The scope and the office role are the server's (`DL-173`)
+ *
+ * `scope` and `scope_barangay_id` are the server's decision from the account's office role, and are
+ * read as sent — never computed here from `role` or `office_role`. A scope that is missing or
+ * unknown, or an `own-barangay` scope that names no barangay, is read as the narrowest,
+ * `assigned-cases`: failing closed, as `fromServerIdentity` does with keys (`DL-133`).
+ * `office_role` labels the account on screen and decides nothing.
  *
  * ## Who is refused
  *
@@ -53,16 +69,24 @@ export function toServerIdentity(wire: unknown): ServerIdentity | null {
   }
 
   const email = str(field(wire, 'email'));
+  const officeRole = oneOf(field(wire, 'office_role'), STAFF_ROLES);
+  const sentScope = oneOf(field(wire, 'scope'), SCOPES);
+  const scopeBarangay = id<BarangayId>(field(wire, 'scope_barangay_id'));
+  const scope: DataScope =
+    sentScope === null || (sentScope === 'own-barangay' && scopeBarangay === null)
+      ? 'assigned-cases'
+      : sentScope;
 
   return {
     id: accountId,
     displayName: str(field(wire, 'name')) ?? email ?? ROLE_LABELS[role],
     email: email ?? '',
-    roles: [role],
+    // The office role first, so the console's own label is the one shown; the tier stays beside it.
+    roles: officeRole === null ? [role] : [officeRole, role],
     roleLabel: ROLE_LABELS[role],
     position: '',
-    barangayId: null,
-    scope: 'assigned-cases',
+    barangayId: scope === 'own-barangay' ? scopeBarangay : null,
+    scope,
     permissions: list(field(wire, 'permissions'), str),
     // An administrator acts for every office; only a staff account can be without one (`DL-168`).
     awaitingOffice: role === 'staff' && str(field(wire, 'office_id')) === null,

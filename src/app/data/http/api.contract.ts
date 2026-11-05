@@ -167,10 +167,15 @@ export const API_ENDPOINTS = {
   /** The office directory. Public and cursor-paged; read in full for a picker (`DL-161`). */
   offices: 'offices',
   /**
-   * Every app account, admin only (`DL-168`). Cursor-paged; `PATCH {id}/role` and
-   * `PATCH {id}/office`. There is no read of one account.
+   * Every app account, admin only (`DL-168`). Cursor-paged; `PATCH {id}/role`,
+   * `PATCH {id}/office` and `PATCH {id}/office-role` (`DL-173`). There is no read of one account.
    */
   adminUsers: 'admin/users',
+  /**
+   * The barangays as the API keys them, whole and public (`DL-173`): what a barangay link's scope
+   * names. Not `TAYTAY_BARANGAYS`, whose ids are this console's own.
+   */
+  barangays: 'barangays',
   /**
    * The office directory, written (`DL-170`, `office.manage`): `POST` and `PATCH {id}` as forms,
    * because they carry the banner; `DELETE {id}`. Read through `offices`, which is public.

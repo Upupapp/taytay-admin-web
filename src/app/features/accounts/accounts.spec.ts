@@ -11,21 +11,29 @@ import {
   asId,
   OFFICE_ASSIGNMENT_EFFECTS,
   OFFICE_REPOSITORY,
+  OFFICE_ROLE_ALWAYS,
+  OFFICE_ROLE_EFFECTS,
+  ROLE_DEFINITIONS,
   ROLE_CHANGE_ALWAYS,
   ROLE_CHANGE_EFFECTS,
+  type AccountBarangay,
   type AccountRole,
   type AppAccount,
   type AppAccountId,
   type AppAccountRepository,
+  type BarangayId,
   type CursorPage,
   type CursorRequest,
   type Office,
   type OfficeId,
   type OfficeRepository,
+  type OfficeRoleChange,
   type Permission,
+  type StaffRole,
 } from '@domain/index';
 import { ready } from '@shared/state/view-state';
 
+import { AccountOfficeRole } from './account-office-role';
 import { AccountPanel } from './account-panel';
 import { AccountsPage } from './accounts-page';
 import { ACCOUNTS_COPY } from './accounts.copy';
@@ -43,13 +51,26 @@ const OFFICES: readonly Office[] = [
 ];
 const READER = 'account-reader';
 
-function account(key: string, role: AccountRole, officeId: OfficeId | null = null): AppAccount {
+const SAN_JUAN = asId<BarangayId>('barangay-san-juan');
+const BARANGAYS: readonly AccountBarangay[] = [
+  { id: asId<BarangayId>('barangay-dolores'), name: 'Dolores' },
+  { id: SAN_JUAN, name: 'San Juan' },
+];
+
+function account(
+  key: string,
+  role: AccountRole,
+  officeId: OfficeId | null = null,
+  officeRole: StaffRole | null = role === 'admin' ? 'system-administrator' : null,
+): AppAccount {
   return {
     id: asId<AppAccountId>(key),
     name: `Person ${key}`,
     email: `${key}@accounts.example.test`,
     role,
     officeId,
+    officeRole,
+    scopeBarangayId: null,
   };
 }
 
@@ -58,6 +79,8 @@ class RecordingAccounts implements AppAccountRepository {
   readonly listed: CursorRequest[] = [];
   readonly roleChanges: { id: string; role: AccountRole }[] = [];
   readonly assignments: { id: string; office: OfficeId | null }[] = [];
+  readonly officeRoles: { id: string; change: OfficeRoleChange }[] = [];
+  barangayReads = 0;
   failWith: unknown = null;
 
   list(page: CursorRequest): Observable<CursorPage<AppAccount>> {
@@ -89,6 +112,19 @@ class RecordingAccounts implements AppAccountRepository {
   assignOffice(id: AppAccountId, office: OfficeId | null): Observable<AppAccount> {
     this.assignments.push({ id, office });
     return of({ ...account(id, 'staff', office) });
+  }
+
+  assignOfficeRole(id: AppAccountId, change: OfficeRoleChange): Observable<AppAccount> {
+    this.officeRoles.push({ id, change });
+    return of({
+      ...account(id, 'staff', null, change.role),
+      scopeBarangayId: change.barangayId,
+    });
+  }
+
+  barangays(): Observable<readonly AccountBarangay[]> {
+    this.barangayReads += 1;
+    return of(BARANGAYS);
   }
 }
 
@@ -335,5 +371,178 @@ describe('AccountPanel (DL-168)', () => {
     expect(element.querySelector('#account-office-choice')).toBeNull();
     expect(element.textContent).toContain(ACCOUNTS_COPY.panel.officeNotStaff);
     expect(element.textContent).toContain('unused while the account is not staff');
+  });
+});
+
+/* ── the office role (DL-173) ────────────────────────────────────────────── */
+
+function officeRole(subject: AppAccount, own = false, granted?: readonly Permission[]) {
+  const repository = configure(granted);
+  const fixture = TestBed.createComponent(AccountOfficeRole);
+  fixture.componentRef.setInput('account', subject);
+  fixture.componentRef.setInput('own', own);
+  return { repository, fixture };
+}
+
+function officeRoleChoices(element: HTMLElement): string[] {
+  return [
+    ...element.querySelectorAll<HTMLInputElement>('input[type="radio"][name="account-office-role"]'),
+  ].map((radio) => radio.value);
+}
+
+function chooseOfficeRole(element: HTMLElement, value: string): void {
+  const radio = element.querySelector<HTMLInputElement>(
+    `input[type="radio"][name="account-office-role"][value="${value}"]`,
+  );
+  if (radio === null) throw new Error(`no ${value} office role`);
+  radio.checked = true;
+  radio.dispatchEvent(new Event('change'));
+}
+
+function typeReason(element: HTMLElement, reason: string): void {
+  const box = element.querySelector<HTMLTextAreaElement>('#account-office-role-reason');
+  if (box === null) throw new Error('no reason box');
+  box.value = reason;
+  box.dispatchEvent(new Event('input'));
+}
+
+const OFFICE_ROLE = ACCOUNTS_COPY.officeRole;
+
+describe('AccountOfficeRole (DL-173)', () => {
+  it('offers every office role but the system administrator, and nothing to press before a choice', async () => {
+    const { fixture } = officeRole(account('a', 'staff', MSWDO));
+    const element = await settle(fixture);
+
+    expect(officeRoleChoices(element)).toEqual([
+      'mswdo-head',
+      'social-worker',
+      'intake-officer',
+      'release-officer',
+      'barangay-link',
+      'auditor',
+      'none',
+    ]);
+    expect(element.textContent).toContain(OFFICE_ROLE.nowNone);
+    expect(element.querySelector('button')).toBeNull();
+    expect(element.querySelector('textarea')).toBeNull();
+  });
+
+  it('says what the server does, then asks why, and only then offers the one button', async () => {
+    const { fixture, repository } = officeRole(account('a', 'staff', MSWDO));
+    const element = await settle(fixture);
+    chooseOfficeRole(element, 'intake-officer');
+    await settle(fixture);
+
+    const effects = element.querySelector('.panel__effects');
+    const reason = element.querySelector('#account-office-role-reason');
+    const button = buttonNamed(element, OFFICE_ROLE.confirm('Intake officer'));
+    if (effects === null || reason === null || button === null) throw new Error('incomplete form');
+    for (const effect of [...OFFICE_ROLE_EFFECTS.assign, ...OFFICE_ROLE_ALWAYS]) {
+      expect(effects.textContent).toContain(effect);
+    }
+    expect(effects.textContent).toContain(ROLE_DEFINITIONS['intake-officer'].description);
+    expect(effects.compareDocumentPosition(reason) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(reason.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Not a barangay link, so the barangays are not asked for.
+    expect(repository.barangayReads).toBe(0);
+  });
+
+  it('refuses to send without a reason, and says why', async () => {
+    const { fixture, repository } = officeRole(account('a', 'staff', MSWDO));
+    const element = await settle(fixture);
+    chooseOfficeRole(element, 'auditor');
+    await settle(fixture);
+
+    buttonNamed(element, OFFICE_ROLE.confirm('Auditor'))?.click();
+    await settle(fixture);
+
+    expect(repository.officeRoles).toEqual([]);
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain('Say why');
+  });
+
+  it('sends the role with the reason, and says so in the panel’s live region', async () => {
+    const { fixture, repository } = panel(account('a', 'staff', MSWDO));
+    const element = await settle(fixture);
+    chooseOfficeRole(element, 'intake-officer');
+    await settle(fixture);
+    typeReason(element, 'Joined the intake counter.');
+    await settle(fixture);
+
+    buttonNamed(element, OFFICE_ROLE.confirm('Intake officer'))?.click();
+    await settle(fixture);
+
+    expect(repository.officeRoles).toEqual([
+      {
+        id: 'a',
+        change: { role: 'intake-officer', barangayId: null, reason: 'Joined the intake counter.' },
+      },
+    ]);
+    expect(liveRegion(element)).toBe(OFFICE_ROLE.saved('Intake officer'));
+  });
+
+  it('asks a barangay link for its barangay, from the API’s own list', async () => {
+    const { fixture, repository } = officeRole(account('a', 'staff', MSWDO));
+    const element = await settle(fixture);
+    chooseOfficeRole(element, 'barangay-link');
+    await settle(fixture);
+    typeReason(element, 'Encodes for San Juan.');
+    await settle(fixture);
+
+    expect(repository.barangayReads).toBe(1);
+    buttonNamed(element, OFFICE_ROLE.confirm('Barangay link'))?.click();
+    await settle(fixture);
+    expect(repository.officeRoles).toEqual([]);
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain('Choose the barangay');
+
+    const select = element.querySelector<HTMLSelectElement>('#account-office-role-barangay');
+    if (select === null) throw new Error('no barangay picker');
+    select.value = SAN_JUAN;
+    select.dispatchEvent(new Event('change'));
+    await settle(fixture);
+    buttonNamed(element, OFFICE_ROLE.confirm('Barangay link'))?.click();
+    await settle(fixture);
+
+    expect(repository.officeRoles).toEqual([
+      {
+        id: 'a',
+        change: { role: 'barangay-link', barangayId: SAN_JUAN, reason: 'Encodes for San Juan.' },
+      },
+    ]);
+  });
+
+  it('takes an office role away, saying every casework permission goes', async () => {
+    const { fixture, repository } = officeRole(account('a', 'staff', MSWDO, 'auditor'));
+    const element = await settle(fixture);
+    expect(element.textContent).toContain(OFFICE_ROLE.now('Auditor'));
+
+    chooseOfficeRole(element, 'none');
+    await settle(fixture);
+    for (const effect of OFFICE_ROLE_EFFECTS.clear) {
+      expect(element.textContent).toContain(effect);
+    }
+    typeReason(element, 'Left the audit team.');
+    await settle(fixture);
+    buttonNamed(element, OFFICE_ROLE.confirmNone)?.click();
+    await settle(fixture);
+
+    expect(repository.officeRoles).toEqual([
+      { id: 'a', change: { role: null, barangayId: null, reason: 'Left the audit team.' } },
+    ]);
+  });
+
+  it('offers nothing to a resident, an administrator, the reader’s own account, or without the grant', async () => {
+    const cases: [AppAccount, boolean, readonly Permission[] | undefined, string][] = [
+      [account('b', 'verified'), false, undefined, OFFICE_ROLE.notStaff],
+      [account(READER, 'admin'), false, undefined, OFFICE_ROLE.administrator],
+      [account('a', 'staff', MSWDO), true, undefined, OFFICE_ROLE.ownAccount],
+      [account('a', 'staff', MSWDO), false, ['user.view'], OFFICE_ROLE.noGrant],
+    ];
+    for (const [subject, own, granted, said] of cases) {
+      const { fixture } = officeRole(subject, own, granted);
+      const element = await settle(fixture);
+
+      expect(officeRoleChoices(element)).toEqual([]);
+      expect(element.textContent).toContain(said);
+    }
   });
 });

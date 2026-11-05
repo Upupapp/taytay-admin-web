@@ -21,6 +21,7 @@ import THREAD_MESSAGES_PAGE from './thread-messages-page.json';
 import THREAD_REPLY from './thread-reply.json';
 import THREADS_PAGE from './threads-page.json';
 import USER_OFFICE_ASSIGNED from './user-office-assigned.json';
+import USER_OFFICE_ROLE_CHANGED from './user-office-role-changed.json';
 import USER_ROLE_CHANGED from './user-role-changed.json';
 import USERS_PAGE from './users-page.json';
 import DELETED from './deleted.json';
@@ -116,7 +117,9 @@ function flatten(raw: unknown): unknown {
 /** What is wrong with `value` against `schema`, as sentences. Empty when it conforms. */
 function problems(value: unknown, raw: unknown, where: string): readonly string[] {
   const schema = flatten(raw);
-  const anyOf = at(schema, 'anyOf');
+  // `oneOf` is read as `anyOf` — one branch must fit. The Node spec writes a nullable reference that
+  // way (`office_role`, `scope`, `DL-173`), and skipping it would wave through any value at all.
+  const anyOf = at(schema, 'anyOf') ?? at(schema, 'oneOf');
 
   if (Array.isArray(anyOf)) {
     return anyOf.some((branch) => problems(value, branch, where).length === 0)
@@ -199,6 +202,7 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['users-page', USERS_PAGE, 'UserListEnvelope'],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
+    ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['office', OFFICE, 'OfficeEnvelope'],
     ['services-page', SERVICES_PAGE, 'ServiceListEnvelope'],
     ['service', SERVICE, 'ServiceEnvelope'],
@@ -244,12 +248,13 @@ describe('the Node fixtures, held to the vendored spec', () => {
   it('catches a fixture that drifts, so a green run means something', () => {
     const drifted = {
       ...ME_STAFF,
-      data: { ...ME_STAFF.data, role: 'auditor', scope: 'all-barangays' },
+      data: { ...ME_STAFF.data, role: 'auditor', scope: 'everywhere', data_scope: 'all-barangays' },
     };
 
     expect(problems(drifted, schema('UserProfileEnvelope'), 'body')).toEqual([
       'body.data.role is "auditor", which the schema does not list',
-      'body.data.scope is not declared by the schema',
+      'body.data.scope matches none of its alternatives',
+      'body.data.data_scope is not declared by the schema',
     ]);
   });
 });

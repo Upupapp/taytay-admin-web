@@ -137,5 +137,13 @@
   }
 </section>
 
+<!-- Its own section: unlike the two above, an office role change carries a reason (DL-173). -->
+<app-account-office-role
+  [account]="account()"
+  [own]="own()"
+  (changed)="changed.emit($event)"
+  (announced)="outcome.set($event)"
+/>
+
 <!-- Always in the DOM, so a screen reader hears the outcome when the text arrives. -->
 <p class="panel__outcome" role="status" aria-live="polite">{{ outcome() }}</p>

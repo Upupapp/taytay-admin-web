@@ -22,6 +22,15 @@
  * `DL-164` — the console's modules are casework and the API's are not — and it falls as platform
  * screens are built on the capabilities the API does grant, or as the API grows casework.
  *
+ * ## Since the API grew casework (`DL-173`)
+ *
+ * `GET /me` now carries `Permission`: the fifteen platform capabilities and, from the account's
+ * office role, the 69 casework keys — the console's own vocabulary, decided by the server from a
+ * table its own test compares with `ROLE_DEFINITIONS`. Every one of the 53 guards asks for a key the
+ * server can send, so the ceiling is **0**. That says a guard is *holdable*, not that its screen is
+ * served: a casework screen with no endpoint behind it is still closed by its `servedGuard`, and
+ * `check:unserved` keeps that count.
+ *
  * Nothing here maps one vocabulary onto the other. Deciding that `case.view` "means"
  * `household.view-counts` would be the console computing a grant the server never made.
  *
@@ -40,17 +49,30 @@ const ROUTES = 'src/app/app.routes.ts';
 
 /**
  * 24 → 42 on 5 November 2026 (`DL-165`): re-pointed from Laravel's `AccessControlPermission` to the
- * Node spec's `StaffCapability`. The API was replaced; no guard changed. LOWER THIS as guards become
- * reachable; never raise it. Raising it means adding a screen no user can open.
+ * Node spec's `StaffCapability`. The API was replaced; no guard changed.
+ * 42 → 0 on 6 November 2026 (`DL-173`): re-pointed to the spec's `Permission`, which `/me` carries
+ * since the server publishes the casework keys. No guard changed. Never raise it: raising it means
+ * adding a screen no user can open.
  */
-const CEILING = 42;
+const CEILING = 0;
 
 const spec = JSON.parse(readFileSync(join(ROOT, 'src/app/data/http/contract/openapi.json'), 'utf8'));
-const capabilities = spec.components?.schemas?.StaffCapability?.enum;
-const granted = new Set(Array.isArray(capabilities) ? capabilities : []);
+const schemas = spec.components?.schemas ?? {};
+const enumOf = (name) => (Array.isArray(schemas[name]?.enum) ? schemas[name].enum : []);
+const granted = new Set(enumOf('Permission'));
 
 if (granted.size === 0) {
-  console.error('\nCould not read components.schemas.StaffCapability from the vendored spec.\n');
+  console.error('\nCould not read components.schemas.Permission from the vendored spec.\n');
+  process.exit(1);
+}
+
+/*
+ * `Permission` is declared as the platform capabilities plus the casework keys. A union that drifted
+ * from its parts would let this check measure against keys neither part grants.
+ */
+const parts = [...enumOf('StaffCapability'), ...enumOf('CaseworkPermission')];
+if (parts.length !== granted.size || parts.some((key) => !granted.has(key))) {
+  console.error('\nPermission is no longer exactly StaffCapability plus CaseworkPermission in the vendored spec.\n');
   process.exit(1);
 }
 
@@ -61,8 +83,8 @@ if (granted.size === 0) {
  */
 const carried = spec.components?.schemas?.UserProfile?.properties?.permissions?.items?.$ref;
 
-if (carried !== '#/components/schemas/StaffCapability') {
-  console.error('\nUserProfile.permissions no longer carries StaffCapability, so this check would compare against nothing /me sends.\n');
+if (carried !== '#/components/schemas/Permission') {
+  console.error('\nUserProfile.permissions no longer carries Permission, so this check would compare against nothing /me sends.\n');
   process.exit(1);
 }
 
@@ -102,10 +124,10 @@ if (unreachable.length > CEILING) {
   console.error(
     `\nPermission parity check failed: ${unreachable.length - CEILING} new unreachable route guard(s).\n\n` +
       detail +
-      `\n  The API grants ${granted.size} capabilities and the console asks for keys outside that set.\n` +
+      `\n  The API grants ${granted.size} keys and the console asks for keys outside that set.\n` +
       `  fromServerIdentity keeps only what the server sends, so this guard refuses every user in\n` +
       `  every role — not as an error, but as a screen nobody can open.\n\n` +
-      `  Use a key from StaffCapability, or get the capability added to the API first.\n`,
+      `  Use a key from Permission, or get the key added to the API first.\n`,
   );
   process.exit(1);
 }
@@ -119,5 +141,5 @@ if (unreachable.length < CEILING) {
 }
 
 console.log(
-  `Permission parity at the recorded ceiling (${unreachable.length}/${guards.length} unreachable guards against ${granted.size} StaffCapability keys, L-23 outstanding).`,
+  `Permission parity at the recorded ceiling (${unreachable.length}/${guards.length} unreachable guards against ${granted.size} Permission keys).`,
 );
