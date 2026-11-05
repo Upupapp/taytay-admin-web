@@ -19,10 +19,14 @@ business pages, and no business rules that money or eligibility depend on.
 
 ### Sibling repositories (separate local repos, not in this tree)
 
-| Concern             | Location                                              | Relationship                                                                |
-| ------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------- |
-| Backend / API       | `Desktop\Taytay_Rizal_LGUIDS_Backend`                 | Owns persistence, authorization enforcement, and the API this app consumes. |
-| Resident mobile app | `Desktop\Taytay_Rizal_LGUIDS_Resident_Mobile_Flutter` | Beneficiary-facing Flutter app against the same backend.                    |
+| Concern             | Location                             | Relationship                                                                                                                                     |
+| ------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Backend / API       | `Documents\GitHub\taytay-backend`    | Node 20 / Express / PostgreSQL on Linode; Firebase for sign-in only. Owns persistence, authorization enforcement, and the API this app consumes. |
+| Resident mobile app | `Documents\GitHub\taytay-mobile-app` | Resident-facing Flutter app against the same backend.                                                                                            |
+
+The backend was Laravel until 2026-10-20 and is Node since (`DL-164`); the Laravel tree survives only
+at its `laravel-archive` tag. Older entries in `docs/` that name `php artisan`, a `Desktop\…` path or
+Laravel route snapshots describe that retired API.
 
 Never implement backend or mobile concerns here. If a task appears to require
 one, stop and say so.
@@ -48,13 +52,14 @@ one, stop and say so.
    protection.
 5. **Secrets and credentials are never read, printed, stored or committed.**
    No token is placed in `localStorage`, `sessionStorage`, a cookie, a URL or a
-   log by this app. Authentication is a **first-party bearer token** held in a
-   private field of an injectable service (ADR 0005, ADR 0006); TAB 02 builds
-   the holder. This rule previously said credentials travel in an HTTP-only
-   cookie set by the API — they never have. The API sets
-   `supports_credentials => false`, so a credentialed request is refused by the
-   browser before any application code runs, and `withCredentials` was removed
-   in TAB 01. Never widen the server to make a request succeed.
+   log by this app. Authentication is a **Firebase ID token sent as a bearer
+   token**, held in a private field of an injectable service (ADR 0006, restated
+   in `DL-164` because the ADR survives only at the backend's archive tag).
+   Credentials never travel in a cookie: `withCredentials` was removed in TAB 01,
+   and the API's CORS policy names exact origins, sends no credentials header and
+   allows four request headers (backend `src/http/cors.ts`), so a credentialed or
+   extra-header request is refused by the browser before any application code
+   runs. Never widen the server to make a request succeed.
 6. **Money is integer centavos** (`Money` in `domain/shared/money.ts`). No
    floating-point arithmetic on amounts, anywhere, ever. Format only at render
    time via `PesoPipe`.
@@ -69,7 +74,7 @@ one, stop and say so.
    deployment, and any production access or data operation.
    **No CI workflow files are committed** — the owner has no Actions credit, so
    `.github/workflows/` stays out of every commit and the gates run locally
-   instead (`npm run verify` here, `phpunit` + `pint` in the backend). A full
+   instead (`npm run verify` here, `npm test` + `npm run typecheck` in the backend). A full
    sweep of both runs before any push.
 10. **Preserve existing architecture.** Migrations (state library, UI kit,
     styling approach) require an explicit instruction, not an inference.
@@ -117,29 +122,25 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 Each enforces a rule a comment could not, and each was validated against planted
 regressions. Do not weaken one to make a change pass.
 
-**Three of them are ratcheted baselines rather than pass/fail rules**, because
-they count a body of pre-existing debt too large to fail the build on:
+**The contract checks measure the vendored Node spec**, `data/http/contract/openapi.json`, with
+its commit and sha256 in `openapi.source.json` (refresh with `node tools/vendor-openapi.mjs`). Since
+the move (`DL-165`) they are hard rules: the Laravel-era debt they used to count went with the
+adapters that carried it.
 
-- `check:routes` compares every composed request path against the backend's own
-  published route snapshot, vendored here with its commit and sha256. It found
-  61 paths that 404 — including, at the time, every money write.
-- `check:wire-adoption` counts write bodies sent **without an explicit
-  `toWire…` mapper**. The API validates `snake_case` and this console posts
-  camelCase domain objects, so each is a 422 nobody has ever seen. It is not a
-  casing problem: `ResidentDraft` nests `name`, `address` and `contact` where the
-  API wants them flat, which is why the generic converter this file forbids could
+- `check:routes` resolves every composed request path against the spec at its verb. It also counts
+  the ports bound to an **unserved** adapter in the `http` set — 18 of 20 at the move — and fails if
+  that number grows.
+- `check:wire-adoption` requires every write body to go through an explicit `toWire…` mapper whose
+  literal keys the operation's `requestBody` declares. The API validates `snake_case` and the domain
+  is camelCase and differently shaped, which is why the generic converter this file forbids could
   never bridge it.
+- `check:port-adoption` counts port methods **no screen calls**, and fails when the number grows. A
+  method can be declared, implemented on both adapters, tested on both, and pass every other gate
+  while being reachable from nowhere. Its number is a *floor*: the search is textual and
+  under-reports, which is the safe direction for a ratchet.
 
-- `check:port-adoption` counts port methods **no screen calls**. A method can be
-  declared, implemented on both adapters, tested on both, and pass every other
-  gate while being reachable from nowhere — because none of the others runs it.
-  It found that a document cannot be uploaded, a payout session cannot be
-  created, and **a referral cannot be sent**. Its number is a *floor*: the search
-  is textual and under-reports, which is the safe direction for a ratchet.
-
-All three print their count on every run and **fail when the number grows**. A
-baseline is never an allow-list: nothing in any of them is acceptable, and gate
-line 05/07 stays NO-GO until they reach zero.
+A baseline is never an allow-list: nothing counted in one is acceptable, and the launch gate stays
+NO-GO while any port is unserved, unless the owner retires the screens behind it.
 
 **`check:scanners` is the one that watches the watchers** (`DL-143`). Four of
 these tools matched `this\.api\.` with the dots contiguous, so a call whose
@@ -152,18 +153,20 @@ fails the build when one does not.
 
 **`check:response-shape` asks the fourth question** (`DL-156`): would the
 *answer* be understood? It compares each read's helper against the envelope its
-route actually answers with, vendored from the controller behind it. **There is
-no `ApiResponse::collection`** in that API — every list is a `page` or an `item`
-wrapping an array — so `collection<T>` is wrong wherever it appears. It started
-at 29 of 70; the reads that showed **nothing** are all fixed, and 21 remain,
-nineteen of them showing the first 25 rows as the whole list — the failure that
-looks like working software.
+operation answers with, derived from the spec: a cursor page
+(`meta.pagination{has_more,next_cursor}`), a bare list (`meta: {}`), or an item.
+A read the spec does not cover fails. `DL-156`'s "there is no
+`ApiResponse::collection`" was a fact about the retired Laravel API; the Node API
+does answer some lists bare, and for those a list helper is right (`DL-164`).
+Reading the first page as the whole list is still the failure that looks like
+working software.
 
 **A list somebody picks from is read in full** (`DL-161`). `ApiClient.everyPage`
-follows the pages and **refuses past a ceiling rather than truncating**, because
+follows the cursors and **refuses past a ceiling rather than truncating**, because
 a picker missing a programme is not a missing page: an intake officer concludes
-the office does not run it. A browsable list is different and takes a `Page<T>`
-with the page said on screen. A helper missing from `check:response-shape`'s
+the office does not run it. A browsable list is different: it is read a page at a
+time, and says on screen that more exist — never "page 1 of N", because the API
+sends no total. A helper missing from `check:response-shape`'s
 table is *skipped*, so the check now fails if `ApiClient` grows a read helper it
 does not know.
 
@@ -228,18 +231,19 @@ on this machine.
 master command names as having shipped once already. `check:environments` now fails the build on
 it, and `check:bundle` inspects the built artefact for seed data, because a tree-shaking assumption
 is not a guarantee. The seam is two files swapped by `angular.json` rather than a runtime `if`, so
-a production build cannot reach the mock: it never imports it (`DL-136`). The API exists;
-TAB 01 reconciled `data/http/api.contract.ts` against it, so that file now
-describes what `/api/v1` actually serves rather than what the console hoped for.
-TAB 05 repoints the twenty adapters and TAB 12 flips the flag per environment —
-flipping it before the adapters are repointed would 404 every screen.
+a production build cannot reach the mock: it never imports it (`DL-136`). The API is the Node
+service (`DL-164`), and `data/http/api.contract.ts` describes what its `/api/v1` actually serves. In
+the `http` set two ports are served — staff identity and notifications — and the other eighteen are
+bound to **unserved** adapters that make no request and say, in a sentence, that this part of the
+console has no server yet (`DL-165`). Mock data never stands in for a missing server.
 
 `data/http` and `core/http` are the **transport seam**: the only two places
 allowed to name a `snake_case` wire field. Adapters map wire shapes into the
 domain explicitly — never a generic recursive case-converter, which cannot tell
 a field name from a key inside a free-text note. `npm run check:contract`
-enforces the seam, the versioned base URL, the pagination and sort shapes, the
-error envelope and the absence of `withCredentials`.
+enforces the seam, the versioned base URL, the cursor pagination shape (and that
+no `page`, `per_page` or `sort` is ever sent), the error envelope, the request
+headers the API's CORS policy allows, and the absence of `withCredentials`.
 
 ---
 
