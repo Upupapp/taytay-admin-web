@@ -78,6 +78,12 @@ import {
   type DigitalIdHolder,
   type DigitalIdId,
   type DigitalIdRepository,
+  type BalitaArticle,
+  type BalitaArticleId,
+  type BalitaCategory,
+  type BalitaChanges,
+  type BalitaDraft,
+  type BalitaRepository,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -93,6 +99,12 @@ import {
   toDigitalIdHolder,
   toWireDigitalIdVerify,
 } from './mappers/digital-id.mapper';
+import {
+  toBalitaArticle,
+  toBalitaCategory,
+  toWireNewsPatch,
+  toWireNewsWrite,
+} from './mappers/balita.mapper';
 import { toOffice } from './mappers/office.mapper';
 import {
   toDirectoryOffice,
@@ -1023,4 +1035,73 @@ function readHolder(wire: unknown): DigitalIdHolder {
   }
 
   return holder;
+}
+
+/**
+ * Balita (`news.write`, `DL-171`). The list is the residents' own — `GET news`, published only —
+ * because the API has no other; a draft is read by its address, which answers one to its office's
+ * staff and to administrators. Writes are forms, because the cover travels with the words.
+ */
+@Injectable()
+export class HttpBalitaRepository implements BalitaRepository {
+  private readonly api = inject(ApiClient);
+
+  /** One page, read whole or not at all: an article the mapper cannot read refuses the page. */
+  list(page: CursorRequest): Observable<CursorPage<BalitaArticle>> {
+    return this.api
+      .cursorPage(API_ENDPOINTS.news, page)
+      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readArticle) })));
+  }
+
+  /** A `404` — no such article, or a draft the reader may not see — is `null`. */
+  get(id: BalitaArticleId): Observable<BalitaArticle | null> {
+    return this.api
+      .optionalItem(`${API_ENDPOINTS.news}/${encodeURIComponent(id)}`)
+      .pipe(map((wire) => (wire === null ? null : readArticle(wire))));
+  }
+
+  categories(): Observable<readonly BalitaCategory[]> {
+    return this.api.list(API_ENDPOINTS.newsCategories).pipe(
+      map((items) =>
+        items.map(toBalitaCategory).filter((item): item is BalitaCategory => item !== null),
+      ),
+    );
+  }
+
+  create(draft: BalitaDraft, cover: Blob | null): Observable<BalitaArticle> {
+    return this.api
+      .postForm(API_ENDPOINTS.news, toWireNewsWrite(draft, cover))
+      .pipe(map(readArticle));
+  }
+
+  update(id: BalitaArticleId, changes: BalitaChanges, cover: Blob | null): Observable<BalitaArticle> {
+    return this.api
+      .patchForm(`${API_ENDPOINTS.news}/${id}`, toWireNewsPatch(changes, cover))
+      .pipe(map(readArticle));
+  }
+
+  pin(id: BalitaArticleId): Observable<BalitaArticle> {
+    return this.api.post(`${API_ENDPOINTS.news}/${id}/pin`, {}).pipe(map(readArticle));
+  }
+
+  unpin(id: BalitaArticleId): Observable<BalitaArticle> {
+    return this.api.delete(`${API_ENDPOINTS.news}/${id}/pin`).pipe(map(readArticle));
+  }
+
+  openCover(id: BalitaArticleId): Observable<Blob> {
+    return this.api.blob(`${API_ENDPOINTS.news}/${id}/cover`);
+  }
+}
+
+function readArticle(wire: unknown): BalitaArticle {
+  const article = toBalitaArticle(wire);
+
+  if (article === null) {
+    throw new Error(
+      'An article from the server could not be read, so none is shown rather than some: an ' +
+        'article left out of this list is one nobody here knows residents are reading.',
+    );
+  }
+
+  return article;
 }

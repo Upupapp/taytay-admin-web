@@ -1,0 +1,135 @@
+<app-page-header [title]="copy.page.title" [subtitle]="copy.page.subtitle">
+  <button type="button" page-actions class="btn btn--primary" (click)="write()">
+    {{ copy.page.write }}
+  </button>
+</app-page-header>
+
+<div class="balita">
+  <section class="card balita__section" aria-labelledby="balita-rules">
+    <h2 id="balita-rules" class="balita__heading">{{ copy.page.rules }}</h2>
+    <ul class="balita__effects">
+      @for (rule of rules; track $index) {
+        <li>{{ rule }}</li>
+      }
+    </ul>
+  </section>
+
+  <section class="card balita__section" aria-labelledby="balita-list">
+    <h2 id="balita-list" class="balita__heading">{{ copy.list.heading }}</h2>
+    <p class="balita__note">{{ copy.list.lead }}</p>
+
+    <app-async-content
+      [state]="first()"
+      [content]="listContent"
+      [skeletonLines]="6"
+      (retryRequested)="reload()"
+    >
+      <ng-template #listContent>
+        <app-data-table
+          [columns]="columns()"
+          [rows]="rows()"
+          [rowKey]="rowKey"
+          [caption]="copy.list.caption"
+          [emptyHeading]="copy.list.emptyHeading"
+          [emptyMessage]="copy.list.emptyMessage"
+        />
+
+        @if (rows().length > 0) {
+          <div class="balita__more">
+            <p class="balita__note" role="status">
+              {{ copy.list.shown(rows().length) }}
+              {{ hasMore() ? copy.list.moreAvailable : copy.list.noMore }}
+            </p>
+            @if (hasMore()) {
+              <button type="button" class="btn" [disabled]="loadingMore()" (click)="showMore()">
+                {{ loadingMore() ? copy.list.loadingMore : copy.list.showMore }}
+              </button>
+            }
+            @if (moreFailed()) {
+              <p class="balita__problem" role="alert">{{ copy.list.moreFailed }}</p>
+            }
+          </div>
+        }
+      </ng-template>
+    </app-async-content>
+  </section>
+
+  <section class="card balita__section" aria-labelledby="balita-drafts">
+    <h2 id="balita-drafts" class="balita__heading">{{ copy.drafts.heading }}</h2>
+    <p class="balita__note">{{ copy.drafts.lead }}</p>
+    @if (drafts().length > 0) {
+      <ul class="balita__drafts">
+        @for (draft of drafts(); track draft.id) {
+          <li>
+            <button type="button" class="btn btn--small" (click)="open(draft)">
+              {{ draft.title }}
+            </button>
+            <span class="balita__note">{{ copy.drafts.id(draft.id) }}</span>
+          </li>
+        }
+      </ul>
+    }
+
+    <form class="balita__lookup" (submit)="$event.preventDefault(); openById()">
+      <h3 class="balita__subheading">{{ copy.byId.heading }}</h3>
+      <p class="balita__note">{{ copy.byId.lead }}</p>
+      <div class="field">
+        <label class="field__label" for="balita-lookup">{{ copy.byId.label }}</label>
+        <input
+          id="balita-lookup"
+          class="field__input"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          [value]="lookupId()"
+          [disabled]="lookupBusy()"
+          (input)="typedId($event)"
+        />
+      </div>
+      <button type="submit" class="btn" [disabled]="lookupBusy()">
+        {{ lookupBusy() ? copy.byId.opening : copy.byId.submit }}
+      </button>
+      @if (lookupProblem()) {
+        <p class="balita__problem" role="alert">{{ lookupProblem() }}</p>
+      }
+    </form>
+  </section>
+</div>
+
+<ng-template #titleCell let-article>
+  {{ article.title }}
+  @if (article.pinned) {
+    <strong class="balita__pinned">({{ copy.list.pinned }})</strong>
+  }
+</ng-template>
+
+<ng-template #actionCell let-article>
+  <button
+    type="button"
+    class="btn btn--small"
+    [attr.aria-label]="copy.list.openLabel(article.title)"
+    (click)="open(article)"
+  >
+    {{ copy.list.open }}
+  </button>
+</ng-template>
+
+@if (editing(); as current) {
+  <app-drawer
+    [open]="true"
+    size="wide"
+    [heading]="
+      current === 'new' ? copy.editor.newHeading : copy.editor.editHeading(current.title)
+    "
+    (dismissed)="close()"
+  >
+    <div drawer-body>
+      <app-balita-editor
+        [article]="editingArticle()"
+        [categories]="categories()"
+        [offices]="directory.state()"
+        (saved)="onSaved($event)"
+      />
+    </div>
+  </app-drawer>
+}

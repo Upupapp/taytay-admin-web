@@ -112,6 +112,7 @@ import type {
 import type { HouseholdDetail, HouseholdSummary } from '../households/household-profile';
 import type {
   AppAccountId,
+  BalitaArticleId,
   DigitalIdId,
   DocumentRequestId,
   DuplicatePairId,
@@ -144,6 +145,12 @@ import type {
 } from '../home/home-screen';
 import type { AppConfig, AppConfigChanges } from '../app-config/app-config';
 import type { DigitalIdCard, DigitalIdHolder } from '../digital-ids/digital-id';
+import type {
+  BalitaArticle,
+  BalitaCategory,
+  BalitaChanges,
+  BalitaDraft,
+} from '../balita/balita-article';
 import type {
   VerificationFilter,
   VerificationImageKind,
@@ -1651,3 +1658,33 @@ export interface DigitalIdRepository {
 }
 
 export const DIGITAL_ID_REPOSITORY = new InjectionToken<DigitalIdRepository>('DigitalIdRepository');
+
+/* ── Balita (`DL-171`) ──────────────────────────────────────────────────── */
+
+/**
+ * The news residents read in the app (`news.write`). **Not `NewsfeedRepository`**, which stays
+ * unserved (`DL-164`). The list is the residents' own — published only; a draft is read by its id.
+ */
+export interface BalitaRepository {
+  /** One cursor page of published articles, pinned first then newest. No total (`DL-161`). */
+  list(page: CursorRequest): Observable<CursorPage<BalitaArticle>>;
+
+  /** One article, a draft included where the API lets the reader see it; `null` when it does not. */
+  get(id: BalitaArticleId): Observable<BalitaArticle | null>;
+
+  categories(): Observable<readonly BalitaCategory[]>;
+
+  create(draft: BalitaDraft, cover: Blob | null): Observable<BalitaArticle>;
+
+  /** Changes what `changes` names, and replaces the cover if one is given. */
+  update(id: BalitaArticleId, changes: BalitaChanges, cover: Blob | null): Observable<BalitaArticle>;
+
+  pin(id: BalitaArticleId): Observable<BalitaArticle>;
+
+  unpin(id: BalitaArticleId): Observable<BalitaArticle>;
+
+  /** The cover as bytes, through the data layer, never as an address. */
+  openCover(id: BalitaArticleId): Observable<Blob>;
+}
+
+export const BALITA_REPOSITORY = new InjectionToken<BalitaRepository>('BalitaRepository');

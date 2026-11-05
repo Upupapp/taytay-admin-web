@@ -1,0 +1,220 @@
+@let current = article();
+
+@if (current !== null) {
+  <dl class="balita__facts">
+    <dt>{{ copy.status }}</dt>
+    <dd><app-status-badge [catalog]="catalog" [status]="current.status" /></dd>
+    <dt>{{ copy.id }}</dt>
+    <dd>
+      <code>{{ current.id }}</code>
+    </dd>
+    @if (current.publishedAt; as published) {
+      <dt>{{ copy.published }}</dt>
+      <dd>{{ published | date: 'd MMM y, h:mm a' }}</dd>
+    }
+  </dl>
+}
+
+<form class="balita__form" (submit)="$event.preventDefault()">
+  <div class="field">
+    <label class="field__label" for="balita-title">{{ copy.title }}</label>
+    <input
+      id="balita-title"
+      class="field__input"
+      type="text"
+      maxlength="160"
+      aria-describedby="balita-title-hint"
+      [value]="title()"
+      [disabled]="busy()"
+      (input)="setTitle($event)"
+    />
+    <p id="balita-title-hint" class="field__hint">{{ copy.titleHint }}</p>
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="balita-body">{{ copy.body }}</label>
+    <textarea
+      id="balita-body"
+      class="field__input"
+      rows="10"
+      maxlength="20000"
+      aria-describedby="balita-body-hint"
+      [value]="body()"
+      [disabled]="busy()"
+      (input)="setBody($event)"
+    ></textarea>
+    <p id="balita-body-hint" class="field__hint">{{ copy.bodyHint }}</p>
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="balita-category">{{ copy.category }}</label>
+    <select
+      id="balita-category"
+      class="field__input"
+      aria-describedby="balita-category-hint"
+      [disabled]="busy() || categories().kind !== 'ready'"
+      (change)="setCategory($event)"
+    >
+      <option value="" [selected]="category() === null" [disabled]="current !== null && current.category !== null">
+        {{ copy.noCategory }}
+      </option>
+      @for (option of categoryList(); track option.slug) {
+        <option [value]="option.slug" [selected]="category() === option.slug">
+          {{ option.label }}
+        </option>
+      }
+    </select>
+    <p id="balita-category-hint" class="field__hint">
+      @if (categories().kind === 'error') {
+        {{ copy.categoriesFailed }}
+      } @else {
+        {{ copy.categoryKept }}
+      }
+    </p>
+  </div>
+
+  @if (current === null) {
+    <div class="field">
+      <label class="field__label" for="balita-office">{{ copy.office }}</label>
+      <select
+        id="balita-office"
+        class="field__input"
+        aria-describedby="balita-office-hint"
+        [disabled]="busy()"
+        (change)="setOffice($event)"
+      >
+        <option value="" [selected]="office() === null">{{ copy.ownOffice }}</option>
+        @for (option of officeList(); track option.id) {
+          <option [value]="option.id" [selected]="office() === option.id">
+            {{ officeName(option) }}
+          </option>
+        }
+      </select>
+      @if (offices().kind === 'error') {
+        <p id="balita-office-hint" class="field__hint">{{ copy.officesFailed }}</p>
+      }
+    </div>
+  }
+
+  <div class="balita__cover">
+    @if (current?.hasCover) {
+      @if (coverUrl(); as url) {
+        <img [src]="url" [alt]="copy.coverAlt" width="240" />
+        <button type="button" class="btn" (click)="hideCover()">{{ copy.coverHide }}</button>
+      } @else if (coverState() === 'loading') {
+        <p class="balita__note" role="status">{{ copy.coverLoading }}</p>
+      } @else {
+        @if (coverState() === 'failed') {
+          <p class="balita__problem" role="alert">{{ copy.coverFailed }}</p>
+        }
+        <button type="button" class="btn" (click)="showCover()">{{ copy.coverShow }}</button>
+      }
+    } @else if (current !== null) {
+      <p class="balita__note">{{ copy.noCover }}</p>
+    }
+
+    <app-image-file-field
+      inputId="balita-cover"
+      [label]="current?.hasCover ? copy.coverNew : copy.cover"
+      [hint]="copy.coverHint"
+      [disabled]="busy()"
+      (chosen)="cover.set($event)"
+    />
+    <!-- The API keeps no description of a cover; said here rather than collected (DL-125). -->
+    <ul class="balita__effects">
+      @for (effect of coverEffects; track $index) {
+        <li>{{ effect }}</li>
+      }
+    </ul>
+  </div>
+
+  @if (problem()) {
+    <p class="balita__problem" role="alert">{{ problem() }}</p>
+  }
+
+  @if (current === null) {
+    <!-- What each button does, above the button that does it (DL-124). -->
+    <div class="balita__act">
+      <ul class="balita__effects">
+        @for (effect of effects['save-draft']; track $index) {
+          <li>{{ effect }}</li>
+        }
+      </ul>
+      <button type="button" class="btn" [disabled]="busy()" (click)="create('draft')">
+        {{ busy() ? copy.working : copy.saveDraft }}
+      </button>
+    </div>
+    <div class="balita__act">
+      <ul class="balita__effects">
+        @for (effect of effects.publish; track $index) {
+          <li>{{ effect }}</li>
+        }
+      </ul>
+      <button type="button" class="btn btn--primary" [disabled]="busy()" (click)="create('published')">
+        {{ busy() ? copy.working : copy.publish }}
+      </button>
+    </div>
+  } @else {
+    @if (current.status === 'published') {
+      <div class="balita__act">
+        <ul class="balita__effects">
+          @for (effect of effects['edit-published']; track $index) {
+            <li>{{ effect }}</li>
+          }
+        </ul>
+        <button
+          type="button"
+          class="btn btn--primary"
+          [disabled]="busy() || !changed()"
+          (click)="save()"
+        >
+          {{ busy() ? copy.working : copy.save }}
+        </button>
+      </div>
+      <div class="balita__act">
+        <ul class="balita__effects">
+          @for (effect of effects[current.pinned ? 'unpin' : 'pin']; track $index) {
+            <li>{{ effect }}</li>
+          }
+        </ul>
+        <button type="button" class="btn" [disabled]="busy()" (click)="pin(!current.pinned)">
+          {{ current.pinned ? copy.unpin : copy.pin }}
+        </button>
+      </div>
+      <div class="balita__act">
+        <ul class="balita__effects">
+          @for (effect of effects.unpublish; track $index) {
+            <li>{{ effect }}</li>
+          }
+        </ul>
+        <button type="button" class="btn" [disabled]="busy()" (click)="move('draft')">
+          {{ copy.unpublish }}
+        </button>
+      </div>
+    } @else {
+      <div class="balita__act">
+        <ul class="balita__effects">
+          @for (effect of effects['save-draft']; track $index) {
+            <li>{{ effect }}</li>
+          }
+        </ul>
+        <button type="button" class="btn" [disabled]="busy() || !changed()" (click)="save()">
+          {{ busy() ? copy.working : copy.save }}
+        </button>
+      </div>
+      <div class="balita__act">
+        <ul class="balita__effects">
+          @for (effect of effects.publish; track $index) {
+            <li>{{ effect }}</li>
+          }
+        </ul>
+        <button type="button" class="btn btn--primary" [disabled]="busy()" (click)="move('published')">
+          {{ busy() ? copy.working : copy.publish }}
+        </button>
+      </div>
+    }
+  }
+</form>
+
+<!-- Always in the DOM, so a screen reader hears the outcome when the text arrives. -->
+<p class="balita__outcome" role="status" aria-live="polite">{{ outcome() }}</p>

@@ -253,6 +253,15 @@ export const PERMISSIONS = [
    */
   'digital-id.verify',
   'digital-id.manage',
+
+  /*
+   * BALITA (`DL-171`) — the server's key, spelled as its `StaffCapability`. Writing, publishing and
+   * pinning the news residents read in the app. **Not** `newsfeed.*`, which belongs to the unserved
+   * newsfeed module (`DL-164`). The server gives it to `admin`, and to `staff` only while the
+   * account is assigned to an office — the same rule as `office-inbox.manage` — so the roles that
+   * hold that key hold this one. Mutating: a published article goes out in the municipality's name.
+   */
+  'news.write',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -311,8 +320,10 @@ const INTAKE_PERMISSIONS: readonly Permission[] = [
   // residents. The roles that work at the MSWDO hold it; the barangay link, who works from a
   // barangay rather than at an office, and the auditor, whose role is read-only, do not.
   'office-inbox.manage',
-  // Mirrors the server (`DL-171`): every staff account checks a resident's digital ID.
+  // Mirrors the server (`DL-171`): every staff account checks a resident's digital ID, and a staff
+  // account at an office writes that office's Balita.
   'digital-id.verify',
+  'news.write',
 ];
 
 const SOCIAL_WORKER_PERMISSIONS: readonly Permission[] = [
@@ -443,6 +454,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       // A staff account at the office, so it answers the office's residents, as on the server.
       'office-inbox.manage',
       'digital-id.verify',
+      'news.write',
     ],
   },
   'barangay-link': {

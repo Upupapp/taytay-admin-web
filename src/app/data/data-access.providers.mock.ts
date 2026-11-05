@@ -31,6 +31,7 @@ import {
   HOME_SCREEN_REPOSITORY,
   APP_CONFIG_REPOSITORY,
   DIGITAL_ID_REPOSITORY,
+  BALITA_REPOSITORY,
   HOTLINE_REPOSITORY,
   TULONG_SERVICE_REPOSITORY,
 } from '@domain/index';
@@ -67,6 +68,7 @@ import {
 import { MockHomeScreenRepository } from './mock/mock-home-screen.repository';
 import { MockAppConfigRepository } from './mock/mock-app-config.repository';
 import { MockDigitalIdRepository } from './mock/mock-digital-id.repository';
+import { MockBalitaRepository } from './mock/mock-balita.repository';
 
 /**
  * THE MOCK/HTTP SEAM — the mock half.
@@ -110,6 +112,7 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: HOME_SCREEN_REPOSITORY, useClass: MockHomeScreenRepository },
     { provide: APP_CONFIG_REPOSITORY, useClass: MockAppConfigRepository },
     { provide: DIGITAL_ID_REPOSITORY, useClass: MockDigitalIdRepository },
+    { provide: BALITA_REPOSITORY, useClass: MockBalitaRepository },
     // The mock serves every port, and says so rather than leaving the token unbound (`DL-167`).
     { provide: UNSERVED_PORTS, useValue: [] },
   ]);

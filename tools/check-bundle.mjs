@@ -61,6 +61,8 @@ const SEED_MARKERS = [
   // The digital ID seed's sample codes and card numbers (`DL-171`).
   'SAMPLE-QR.',
   'TAY-SAMPLE-',
+  // The Balita seed's article titles (`DL-171`).
+  'SAMPLE BALITA - ',
   'mockLatencyMs":250',
 ];
 

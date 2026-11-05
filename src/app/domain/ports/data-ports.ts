@@ -39,6 +39,7 @@ export const DATA_PORTS = [
   'home-screen',
   'app-config',
   'digital-id',
+  'balita',
 ] as const;
 
 export type DataPort = (typeof DATA_PORTS)[number];
@@ -80,6 +81,7 @@ export const DATA_PORT_HOLDINGS: Readonly<Record<DataPort, string>> = {
   'home-screen': 'the app’s home screen',
   'app-config': 'the app’s settings',
   'digital-id': 'residents’ digital IDs',
+  balita: 'the app’s Balita',
 };
 
 /**

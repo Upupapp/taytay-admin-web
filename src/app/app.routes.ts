@@ -583,6 +583,14 @@ export const routes: Routes = [
           import('@features/digital-ids/digital-ids-page').then((m) => m.DigitalIdsPage),
       },
       {
+        // `DL-171`. The API grants `news.write` to administrators and to staff at an office; this guard
+        // mirrors it and is not the protection (rule 4). The office picker reads the office directory.
+        path: 'balita',
+        title: 'Balita — Taytay Social Welfare',
+        canActivate: [servedGuard('balita', 'office'), permissionGuard('news.write')],
+        loadComponent: () => import('@features/balita/balita-page').then((m) => m.BalitaPage),
+      },
+      {
         // Where every unserved module's address leads (`DL-167`). No permission: it names what the
         // server lacks, which is no secret about any record, and it is linked from the menu.
         path: 'unavailable',

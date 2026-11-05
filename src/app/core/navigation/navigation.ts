@@ -241,6 +241,15 @@ export const NAVIGATION: readonly NavSection[] = [
         permissions: ['digital-id.verify', 'digital-id.manage'],
         description: 'Check the digital ID a resident shows, and issue, suspend or revoke cards.',
       },
+      {
+        // `DL-171`. The news residents read in the app. Not the newsfeed, which has no server.
+        label: 'Balita',
+        route: '/balita',
+        reads: ['balita', 'office'],
+        glyph: 'BL',
+        permissions: ['news.write'],
+        description: 'Write and publish the news residents read in the Taytay app.',
+      },
     ],
   },
   {

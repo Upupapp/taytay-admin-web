@@ -205,6 +205,14 @@ export const API_ENDPOINTS = {
    * An account’s card is read and issued at `admin/users/{id}/digital-id`.
    */
   adminDigitalIds: 'admin/digital-ids',
+  /**
+   * Balita (`news.write`, `DL-171`). `GET` is the residents' list — published only, cursor-paged;
+   * one by `{id}` (a draft to its office and administrators); `POST` and `PATCH {id}` as forms;
+   * `{id}/pin` by `POST` and `DELETE`; the cover's bytes at `{id}/cover`.
+   */
+  news: 'news',
+  /** Balita's five categories, a bare list. */
+  newsCategories: 'news/categories',
 } as const;
 
 /** The one place `meta.pagination` becomes a domain `CursorPage`. */

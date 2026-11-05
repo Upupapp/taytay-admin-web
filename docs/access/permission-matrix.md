@@ -35,7 +35,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-82 permissions × 7 roles. `X` means the role holds the permission.
+83 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -147,6 +147,11 @@ account's and a read; keeping cards is the administrator's alone. -->
 
 | `digital-id.verify`               | X     | X     | X     | X     | X     | X     | X    |
 | `digital-id.manage`               | X     |       |       |       |       |       |      |
+
+<!-- Balita, the residents' app news, added by DL-171. The server's own key: staff at an office and
+administrators, so the roles that answer an office's inbox. Not the newsfeed's keys. -->
+
+| `news.write`                      | X     | X     | X     | X     | X     |       |      |
 
 ---
 

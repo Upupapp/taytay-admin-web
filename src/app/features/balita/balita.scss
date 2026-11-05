@@ -1,0 +1,120 @@
+/* Layout only: every status, effect and outcome is text in the DOM. */
+
+.balita {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-section);
+}
+
+.balita__section,
+.balita__form,
+.balita__result,
+.balita__more {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-snug);
+}
+
+.balita__form {
+  align-self: stretch;
+}
+
+.balita__heading,
+.balita__subheading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.balita__facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-snug) var(--space-section);
+  margin: 0;
+}
+
+.balita__facts dt {
+  font-weight: 600;
+}
+
+.balita__facts dd {
+  margin: 0;
+}
+
+.balita__effects {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+  font-size: 13px;
+}
+
+.balita__effects p,
+.balita__effects ul,
+.balita__note,
+.balita__problem,
+.balita__outcome {
+  margin: 0;
+  font-size: 13px;
+}
+
+.balita__note,
+.balita__aside {
+  color: var(--c-text-muted);
+}
+
+.balita__aside {
+  display: block;
+  font-size: 12.5px;
+}
+
+.balita__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-snug);
+}
+
+.balita__photo {
+  margin: 0;
+}
+
+.balita__photo img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.balita__cover,
+.balita__act,
+.balita__lookup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-snug);
+}
+
+.balita__act {
+  padding-block-start: var(--space-snug);
+  border-block-start: 1px solid var(--c-border);
+}
+
+.balita__cover img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.balita__drafts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.balita__pinned {
+  margin-inline-start: var(--space-micro);
+  font-size: 12.5px;
+}

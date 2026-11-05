@@ -120,7 +120,7 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:bundle`, `check:routes`, `check:response-shape`, `check:wire-adoption`,
 `check:port-adoption`, `check:scanners`, `check:unserved`, `check:verification`,
 `check:inbox`, `check:accounts`, `check:directory`, `check:home`,
-`check:app-settings` and `check:digital-ids`.
+`check:app-settings`, `check:digital-ids` and `check:balita`.
 `check:unserved` keeps a module whose port the active adapter set cannot serve out
 of the navigation and names it on one page (`DL-167`); `check:verification` holds
 the ID-review screen to its privacy rules — images only after a warning, fetched
@@ -142,7 +142,10 @@ that can make every resident update the app or accept again (`DL-170`);
 `check:digital-ids` keeps checking a resident's card a lookup — no camera, nothing
 logged or kept, the code emptied as it is sent, the photo only after a warning — and
 holds every act on a card behind a confirmation that says first what it does to the
-card in the app (`DL-171`).
+card in the app (`DL-171`); `check:balita` warns before every publish that a
+published article cannot be recalled from those who read it, keeps Balita apart from
+the unserved newsfeed, and says — rather than collects — that the API keeps no
+description of a cover (`DL-171`, `DL-124`, `DL-125`).
 Each enforces a rule a comment could not, and each was validated against planted
 regressions. Do not weaken one to make a change pass.
 

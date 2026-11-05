@@ -9,10 +9,10 @@ sign-in only, hosted on Linode.
 
 | | |
 |---|---|
-| Console ports the Node API serves fully | 0 of 20 casework ports; 10 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines, the home screen, the app's settings; `DL-171` digital IDs) |
+| Console ports the Node API serves fully | 0 of 20 casework ports; 11 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines, the home screen, the app's settings; `DL-171` digital IDs, Balita) |
 | Served in part (mostly different concepts with the same name) | 7 |
 | No endpoint at all | 13 — cases, requests, beneficiaries, visits, releases, referrals, families, saved views, dashboard, work, reports, search, events |
-| Node staff endpoints with no console screen | 9 — Balita (eight routes) and the audit trail (one) |
+| Node staff endpoints with no console screen | 1 — the audit trail |
 
 ## Plan
 
@@ -30,7 +30,8 @@ sign-in only, hosted on Linode.
 | 6e | Platform screen: the app's home screen — banners and quick links | console | done (`DL-170`, [`docs/home-screen`](../home-screen/README.md)): every banner and link, in the app's order; added and changed in a drawer with what the API does before each button — an image stored before its banner and kept if the banner is refused, an old image never removed, every link shown; deletes only through a confirmation, hiding offered instead for a banner; a banner's image read as bytes and shown from object URLs; the screen says the app has **no description of a banner's image** because the API keeps none, rather than collecting one it would drop; a preview of `GET home` read again after every save; `home.manage` added unchanged. **Not run against a live API** |
 | 6f | Platform screen: the app's settings | console | done (`DL-170`, [`docs/app-settings`](../app-settings/README.md)): contact line, support email, terms and privacy versions, the oldest app version, feature flags; only what changed is sent, `null` to clear; **every change reviewed** in a confirmation listing what it does, and a newer oldest version or a new terms or privacy version **acknowledged** before the button enables — it can stop residents using the app until they update or accept again; the privacy notice the API serves shown by version and date, with a warning when residents would be asked to accept another; flags said not secret; `app-config.manage` added unchanged. **Not run against a live API** |
 | 6g | Platform screen: digital IDs | console | done (`DL-171`, [`docs/digital-ids`](../digital-ids/README.md)): a resident's QR code checked from a pasted or typed payload — no camera — showing only what the API answers, the photo only after a warning, the code emptied as it is sent and nothing kept or logged; an account's current card read through the app accounts' verified residents, and issued, suspended, revoked or replaced behind a confirmation that says first what each does to the card in the app; `digital-id.verify` (every role, a read) and `digital-id.manage` added unchanged. **Not run against a live API** |
-| 6h | Platform screens: Balita, audit | console | to do |
+| 6h | Platform screen: Balita | console | done (`DL-171`, [`docs/balita`](../balita/README.md)): the residents' published list, pinned first, a page at a time; an article written and changed in a drawer as a form with its cover; what publishing, saving a draft, taking an article off and pinning do shown **above each button** — publishing cannot be recalled from anybody who read it, and sends no notification; drafts kept in the page's memory with their IDs, and one opened by its ID, because the API lists none; no cover description, said; `news.write` added unchanged, not the newsfeed's keys. **Not run against a live API** |
+| 6i | Platform screen: the audit trail | console | to do |
 | 7 | Re-point the contract checks at the Node spec, new baselines stated | console | done with step 3, in one commit, each old and new count stated (`DL-165`) |
 
 ## For the owner to decide
@@ -128,6 +129,13 @@ These are not engineering choices, and nothing below has been built.
   resident first. A `GET admin/digital-ids` by status or number would close it.
 - **No route lists a resident's media**, so `photo_media_id` on an issue cannot be chosen from the
   console; the API's default — the latest approved verification selfie — is the only photo offered.
+- **No list of Balita drafts for staff** (`DL-171`). `GET news` is the residents' list, published
+  only; a draft is reachable only by its id, so one not opened in the console's page is lost to it
+  though stored. A `status=draft` filter for `news.write` holders would close it.
+- **No description of a Balita cover** (`DL-171`, `DL-125`), as for banners: the app has nothing to
+  give a resident who cannot see it. An `alt_text` on `news`, required with a cover, would close it.
+- **A Balita category or cover cannot be removed** once set: `NewsPatch` takes neither as `null`, and
+  a form cannot say `null`.
 - A multipart request with an unexpected file field (`LIMIT_UNEXPECTED_FILE`) is not mapped by the
   error handler and answers `500`.
 

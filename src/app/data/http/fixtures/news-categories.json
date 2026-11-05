@@ -1,0 +1,25 @@
+{
+  "data": [
+    {
+      "slug": "abiso",
+      "label": "Abiso"
+    },
+    {
+      "slug": "advisory",
+      "label": "Advisory"
+    },
+    {
+      "slug": "negosyo",
+      "label": "Negosyo"
+    },
+    {
+      "slug": "safety",
+      "label": "Safety"
+    },
+    {
+      "slug": "events",
+      "label": "Events"
+    }
+  ],
+  "meta": {}
+}

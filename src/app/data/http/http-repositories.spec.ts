@@ -12,6 +12,7 @@ import {
   HOTLINE_LIST_CAP,
   SignInError,
   type AppAccountId,
+  type BalitaArticleId,
   type DigitalIdId,
   type HomeBannerId,
   type HotlineId,
@@ -58,9 +59,13 @@ import MEDIA from './fixtures/media.json';
 import APP_CONFIG from './fixtures/app-config.json';
 import DIGITAL_ID_CARD from './fixtures/digital-id-card.json';
 import DIGITAL_ID_HOLDER from './fixtures/digital-id-holder.json';
+import NEWS from './fixtures/news.json';
+import NEWS_PAGE from './fixtures/news-page.json';
+import NEWS_CATEGORIES from './fixtures/news-categories.json';
 import {
   HttpAppAccountRepository,
   HttpAppConfigRepository,
+  HttpBalitaRepository,
   HttpDigitalIdRepository,
   HttpDirectoryOfficeRepository,
   HttpHomeScreenRepository,
@@ -119,6 +124,7 @@ describe('the Node adapters', () => {
         HttpHomeScreenRepository,
         HttpAppConfigRepository,
         HttpDigitalIdRepository,
+        HttpBalitaRepository,
       ],
     });
 
@@ -144,7 +150,7 @@ describe('the Node adapters', () => {
 
       // `audit.view`, `verification.review` (DL-167), `office-inbox.manage` and the three `user.*`
       // keys (DL-168), the directory's three, `home.manage` and `app-config.manage` (DL-170), and the
-      // two `digital-id.*` keys (DL-171) are the capabilities with a console key of the same name;
+      // two `digital-id.*` keys and `news.write` (DL-171) are the capabilities with a console key of the same name;
       // the rest are kept aside as unknown.
       expect([...(identity?.permissions ?? [])].sort()).toEqual([
         'app-config.manage',
@@ -153,6 +159,7 @@ describe('the Node adapters', () => {
         'digital-id.verify',
         'home.manage',
         'hotline.manage',
+        'news.write',
         'office-inbox.manage',
         'office.manage',
         'service.manage',
@@ -177,6 +184,7 @@ describe('the Node adapters', () => {
 
       expect([...(identity?.permissions ?? [])].sort()).toEqual([
         'digital-id.verify',
+        'news.write',
         'office-inbox.manage',
       ]);
       expect(identity?.roleLabel).toBe('Staff');
@@ -282,6 +290,7 @@ describe('the Node adapters', () => {
           // DL-171).
           expect([...result.user.permissions].sort()).toEqual([
             'digital-id.verify',
+            'news.write',
             'office-inbox.manage',
           ]);
         }
@@ -1254,6 +1263,95 @@ describe('the Node adapters', () => {
       expect(request.request.urlWithParams).not.toContain('token');
       request.flush(new Blob(['x']));
       expect(await photo).toBeInstanceOf(Blob);
+    });
+  });
+
+  describe('Balita (DL-171)', () => {
+    beforeEach(() => tokens.hold('fixture-token', null));
+    const ARTICLE = asId<BalitaArticleId>('7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c41');
+
+    it('reads the residents’ list a page at a time, and never a cover’s address', async () => {
+      const news = TestBed.inject(HttpBalitaRepository);
+      const page = firstValueFrom(news.list({ limit: 20, cursor: null }));
+      http.expectOne((request) => request.url === `${BASE}/news`).flush(NEWS_PAGE);
+      const answer = await page;
+
+      expect(answer.items.map((article) => article.pinned)).toEqual([true, false]);
+      expect(answer.items[0]?.hasCover).toBe(true);
+      expect(answer.hasMore).toBe(true);
+      expect(JSON.stringify(answer)).not.toContain('example.invalid');
+    });
+
+    it('reads one by its address, and a 404 as none the reader can open', async () => {
+      const news = TestBed.inject(HttpBalitaRepository);
+      const one = firstValueFrom(news.get(ARTICLE));
+      http.expectOne(`${BASE}/news/${ARTICLE}`).flush(NEWS);
+      expect((await one)?.title).toBe('Fixture advisory');
+
+      const none = firstValueFrom(news.get(ARTICLE));
+      http
+        .expectOne(`${BASE}/news/${ARTICLE}`)
+        .flush(
+          { error: { code: 'NOT_FOUND', message: 'That article was not found.' } },
+          { status: 404, statusText: 'Not Found' },
+        );
+      expect(await none).toBeNull();
+    });
+
+    it('reads the five categories', async () => {
+      const news = TestBed.inject(HttpBalitaRepository);
+      const categories = firstValueFrom(news.categories());
+      http.expectOne(`${BASE}/news/categories`).flush(NEWS_CATEGORIES);
+      expect((await categories).map((category) => category.slug)).toEqual([
+        'abiso',
+        'advisory',
+        'negosyo',
+        'safety',
+        'events',
+      ]);
+    });
+
+    it('writes as a form, the cover beside the words, and only what changed', async () => {
+      const news = TestBed.inject(HttpBalitaRepository);
+      const cover = new Blob(['x'], { type: 'image/png' });
+      const created = firstValueFrom(
+        news.create(
+          { title: ' Title ', body: 'Words', category: null, officeId: null, status: 'draft' },
+          cover,
+        ),
+      );
+      const post = http.expectOne({ method: 'POST', url: `${BASE}/news` });
+      const form = post.request.body as FormData;
+      expect(form.get('title')).toBe('Title');
+      expect(form.get('status')).toBe('draft');
+      expect(form.has('office_id')).toBe(false);
+      expect(form.has('category')).toBe(false);
+      expect(form.get('cover')).toBeInstanceOf(Blob);
+      post.flush(NEWS);
+      await created;
+
+      const updated = firstValueFrom(news.update(ARTICLE, { status: 'published' }, null));
+      const patch = http.expectOne({ method: 'PATCH', url: `${BASE}/news/${ARTICLE}` });
+      const changes = patch.request.body as FormData;
+      expect([...changes.keys()]).toEqual(['status']);
+      patch.flush(NEWS);
+      await updated;
+    });
+
+    it('pins and unpins at one address, and reads the cover as bytes', async () => {
+      const news = TestBed.inject(HttpBalitaRepository);
+      const pinned = firstValueFrom(news.pin(ARTICLE));
+      http.expectOne({ method: 'POST', url: `${BASE}/news/${ARTICLE}/pin` }).flush(NEWS);
+      await pinned;
+      const unpinned = firstValueFrom(news.unpin(ARTICLE));
+      http.expectOne({ method: 'DELETE', url: `${BASE}/news/${ARTICLE}/pin` }).flush(NEWS);
+      await unpinned;
+
+      const cover = firstValueFrom(news.openCover(ARTICLE));
+      const request = http.expectOne(`${BASE}/news/${ARTICLE}/cover`);
+      expect(request.request.responseType).toBe('blob');
+      request.flush(new Blob(['x']));
+      expect(await cover).toBeInstanceOf(Blob);
     });
   });
 });

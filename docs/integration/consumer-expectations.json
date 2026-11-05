@@ -535,6 +535,130 @@
     },
     {
       "method": "GET",
+      "path": "news",
+      "consumer": "balita.mapper.ts#toBalitaArticle",
+      "required": [
+        "body",
+        "id",
+        "office_id",
+        "status",
+        "title",
+        "updated_at"
+      ],
+      "optional": [
+        "category",
+        "cover_media_id",
+        "pinned",
+        "published_at"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "news",
+      "consumer": "balita.mapper.ts#toBalitaArticle",
+      "required": [
+        "body",
+        "id",
+        "office_id",
+        "status",
+        "title",
+        "updated_at"
+      ],
+      "optional": [
+        "category",
+        "cover_media_id",
+        "pinned",
+        "published_at"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "news/{id}",
+      "consumer": "balita.mapper.ts#toBalitaArticle",
+      "required": [
+        "body",
+        "id",
+        "office_id",
+        "status",
+        "title",
+        "updated_at"
+      ],
+      "optional": [
+        "category",
+        "cover_media_id",
+        "pinned",
+        "published_at"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "news/{id}",
+      "consumer": "balita.mapper.ts#toBalitaArticle",
+      "required": [
+        "body",
+        "id",
+        "office_id",
+        "status",
+        "title",
+        "updated_at"
+      ],
+      "optional": [
+        "category",
+        "cover_media_id",
+        "pinned",
+        "published_at"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "news/{id}/pin",
+      "consumer": "balita.mapper.ts#toBalitaArticle",
+      "required": [
+        "body",
+        "id",
+        "office_id",
+        "status",
+        "title",
+        "updated_at"
+      ],
+      "optional": [
+        "category",
+        "cover_media_id",
+        "pinned",
+        "published_at"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "news/{id}/pin",
+      "consumer": "balita.mapper.ts#toBalitaArticle",
+      "required": [
+        "body",
+        "id",
+        "office_id",
+        "status",
+        "title",
+        "updated_at"
+      ],
+      "optional": [
+        "category",
+        "cover_media_id",
+        "pinned",
+        "published_at"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "news/categories",
+      "consumer": "balita.mapper.ts#toBalitaCategory",
+      "required": [],
+      "optional": [
+        "label",
+        "slug"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "notifications",
       "consumer": "notification.mapper.ts#toNotification",
       "required": [

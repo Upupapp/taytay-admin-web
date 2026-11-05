@@ -6169,3 +6169,54 @@ Described in [`docs/digital-ids/README.md`](../digital-ids/README.md); the decis
 | `check:hardening` | none — the two outcome lines are `role="status"` without a second `aria-live`, so the cap of twelve holds | — |
 | `check:bundle` | the sample codes `SAMPLE-QR.` and card numbers `TAY-SAMPLE-` are seed markers | — |
 | `check:digital-ids` | new, in `verify` — eight rules, see `docs/digital-ids/README.md` | fifteen plants, each caught, every file restored |
+
+### 2. Balita
+
+`GET news` (published only, pinned first, cursor-paged), `GET news/{id}`, `GET news/categories`,
+`POST news` and `PATCH news/{id}` as forms, `POST`/`DELETE news/{id}/pin`, `GET news/{id}/cover`,
+under `news.write` — administrators, and staff while assigned to an office. One new port, `balita`,
+served in the http set; the editor also reads `office` for its picker. One route, `/balita`.
+Described in [`docs/balita/README.md`](../balita/README.md); the decisions are these.
+
+- **Not the newsfeed** (`DL-164`). The newsfeed module keeps what this API has none of — schedule,
+  archive, image descriptions, moderation — and stays unserved; Balita has its own model, port,
+  screen and key, and `check:balita` fails if the module names the newsfeed's. The page says near its
+  title that residents read it in the app's Balita.
+- **Publishing is warned about before its button** (`DL-124`'s doctrine, kept on a model that
+  cannot keep its mechanism). Above the publish button: every resident can read it at once, nothing
+  recalls it from those who have, and no notification is sent. Above "take it off the app": whoever
+  read it keeps it, and published again it keeps its first date (`COALESCE(published_at, now())`),
+  so it does not return to the top. Above saving a draft, changing a published article and pinning,
+  what each does. Every request leaves from one method, and only from a button below its effects.
+- **The API lists no drafts, so the page keeps them — in memory.** A draft created, opened or taken
+  off here stays on the page with its ID, and the page says it is gone when the page is left; one can
+  be opened by its ID, which the audit trail also records. Nothing goes to web storage (`DL-110`).
+- **No description of a cover, said rather than collected** (`DL-125`; `d2d9188` for banners). The
+  model, the wire and the form have no field for one, and the form says the app has nothing to give a
+  resident who cannot see it. Replacing a cover deletes the old image; one cannot be removed. The
+  cover is read as bytes on request, never from `cover_url`.
+- **Who writes is the server's decision.** Staff post for their own office (the API uses it when none
+  is chosen and refuses another) and change only their office's articles; an administrator must
+  choose an office. The console offers the choice and shows a refusal in the API's words.
+- **One vocabulary.** `news.write` joins `PERMISSIONS` as the server spells it, mutating; the roles
+  that hold `office-inbox.manage` — the server's other "staff at an office" key — hold it in the mock.
+
+#### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:wire-adoption` | none — `toWireNewsWrite` and `toWireNewsPatch` (`NewsWriteWire`, `NewsPatchWire`) held to the forms `NewsWrite` and `NewsPatch` declare; the pin `{}` | 31 of 31 bodies |
+| `check:routes` | none | 21 endpoints and 58 composed requests served at their verbs |
+| `check:response-shape`, `check:query-params` | none | 27 of 27 reads; the list a cursor page, the categories a bare `list`, one article an `item` through `optionalItem`, the cover `binary` |
+| `check:consumer-contract` | regenerated | 50 interactions, 259 required fields |
+| `check:port-adoption` | none | 200 of 211 port methods reached; the eight new ones each by a screen, the 11 unreached unchanged |
+| `check:unserved` | none | 31 ports, 18 unserved; 58 routed screens, 26 menu entries |
+| `check:permission-parity` | none | 42 of 52 guards unreachable, the ceiling held |
+| `check:access` | one matrix row | 83 permissions × 7 roles |
+| `check:newsfeed` | none — the newsfeed module is untouched and still passes | — |
+| `check:bundle` | the seed's article titles, `SAMPLE BALITA - `, are a seed marker | — |
+| `check:balita` | new, in `verify` — eight rules, see `docs/balita/README.md` | sixteen plants, each caught, every file restored |
+
+A fix rode beside this part (`bd60a32`): the digital IDs page's drawer was never opened and its
+panel sat outside the drawer's body slot, so "Open the card" showed nothing; the panel's own tests had
+built it directly. It is opened now, and a page-level test opens a card from the list.
