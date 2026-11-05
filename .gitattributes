@@ -1,0 +1,14 @@
+# The repository checks read source with regular expressions written for LF. A Windows checkout
+# with core.autocrlf=true (GitHub Desktop's default) rewrote every file as CRLF, and four checks
+# failed on a tree that was correct. Every file is already stored as LF; this keeps it LF on disk too.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
