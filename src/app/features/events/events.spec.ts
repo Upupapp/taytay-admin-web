@@ -39,6 +39,13 @@ import { EventListPage } from './event-list-page';
  */
 const SEED_PRESENT = new Date('2026-08-17T00:00:00.000Z');
 
+/*
+ * The first test here pays for compiling the event screens. Alone it takes about a second; inside
+ * the full suite on a low-memory machine it took 5.8 s and failed the default 5 s limit on a tree
+ * that was correct. A timeout is not an assertion, so it is raised for this file only.
+ */
+vi.setConfig({ testTimeout: 20_000 });
+
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(SEED_PRESENT);

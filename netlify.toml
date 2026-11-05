@@ -117,7 +117,12 @@
 # A preview gets a generated *.netlify.app origin. It must reach the STAGING API and
 # never production: anybody can create a site on that domain, so a preview trusted by the
 # production API would be a public front door to residents' records.
+#
+# The environment is chosen at BUILD time by angular.json's configuration, not by a variable:
+# nothing in the app reads NG_APP_ENVIRONMENT, so a preview used to build `production` and call
+# the production API host that this context's CSP refuses. The command picks staging explicitly.
 [context.deploy-preview]
+  command = "npx ng build --configuration staging"
   [context.deploy-preview.environment]
     NG_APP_ENVIRONMENT = "staging"
 

@@ -2979,16 +2979,27 @@
           "longitude": { "type": "number" },
           "address": { "type": "string" },
           "category": { "type": "string" },
+          "service_lines": { "type": "array", "maxItems": 20, "items": { "type": "string", "maxLength": 120 }, "description": "Up to 20 lines. In multipart bodies, send a JSON array string." },
           "banner": { "type": "string", "format": "binary" }
         }
       },
       "OfficePatch": {
         "type": "object",
+        "description": "Any subset of the create fields. The route validates with the create schema made partial.",
         "properties": {
           "name": { "type": "string" },
           "slug": { "type": "string" },
           "short_name": { "type": ["string", "null"] },
+          "description": { "type": "string" },
+          "head": { "type": "string" },
+          "hours": { "type": "string" },
+          "phone": { "type": "string" },
+          "email": { "type": "string" },
+          "latitude": { "type": "number" },
+          "longitude": { "type": "number" },
+          "address": { "type": "string" },
           "category": { "type": "string" },
+          "service_lines": { "type": "array", "maxItems": 20, "items": { "type": "string", "maxLength": 120 }, "description": "Up to 20 lines. In multipart bodies, send a JSON array string." },
           "banner": { "type": "string", "format": "binary" }
         }
       },
@@ -3421,6 +3432,11 @@
         "type": "object",
         "properties": {
           "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "category": { "type": ["string", "null"] },
+          "eligibility": { "type": ["string", "null"] },
+          "locations": { "type": "array", "items": { "$ref": "#/components/schemas/ServiceLocation" } },
+          "office_id": { "type": ["string", "null"], "format": "uuid" },
           "summary": { "type": "string" },
           "details": { "type": "string" },
           "requirements": { "type": "array", "items": { "type": "string" } },

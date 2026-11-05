@@ -214,9 +214,16 @@ describe('DigitalIdsPage — checking a card (DL-171)', () => {
     expect(document.body.textContent).toContain(COPY.photo.warningHeading);
 
     button(document.body, COPY.photo.confirm)?.click();
-    await settle(fixture);
-    expect(cards.calls).toContain('photo:photo-1');
-    expect(element.querySelector('img')?.getAttribute('alt')).toBe(COPY.photo.alt('Ana Reyes'));
+    // The photo arrives as a blob turned into an object URL — more than one turn of the event loop.
+    // One settle was enough alone and not inside the full suite on a loaded machine.
+    await vi.waitFor(
+      async () => {
+        await settle(fixture);
+        expect(cards.calls).toContain('photo:photo-1');
+        expect(element.querySelector('img')?.getAttribute('alt')).toBe(COPY.photo.alt('Ana Reyes'));
+      },
+      { timeout: 5_000, interval: 50 },
+    );
   });
 
   it('offers neither section to a grant that does not hold it, and reads no account', async () => {

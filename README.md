@@ -1,32 +1,51 @@
 # Taytay Rizal Social Welfare — Angular Frontend
 
 Staff console for the Municipal Social Welfare and Development Office (MSWDO) of
-Taytay, Rizal. Angular 22, standalone, zoneless, strict TypeScript.
+Taytay, Rizal, and for the staff who run the residents' Taytay app. Angular 22,
+standalone, zoneless, strict TypeScript.
 
 Read [`CLAUDE.md`](./CLAUDE.md) before contributing — it is the project
 constitution and holds the architecture, boundaries and non-negotiable rules.
 
 ## Status
 
-Foundation in place: routing skeleton, typed domain models, mock/HTTP data seam,
-shared UI primitives and the authenticated app shell. Most feature screens are
-deliberate placeholders that later work will replace.
+The backend is the Node API in `taytay-backend` (since 2026-10-20; `DL-164`).
+Against it the console serves staff sign-in (Firebase), notifications, and the
+platform screens: ID verification, office inbox, users and roles, app
+directory, home screen, app settings, digital IDs, Balita and the app audit
+trail (`DL-167`–`DL-171`).
+
+The MSWDO casework modules (requests, cases, releases, referrals, visits, …)
+have no endpoint on that API. They run on sample data in `local-mock`; against
+the real API they are hidden from the menu and named on one "not connected"
+page. Whether the API grows them is an owner decision —
+[`docs/integration/node-api-migration.md`](./docs/integration/node-api-migration.md).
 
 ## Local development
 
 ```bash
 npm install
-npm start          # http://localhost:4200
+npm start          # local-mock: http://localhost:4200, sample data, no backend
 ```
 
-The app starts against **in-memory mock adapters** — there is no backend in this
-repository. Sign-in offers a list of seeded staff accounts so every role and
-permission path can be exercised.
+Against the real API on this machine (no Docker needed):
+
+```bash
+# in taytay-backend
+npm run dev:memory # API on http://127.0.0.1:3000, in-memory database, mock tokens
+
+# here
+npx ng serve --configuration local-api
+```
+
+`local-api` signs in through the backend's development token verifier: type
+any email, pick staff or admin. Staging signs in against the Firebase project
+`taytay-lgu-ids-staging` (`DL-169`).
 
 ## Checks
 
 ```bash
-npm run verify     # lint + typecheck + tests + production build
+npm run verify     # lint + typecheck + every repository check + tests + production build
 ```
 
 Individually: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`.
@@ -44,10 +63,10 @@ src/app/layout/     Authenticated application shell
 
 ## Related repositories
 
-The backend API and the resident-facing Flutter app are separate local
-repositories. Nothing server-side or mobile belongs here.
+`taytay-backend` (Node API) and `taytay-mobile-app` (resident Flutter app) are
+separate repositories. Nothing server-side or mobile belongs here.
 
-## Local-only
+## Remote
 
-No remote is configured. Work stays local; nothing is pushed or deployed from
-this repository.
+`origin` is `Upupapp/taytay-admin-web`. Commits land on `main`; pushing and
+deploying are human decisions (CLAUDE.md rule 9).
