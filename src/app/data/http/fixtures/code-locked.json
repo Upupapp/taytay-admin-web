@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "code_locked",
+    "message": "That code is locked.",
+    "details": { "attempts_remaining": 0, "retry_after": 900 },
+    "request_id": "req-fixture-0003"
+  }
+}

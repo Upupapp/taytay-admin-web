@@ -4,35 +4,31 @@
  *
  * ## The finding (L-23)
  *
- * The console defines 70 permission keys. The API publishes 61, in
- * `AccessControlPermission` in the vendored contract. **Thirty of them match.**
+ * `fromServerIdentity` keeps only the keys it recognises from the list the server sends and invents
+ * nothing — correctly, and by design (`DL-133`). So a permission the API never grants is a
+ * permission no user can ever hold, and `permissionGuard('dashboard.view')` refuses everybody, in
+ * every role, forever — not as an error, but as a screen nobody can open.
  *
- * That matters because of how the console resolves a session. `fromServerIdentity` keeps only the
- * keys it recognises from the list the server sends and invents nothing — correctly, and by
- * design. So a permission the API has never heard of is a permission no user can ever hold, and
- * `permissionGuard('dashboard.view')` refuses everybody, in every role, forever.
+ * ## What it compares since the Node API (`DL-165`)
  *
- * Measured against `app.routes.ts`: **24 of 43 guarded routes**, including the landing page.
+ * The Laravel API published 61 permission keys in `AccessControlPermission`, and 24 of the
+ * console's 43 route guards asked for one it did not have. The Node API publishes what it grants as
+ * the `StaffCapability` enum in its spec — the keys `GET /me` returns in `permissions`, built from a
+ * table of the API's own route guards. Fifteen capabilities, about the residents' app back office:
+ * verification review, offices, services, hotlines, Balita, digital IDs, users, audit.
  *
- * Not all 24 are the same problem, and the fix differs:
+ * **One** of them is a key a console route asks for: `audit.view`. So 42 of 43 guards are
+ * unreachable against the real API. That is not 18 guards regressing; it is the measure of
+ * `DL-164` — the console's modules are casework and the API's are not — and it falls as platform
+ * screens are built on the capabilities the API does grant, or as the API grows casework.
  *
- *   * some are naming divergences over an act both sides implement — the console splits
- *     `resident.create` and `resident.update` where the API grants `resident.manage`;
- *   * some are concepts the API genuinely does not have — `case.view` awaits ADR 0044,
- *     `beneficiary.*` is a projection the console invented (`DL-71`), `dashboard.view` and
- *     `settings.manage` have no server-side counterpart at all.
+ * Nothing here maps one vocabulary onto the other. Deciding that `case.view` "means"
+ * `household.view-counts` would be the console computing a grant the server never made.
  *
- * Which is which is a decision for the API owner and the office, not for a checker. What a checker
- * can do is make sure the number stops growing.
+ * ## A ratchet, in both directions
  *
- * ## Why this is not a `verify` failure today
- *
- * The console still runs on mock adapters (`environment.dataSource === 'mock'`), where permissions
- * come from seed data and every route opens. Nothing is broken *now*. It breaks the day TAB 12
- * flips the flag — and it breaks silently, as a blank console rather than an error.
- *
- * So this is a ratchet on the recorded ceiling, like `check:mapper-adoption`. It fails in both
- * directions: a new unreachable guard, and a guard fixed without lowering the number.
+ * The console runs on mock adapters in development, where every route opens, so nothing is broken
+ * there. It fails on a new unreachable guard, and on a guard fixed without lowering the number.
  */
 
 import { readFileSync } from 'node:fs';
@@ -43,22 +39,48 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const ROUTES = 'src/app/app.routes.ts';
 
 /**
- * Recorded 18 August 2026, TAB 06. LOWER THIS as guards are reconciled with the API's catalog;
- * never raise it. Raising it means adding a screen no user can open.
+ * 24 → 42 on 5 November 2026 (`DL-165`): re-pointed from Laravel's `AccessControlPermission` to the
+ * Node spec's `StaffCapability`. The API was replaced; no guard changed. LOWER THIS as guards become
+ * reachable; never raise it. Raising it means adding a screen no user can open.
  */
-const CEILING = 24;
+const CEILING = 42;
 
-const contract = readFileSync(join(ROOT, 'src/app/data/http/contract/types.ts'), 'utf8');
-const union = /export type AccessControlPermission =([\s\S]*?);/.exec(contract)?.[1] ?? '';
-const granted = new Set([...union.matchAll(/'([a-z][a-z.-]+)'/g)].map((m) => m[1]));
+const spec = JSON.parse(readFileSync(join(ROOT, 'src/app/data/http/contract/openapi.json'), 'utf8'));
+const capabilities = spec.components?.schemas?.StaffCapability?.enum;
+const granted = new Set(Array.isArray(capabilities) ? capabilities : []);
 
 if (granted.size === 0) {
-  console.error('\nCould not read AccessControlPermission from the vendored contract.\n');
+  console.error('\nCould not read components.schemas.StaffCapability from the vendored spec.\n');
+  process.exit(1);
+}
+
+/*
+ * The enum is only worth comparing against if it is what `/me` actually carries. A spec that kept
+ * the enum and stopped referencing it from `UserProfile.permissions` would leave this check
+ * measuring a vocabulary nothing sends.
+ */
+const carried = spec.components?.schemas?.UserProfile?.properties?.permissions?.items?.$ref;
+
+if (carried !== '#/components/schemas/StaffCapability') {
+  console.error('\nUserProfile.permissions no longer carries StaffCapability, so this check would compare against nothing /me sends.\n');
   process.exit(1);
 }
 
 const routes = readFileSync(join(ROOT, ROUTES), 'utf8');
-const guards = [...routes.matchAll(/permissionGuard\('([a-z][a-z.-]+)'\)/g)].map((m) => m[1]);
+const guards = [...routes.matchAll(/permissionGuard\(\s*'([a-z][a-z.-]+)'\s*\)/g)].map((m) => m[1]);
+const callSites = [...routes.matchAll(/permissionGuard\s*\(/g)].length;
+
+/*
+ * Relative reach: every guard call must have been read as a key. A guard written with a constant or
+ * a double-quoted string would otherwise drop out of the comparison and pass by absence.
+ */
+if (guards.length === 0 || guards.length !== callSites) {
+  console.error(
+    `\n${callSites} permissionGuard calls in ${ROUTES}, ${guards.length} read as a key. Write each as a single-quoted literal.\n`,
+  );
+  process.exit(1);
+}
+
 const unreachable = guards.filter((key) => !granted.has(key));
 
 const detail =
@@ -69,10 +91,10 @@ if (unreachable.length > CEILING) {
   console.error(
     `\nPermission parity check failed: ${unreachable.length - CEILING} new unreachable route guard(s).\n\n` +
       detail +
-      `\n  The API grants ${granted.size} permissions and the console asks for keys outside that set.\n` +
+      `\n  The API grants ${granted.size} capabilities and the console asks for keys outside that set.\n` +
       `  fromServerIdentity keeps only what the server sends, so this guard refuses every user in\n` +
       `  every role — not as an error, but as a screen nobody can open.\n\n` +
-      `  Use a key from AccessControlPermission, or get the key added to the API's catalog first.\n`,
+      `  Use a key from StaffCapability, or get the capability added to the API first.\n`,
   );
   process.exit(1);
 }
@@ -86,5 +108,5 @@ if (unreachable.length < CEILING) {
 }
 
 console.log(
-  `Permission parity at the recorded ceiling (${unreachable.length}/${guards.length} unreachable guards, L-23 outstanding).`,
+  `Permission parity at the recorded ceiling (${unreachable.length}/${guards.length} unreachable guards against ${granted.size} StaffCapability keys, L-23 outstanding).`,
 );

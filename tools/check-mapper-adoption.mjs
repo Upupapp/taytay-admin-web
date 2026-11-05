@@ -24,9 +24,9 @@
  * routinely is a list nobody reads. A single ceiling can only be lowered, and lowering it is the
  * commit that also removes the cast — the two cannot drift apart.
  *
- * This is a ratchet, not a gate. It does not claim the 45 are acceptable. It guarantees the
- * forty-sixth cannot be added quietly, which is the only thing a check can honestly promise while
- * the work is outstanding.
+ * It was a ratchet while the work was outstanding. It never claimed the 45 — later 71 — were
+ * acceptable; it guaranteed the next could not be added quietly. Since `DL-165` the ceiling is zero,
+ * which makes it a gate: every call is mapped, and the first cast fails the build.
  */
 
 import { readFileSync } from 'node:fs';
@@ -36,89 +36,65 @@ import { fileURLToPath } from 'node:url';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const ADAPTERS = 'src/app/data/http/http-repositories.ts';
 
-/**
- * Recorded 18 August 2026, TAB 06. LOWER THIS when you repoint an adapter through a mapper;
- * never raise it. Raising it is the change this file exists to make somebody argue for.
- */
 /*
- * 44 → 45 when the scanner learned to see a chained call, and it is not new debt.
- *
- * `optionalItem<HouseholdDetail>` was always an unmapped read; it was simply written across two
- * lines, which the old contiguous `this\.api\.` pattern did not match. Three further reads became
- * visible at the same time and are excluded above as wire-typed — they are the pattern this check
- * asks for, not the one it forbids.
+ * 71 → 0 on 5 November 2026 (`DL-165`), and not because 71 casts were repaired. The Laravel
+ * adapters that held 69 of them were deleted with the API they called, and the two reads that
+ * survive — `GET me` and `GET notifications` — were rewritten through `me.mapper.ts` and
+ * `notification.mapper.ts`. Removal, recorded as removal. At zero the ratchet is a hard rule: a
+ * single cast fails the build.
  */
-/*
- * 45 → 44 when `previewResolution` stopped casting a `GET` response to `MergePreview` at a URL the
- * API does not serve; 44 → 43 when `metrics` gained `toEventMetrics` (`DL-149`).
- *
- * The `optionalItem<HouseholdDetail>` pair remains and cannot be mapped — `household_memberships`
- * has no role column (`DL-145`).
- */
-/*
- * 43 → 71 when `collection` and `everyPage` were added to the helper list. Not new debt: 28 casts
- * this check had never looked at, in a file it was pointed straight at (`DL-162`).
- */
-const CEILING = 71;
+const CEILING = 0;
 
 const source = readFileSync(join(ROOT, ADAPTERS), 'utf8');
 
-// A read that hands a domain type straight to the transport: `api.page<ResidentView>(…)`.
+/*
+ * Every helper on ApiClient is examined — writes as well as reads, because `post<Foo>` asserts the
+ * shape of the answer exactly as `item<Foo>` does. The list is not trusted: it is compared with the
+ * client's surface, because a check that enumerates the helpers it inspects has missed the next one
+ * four times (`DL-162`).
+ */
+const HELPERS = ['cursorPage', 'everyPage', 'list', 'item', 'optionalItem', 'post', 'patch', 'delete'];
+
+const client = readFileSync(join(ROOT, 'src/app/data/http/api.client.ts'), 'utf8');
+const surface = [...client.matchAll(/^  ([a-zA-Z]\w*)\s*[<(]/gm)].map((m) => m[1]);
+const unknown = surface.filter((name) => !HELPERS.includes(name));
+const vanished = HELPERS.filter((name) => !surface.includes(name));
+
+if (unknown.length > 0 || vanished.length > 0) {
+  console.error(
+    `\nMapper adoption check cannot run: its view of ApiClient is out of date.\n` +
+      (unknown.length ? `  not examined: ${unknown.join(', ')}\n` : '') +
+      (vanished.length ? `  no longer on ApiClient: ${vanished.join(', ')}\n` : ''),
+  );
+  process.exit(1);
+}
+
+// A call that hands a domain type straight to the transport: `api.item<ResidentView>(…)`.
 const generics = [
-  /*
-   * `collection` and `everyPage` belong here and were missing, which cost 28 reads.
-   *
-   * The rule is that a generic on a read is an assertion rather than a conversion — and
-   * `collection<Referral>` asserts a snake_case array is a `Referral[]` exactly as much as
-   * `page<Referral>` does. Only four helper names were listed, so more than a third of the
-   * unmapped reads in this file were never counted. Fourth instance in two turns of a check that
-   * enumerates helper names and misses one (`DL-162`).
-   */
-  ...source.matchAll(
-    /\bthis\s*\.\s*api\s*\.\s*(page|everyPage|collection|item|optionalItem|list)<([^>]+)>/g,
-  ),
+  ...source.matchAll(new RegExp(String.raw`\bthis\s*\.\s*api\s*\.\s*(${HELPERS.join('|')})\s*<([^>]+)>`, 'g')),
 ];
 
 /*
- * A read typed as a **wire** shape is the pattern this check is asking for, not the one it forbids.
- *
- * The rule is that a generic is an assertion, not a conversion: `api.page<ResidentView>` tells
- * TypeScript a snake_case payload is a domain object, and nothing at run time makes that true. But
- * `api.item<MeWire>(…).pipe(map(toMe))` asserts only that the payload is the wire shape it really
- * is, and then converts it. Counting that as debt would mark the fix as the defect.
- *
- * Two forms qualify, and neither can be an escape hatch. A name ending `Wire` is this repository's
- * convention for a payload shape, declared beside its mapper. `Record<string, unknown>` asserts
- * nothing at all — a template cannot read a camelCase property off it, because TypeScript refuses,
- * which is exactly the failure this check exists to prevent.
+ * A call typed as a **wire** shape is the pattern this check asks for, not the one it forbids. A
+ * name ending `Wire` is this repository's convention for a payload shape declared beside its mapper;
+ * `Record<string, unknown>` and `unknown` assert nothing a template could read. Only the first type
+ * argument is the answer's type — a write's second is its body, which `check:wire-adoption` owns.
  */
-const isWireShape = (type) => /Wire\b/.test(type) || /^Record\s*</.test(type.trim());
+const answerType = (generic) => generic.split(',')[0].trim();
+const isWireShape = (type) => /Wire\b/.test(type) || /^Record\s*</.test(type) || type === 'unknown';
 
-const casts = generics.filter((match) => !isWireShape(match[2]));
+const casts = generics.filter((match) => !isWireShape(answerType(match[2])));
 
 if (casts.length > CEILING) {
-  const added = casts.length - CEILING;
-
   console.error(
-    `\nMapper adoption check failed: ${added} new unmapped read${added === 1 ? '' : 's'} in ${ADAPTERS}.\n\n` +
-      `  ceiling ${CEILING}, found ${casts.length}\n\n` +
-      `  A generic on this.api.page<T> is an assertion, not a conversion. It tells TypeScript the\n` +
+    `\nMapper adoption check failed: ${casts.length} unmapped call${casts.length === 1 ? '' : 's'} in ${ADAPTERS}.\n\n` +
+      casts.map((match) => `    this.api.${match[1]}<${match[2]}>`).join('\n') +
+      `\n\n  A generic on this.api.<helper><T> is an assertion, not a conversion. It tells TypeScript the\n` +
       `  snake_case payload is a domain object; nothing at run time makes that true, so every\n` +
-      `  camelCase property a template reads comes back undefined — and undefined renders blank\n` +
-      `  rather than raising anything.\n\n` +
-      `  Map the response through src/app/data/http/mappers/ instead. If you are removing casts,\n` +
-      `  lower CEILING in tools/check-mapper-adoption.mjs in the same commit.\n`,
+      `  camelCase property a template reads comes back undefined — and undefined renders blank.\n\n` +
+      `  Read it as unknown and map it through src/app/data/http/mappers/.\n`,
   );
   process.exit(1);
 }
 
-if (casts.length < CEILING) {
-  console.error(
-    `\nMapper adoption improved — ${CEILING - casts.length} fewer unmapped reads than the recorded ceiling.\n\n` +
-      `  Lower CEILING to ${casts.length} in tools/check-mapper-adoption.mjs so the ground gained is held.\n` +
-      `  A ratchet that is not tightened is a ratchet that slips back.\n`,
-  );
-  process.exit(1);
-}
-
-console.log(`Mapper adoption at the recorded ceiling (${casts.length} unmapped reads, L-22 outstanding).`);
+console.log(`Mapper adoption check passed (${generics.length} typed calls, none of them a cast to a domain type).`);

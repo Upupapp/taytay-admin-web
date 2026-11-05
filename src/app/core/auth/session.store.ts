@@ -144,12 +144,20 @@ export class SessionStore {
   /**
    * Sign-out.
    *
-   * The adapter revokes server-side and only then drops the token, so a failure
-   * here leaves the user signed in — which is the truth, and better than a
-   * signed-out screen over a credential that still works.
+   * The adapter asks the server to revoke and then drops the token whatever the
+   * answer (`DL-165`), so the identity goes on both paths too. Keeping it after
+   * a failure would show a signed-in screen over a session with no credential
+   * left — every next request a 401. The failure still propagates, so the
+   * caller can say the server did not confirm.
+   *
+   * Cleared in `tap` rather than `finalize`, because the caller navigates to
+   * the sign-in page from its own handlers, and that page refuses anybody still
+   * signed in: the identity has to be gone before they run, not after.
    */
   signOut(): Observable<void> {
-    return this.repository.signOut().pipe(tap(() => this.apply(null)));
+    return this.repository.signOut().pipe(
+      tap({ next: () => this.apply(null), error: () => this.apply(null) }),
+    );
   }
 
   /**

@@ -1,121 +1,66 @@
-import type {
-  AppNotification,
-  NotificationId,
-  NotificationKind,
-  NotificationSeverity,
-} from '@domain/index';
+import type { AppNotification, NotificationId, NotificationKind } from '@domain/index';
 
-import { dateTime, field, id, oneOf, str, text } from './wire';
+import { dateTime, field, id, str, text } from './wire';
 
 /**
- * `GET me/notifications` → `AppNotification`.
+ * `GET notifications` (and the row `POST notifications/{id}/read` answers with) → `AppNotification`.
  *
- * The cleanest resource mapped so far, and worth saying why: **this endpoint's
- * items are, by definition, inbox items for the calling actor.** Three domain
- * fields the wire does not carry are therefore *determined* rather than
- * guessed —
+ * ## What the API sends, and what the console has to supply
  *
- *  * `channel` is `'inbox'`. That is what the endpoint is.
- *  * `autoDismissMs` is `null`. An inbox entry is not a toast; nothing dismisses
- *    it on a timer.
- *  * `recipientId` is `null`, meaning "the caller". The route is `me/…`, so
- *    there is no other person it could be about, and inventing an id here would
- *    be the console asserting something the payload never said.
+ * A row is `id`, `type`, `title`, `body`, `subject_id`, `read_at`, `created_at`. The console's
+ * notification also has a kind, a severity and an action, and none of the three is on the wire.
+ * Each is filled with the **least** it can honestly say:
  *
- * That is the distinction this whole mapping exercise turns on: a field the
- * endpoint's own contract fixes is not the same as a field nobody sent. Compare
- * `household.mapper.ts`, where the absent field was a claim about a household
- * and the mapper was left unwritten.
+ * | `type`                 | kind       | severity | action |
+ * | ---------------------- | ---------- | -------- | ------ |
+ * | `verification_decided` | `decision` | `info`   | none   |
+ * | `message_received`     | `general`  | `info`   | none   |
+ * | anything else          | `general`  | `info`   | none   |
  *
- * @consumes GET me/notifications
+ * - **Kind.** A verification outcome is a decision somebody made about an account; a message to an
+ *   office inbox is not an assignment, a status change or a referral, so it is `general` rather
+ *   than borrowed from a kind that would group it with work it is not.
+ * - **Severity is always `info`.** The API sends no priority. Promoting any of these to a warning
+ *   would be the console raising an alarm nobody raised — and an inbox that cries wolf is one
+ *   people stop reading, which is how the one real alert gets missed.
+ * - **No action.** `subject_id` names a verification request or a message thread, and this console
+ *   has no screen for either yet. A link to a route that does not exist is worse than no link: the
+ *   user concludes the record is gone. The action arrives with the screen it points at.
+ * - **An unrecognised `type` is kept**, as `general`. Dropping it would show one fewer message with
+ *   no error anywhere; showing it plainly loses nothing.
+ *
+ * `channel` is `'inbox'`, `recipientId` is `null` ("the caller") and `autoDismissMs` is `null`
+ * because the endpoint fixes them: these rows are, by definition, the caller's own inbox, and an
+ * inbox entry is not dismissed on a timer.
+ *
+ * @consumes GET notifications
+ * @consumes POST notifications/{id}/read
  */
 export function toNotification(wire: unknown): AppNotification | null {
   const notificationId = id<NotificationId>(field(wire, 'id'));
-
-  if (notificationId === null) {
-    return null;
-  }
-
+  // Every inbox view orders by time; a row with no timestamp would read as though it had just come.
   const createdAt = dateTime(field(wire, 'created_at'));
 
-  if (createdAt === null) {
-    // Every inbox view orders by time. An entry with no timestamp would sort
-    // arbitrarily and read as though it had just arrived.
+  if (notificationId === null || createdAt === null) {
     return null;
   }
 
   return {
     id: notificationId,
     recipientId: null,
-    severity: toSeverity(field(wire, 'priority')),
-    kind: oneOf<NotificationKind>(field(wire, 'category'), KINDS) ?? 'general',
+    severity: 'info',
+    kind: KIND_BY_TYPE[str(field(wire, 'type')) ?? ''] ?? 'general',
     title: text(field(wire, 'title'), 'Notification'),
     body: str(field(wire, 'body')),
     channel: 'inbox',
-    action: toAction(wire),
+    action: null,
     createdAt,
     readAt: dateTime(field(wire, 'read_at')),
     autoDismissMs: null,
   };
 }
 
-const KINDS: readonly NotificationKind[] = [
-  'assignment',
-  'status-change',
-  'decision',
-  'release',
-  'referral',
-  'data-quality',
-  'general',
-];
-
-/**
- * The API sends a `priority`; the console renders a severity.
- *
- * An unrecognised value becomes `'info'` rather than `'error'`. A message the
- * console does not understand must not be shown as an alarm — an inbox that
- * cries wolf on every unfamiliar type is an inbox people stop reading, which is
- * how the one real alert gets missed.
- */
-function toSeverity(priority: unknown): NotificationSeverity {
-  switch (str(priority)) {
-    case 'urgent':
-    case 'high':
-      return 'warning';
-    case 'critical':
-      return 'error';
-    default:
-      return 'info';
-  }
-}
-
-/**
- * The subject reference, turned into somewhere to go.
- *
- * The payload carries `subject_type` and `subject_id` and **no narrative** —
- * deliberately, and the console must not add one. A notification says that
- * something happened and points at it; the record itself is read over the
- * authenticated API, behind its own permission. That is the same rule the push
- * payload follows, for the same reason.
- *
- * An unrecognised `subject_type` yields no action rather than a guessed route:
- * a link that 404s is worse than no link, because the user believes the record
- * is gone.
- */
-function toAction(wire: unknown): { label: string; routerLink: readonly string[] } | null {
-  const subjectId = str(field(wire, 'subject_id'));
-  const route = SUBJECT_ROUTES[str(field(wire, 'subject_type')) ?? ''];
-
-  return subjectId === null || route === undefined
-    ? null
-    : { label: 'Open', routerLink: [route, subjectId] };
-}
-
-const SUBJECT_ROUTES: Readonly<Record<string, string>> = {
-  welfare_case: '/requests',
-  assistance_request: '/requests',
-  referral: '/referrals',
-  visit: '/visits',
-  release: '/releases',
-  resident: '/residents',
+const KIND_BY_TYPE: Readonly<Record<string, NotificationKind>> = {
+  verification_decided: 'decision',
+  message_received: 'general',
 };

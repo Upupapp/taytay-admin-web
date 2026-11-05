@@ -24,7 +24,7 @@ export interface ApiFailure {
   /**
    * The API's stable machine-readable code, or `null` when the response never
    * reached the application — a CORS refusal, a dropped connection, a proxy
-   * rejecting a body before Laravel saw it. Angular reports all of those as
+   * rejecting a body before the API saw it. Angular reports all of those as
    * status `0`, and they are genuinely different from a server that answered.
    */
   readonly code: string | null;
@@ -35,7 +35,10 @@ export interface ApiFailure {
   readonly details: ApiFieldErrors | null;
   /** Matches the `X-Request-Id` header. What a caseworker quotes to support. */
   readonly requestId: string | null;
-  /** Present on a `429`, read from `Retry-After`. */
+  /**
+   * Present on a `429`. Read from `details.retry_after`, because the API exposes no header but
+   * `X-Request-Id` across origins, so `Retry-After` is invisible to a browser client.
+   */
   readonly retryAfterSeconds: number | null;
 }
 
@@ -56,7 +59,7 @@ export function readApiError(error: HttpErrorResponse): ApiFailure {
     message: envelope?.message ?? fallbackMessage(error),
     details: envelope?.details ?? null,
     requestId: envelope?.request_id ?? error.headers.get('X-Request-Id'),
-    retryAfterSeconds: readRetryAfter(error),
+    retryAfterSeconds: envelope?.retryAfter ?? readRetryAfterHeader(error),
   };
 }
 
@@ -65,6 +68,7 @@ interface WireError {
   readonly message: string;
   readonly details?: ApiFieldErrors;
   readonly request_id?: string;
+  readonly retryAfter: number | null;
 }
 
 function readEnvelope(body: unknown): WireError | null {
@@ -91,19 +95,45 @@ function readEnvelope(body: unknown): WireError | null {
   return {
     code,
     message,
-    details: isDetails(details) ? details : undefined,
+    details: fieldErrorsIn(details) ?? undefined,
     request_id: typeof requestId === 'string' ? requestId : undefined,
+    retryAfter: secondsIn(details),
   };
 }
 
-function isDetails(value: unknown): value is ApiFieldErrors {
-  if (value === null || typeof value !== 'object') {
-    return false;
+/**
+ * The `field -> [messages]` entries of `details`, and only those.
+ *
+ * The API puts counters in the same object — `retry_after`, `attempts_remaining` — as bare
+ * numbers. This used to reject the whole of `details` when any value was not a list of strings, so
+ * one counter beside a validation message discarded the message a form needed. A counter is not a
+ * field error, so it is left out and the field errors are kept; any other malformed entry is
+ * dropped the same way, because one odd entry must not cost the entries beside it.
+ */
+function fieldErrorsIn(value: unknown): ApiFieldErrors | null {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
   }
 
-  return Object.values(value).every(
-    (messages) => Array.isArray(messages) && messages.every((m) => typeof m === 'string'),
-  );
+  const kept: Record<string, readonly string[]> = {};
+
+  for (const [field, messages] of Object.entries(value)) {
+    if (Array.isArray(messages) && messages.every((m) => typeof m === 'string')) {
+      kept[field] = messages;
+    }
+  }
+
+  return Object.keys(kept).length > 0 ? kept : null;
+}
+
+function secondsIn(details: unknown): number | null {
+  if (details === null || typeof details !== 'object') {
+    return null;
+  }
+
+  const seconds: unknown = (details as { retry_after?: unknown }).retry_after;
+
+  return typeof seconds === 'number' && Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
 }
 
 /**
@@ -122,7 +152,11 @@ function fallbackMessage(error: HttpErrorResponse): string {
   return `The request failed (${error.status} ${error.statusText}).`;
 }
 
-function readRetryAfter(error: HttpErrorResponse): number | null {
+/**
+ * The fallback, for something same-origin in front of the API that answers with the header and no
+ * envelope. Across origins the browser hides it, which is why the envelope is read first.
+ */
+function readRetryAfterHeader(error: HttpErrorResponse): number | null {
   const header = error.headers.get('Retry-After');
 
   if (header === null) {

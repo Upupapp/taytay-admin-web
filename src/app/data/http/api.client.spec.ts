@@ -1,58 +1,81 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
+import { firstValueFrom } from 'rxjs';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { WriteIntent } from './api.client';
+import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 
-/**
- * The idempotency key is generated per **intent**, not per attempt.
- *
- * This is the distinction the whole mechanism rests on. A key made fresh for
- * each HTTP call defeats it exactly: the retry carries a different key, the
- * server sees a second genuine request, and on the release surface that is a
- * second payout to the same household.
- */
-describe('WriteIntent', () => {
-  it('keeps one key across every attempt at the same act', () => {
-    const intent = new WriteIntent();
+import { ApiClient } from './api.client';
 
-    // However many times the adapter retries, it presents the same key.
-    expect(intent.key).toBe(intent.key);
-    expect(new WriteIntent(intent.key).key).toBe(intent.key);
+const BASE = 'https://api.example.gov.ph/api/v1';
+
+describe('ApiClient against the Node envelope', () => {
+  let api: ApiClient;
+  let http: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: APP_ENVIRONMENT, useValue: { apiBaseUrl: `${BASE}/`, dataSource: 'http' } },
+      ],
+    });
+
+    api = TestBed.inject(ApiClient);
+    http = TestBed.inject(HttpTestingController);
   });
 
-  it('gives two separate acts two different keys', () => {
-    // Two officers releasing two payouts, or one officer releasing twice on
-    // purpose, must not be collapsed into one by a shared key.
-    expect(new WriteIntent().key).not.toBe(new WriteIntent().key);
+  afterEach(() => http.verify());
+
+  it('reads one cursor page with no total, because the server sends none', async () => {
+    const page = firstValueFrom(api.cursorPage<string>('news', { limit: 10, cursor: 'c1' }));
+
+    const request = http.expectOne((r) => r.url === `${BASE}/news`);
+    expect(request.request.params.get('limit')).toBe('10');
+    expect(request.request.params.get('cursor')).toBe('c1');
+    request.flush({ data: ['a'], meta: { pagination: { has_more: false, next_cursor: null } } });
+
+    expect(await page).toEqual({ items: ['a'], hasMore: false, nextCursor: null });
   });
 
-  it('produces a key that survives being put in a header', () => {
-    const { key } = new WriteIntent();
+  it('reads a whole unpaged list from data', async () => {
+    const rows = firstValueFrom(api.list<string>('barangays'));
 
-    expect(key).toMatch(/^[0-9a-f-]{36}$/);
-    expect(key.trim()).toBe(key);
+    http.expectOne(`${BASE}/barangays`).flush({ data: ['x', 'y'], meta: {} });
+
+    expect(await rows).toEqual(['x', 'y']);
   });
-});
 
-/**
- * `optionalItem` used to map any empty body to `null`, so a transport failure
- * and a genuine absence produced the same answer. For a caseworker checking
- * whether a household has an open referral, "there is none" and "we could not
- * ask" are opposite conclusions, and only one of them is safe to act on.
- *
- * The behaviour is asserted here at the level the distinction lives — which
- * status becomes an absence — because the adapter tests that exercise it
- * end to end need recorded responses from a staging API that does not exist yet.
- */
-describe('absence is not failure', () => {
-  it('treats only 404 as "the server says it is not there"', () => {
-    const notFound = new HttpErrorResponse({ status: 404, statusText: 'Not Found' });
-    const serverError = new HttpErrorResponse({ status: 500, statusText: 'Server Error' });
-    const refused = new HttpErrorResponse({ status: 0, statusText: 'Unknown Error' });
+  /**
+   * A transport failure and a genuine absence are opposite conclusions for a caseworker, and only
+   * one of them is safe to act on. Only a 404 is the server saying "not there".
+   */
+  it('turns only a 404 into an absence', async () => {
+    const absent = firstValueFrom(api.optionalItem('offices/missing'));
+    http.expectOne(`${BASE}/offices/missing`).flush(null, { status: 404, statusText: 'Not Found' });
+    expect(await absent).toBeNull();
 
-    expect(notFound.status).toBe(404);
-    // A 500 and a status 0 must propagate: the screen shows a failure, never
-    // an empty record.
-    expect(serverError.status).not.toBe(404);
-    expect(refused.status).not.toBe(404);
+    const failed = firstValueFrom(api.optionalItem('offices/broken'));
+    http
+      .expectOne(`${BASE}/offices/broken`)
+      .flush(null, { status: 500, statusText: 'Server Error' });
+    await expect(failed).rejects.toBeTruthy();
+  });
+
+  /**
+   * The API's CORS policy allows four request headers. `Idempotency-Key` is not one of them, so a
+   * write carrying it would fail its preflight before reaching the server — and the API does not
+   * implement it anyway.
+   */
+  it('sends a write with no Idempotency-Key', async () => {
+    const written = firstValueFrom(api.post<{ ok: boolean }>('notifications/read', {}));
+
+    const request = http.expectOne({ method: 'POST', url: `${BASE}/notifications/read` });
+    expect(request.request.headers.has('Idempotency-Key')).toBe(false);
+    request.flush({ data: { ok: true }, meta: {} });
+
+    expect(await written).toEqual({ ok: true });
   });
 });

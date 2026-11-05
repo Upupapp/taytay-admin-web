@@ -256,4 +256,23 @@ describe('SessionStore — an expired session', () => {
     expect(revocations).toBe(1);
     expect(store.isAuthenticated()).toBe(false);
   });
+
+  /**
+   * The adapter drops the token once the server has answered, whatever it answered (`DL-165`). A
+   * signed-in screen kept after a refused revocation would sit over a session with no credential.
+   */
+  it('ends the local session when the server did not confirm, and still reports it', () => {
+    let reported: unknown = null;
+    const store = storeWith(
+      repository({
+        signOut: (): Observable<void> => throwError(() => new Error('revocation not confirmed')),
+      }),
+    );
+
+    store.signIn(CREDENTIALS).subscribe();
+    store.signOut().subscribe({ error: (error: unknown) => (reported = error) });
+
+    expect(store.isAuthenticated()).toBe(false);
+    expect(reported).toBeInstanceOf(Error);
+  });
 });

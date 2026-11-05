@@ -6,62 +6,94 @@
  * asks whether its body would be understood. `check:port-adoption` asks whether anybody makes it at
  * all. All three can be green about a read that hands a screen nothing.
  *
- * That is not hypothetical. `listDocumentRequests` called `collection<DocumentRequest>` on a path
- * that **is** published, at a verb that **is** served, and the endpoint answers
- * `{ "requests": [...] }` — so `data` is an object, `collection<T>` returned a non-array, and the
- * screen would have shown an empty list on a record of what an applicant was told (`DL-151`).
+ * That is not hypothetical. `listDocumentRequests` once called `collection<DocumentRequest>` on a
+ * path that was published, at a verb that was served, and the endpoint answered
+ * `{ "requests": [...] }` — so `data` was an object and the screen would have shown an empty list
+ * on a record of what an applicant was told (`DL-151`).
  *
  * ## What this compares
  *
- * Each read in the adapters names an endpoint and picks a helper. Each published route answers with
- * an envelope, vendored in `response-envelopes.json` from the controller behind it. The helper and
- * the envelope have to agree:
+ * Each read in the adapters names an endpoint and picks a helper. Each `GET` in the vendored spec
+ * declares the envelope it answers with (`contract/openapi.json`, `DL-165`), and the two have to
+ * agree:
  *
- * | console helper | needs `data` to be | server envelope |
- * | --- | --- | --- |
- * | `item` / `optionalItem` | an object | `item` |
- * | `page` | an array plus `meta.pagination` | `page` |
- * | `collection` | a bare array | **nothing produces this** |
+ * | console helper            | needs `data` to be                    | spec envelope  |
+ * | ------------------------- | ------------------------------------- | -------------- |
+ * | `item` / `optionalItem`   | an object                             | `item`         |
+ * | `cursorPage` / `everyPage`| an array plus `meta.pagination`       | `cursor-page`  |
+ * | `list`                    | an array, `meta: {}`                  | `list`         |
  *
- * ## `collection` cannot be right anywhere
+ * ## `list` is right on Node, exactly where the spec says so
  *
- * There is no `ApiResponse::collection` in the backend. Every list is either a `page` — `data` is an
- * array *and* there is pagination meta — or an `item` whose object happens to contain an array.
+ * `DL-156` held that a bare-array helper could be right nowhere, because the Laravel API had no
+ * `ApiResponse::collection` — every list was paginated or wrapped. That was a fact about Laravel.
+ * The Node API answers several lists whole, with `meta: {}` (barangays, news categories, banners,
+ * hotlines), and for those a bare-array helper is the only correct one. On a cursor-paged route it
+ * is still the dangerous mistake: rows appear, the screen looks right, and it has read **the first
+ * twenty and presented them as the whole list**.
  *
- * The two failures are different and the report keeps them apart, because their consequences are:
+ * ## All hard
  *
- * - **`collection` where the server sends `item`** — `data` is an object, the helper hands back a
- *   non-array, and the screen shows nothing. Loud, once anybody looks.
- * - **`collection` where the server sends `page`** — `data` *is* an array, so rows appear and the
- *   screen looks right. It has silently read **the first 25 rows and presented them as the whole
- *   list**, because 25 is the default page size and nothing asked for more. This is the dangerous
- *   one: `DL-112`'s wrong answer delivered with confidence, on a queue where a caseworker counts
- *   what is outstanding.
- *
- * Exit 0 = no new mismatch, 1 = the baseline grew or ground was gained and not recorded.
+ * Against Laravel this was a ratchet: twelve reads were known to misread their answer, carried in
+ * `shape-mismatches.json`, and seven more read routes the snapshot did not cover. The adapters
+ * behind all nineteen were replaced by ones that make no request, so the count reached zero by
+ * removal and the baseline file is gone. A mismatch fails the build, and so does a read of a route
+ * the spec does not document — a read nobody can check is not one this check may call agreed.
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const CONTRACT = join(ROOT, 'src/app/data/http/contract');
+const HTTP = join(ROOT, 'src', 'app', 'data', 'http');
 const ADAPTERS = 'src/app/data/http/http-repositories.ts';
 
-const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
+const read = (...segments) => readFileSync(join(...segments), 'utf8');
 
-const vendored = JSON.parse(readFileSync(join(CONTRACT, 'response-envelopes.json'), 'utf8'));
-const baseline = JSON.parse(readFileSync(join(CONTRACT, 'shape-mismatches.json'), 'utf8'));
+const spec = JSON.parse(read(HTTP, 'contract', 'openapi.json'));
+const provenance = JSON.parse(read(HTTP, 'contract', 'openapi.source.json'));
 
 const failures = [];
 
-if (Object.keys(vendored.envelopes).length < 200) {
-  failures.push('The vendored envelope snapshot looks truncated. Re-vendor rather than proceed.');
+/* ── the envelope each GET declares ──────────────────────────────────────── */
+
+const resolve = (schema) => {
+  const ref = schema?.$ref;
+  if (typeof ref !== 'string') return schema;
+  return resolve(ref.replace(/^#\//, '').split('/').reduce((node, key) => node?.[key], spec));
+};
+
+/** `item`, `list`, `cursor-page`, or `undeclared` when the spec says nothing a helper can match. */
+function envelopeOf(operation) {
+  const schema = resolve(operation?.responses?.['200']?.content?.['application/json']?.schema);
+  const data = resolve(schema?.properties?.data);
+  const meta = resolve(schema?.properties?.meta);
+
+  if (data === undefined) return 'undeclared';
+
+  const types = [data.type].flat();
+  if (types.includes('array')) return meta?.properties?.pagination !== undefined ? 'cursor-page' : 'list';
+  if (types.includes('object') || data.properties !== undefined) return 'item';
+  return 'undeclared';
 }
 
-/* ── the endpoint table ───────────────────────────────────────────────────── */
+const normalise = (path) => path.replace(/\{[^}]*\}/g, '{}');
 
-const contract = read('src/app/data/http/api.contract.ts');
+const serverEnvelope = new Map();
+for (const [path, item] of Object.entries(spec.paths ?? {})) {
+  if (item.get !== undefined) {
+    serverEnvelope.set(normalise(path.replace(/^\/api\/v1\//, '')), envelopeOf(item.get));
+  }
+}
+
+if (serverEnvelope.size === 0) {
+  failures.push('No GET operation was read from the vendored spec, so nothing was compared.');
+}
+
+/* ── the endpoint table ──────────────────────────────────────────────────── */
+
+const contract = read(HTTP, 'api.contract.ts');
 const table = /API_ENDPOINTS = \{([\s\S]*?)\n\} as const;/.exec(contract);
 
 if (table === null) {
@@ -72,32 +104,47 @@ const lookup =
   table === null
     ? {}
     : Object.fromEntries(
-        [...table[1].replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').matchAll(
-          /(\w+):\s*'([^']+)'/g,
-        )].map(([, name, path]) => [name, path]),
+        [
+          ...table[1]
+            .replace(/\/\*[\s\S]*?\*\//g, '')
+            .replace(/\/\/[^\n]*/g, '')
+            .matchAll(/(\w+):\s*'([^']+)'/g),
+        ].map(([, name, path]) => [name, path]),
       );
 
-/* ── the reads ────────────────────────────────────────────────────────────── */
+/* ── the reads ───────────────────────────────────────────────────────────── */
 
 /**
  * Which envelope each console helper requires.
  *
- * **A helper missing from this table is not checked** — it is skipped, and its reads disappear from
- * the comparison rather than counting as wrong. `everyPage` was added to the client and three reads
- * went quiet instead of green, which is the failure this whole file exists to catch, committed
- * while fixing it. The guard below is why that surfaced.
+ * **A helper missing from this table would not be checked**, which is why the client's surface is
+ * asserted against it below: `everyPage` was once added to the client, three reads went quiet
+ * instead of green, and that was the failure this file exists to catch, committed while fixing it.
  */
 const NEEDS = {
   item: 'item',
   optionalItem: 'item',
-  page: 'page',
-  /** Reads every page of a paginated route, so it needs the same envelope `page` does. */
-  everyPage: 'page',
-  collection: 'collection',
+  cursorPage: 'cursor-page',
+  /** Follows `next_cursor`, so it needs the same envelope `cursorPage` does. */
+  everyPage: 'cursor-page',
+  list: 'list',
 };
 
-const adapters = read(ADAPTERS);
+const WRITES = new Set(['post', 'patch', 'delete']);
+
+const client = read(HTTP, 'api.client.ts');
+for (const [, helper] of client.matchAll(/^  ([a-zA-Z]\w*)\s*[<(]/gm)) {
+  if (NEEDS[helper] === undefined && !WRITES.has(helper)) {
+    failures.push(
+      `ApiClient.${helper} is neither a known read helper nor a write. Add it to NEEDS, or its reads ` +
+        `are skipped rather than checked.`,
+    );
+  }
+}
+
+const adapters = read(ROOT, ADAPTERS);
 const reads = [];
+let unresolved = 0;
 
 const start = /this\s*\.\s*api\s*\.\s*(\w+)\s*[<(]/g;
 let match;
@@ -144,97 +191,62 @@ while ((match = start.exec(adapters)) !== null) {
     path = lookup[bare[1]];
   }
 
-  if (path !== null) {
-    reads.push({
-      needs,
-      helper: match[1],
-      path: path.replace(/\/$/, ''),
-      line: adapters.slice(0, match.index).split('\n').length,
-    });
+  if (path === null) {
+    unresolved++;
+    continue;
   }
-}
 
-if (reads.length < 40) {
-  failures.push(`Only ${reads.length} reads were extracted from the adapters. The parser is broken, not the code.`);
+  reads.push({
+    needs,
+    helper: match[1],
+    path: path.replace(/\/$/, ''),
+    line: adapters.slice(0, match.index).split('\n').length,
+  });
 }
 
 /*
- * Every read helper the client offers must appear in NEEDS.
- *
- * Otherwise adding one silently narrows what this check covers: the new reads are skipped, the
- * count of disagreements falls, and the ratchet reports progress for a surface it stopped watching.
+ * Relative, not a magic floor: every read call site in the adapters must have been extracted. A
+ * parser that silently drops calls reports agreement about reads it never saw.
  */
-const client = read('src/app/data/http/api.client.ts');
-const declared = [...client.matchAll(/^  (\w+)<T\w*>\(/gm)].map((match) => match[1]);
-const READ_HELPERS = /^(item|optionalItem|page|everyPage|collection)$/;
+const readSites = [...adapters.matchAll(/this\s*\.\s*api\s*\.\s*(\w+)/g)].filter(
+  ([, helper]) => NEEDS[helper] !== undefined,
+).length;
 
-for (const helper of declared) {
-  if (READ_HELPERS.test(helper) && NEEDS[helper] === undefined) {
-    failures.push(
-      `ApiClient.${helper} is a read helper and is not in NEEDS, so its reads are skipped rather ` +
-        `than checked. Add it, or this check quietly stops covering them.`,
-    );
-  }
+if (reads.length + unresolved !== readSites || unresolved > 0) {
+  failures.push(
+    `${readSites} read call sites in ${ADAPTERS}, ${reads.length} resolved to a path. Build every read ` +
+      `from API_ENDPOINTS, or this check cannot say what it answers with.`,
+  );
 }
 
-/* ── compare ──────────────────────────────────────────────────────────────── */
+/* ── compare ─────────────────────────────────────────────────────────────── */
 
-const normalise = (path) => path.replace(/\{[^}]*\}/g, '{}');
-
-const serverEnvelope = new Map();
-for (const [route, envelope] of Object.entries(vendored.envelopes)) {
-  const [verb, path] = route.split(' ');
-  if (verb === 'GET') serverEnvelope.set(normalise(path), envelope);
-}
-
-const mismatches = [];
 let agree = 0;
-let unpublished = 0;
 
 for (const entry of reads) {
   const server = serverEnvelope.get(normalise(entry.path));
 
-  if (server === undefined || server === 'none' || server === 'unresolved') {
-    unpublished++;
+  if (server === undefined || server === 'undeclared') {
+    failures.push(
+      `${ADAPTERS}:${entry.line} reads GET ${entry.path} with ${entry.helper}, and the spec declares no ` +
+        `envelope for it. A read nobody can check is not one this check may call agreed.`,
+    );
     continue;
   }
 
-  if (server === entry.needs) {
-    agree++;
+  if (server !== entry.needs) {
+    const consequence =
+      entry.needs === 'list' && server === 'cursor-page'
+        ? 'It reads the first page and presents it as the whole list.'
+        : entry.needs === 'list' && server === 'item'
+          ? 'data is an object, so the screen shows nothing.'
+          : `${entry.helper} needs ${entry.needs} and the route answers ${server}.`;
+
+    failures.push(`${ADAPTERS}:${entry.line} ${entry.helper} GET ${entry.path} <- ${server}. ${consequence}`);
     continue;
   }
 
-  mismatches.push(`${entry.helper} ${entry.path} <- ${server}`);
-}
-
-const found = [...new Set(mismatches)].sort();
-
-if (process.argv.includes('--write-baseline')) {
-  writeFileSync(
-    join(CONTRACT, 'shape-mismatches.json'),
-    `${JSON.stringify({ ...baseline, count: found.length, mismatches: found }, null, 2)}\n`,
-  );
-  console.log(`Baseline rewritten: ${found.length} reads that would misread the answer.`);
-  process.exit(0);
-}
-
-const recorded = new Set(baseline.mismatches);
-const added = found.filter((entry) => !recorded.has(entry));
-const gone = [...recorded].filter((entry) => !found.includes(entry));
-
-if (added.length > 0) {
-  failures.push(
-    `${added.length} read(s) would misread the answer:\n` +
-      added.map((entry) => `      ${entry}`).join('\n'),
-  );
-}
-
-if (gone.length > 0) {
-  failures.push(
-    `${gone.length} read(s) are fixed and still in the baseline. Shrink it:\n` +
-      gone.map((entry) => `      ${entry}`).join('\n') +
-      '\n      Run: node tools/check-response-shape.mjs --write-baseline',
-  );
+  agree++;
 }
 
 if (failures.length > 0) {
@@ -243,21 +255,7 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-const silentlyTruncated = found.filter((entry) => entry.endsWith('<- page') && entry.startsWith('collection'));
-const returnsNothing = found.filter((entry) => entry.endsWith('<- item') && entry.startsWith('collection'));
-
 console.log(
-  `Response-shape check passed (${agree}/${agree + found.length} reads agree with the envelope ` +
-    `their route answers, ${vendored.commitShort}).`,
-);
-console.log(`\n  [31m${found.length} reads would misread the answer[0m:`);
-console.log(
-  `    ${silentlyTruncated.length} read a paginated route as a plain list — the first 25 rows, ` +
-    `shown as the whole of it.`,
-);
-console.log(`    ${returnsNothing.length} read an object as an array — the screen shows nothing.`);
-console.log(
-  `    ${found.length - silentlyTruncated.length - returnsNothing.length} other.` +
-    `\n  ${unpublished} read a route this snapshot does not cover.` +
-    `\n  See docs/integration/release-engineering.md.\n`,
+  `Response-shape check passed (${agree}/${reads.length} reads agree with the envelope their route ` +
+    `declares, ${provenance.repository}@${provenance.commitShort}).`,
 );

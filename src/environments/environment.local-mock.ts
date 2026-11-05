@@ -14,7 +14,7 @@ export const environment: AppEnvironment = {
   appName: 'Taytay Social Welfare',
   // Present but unused while `dataSource` is `mock`. Kept accurate so switching one field is all
   // it takes to become `local-api`.
-  apiBaseUrl: 'http://localhost:8000/api/v1',
+  apiBaseUrl: 'http://localhost:3000/api/v1',
   dataSource: 'mock',
   mockLatencyMs: 250,
   enableDevTools: true,

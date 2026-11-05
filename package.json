@@ -53,7 +53,7 @@
     "check:port-adoption": "node tools/check-port-adoption.mjs",
     "check:scanners": "node tools/check-scanners.mjs",
     "check:response-shape": "node tools/check-response-shape.mjs",
-    "vendor:envelopes": "node tools/vendor-response-envelopes.mjs"
+    "vendor:openapi": "node tools/vendor-openapi.mjs"
   },
   "private": true,
   "packageManager": "npm@11.12.1",

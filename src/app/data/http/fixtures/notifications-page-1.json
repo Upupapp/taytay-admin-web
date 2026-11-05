@@ -1,0 +1,28 @@
+{
+  "data": [
+    {
+      "id": "5e1d2c3b-4a59-4687-9a0b-1c2d3e4f5a01",
+      "type": "message_received",
+      "title": "New message",
+      "body": "A resident wrote to your office.",
+      "subject_id": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c01",
+      "read_at": null,
+      "created_at": "2026-11-04T03:00:00.000Z"
+    },
+    {
+      "id": "5e1d2c3b-4a59-4687-9a0b-1c2d3e4f5a02",
+      "type": "verification_decided",
+      "title": "Verification decided",
+      "body": "Your ID verification was reviewed.",
+      "subject_id": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c02",
+      "read_at": "2026-11-03T05:00:00.000Z",
+      "created_at": "2026-11-03T04:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "has_more": true,
+      "next_cursor": "MjAyNi0xMS0wM1QwNDowMDowMC4wMDBafDVlMWQyYzNiLTRhNTktNDY4Ny05YTBiLTFjMmQzZTRmNWEwMg"
+    }
+  }
+}

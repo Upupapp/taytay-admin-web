@@ -1,171 +1,131 @@
 /**
- * check:query-params — a filter key the API never reads is a filter that does nothing.
+ * check:query-params — a query key the API never reads is a filter that does nothing.
  *
  * ## The finding (L-24)
  *
- * `L-22` records the inbound half of this expression:
+ * The console used to copy every filter key into the query string **verbatim**, so `?barangayId=3`
+ * arrived where the server read `barangay_id`, the `where` clause was skipped, and the endpoint
+ * answered **200 with the unfiltered list** under a heading that said it was narrowed. It is not an
+ * authorisation bypass — the server scopes before it filters — but it is a filter that fails open
+ * and fails silently, and the single-word keys that do work make a broken filter panel look like a
+ * working one.
  *
- * ```ts
- * return this.api.page<ResidentView>(API_ENDPOINTS.residents, page, filter);
- * ```
+ * ## The measure changed with the API, and got stronger (`DL-165`)
  *
- * — a `snake_case` payload cast to a domain type with no conversion. **This check is the
- * outbound half of the same line, and it is worse**, because the inbound failure renders a
- * blank cell and the outbound failure renders a full list.
+ * Against Laravel this compared **shape**: a key passed if the wire could carry it as written,
+ * because the console had no route table to ask whether the endpoint read it at all. Its own
+ * docblock said a green run did not mean the filters worked. It counted 53 keys, nearly all in the
+ * domain's `…Filter` interfaces, which reached the wire only through adapters that no longer exist.
  *
- * `toQueryParams` and `toParams` copy every filter key **verbatim**. Neither converts case;
- * `per_page` is hand-written `snake_case` two lines above the copy loop, which is the whole
- * convention stated and then not applied. The API reads `snake_case` exclusively — measured
- * across every `V1` controller: `barangay_id`, `assigned_to`, `resident_id`, `program_id`,
- * `overdue_only`, `open_only`, `as_of`, and **no camelCase parameter anywhere**.
+ * The Node API's spec declares every query parameter of every operation, and its query schemas
+ * are not strict: an unknown key is not refused, it is dropped. So this now asks the question the
+ * old docblock said it could not — **existence** — and it is a hard rule:
  *
- * So `?barangayId=3` arrives, `$request->query('barangay_id')` returns null, the `if` guarding
- * the `where` clause is skipped, and the endpoint answers **200 with the unfiltered list**.
+ *   1. Every key a read sends is declared as a query parameter of that operation. That includes
+ *      `limit` and `cursor`, which `toQueryParams` adds to every cursor read.
+ *   2. Every filter argument is an object literal, so its keys can be read here. A variable — a
+ *      domain filter passed whole — is exactly how `barangayId` reached the wire unconverted, and a
+ *      check that cannot see the keys cannot vouch for them.
+ *   3. Every key is wire-shaped (`snake_case` or one lowercase word).
  *
- * ## What this is, and what it is not
- *
- * It is **not** an authorisation bypass, and saying so would be alarmism. Every list controller
- * scopes before it filters — `scopeToBarangays($actor, ...)` runs first and `barangay_id` is
- * documented in `ResidentController` as *"narrowing only … asking for a barangay outside it
- * yields nothing rather than widening anything"*. The actor's scope holds.
- *
- * It is a filter that **fails open and fails silently**, bounded by that scope. For a barangay
- * -scoped clerk that is their own barangay. For a municipality-scoped supervisor — the MSWDO
- * head, an administrator — it is every resident of a municipality of 397,111 people, returned
- * under a heading that says the list was narrowed.
- *
- * The reason it survived every gate is that **the single-word keys work**. `status`, `search`,
- * `category`, `q` and `scope` need no conversion, so the filter panel demonstrates itself with
- * the half that functions while `barangayId`, `assignedTo`, `residentId`, `programId`,
- * `overdueOnly` and `openOnly` are discarded.
- *
- * ## Why no existing check catches it
- *
- * `check:routes` compares path and verb — this path is correct at this verb.
- * `check:wire-adoption` reads `args[1]`, the request **body**, and returns early on reads.
- * `check:contract` governs the envelope. Query parameters are covered by none of them; this
- * file is that counter.
- *
- * Proven red before it was trusted: run against `HEAD` it reports 54 offending keys across 13
- * filter interfaces and 24 call sites.
- *
- * ## What this check does NOT cover — read this before trusting a green run
- *
- * It compares **shape**, not existence. A key is accepted here if the wire could carry it as
- * written; whether the endpoint has that filter at all is a different question and this file
- * cannot answer it without the API's route table.
- *
- * There is already a known instance: `http-repositories.ts:664` sends `{ view, ... }` to
- * `admin/newsfeed`, and **no `view` parameter is read anywhere in the Content module**. It is
- * lowercase, so it passes here, and it is discarded there. Counted in neither number.
- *
- * So a green run means *"no new key was added in a case the API cannot read"*. It does not mean
- * the filters work. That claim needs the recorded consumer expectations replayed against the
- * real router — TAB 06's backend half — and until that runs, this counter is a floor.
+ * The domain-interface scan is retired with the adapters that gave it meaning: no domain filter
+ * reaches the wire, and rule 2 refuses one that would. A new measure, so a new first value: 0.
  */
 
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const HTTP = join(ROOT, 'src', 'app', 'data', 'http');
 const ADAPTERS = 'src/app/data/http/http-repositories.ts';
-const DOMAIN = join(ROOT, 'src/app/domain');
 
-/**
- * A key the wire can carry as written. `snake_case` and single lowercase words only — the API
- * reads nothing else. Keys already known to be sent as-is by the transport itself are exempt.
- */
-const TRANSPORT_KEYS = new Set(['page', 'per_page', 'sort']);
-const wireShaped = (key) => TRANSPORT_KEYS.has(key) || /^[a-z][a-z0-9_]*$/.test(key);
+const wireShaped = (key) => /^[a-z][a-z0-9_]*$/.test(key);
 
 /*
  * ── Which ApiClient helpers this check inspects, and why the list is asserted ─────────
  *
- * `everyPage` was added to ApiClient and this tool did not know the name, so it SKIPPED
- * those calls rather than checking them: the count fell by seven for work nobody had done
- * (DL-162). Adding the name fixes that instance. It does not fix the class, and the commit
- * that fixed it said so — *"a check that enumerates the names of things it inspects has a
- * hole shaped like the next name."*
+ * `everyPage` was once added to ApiClient and this tool did not know the name, so it SKIPPED those
+ * calls rather than checking them (DL-162). *"A check that enumerates the names of things it
+ * inspects has a hole shaped like the next name."* So the sets below are asserted against
+ * ApiClient's actual public surface, and anything it grows that is in neither set fails this check.
  *
- * So the names are no longer trusted. Both sets below are asserted against ApiClient's
- * actual public surface, and **anything it grows that is in neither set fails this check**.
- * A new helper cannot be silently skipped; somebody has to classify it, which is the only
- * point at which a human knows whether its arguments carry query parameters.
- *
- * Fail-closed on purpose: an unknown method is treated as an error, not as a write.
+ * For each read helper: which argument carries query keys, and whether the transport adds the
+ * cursor keys itself.
  */
-const READ_HELPERS = new Set(['page', 'everyPage', 'collection', 'item', 'optionalItem']);
+const READ_HELPERS = {
+  cursorPage: { filterAt: 2, cursorKeys: true },
+  everyPage: { filterAt: 1, cursorKeys: true },
+  list: { filterAt: 1, cursorKeys: false },
+  item: { filterAt: 1, cursorKeys: false },
+  optionalItem: { filterAt: null, cursorKeys: false },
+};
 
-/* Writes. Excluded because their arguments are a BODY, which `check:wire-adoption` owns —
- * not because they are safe. The exclusion is a floor, not a dismissal. */
-const WRITE_HELPERS = new Set(['post', 'postVoid', 'delete', 'deleteVoid', 'patch']);
+/* Writes. Excluded because their arguments are a BODY, which `check:wire-adoption` owns. */
+const WRITE_HELPERS = new Set(['post', 'patch', 'delete']);
 
 {
-  const client = readFileSync(join(ROOT, 'src/app/data/http/api.client.ts'), 'utf8');
+  const client = readFileSync(join(HTTP, 'api.client.ts'), 'utf8');
   const declared = new Set(
     [...client.matchAll(/\n  ([a-zA-Z]\w*)\s*[<(]/g)]
       .map((m) => m[1])
       .filter((n) => !['constructor', 'if', 'for', 'while', 'switch', 'catch', 'return'].includes(n)),
   );
-  const unclassified = [...declared].filter((n) => !READ_HELPERS.has(n) && !WRITE_HELPERS.has(n));
-  const vanished = [...READ_HELPERS, ...WRITE_HELPERS].filter((n) => !declared.has(n));
+  const known = [...Object.keys(READ_HELPERS), ...WRITE_HELPERS];
+  const unclassified = [...declared].filter((n) => !known.includes(n));
+  const vanished = known.filter((n) => !declared.has(n));
 
   if (unclassified.length > 0 || vanished.length > 0) {
     console.error(
       `\nQuery parameter check cannot run: its view of ApiClient is out of date.\n\n` +
         (unclassified.length
-          ? `  ApiClient declares ${unclassified.length} method(s) this check has never heard of:\n` +
-            unclassified.map((n) => `    ${n}`).join('\n') +
-            `\n\n  A name this tool does not know is a name it SKIPS, and a skipped call reports\n` +
-            `  ground gained for a surface nobody inspected. Add each to READ_HELPERS if its\n` +
-            `  arguments carry query parameters, or to WRITE_HELPERS if they are a body.\n\n`
+          ? `  ApiClient declares method(s) this check has never heard of: ${unclassified.join(', ')}\n` +
+            `  A name this tool does not know is a name it SKIPS. Classify each above.\n\n`
           : '') +
         (vanished.length
-          ? `  These are classified here but no longer exist on ApiClient: ${vanished.join(', ')}\n` +
-            `  Remove them, so the sets keep describing something real.\n\n`
+          ? `  These are classified here but no longer exist on ApiClient: ${vanished.join(', ')}\n\n`
           : ''),
     );
     process.exit(1);
   }
 }
 
-const offenders = [];
+const spec = JSON.parse(readFileSync(join(HTTP, 'contract', 'openapi.json'), 'utf8'));
+const contract = readFileSync(join(HTTP, 'api.contract.ts'), 'utf8');
 
-// ── 1. filter interfaces in the domain ───────────────────────────────────────
-const walk = (dir) =>
-  readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-    e.isDirectory() ? walk(join(dir, e.name)) : e.name.endsWith('.ts') && !e.name.includes('.spec.') ? [join(dir, e.name)] : [],
-  );
+const resolve = (node) => {
+  const ref = node?.$ref;
+  if (typeof ref !== 'string') return node;
+  return resolve(ref.replace(/^#\//, '').split('/').reduce((n, key) => n?.[key], spec));
+};
 
-for (const file of walk(DOMAIN)) {
-  const source = readFileSync(file, 'utf8');
-  for (const match of source.matchAll(/export interface (\w*Filter)\s*\{([\s\S]*?)\n\}/g)) {
-    const [, name, body] = match;
-    for (const [, key] of body.matchAll(/readonly\s+(\w+)\??\s*:/g)) {
-      if (!wireShaped(key)) offenders.push({ where: name, key });
-    }
-  }
+const normalise = (path) => path.replace(/\{[^}]+\}/g, '{}');
+
+/** `GET path` → the query parameter names it declares, path-level ones included. */
+const declaredQuery = new Map();
+for (const [path, item] of Object.entries(spec.paths ?? {})) {
+  if (item.get === undefined) continue;
+  const names = [...(item.parameters ?? []), ...(item.get.parameters ?? [])]
+    .map(resolve)
+    .filter((parameter) => parameter?.in === 'query')
+    .map((parameter) => parameter.name);
+  declaredQuery.set(normalise(path.replace(/^\/api\/v1\//, '')), new Set(names));
 }
 
-// ── 2. keys hand-written at a call site ──────────────────────────────────────
+const table = /export const API_ENDPOINTS = \{([\s\S]*?)\n\} as const;/.exec(contract)?.[1] ?? '';
+const lookup = Object.fromEntries(
+  [...table.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').matchAll(/(\w+):\s*'([^']+)'/g)].map(
+    ([, name, path]) => [name, path],
+  ),
+);
 
 /*
- * The call's OWN parentheses, counted — not everything up to the next `);`.
- *
- * The old bound swallowed whole pipelines. A read written as
- *
- *     this.api.optionalItem<HouseholdDetail>(path)
- *       .pipe(map((detail) => ({ view, household, householdMembers: …, history })))
- *
- * put `householdMembers` — a key in the **mapped result**, not a query parameter — on the
- * unreadable-filter list, and the ceiling carried it as debt. `check:routes` was fixed the same way
- * for the same reason: read each call's own arguments, never a span delimited by punctuation that
- * a chain can move.
+ * The call's OWN parentheses, counted — not everything up to the next `);`. An earlier bound
+ * swallowed whole pipelines and put a key from a mapped result on the list (DL-145).
  */
 function callArguments(text) {
   const out = [];
-  const start = new RegExp(String.raw`this\s*\.\s*api\s*\.\s*(?:${[...READ_HELPERS].join('|')})\s*[<(]`, 'g');
+  const start = new RegExp(String.raw`this\s*\.\s*api\s*\.\s*(${Object.keys(READ_HELPERS).join('|')})\s*[<(]`, 'g');
   let m;
 
   while ((m = start.exec(text)) !== null) {
@@ -192,69 +152,91 @@ function callArguments(text) {
       }
     }
 
-    out.push({ args: text.slice(open + 1, i), index: m.index });
+    out.push({ helper: m[1], args: topLevelArgs(text.slice(open + 1, i)), index: m.index });
   }
 
   return out;
 }
 
-const adapters = readFileSync(join(ROOT, ADAPTERS), 'utf8');
-
-if (callArguments(adapters).length < 50) {
-  console.error('\nThe call-site scan found almost nothing. The parser is broken, not the code.\n');
-  process.exit(1);
+function topLevelArgs(args) {
+  const parts = [];
+  let depth = 0;
+  let tick = false;
+  let current = '';
+  for (const ch of args) {
+    if (ch === '`') tick = !tick;
+    if (!tick) {
+      if ('([{'.includes(ch)) depth++;
+      else if (')]}'.includes(ch)) depth--;
+      else if (ch === ',' && depth === 0) {
+        parts.push(current.trim());
+        current = '';
+        continue;
+      }
+    }
+    current += ch;
+  }
+  if (current.trim() !== '') parts.push(current.trim());
+  return parts;
 }
 
-for (const call of callArguments(adapters)) {
-  const args = call.args;
+function pathOf(argument) {
+  const template = /^`\$\{API_ENDPOINTS\.(\w+)\}([^`]*)`$/.exec(argument);
+  const bare = /^API_ENDPOINTS\.(\w+)$/.exec(argument);
+  if (template !== null && lookup[template[1]] !== undefined) {
+    return lookup[template[1]] + template[2].replace(/\$\{[^}]+\}/g, '{}').split('?')[0];
+  }
+  return bare !== null ? (lookup[bare[1]] ?? null) : null;
+}
+
+const adapters = readFileSync(join(ROOT, ADAPTERS), 'utf8');
+const calls = callArguments(adapters);
+const offenders = [];
+
+/* Every read call site walked, relative to a raw count rather than a guessed floor. */
+const rawReads = [...adapters.matchAll(/this\s*\.\s*api\s*\.\s*(\w+)/g)].filter(([, h]) => h in READ_HELPERS).length;
+
+if (calls.length !== rawReads) {
+  offenders.push(`${rawReads} read call sites and ${calls.length} walked — the parser is broken, not the code`);
+}
+
+for (const call of calls) {
   const line = adapters.slice(0, call.index).split('\n').length;
-  for (const literal of args.matchAll(/\{([^{}]*)\}/g)) {
-    for (const [, key] of literal[1].matchAll(/(?:^|,)\s*([A-Za-z_]\w*)\s*(?::|,|$)/g)) {
-      if (!wireShaped(key)) offenders.push({ where: `${ADAPTERS}:${line}`, key });
+  const where = `${ADAPTERS}:${line}`;
+  const path = pathOf(call.args[0] ?? '');
+  const declared = path === null ? undefined : declaredQuery.get(normalise(path.replace(/\/$/, '')));
+
+  if (declared === undefined) {
+    offenders.push(`${where}: GET ${call.args[0]} is no GET in the vendored spec, so its query cannot be checked`);
+    continue;
+  }
+
+  const { filterAt, cursorKeys } = READ_HELPERS[call.helper];
+  const sent = cursorKeys ? ['limit', 'cursor'] : [];
+  const filter = filterAt === null ? undefined : call.args[filterAt];
+
+  if (filter !== undefined) {
+    if (!filter.startsWith('{')) {
+      offenders.push(`${where}: passes ${filter} as its query, whose keys this check cannot read`);
+      continue;
     }
+    sent.push(...[...filter.matchAll(/(?:^|[{,]\s*)([A-Za-z_]\w*)\s*(?::|,|\})/g)].map((k) => k[1]));
+  }
+
+  for (const key of new Set(sent)) {
+    if (!wireShaped(key)) offenders.push(`${where}: '${key}' is not wire-shaped`);
+    else if (!declared.has(key)) offenders.push(`${where}: GET ${path} does not declare '${key}'`);
   }
 }
 
-/*
- * 54 → 55 → 54, and the round trip is the lesson (`DL-145`).
- *
- * Teaching the scanner to see a chained call raised this to 55, and that extra key was recorded as
- * real pre-existing debt. It was not. It was `householdMembers`, a key in a **mapped result** —
- * `.pipe(map((detail) => ({ view, household, householdMembers: … })))` — that the argument scan
- * swallowed because it bounded a call at the next `);` rather than at the call's own closing paren.
- * Widening the scan did not find debt; it exposed a second defect in the same tool, and the debt
- * was the tool's arithmetic.
- *
- * A ratchet number that goes up is not self-evidently a finding. It has to be read.
- */
-const CEILING = 53;
-
-/*
- * 54 → 53 when `previewResolution` stopped sending `canonicalResidentId` and `supersededResidentId`
- * as query keys. They were never read: the URL they were sent to is served at no verb (`DL-148`).
- * Ground gained by deleting a call, which is the cheapest kind.
- */
-
-if (offenders.length > CEILING) {
-  const shown = offenders.slice(0, 12).map((o) => `    ${o.key}  (${o.where})`).join('\n');
+if (offenders.length > 0) {
   console.error(
-    `\nQuery parameter check failed: ${offenders.length} filter key(s) the API cannot read.\n\n` +
-      `  ceiling ${CEILING}, found ${offenders.length}\n\n${shown}\n\n` +
-      `  The API reads snake_case exclusively. A camelCase key is not rejected — it is ignored,\n` +
-      `  the where clause never runs, and the endpoint answers 200 with the UNFILTERED list.\n` +
-      `  The single-word keys work, which is why a broken filter panel looks like a working one.\n\n` +
-      `  Convert at the transport seam (toQueryParams / toParams), not at the call site, and\n` +
-      `  lower CEILING in tools/check-query-params.mjs in the same commit.\n`,
+    `\nQuery parameter check failed: ${offenders.length} problem(s).\n\n` +
+      offenders.map((o) => `    ${o}`).join('\n') +
+      `\n\n  The API drops a query key it does not declare. The request is not refused — it answers\n` +
+      `  200 with the UNFILTERED list, under a heading that says it was narrowed.\n`,
   );
   process.exit(1);
 }
 
-if (offenders.length < CEILING) {
-  console.error(
-    `\nQuery parameters improved — ${CEILING - offenders.length} fewer unreadable key(s) than the recorded ceiling.\n\n` +
-      `  Lower CEILING to ${offenders.length} in tools/check-query-params.mjs so the ground gained is held.\n`,
-  );
-  process.exit(1);
-}
-
-console.log(`Query parameters at the recorded ceiling (${offenders.length} unreadable keys, L-24 outstanding).`);
+console.log(`Query parameters check passed (${calls.length} reads, every key declared by its operation).`);

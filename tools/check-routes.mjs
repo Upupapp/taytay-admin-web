@@ -1,362 +1,296 @@
 #!/usr/bin/env node
 /**
- * check:routes — every endpoint this console calls is one the API actually serves.
+ * check:routes — every request this console makes is one the API actually serves, at that verb.
  *
  * ## The failure this exists for
  *
- * TAB 05 repointed twenty adapters against `php artisan route:list`, by hand, once. Nothing has
- * re-checked them since, and nothing would: a path that no longer exists produces a 404 at
- * runtime, on one screen, discovered by whoever opened it. There is no compiler error available
- * for "this string is not a route".
+ * A path that does not exist produces a 404 at runtime, on one screen, discovered by whoever opened
+ * it. There is no compiler error available for "this string is not a route", so the comparison is
+ * made here, mechanically, against the API's own published surface — the vendored
+ * `contract/openapi.json` (`DL-165`). The backend's `tests/openapi-routes.test.ts` fails when a
+ * registered route is undocumented, which is what makes the spec a route list rather than a hope.
  *
- * TAB 18 makes that mechanical, because it is also what decides deployment order: *"The API deploys
- * before the console when the console needs a new endpoint; the console deploys before the API when
- * the API removes one."* Both halves of that sentence are answerable by comparing this console's
- * endpoint table against the API's published surface — and neither is answerable from memory.
+ * ## Four rules, all hard
  *
- * ## The snapshot is vendored, with provenance
+ *   1. Every `API_ENDPOINTS` entry is a path the spec publishes.
+ *   2. Every request the adapters compose — base path plus segments — is published **at its verb**.
+ *      A `POST` to a path served only for `GET` is refused by a router that never reaches the
+ *      application, and a path-only comparison reports that as clean.
+ *   3. Every call the adapters make is one this check could resolve. A call it cannot read is a
+ *      call it cannot vouch for, so it fails rather than being skipped.
+ *   4. Every port bound to an unserved adapter is bound to one that **makes no request**.
  *
- * `contract/routes.published.json` is a copy of the backend's own generated snapshot, recorded in
- * `routes.source.json` with the commit it came from and its sha256 — the same treatment
- * `types.ts` gets, for the same reason. **A vendored artefact that cannot say where it came from
- * is one nobody can tell is stale**, and a stale route list is confidently wrong rather than
- * merely absent.
+ * Against the retired Laravel API rules 1 and 2 were a hard rule and a ratchet: fifteen composed
+ * paths were known 404s, carried in `unwired-paths.json` and allowed not to grow. Against the Node
+ * API every adapter that called a route it does not serve has been replaced by one that calls
+ * nothing (`unserved-repositories.ts`), so the ratchet reached zero by **removal** — and a ratchet at
+ * zero is a hard rule. The baseline file is gone; a new unserved path fails the build.
  *
- * The staleness this cannot see is the backend having moved on since that commit. That is the
- * backend's half: `PublishedRoutesAreStableTest` fails there when a route disappears without the
- * snapshot changing, so the removal becomes a line in a diff before it can become a 404 here.
+ * ## What is still counted rather than refused
  *
- * ## What it compares
- *
- * `API_ENDPOINTS` holds the base paths; adapters append segments and identifiers. So the rule is
- * that every base path must match a published route **as a prefix** — an exact match would reject
- * `admin/residents` (only ever called as `admin/residents/{id}` for reads), and a substring match
- * would accept anything. Parameter names are normalised away: `{resident}` and `{id}` are the same
- * position.
+ * How many ports are unserved. That number is the honest size of the gap between this console and
+ * its API (`DL-164`), it may only shrink, and launch gate line 05/07 stays NO-GO while it is above
+ * zero — unless the owner retires those screens.
  */
 
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const CONTRACT = join(ROOT, 'src/app/data/http/contract');
+const HTTP = join(ROOT, 'src', 'app', 'data', 'http');
+const CONTRACT = join(HTTP, 'contract');
 
 const failures = [];
 
-// ── 1. the vendored snapshot is what it says it is ─────────────────────────
-const raw = readFileSync(join(CONTRACT, 'routes.published.json'), 'utf8');
-const provenance = JSON.parse(readFileSync(join(CONTRACT, 'routes.source.json'), 'utf8'));
-const actual = createHash('sha256').update(raw).digest('hex');
+// ── the vendored spec, re-verified so this check can be trusted on its own ─────
+const raw = readFileSync(join(CONTRACT, 'openapi.json'));
+const provenance = JSON.parse(readFileSync(join(CONTRACT, 'openapi.source.json'), 'utf8'));
 
-if (actual !== provenance.sha256) {
+if (createHash('sha256').update(raw).digest('hex') !== provenance.sha256) {
   failures.push(
-    'routes.published.json does not match the sha256 in routes.source.json.\n' +
-      '    Either it was edited by hand — which makes the provenance a lie — or it was re-copied\n' +
-      `    without updating the record. Re-vendor from the backend and rewrite both.`,
+    'openapi.json does not match the sha256 in openapi.source.json. Run: npm run vendor:openapi',
   );
 }
 
-const published = JSON.parse(raw).routes ?? [];
+const spec = JSON.parse(raw.toString('utf8'));
+const METHODS = ['get', 'post', 'put', 'patch', 'delete'];
 
-if (published.length !== provenance.routeCount) {
-  failures.push(
-    `routes.source.json records ${provenance.routeCount} routes and the snapshot holds ${published.length}.`,
-  );
-}
-
-/*
- * A comparison against an empty list would pass every endpoint. Every detector here asserts its
- * own reach, because one that reaches nothing is indistinguishable from a codebase with nothing
- * to find.
- */
-if (published.length < 100) {
-  failures.push(
-    `The vendored route snapshot holds only ${published.length} routes, which is too few to be the\n` +
-      '    whole API. Every endpoint would pass against it, and the check would report a guarantee\n' +
-      '    nobody has.',
-  );
-}
-
-// ── 2. every endpoint the console names is one the API publishes ───────────
-const contract = readFileSync(join(ROOT, 'src/app/data/http/api.contract.ts'), 'utf8');
-
-const table = /export const API_ENDPOINTS = \{([\s\S]*?)\n\} as const;/.exec(contract);
-
-if (table === null) {
-  failures.push('API_ENDPOINTS could not be read from api.contract.ts, so nothing was checked.');
-} else {
-  /** Comments in that table explain the exceptions and must not be mistaken for entries. */
-  const body = table[1].replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-
-  const entries = [...body.matchAll(/(\w+):\s*'([^']+)'/g)].map(([, name, path]) => ({ name, path }));
-
-  if (entries.length < 20) {
-    failures.push(`Only ${entries.length} endpoints were parsed from API_ENDPOINTS. The parser is broken, not the table.`);
-  }
-
-  /** `{resident}` and `{id}` are the same position; the name is documentation. */
-  const normalise = (path) => path.replace(/\{[^}]+\}/g, '{}');
-
-  const prefixes = new Set();
-
-  for (const route of published) {
-    const [, path] = route.split(' ');
-    const normalised = normalise(path.replace(/^\/api\/v1\//, ''));
-
-    // Record every prefix, so `admin/residents` matches a published `admin/residents/{}`.
-    const segments = normalised.split('/');
-    for (let i = 1; i <= segments.length; i++) prefixes.add(segments.slice(0, i).join('/'));
-  }
-
-  /*
-   * A deliberately-absent endpoint, asserted absent rather than skipped.
-   *
-   * `cases` holds the route that used to exist and no longer does, so an adapter wired to it fails
-   * loudly at 404 instead of quietly succeeding against `admin/assistance-requests` — the
-   * "looks like success when wrong" trap TAB 04 exists to prevent (L-07).
-   *
-   * Skipping it would mean this check stays silent on the day the API finally publishes the case
-   * surface, which is exactly the day somebody needs telling to wire it. So it is checked in
-   * reverse: present is the failure.
-   */
-  const INTENTIONALLY_ABSENT = {
-    cases: 'Blocked on ADR 0044. The value is a 404 sentinel, not an endpoint.',
-  };
-
-  for (const [name, why] of Object.entries(INTENTIONALLY_ABSENT)) {
-    const entry = entries.find((e) => e.name === name);
-
-    if (entry !== undefined && prefixes.has(normalise(entry.path))) {
-      failures.push(
-        `API_ENDPOINTS.${name} is now published by the API.\n` +
-          `    ${why}\n` +
-          `    It is no longer absent, so wire the adapters and remove it from INTENTIONALLY_ABSENT.`,
-      );
-    }
-  }
-
-  for (const { name, path } of entries) {
-    if (name in INTENTIONALLY_ABSENT) continue;
-
-    if (!prefixes.has(normalise(path))) {
-      failures.push(
-        `API_ENDPOINTS.${name} is '${path}', which the API does not publish.\n` +
-          `    Either the API must deploy first with this endpoint, or the console is calling a path\n` +
-          `    that was removed — in which case every screen using it 404s, discovered by whoever\n` +
-          `    opens it. See docs/integration/release-engineering.md for which order this release needs.`,
-      );
-    }
-  }
-}
-
-/*
- * ── 3. the composed paths, which is where the defects actually are ─────────
- *
- * `API_ENDPOINTS` holds base paths. The adapters compose the rest — `${releases}/${id}/release`,
- * `${newsfeed}/${id}/publish` — and TAB 05 repointed the twenty base paths without bringing those
- * composed paths in line with the 148-row mapping it produced in the same command.
- *
- * That mapping is CORRECT and the code does not follow it. `port-mapping.md` records
- * `markReleased → POST admin/releases/{release}/status`; the adapter posts to
- * `admin/releases/{id}/release`. Appendix A named this failure in advance: *"TAB 05 is estimated
- * from the 146 call sites rather than from the 147-row mapping. The call sites are typing; the
- * mapping is the work."*
- *
- * ## Why a baseline and not a hard failure
- *
- * There are 61 of them, including every money write. Failing the build outright would stop all
- * other work behind a body of rework that belongs to TAB 05, and the realistic outcome of a check
- * nobody can make pass is a check somebody removes.
- *
- * So the count is printed on **every** run, and the check fails when the list GROWS. The number is
- * visible, it cannot quietly increase, and shrinking it is the work. It is a baseline, never an
- * allow-list: nothing here is acceptable, and gate line 05/07 stays NO-GO until it is empty.
- */
-const adapters = readFileSync(join(ROOT, 'src/app/data/http/http-repositories.ts'), 'utf8');
-const baseline = JSON.parse(readFileSync(join(CONTRACT, 'unwired-paths.json'), 'utf8'));
-
-const composed = new Set();
-
-/*
- * ── the METHOD is part of the contract ─────────────────────────────────────
- *
- * The first version compared paths alone, and a `POST` to a path the API serves `GET`-only passed
- * cleanly. That is how the programme composer came to write to `/programs` — the public catalog a
- * resident may browse — while `POST admin/programs` sat unused. The path existed, so nothing
- * objected, and the request would have been refused by a router that never reached the application.
- *
- * A path-only check is the more dangerous half-measure, because it reports a clean result.
- *
- * Each call is walked to its own closing paren and its FIRST ARGUMENT taken as the path. An earlier
- * attempt scanned for `API_ENDPOINTS.x` and looked backwards for the nearest verb; that
- * mis-attributed verbs across call boundaries and reported a `DELETE admin/households` that nothing
- * performs. Only the call being examined knows which verb owns its path.
- */
-const VERBS = {
-  post: 'POST',
-  postVoid: 'POST',
-  patch: 'PATCH',
-  delete: 'DELETE',
-  deleteVoid: 'DELETE',
-  page: 'GET',
-  collection: 'GET',
-  item: 'GET',
-  optionalItem: 'GET',
-};
-
-if (table !== null) {
-  const body = table[1].replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-  const lookup = Object.fromEntries([...body.matchAll(/(\w+):\s*'([^']+)'/g)].map(([, n, p]) => [n, p]));
-
-  for (const call of apiCalls(adapters)) {
-    const verb = VERBS[call.verb];
-
-    if (verb === undefined) continue;
-
-    const argument = firstArgument(call.args);
-    const template = /^`\$\{API_ENDPOINTS\.(\w+)\}([^`]*)`$/.exec(argument);
-    const bare = /^API_ENDPOINTS\.(\w+)$/.exec(argument);
-
-    let path = null;
-
-    if (template !== null && lookup[template[1]] !== undefined) {
-      path = lookup[template[1]] + template[2].replace(/\$\{[^}]+\}/g, '{}').split('?')[0];
-    } else if (bare !== null && lookup[bare[1]] !== undefined) {
-      path = lookup[bare[1]];
-    }
-
-    if (path !== null) composed.add(`${verb} ${path.replace(/\/$/, '')}`);
-  }
-}
-
-const normalisePath = (p) => p.replace(/\{[^}]+\}/g, '{}');
+/** `{resident}` and `{id}` are the same position; the name is documentation. */
+const normalise = (path) => path.replace(/\{[^}]+\}/g, '{}');
 
 const publishedMethods = new Map();
+let operations = 0;
 
-for (const route of published) {
-  const [method, path] = route.split(' ');
-  const key = normalisePath(path.replace(/^\/api\/v1\//, ''));
-  publishedMethods.set(key, (publishedMethods.get(key) ?? new Set()).add(method));
+for (const [path, item] of Object.entries(spec.paths ?? {})) {
+  const key = normalise(path.replace(/^\/api\/v1\//, ''));
+  for (const method of METHODS) {
+    if (item[method] === undefined) continue;
+    operations++;
+    publishedMethods.set(key, (publishedMethods.get(key) ?? new Set()).add(method.toUpperCase()));
+  }
 }
 
-const publishedPaths = new Set(publishedMethods.keys());
+/*
+ * A comparison against an empty list would pass every endpoint. The floor is the count recorded
+ * when the spec was vendored, not a number somebody guessed once.
+ */
+if (operations === 0 || operations !== provenance.operationCount) {
+  failures.push(
+    `The vendored spec yields ${operations} operations; openapi.source.json records ` +
+      `${provenance.operationCount}. Every path would be judged against a truncated surface.`,
+  );
+}
 
-const unwired = [...composed]
-  .filter((entry) => {
-    const [verb, path] = entry.split(' ');
-    const serves = publishedMethods.get(path);
-
-    /*
-     * A base path with no published route of its own is legitimate when something extends it.
-     * A path that IS published is judged on its verbs, which is the point of this pass.
-     */
-    if (serves === undefined) {
-      return ![...publishedPaths].some((q) => q.startsWith(`${path}/`));
-    }
-
-    return !serves.has(verb);
-  })
-  .sort();
+const published = [...publishedMethods.keys()];
 
 /*
- * ── Nearest published routes, printed with every unwired path ────────────────
- *
- * Written after a triage done by hand got four of seven entries wrong.
- *
- * The method was to grep the published list for a substring guessed from the composed path —
- * `'reports/'`, `'privacy/'`, `'families/transfers'` — and conclude "nothing published covers this"
- * when nothing came back. But `POST admin/reports/{}/export` is served by `POST admin/exports`
- * with the report in the body; `GET admin/privacy/corrections` by `GET admin/resident-corrections`;
- * `POST admin/families/transfers` by `POST admin/households/{household}/transfers`. None of them
- * shares the substring that was searched for, and each was filed as a backend request that would
- * have had somebody build a route the API already serves.
- *
- * A guessed substring is a scan that under-reports, and this file already carries two entries about
- * exactly that failure (`DL-142`, `DL-143`). So the comparison is no longer done by eye: every
- * unwired path prints its closest published routes, scored on shared path segments, and whoever
- * reads the list is looking at candidates rather than remembering to search for them.
- *
- * It suggests and never decides. `POST .../assessment` and `POST .../assessment/complete` score
- * identically and mean different things (`DL-141`), so a match here is a prompt to read the
- * controller, never a repoint.
+ * Nearest published routes, printed with every failure. A triage done by eye once got four of seven
+ * entries wrong by grepping for a guessed substring (`DL-142`, `DL-143`); these are candidates to
+ * read, never a repoint.
  */
 const SEGMENT_NOISE = new Set(['admin', 'api', 'v1', '{}', 'me']);
-
 const segmentsOf = (path) =>
   path
     .split(/[/{}]/)
     .map((part) => part.trim().toLowerCase().replace(/s$/, ''))
     .filter((part) => part.length > 3 && !SEGMENT_NOISE.has(part));
 
-function nearestPublished(entry, limit = 3) {
-  const [, path] = entry.split(' ');
+function nearest(path, limit = 3) {
   const wanted = segmentsOf(path);
-  if (wanted.length === 0) return [];
-
   return published
-    .map((route) => {
-      const [, candidate] = route.split(' ');
-      const shared = segmentsOf(candidate.replace(/^\/api\/v1\//, ''));
-      const score = wanted.filter((part) => shared.includes(part)).length;
-      return { route: route.replace('/api/v1/', ''), score };
-    })
+    .map((candidate) => ({
+      route: `${[...publishedMethods.get(candidate)].join('|')} ${candidate}`,
+      score: wanted.filter((part) => segmentsOf(candidate).includes(part)).length,
+    }))
     .filter((match) => match.score > 0)
     .sort((a, b) => b.score - a.score || a.route.length - b.route.length)
-    .slice(0, limit);
+    .slice(0, limit)
+    .map((match) => `        nearest: ${match.route}`)
+    .join('\n');
 }
 
-if (process.argv.includes('--nearest')) {
-  for (const entry of unwired) {
-    console.log(`\n${entry}`);
-    const matches = nearestPublished(entry, 4);
-    if (matches.length === 0) {
-      console.log('   (no published route shares a path segment)');
-    }
-    for (const match of matches) console.log(`   [${match.score}] ${match.route}`);
+// ── 1. every endpoint the console names is one the API publishes ─────────────
+const contract = readFileSync(join(HTTP, 'api.contract.ts'), 'utf8');
+const table = /export const API_ENDPOINTS = \{([\s\S]*?)\n\} as const;/.exec(contract);
+
+/** Comments in that table explain the entries and must not be mistaken for them. */
+const tableBody = table === null ? '' : table[1].replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+const entries = [...tableBody.matchAll(/(\w+):\s*'([^']+)'/g)].map(([, name, path]) => ({ name, path }));
+const lookup = Object.fromEntries(entries.map(({ name, path }) => [name, path]));
+
+if (table === null) {
+  failures.push('API_ENDPOINTS could not be read from api.contract.ts, so nothing was checked.');
+}
+
+/*
+ * The parser's reach, asserted against a second reading of the same table: every property line must
+ * have produced an entry. A value written in double quotes or as an expression would otherwise drop
+ * out of the comparison silently and pass by absence.
+ */
+const propertyLines = [...tableBody.matchAll(/^\s*\w+\s*:/gm)].length;
+
+if (table !== null && (entries.length === 0 || entries.length !== propertyLines)) {
+  failures.push(
+    `API_ENDPOINTS has ${propertyLines} properties and ${entries.length} were read as paths. ` +
+      `Write each value as a single-quoted path, or this check cannot see it.`,
+  );
+}
+
+for (const { name, path } of entries) {
+  const key = normalise(path);
+  if (!published.some((candidate) => candidate === key || candidate.startsWith(`${key}/`))) {
+    failures.push(
+      `API_ENDPOINTS.${name} is '${path}', which the API does not publish.\n` +
+        `    Either the API must deploy first with this endpoint, or the console is calling a path\n` +
+        `    nobody serves — every screen using it 404s.\n${nearest(key)}`,
+    );
   }
-  console.log(
-    `\n${unwired.length} unwired paths. A match is a prompt to read the controller, never a repoint.\n`,
-  );
-  process.exit(0);
 }
 
-if (process.argv.includes('--write-baseline')) {
-  writeFileSync(
-    join(CONTRACT, 'unwired-paths.json'),
-    `${JSON.stringify({ ...baseline, count: unwired.length, paths: unwired }, null, 2)}\n`,
-  );
-  console.log(`Baseline rewritten: ${unwired.length} unwired composed paths.`);
-  process.exit(0);
+// ── 2 & 3. the composed requests, at their verbs ─────────────────────────────
+const VERBS = {
+  cursorPage: 'GET',
+  everyPage: 'GET',
+  list: 'GET',
+  item: 'GET',
+  optionalItem: 'GET',
+  post: 'POST',
+  patch: 'PATCH',
+  delete: 'DELETE',
+};
+
+/*
+ * The helper names are asserted against ApiClient's surface. A check that enumerates the names of
+ * the things it inspects has a hole shaped like the next name (`DL-162`): a helper added to the
+ * client and not to this table would have its calls skipped, not judged.
+ */
+const client = readFileSync(join(HTTP, 'api.client.ts'), 'utf8');
+const declared = [...client.matchAll(/^  ([a-zA-Z]\w*)\s*[<(]/gm)].map((m) => m[1]);
+
+for (const helper of declared) {
+  if (VERBS[helper] === undefined) {
+    failures.push(`ApiClient.${helper} has no verb in this check's VERBS table, so its calls cannot be judged.`);
+  }
 }
 
-if (composed.size < 50) {
-  failures.push(`Only ${composed.size} composed paths were extracted from the adapters. The parser is broken, not the code.`);
-}
+const adapters = readFileSync(join(HTTP, 'http-repositories.ts'), 'utf8');
+const calls = apiCalls(adapters);
+const rawCallSites = [...adapters.matchAll(/this\s*\.\s*api\s*\.\s*\w+/g)].length;
 
-const known = new Set(baseline.paths);
-const newlyUnwired = unwired.filter((p) => !known.has(p));
-
-if (newlyUnwired.length > 0) {
+if (calls.length !== rawCallSites) {
   failures.push(
-    `${newlyUnwired.length} NEW composed path(s) the API does not publish:\n` +
-      newlyUnwired.map((p) => `      ${p}`).join('\n') +
-      `\n\n    Each is a 404 in the HTTP configuration. Check port-mapping.md — it very likely already\n` +
-      `    records the right route, because the mapping was done and the code did not follow it.`,
+    `${rawCallSites} call sites on this.api and ${calls.length} were walked. The walker is broken, not the code.`,
   );
 }
 
-const fixed = [...known].filter((p) => !unwired.includes(p));
+const composed = new Set();
 
-if (fixed.length > 0) {
+for (const call of calls) {
+  const verb = VERBS[call.verb];
+  const argument = firstArgument(call.args);
+  const template = /^`\$\{API_ENDPOINTS\.(\w+)\}([^`]*)`$/.exec(argument);
+  const bare = /^API_ENDPOINTS\.(\w+)$/.exec(argument);
+
+  let path = null;
+  if (template !== null && lookup[template[1]] !== undefined) {
+    path = lookup[template[1]] + template[2].replace(/\$\{[^}]+\}/g, '{}').split('?')[0];
+  } else if (bare !== null && lookup[bare[1]] !== undefined) {
+    path = lookup[bare[1]];
+  }
+
+  if (verb === undefined || path === null) {
+    failures.push(
+      `http-repositories.ts:${call.line} calls this.api.${call.verb}(${argument}), which this check cannot resolve.\n` +
+        `    Build the path from API_ENDPOINTS through a known ApiClient helper, or nobody can say which route it reaches.`,
+    );
+    continue;
+  }
+
+  composed.add(`${verb} ${normalise(path.replace(/\/$/, ''))}`);
+}
+
+for (const entry of [...composed].sort()) {
+  const [verb, path] = entry.split(' ');
+  const serves = publishedMethods.get(path);
+
+  if (serves === undefined || !serves.has(verb)) {
+    failures.push(
+      `${entry} is not served` +
+        (serves === undefined ? '.' : ` at that verb (the API serves ${[...serves].join(', ')}).`) +
+        `\n    Every screen that reaches this call fails with a 404 or 405 in the http configuration.\n${nearest(path)}`,
+    );
+  }
+}
+
+// ── 4. an unserved port makes no request ─────────────────────────────────────
+const providers = readFileSync(join(ROOT, 'src', 'app', 'data', 'data-access.providers.ts'), 'utf8');
+const unservedSource = readFileSync(join(HTTP, 'unserved-repositories.ts'), 'utf8');
+const bindings = [...providers.matchAll(/provide:\s*(\w+),\s*useClass:\s*(\w+)/g)].map(([, token, adapter]) => ({
+  token,
+  adapter,
+}));
+
+if (bindings.length === 0) {
+  failures.push('No port bindings were read from data-access.providers.ts, so none was checked.');
+}
+
+const unservedBindings = bindings.filter((b) => b.adapter.startsWith('Unserved'));
+
+for (const { token, adapter } of bindings) {
+  const home = adapter.startsWith('Unserved') ? unservedSource : adapter.startsWith('Http') ? adapters : null;
+
+  if (home === null || !new RegExp(`export class ${adapter}\\b`).test(home)) {
+    failures.push(
+      `${token} is bound to ${adapter}, which is neither an Http adapter in http-repositories.ts nor an\n` +
+        `    Unserved adapter in unserved-repositories.ts. A port is served by a route or it says it is not.`,
+    );
+  }
+}
+
+/*
+ * Comments stripped first: the file's own docblock explains why it never injects `ApiClient`, and a
+ * rule that fails on its own documentation teaches people to delete the documentation.
+ */
+const unservedCode = unservedSource
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/^\s*\/\/[^\n]*$/gm, '');
+
+for (const [pattern, what] of [
+  [/\binject\s*\(/, 'injects a dependency'],
+  [/\b(ApiClient|HttpClient|HttpBackend)\b/, 'names an HTTP client'],
+  [/\b(fetch|XMLHttpRequest|WebSocket|EventSource)\b/, 'reaches the network directly'],
+  [/\bfrom\s+'[^']*\/mock\//, 'imports the mock adapters'],
+]) {
+  if (pattern.test(unservedCode)) {
+    failures.push(
+      `unserved-repositories.ts ${what}. An unserved adapter makes no request and falls back to no\n` +
+        `    sample data: either would put an answer on screen that no server gave (DL-112, DL-136).`,
+    );
+  }
+}
+
+/**
+ * Recorded 5 November 2026, `DL-165`: eighteen of twenty ports have no Node route. LOWER THIS as a
+ * port is served (or retired by the owner); never raise it. Raising it means a screen that worked
+ * against the API has stopped.
+ */
+const UNSERVED_CEILING = 18;
+
+if (unservedBindings.length > UNSERVED_CEILING) {
   failures.push(
-    `${fixed.length} baseline path(s) are now published. Shrink the baseline:\n` +
-      fixed.map((p) => `      ${p}`).join('\n') +
-      `\n\n    Run: node tools/check-routes.mjs --write-baseline`,
+    `${unservedBindings.length} ports are unserved; the recorded ceiling is ${UNSERVED_CEILING}. A port that was served has\n` +
+      `    been unbound from its route.`,
+  );
+} else if (unservedBindings.length < UNSERVED_CEILING) {
+  failures.push(
+    `${UNSERVED_CEILING - unservedBindings.length} fewer unserved ports than recorded. Lower UNSERVED_CEILING to ` +
+      `${unservedBindings.length} in tools/check-routes.mjs so the ground is held.`,
   );
 }
 
+// ── report ───────────────────────────────────────────────────────────────────
 if (failures.length > 0) {
   console.error('\nRoute check failed:\n');
   for (const failure of failures) console.error(`  ${failure}\n`);
@@ -364,50 +298,22 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `Route check passed (every API_ENDPOINTS entry is published by ${provenance.repository}@${provenance.commitShort}, ${published.length} routes).`,
+  `Route check passed (${entries.length} endpoints and ${composed.size} composed requests, each served at its verb by ` +
+    `${provenance.repository}@${provenance.commitShort}, ${operations} operations).`,
 );
 
-/*
- * Printed on every run, in red, whether or not the check passed. A number in a file is a number
- * nobody reads; a number on every build is one somebody eventually asks about.
- */
-const blocked = unwired.filter((entry) => entry.split(' ')[1]?.startsWith('admin/cases')).length;
-
-/*
- * The breakdown is computed, not asserted.
- *
- * This line used to end "Every money write is among them", which was true when it was written and
- * became false the moment the release cluster was wired — a hardcoded claim about a changing set,
- * which is the same species of error as the stale port-mapping document this check exists to
- * correct for.
- */
 console.error(
-  `\n  \u001b[31m${unwired.length} composed request paths are still 404s\u001b[0m ` +
-    `(${composed.size} checked)` +
-    (blocked > 0 ? `, of which ${blocked} are the case surface blocked on ADR 0044` : '') +
-    `.\n  Gate line 05/07 — "no port method is unresolved" — is NO-GO until this reaches zero.\n` +
-    `  See docs/integration/release-engineering.md.\n`,
+  `\n  \u001b[31m${unservedBindings.length} of ${bindings.length} ports have no route\u001b[0m and are bound to an adapter that ` +
+    `makes no request.\n  Gate line 05/07 is NO-GO until this reaches zero or the owner retires those screens (DL-164).\n`,
 );
-
 
 /** Walk each `this.api.<verb>(` to its matching close paren, counting depth. */
 function apiCalls(text) {
   const out = [];
   /*
-   * Whitespace is allowed around the dot, and finding that out cost three adapter methods.
-   *
-   * The pattern was `this\.api\.(\w+)`, contiguous. Every call written as
-   *
-   *     return this.api
-   *       .item<Foo>(API_ENDPOINTS.bar)
-   *       .pipe(...)
-   *
-   * — the shape Prettier produces the moment a chain is long enough to wrap — was invisible to
-   * this check. It did not report them as unwired; it never saw them at all, which is worse: the
-   * count looked healthy because the paths were absent from both sides of the comparison.
-   *
-   * A ratchet that silently stops watching part of the surface is the failure mode this whole file
-   * exists to prevent elsewhere.
+   * Whitespace is allowed around the dot. The contiguous `this\.api\.` pattern this replaced never
+   * saw a call Prettier had wrapped onto a second line — not reported as wrong, never seen at all
+   * (`DL-143`), and `check:scanners` now fails any scanner written that way.
    */
   const start = /this\s*\.\s*api\s*\.\s*(\w+)\s*[<(]/g;
   let m;
@@ -437,7 +343,11 @@ function apiCalls(text) {
       }
     }
 
-    out.push({ verb: m[1], args: text.slice(open + 1, i) });
+    out.push({
+      verb: m[1],
+      args: text.slice(open + 1, i),
+      line: text.slice(0, m.index).split('\n').length,
+    });
   }
 
   return out;

@@ -18,13 +18,19 @@
  *
  * ## The two rules
  *
- * 1. Every money write in the HTTP adapter takes `intent: WriteIntent` **and passes it on**.
+ * 1. **No money write reaches the network without replay protection.** Against the Laravel API this
+ *    read "every money write in the HTTP adapter takes `intent: WriteIntent` and passes it on",
+ *    because that API honoured an `Idempotency-Key`. The Node API that replaced it implements no
+ *    such key, and its CORS policy refuses the header outright (`DL-165`). There is nothing for an
+ *    adapter to pass an intent *to*, so the only state in which no family can be paid twice by a
+ *    retry is the one where no money write is served over HTTP at all: the release port is bound to
+ *    its unserved adapter, and the port itself still demands an intent on all five writes, so the
+ *    screens keep holding one for whichever server takes these writes next.
  * 2. No screen mints a `new WriteIntent()` inline inside a repository call. The key must be held
  *    across retries, and one minted at the call site is a new key on every press — which is a new
- *    intent, which the API will happily accept and pay again.
+ *    intent, which an idempotent API will happily accept and pay again.
  *
- * Rule 2 is the one worth the file. Rule 1 fails loudly at run time on the first request; rule 2
- * fails silently, only under a retry, and only with money.
+ * Rule 2 is the one worth the file. It fails silently, only under a retry, and only with money.
  */
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -33,44 +39,52 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
-/** The writes the API refuses without an `Idempotency-Key`. */
+/** The money writes. Each must be replayable, so each takes an intent. */
 const MONEY_WRITES = ['createBatch', 'markReleased', 'acknowledge', 'deferRelease', 'changeStatus'];
 
 const failures = [];
 
-// ── 1. the adapter accepts an intent and forwards it ─────────────────────────
-const adapter = readFileSync(join(ROOT, 'src/app/data/http/http-repositories.ts'), 'utf8');
+// ── 1. no money write reaches the network without replay protection ─────────
+//
+// The port half: every money write still demands an intent, so the screens keep holding one.
+const ports = readFileSync(join(ROOT, 'src/app/domain/ports/repositories.ts'), 'utf8');
+const releasePortStart = ports.indexOf('export interface ReleaseRepository {');
+const releasePort = releasePortStart === -1 ? '' : ports.slice(releasePortStart, ports.indexOf('\n}', releasePortStart));
 
-const releaseAdapter = /class HttpReleaseRepository[\s\S]*?\n}/.exec(adapter)?.[0] ?? '';
-
-if (releaseAdapter === '') {
-  failures.push('could not find HttpReleaseRepository — this check no longer knows what it is checking.');
+if (releasePort === '') {
+  failures.push('could not find the ReleaseRepository port — this check no longer knows what it is checking.');
 }
 
 for (const method of MONEY_WRITES) {
-  const body = new RegExp(`\\n  ${method}\\(([\\s\\S]*?)\\n  \\}`).exec(releaseAdapter)?.[0];
+  const signature = new RegExp(String.raw`\n  ${method}\(([\s\S]*?)\):`).exec(releasePort)?.[1];
 
-  if (body === undefined) {
-    failures.push(`HttpReleaseRepository.${method} is missing. Money writes cannot quietly disappear.`);
+  if (signature === undefined) {
+    failures.push(`ReleaseRepository.${method} is missing. Money writes cannot quietly disappear.`);
     continue;
   }
 
-  if (!/intent: WriteIntent/.test(body)) {
+  if (!/\bintent\s*:\s*WriteIntent\b/.test(signature)) {
     failures.push(
-      `HttpReleaseRepository.${method} does not accept an intent.\n` +
-        `    An implementation may declare fewer parameters than its interface, so this compiles\n` +
-        `    and sends no Idempotency-Key. The API refuses the request; nothing here says why.`,
+      `ReleaseRepository.${method} no longer demands a WriteIntent. A screen that is not made to hold\n` +
+        `    one across retries will mint a new key per press the day an API honours the key.`,
     );
-    continue;
   }
+}
 
-  // Accepting it and not forwarding it is the same defect wearing a signature.
-  if (!/\bintent\b\s*[,)]/.test(body.replace(/intent: WriteIntent/g, ''))) {
-    failures.push(
-      `HttpReleaseRepository.${method} takes an intent and never passes it to the client.\n` +
-        `    The parameter is not the protection — the header is.`,
-    );
-  }
+// The transport half: with no idempotency on the API, the release port must not be served at all.
+const providers = readFileSync(join(ROOT, 'src/app/data/data-access.providers.ts'), 'utf8');
+const releaseBinding = /provide:\s*RELEASE_REPOSITORY,\s*useClass:\s*(\w+)/.exec(providers)?.[1];
+
+if (releaseBinding === undefined) {
+  failures.push('could not find the RELEASE_REPOSITORY binding in data-access.providers.ts.');
+} else if (releaseBinding !== 'UnservedReleaseRepository') {
+  failures.push(
+    `RELEASE_REPOSITORY is bound to ${releaseBinding} in the http configuration.\n` +
+      `    The API implements no Idempotency-Key and its CORS policy refuses the header, so a money\n` +
+      `    write sent over HTTP has no replay protection: a retry after a dropped answer pays the same\n` +
+      `    family twice. Serve releases only once the API honours the key and allows it across\n` +
+      `    origins, and restore the rule that every money write forwards its intent (DL-165).`,
+  );
 }
 
 // ── 2. no screen mints an intent inside the call it is protecting ────────────
@@ -109,4 +123,6 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(`Money check passed (${MONEY_WRITES.length} writes carry a held intent).`);
+console.log(
+  `Money check passed (${MONEY_WRITES.length} writes demand a held intent; none is served over HTTP without replay protection).`,
+);

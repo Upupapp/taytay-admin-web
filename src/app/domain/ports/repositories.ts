@@ -1036,11 +1036,13 @@ export interface StaffRepository {
    */
   completeMfa(credentials: MfaCredentials): Observable<AuthenticatedUser>;
   /**
-   * Ends the session **server-side**.
+   * Ends the session **server-side**, and then locally whatever the server said.
    *
-   * Discarding a variable is not revocation. The token is only dropped once the
-   * API confirms, so a failed sign-out leaves the user signed in and says so,
-   * rather than showing a signed-out screen while the token stays valid.
+   * Discarding a variable is not revocation, so the revocation is asked for
+   * first, with the credential it revokes. The local credential is dropped once
+   * the API has answered — including when it answered with a failure, which
+   * still propagates so the screen can say the server did not confirm
+   * (`DL-165`, superseding the rule that a failed sign-out keeps the token).
    */
   signOut(): Observable<void>;
 }
@@ -1050,8 +1052,8 @@ export const STAFF_REPOSITORY = new InjectionToken<StaffRepository>('StaffReposi
 /**
  * The actor's inbox — **read-only**, plus marking read.
  *
- * `create()` was deleted in TAB 05. The API offers `GET me/notifications`,
- * `POST me/notifications/{id}/read` and `POST me/notifications/read-all`, and
+ * `create()` was deleted in TAB 05. The API offers `GET notifications`,
+ * `POST notifications/{id}/read` and `POST notifications/read`, and
  * nothing that mints one: a client creating its own notification asserts
  * something the server never agreed to, and the record would exist in exactly
  * one browser tab.

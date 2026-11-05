@@ -5,9 +5,15 @@
  * This is the **consumer half of a contract test**. It produces
  * `docs/integration/consumer-expectations.json`: for every endpoint a mapper
  * consumes, the wire fields the console requires and the ones it merely uses.
- * The backend vendors that file and replays it against its real router, so a
- * response that stops carrying a required field fails a build rather than
- * emptying a list in front of a caseworker.
+ *
+ * The Laravel backend vendored that file and replayed it against its router.
+ * The Node backend has no replay, so the comparison now runs here instead
+ * (`DL-165`): every field a mapper reads must be a property of that
+ * operation's response in the vendored `openapi.json`, and every field the
+ * console **requires** must be one the spec marks required. A mapper that
+ * reads a field the API does not send renders a blank; one that requires a
+ * field the API may omit drops the record, and the screen shows one fewer
+ * row with no error anywhere.
  *
  * ## It is derived, never written
  *
@@ -116,6 +122,73 @@ for (const file of readdirSync(MAPPERS).filter((f) => f.endsWith('.mapper.ts')))
 }
 
 interactions.sort((a, b) => `${a.path} ${a.method}`.localeCompare(`${b.path} ${b.method}`));
+
+/*
+ * ── Held to the vendored spec ─────────────────────────────────────────────
+ *
+ * The object a mapper reads is the `data` of the operation's 200 answer — the item itself, or one
+ * element of a list. Its declared properties are what the console may read; its `required` list is
+ * what the console may depend on.
+ */
+const spec = JSON.parse(readFileSync(join(ROOT, 'src/app/data/http/contract/openapi.json'), 'utf8'));
+
+const resolve = (schema) => {
+  const ref = schema?.$ref;
+  if (typeof ref !== 'string') return schema;
+  return resolve(ref.replace(/^#\//, '').split('/').reduce((node, key) => node?.[key], spec));
+};
+
+const normalise = (path) => path.replace(/\{[^}]+\}/g, '{}');
+
+function payloadOf(method, path) {
+  for (const [candidate, item] of Object.entries(spec.paths ?? {})) {
+    if (normalise(candidate.replace(/^\/api\/v1\//, '')) !== normalise(path)) continue;
+
+    const answer = resolve(item[method.toLowerCase()]?.responses?.['200']?.content?.['application/json']?.schema);
+    const data = resolve(answer?.properties?.data);
+    return [data?.type].flat().includes('array') ? resolve(data.items) : data;
+  }
+  return undefined;
+}
+
+const contractFailures = [];
+
+if (interactions.length === 0) {
+  contractFailures.push('No `@consumes` tag was read from any mapper, so nothing was compared.');
+}
+
+for (const interaction of interactions) {
+  const payload = payloadOf(interaction.method, interaction.path);
+  const where = `${interaction.consumer} (${interaction.method} ${interaction.path})`;
+
+  if (payload?.properties === undefined) {
+    contractFailures.push(`${where}: the vendored spec declares no response object for this operation.`);
+    continue;
+  }
+
+  const declared = new Set(Object.keys(payload.properties));
+  const guaranteed = new Set(payload.required ?? []);
+
+  for (const field of [...interaction.required, ...interaction.optional]) {
+    if (!declared.has(field)) {
+      contractFailures.push(`${where}: reads '${field}', which the API does not send. It renders as blank.`);
+    }
+  }
+
+  for (const field of interaction.required) {
+    if (declared.has(field) && !guaranteed.has(field)) {
+      contractFailures.push(
+        `${where}: drops the record without '${field}', which the API may omit. One fewer row, no error.`,
+      );
+    }
+  }
+}
+
+if (contractFailures.length > 0) {
+  console.error('\nConsumer expectations disagree with the vendored spec:\n');
+  for (const failure of contractFailures) console.error(`  ${failure}\n`);
+  process.exit(1);
+}
 
 const document = {
   $comment:

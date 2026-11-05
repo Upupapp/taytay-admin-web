@@ -83,7 +83,7 @@ const read = (path) => files.find((f) => f.path === path)?.code ?? '';
 
 // ── 1. Credentialed requests, in any form ────────────────────────────────────
 //
-// `withCredentials: true` against an API with `supports_credentials => false`
+// `withCredentials: true` against an API whose CORS policy sends no Allow-Credentials
 // is refused by the browser before any application code runs. It is a CORS
 // failure rather than a status, so nothing in the app can catch it, and the
 // only symptom is a message in the developer console. There is no configuration
@@ -92,7 +92,7 @@ for (const { path, code } of files) {
   if (/withCredentials\s*:\s*true/.test(code)) {
     fail(
       path,
-      'withCredentials: true — the API sets supports_credentials => false, so the browser ' +
+      'withCredentials: true — the API sends no Access-Control-Allow-Credentials, so the browser ' +
         'refuses the response outright (ADR 0005/0006). Never widen the server to make this work.',
     );
   }
@@ -127,7 +127,7 @@ for (const path of readdirSync(join(ROOT, 'src/environments'))
       path,
       `apiBaseUrl is '${url}' — it must be an absolute origin. The console and the API are ` +
         'different hosts by design (admin.<domain> calling api.<domain>), so a relative path ' +
-        'resolves against the static host and never reaches Laravel.',
+        'resolves against the static host and never reaches the API.',
     );
   }
 }
@@ -158,41 +158,84 @@ for (const { path, code } of files) {
 }
 
 // ── 4. The pagination shape the API actually sends ───────────────────────────
+//
+// Cursor paging (`DL-165`): `meta.pagination` is `{ has_more, next_cursor }` and nothing else. A
+// contract that names a total or a page count is reading keys the server never sends — every one
+// `undefined`, rendered as "page 1 of NaN" or as nothing.
 const contract = read('src/app/data/http/api.contract.ts');
 
-for (const key of ['per_page', 'total_pages', 'has_more']) {
+for (const key of ['has_more', 'next_cursor']) {
   if (!contract.includes(key)) {
     fail('src/app/data/http/api.contract.ts', `the pagination contract must name '${key}' — it is what meta.pagination carries.`);
   }
 }
 
-if (/meta\.(pageSize|totalItems)\b/.test(contract) || /\bpageSize:\s*response\.meta\./.test(contract)) {
-  fail(
-    'src/app/data/http/api.contract.ts',
-    'reads meta.pageSize / meta.totalItems. The API sends meta.pagination.{page,per_page,total,total_pages,has_more}; ' +
-      'those keys are undefined and every list renders as one empty page.',
-  );
+for (const key of ['total_pages', 'per_page', 'total']) {
+  if (
+    new RegExp(String.raw`\b${key}\b\s*[:?]`).test(contract) ||
+    new RegExp(String.raw`pagination\s*\.\s*${key}\b`).test(contract)
+  ) {
+    fail(
+      'src/app/data/http/api.contract.ts',
+      `names '${key}' in the pagination contract. The API sends no total, no page size and no page count; ` +
+        'a screen built on one shows a number nobody computed.',
+    );
+  }
 }
 
-if (!/meta\.pagination/.test(contract)) {
-  fail('src/app/data/http/api.contract.ts', 'toPage must read meta.pagination.');
+if (!/meta\s*\.\s*pagination/.test(contract)) {
+  fail('src/app/data/http/api.contract.ts', 'toCursorPage must read meta.pagination.');
 }
 
-// ── 5. Sorting is a leading '-', not a direction parameter ───────────────────
+// ── 5. Only the query keys the API reads: limit, cursor, filters ─────────────
 //
-// The server has no `direction` parameter. Sending one means the sort is
-// silently ignored while the grid's header arrow asserts an order the data does
-// not have — a lie the user acts on.
-if (/params\['direction'\]/.test(contract) || /\bdirection:\s*String\(/.test(contract)) {
-  fail(
-    'src/app/data/http/api.contract.ts',
-    "emits a 'direction' query parameter. The API encodes descending as a leading '-' on 'sort' " +
-      '(conventions.md §5) and ignores anything else.',
-  );
+// The API's query schemas are not strict. An unknown key is DROPPED, not refused, so a `sort`
+// would be ignored while a header arrow asserted an order the rows do not have, and a `page` would
+// fetch the first rows again for ever. A parameter the server ignores is worse than one it refuses.
+if (!/params\s*\[\s*'cursor'\s*\]|\bcursor:\s*/.test(contract) || !/\blimit:\s*String\(/.test(contract)) {
+  fail('src/app/data/http/api.contract.ts', "toQueryParams must emit 'limit' and 'cursor', the only paging keys the API reads.");
 }
 
-if (!/per_page/.test(contract) || /params\['pageSize'\]|pageSize:\s*String\(/.test(contract)) {
-  fail('src/app/data/http/api.contract.ts', "toQueryParams must emit 'per_page'; the API does not read 'pageSize'.");
+for (const ignored of ['page', 'per_page', 'sort', 'direction', 'pageSize']) {
+  if (new RegExp(String.raw`params\s*\[\s*'${ignored}'\s*\]\s*=|\b${ignored}:\s*String\(`).test(contract)) {
+    fail(
+      'src/app/data/http/api.contract.ts',
+      `emits '${ignored}'. The API declares no such query parameter and silently drops it — the list ` +
+        'comes back unpaged or unsorted under a control that says otherwise.',
+    );
+  }
+}
+
+// ── 5b. Only the request headers the API's CORS policy allows ───────────────
+//
+// A non-safelisted header the API does not list in `Access-Control-Allow-Headers` fails the
+// preflight of every request carrying it: status 0, before the server sees anything, and nothing
+// for an interceptor to read. The list below is the backend's `src/http/cors.ts` at the vendored
+// commit; `Accept` and `Content-Type: application/json` are what the browser and HttpClient send.
+const CORS_ALLOWED_HEADERS = new Set(['authorization', 'content-type', 'x-request-id', 'x-client-channel', 'accept']);
+
+for (const { path, code } of files) {
+  if (!TRANSPORT_SEAM.some((dir) => path.startsWith(dir)) || path.endsWith('.spec.ts')) continue;
+
+  for (const block of code.matchAll(/(?:setHeaders|headers)\s*:\s*\{([^}]*)\}/g)) {
+    for (const [, name] of block[1].matchAll(/['"]?([A-Za-z][A-Za-z-]*)['"]?\s*:/g)) {
+      if (!CORS_ALLOWED_HEADERS.has(name.toLowerCase())) {
+        fail(
+          path,
+          `sets the request header '${name}', which the API's CORS policy does not allow. Every request ` +
+            'carrying it fails its preflight before the server sees it.',
+        );
+      }
+    }
+  }
+
+  if (/['"`]Idempotency-Key['"`]/.test(code)) {
+    fail(
+      path,
+      "sends 'Idempotency-Key'. The API does not implement it and its CORS policy refuses it, so it " +
+        'promises a replay safety nobody provides and breaks the request it is attached to (DL-165).',
+    );
+  }
 }
 
 // ── 6. The error envelope ────────────────────────────────────────────────────
@@ -227,6 +270,7 @@ const WIRE_NAMES = [
   'per_page',
   'total_pages',
   'has_more',
+  'next_cursor',
   'request_id',
   'created_at',
   'updated_at',

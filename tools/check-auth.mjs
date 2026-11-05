@@ -145,21 +145,44 @@ for (const { path, code } of files) {
 
 // ── 5. Sign-out is server-side revocation ────────────────────────────────────
 //
-// Discarding a variable is not revocation, and must not be described as one.
-const adapters = files.find((f) => f.path === 'src/app/data/http/http-repositories.ts')?.code ?? '';
+// Discarding a variable is not revocation, and must not be described as one. The Node API revokes
+// at `POST auth/sign-out` (every refresh token the account holds), so the adapter must call it —
+// literally, or through `API_ENDPOINTS.signOut` resolving to it.
+//
+// And the request must go out BEFORE the token is dropped, or it is sent unauthenticated and
+// revokes nothing while the screen says signed out. The token is dropped once the API has answered,
+// whatever it answered (`DL-165`, superseding the Laravel-era rule that a failed revocation keeps
+// the token): so `clear()` must sit in a `finalize`/`tap` after the request, never before it.
+const ADAPTER_PATH = 'src/app/data/http/http-repositories.ts';
+const adapters = files.find((f) => f.path === ADAPTER_PATH)?.code ?? '';
+const contract = files.find((f) => f.path === 'src/app/data/http/api.contract.ts')?.code ?? '';
 const signOut = /signOut\(\): Observable<void> \{([\s\S]*?)\n  \}/.exec(adapters)?.[1] ?? '';
+const signOutPath = /\bsignOut:\s*'([^']+)'/.exec(contract)?.[1] ?? null;
 
-if (signOut !== '') {
-  if (!/auth\/tokens\/current/.test(signOut)) {
+if (signOut === '') {
+  fail(ADAPTER_PATH, 'signOut() could not be found in the staff adapter, so revocation was not checked.');
+} else {
+  const callsRevocation =
+    /['"`]auth\/sign-out['"`]/.test(signOut) ||
+    (/API_ENDPOINTS\s*\.\s*signOut\b/.test(signOut) && signOutPath === 'auth/sign-out');
+
+  if (!callsRevocation) {
     fail(
-      'src/app/data/http/http-repositories.ts',
-      'signOut() does not call DELETE auth/tokens/current. Clearing the local token leaves the credential valid on the server.',
+      ADAPTER_PATH,
+      'signOut() does not call POST auth/sign-out. Clearing the local token leaves every refresh token valid on the server.',
     );
   }
-  if (!/tap\(/.test(signOut) && /clear\(\)/.test(signOut)) {
+
+  const request = signOut.search(/this\s*\.\s*(api|http)\s*\./);
+  const clearing = signOut.search(/\.\s*clear\s*\(\s*\)/);
+
+  if (request === -1) {
+    fail(ADAPTER_PATH, 'signOut() makes no request at all. Revocation is something the server does.');
+  } else if (clearing !== -1 && (clearing < request || !/\b(finalize|tap)\s*\(/.test(signOut.slice(request)))) {
     fail(
-      'src/app/data/http/http-repositories.ts',
-      'signOut() clears the token outside the response handler — the token must be dropped only after the API confirms revocation.',
+      ADAPTER_PATH,
+      'signOut() clears the token before, or outside, the answer to its revocation request. Cleared first, ' +
+        'the request goes out unauthenticated and revokes nothing.',
     );
   }
 }
@@ -175,10 +198,16 @@ if (signOut !== '') {
 // Deliberately scoped to the deciders rather than every reader: the
 // administration screen renders the matrix for the office, which is the map's
 // legitimate use, and forbidding that would only push it somewhere less visible.
+//
+// The HTTP adapters are deciders too (`DL-165`). The Node API has two staff roles and publishes
+// what it grants as `permissions` on `/me`; an adapter that filled a permission set from
+// `ROLE_DEFINITIONS[role]` would be the same second authority, one folder over, and the guards
+// would never see the difference.
 const DECIDERS = [
   'src/app/core/access/',
   'src/app/core/auth/session.store.ts',
   'src/app/core/auth/session-state.ts',
+  'src/app/data/http/',
 ];
 
 for (const { path, code } of files) {

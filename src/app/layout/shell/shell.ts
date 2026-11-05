@@ -148,8 +148,12 @@ export class Shell {
   }
 
   protected signOut(): void {
+    // The session has ended locally on both paths; a refused revocation has
+    // already been reported by the error interceptor, so the error path only
+    // leaves the screen rather than saying it twice.
     this.session.signOut().subscribe({
       next: () => void this.router.navigate(['/sign-in']),
+      error: () => void this.router.navigate(['/sign-in']),
     });
   }
 

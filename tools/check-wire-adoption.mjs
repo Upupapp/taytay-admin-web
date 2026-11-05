@@ -1,78 +1,113 @@
 #!/usr/bin/env node
 /**
- * check:wire-adoption — what this console SENDS is mapped, not merely typed.
+ * check:wire-adoption — what this console SENDS is mapped, not merely typed, and is what the
+ * operation accepts.
  *
- * ## The defect class this counts
+ * ## The defect class this catches
  *
- * `check:mapper-adoption` counts the read side: a generic like `this.api.page<ResidentView>(…)` is
- * an **assertion, not a check** — it tells TypeScript the `snake_case` payload *is* a
- * `ResidentView`, and nothing converts anything at run time.
+ * `check:mapper-adoption` holds the read side: a generic like `this.api.item<ResidentView>(…)` is an
+ * **assertion, not a check** — it tells TypeScript the `snake_case` payload *is* a `ResidentView`,
+ * and nothing converts anything at run time.
  *
- * The write side has the same hole and no counter at all. `this.api.post<Resident, ResidentDraft>(…)`
- * sends the domain object **verbatim**, so the request carries `birthDate` where the API validates
- * `birth_date` — and every field is rejected at once with a 422 nobody has ever seen, because the
- * console has never run against the API.
- *
- * It is not merely a casing problem. `ResidentDraft` nests `name`, `address` and `contact`; the API
- * wants `first_name`, `barangay_id`, `mobile_number` **flat**. No generic converter could bridge
- * that, which is exactly why `CLAUDE.md` forbids one: *"never a generic recursive case-converter,
- * which cannot tell a field name from a key inside a free-text note."* Each payload is written out.
+ * The write side has the same hole. `this.api.post<Resident, ResidentDraft>(…)` sends the domain
+ * object **verbatim**, so the request carries `birthDate` where the API validates `birth_date`, and
+ * every field is rejected at once with a 422. It is not merely casing: a domain draft nests what the
+ * API wants flat, which no generic converter could bridge — which is why CLAUDE.md forbids one.
  *
  * ## What counts as mapped
  *
  * A write whose body is either
  *
  *   1. a call to a `toWire…()` function — the explicit mapper, or
- *   2. an inline literal every one of whose keys is already wire-shaped (`snake_case`, or a single
- *      lowercase word, which is the same thing).
+ *   2. an inline literal every one of whose keys is wire-shaped **and declared by the operation's
+ *      `requestBody` in the vendored spec** (`DL-165`). Several of the Node API's body schemas are
+ *      strict, so an undeclared key is a 422; the others drop it, which is worse, because the field
+ *      somebody filled in is discarded and the write reports success. An operation that declares no
+ *      body accepts only `{}`.
  *
- * Anything else is counted. The number is printed on every run and the check fails when it grows,
- * exactly like `check:routes` — a baseline, never an allow-list.
+ * Anything else fails. Against the Laravel API this was a ratchet — eight bodies were known to be
+ * sent unmapped, carried in `unmapped-writes.json` — and every one of them belonged to an adapter
+ * that now makes no request, so the count reached zero by removal and the baseline file is gone.
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const SOURCE = join(ROOT, 'src/app/data/http/http-repositories.ts');
-const BASELINE = join(ROOT, 'src/app/data/http/contract/unmapped-writes.json');
-
-const RED = '[31m';
-const RESET = '[0m';
+const HTTP = join(ROOT, 'src', 'app', 'data', 'http');
+const SOURCE = join(HTTP, 'http-repositories.ts');
 
 const src = readFileSync(SOURCE, 'utf8');
+const spec = JSON.parse(readFileSync(join(HTTP, 'contract', 'openapi.json'), 'utf8'));
+const contract = readFileSync(join(HTTP, 'api.contract.ts'), 'utf8');
 const failures = [];
 
 /** `birthDate` is not wire-shaped; `reason`, `status` and `birth_date` are. */
 const wireShaped = (key) => /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/.test(key);
 
+const WRITE_VERBS = { post: 'post', patch: 'patch', delete: 'delete' };
+
+const resolve = (schema) => {
+  const ref = schema?.$ref;
+  if (typeof ref !== 'string') return schema;
+  return resolve(ref.replace(/^#\//, '').split('/').reduce((node, key) => node?.[key], spec));
+};
+
+const normalise = (path) => path.replace(/\{[^}]+\}/g, '{}');
+
+const operations = new Map();
+for (const [path, item] of Object.entries(spec.paths ?? {})) {
+  for (const verb of Object.values(WRITE_VERBS)) {
+    if (item[verb] !== undefined) operations.set(`${verb} ${normalise(path.replace(/^\/api\/v1\//, ''))}`, item[verb]);
+  }
+}
+
+const table = /export const API_ENDPOINTS = \{([\s\S]*?)\n\} as const;/.exec(contract)?.[1] ?? '';
+const lookup = Object.fromEntries(
+  [...table.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').matchAll(/(\w+):\s*'([^']+)'/g)].map(
+    ([, name, path]) => [name, path],
+  ),
+);
+
+/** The keys a body schema declares, or `null` when the operation takes no body at all. */
+function declaredKeys(operation) {
+  const content = operation?.requestBody?.content;
+  if (content === undefined) return null;
+
+  const keys = new Set();
+  for (const media of Object.values(content)) {
+    const schema = resolve(media.schema);
+    for (const branch of [schema, ...(schema?.allOf ?? []), ...(schema?.anyOf ?? []), ...(schema?.oneOf ?? [])]) {
+      for (const key of Object.keys(resolve(branch)?.properties ?? {})) keys.add(key);
+    }
+  }
+  return keys;
+}
+
 /**
- * Walk from a `this.api.<verb><…>(` to its matching close paren, counting depth.
- *
- * A regex cannot find the end of a call whose arguments contain template literals, nested objects
- * and further calls. The first version of this used one, matched the wrong closing paren, and
- * reported "bodies" that were really fragments of the following argument.
+ * Walk from a `this.api.<verb>` to its matching close paren, counting depth. The generic is
+ * optional — a write written without one was once invisible to this walker, which required `<`.
  */
 function callsIn(text) {
   const out = [];
-  // Whitespace around the dot, for the reason `check:routes` records: a chained call that Prettier
-  // wrapped was invisible to this scan, so its body was never counted either way.
-  const start = /this\s*\.\s*api\s*\.\s*(post|patch|delete|postVoid)\s*</g;
+  // Whitespace around the dot, for the reason `check:routes` records (`DL-143`).
+  const start = /this\s*\.\s*api\s*\.\s*(post|patch|delete)\s*[<(]/g;
   let m;
 
   while ((m = start.exec(text)) !== null) {
-    // Skip the generic parameter list to reach the argument list.
-    let i = m.index + m[0].length;
-    let angle = 1;
+    let i = m.index + m[0].length - 1;
 
-    while (i < text.length && angle > 0) {
-      if (text[i] === '<') angle++;
-      else if (text[i] === '>') angle--;
+    if (text[i] === '<') {
+      let angle = 1;
       i++;
+      while (i < text.length && angle > 0) {
+        if (text[i] === '<') angle++;
+        else if (text[i] === '>') angle--;
+        i++;
+      }
+      while (i < text.length && text[i] !== '(') i++;
     }
-
-    while (i < text.length && text[i] !== '(') i++;
 
     let depth = 0;
     const open = i;
@@ -85,11 +120,7 @@ function callsIn(text) {
       }
     }
 
-    out.push({
-      verb: m[1],
-      args: text.slice(open + 1, i),
-      line: text.slice(0, m.index).split('\n').length,
-    });
+    out.push({ verb: m[1], args: text.slice(open + 1, i), line: text.slice(0, m.index).split('\n').length });
   }
 
   return out;
@@ -123,88 +154,78 @@ function topLevelArgs(args) {
   return parts;
 }
 
-const unmapped = [];
+function pathOf(argument) {
+  const template = /^`\$\{API_ENDPOINTS\.(\w+)\}([^`]*)`$/.exec(argument);
+  const bare = /^API_ENDPOINTS\.(\w+)$/.exec(argument);
+
+  if (template !== null && lookup[template[1]] !== undefined) {
+    return lookup[template[1]] + template[2].replace(/\$\{[^}]+\}/g, '{}').split('?')[0];
+  }
+  return bare !== null ? (lookup[bare[1]] ?? null) : null;
+}
+
+const calls = callsIn(src);
 let checked = 0;
 
-for (const call of callsIn(src)) {
-  const args = topLevelArgs(call.args);
-  const body = args[1];
+/*
+ * Every write call site must have been walked. Relative rather than the old floor of forty: a
+ * walker that misses a call reports a spotless adapter, and two writes cannot clear a number set
+ * for seventy-two.
+ */
+const rawSites = [...src.matchAll(/this\s*\.\s*api\s*\.\s*(post|patch|delete)\b/g)].length;
 
-  // `deleteVoid`, and a DELETE with no body, send nothing to map.
+if (calls.length !== rawSites) {
+  failures.push(`${rawSites} write call sites and ${calls.length} were walked. The walker is broken, not the code.`);
+}
+
+for (const call of calls) {
+  const [pathArgument, body] = topLevelArgs(call.args);
+  const where = `http-repositories.ts:${call.line}`;
+
+  // A DELETE with no body sends nothing to map.
   if (body === undefined) continue;
 
   checked++;
 
   if (/^toWire\w*\(/.test(body)) continue;
 
-  if (body.startsWith('{')) {
-    const keys = [
-      ...[...body.matchAll(/(?:^|[{,]\s*)([A-Za-z_]\w*)\s*:/g)].map((k) => k[1]),
-      ...[...body.matchAll(/(?:^|[{,]\s*)([A-Za-z_]\w*)\s*(?=[,}])/g)].map((k) => k[1]),
-    ];
-
-    const offenders = [...new Set(keys.filter((k) => !wireShaped(k)))];
-
-    if (offenders.length === 0) continue;
-
-    unmapped.push(`${call.line}: inline literal sends ${offenders.join(', ')}`);
+  if (!body.startsWith('{')) {
+    failures.push(
+      `${where}: sends ${body} verbatim.\n` +
+        `    The API validates snake_case and this sends a domain object as it stands. Map it with an\n` +
+        `    explicit toWire… function — never a generic converter.`,
+    );
     continue;
   }
 
-  unmapped.push(`${call.line}: sends ${body} verbatim`);
-}
+  const keys = [
+    ...[...body.matchAll(/(?:^|[{,]\s*)([A-Za-z_]\w*)\s*:/g)].map((k) => k[1]),
+    ...[...body.matchAll(/(?:^|[{,]\s*)([A-Za-z_]\w*)\s*(?=[,}])/g)].map((k) => k[1]),
+  ];
+  const unique = [...new Set(keys)];
+  const notWire = unique.filter((k) => !wireShaped(k));
 
-/*
- * A walker that found nothing would report a spotlessly mapped adapter. Every detector here
- * asserts its own reach, because one that reaches nothing is indistinguishable from a codebase
- * with nothing to find.
- */
-if (checked < 40) {
-  failures.push(`Only ${checked} write bodies were found. The parser is broken, not the code.`);
-}
-
-const baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
-
-if (process.argv.includes('--write-baseline')) {
-  writeFileSync(
-    BASELINE,
-    `${JSON.stringify({ ...baseline, count: unmapped.length, writes: unmapped }, null, 2)}\n`,
-  );
-  console.log(`Baseline rewritten: ${unmapped.length} unmapped writes.`);
-  process.exit(0);
-}
-
-/*
- * Compared by COUNT and by the payload named, never by line number.
- *
- * A baseline keyed on line numbers would fail on every edit above it, which is the fastest way to
- * teach somebody to regenerate a baseline without reading what changed.
- */
-const shape = (entry) => entry.replace(/^\d+: /, '');
-const tally = (entries) => {
-  const counts = new Map();
-  for (const entry of entries) counts.set(shape(entry), (counts.get(shape(entry)) ?? 0) + 1);
-  return counts;
-};
-
-const known = tally(baseline.writes);
-const now = tally(unmapped);
-
-for (const [what, count] of now) {
-  if (count > (known.get(what) ?? 0)) {
-    failures.push(
-      `A new unmapped write: ${what}\n` +
-        `    The API validates snake_case and this sends the domain object as it stands, so every\n` +
-        `    field is rejected at once. Add a toWire… mapper in data/http/mappers/to-wire.ts.`,
-    );
+  if (notWire.length > 0) {
+    failures.push(`${where}: inline literal sends ${notWire.join(', ')}, which is not wire-shaped.`);
+    continue;
   }
-}
 
-for (const [what, count] of known) {
-  if ((now.get(what) ?? 0) < count) {
+  const path = pathOf(pathArgument ?? '');
+  const operation = path === null ? undefined : operations.get(`${call.verb} ${normalise(path.replace(/\/$/, ''))}`);
+
+  if (operation === undefined) {
+    failures.push(`${where}: ${call.verb.toUpperCase()} ${pathArgument} is no operation in the vendored spec, so its body cannot be checked.`);
+    continue;
+  }
+
+  const declared = declaredKeys(operation);
+  const undeclared = declared === null ? unique : unique.filter((k) => !declared.has(k));
+
+  if (undeclared.length > 0) {
     failures.push(
-      `Mapped now, still in the baseline: ${what}\n` +
-        `    Run: node tools/check-wire-adoption.mjs --write-baseline`,
+      `${where}: ${call.verb.toUpperCase()} ${path} sends ${undeclared.join(', ')}, which its request body ` +
+        (declared === null ? 'does not exist to declare.' : 'does not declare.') +
+        `\n    A strict schema refuses it with a 422; a lenient one drops it and reports success.`,
     );
   }
 }
@@ -215,14 +236,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(
-  `Wire-adoption check passed (${checked - unmapped.length}/${checked} write bodies mapped).`,
-);
-
-if (unmapped.length > 0) {
-  console.error(
-    `\n  ${RED}${unmapped.length} of ${checked} write bodies are sent unmapped${RESET}.\n` +
-      `  Each is a 422 against the real API. The console has never run against it, so nothing has\n` +
-      `  ever rejected them. See docs/integration/release-engineering.md.\n`,
-  );
-}
+console.log(`Wire-adoption check passed (${checked}/${checked} write bodies mapped and declared by their operation).`);

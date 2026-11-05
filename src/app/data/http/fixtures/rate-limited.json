@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Too many requests. Try again shortly.",
+    "details": { "retry_after": 42 },
+    "request_id": "req-fixture-0001"
+  }
+}

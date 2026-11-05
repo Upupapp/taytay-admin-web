@@ -1,297 +1,186 @@
-import type { Page, PageRequest } from '@domain/index';
+import type { CursorPage, CursorRequest } from '@domain/index';
 
 /**
- * THE API CONTRACT, AS THE BACKEND ACTUALLY SERVES IT.
+ * THE API CONTRACT, AS THE NODE API SERVES IT.
  *
- * Reconciled against the running backend in TAB 01 — its router, its response
- * builder and its paginator — not against prose. The header this file used to
- * carry ("No backend exists for this workspace yet… the contract the front end
- * will hold the API to") described a wish, and six of the eight divergences the
- * integration sweep found were the gap between that wish and `/api/v1`.
- *
- * A stale disclaimer is worse than none, so it is gone rather than softened.
+ * The Laravel API this file used to describe was retired on 2026-10-20 (`DL-164`). What follows is
+ * read from the Node service's published spec, vendored beside this file as
+ * `contract/openapi.json` with its commit and sha256 in `contract/openapi.source.json`, and checked
+ * against it on every build (`check:contract-drift`, `check:routes`, `check:response-shape`).
  *
  * Envelope, both halves:
  *
- *   item  -> { "data": {...}, "meta": { "request_id": "…" } }
- *   list  -> { "data": [...], "meta": { "request_id": "…", "pagination": {…} } }
- *   error -> { "error": { "code", "message", "details", "request_id" } }
+ *   item         -> { "data": {...}, "meta": {} }
+ *   list         -> { "data": [...], "meta": {} }
+ *   cursor page  -> { "data": [...], "meta": { "pagination": { "has_more", "next_cursor" } } }
+ *   error        -> { "error": { "code", "message", "details", "request_id" } }
  *
- * THIS FILE IS THE ONLY PLACE WIRE SHAPES ARE NAMED. Everything below is
- * `snake_case` because that is what crosses the wire; the domain is camelCase
- * and must never learn that HTTP exists. Adapters map between the two
- * explicitly — `npm run check:contract` fails the build if a wire-shaped field
+ * A successful answer carries **no** `request_id`; the `X-Request-Id` header is the only place a
+ * success names itself, and it is the one header the API exposes across origins.
+ *
+ * THIS FILE IS THE ONLY PLACE WIRE SHAPES ARE NAMED. Everything below is `snake_case` because that
+ * is what crosses the wire; the domain is camelCase and must never learn that HTTP exists. Adapters
+ * map between the two explicitly — `npm run check:contract` fails the build if a wire-shaped field
  * name appears outside `data/http`.
  *
- * Deliberately NOT a generic recursive case-converter. A converter cannot tell
- * a field name from a key inside a free-text note or an opaque identifier, so it
- * renames things it was never asked to rename and the failure surfaces months
- * later inside a case file.
+ * Deliberately NOT a generic recursive case-converter. A converter cannot tell a field name from a
+ * key inside a free-text note or an opaque identifier, so it renames things it was never asked to
+ * rename and the failure surfaces months later inside a case file.
  */
 
 /**
  * Error codes the API emits. Branch on these; never on `message`.
  *
- * **Re-exported from the vendored contract, not restated here.** TAB 06 pulls
- * `docs/api/types.ts` in from the backend as a build artefact with its source
- * commit recorded, so a backend enum change is a **TypeScript error in this
- * console** rather than a runtime surprise. Restating the union locally would
- * put the console back where TAB 01 found it: holding a second description of
- * the API and discovering the difference in production.
+ * Held here rather than generated, because the Node API publishes its vocabulary only inside
+ * `openapi.json` (`ErrorEnvelope.error.code.enum`), and a TypeScript type cannot be read out of a
+ * JSON file at compile time. Restating it is safe only because it is not trusted:
+ * `check:contract-drift` compares this union **and** the runtime list below against the vendored
+ * enum on every build, so a code the API adds or drops fails the build here rather than surprising
+ * a screen.
+ *
+ * The three lowercase codes are the API's, not a typo: email and password-reset verification use
+ * them, and the console must recognise them as codes rather than treat them as unknown.
  */
-export type { ApiErrorCode } from './contract/types';
-
-import type { ApiErrorCode } from './contract/types';
+export type ApiErrorCode =
+  | 'INVALID_JSON'
+  | 'UNAUTHENTICATED'
+  | 'FORBIDDEN'
+  | 'NOT_FOUND'
+  | 'CONFLICT'
+  | 'PAYLOAD_TOO_LARGE'
+  | 'VALIDATION_FAILED'
+  | 'code_invalid'
+  | 'code_expired'
+  | 'code_locked'
+  | 'RATE_LIMITED'
+  | 'INTERNAL_ERROR'
+  | 'SERVICE_UNAVAILABLE';
 
 /**
- * The same vocabulary as a runtime value.
- *
- * TypeScript unions vanish at build time and `isApiErrorCode` has to check
- * something at run time, so this list exists — and `check:contract` fails the
- * build if it drifts from the vendored union, which is the only reason it is
- * safe to have two of them.
+ * The same vocabulary as a runtime value, because a union vanishes at build time and
+ * `isApiErrorCode` has to check something at run time. `check:contract-drift` holds the two
+ * together.
  */
 const API_ERROR_CODES: readonly string[] = [
-  'BAD_REQUEST',
+  'INVALID_JSON',
   'UNAUTHENTICATED',
   'FORBIDDEN',
   'NOT_FOUND',
-  'METHOD_NOT_ALLOWED',
   'CONFLICT',
-  'INVALID_STATE_TRANSITION',
-  'VALIDATION_FAILED',
-  'RATE_LIMITED',
   'PAYLOAD_TOO_LARGE',
-  'UNSUPPORTED_MEDIA_TYPE',
-  'SERVER_ERROR',
+  'VALIDATION_FAILED',
+  'code_invalid',
+  'code_expired',
+  'code_locked',
+  'RATE_LIMITED',
+  'INTERNAL_ERROR',
   'SERVICE_UNAVAILABLE',
 ];
 
 /**
- * TREAT THE VOCABULARY AS OPEN. A new code is an additive change on the API's
- * side, so a wire `code` is typed `string` and narrowed here rather than
- * declared exhaustive — an unrecognised code must degrade to a generic failure,
- * never throw.
- *
- * TAB 06 replaces this declaration with the backend's generated `types.ts`,
- * vendored with a recorded source SHA, at which point a backend enum change
- * becomes a TypeScript error here instead of a runtime surprise.
+ * TREAT THE VOCABULARY AS OPEN. A new code is an additive change on the API's side, so a wire
+ * `code` is typed `string` and narrowed here rather than declared exhaustive — an unrecognised code
+ * must degrade to a generic failure, never throw.
  */
 export function isApiErrorCode(code: string): code is ApiErrorCode {
   return API_ERROR_CODES.includes(code);
 }
 
-/** `meta.pagination` — all five keys, exactly as `Page::meta()` builds them. */
+/**
+ * `meta.pagination` on a cursor page. There is no total, no page number and no page count: the
+ * server does not compute them, and nothing here may pretend it did.
+ */
 export interface ApiPagination {
-  readonly page: number;
-  readonly per_page: number;
-  readonly total: number;
-  readonly total_pages: number;
   readonly has_more: boolean;
+  readonly next_cursor: string | null;
 }
 
-export interface ApiMeta {
-  /** Matches the `X-Request-Id` response header. Quote it to a support desk. */
-  readonly request_id: string;
-  readonly pagination?: ApiPagination;
+export interface ApiCursorPageResponse<TItem> {
+  readonly data: readonly TItem[];
+  readonly meta: { readonly pagination: ApiPagination };
 }
 
+/** A whole list, answered at once with `meta: {}` — barangays, news categories, banners. */
 export interface ApiListResponse<TItem> {
   readonly data: readonly TItem[];
-  readonly meta: ApiMeta & { readonly pagination: ApiPagination };
+  readonly meta: Readonly<Record<string, never>>;
 }
 
 export interface ApiItemResponse<TItem> {
   readonly data: TItem;
-  readonly meta: ApiMeta;
+  readonly meta: Readonly<Record<string, never>>;
 }
 
-/** `details` is `field -> [messages]` for a validation failure. */
-export type ApiErrorDetails = Readonly<Record<string, readonly string[]>>;
+/**
+ * `details` is `field -> [messages]` for a validation failure, and a bare number for the counters
+ * the API reports alongside one (`retry_after`, `attempts_remaining`).
+ */
+export type ApiErrorDetails = Readonly<Record<string, readonly string[] | number>>;
 
 export interface ApiErrorBody {
   readonly error: {
     /** Typed `string`, not the union — see `isApiErrorCode`. */
     readonly code: string;
     readonly message: string;
-    readonly details?: ApiErrorDetails;
-    readonly request_id?: string;
+    readonly details: ApiErrorDetails;
+    readonly request_id: string;
   };
 }
 
 /**
- * The server clamps rather than rejects, so asking for more than this is not an
- * error — it is a silent disagreement between what the grid thinks it requested
- * and what it received. Clamp here so the two never differ.
+ * The largest `limit` the API accepts. Unlike the retired API it **refuses** rather than clamps
+ * (`limit` is validated 1–50), so asking for more is a 422 on every list — clamped here so the
+ * request is always one the server will answer.
  */
-export const MAX_PER_PAGE = 100;
-
-export const API_ENDPOINTS = {
-  /*
-   * REPOINTED IN TAB 05 against `php artisan route:list`, one row per line of
-   * `docs/integration/port-mapping.md`.
-   *
-   * The `admin/` prefix confers no authority — it is a routing convention that
-   * keeps permission-guarded staff endpoints out of the public namespace, and
-   * the console follows it rather than arguing with it.
-   *
-   * Two deliberate exceptions, both measured rather than assumed:
-   *
-   *  * `staff` carries **no** prefix. All nine staff routes sit at `/staff`,
-   *    against the general rule (ledger finding L-10).
-   *  * `programs` reads from the **public catalog** surface; only writes are
-   *    under `admin/`.
-   */
-  residents: 'admin/residents',
-  households: 'admin/households',
-  families: 'admin/families',
-  savedViews: 'admin/saved-views',
-  /** Reads are public-catalog; `admin/programs` takes the writes. */
-  programs: 'programs',
-  programsAdmin: 'admin/programs',
-  /** The duplicate-review queue. `/decide` records a finding; `/merge` is unused (ADR 0044). */
-  residentDuplicates: 'admin/resident-duplicates',
-  /**
-   * The intervention. Renamed from `cases` in TAB 04 — ADR 0007 §2 always
-   * called it this, and the implementation had drifted.
-   */
-  assistanceRequests: 'admin/assistance-requests',
-  assistanceIntakes: 'admin/assistance-intakes',
-  /** The published assessment forms, with their versions. Read before opening an assessment. */
-  assessmentTemplates: 'admin/assessment-templates',
-  enrollments: 'admin/enrollments',
-  releases: 'admin/releases',
-  releaseBatches: 'admin/release-batches',
-  referrals: 'admin/referrals',
-  serviceProviders: 'admin/service-providers',
-  visits: 'admin/visits',
-  /** No `admin/` prefix — see L-10. */
-  staff: 'staff',
-  /** The signed-in account and the permissions the server resolved for it. */
-  me: 'me',
-  notifications: 'me/notifications',
-  tasks: 'tasks',
-  dashboard: 'admin/dashboard',
-  exports: 'admin/exports',
-  search: 'admin/search',
-  auditEntries: 'admin/audit-entries',
-  residentCorrections: 'admin/resident-corrections',
-  privacyRetention: 'admin/privacy/retention',
-  newsfeed: 'admin/newsfeed',
-  newsfeedComments: 'admin/newsfeed-comments',
-  events: 'admin/events',
-
-  /*
-   * ── Aliases the adapters still use, and the routes they truly resolve to ──
-   *
-   * These keep the existing call sites compiling while the adapters are
-   * rewritten port by port (TAB 05 steps 2–10). Each points at what the mapping
-   * proved exists.
-   */
-  relationships: 'admin/residents',
-  beneficiaries: 'admin/beneficiaries',
-  identityReview: 'admin/resident-duplicates',
-  fieldVisits: 'admin/visits',
-  staffAccounts: 'staff',
-  audit: 'admin/audit-entries',
-  governance: 'admin/privacy',
-  dashboardSummary: 'admin/dashboard',
-
-  /*
-   * NO COUNTERPART — do not wire this.
-   *
-   * `cases` is the continuing-involvement entity, which has no endpoint at all
-   * and is blocked on ADR 0044's ratification. The value below is deliberately
-   * the route that **used to** exist and no longer does, so an adapter wired to
-   * it fails loudly at 404 rather than quietly succeeding against
-   * `admin/assistance-requests` — which is the "looks like success when wrong"
-   * trap TAB 04 exists to prevent (ledger L-07).
-   *
-   * `check:routes` knows this one is intentional and asserts it stays absent;
-   * the day the API publishes it, that check fails and says to wire it.
-   */
-  cases: 'admin/cases',
-
-  /*
-   * REPOINTED IN TAB 18, and they were wrong from the day TAB 07 landed.
-   *
-   * This comment used to say `work` and `reports` were surfaces TAB 07 would
-   * build. It built them — at `admin/work/*` and `admin/reports` — and these two
-   * values were never moved, so the adapters called `/api/v1/work/mine` and
-   * `/api/v1/reports` and both 404. Every work-queue screen and every report.
-   *
-   * Nothing caught it. The mock served both happily, the types were right, the
-   * tests were green, and the only way to see it was to ask the API. That is
-   * what `check:routes` now does on every build.
-   */
-  work: 'admin/work',
-  reports: 'admin/reports',
-} as const;
+export const MAX_LIMIT = 50;
 
 /**
- * The one place `meta.pagination` becomes a domain `Page`.
+ * The paths this console actually calls, and nothing else.
  *
- * The console previously read `meta.{page,pageSize,totalItems,totalPages}`,
- * which the API has never sent. Every list rendered as a single empty page and
- * `toPage()` read `undefined` four times without anything failing loudly —
- * a shape mismatch a build cannot see, because the envelope was cast.
+ * Every entry must be a path the vendored spec publishes (`check:routes`, a hard rule). The forty
+ * Laravel paths that stood here went with the API that served them (`DL-165`): a port with no Node
+ * route is bound to an adapter that makes no request at all (`unserved-repositories.ts`), so it
+ * needs no path, and a path kept "for later" would be a 404 waiting for somebody to wire it.
  */
-export function toPage<TItem>(response: ApiListResponse<TItem>): Page<TItem> {
+export const API_ENDPOINTS = {
+  /** The signed-in account, and the capabilities the server resolved for it. */
+  me: 'me',
+  /** Revokes every refresh token of the signed-in account, server-side. */
+  signOut: 'auth/sign-out',
+  /** The caller's own inbox. Cursor-paged; marking read is `POST {id}/read` and `POST read`. */
+  notifications: 'notifications',
+} as const;
+
+/** The one place `meta.pagination` becomes a domain `CursorPage`. */
+export function toCursorPage<TItem>(response: ApiCursorPageResponse<TItem>): CursorPage<TItem> {
   const pagination = response.meta.pagination;
 
   return {
     items: response.data,
-    page: pagination.page,
-    pageSize: pagination.per_page,
-    totalItems: pagination.total,
-    totalPages: pagination.total_pages,
+    hasMore: pagination.has_more,
+    nextCursor: pagination.next_cursor,
   };
 }
 
 /**
- * What this API accepts on an upload.
+ * Flattens a `CursorRequest` plus a filter into the query parameters this API accepts.
  *
- * **The server publishes these**, on the requirement read as `accepts.{mime_types,max_bytes}`, so
- * that a client can give somebody a useful message before a slow upload rather than after it. Held
- * here as the client-side copy of that published pair — the same figures, in the transport seam
- * where a wire fact belongs.
- *
- * `FileTransport.refusalFor` checks against these **before** sending, which is the only way a
- * caseworker on a slow connection learns their scan is too large without waiting for the whole of
- * it to arrive and be refused.
- *
- * They are still the client's copy of a server rule. The server refuses independently, and
- * `FileStore::store()` is the boundary that actually decides.
- */
-export const UPLOAD_POLICY = {
-  mimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
-  maxBytes: 10 * 1024 * 1024,
-} as const;
-
-/**
- * Flattens a `PageRequest` plus an arbitrary filter into the query parameters
- * this API accepts.
- *
- * Two things the previous version got wrong, both silent:
- *
- *  * `pageSize` — the server reads `per_page` and ignored the rest, so every
- *    list quietly fell back to the default of 25.
- *  * `sort` + `direction` — the server encodes descending as a leading `-` on
- *    `sort` and has no `direction` parameter, so a descending sort was served
- *    ascending and the grid's header arrow asserted an order the data did not
- *    have. A lie a user acts on is worse than an error they can see.
+ * Emits `limit`, `cursor` and the filter — and **never** `page`, `per_page` or `sort`. The API's
+ * query schemas are not strict: an unknown key is not refused, it is dropped. So a `sort` sent here
+ * would be ignored while a header arrow asserted an order the rows do not have, and a `page` would
+ * fetch the first rows again for ever. A parameter the server ignores is worse than one it
+ * refuses, because nothing on the screen looks wrong.
  */
 export function toQueryParams(
-  page: PageRequest<string>,
+  request: CursorRequest,
   filter: Record<string, unknown> = {},
 ): Record<string, string> {
   const params: Record<string, string> = {
-    page: String(page.page),
-    per_page: String(Math.min(page.pageSize, MAX_PER_PAGE)),
+    limit: String(Math.min(Math.max(1, request.limit), MAX_LIMIT)),
   };
 
-  if (page.sort) {
-    params['sort'] = (page.sort.direction === 'desc' ? '-' : '') + page.sort.field;
+  if (request.cursor) {
+    params['cursor'] = request.cursor;
   }
 
   for (const [key, value] of Object.entries(filter)) {

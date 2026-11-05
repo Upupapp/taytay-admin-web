@@ -11,20 +11,17 @@ import { ApiClient } from './api.client';
 const BASE = 'https://api.example.gov.ph/api/v1';
 
 /**
- * `everyPage` exists because 25 rows is what this API gives a request that did not ask, and for a
- * **picker** that is not a missing page — it is a wrong answer. An intake officer who cannot see a
+ * `everyPage` exists because twenty rows is what this API gives a request that did not ask, and for
+ * a **picker** that is not a missing page — it is a wrong answer. An intake officer who cannot see a
  * programme in a dropdown concludes the office does not run it (`DL-161`).
  */
-describe('reading every page of a list somebody picks from', () => {
+describe('reading every cursor page of a list somebody picks from', () => {
   let api: ApiClient;
   let http: HttpTestingController;
 
-  const answer = (page: number, totalPages: number, items: readonly unknown[]) => ({
+  const answer = (items: readonly unknown[], next: string | null) => ({
     data: items,
-    meta: {
-      request_id: 'r',
-      pagination: { page, per_page: 100, total: totalPages * 100, total_pages: totalPages, has_more: page < totalPages },
-    },
+    meta: { pagination: { has_more: next !== null, next_cursor: next } },
   });
 
   beforeEach(() => {
@@ -42,22 +39,23 @@ describe('reading every page of a list somebody picks from', () => {
 
   afterEach(() => http.verify());
 
-  it('asks for the largest page the server allows, so one request usually suffices', async () => {
-    const rows = firstValueFrom(api.everyPage<string>('programs'));
+  it('asks for the largest page the server allows, and nothing it would ignore', async () => {
+    const rows = firstValueFrom(api.everyPage<string>('offices'));
 
-    const request = http.expectOne((candidate) => candidate.url === `${BASE}/programs`);
-    expect(request.request.params.get('per_page')).toBe('100');
-    request.flush(answer(1, 1, ['a', 'b']));
+    const request = http.expectOne((candidate) => candidate.url === `${BASE}/offices`);
+    expect(request.request.params.get('limit')).toBe('50');
+    expect(request.request.params.keys()).toEqual(['limit']);
+    request.flush(answer(['a', 'b'], null));
 
     expect(await rows).toEqual(['a', 'b']);
   });
 
-  it('follows the pages and hands back every row in order', async () => {
-    const rows = firstValueFrom(api.everyPage<string>('programs'));
+  it('follows next_cursor exactly as received and hands back every row in order', async () => {
+    const rows = firstValueFrom(api.everyPage<string>('offices'));
 
-    http.expectOne((c) => c.params.get('page') === '1').flush(answer(1, 3, ['a']));
-    http.expectOne((c) => c.params.get('page') === '2').flush(answer(2, 3, ['b']));
-    http.expectOne((c) => c.params.get('page') === '3').flush(answer(3, 3, ['c']));
+    http.expectOne((c) => !c.params.has('cursor')).flush(answer(['a'], 'c2'));
+    http.expectOne((c) => c.params.get('cursor') === 'c2').flush(answer(['b'], 'c3'));
+    http.expectOne((c) => c.params.get('cursor') === 'c3').flush(answer(['c'], null));
 
     expect(await rows).toEqual(['a', 'b', 'c']);
   });
@@ -70,33 +68,36 @@ describe('reading every page of a list somebody picks from', () => {
    * registry-sized answer instead. Refusing says plainly that nothing is shown and why.
    */
   it('refuses rather than returning part of a list too long to read', async () => {
-    const rows = firstValueFrom(api.everyPage<string>('programs'));
+    const rows = firstValueFrom(api.everyPage<string>('offices'));
 
-    for (let page = 1; page <= 20; page++) {
-      http.expectOne((c) => c.params.get('page') === String(page)).flush(answer(page, 999, ['x']));
+    http.expectOne((c) => !c.params.has('cursor')).flush(answer(['x'], 'p2'));
+    for (let page = 2; page <= 20; page++) {
+      http
+        .expectOne((c) => c.params.get('cursor') === `p${page}`)
+        .flush(answer(['x'], `p${page + 1}`));
     }
 
     await expect(rows).rejects.toThrow(/longer than this screen can read/);
   });
 
   it('stops on an empty page rather than asking for the next one for ever', async () => {
-    const rows = firstValueFrom(api.everyPage<string>('programs'));
+    const rows = firstValueFrom(api.everyPage<string>('offices'));
 
-    http.expectOne((c) => c.params.get('page') === '1').flush(answer(1, 9, []));
+    http.expectOne((c) => !c.params.has('cursor')).flush(answer([], 'still-more'));
 
     expect(await rows).toEqual([]);
   });
 
   it('passes a filter through to every page', async () => {
-    const rows = firstValueFrom(api.everyPage<string>('programs', { status: 'active' }));
+    const rows = firstValueFrom(api.everyPage<string>('offices', { q: 'health' }));
 
-    const first = http.expectOne((c) => c.params.get('page') === '1');
-    expect(first.request.params.get('status')).toBe('active');
-    first.flush(answer(1, 2, ['a']));
+    const first = http.expectOne((c) => !c.params.has('cursor'));
+    expect(first.request.params.get('q')).toBe('health');
+    first.flush(answer(['a'], 'c2'));
 
-    const second = http.expectOne((c) => c.params.get('page') === '2');
-    expect(second.request.params.get('status')).toBe('active');
-    second.flush(answer(2, 2, ['b']));
+    const second = http.expectOne((c) => c.params.get('cursor') === 'c2');
+    expect(second.request.params.get('q')).toBe('health');
+    second.flush(answer(['b'], null));
 
     expect(await rows).toEqual(['a', 'b']);
   });

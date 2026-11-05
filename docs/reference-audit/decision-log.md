@@ -5301,3 +5301,153 @@ thing the port names.
 `135ec41` — CORS, exact-origin allowlist from `CORS_ALLOWED_ORIGINS`, no wildcard, no credentials.
 `189b911` — `permissions` on `GET /me` from `src/auth/capabilities.ts`, probed against the route
 guards for five roles, and `POST /api/v1/auth/sign-out`, which revokes the account's refresh tokens.
+
+## DL-165 — the transport moved to the Node API, and every check moved with it
+
+`DL-164` decided what the console does about the Laravel API's replacement. This is step 3 of
+`docs/integration/node-api-migration.md`: the transport, the vendored contract, the two adapters the
+Node API can actually serve, and every contract check re-pointed at the new spec — in one change,
+because a check left reading a Laravel snapshot reports a guarantee about an API that no longer runs.
+
+### What the console now talks to
+
+- **One vendored spec.** `src/app/data/http/contract/openapi.json` is a byte copy of the backend's
+  `openapi/openapi.json` at `2736e28` (sha256 `d2c4ac68…`, 103 operations), recorded in
+  `openapi.source.json` by `tools/vendor-openapi.mjs`, which refuses to vendor a spec with
+  uncommitted edits. `npm run vendor:openapi` replaces `vendor:envelopes`.
+- **Cursor paging.** `ApiClient.cursorPage` / `everyPage` send `limit` (clamped to 50 — the API
+  refuses more, it does not clamp) and `cursor`, and **never** `page`, `per_page` or `sort`: the API's
+  query schemas drop an unknown key rather than refusing it. `everyPage` follows `next_cursor` and
+  still **throws** past twenty pages (`DL-161`). `CursorPage<T>` and `CursorRequest` join the domain;
+  `Page<T>` stays for the mock and the unserved ports.
+- **`list` is a helper again.** `DL-156`'s "no bare-array helper can be right" was a fact about
+  Laravel. Node answers seven lists whole with `meta: {}`; `check:response-shape` now allows `list`
+  exactly there and refuses it on a cursor-paged route.
+- **The error vocabulary is Node's**: thirteen codes, three of them lowercase OTP codes. The union
+  and the runtime list are restated in `api.contract.ts` (Node publishes only JSON) and both are
+  compared with the spec's enum on every build. `INVALID_STATE_TRANSITION`'s interceptor case is gone
+  — Node answers a refused transition with `CONFLICT`. `details` keeps its `string[]` entries and
+  leaves out the numeric counters, where one counter used to discard every field message beside it;
+  the wait on a `429` comes from `details.retry_after`, because CORS exposes no `Retry-After`.
+- **Headers go only to the API.** `apiHeadersInterceptor` used to put the bearer token on every
+  request `HttpClient` made, to any origin. It now decorates a request only when its URL is the API
+  base followed by `/`.
+- **No `Idempotency-Key`.** The API implements none, and its CORS policy allows exactly
+  `Authorization`, `Content-Type`, `X-Request-Id` and `X-Client-Channel` — any other header fails the
+  preflight before the server sees the request. `ApiClient` writes no longer take an intent;
+  `WriteIntent` stays in the domain, held by the screens across retries.
+- **`local-api` is `http://localhost:3000/api/v1`**, and so is `local-mock`'s unused copy, which its
+  own comment says is kept accurate.
+
+### Two adapters served, eighteen that say they are not
+
+`HttpStaffRepository.currentUser` reads `GET me` through `me.mapper.ts`: permissions exactly as the
+server sent them (`fromServerIdentity` keeps the console keys among them — today only `audit.view`),
+`roles: [role]`, the narrowest scope, `barangayId: null`. Birth date, sex, mobile, address, street,
+purok and the **home** barangay are not read. A `registered`/`verified` account or one not explicitly
+`closed: false` is answered as signed out, and its token dropped locally — revoking it would sign
+that person out of the residents' app on their phone. `signIn` and `completeMfa` fail with
+`unavailable` and say sign-in is not connected yet: the Firebase sign-in is the next change. `list`
+and `getById` are unserved — `GET admin/users` is app accounts, not the staff directory.
+
+`HttpNotificationRepository` reads `GET notifications` in full, marks one read with
+`POST notifications/{id}/read` and all with `POST notifications/read` (which answers a count, so the
+inbox is read again). Kind, severity and action are not on the wire; `notification.mapper.ts`
+documents the least it can honestly say: `verification_decided` is a `decision`,
+`message_received` is `general`, severity is always `info`, and there is no action until a screen
+exists for verification requests or office threads.
+
+The other eighteen ports are bound to `unserved-repositories.ts`: a class per port, every method
+failing with *"This part of the console has no server yet…"*, injecting nothing, so no request is
+possible. They implement their ports without a cast — a parameterless method returning
+`Observable<never>` is assignable to every port method.
+
+### Sign-out drops the token whatever the server answered — superseding the old rule
+
+The port, `SessionStore` and `check:auth` all said a failed sign-out **keeps** the token, so the user
+stays visibly signed in over a credential that still works. That was right for a Laravel personal
+access token, which lived until revoked. It is wrong for a Firebase ID token, which expires within the
+hour on its own: keeping it in memory after somebody asked to leave a shared office computer protects
+nobody. So `signOut` posts `auth/sign-out` **first**, with the credential it revokes, and drops the
+token in `finalize` once the API has answered; the failure still propagates and the interceptor
+reports it. `SessionStore` ends the identity on both paths and the shell leaves for sign-in on both.
+What did not change is the half that mattered: clearing **before** the request would send it
+unauthenticated and revoke nothing, and `check:auth` rule 5 still fails that.
+
+### Every check, before and after
+
+The before column is `990edfa` against the Laravel snapshots; the after column is this change against
+the Node spec. **No count fell because a rule was loosened.** Where a ratchet reached zero it reached
+it by removal — the adapters that held the debt now make no request — and at zero it became a hard
+rule, its baseline file deleted.
+
+| Check | Before (Laravel) | After (Node) | Cause |
+| --- | --- | --- | --- |
+| `check:contract-drift` | `types.ts` @ `ba7f5e2`, 13 codes; list vs union | `openapi.json` @ `2736e28`, 103 operations recounted, 13 codes; union **and** list vs the spec's enum | spec vendored; Node publishes JSON, not TypeScript |
+| `check:routes` | 40 endpoints, 120 composed vs 293 routes; **15** unwired (ratchet); `cases` sentinel | 3 endpoints, 5 composed, **0** unwired — hard; every `this.api` call must resolve; floors relative to recorded counts | adapters removed, not repaired. New: 18 of 20 ports unserved (ceiling, shrink-only), and an unserved adapter may not inject, name an HTTP client, reach the network or import the mock |
+| `check:response-shape` | 61/73 agree; **12** mismatches (ratchet); 7 uncovered | 2/2 agree — hard; an uncovered read now **fails** | envelopes derived from the spec; `list` legitimate on `meta: {}` lists |
+| `check:wire-adoption` | 64/72 mapped; **8** unmapped (ratchet) | 3/3 — hard; literal keys must also be declared by the operation's `requestBody`, and an operation with none accepts only `{}` | adapters removed; strengthened, because several Node schemas are strict and the rest drop keys |
+| `check:query-params` | **53** keys, measured by *shape* (ceiling) | new measure, **existence** against the operation's declared query parameters, first value **0** — hard; a filter must be a literal | the 53 lived in domain filter interfaces that reached the wire only through deleted adapters |
+| `check:mapper-adoption` | **71** casts (ceiling) | **0** — hard; write responses now counted too; helper list asserted against `ApiClient` | 69 casts went with their adapters; `me` and `notifications` read through mappers |
+| `check:permission-parity` | **24**/43 guards unreachable vs `AccessControlPermission` (61 keys) | **42**/43 vs `StaffCapability` (15 keys) — only `audit.view` matches; also fails if `/me` stops carrying the enum | the API was replaced; no guard changed. This is `DL-164`'s gap, measured |
+| `check:consumer-contract` | 12 interactions, 24 required fields; replayed by the Laravel backend | 3 interactions, 7 required; every field read must be a response property in the spec, every required one required there | Node has no replay, so the comparison runs here |
+| `check:contract` | pagination `page/per_page/total_pages`; `-sort` | `has_more`/`next_cursor`; forbids emitting `page`, `per_page`, `sort`, `direction`; request headers limited to the CORS allow-list; `Idempotency-Key` refused; `next_cursor` joins the wire names | |
+| `check:auth` | rule 5: `DELETE auth/tokens/current`, clear in `tap` | rule 5: `POST auth/sign-out`, literal or via `API_ENDPOINTS.signOut`; clear only after the request; rule 6's `ROLE_DEFINITIONS` ban extends to `src/app/data/http/` | see the section above |
+| `check:money` | 5 writes forward their intent in `HttpReleaseRepository` | the port demands an intent on all 5, and `RELEASE_REPOSITORY` must be bound to its unserved adapter | the doctrine moved: with no idempotency on the API, the only way no family is paid twice by a retry is no money write over HTTP |
+| `check:intake` | not-recorded rule read `toWireAssessment` in `to-wire.ts` | reads it anywhere under `data/http`; when absent, requires the assistance port to be unserved | the doctrine (nothing typed is silently discarded) holds by refusal; the rule itself is unchanged |
+| `check:port-adoption` | 11/155 | 11/155 | reads ports and screens; `unreached-ports.json` kept |
+| `check:scanners` | 39 tools, 736 regexes | 39 tools, 760 regexes, all whitespace-tolerant | |
+
+Each new or rewritten rule was validated against a planted regression before being trusted: nineteen
+plants across the twelve checks above, every one caught, every file restored.
+
+`DL-164` asked for each re-pointed check to be re-baselined in its own commit, so that every new
+number arrived beside its cause. They arrive together here: the snapshots they read are deleted in
+the same change, and an intermediate commit would have had to keep a Laravel artefact alive for the
+checks not yet moved — a green build about a retired API, which is the state this entry ends. The
+table keeps what the per-commit rule was for: every number, old and new, with its cause.
+
+### What was deleted, and why
+
+Recoverable at `990edfa`; kept nowhere else, because code kept "for later" against a server that no
+longer exists is a surface nothing is reading (`DL-143`).
+
+- **The Laravel snapshots and their tooling**: `contract/types.ts`, `source.json`,
+  `routes.published.json`, `routes.source.json`, `response-envelopes.json`, and
+  `tools/vendor-response-envelopes.mjs`, which parsed PHP controllers that no longer exist.
+- **Thirty-eight of the forty `API_ENDPOINTS` entries** (`me` stays, `notifications` moves from
+  `me/notifications`, `signOut` is new), the `cases` 404 sentinel among them: a port
+  with no Node route makes no request, so it needs no path, and the sentinel guarded a wiring that
+  can no longer happen by accident.
+- **The ratchet baselines that measured only Laravel**: `unwired-paths.json`,
+  `shape-mismatches.json`, `unmapped-writes.json`. `unreached-ports.json` stays — it measures this
+  console's screens, not an API.
+- **Eighteen HTTP adapters** (2,358 lines of `http-repositories.ts`) and the mappers only they used:
+  advisory, assessment, audit, correction, document-request, event-metrics, governance, household,
+  request-note, resident, utilization, visit and `to-wire.ts`, with their specs. `file-transport.ts`
+  and `UPLOAD_POLICY` went with the one adapter that uploaded (Node's media limit is 5 MB, not 10, if
+  it returns). The domain's `DOCUMENT_UPLOAD_POLICY` is untouched.
+- **`recorded/`**: nineteen payloads captured from the Laravel API and six specs over them. Their
+  replacements in `fixtures/` are **composed from the spec, not recorded** — nothing here runs the
+  Node API — and `fixtures.spec.ts` holds every one to its schema (required fields present, nothing
+  undeclared, every enum value one the API can send), proving the validator red on a drifted copy.
+
+### Not done here, deliberately
+
+- Firebase sign-in (step 4). Until it lands, the `http` configurations cannot sign in at all.
+- Hiding unserved modules from navigation and the page that names them (step 5). Today an unserved
+  screen shows its sentence in place of its content.
+- `CLAUDE.md` §3 still describes `check:routes`, `check:wire-adoption` and `check:response-shape` as
+  ratchets with Laravel's numbers, and `release-engineering.md` quotes them. Both are now stale; the
+  constitution is the owner's to amend.
+- `fromServerIdentity` still labels a role it does not recognise `auditor` (design doc item 14).
+- The inbox port returns one list, so it reads every page and refuses past a thousand rows. It should
+  become paged.
+- The assessment screen's not-recorded notice describes the retired Laravel schema. Against Node the
+  screen cannot save at all; what the notice should say belongs to whoever decides the casework
+  question (`DL-164`).
+
+The launch gate stays **NO-GO**. `npm run verify` is green on Windows: 93 spec files, 1,628 tests
+(104 and 1,709 before — seventeen Laravel-era spec files went with the code they tested; six came
+in, for the Node adapters, the `me` mapper, the fixtures, the unserved ports, the interceptor, and
+the `WriteIntent` rule, which moved to the domain when the transport stopped carrying the key).

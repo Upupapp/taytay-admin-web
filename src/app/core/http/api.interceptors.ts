@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 
 import { RETURN_URL_PARAM } from '../access/access.guards';
+import { APP_ENVIRONMENT } from '../config/app-environment.token';
 
 import { readApiError, type ApiFailure } from './api-failure';
 import { AuthTokenHolder } from '../auth/auth-token.holder';
@@ -11,32 +12,36 @@ import { SessionStore } from '../auth/session.store';
 import { NotificationStore } from '../notifications/notification.store';
 
 /**
- * The headers every API call carries.
+ * The headers an API call carries — and only an API call.
  *
- * `withCredentials: true` used to be set here, and it was the single most
- * expensive line in the console. The API authenticates with a first-party
- * bearer token and sets `supports_credentials => false` (ADR 0005, ADR 0006),
- * so a credentialed request against an origin that does not answer
- * `Access-Control-Allow-Credentials` is refused **by the browser**. That is a
- * CORS failure, not a `401`: nothing reaches this application to be handled, no
- * interceptor sees a status, and the only symptom is a console message. It is
- * removed rather than made conditional — there is no configuration in which it
- * is correct against this API.
+ * This used to decorate **every** request `HttpClient` made, so the bearer token would have gone
+ * to whatever origin a request named: an asset host, a map tile server, the identity provider the
+ * next change signs in through. A credential is attached where it is meant to be read and nowhere
+ * else, so the decision is made on the URL — the API's base, followed by a path separator, so that
+ * `https://api.example.ph.attacker.test` and `…/api/v1evil` are not mistaken for it.
  *
- * The fix is never to widen the server. Enabling `supports_credentials`,
- * widening CORS or turning on Sanctum stateful domains would each make the
- * request succeed and each was refused deliberately.
+ * `withCredentials: true` used to be set here as well, and it was the single most expensive line
+ * in the console. The API authenticates with a bearer token and its CORS policy sends no
+ * `Access-Control-Allow-Credentials`, so a credentialed request is refused **by the browser**: a
+ * status `0`, nothing for an interceptor to handle, only a message in the developer console. It is
+ * removed rather than made conditional — there is no configuration in which it is correct against
+ * this API, and the fix is never to widen the server.
  *
- * `X-Client-Channel` is telemetry and presentation default only, never
- * authority (`conventions.md` §2, backend constitution Article 3.3). Sending it
- * grants nothing; not sending it recorded every staff request as an unknown
- * channel, which is a gap in the audit trail rather than a cosmetic one.
+ * `X-Client-Channel` is telemetry and presentation default only, never authority. It is one of the
+ * four headers the API's CORS policy allows; any header outside that list fails the preflight of
+ * every request that carries it (`check:contract`).
  *
- * The bearer token comes from `AuthTokenHolder`, which keeps it in a private
- * field and exposes no getter. This interceptor never reads, stores or logs the
- * token itself — it asks for a header and attaches whatever it is given.
+ * The bearer token comes from `AuthTokenHolder`, which keeps it in a private field and exposes no
+ * getter. This interceptor never reads, stores or logs the token itself — it asks for a header and
+ * attaches whatever it is given.
  */
 export const apiHeadersInterceptor: HttpInterceptorFn = (request, next) => {
+  const base = inject(APP_ENVIRONMENT).apiBaseUrl.replace(/\/+$/, '');
+
+  if (request.url !== base && !request.url.startsWith(`${base}/`)) {
+    return next(request);
+  }
+
   const tokens = inject(AuthTokenHolder);
 
   return next(
@@ -83,7 +88,7 @@ export const httpErrorInterceptor: HttpInterceptorFn = (request, next) => {
        *
        * The status is the fallback rather than the primary, and only where the
        * envelope is missing: a refusal that never reached the application, or
-       * an error page from something in front of Laravel, still has to send the
+       * an error page from something in front of the API, still has to send the
        * user somewhere sensible.
        */
       switch (failure.code ?? codeFromStatus(failure.status)) {
@@ -91,8 +96,8 @@ export const httpErrorInterceptor: HttpInterceptorFn = (request, next) => {
           /*
            * The token is gone or the server refused it. End the session
            * locally without a round-trip: `signOut()` would call
-           * `DELETE auth/tokens/current` with the credential that was just
-           * rejected, and answer 401 again.
+           * `POST auth/sign-out` with the credential that was just rejected,
+           * and answer 401 again.
            *
            * The current URL is carried so the user comes back to the screen
            * they were on rather than the dashboard. What it does **not** yet
@@ -113,13 +118,10 @@ export const httpErrorInterceptor: HttpInterceptorFn = (request, next) => {
           // A toast as well would say the same thing twice, less usefully.
           break;
 
-        case 'INVALID_STATE_TRANSITION':
-          // A domain outcome, not a transport fault. Somebody else moved the
-          // record on while this screen was open, and the user needs to be
-          // told what happened rather than that "the server responded with
-          // 409".
-          notifications.warning('That change no longer applies', describeFailure(failure));
-          break;
+        // `INVALID_STATE_TRANSITION` had its own warning here. The Node API
+        // never sends it — a refused transition there is a `CONFLICT`, which
+        // is also what a closed account receives on every write — so the case
+        // is gone rather than kept for a code that cannot arrive.
 
         case 'RATE_LIMITED':
           notifications.warning('Too many requests', describeFailure(failure));

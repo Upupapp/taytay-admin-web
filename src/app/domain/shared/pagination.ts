@@ -20,6 +20,32 @@ export interface Page<TItem> {
   readonly totalPages: number;
 }
 
+/**
+ * A request for one cursor page: how many rows, and where the previous page stopped.
+ *
+ * Cursor paging answers "what comes after this row", not "what is on page N", so there is no page
+ * number and no sort to ask for — the order is the server's. `cursor` is opaque; it is handed back
+ * exactly as it was received and never built or parsed here.
+ */
+export interface CursorRequest {
+  readonly limit: number;
+  readonly cursor?: string | null;
+}
+
+/**
+ * One cursor page.
+ *
+ * Deliberately carries no total and no page count, because the server sends neither. A screen
+ * reading this says "the first fifty, more available" — never "page 1 of N", which would assert a
+ * number nobody computed (`DL-161`). `Page<T>` stays for the ports that are not served over a
+ * cursor API.
+ */
+export interface CursorPage<TItem> {
+  readonly items: readonly TItem[];
+  readonly hasMore: boolean;
+  readonly nextCursor: string | null;
+}
+
 export const DEFAULT_PAGE_SIZE = 20;
 
 /**

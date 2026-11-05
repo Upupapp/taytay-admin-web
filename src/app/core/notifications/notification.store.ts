@@ -104,7 +104,7 @@ export class NotificationStore {
 
     /*
      * A message this console raised for itself has no server record to mark.
-     * Sending its `local-` id to `POST me/notifications/{id}/read` would ask the
+     * Sending its `local-` id to `POST notifications/{id}/read` would ask the
      * API about something it never issued, and be answered with a 404 the user
      * would see as a failure to dismiss their own toast.
      */

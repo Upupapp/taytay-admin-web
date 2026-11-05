@@ -24,28 +24,27 @@ import {
   STAFF_REPOSITORY,
 } from '@domain/index';
 
+import { HttpNotificationRepository, HttpStaffRepository } from './http/http-repositories';
 import {
-  HttpAssistanceRequestRepository,
-  HttpBeneficiaryRepository,
-  HttpCaseRepository,
-  HttpDashboardRepository,
-  HttpReportRepository,
-  HttpGovernanceRepository,
-  HttpEventRepository,
-  HttpNewsfeedRepository,
-  HttpSearchRepository,
-  HttpWorkRepository,
-  HttpReleaseRepository,
-  HttpFieldVisitRepository,
-  HttpFamilyRepository,
-  HttpHouseholdRepository,
-  HttpNotificationRepository,
-  HttpProgramRepository,
-  HttpReferralRepository,
-  HttpResidentRepository,
-  HttpSavedViewRepository,
-  HttpStaffRepository,
-} from './http/http-repositories';
+  UnservedAssistanceRequestRepository,
+  UnservedBeneficiaryRepository,
+  UnservedCaseRepository,
+  UnservedDashboardRepository,
+  UnservedEventRepository,
+  UnservedFamilyRepository,
+  UnservedFieldVisitRepository,
+  UnservedGovernanceRepository,
+  UnservedHouseholdRepository,
+  UnservedNewsfeedRepository,
+  UnservedProgramRepository,
+  UnservedReferralRepository,
+  UnservedReleaseRepository,
+  UnservedReportRepository,
+  UnservedResidentRepository,
+  UnservedSavedViewRepository,
+  UnservedSearchRepository,
+  UnservedWorkRepository,
+} from './http/unserved-repositories';
 /**
  * THE MOCK/HTTP SEAM — the HTTP half.
  *
@@ -69,29 +68,36 @@ import {
  * explicit that an assumption is not a guarantee, so the guarantee is now structural: this file
  * names no mock class at all, and `angular.json` swaps in `data-access.providers.mock.ts` for the
  * one configuration that wants them.
+ *
+ * ## Two ports served, eighteen unserved
+ *
+ * The Node API serves the signed-in account and its inbox and nothing else this console has a port
+ * for (`DL-164`). Every other port is bound to an `Unserved…` adapter that makes no request and
+ * fails with a sentence saying so (`DL-165`). A port moves from that list to an `Http…` adapter
+ * only when the API serves the thing the port names — not something with the same word on it.
  */
 
 export function provideDataAccess(): EnvironmentProviders {
   return makeEnvironmentProviders([
-    { provide: RESIDENT_REPOSITORY, useClass: HttpResidentRepository },
-    { provide: PROGRAM_REPOSITORY, useClass: HttpProgramRepository },
-    { provide: ASSISTANCE_REQUEST_REPOSITORY, useClass: HttpAssistanceRequestRepository },
-    { provide: RELEASE_REPOSITORY, useClass: HttpReleaseRepository },
-    { provide: REFERRAL_REPOSITORY, useClass: HttpReferralRepository },
+    { provide: RESIDENT_REPOSITORY, useClass: UnservedResidentRepository },
+    { provide: PROGRAM_REPOSITORY, useClass: UnservedProgramRepository },
+    { provide: ASSISTANCE_REQUEST_REPOSITORY, useClass: UnservedAssistanceRequestRepository },
+    { provide: RELEASE_REPOSITORY, useClass: UnservedReleaseRepository },
+    { provide: REFERRAL_REPOSITORY, useClass: UnservedReferralRepository },
     { provide: STAFF_REPOSITORY, useClass: HttpStaffRepository },
     { provide: NOTIFICATION_REPOSITORY, useClass: HttpNotificationRepository },
-    { provide: DASHBOARD_REPOSITORY, useClass: HttpDashboardRepository },
-    { provide: WORK_REPOSITORY, useClass: HttpWorkRepository },
-    { provide: REPORT_REPOSITORY, useClass: HttpReportRepository },
-    { provide: SEARCH_REPOSITORY, useClass: HttpSearchRepository },
-    { provide: GOVERNANCE_REPOSITORY, useClass: HttpGovernanceRepository },
-    { provide: NEWSFEED_REPOSITORY, useClass: HttpNewsfeedRepository },
-    { provide: EVENT_REPOSITORY, useClass: HttpEventRepository },
-    { provide: SAVED_VIEW_REPOSITORY, useClass: HttpSavedViewRepository },
-    { provide: HOUSEHOLD_REPOSITORY, useClass: HttpHouseholdRepository },
-    { provide: FAMILY_REPOSITORY, useClass: HttpFamilyRepository },
-    { provide: CASE_REPOSITORY, useClass: HttpCaseRepository },
-    { provide: BENEFICIARY_REPOSITORY, useClass: HttpBeneficiaryRepository },
-    { provide: FIELD_VISIT_REPOSITORY, useClass: HttpFieldVisitRepository },
+    { provide: DASHBOARD_REPOSITORY, useClass: UnservedDashboardRepository },
+    { provide: WORK_REPOSITORY, useClass: UnservedWorkRepository },
+    { provide: REPORT_REPOSITORY, useClass: UnservedReportRepository },
+    { provide: SEARCH_REPOSITORY, useClass: UnservedSearchRepository },
+    { provide: GOVERNANCE_REPOSITORY, useClass: UnservedGovernanceRepository },
+    { provide: NEWSFEED_REPOSITORY, useClass: UnservedNewsfeedRepository },
+    { provide: EVENT_REPOSITORY, useClass: UnservedEventRepository },
+    { provide: SAVED_VIEW_REPOSITORY, useClass: UnservedSavedViewRepository },
+    { provide: HOUSEHOLD_REPOSITORY, useClass: UnservedHouseholdRepository },
+    { provide: FAMILY_REPOSITORY, useClass: UnservedFamilyRepository },
+    { provide: CASE_REPOSITORY, useClass: UnservedCaseRepository },
+    { provide: BENEFICIARY_REPOSITORY, useClass: UnservedBeneficiaryRepository },
+    { provide: FIELD_VISIT_REPOSITORY, useClass: UnservedFieldVisitRepository },
   ]);
 }

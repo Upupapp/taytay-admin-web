@@ -144,11 +144,33 @@ notes.push('derivation: no function returns a recommendation');
  * applying on its own — nobody has to remember to delete a notice that has become untrue.
  */
 
-const wireText = read('src/app/data/http/mappers/to-wire.ts');
-const assessmentMapper = /export function toWireAssessment\s*\([\s\S]*?\n\}/.exec(wireText);
+/*
+ * Where the mapper lives is read rather than assumed, and its absence is a finding, not a pass.
+ *
+ * Against the Node API there is no assessment endpoint, so the http configuration binds the
+ * assistance-request port to an adapter that refuses every write before anything is sent, and
+ * `to-wire.ts` went with the Laravel adapters (`DL-165`). The doctrine this rule enforces — nothing a
+ * caseworker types may be silently discarded — holds there by refusal: the save fails, saying the
+ * module has no server, and nobody believes a record exists. So the rule's subject moved from the
+ * mapper to the binding, and it is checked there. A served adapter with no `toWireAssessment` is
+ * still the blind case and still fails.
+ */
+const httpFiles = walk('src/app/data/http', new Set(['.ts'])).filter((file) => !file.includes('.spec.'));
+const assessmentMapper =
+  httpFiles
+    .map((file) => /export function toWireAssessment\s*\([\s\S]*?\n\}/.exec(read(file)))
+    .find((match) => match !== null) ?? null;
+const assistanceBinding = /provide:\s*ASSISTANCE_REQUEST_REPOSITORY,\s*useClass:\s*(\w+)/.exec(
+  read('src/app/data/data-access.providers.ts'),
+)?.[1];
 
-if (assessmentMapper === null) {
-  problems.push('`toWireAssessment` could not be found — the not-recorded rule is blind.');
+if (assessmentMapper === null && assistanceBinding === 'UnservedAssistanceRequestRepository') {
+  notes.push('not-recorded: no assessment endpoint is served — the http adapter refuses the save, so nothing is silently discarded');
+} else if (assessmentMapper === null) {
+  problems.push(
+    `ASSISTANCE_REQUEST_REPOSITORY is bound to ${assistanceBinding ?? 'nothing readable'} and no ` +
+      '`toWireAssessment` exists under data/http — the not-recorded rule is blind.',
+  );
 } else {
   const sends = (field) => new RegExp(`['\"\`]${field}['\"\`]`).test(assessmentMapper[0]);
   const dropped = ['recommended_amount', 'home_visit_conducted'].filter((field) => !sends(field));
