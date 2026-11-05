@@ -241,6 +241,18 @@ describe('DigitalIdsPage — keeping cards (DL-171)', () => {
     expect(element.textContent).toContain(COPY.manage.moreAvailable);
     expect(element.textContent).not.toMatch(/page \d+ of/i);
   });
+
+  it('opens a resident’s card beside the list', async () => {
+    const { cards } = configure();
+    const fixture = TestBed.createComponent(DigitalIdsPage);
+    const element = await settle(fixture);
+    element.querySelector<HTMLButtonElement>('tbody tr button')?.click();
+    await settle(fixture);
+
+    expect(cards.calls).toContain('cardOf:a');
+    expect(document.body.textContent).toContain(COPY.panel.heading('Person a'));
+    expect(document.body.textContent).toContain('TAY-2026-000001');
+  });
 });
 
 describe('CardPanel (DL-171)', () => {

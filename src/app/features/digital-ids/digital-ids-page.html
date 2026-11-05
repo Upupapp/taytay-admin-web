@@ -61,7 +61,9 @@
 </ng-template>
 
 @if (selected(); as account) {
-  <app-drawer [heading]="copy.panel.heading(nameOf(account))" (dismissed)="close()">
-    <app-card-panel [account]="account" />
+  <app-drawer [open]="true" [heading]="copy.panel.heading(nameOf(account))" (dismissed)="close()">
+    <div drawer-body>
+      <app-card-panel [account]="account" />
+    </div>
   </app-drawer>
 }
