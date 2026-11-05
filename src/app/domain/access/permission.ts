@@ -226,6 +226,13 @@ export const PERMISSIONS = [
   'office.manage',
   'service.manage',
   'hotline.manage',
+
+  /*
+   * THE APP'S HOME SCREEN (`DL-170`) — the server's key, spelled as its `StaffCapability`. Its banners
+   * and links; the server gives it to `admin` alone, so only the system administrator holds it, by
+   * holding every key. Mutating: it changes the first screen every resident sees.
+   */
+  'home.manage',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

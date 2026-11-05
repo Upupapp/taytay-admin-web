@@ -18,6 +18,7 @@ import {
   TULONG_SERVICE_REPOSITORY,
   type TulongService,
 } from '@domain/index';
+import { readText } from '@shared/forms/form-values';
 import { officeDirectory } from '@shared/offices/office-directory';
 import { failureReason } from '@shared/state/failure-reason';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -29,7 +30,6 @@ import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { cursorList } from './cursor-list';
 import { DIRECTORY_COPY } from './directory.copy';
-import { readText } from './form-values';
 import { ServiceForm } from './service-form';
 
 /**

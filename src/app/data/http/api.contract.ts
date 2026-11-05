@@ -154,7 +154,10 @@ export const API_ENDPOINTS = {
    * by `status`; decided with `POST {id}/approve` and `POST {id}/reject` (`DL-167`).
    */
   verificationRequests: 'admin/verification-requests',
-  /** Stored images. Only `GET {id}/content` is read, as bytes, after a reader is warned. */
+  /**
+   * Stored images. `GET {id}/content` is read as bytes — a resident's, only after a reader is warned;
+   * a banner's, to show it (`DL-170`). `POST` stores a banner's image, as a form.
+   */
   media: 'media',
   /**
    * Residents' conversations with an office (`DL-168`, `office-inbox.manage`). Cursor-paged; one by
@@ -182,6 +185,15 @@ export const API_ENDPOINTS = {
   adminServices: 'admin/services',
   /** Every hotline, shown and hidden, at most a hundred (`hotline.manage`); written as JSON. */
   adminHotlines: 'admin/hotlines',
+  /**
+   * The home screen's banners and links, admin only (`DL-170`, `home.manage`): every banner, shown
+   * and hidden, and every link, each answered whole; written as JSON. A banner's image is stored
+   * first through `POST media` (a form) and then named by its id.
+   */
+  adminBanners: 'admin/home/banners',
+  adminLinks: 'admin/home/links',
+  /** The home screen as the app is given it — public, one object. */
+  home: 'home',
 } as const;
 
 /** The one place `meta.pagination` becomes a domain `CursorPage`. */

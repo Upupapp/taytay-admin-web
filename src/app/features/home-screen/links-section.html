@@ -1,0 +1,91 @@
+<section class="card home-section" aria-labelledby="links-heading">
+  <div class="home-section__head">
+    <h2 id="links-heading" class="home-section__title">{{ copy.heading }}</h2>
+    <button type="button" class="btn btn--primary" (click)="add()">{{ copy.add }}</button>
+  </div>
+  <p class="home-section__note">{{ copy.lead }}</p>
+
+  <p class="home-section__outcome" role="status" aria-live="polite">{{ outcome() }}</p>
+
+  <app-async-content
+    [state]="state()"
+    [content]="linksContent"
+    [skeletonLines]="3"
+    (retryRequested)="reload()"
+  >
+    <ng-template #linksContent>
+      <app-data-table
+        [columns]="columns()"
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [caption]="copy.caption"
+        [emptyHeading]="copy.emptyHeading"
+        [emptyMessage]="copy.emptyMessage"
+      />
+      @if (rows().length > 0) {
+        <p class="home-section__note" role="status">{{ copy.count(rows().length) }}</p>
+      }
+    </ng-template>
+  </app-async-content>
+</section>
+
+<ng-template #actionCell let-link>
+  <div class="home-section__actions">
+    <button
+      type="button"
+      class="btn btn--secondary"
+      [attr.aria-label]="copy.editLabel(link.label)"
+      (click)="edit(link)"
+    >
+      {{ common.edit }}
+    </button>
+    <button
+      type="button"
+      class="btn btn--secondary"
+      [attr.aria-label]="copy.removeLabel(link.label)"
+      (click)="askRemove(link)"
+    >
+      {{ common.remove }}
+    </button>
+  </div>
+</ng-template>
+
+@if (editing() !== null) {
+  <app-drawer
+    [open]="true"
+    [heading]="drawerLink() === null ? copy.createHeading : copy.editHeading"
+    (dismissed)="closeDrawer()"
+  >
+    <div drawer-body>
+      <app-link-form [link]="drawerLink()" (saved)="onSaved($event)" />
+    </div>
+  </app-drawer>
+}
+
+@if (removing(); as link) {
+  <app-modal [open]="true" [heading]="copy.removeHeading(link.label)" (dismissed)="cancelRemove()">
+    <div modal-body class="home-section__warning">
+      <p>{{ common.effectsLead }}</p>
+      <ul>
+        @for (effect of removeEffects; track $index) {
+          <li>{{ effect }}</li>
+        }
+      </ul>
+      @if (removeProblem(); as problem) {
+        <p class="home-section__problem" role="alert">{{ problem }}</p>
+      }
+    </div>
+    <button type="button" modal-actions class="btn btn--secondary" (click)="cancelRemove()">
+      {{ common.cancel }}
+    </button>
+    <button
+      type="button"
+      modal-actions
+      class="btn btn--primary"
+      [disabled]="removeBusy()"
+      (click)="confirmRemove()"
+    >
+      {{ copy.removeConfirm }}
+    </button>
+  </app-modal>
+}

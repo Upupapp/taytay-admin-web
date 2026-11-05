@@ -88,6 +88,10 @@ export type OfficeId = Branded<string, 'OfficeId'>;
 export type TulongServiceId = Branded<string, 'TulongServiceId'>;
 /** An emergency or office number the residents' app lists (`DL-170`). */
 export type HotlineId = Branded<string, 'HotlineId'>;
+/** A banner on the residents' app's home screen (`DL-170`). */
+export type HomeBannerId = Branded<string, 'HomeBannerId'>;
+/** A link on the residents' app's home screen (`DL-170`). */
+export type QuickLinkId = Branded<string, 'QuickLinkId'>;
 /** A conversation between one resident and one office (`DL-168`). */
 export type OfficeThreadId = Branded<string, 'OfficeThreadId'>;
 /** One message in an office conversation (`DL-168`). */

@@ -30,12 +30,12 @@ import {
   type ServiceLocation,
   type TulongService,
 } from '@domain/index';
+import { blankToNull, linesOf, readChecked, readText } from '@shared/forms/form-values';
 import { ImageFileField } from '@shared/media/image-file-field';
 import { failureReason } from '@shared/state/failure-reason';
 import { valueOf, type ViewState } from '@shared/state/view-state';
 
 import { DIRECTORY_COPY } from './directory.copy';
-import { blankToNull, linesOf, readChecked, readText } from './form-values';
 
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 

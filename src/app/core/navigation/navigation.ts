@@ -214,6 +214,15 @@ export const NAVIGATION: readonly NavSection[] = [
         permissions: ['office.manage', 'service.manage', 'hotline.manage'],
         description: 'The offices, Tulong pages and hotlines residents see in the Taytay app.',
       },
+      {
+        // `DL-170`. The first screen every resident opens: its banners and quick links.
+        label: 'Home screen',
+        route: '/home-screen',
+        reads: ['home-screen'],
+        glyph: 'HS',
+        permissions: ['home.manage'],
+        description: 'The banners and quick links on the Taytay app’s home screen.',
+      },
     ],
   },
   {

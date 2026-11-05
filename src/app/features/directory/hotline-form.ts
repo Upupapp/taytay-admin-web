@@ -20,10 +20,10 @@ import {
   type HotlineChanges,
   type HotlineDraft,
 } from '@domain/index';
+import { readChecked, readText, wholeNumberOf } from '@shared/forms/form-values';
 import { failureReason } from '@shared/state/failure-reason';
 
 import { DIRECTORY_COPY } from './directory.copy';
-import { readChecked, readText, wholeNumberOf } from './form-values';
 
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 

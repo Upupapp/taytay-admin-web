@@ -552,6 +552,15 @@ export const routes: Routes = [
           import('@features/directory/directory-page').then((m) => m.DirectoryPage),
       },
       {
+        // `DL-170`. The API grants `home.manage` to administrators alone; this guard mirrors it and is
+        // not the protection (rule 4).
+        path: 'home-screen',
+        title: 'Home screen — Taytay Social Welfare',
+        canActivate: [servedGuard('home-screen'), permissionGuard('home.manage')],
+        loadComponent: () =>
+          import('@features/home-screen/home-screen-page').then((m) => m.HomeScreenPage),
+      },
+      {
         // Where every unserved module's address leads (`DL-167`). No permission: it names what the
         // server lacks, which is no secret about any record, and it is linked from the menu.
         path: 'unavailable',

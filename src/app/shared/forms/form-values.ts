@@ -1,5 +1,6 @@
 /**
- * Reading form controls into the domain's values (`DL-170`). An empty field is `null` — "not given" —
+ * Reading form controls into the domain's values (`DL-170`) — shared by the app directory and the
+ * home screen, so both read an empty field the same way. An empty field is `null` — "not given" —
  * never an empty string, because the API refuses an empty one and would refuse the whole form.
  */
 

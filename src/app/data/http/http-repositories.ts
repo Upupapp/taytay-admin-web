@@ -62,6 +62,15 @@ import {
   type TulongService,
   type TulongServiceId,
   type TulongServiceRepository,
+  type BannerDraft,
+  type BannerImageChange,
+  type HomeBanner,
+  type HomeBannerId,
+  type HomePreview,
+  type HomeScreenRepository,
+  type LinkDraft,
+  type QuickLink,
+  type QuickLinkId,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -79,6 +88,13 @@ import {
   toWireOfficeDraft,
 } from './mappers/directory-office.mapper';
 import { toHotline } from './mappers/hotline.mapper';
+import {
+  toHomeBanner,
+  toHomePreview,
+  toQuickLink,
+  toStoredMedia,
+  toWireMediaUpload,
+} from './mappers/home.mapper';
 import {
   toTulongService,
   toWireServiceChanges,
@@ -723,4 +739,164 @@ function readHotline(wire: unknown): Hotline {
   }
 
   return hotline;
+}
+
+/* ── the app's home screen (`DL-170`) ────────────────────────────────────── */
+
+/**
+ * The home screen's banners and links (`home.manage`), and what the app is given now (`GET home`).
+ *
+ * A banner's image is stored first, through `POST media`, and the banner then names it — two
+ * requests, because that is how the API takes an image for a banner. If the second is refused, the
+ * first has already stored the image; nothing in the API removes it, and the effects say so before
+ * the button (`HOME_EFFECTS.imageUpload`).
+ */
+@Injectable()
+export class HttpHomeScreenRepository implements HomeScreenRepository {
+  private readonly api = inject(ApiClient);
+
+  /** Every banner, shown and hidden, answered whole; one the mapper cannot read refuses the list. */
+  banners(): Observable<readonly HomeBanner[]> {
+    return this.api.list(API_ENDPOINTS.adminBanners).pipe(map((items) => items.map(readBanner)));
+  }
+
+  createBanner(draft: BannerDraft, image: Blob | null): Observable<HomeBanner> {
+    return this.storedImage(image).pipe(
+      switchMap((media) =>
+        this.api.post(API_ENDPOINTS.adminBanners, {
+          title: draft.title,
+          media_id: media,
+          href: draft.href,
+          sort_order: draft.sortOrder,
+          active: draft.active,
+        }),
+      ),
+      map(readBanner),
+    );
+  }
+
+  /**
+   * The spec's `PATCH` body is `BannerWrite`, which requires `title`, so the title is always sent.
+   * The image is named only when it changes: `undefined` leaves it, `null` removes it.
+   */
+  updateBanner(id: HomeBannerId, draft: BannerDraft, image: BannerImageChange): Observable<HomeBanner> {
+    const media: Observable<MediaId | null | undefined> =
+      image.kind === 'replace'
+        ? this.storedImage(image.image)
+        : of(image.kind === 'remove' ? null : undefined);
+    return media.pipe(
+      switchMap((mediaId) =>
+        this.api.patch(`${API_ENDPOINTS.adminBanners}/${id}`, {
+          title: draft.title,
+          media_id: mediaId,
+          href: draft.href,
+          sort_order: draft.sortOrder,
+          active: draft.active,
+        }),
+      ),
+      map(readBanner),
+    );
+  }
+
+  removeBanner(id: HomeBannerId): Observable<void> {
+    return this.api.delete(`${API_ENDPOINTS.adminBanners}/${id}`).pipe(map(() => undefined));
+  }
+
+  /**
+   * A banner's image, as bytes, with the bearer token in a header (`ApiClient.blob`) — for a banner
+   * hidden from the app as well, which the public image route would not answer.
+   */
+  bannerImage(banner: HomeBanner): Observable<Blob> {
+    return banner.mediaId === null
+      ? throwError(() => new Error('This banner has no image.'))
+      : this.api.blob(`${API_ENDPOINTS.media}/${banner.mediaId}/content`);
+  }
+
+  links(): Observable<readonly QuickLink[]> {
+    return this.api.list(API_ENDPOINTS.adminLinks).pipe(map((items) => items.map(readLink)));
+  }
+
+  createLink(draft: LinkDraft): Observable<QuickLink> {
+    return this.api
+      .post(API_ENDPOINTS.adminLinks, {
+        label: draft.label,
+        href: draft.href,
+        sort_order: draft.sortOrder,
+      })
+      .pipe(map(readLink));
+  }
+
+  updateLink(id: QuickLinkId, draft: LinkDraft): Observable<QuickLink> {
+    return this.api
+      .patch(`${API_ENDPOINTS.adminLinks}/${id}`, {
+        label: draft.label,
+        href: draft.href,
+        sort_order: draft.sortOrder,
+      })
+      .pipe(map(readLink));
+  }
+
+  removeLink(id: QuickLinkId): Observable<void> {
+    return this.api.delete(`${API_ENDPOINTS.adminLinks}/${id}`).pipe(map(() => undefined));
+  }
+
+  preview(): Observable<HomePreview> {
+    return this.api.item(API_ENDPOINTS.home).pipe(
+      map((wire) => {
+        const preview = toHomePreview(wire);
+        if (preview === null) {
+          throw new Error(
+            'The home screen from the server could not be read, so no preview is shown rather than ' +
+              'one that differs from what residents see.',
+          );
+        }
+        return preview;
+      }),
+    );
+  }
+
+  /** Stores the image and answers its id, or answers `null` at once when there is none. */
+  private storedImage(image: Blob | null): Observable<MediaId | null> {
+    if (image === null) {
+      return of(null);
+    }
+    return this.api.postForm(API_ENDPOINTS.media, toWireMediaUpload(image)).pipe(
+      map((wire) => {
+        const media = toStoredMedia(wire);
+        if (media === null) {
+          throw new Error(
+            'The image was stored, but the server’s answer could not be read, so the banner was not ' +
+              'saved. The image stays stored, unused.',
+          );
+        }
+        return media;
+      }),
+    );
+  }
+}
+
+function readBanner(wire: unknown): HomeBanner {
+  const banner = toHomeBanner(wire);
+
+  if (banner === null) {
+    throw new Error(
+      'A banner from the server could not be read, so the list is not shown rather than shown ' +
+        'without it: a banner missing here may still be on every resident’s home screen.',
+    );
+  }
+
+  return banner;
+}
+
+function readLink(wire: unknown): QuickLink {
+  const link = toQuickLink(wire);
+
+  if (link === null) {
+    throw new Error(
+      'A link from the server could not be read, so the list is not shown rather than shown ' +
+        'without it: a link missing here is still on every resident’s home screen.',
+    );
+  }
+
+  return link;
 }

@@ -36,6 +36,7 @@ export const DATA_PORTS = [
   'directory-office',
   'tulong-service',
   'hotline',
+  'home-screen',
 ] as const;
 
 export type DataPort = (typeof DATA_PORTS)[number];
@@ -74,6 +75,7 @@ export const DATA_PORT_HOLDINGS: Readonly<Record<DataPort, string>> = {
   'directory-office': 'the app’s office directory',
   'tulong-service': 'the app’s Tulong pages',
   hotline: 'the app’s hotlines',
+  'home-screen': 'the app’s home screen',
 };
 
 /**

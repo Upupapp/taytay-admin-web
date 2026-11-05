@@ -1,0 +1,73 @@
+<form class="home-form" novalidate (submit)="$event.preventDefault(); save()">
+  <div class="field">
+    <label class="field__label" for="link-label">{{ copy.label }}</label>
+    <input
+      id="link-label"
+      class="field__input"
+      autocomplete="off"
+      [value]="label()"
+      (input)="label.set(text($event))"
+    />
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="link-href">{{ copy.href }}</label>
+    <p class="field__hint" id="link-href-hint">{{ common.hrefHint }}</p>
+    <input
+      id="link-href"
+      class="field__input"
+      autocomplete="off"
+      spellcheck="false"
+      aria-describedby="link-href-hint"
+      [value]="href()"
+      (input)="href.set(text($event))"
+    />
+  </div>
+
+  <div class="field field--narrow">
+    <label class="field__label" for="link-order">{{ common.order }}</label>
+    <p class="field__hint" id="link-order-hint">{{ common.orderHint }}</p>
+    <input
+      id="link-order"
+      class="field__input"
+      inputmode="numeric"
+      autocomplete="off"
+      aria-describedby="link-order-hint"
+      [value]="sortOrder()"
+      (input)="sortOrder.set(text($event))"
+    />
+  </div>
+
+  @if (attempted() && problems().length > 0) {
+    <div class="home-form__problems" role="alert">
+      <p>{{ common.problemsLead }}</p>
+      <ul>
+        @for (problem of problems(); track $index) {
+          <li>{{ problem }}</li>
+        }
+      </ul>
+    </div>
+  }
+
+  @if (unchanged()) {
+    <p class="home-form__note">{{ common.unchanged }}</p>
+  } @else {
+    <!-- What the server does, between the fields and the button that does it. -->
+    <div class="home-form__effects">
+      <p>{{ common.effectsLead }}</p>
+      <ul>
+        @for (effect of effects(); track $index) {
+          <li>{{ effect }}</li>
+        }
+      </ul>
+    </div>
+    <button type="submit" class="btn btn--primary" [disabled]="busy()">
+      {{ busy() ? common.saving : creating() ? copy.create : copy.save }}
+    </button>
+  }
+
+  <!-- Only ever a refusal: a save that works is announced by the list beside the form. -->
+  @if (outcome(); as problem) {
+    <p class="home-form__outcome" role="alert">{{ problem }}</p>
+  }
+</form>

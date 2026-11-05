@@ -4,6 +4,93 @@
   "interactions": [
     {
       "method": "GET",
+      "path": "admin/home/banners",
+      "consumer": "home.mapper.ts#toHomeBanner",
+      "required": [
+        "active",
+        "created_at",
+        "id",
+        "sort_order",
+        "title"
+      ],
+      "optional": [
+        "href",
+        "media_id"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/home/banners",
+      "consumer": "home.mapper.ts#toHomeBanner",
+      "required": [
+        "active",
+        "created_at",
+        "id",
+        "sort_order",
+        "title"
+      ],
+      "optional": [
+        "href",
+        "media_id"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "admin/home/banners/{id}",
+      "consumer": "home.mapper.ts#toHomeBanner",
+      "required": [
+        "active",
+        "created_at",
+        "id",
+        "sort_order",
+        "title"
+      ],
+      "optional": [
+        "href",
+        "media_id"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "admin/home/links",
+      "consumer": "home.mapper.ts#toQuickLink",
+      "required": [
+        "created_at",
+        "href",
+        "id",
+        "label",
+        "sort_order"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "admin/home/links",
+      "consumer": "home.mapper.ts#toQuickLink",
+      "required": [
+        "created_at",
+        "href",
+        "id",
+        "label",
+        "sort_order"
+      ],
+      "optional": []
+    },
+    {
+      "method": "PATCH",
+      "path": "admin/home/links/{id}",
+      "consumer": "home.mapper.ts#toQuickLink",
+      "required": [
+        "created_at",
+        "href",
+        "id",
+        "label",
+        "sort_order"
+      ],
+      "optional": []
+    },
+    {
+      "method": "GET",
       "path": "admin/hotlines",
       "consumer": "hotline.mapper.ts#toHotline",
       "required": [
@@ -292,6 +379,19 @@
     },
     {
       "method": "GET",
+      "path": "home",
+      "consumer": "home.mapper.ts#toHomePreview",
+      "required": [],
+      "optional": [
+        "banners",
+        "hotlines",
+        "news",
+        "quick_links",
+        "services"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "me",
       "consumer": "me.mapper.ts#toServerIdentity",
       "required": [
@@ -304,6 +404,15 @@
         "name",
         "office_id",
         "permissions"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "media",
+      "consumer": "home.mapper.ts#toStoredMedia",
+      "required": [],
+      "optional": [
+        "id"
       ]
     },
     {

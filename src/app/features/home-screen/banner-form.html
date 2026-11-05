@@ -1,0 +1,126 @@
+<form class="home-form" novalidate (submit)="$event.preventDefault(); save()">
+  <div class="field">
+    <label class="field__label" for="banner-title">{{ copy.title }}</label>
+    <p class="field__hint" id="banner-title-hint">{{ copy.titleHint }}</p>
+    <input
+      id="banner-title"
+      class="field__input"
+      autocomplete="off"
+      aria-describedby="banner-title-hint"
+      [value]="title()"
+      (input)="title.set(text($event))"
+    />
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="banner-href">{{ copy.href }}</label>
+    <p class="field__hint" id="banner-href-hint">{{ common.hrefHint }}</p>
+    <input
+      id="banner-href"
+      class="field__input"
+      autocomplete="off"
+      spellcheck="false"
+      aria-describedby="banner-href-hint"
+      [value]="href()"
+      (input)="href.set(text($event))"
+    />
+  </div>
+
+  <div class="field field--narrow">
+    <label class="field__label" for="banner-order">{{ common.order }}</label>
+    <p class="field__hint" id="banner-order-hint">{{ common.orderHint }}</p>
+    <input
+      id="banner-order"
+      class="field__input"
+      inputmode="numeric"
+      autocomplete="off"
+      aria-describedby="banner-order-hint"
+      [value]="sortOrder()"
+      (input)="sortOrder.set(text($event))"
+    />
+  </div>
+
+  <label class="check">
+    <input type="checkbox" [checked]="active()" (change)="active.set(checked($event))" />
+    {{ copy.active }}
+  </label>
+
+  <section class="home-form__image" aria-labelledby="banner-image-heading">
+    <h3 id="banner-image-heading" class="home-form__heading">{{ copy.imageHeading }}</h3>
+    <p class="home-form__gap">{{ noDescription }}</p>
+
+    @if (banner(); as shown) {
+      @if (shown.mediaId !== null) {
+        <p class="field__hint">{{ copy.current }}</p>
+        @if (currentImage(); as url) {
+          <img class="home-form__current" [src]="url" [alt]="copy.currentAlt(shown.title)" />
+        } @else {
+          <button
+            type="button"
+            class="btn btn--secondary"
+            [disabled]="currentLoading()"
+            (click)="showCurrent()"
+          >
+            {{ currentLoading() ? copy.loadingCurrent : copy.showCurrent }}
+          </button>
+        }
+        @if (currentFailed()) {
+          <p class="home-form__problem" role="alert">{{ copy.currentFailed }}</p>
+        }
+        @if (image() === null) {
+          <label class="check">
+            <input
+              type="checkbox"
+              [checked]="removeImage()"
+              (change)="removeImage.set(checked($event))"
+            />
+            {{ copy.removeImage }}
+          </label>
+        }
+      } @else {
+        <p class="field__hint">{{ copy.none }}</p>
+      }
+    }
+
+    <app-image-file-field
+      inputId="banner-image"
+      [label]="copy.image"
+      [hint]="copy.imageHint"
+      [disabled]="busy()"
+      (chosen)="image.set($event)"
+    />
+  </section>
+
+  @if (attempted() && problems().length > 0) {
+    <div class="home-form__problems" role="alert">
+      <p>{{ common.problemsLead }}</p>
+      <ul>
+        @for (problem of problems(); track $index) {
+          <li>{{ problem }}</li>
+        }
+      </ul>
+    </div>
+  }
+
+  @if (unchanged()) {
+    <p class="home-form__note">{{ common.unchanged }}</p>
+  } @else {
+    <!-- What the server does, between the fields and the button that does it. -->
+    <div class="home-form__effects">
+      <p>{{ common.effectsLead }}</p>
+      <ul>
+        @for (effect of effects(); track $index) {
+          <li>{{ effect }}</li>
+        }
+      </ul>
+    </div>
+    <button type="submit" class="btn btn--primary" [disabled]="busy()">
+      {{ busy() ? common.saving : creating() ? copy.create : copy.save }}
+    </button>
+  }
+
+  <!-- Only ever a refusal: a save that works is announced by the list beside the form. -->
+  @if (outcome(); as problem) {
+    <p class="home-form__outcome" role="alert">{{ problem }}</p>
+  }
+</form>

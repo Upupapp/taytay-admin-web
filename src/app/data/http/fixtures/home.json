@@ -1,0 +1,98 @@
+{
+  "data": {
+    "banners": [
+      {
+        "id": "1f2e3d4c-5b6a-4978-8a1b-2c3d4e5f6a7b",
+        "title": "Senior citizen IDs, every weekday",
+        "media_id": "8e2f1d5b-3c4a-4b6f-8d9e-1f2a3b4c5d70",
+        "image_url": "http://localhost:3000/api/v1/home/banners/1f2e3d4c-5b6a-4978-8a1b-2c3d4e5f6a7b/image",
+        "href": "https://home.example.test/senior-id",
+        "sort_order": 1,
+        "active": true,
+        "created_at": "2026-10-01T00:00:00.000Z"
+      }
+    ],
+    "quick_links": [
+      {
+        "id": "2a3b4c5d-6e7f-4a8b-9c0d-1e2f3a4b5c6d",
+        "label": "Tulong",
+        "href": "https://home.example.test/tulong",
+        "sort_order": 1,
+        "created_at": "2026-10-01T00:00:00.000Z"
+      }
+    ],
+    "news": [
+      {
+        "id": "4c5d6e7f-8a9b-4c0d-9e1f-2a3b4c5d6e7f",
+        "title": "Office hours on the holiday",
+        "body": "The municipal hall is closed on Monday.",
+        "cover_media_id": null,
+        "cover_url": null,
+        "category": "abiso",
+        "office_id": "3c9a7e21-5b84-4d1f-a0c6-1e2f3a4b5c66",
+        "office_slug": "mswdo",
+        "status": "published",
+        "published_at": "2026-11-04T00:00:00.000Z",
+        "author_id": "5d6e7f8a-9b0c-4d1e-8f2a-3b4c5d6e7f8a",
+        "pinned": false,
+        "pinned_at": null,
+        "share_url": "https://home.example.test/balita/1",
+        "created_at": "2026-11-04T00:00:00.000Z",
+        "updated_at": "2026-11-04T00:00:00.000Z"
+      }
+    ],
+    "services": [
+      {
+        "id": "5a2b1c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+        "name": "Senior citizen ID",
+        "slug": "senior-citizen-id",
+        "category": "Senior citizens",
+        "summary": "How a resident aged sixty or over applies for the municipal senior ID.",
+        "details": "Bring the requirements to the MSWDO on a weekday.",
+        "eligibility": "Residents of the municipality aged sixty or over.",
+        "requirements": ["Proof of age", "Proof of residence"],
+        "contacts": [
+          {
+            "type": "landline",
+            "label": "Senior citizens desk",
+            "value": "(02) 8000 0102"
+          }
+        ],
+        "locations": [
+          {
+            "name": "MSWDO",
+            "address": "Municipal Hall, ground floor"
+          }
+        ],
+        "office_id": "3c9a7e21-5b84-4d1f-a0c6-1e2f3a4b5c66",
+        "office_slug": "mswdo",
+        "media_id": "8e2f1d5b-3c4a-4b6f-8d9e-1f2a3b4c5d6e",
+        "featured": true,
+        "icon_key": "id-card",
+        "tile_color": "#1F6F8B",
+        "badge": null,
+        "legal_basis": null,
+        "claim_steps": ["Bring the requirements", "Have your photograph taken"],
+        "featured_headline": "Turning sixty? Get your senior ID",
+        "schedule": null,
+        "hero_url": "http://localhost:3000/api/v1/services/senior-citizen-id/hero",
+        "hidden_from_list": false,
+        "created_at": "2026-10-01T00:00:00.000Z",
+        "updated_at": "2026-10-01T00:00:00.000Z"
+      }
+    ],
+    "hotlines": [
+      {
+        "id": "9b8a7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+        "name": "Municipal rescue",
+        "number": "(02) 8000 0111",
+        "category": "Emergency",
+        "sort_order": 1,
+        "active": true,
+        "created_at": "2026-10-01T00:00:00.000Z",
+        "updated_at": "2026-10-01T00:00:00.000Z"
+      }
+    ]
+  },
+  "meta": {}
+}

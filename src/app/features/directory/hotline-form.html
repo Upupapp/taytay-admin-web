@@ -92,6 +92,8 @@
     </button>
   }
 
-  <!-- Always in the DOM, so a screen reader hears the outcome when the text arrives. -->
-  <p class="directory-form__outcome" role="status" aria-live="polite">{{ outcome() }}</p>
+  <!-- Only ever a refusal: a save that works is announced by the list beside the form. -->
+  @if (outcome(); as problem) {
+    <p class="directory-form__outcome" role="alert">{{ problem }}</p>
+  }
 </form>

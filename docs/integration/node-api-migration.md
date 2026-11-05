@@ -9,10 +9,10 @@ sign-in only, hosted on Linode.
 
 | | |
 |---|---|
-| Console ports the Node API serves fully | 0 of 20 casework ports; 7 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines) |
+| Console ports the Node API serves fully | 0 of 20 casework ports; 8 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines, the home screen) |
 | Served in part (mostly different concepts with the same name) | 7 |
 | No endpoint at all | 13 — cases, requests, beneficiaries, visits, releases, referrals, families, saved views, dashboard, work, reports, search, events |
-| Node staff endpoints with no console screen | ~16 — home banners and links, digital IDs, audit, app configuration, Balita |
+| Node staff endpoints with no console screen | ~8 — digital IDs, audit, app configuration, Balita |
 
 ## Plan
 
@@ -27,7 +27,8 @@ sign-in only, hosted on Linode.
 | 6b | Platform screen: the office inbox | console | done (`DL-168`, [`docs/inbox`](../inbox/README.md)): conversations newest activity first, cursor-paged, no preview of what a resident wrote in the list; one conversation by address, oldest first; replies in words; mark read (one mark for the whole office, said so); close behind a confirmation listing what the server does and asking no reason (it keeps none); attachments only after a warning, as bytes, revoked on leave; an empty first page asked about (`GET me`) so a staff account with no office is told so rather than shown an empty inbox; `office-inbox.manage` added unchanged. **Not run against a live API.** Not done: sending an image with a reply |
 | 6c | Platform screen: users and roles | console | done (`DL-168`, [`docs/accounts`](../accounts/README.md)): every app account, a page at a time, showing name, email, role and office only; role and office changed in a drawer, what the server does shown before each button (digital ID revoked on any role but verified, `verified` skipping the ID review, console access, the next-request timing), no reason asked (the server keeps none), one's own role not offered; offices picked from the directory read in full; `user.view`, `user.change-role`, `user.assign-office` added unchanged, held by the administrator alone. **Not run against a live API.** No search: the API has none |
 | 6d | Platform screen: the app directory — offices, Tulong pages, hotlines | console | done (`DL-170`, [`docs/directory`](../directory/README.md)): offices and Tulong pages a page at a time, hotlines whole with the cap said; added and changed in a drawer, each form listing what the API does before its button; deletes only through a confirmation listing the effects, a refusal shown in the server's words; images chosen through one shared field that refuses past 5 MB or by the file's first bytes before sending, sent as `multipart/form-data` through the new `ApiClient.postForm`/`patchForm` (the contract checks learned form bodies and now read a `toWire…` mapper's keys); a Tulong page never modelled as a programme; `office.manage`, `service.manage`, `hotline.manage` added unchanged. **Not run against a live API.** Not possible on the published contract: changing an office's details after creation, clearing a short name, removing a banner, changing a page's address, category, eligibility, places or office, listing a hidden page (opened by its address instead) |
-| 6e | Platform screens: home, app settings, digital IDs, Balita, audit | console | to do |
+| 6e | Platform screen: the app's home screen — banners and quick links | console | done (`DL-170`, [`docs/home-screen`](../home-screen/README.md)): every banner and link, in the app's order; added and changed in a drawer with what the API does before each button — an image stored before its banner and kept if the banner is refused, an old image never removed, every link shown; deletes only through a confirmation, hiding offered instead for a banner; a banner's image read as bytes and shown from object URLs; the screen says the app has **no description of a banner's image** because the API keeps none, rather than collecting one it would drop; a preview of `GET home` read again after every save; `home.manage` added unchanged. **Not run against a live API** |
+| 6f | Platform screens: app settings, digital IDs, Balita, audit | console | to do |
 | 7 | Re-point the contract checks at the Node spec, new baselines stated | console | done with step 3, in one commit, each old and new count stated (`DL-165`) |
 
 ## For the owner to decide
@@ -93,6 +94,16 @@ These are not engineering choices, and nothing below has been built.
   records"), and a deleted office's banner image is never removed from storage.
 - **Hotline lists stop at 100 with no word of more** (`HOTLINE_LIST_CAP`), for the app and the admin
   list alike; the console says so when it receives a hundred.
+- **A banner's image has no description** (`DL-170`, `DL-125`): `home_banners` keeps a title, an image,
+  a link, an order and whether it is shown. The app has nothing to give a resident who cannot see
+  the image. An `alt_text` column on banners, required to show one, would close it; the console
+  would then ask for it beside the image.
+- **Stored images are never removed.** Replacing or removing a banner's image, deleting a banner, or
+  an upload left unused because the banner was then refused all leave the bytes in storage. Banners
+  name an image uploaded separately (`POST media`), so a refused banner leaves one behind by design.
+- The spec's banner `PATCH` body is `BannerWrite` (`title` required) while the handler takes a
+  partial body, and `LinkWrite` requires nothing while the handler requires `label` and `href` on a
+  create. The console sends what both accept; the spec and the handlers should agree.
 - A multipart request with an unexpected file field (`LIMIT_UNEXPECTED_FILE`) is not mapped by the
   error handler and answers `500`.
 

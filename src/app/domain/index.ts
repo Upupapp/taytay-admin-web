@@ -84,6 +84,7 @@ export * from './directory/app-visibility';
 export * from './directory/directory-office';
 export * from './directory/hotline';
 export * from './directory/tulong-service';
+export * from './home/home-screen';
 export * from './media/image-policy';
 export * from './views/saved-view';
 export * from './work/office-alert';

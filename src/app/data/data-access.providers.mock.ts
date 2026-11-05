@@ -28,6 +28,7 @@ import {
   OFFICE_REPOSITORY,
   APP_ACCOUNT_REPOSITORY,
   DIRECTORY_OFFICE_REPOSITORY,
+  HOME_SCREEN_REPOSITORY,
   HOTLINE_REPOSITORY,
   TULONG_SERVICE_REPOSITORY,
 } from '@domain/index';
@@ -61,6 +62,7 @@ import {
   MockHotlineRepository,
   MockTulongServiceRepository,
 } from './mock/mock-directory.repositories';
+import { MockHomeScreenRepository } from './mock/mock-home-screen.repository';
 
 /**
  * THE MOCK/HTTP SEAM — the mock half.
@@ -101,6 +103,7 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: DIRECTORY_OFFICE_REPOSITORY, useClass: MockDirectoryOfficeRepository },
     { provide: TULONG_SERVICE_REPOSITORY, useClass: MockTulongServiceRepository },
     { provide: HOTLINE_REPOSITORY, useClass: MockHotlineRepository },
+    { provide: HOME_SCREEN_REPOSITORY, useClass: MockHomeScreenRepository },
     // The mock serves every port, and says so rather than leaving the token unbound (`DL-167`).
     { provide: UNSERVED_PORTS, useValue: [] },
   ]);

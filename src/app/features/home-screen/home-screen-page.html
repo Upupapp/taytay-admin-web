@@ -1,0 +1,9 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+
+<div class="home-layout">
+  <div class="home-layout__lists">
+    <app-banners-section (changed)="refreshPreview()" />
+    <app-links-section (changed)="refreshPreview()" />
+  </div>
+  <app-preview-section [generation]="previewGeneration()" />
+</div>

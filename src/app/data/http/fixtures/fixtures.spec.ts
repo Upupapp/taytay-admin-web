@@ -29,6 +29,12 @@ import HOTLINES from './hotlines.json';
 import OFFICE from './office.json';
 import SERVICE from './service.json';
 import SERVICES_PAGE from './services-page.json';
+import BANNER from './banner.json';
+import BANNERS from './banners.json';
+import HOME from './home.json';
+import LINK from './link.json';
+import LINKS from './links.json';
+import MEDIA from './media.json';
 
 /**
  * **These fixtures are composed, not recorded** — and this file is why that is acceptable.
@@ -192,6 +198,12 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['hotlines', HOTLINES, 'HotlineListEnvelope'],
     ['hotline', HOTLINE, 'HotlineEnvelope'],
     ['deleted', DELETED, 'DeletedEnvelope'],
+    ['banners', BANNERS, 'BannerListEnvelope'],
+    ['banner', BANNER, 'BannerEnvelope'],
+    ['links', LINKS, 'LinkListEnvelope'],
+    ['link', LINK, 'LinkEnvelope'],
+    ['home', HOME, 'HomeEnvelope'],
+    ['media', MEDIA, 'MediaEnvelope'],
   ] as const)('%s conforms to %s', (_name, fixture, envelope) => {
     expect(schema(envelope)).toBeDefined();
     expect(problems(fixture, schema(envelope), 'body')).toEqual([]);

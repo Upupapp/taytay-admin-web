@@ -114,10 +114,12 @@ import type {
   AppAccountId,
   DocumentRequestId,
   DuplicatePairId,
+  HomeBannerId,
   HotlineId,
   MediaId,
   OfficeId,
   OfficeThreadId,
+  QuickLinkId,
   TulongServiceId,
   VerificationRequestId,
 } from '../shared/ids';
@@ -131,6 +133,14 @@ import type { AccountRole, AppAccount } from '../accounts/app-account';
 import type { DirectoryOffice, OfficeChanges, OfficeDraft } from '../directory/directory-office';
 import type { Hotline, HotlineChanges, HotlineDraft } from '../directory/hotline';
 import type { ServiceChanges, ServiceDraft, TulongService } from '../directory/tulong-service';
+import type {
+  BannerDraft,
+  BannerImageChange,
+  HomeBanner,
+  HomePreview,
+  LinkDraft,
+  QuickLink,
+} from '../home/home-screen';
 import type {
   VerificationFilter,
   VerificationImageKind,
@@ -1553,3 +1563,45 @@ export interface HotlineRepository {
 
 export const HOTLINE_REPOSITORY = new InjectionToken<HotlineRepository>('HotlineRepository');
 
+
+/* ── the app's home screen (`DL-170`) ────────────────────────────────────── */
+
+/**
+ * The banners and links on the residents' app's home screen (`home.manage`), and the home screen as
+ * the app is given it now.
+ */
+export interface HomeScreenRepository {
+  /** Every banner, shown and hidden, answered whole. */
+  banners(): Observable<readonly HomeBanner[]>;
+
+  /** Stores the image first, if there is one, then the banner naming it (`HOME_EFFECTS.imageUpload`). */
+  createBanner(draft: BannerDraft, image: Blob | null): Observable<HomeBanner>;
+
+  /** Saves the banner as the draft says, and its image as the change says. */
+  updateBanner(id: HomeBannerId, draft: BannerDraft, image: BannerImageChange): Observable<HomeBanner>;
+
+  /** Deletes it. Its image stays stored; the API removes none (`HOME_EFFECTS.bannerRemove`). */
+  removeBanner(id: HomeBannerId): Observable<void>;
+
+  /**
+   * A banner's image, as bytes — a **method rather than an address**, as every image in the console
+   * is read: an address to the API would need the bearer token, which belongs in no URL.
+   */
+  bannerImage(banner: HomeBanner): Observable<Blob>;
+
+  /** Every link, answered whole. Every one is on the home screen; there is no hidden link. */
+  links(): Observable<readonly QuickLink[]>;
+
+  createLink(draft: LinkDraft): Observable<QuickLink>;
+
+  updateLink(id: QuickLinkId, draft: LinkDraft): Observable<QuickLink>;
+
+  removeLink(id: QuickLinkId): Observable<void>;
+
+  /** The home screen as the app is given it now (`GET home`). */
+  preview(): Observable<HomePreview>;
+}
+
+export const HOME_SCREEN_REPOSITORY = new InjectionToken<HomeScreenRepository>(
+  'HomeScreenRepository',
+);

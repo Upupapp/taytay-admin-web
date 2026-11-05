@@ -23,11 +23,11 @@ import {
   type OfficeChanges,
   type OfficeDraft,
 } from '@domain/index';
+import { blankToNull, coordinateOf, coordinateProblem, readText } from '@shared/forms/form-values';
 import { ImageFileField } from '@shared/media/image-file-field';
 import { failureReason } from '@shared/state/failure-reason';
 
 import { DIRECTORY_COPY } from './directory.copy';
-import { blankToNull, coordinateOf, coordinateProblem, readText } from './form-values';
 
 /**
  * One office, added or changed (`DL-170`), in a drawer beside the list.

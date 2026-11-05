@@ -53,6 +53,9 @@ const SEED_MARKERS = [
   'accounts.example.test',
   // Every seeded directory address is at this reserved name (`DL-170`).
   'directory.example.test',
+  // The home screen seed's reserved address and drawn banners (`DL-170`).
+  'home.example.test',
+  'SAMPLE BANNER - ',
   'mockLatencyMs":250',
 ];
 

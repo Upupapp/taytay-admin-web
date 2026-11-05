@@ -12,12 +12,14 @@ import {
   HOTLINE_LIST_CAP,
   SignInError,
   type AppAccountId,
+  type HomeBannerId,
   type HotlineId,
   type TulongServiceId,
   type MediaId,
   type NotificationId,
   type OfficeId,
   type OfficeThreadId,
+  type QuickLinkId,
   type VerificationRequestId,
 } from '@domain/index';
 
@@ -46,9 +48,16 @@ import HOTLINES from './fixtures/hotlines.json';
 import OFFICE from './fixtures/office.json';
 import SERVICE from './fixtures/service.json';
 import SERVICES_PAGE from './fixtures/services-page.json';
+import BANNER from './fixtures/banner.json';
+import BANNERS from './fixtures/banners.json';
+import HOME from './fixtures/home.json';
+import LINK from './fixtures/link.json';
+import LINKS from './fixtures/links.json';
+import MEDIA from './fixtures/media.json';
 import {
   HttpAppAccountRepository,
   HttpDirectoryOfficeRepository,
+  HttpHomeScreenRepository,
   HttpHotlineRepository,
   HttpNotificationRepository,
   HttpOfficeInboxRepository,
@@ -58,6 +67,7 @@ import {
   HttpTulongServiceRepository,
   HttpVerificationRepository,
 } from './http-repositories';
+import { toHomeBanner } from './mappers/home.mapper';
 import { toThreadMessage } from './mappers/office-thread.mapper';
 import { toVerificationRequest } from './mappers/verification.mapper';
 import { UnservedError } from './unserved-repositories';
@@ -100,6 +110,7 @@ describe('the Node adapters', () => {
         HttpDirectoryOfficeRepository,
         HttpTulongServiceRepository,
         HttpHotlineRepository,
+        HttpHomeScreenRepository,
       ],
     });
 
@@ -124,10 +135,11 @@ describe('the Node adapters', () => {
       const identity = await user;
 
       // `audit.view`, `verification.review` (DL-167), `office-inbox.manage` and the three `user.*`
-      // keys (DL-168), and the directory's three (DL-170) are the capabilities with a console key of
-      // the same name; the rest are kept aside as unknown, never translated.
+      // keys (DL-168), and the directory's three and `home.manage` (DL-170) are the capabilities
+      // with a console key of the same name; the rest are kept aside as unknown, never translated.
       expect([...(identity?.permissions ?? [])].sort()).toEqual([
         'audit.view',
+        'home.manage',
         'hotline.manage',
         'office-inbox.manage',
         'office.manage',
@@ -974,6 +986,144 @@ describe('the Node adapters', () => {
       const removed = firstValueFrom(hotlines.remove(hotlineId));
       http.expectOne({ method: 'DELETE', url: `${BASE}/admin/hotlines/${hotlineId}` }).flush(DELETED);
       await expect(removed).resolves.toBeUndefined();
+    });
+  });
+
+  describe('the home screen (DL-170)', () => {
+    const png = () => new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], { type: 'image/png' });
+    const DRAFT = { title: 'Supplementary feeding resumes', href: null, sortOrder: 2, active: true };
+
+    beforeEach(() => tokens.hold('fixture-token', null));
+
+    it('reads every banner and link whole, from the admin lists', async () => {
+      const home = TestBed.inject(HttpHomeScreenRepository);
+      const banners = firstValueFrom(home.banners());
+      http.expectOne({ method: 'GET', url: `${BASE}/admin/home/banners` }).flush(BANNERS);
+      expect((await banners).map((banner) => banner.active)).toEqual([true, false]);
+
+      const links = firstValueFrom(home.links());
+      http.expectOne({ method: 'GET', url: `${BASE}/admin/home/links` }).flush(LINKS);
+      expect((await links).map((link) => link.label)).toEqual(['Tulong']);
+    });
+
+    it('stores the image first, as a form, and then the banner naming it', async () => {
+      const home = TestBed.inject(HttpHomeScreenRepository);
+      const created = firstValueFrom(home.createBanner(DRAFT, png()));
+
+      const upload = http.expectOne({ method: 'POST', url: `${BASE}/media` });
+      expect(upload.request.body).toBeInstanceOf(FormData);
+      expect(upload.request.body instanceof FormData ? upload.request.body.has('file') : false).toBe(
+        true,
+      );
+      upload.flush(MEDIA, { status: 201, statusText: 'Created' });
+
+      const post = http.expectOne({ method: 'POST', url: `${BASE}/admin/home/banners` });
+      expect(post.request.body).toEqual({
+        title: 'Supplementary feeding resumes',
+        media_id: MEDIA.data.id,
+        href: null,
+        sort_order: 2,
+        active: true,
+      });
+      post.flush(BANNER, { status: 201, statusText: 'Created' });
+      expect((await created).mediaId).toBe(MEDIA.data.id);
+    });
+
+    it('sends no image request when there is none, and keeps the title on every change', async () => {
+      const home = TestBed.inject(HttpHomeScreenRepository);
+      const bannerId = asId<HomeBannerId>(BANNER.data.id);
+
+      const kept = firstValueFrom(home.updateBanner(bannerId, DRAFT, { kind: 'keep' }));
+      const keep = http.expectOne({ method: 'PATCH', url: `${BASE}/admin/home/banners/${bannerId}` });
+      // `undefined` is left out by the serialiser, so a kept image is not named at all.
+      expect(JSON.parse(JSON.stringify(keep.request.body))).toEqual({
+        title: 'Supplementary feeding resumes',
+        href: null,
+        sort_order: 2,
+        active: true,
+      });
+      keep.flush(BANNER);
+      await kept;
+
+      const removed = firstValueFrom(home.updateBanner(bannerId, DRAFT, { kind: 'remove' }));
+      const remove = http.expectOne({ method: 'PATCH', url: `${BASE}/admin/home/banners/${bannerId}` });
+      expect(remove.request.body).toMatchObject({ title: DRAFT.title, media_id: null });
+      remove.flush(BANNER);
+      await removed;
+
+      const deleted = firstValueFrom(home.removeBanner(bannerId));
+      http
+        .expectOne({ method: 'DELETE', url: `${BASE}/admin/home/banners/${bannerId}` })
+        .flush(DELETED);
+      await expect(deleted).resolves.toBeUndefined();
+    });
+
+    it('does not save the banner when the image is refused', async () => {
+      const home = TestBed.inject(HttpHomeScreenRepository);
+      const created = firstValueFrom(home.createBanner(DRAFT, png()));
+
+      http.expectOne(`${BASE}/media`).flush(
+        {
+          error: {
+            code: 'PAYLOAD_TOO_LARGE',
+            message: 'That file is larger than 5 MB.',
+            details: {},
+            request_id: 'r',
+          },
+        },
+        { status: 413, statusText: 'Payload Too Large' },
+      );
+      await expect(created).rejects.toBeTruthy();
+      http.expectNone(`${BASE}/admin/home/banners`);
+    });
+
+    it('reads a banner’s image as bytes through the media route, with the token in a header', async () => {
+      const home = TestBed.inject(HttpHomeScreenRepository);
+      const [banner] = BANNERS.data;
+      const shown = toHomeBanner(banner);
+      if (shown === null) throw new Error('The fixture banner is unreadable.');
+
+      const bytes = firstValueFrom(home.bannerImage(shown));
+      const request = http.expectOne(`${BASE}/media/${shown.mediaId}/content`);
+      expect(request.request.responseType).toBe('blob');
+      expect(request.request.headers.get('Authorization')).toBe('Bearer fixture-token');
+      request.flush(new Blob(['x'], { type: 'image/png' }));
+      expect((await bytes).size).toBe(1);
+    });
+
+    it('writes a link with the body the API reads', async () => {
+      const home = TestBed.inject(HttpHomeScreenRepository);
+      const linkId = asId<QuickLinkId>(LINK.data.id);
+
+      const created = firstValueFrom(
+        home.createLink({ label: 'Hotlines', href: 'https://home.example.test/hotlines', sortOrder: 2 }),
+      );
+      const post = http.expectOne({ method: 'POST', url: `${BASE}/admin/home/links` });
+      expect(post.request.body).toEqual({
+        label: 'Hotlines',
+        href: 'https://home.example.test/hotlines',
+        sort_order: 2,
+      });
+      post.flush(LINK, { status: 201, statusText: 'Created' });
+      await created;
+
+      const changed = firstValueFrom(
+        home.updateLink(linkId, { label: 'Hotlines', href: 'https://home.example.test/x', sortOrder: 3 }),
+      );
+      http.expectOne({ method: 'PATCH', url: `${BASE}/admin/home/links/${linkId}` }).flush(LINK);
+      await changed;
+
+      const removed = firstValueFrom(home.removeLink(linkId));
+      http.expectOne({ method: 'DELETE', url: `${BASE}/admin/home/links/${linkId}` }).flush(DELETED);
+      await expect(removed).resolves.toBeUndefined();
+    });
+
+    it('previews the home screen as the app is given it', async () => {
+      const home = TestBed.inject(HttpHomeScreenRepository);
+      const preview = firstValueFrom(home.preview());
+      http.expectOne({ method: 'GET', url: `${BASE}/home` }).flush(HOME);
+
+      expect(await preview).toMatchObject({ hotlines: 1, news: 1 });
     });
   });
 });

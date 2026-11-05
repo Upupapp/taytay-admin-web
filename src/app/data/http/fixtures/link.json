@@ -1,0 +1,10 @@
+{
+  "data": {
+    "id": "2a3b4c5d-6e7f-4a8b-9c0d-1e2f3a4b5c6e",
+    "label": "Hotlines",
+    "href": "https://home.example.test/hotlines",
+    "sort_order": 2,
+    "created_at": "2026-11-05T02:00:00.000Z"
+  },
+  "meta": {}
+}

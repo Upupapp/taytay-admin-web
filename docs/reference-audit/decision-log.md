@@ -6000,3 +6000,54 @@ and the writes under `admin/offices`, `admin/services` and `admin/hotlines`, und
 1,881 before — five new spec files, for the domain, the mappers, the mock adapters, the shared image
 field and the screen; the HTTP adapters, the fixtures, the identity, the layout and the unserved
 modules gained tests in their own).
+
+### 2. The home screen: banners and quick links
+
+`GET admin/home/banners` and `GET admin/home/links` (each answered whole), their writes, `POST media`
+for a banner's image, `GET media/{id}/content` to show one, and `GET home` as the preview, under
+`home.manage`. One new port, `home-screen`, served in the http set; one route, `/home-screen`.
+Described in [`docs/home-screen/README.md`](../home-screen/README.md); the decisions are these.
+
+- **No description of a banner's image, said rather than collected** (`DL-125`). The API keeps none —
+  `home_banners` stores a title, an image, a link, an order and whether it is shown — so the model
+  has no field for one, the form no box, the body no key, and both the section and the form say the
+  app has no description to give a resident who cannot see the image. A box the console filled and
+  the server dropped would be a description somebody believes residents hear. Recorded as a backend
+  item; the console asks for one beside the image the day the API keeps it.
+- **An image is stored before its banner,** because that is how the API takes one: `POST media`, then
+  the banner naming the id. If the banner is then refused the image stays stored, and nothing in the
+  API removes it — nor a replaced image, nor a deleted banner's. The effects say all three before the
+  button. The banner `PATCH` always carries the title, because the spec's body (`BannerWrite`)
+  requires it though the handler does not.
+- **Every link is shown.** The API has no hidden link, so deleting is the only way to take one off the
+  home screen, and the list says so; a banner's delete offers hiding instead.
+- **A preview read from the server, not composed here.** `GET home` — shown banners by order then age,
+  every link, the six newest featured Tulong pages, the hotlines and the latest Balita — read again
+  after every save. Names and counts only: an article's words are not read for a preview.
+- **Images as bytes, from the data layer.** A banner's image is a public picture, so the preview shows
+  them without a warning; still read through `ApiClient.blob` by id, shown from `ObjectUrls`, and
+  given back on reload and on leave. The model holds the image's id, never `image_url`.
+- **Two features now read form controls the same way**, so `form-values` moved from the directory to
+  `shared/forms` (CLAUDE.md §4).
+- **One vocabulary.** `home.manage` joins `PERMISSIONS` as the server spells it; the administrator's
+  alone, named by no role, mutating.
+
+#### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:wire-adoption` | none — the image upload is a `toWire…` mapper whose `MediaUploadWire` is read and held to `POST media`'s form | 22 of 22 bodies |
+| `check:routes` | none | 15 endpoints and 42 composed requests served at their verbs |
+| `check:response-shape` | none | 20 of 20 reads; the two admin lists `list`, `GET home` an `item`, the image `binary` |
+| `check:query-params` | none | 20 reads, every key declared |
+| `check:consumer-contract` | none | 35 interactions, 187 required fields |
+| `check:port-adoption` | none | 183 of 194 port methods reached; the 11 unreached unchanged |
+| `check:unserved` | none | 28 ports, 18 unserved; 55 routed screens, 23 menu entries |
+| `check:permission-parity` | none | 42 of 49 guards unreachable, the ceiling held |
+| `check:access` | one matrix row | 79 permissions × 7 roles |
+| `check:bundle` | the home seed's reserved address and drawn banners are seed markers | — |
+| `check:home` | new, in `verify` — eight rules, see `docs/home-screen/README.md` | eighteen plants, each caught, every file restored byte for byte |
+
+`npm run verify` is green on Windows after this part: 119 spec files, 1,995 tests (115 and 1,960 after part 1 —
+four new spec files, for the domain, the mappers, the mock adapter and the screen; the HTTP adapters,
+the fixtures, the identity, the layout and the unserved modules gained tests in their own).
