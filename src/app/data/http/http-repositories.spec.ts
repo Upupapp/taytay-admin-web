@@ -12,6 +12,7 @@ import {
   HOTLINE_LIST_CAP,
   SignInError,
   type AppAccountId,
+  type DigitalIdId,
   type HomeBannerId,
   type HotlineId,
   type TulongServiceId,
@@ -55,9 +56,12 @@ import LINK from './fixtures/link.json';
 import LINKS from './fixtures/links.json';
 import MEDIA from './fixtures/media.json';
 import APP_CONFIG from './fixtures/app-config.json';
+import DIGITAL_ID_CARD from './fixtures/digital-id-card.json';
+import DIGITAL_ID_HOLDER from './fixtures/digital-id-holder.json';
 import {
   HttpAppAccountRepository,
   HttpAppConfigRepository,
+  HttpDigitalIdRepository,
   HttpDirectoryOfficeRepository,
   HttpHomeScreenRepository,
   HttpHotlineRepository,
@@ -114,6 +118,7 @@ describe('the Node adapters', () => {
         HttpHotlineRepository,
         HttpHomeScreenRepository,
         HttpAppConfigRepository,
+        HttpDigitalIdRepository,
       ],
     });
 
@@ -138,11 +143,14 @@ describe('the Node adapters', () => {
       const identity = await user;
 
       // `audit.view`, `verification.review` (DL-167), `office-inbox.manage` and the three `user.*`
-      // keys (DL-168), and the directory's three, `home.manage` and `app-config.manage` (DL-170) are
-      // the capabilities with a console key of the same name; the rest are kept aside as unknown.
+      // keys (DL-168), the directory's three, `home.manage` and `app-config.manage` (DL-170), and the
+      // two `digital-id.*` keys (DL-171) are the capabilities with a console key of the same name;
+      // the rest are kept aside as unknown.
       expect([...(identity?.permissions ?? [])].sort()).toEqual([
         'app-config.manage',
         'audit.view',
+        'digital-id.manage',
+        'digital-id.verify',
         'home.manage',
         'hotline.manage',
         'office-inbox.manage',
@@ -154,7 +162,7 @@ describe('the Node adapters', () => {
         'verification.review',
       ]);
       expect(identity?.unknownPermissions).not.toContain('user.view');
-      expect(identity?.unknownPermissions).toContain('digital-id.manage');
+      expect(identity?.unknownPermissions).toContain('household.view-counts');
       expect(identity?.roleLabel).toBe('Administrator');
       // An administrator acts for every office, so it is never waiting for one.
       expect(identity?.awaitingOffice).toBe(false);
@@ -167,7 +175,10 @@ describe('the Node adapters', () => {
       http.expectOne(`${BASE}/me`).flush(ME_STAFF);
       const identity = await user;
 
-      expect([...(identity?.permissions ?? [])]).toEqual(['office-inbox.manage']);
+      expect([...(identity?.permissions ?? [])].sort()).toEqual([
+        'digital-id.verify',
+        'office-inbox.manage',
+      ]);
       expect(identity?.roleLabel).toBe('Staff');
       expect(identity?.awaitingOffice).toBe(false);
     });
@@ -267,8 +278,12 @@ describe('the Node adapters', () => {
         if (result.kind === 'authenticated') {
           expect(result.user.roleLabel).toBe('Staff');
           expect(result.user.role).toBeNull();
-          // The one server key a staff account at an office holds that the console knows (DL-168).
-          expect([...result.user.permissions]).toEqual(['office-inbox.manage']);
+          // The server keys a staff account at an office holds that the console knows (DL-168,
+          // DL-171).
+          expect([...result.user.permissions].sort()).toEqual([
+            'digital-id.verify',
+            'office-inbox.manage',
+          ]);
         }
         expect(tokens.hasToken()).toBe(true);
       });
@@ -1162,6 +1177,83 @@ describe('the Node adapters', () => {
       });
       patch.flush(APP_CONFIG);
       await changed;
+    });
+  });
+
+  describe('residents’ digital IDs (DL-171)', () => {
+    beforeEach(() => tokens.hold('fixture-token', null));
+
+    it('sends the code in the body, trimmed, and reads only what the API answers', async () => {
+      const cards = TestBed.inject(HttpDigitalIdRepository);
+      const answer = firstValueFrom(cards.check('  example.qr.payload \n'));
+      const sent = http.expectOne({ method: 'POST', url: `${BASE}/digital-id/verify` });
+      expect(sent.request.body).toEqual({ token: 'example.qr.payload' });
+      sent.flush(DIGITAL_ID_HOLDER);
+
+      expect(await answer).toEqual({
+        name: 'Fixture Resident',
+        photo: '33333333-3333-4333-8333-333333333333',
+        status: 'suspended',
+        expired: false,
+        barangayName: 'San Juan',
+      });
+    });
+
+    it('reads an account’s card, and a 404 as no current card', async () => {
+      const cards = TestBed.inject(HttpDigitalIdRepository);
+      const account = asId<AppAccountId>('0f1e2d3c-4b5a-4968-8776-655443322102');
+      const held = firstValueFrom(cards.cardOf(account));
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/admin/users/${account}/digital-id` })
+        .flush(DIGITAL_ID_CARD);
+      expect((await held)?.number).toBe('TAY-2026-000123');
+
+      const none = firstValueFrom(cards.cardOf(account));
+      http
+        .expectOne(`${BASE}/admin/users/${account}/digital-id`)
+        .flush(
+          { error: { code: 'NOT_FOUND', message: 'That digital ID was not found.' } },
+          { status: 404, statusText: 'Not Found' },
+        );
+      expect(await none).toBeNull();
+    });
+
+    it('issues with no photo named, and acts on a card by its own id', async () => {
+      const cards = TestBed.inject(HttpDigitalIdRepository);
+      const account = asId<AppAccountId>('0f1e2d3c-4b5a-4968-8776-655443322102');
+      const card = asId<DigitalIdId>('5d1c2b3a-4e5f-4a6b-8c7d-9e0f1a2b3c01');
+
+      const issued = firstValueFrom(cards.issue(account));
+      const issue = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/users/${account}/digital-id`,
+      });
+      expect(issue.request.body).toEqual({});
+      issue.flush(DIGITAL_ID_CARD);
+      await issued;
+
+      for (const act of ['suspend', 'revoke', 'reissue'] as const) {
+        const done = firstValueFrom(cards[act](card));
+        const request = http.expectOne({
+          method: 'POST',
+          url: `${BASE}/admin/digital-ids/${card}/${act}`,
+        });
+        expect(request.request.body).toEqual({});
+        request.flush(DIGITAL_ID_CARD);
+        expect((await done).id).toBe('5d1c2b3a-4e5f-4a6b-8c7d-9e0f1a2b3c01');
+      }
+    });
+
+    it('reads the photo as bytes with the token in a header, never in the address', async () => {
+      const cards = TestBed.inject(HttpDigitalIdRepository);
+      const photo = firstValueFrom(
+        cards.openPhoto(asId<MediaId>('33333333-3333-4333-8333-333333333333')),
+      );
+      const request = http.expectOne(`${BASE}/media/33333333-3333-4333-8333-333333333333/content`);
+      expect(request.request.responseType).toBe('blob');
+      expect(request.request.urlWithParams).not.toContain('token');
+      request.flush(new Blob(['x']));
+      expect(await photo).toBeInstanceOf(Blob);
     });
   });
 });

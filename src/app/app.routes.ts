@@ -570,6 +570,19 @@ export const routes: Routes = [
           import('@features/app-settings/app-settings-page').then((m) => m.AppSettingsPage),
       },
       {
+        // `DL-171`. The API grants `digital-id.verify` to every staff account and `digital-id.manage` to
+        // administrators; this guard opens for either, as the menu entry does, and each section asks
+        // for its own. Not the protection (rule 4). Keeping cards reads the app accounts as well.
+        path: 'digital-ids',
+        title: 'Digital IDs — Taytay Social Welfare',
+        canActivate: [
+          servedGuard('digital-id', 'app-account'),
+          permissionGuard('digital-id.verify', 'digital-id.manage'),
+        ],
+        loadComponent: () =>
+          import('@features/digital-ids/digital-ids-page').then((m) => m.DigitalIdsPage),
+      },
+      {
         // Where every unserved module's address leads (`DL-167`). No permission: it names what the
         // server lacks, which is no secret about any record, and it is linked from the menu.
         path: 'unavailable',

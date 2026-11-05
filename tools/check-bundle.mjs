@@ -58,6 +58,9 @@ const SEED_MARKERS = [
   'SAMPLE BANNER - ',
   // The settings seed's reserved address (`DL-170`).
   'settings.example.test',
+  // The digital ID seed's sample codes and card numbers (`DL-171`).
+  'SAMPLE-QR.',
+  'TAY-SAMPLE-',
   'mockLatencyMs":250',
 ];
 

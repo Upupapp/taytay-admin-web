@@ -101,7 +101,10 @@ export const READ_ONLY_PERMISSIONS: readonly Permission[] = PERMISSIONS.filter(
     // not a change, exactly as `report.export` is classified above — which is
     // what keeps the auditor a read-only role.
     permission.endsWith('.view-insights') ||
-    permission === 'event.export-registrants',
+    permission === 'event.export-registrants' ||
+    // Checking a resident's QR code reads what the API says about the card and changes nothing in
+    // it (`DL-171`); the server noting the check is its own record, not an act on the card.
+    permission === 'digital-id.verify',
 );
 
 /** Permissions that alter data, as opposed to merely reading it. */

@@ -232,6 +232,15 @@ export const NAVIGATION: readonly NavSection[] = [
         permissions: ['app-config.manage'],
         description: 'Contact details, required versions and feature flags of the Taytay app.',
       },
+      {
+        // `DL-171`. A resident's card in the app: checked by staff, kept by an administrator.
+        label: 'Digital IDs',
+        route: '/digital-ids',
+        reads: ['digital-id', 'app-account'],
+        glyph: 'DI',
+        permissions: ['digital-id.verify', 'digital-id.manage'],
+        description: 'Check the digital ID a resident shows, and issue, suspend or revoke cards.',
+      },
     ],
   },
   {

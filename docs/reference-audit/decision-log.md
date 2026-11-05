@@ -6113,3 +6113,59 @@ The launch gate stays **NO-GO**: the eighteen unserved casework ports are unchan
 is green on Windows after this part: 123 spec files, 2,017 tests (119 and 1,995 after part
 2 — four new spec files, for the domain, the mapper, the mock adapter and the screen; the HTTP
 adapters, the fixtures, the identity, the layout and the unserved modules gained tests in their own).
+
+## DL-171 — the last three staff screens: digital IDs, Balita, the platform audit trail
+
+Step 6 of `docs/integration/node-api-migration.md`, after `DL-170`, and its end: the three staff
+surfaces the Node API has served since `DL-164` with no screen. Each moves a port from "no screen"
+to "served"; the eighteen unserved casework ports are unchanged. The backend was read at `2af2243`;
+the modules these screens use are unchanged since `2736e28`, the commit the vendored spec was taken
+from, so the domain's citations name `2736e28`.
+
+### 1. Digital IDs
+
+`POST digital-id/verify` (`digital-id.verify` — every staff account and administrators),
+`GET`/`POST admin/users/{id}/digital-id` and `POST admin/digital-ids/{id}/suspend|revoke|reissue`
+(`digital-id.manage`, administrators alone). One new port, `digital-id`, served in the http set; the
+administrator's section also reads `app-account`. One route, `/digital-ids`, a section per grant.
+Described in [`docs/digital-ids/README.md`](../digital-ids/README.md); the decisions are these.
+
+- **A check is a lookup, kept as small as the API makes it.** A pasted or typed payload — no camera,
+  and the page says so; a scanner that types into a field is enough. The field is emptied as the code
+  is sent; the answer lives in one signal and goes when another code is checked, the answer is
+  cleared, or the page is left. Nothing is logged, stored or cached. The screen shows the five
+  things the API answers — name, status, expiry, barangay, and the photo only after a warning
+  (`DL-167`'s pattern) — and says before the button that the API records each check under the
+  checker's account (`digital_id.scanned`) while this console keeps nothing.
+- **No verdict** (`DL-60`'s doctrine). The screen repeats the API's status and expiry and says what
+  that settles is the checker's decision; there is no "valid" or "accept" in the model.
+- **A card is found through its account.** The API has no list of cards, so the administrator's
+  section reads app accounts fifty at a time and shows the verified residents among them, saying how
+  many accounts were read and whether more are available (`DL-161`). A filtered page is never
+  presented as the registry.
+- **What each act does, before its button, from the handlers.** Suspend stops the app showing a QR
+  code, and **no route lifts a suspension**; revoke ends the card and the administrator's read never
+  returns it again; replace revokes and issues a new number in one act, refused (and the old card
+  untouched) if the account is no longer a verified resident; issue uses the latest approved
+  verification selfie, the only photo the console can offer. Each act is confirmed; the API keeps no
+  reason, so none is asked for.
+- **One vocabulary.** Both keys join `PERMISSIONS` as the server spells them. The server gives
+  `digital-id.verify` to every staff account, so every role holds it in the mock as well, and it is
+  classified **read-only** — a check changes nothing on the card, and the auditor stays a read-only
+  role. `digital-id.manage` is the administrator's alone, named by no role, mutating.
+
+#### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:wire-adoption` | none — the check's body is `toWireDigitalIdVerify` (`DigitalIdVerifyWire`, `token`); the four admin writes send `{}` | 28 of 28 bodies |
+| `check:routes` | none | 19 endpoints and 50 composed requests served at their verbs |
+| `check:response-shape`, `check:query-params` | none | 23 of 23 reads; the card an `item` read through `optionalItem` (a `404` is "no current card"), the photo `binary` |
+| `check:consumer-contract` | regenerated | 43 interactions, 223 required fields |
+| `check:port-adoption` | none | 192 of 203 port methods reached; the seven new ones each by a screen, the 11 unreached unchanged |
+| `check:unserved` | none | 30 ports, 18 unserved; 57 routed screens, 25 menu entries |
+| `check:permission-parity` | none | 42 of 51 guards unreachable, the ceiling held |
+| `check:access` | two matrix rows | 82 permissions × 7 roles |
+| `check:hardening` | none — the two outcome lines are `role="status"` without a second `aria-live`, so the cap of twelve holds | — |
+| `check:bundle` | the sample codes `SAMPLE-QR.` and card numbers `TAY-SAMPLE-` are seed markers | — |
+| `check:digital-ids` | new, in `verify` — eight rules, see `docs/digital-ids/README.md` | fifteen plants, each caught, every file restored |

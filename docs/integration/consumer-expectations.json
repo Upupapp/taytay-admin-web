@@ -20,6 +20,48 @@
       ]
     },
     {
+      "method": "POST",
+      "path": "admin/digital-ids/{id}/reissue",
+      "consumer": "digital-id.mapper.ts#toDigitalIdCard",
+      "required": [
+        "expires_at",
+        "id",
+        "id_number",
+        "issued_at",
+        "photo_media_id",
+        "status"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "admin/digital-ids/{id}/revoke",
+      "consumer": "digital-id.mapper.ts#toDigitalIdCard",
+      "required": [
+        "expires_at",
+        "id",
+        "id_number",
+        "issued_at",
+        "photo_media_id",
+        "status"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "admin/digital-ids/{id}/suspend",
+      "consumer": "digital-id.mapper.ts#toDigitalIdCard",
+      "required": [
+        "expires_at",
+        "id",
+        "id_number",
+        "issued_at",
+        "photo_media_id",
+        "status"
+      ],
+      "optional": []
+    },
+    {
       "method": "GET",
       "path": "admin/home/banners",
       "consumer": "home.mapper.ts#toHomeBanner",
@@ -307,6 +349,34 @@
       ]
     },
     {
+      "method": "GET",
+      "path": "admin/users/{id}/digital-id",
+      "consumer": "digital-id.mapper.ts#toDigitalIdCard",
+      "required": [
+        "expires_at",
+        "id",
+        "id_number",
+        "issued_at",
+        "photo_media_id",
+        "status"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "admin/users/{id}/digital-id",
+      "consumer": "digital-id.mapper.ts#toDigitalIdCard",
+      "required": [
+        "expires_at",
+        "id",
+        "id_number",
+        "issued_at",
+        "photo_media_id",
+        "status"
+      ],
+      "optional": []
+    },
+    {
       "method": "PATCH",
       "path": "admin/users/{id}/office",
       "consumer": "app-account.mapper.ts#toAppAccount",
@@ -409,6 +479,20 @@
         "privacy_version",
         "support_email",
         "terms_version"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "digital-id/verify",
+      "consumer": "digital-id.mapper.ts#toDigitalIdHolder",
+      "required": [
+        "photo_media_id",
+        "status"
+      ],
+      "optional": [
+        "barangay",
+        "expired",
+        "name"
       ]
     },
     {

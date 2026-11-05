@@ -112,6 +112,7 @@ import type {
 import type { HouseholdDetail, HouseholdSummary } from '../households/household-profile';
 import type {
   AppAccountId,
+  DigitalIdId,
   DocumentRequestId,
   DuplicatePairId,
   HomeBannerId,
@@ -142,6 +143,7 @@ import type {
   QuickLink,
 } from '../home/home-screen';
 import type { AppConfig, AppConfigChanges } from '../app-config/app-config';
+import type { DigitalIdCard, DigitalIdHolder } from '../digital-ids/digital-id';
 import type {
   VerificationFilter,
   VerificationImageKind,
@@ -1619,3 +1621,33 @@ export interface AppConfigRepository {
 }
 
 export const APP_CONFIG_REPOSITORY = new InjectionToken<AppConfigRepository>('AppConfigRepository');
+
+/* ── digital IDs (`DL-171`) ──────────────────────────────────────────────── */
+
+/**
+ * Residents' digital IDs: checked by staff (`digital-id.verify`) and kept by an administrator
+ * (`digital-id.manage`). There is no list of cards — the API reads one account's current card — so a
+ * card is reached through the account that holds it.
+ */
+export interface DigitalIdRepository {
+  /** What the API says about the card a QR code names. Recorded by the server under the checker. */
+  check(payload: string): Observable<DigitalIdHolder>;
+
+  /** The account's current card — active or suspended — or `null` when it has none. */
+  cardOf(account: AppAccountId): Observable<DigitalIdCard | null>;
+
+  /** A new card from the resident's latest approved verification selfie. */
+  issue(account: AppAccountId): Observable<DigitalIdCard>;
+
+  suspend(card: DigitalIdId): Observable<DigitalIdCard>;
+
+  revoke(card: DigitalIdId): Observable<DigitalIdCard>;
+
+  /** Revokes the card and issues its replacement in one act; answers with the new card. */
+  reissue(card: DigitalIdId): Observable<DigitalIdCard>;
+
+  /** The card's photo as bytes, through the data layer (`ApiClient.blob`), never as a URL. */
+  openPhoto(photo: MediaId): Observable<Blob>;
+}
+
+export const DIGITAL_ID_REPOSITORY = new InjectionToken<DigitalIdRepository>('DigitalIdRepository');

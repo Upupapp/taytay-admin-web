@@ -1,0 +1,85 @@
+@switch (card().kind) {
+  @case ('error') {
+    <p class="digital-ids__problem" role="alert">{{ copy.failed }}</p>
+    <button type="button" class="btn" (click)="retry()">{{ copy.retry }}</button>
+  }
+  @case ('ready') {
+    @if (cardValue(); as current) {
+      <dl class="digital-ids__facts">
+        <dt>{{ copy.number }}</dt>
+        <dd>
+          {{ current.number }}
+          <span class="digital-ids__aside">{{ copy.numberNote }}</span>
+        </dd>
+        <dt>{{ copy.status }}</dt>
+        <dd><app-status-badge [catalog]="catalog" [status]="current.status" /></dd>
+        <dt>{{ copy.issued }}</dt>
+        <dd>{{ current.issuedAt | date: 'd MMM y' }}</dd>
+        <dt>{{ copy.expires }}</dt>
+        <dd>{{ current.expiresAt | date: 'd MMM y' }}</dd>
+      </dl>
+      @if (pastExpiry(current)) {
+        <p class="digital-ids__note">{{ copy.pastExpiry }}</p>
+      }
+      <app-card-photo [photo]="current.photo" [whose]="whose()" />
+
+      <h3 class="digital-ids__subheading">{{ copy.actsHeading }}</h3>
+      <div class="digital-ids__actions">
+        @for (act of actsOn(current); track act) {
+          <button type="button" class="btn" [disabled]="busy()" (click)="choose(act)">
+            {{ copy.act[act] }}
+          </button>
+        } @empty {
+          <p class="digital-ids__note">{{ copy.noActs }}</p>
+        }
+      </div>
+    } @else {
+      <p class="digital-ids__note">{{ copy.none }}</p>
+      <p class="digital-ids__note">{{ copy.noneWhy }}</p>
+      <button type="button" class="btn" [disabled]="busy()" (click)="choose('issue')">
+        {{ copy.act.issue }}
+      </button>
+    }
+  }
+  @default {
+    <p class="digital-ids__note" role="status">{{ copy.loading }}</p>
+  }
+}
+
+@if (pending(); as act) {
+  <app-modal [open]="true" [heading]="copy.confirmHeading[act]" size="small" (dismissed)="cancel()">
+    <!-- What the API does, between the choice and the button that does it. -->
+    <div modal-body class="digital-ids__effects">
+      <p>{{ copy.effectsLead(copy.act[act]) }}</p>
+      <ul>
+        @for (effect of effects[act]; track $index) {
+          <li>{{ effect }}</li>
+        }
+      </ul>
+      <p>{{ copy.always }}</p>
+      <ul>
+        @for (effect of always; track $index) {
+          <li>{{ effect }}</li>
+        }
+      </ul>
+      @if (problem()) {
+        <p class="digital-ids__problem" role="alert">{{ problem() }}</p>
+      }
+    </div>
+    <button type="button" modal-actions class="btn" [disabled]="busy()" (click)="cancel()">
+      {{ copy.cancel }}
+    </button>
+    <button
+      type="button"
+      modal-actions
+      class="btn btn--primary"
+      [disabled]="busy()"
+      (click)="commit(cardValue())"
+    >
+      {{ busy() ? copy.working : copy.confirm[act] }}
+    </button>
+  </app-modal>
+}
+
+<!-- Always in the DOM, so a screen reader hears the outcome when the text arrives. -->
+<p class="digital-ids__outcome" role="status">{{ outcome() }}</p>

@@ -1,0 +1,85 @@
+/* Layout only: every status, effect and outcome is text in the DOM. */
+
+.digital-ids {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-section);
+}
+
+.digital-ids__section,
+.digital-ids__form,
+.digital-ids__result,
+.digital-ids__more {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-snug);
+}
+
+.digital-ids__form {
+  align-self: stretch;
+}
+
+.digital-ids__heading,
+.digital-ids__subheading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.digital-ids__facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-snug) var(--space-section);
+  margin: 0;
+}
+
+.digital-ids__facts dt {
+  font-weight: 600;
+}
+
+.digital-ids__facts dd {
+  margin: 0;
+}
+
+.digital-ids__effects {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+  font-size: 13px;
+}
+
+.digital-ids__effects p,
+.digital-ids__effects ul,
+.digital-ids__note,
+.digital-ids__problem,
+.digital-ids__outcome {
+  margin: 0;
+  font-size: 13px;
+}
+
+.digital-ids__note,
+.digital-ids__aside {
+  color: var(--c-text-muted);
+}
+
+.digital-ids__aside {
+  display: block;
+  font-size: 12.5px;
+}
+
+.digital-ids__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-snug);
+}
+
+.digital-ids__photo {
+  margin: 0;
+}
+
+.digital-ids__photo img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}

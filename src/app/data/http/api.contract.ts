@@ -198,6 +198,13 @@ export const API_ENDPOINTS = {
   appConfig: 'app/config',
   /** The same settings, changed (`app-config.manage`): one JSON `PATCH` of only what changed. */
   adminAppConfig: 'admin/app/config',
+  /** Checks the card a resident's QR code names (`digital-id.verify`, `DL-171`). */
+  digitalIdVerify: 'digital-id/verify',
+  /**
+   * A card by its own id: `POST {id}/suspend`, `{id}/revoke`, `{id}/reissue` (`digital-id.manage`).
+   * An account’s card is read and issued at `admin/users/{id}/digital-id`.
+   */
+  adminDigitalIds: 'admin/digital-ids',
 } as const;
 
 /** The one place `meta.pagination` becomes a domain `CursorPage`. */

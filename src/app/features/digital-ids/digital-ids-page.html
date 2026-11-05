@@ -1,0 +1,67 @@
+<app-page-header [title]="copy.page.title" [subtitle]="copy.page.subtitle" />
+
+<div class="digital-ids">
+  @if (canCheck()) {
+    <app-card-check />
+  }
+
+  <section class="card digital-ids__section" aria-labelledby="digital-ids-manage">
+    <h2 id="digital-ids-manage" class="digital-ids__heading">{{ copy.manage.heading }}</h2>
+
+    @if (!canManage()) {
+      <p class="digital-ids__note">{{ copy.manage.noManage }}</p>
+    } @else {
+      <p class="digital-ids__note">{{ copy.manage.lead }} {{ copy.manage.order }}</p>
+
+      <app-async-content
+        [state]="first()"
+        [content]="accountsContent"
+        [skeletonLines]="5"
+        (retryRequested)="reload()"
+      >
+        <ng-template #accountsContent>
+          <app-data-table
+            [columns]="columns()"
+            [rows]="rows()"
+            [rowKey]="rowKey"
+            [caption]="copy.manage.caption"
+            [emptyHeading]="copy.manage.emptyHeading"
+            [emptyMessage]="copy.manage.emptyMessage"
+          />
+
+          <div class="digital-ids__more">
+            <p class="digital-ids__note" role="status">
+              {{ copy.manage.read(readCount(), rows().length) }}
+              {{ hasMore() ? copy.manage.moreAvailable : copy.manage.noMore }}
+            </p>
+            @if (hasMore()) {
+              <button type="button" class="btn" [disabled]="loadingMore()" (click)="showMore()">
+                {{ loadingMore() ? copy.manage.loadingMore : copy.manage.showMore }}
+              </button>
+            }
+            @if (moreFailed()) {
+              <p class="digital-ids__problem" role="alert">{{ copy.manage.moreFailed }}</p>
+            }
+          </div>
+        </ng-template>
+      </app-async-content>
+    }
+  </section>
+</div>
+
+<ng-template #actionCell let-account>
+  <button
+    type="button"
+    class="btn btn--small"
+    [attr.aria-label]="copy.manage.openLabel(nameOf(account))"
+    (click)="open(account)"
+  >
+    {{ copy.manage.open }}
+  </button>
+</ng-template>
+
+@if (selected(); as account) {
+  <app-drawer [heading]="copy.panel.heading(nameOf(account))" (dismissed)="close()">
+    <app-card-panel [account]="account" />
+  </app-drawer>
+}

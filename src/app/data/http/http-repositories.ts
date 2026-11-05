@@ -74,6 +74,10 @@ import {
   type AppConfig,
   type AppConfigChanges,
   type AppConfigRepository,
+  type DigitalIdCard,
+  type DigitalIdHolder,
+  type DigitalIdId,
+  type DigitalIdRepository,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -84,6 +88,11 @@ import { invalidCredentials, signInUnavailable } from './identity/sign-in-messag
 import { toServerIdentity } from './mappers/me.mapper';
 import { toNotification } from './mappers/notification.mapper';
 import { toAppAccount } from './mappers/app-account.mapper';
+import {
+  toDigitalIdCard,
+  toDigitalIdHolder,
+  toWireDigitalIdVerify,
+} from './mappers/digital-id.mapper';
 import { toOffice } from './mappers/office.mapper';
 import {
   toDirectoryOffice,
@@ -937,4 +946,81 @@ function readAppConfig(wire: unknown): AppConfig {
   }
 
   return config;
+}
+
+/**
+ * Residents' digital IDs (`DL-171`). A check is `digital-id.verify` — staff and administrators on the
+ * server; the rest is `digital-id.manage`, administrators alone.
+ *
+ * **Nothing about a check is kept here.** The code goes in the body of one request and the answer is
+ * returned to the screen that asked; no field, cache or log in this adapter holds either.
+ */
+@Injectable()
+export class HttpDigitalIdRepository implements DigitalIdRepository {
+  private readonly api = inject(ApiClient);
+
+  check(payload: string): Observable<DigitalIdHolder> {
+    return this.api
+      .post(API_ENDPOINTS.digitalIdVerify, toWireDigitalIdVerify(payload))
+      .pipe(map(readHolder));
+  }
+
+  /** A `404` is "no current card" — the API's answer for none and for one only revoked. */
+  cardOf(account: AppAccountId): Observable<DigitalIdCard | null> {
+    return this.api
+      .optionalItem(`${API_ENDPOINTS.adminUsers}/${account}/digital-id`)
+      .pipe(map((wire) => (wire === null ? null : readCard(wire))));
+  }
+
+  /** No photo is named, so the API uses the resident's latest approved verification selfie. */
+  issue(account: AppAccountId): Observable<DigitalIdCard> {
+    return this.api
+      .post(`${API_ENDPOINTS.adminUsers}/${account}/digital-id`, {})
+      .pipe(map(readCard));
+  }
+
+  suspend(card: DigitalIdId): Observable<DigitalIdCard> {
+    return this.api
+      .post(`${API_ENDPOINTS.adminDigitalIds}/${card}/suspend`, {})
+      .pipe(map(readCard));
+  }
+
+  revoke(card: DigitalIdId): Observable<DigitalIdCard> {
+    return this.api.post(`${API_ENDPOINTS.adminDigitalIds}/${card}/revoke`, {}).pipe(map(readCard));
+  }
+
+  reissue(card: DigitalIdId): Observable<DigitalIdCard> {
+    return this.api
+      .post(`${API_ENDPOINTS.adminDigitalIds}/${card}/reissue`, {})
+      .pipe(map(readCard));
+  }
+
+  openPhoto(photo: MediaId): Observable<Blob> {
+    return this.api.blob(`${API_ENDPOINTS.media}/${photo}/content`);
+  }
+}
+
+function readCard(wire: unknown): DigitalIdCard {
+  const card = toDigitalIdCard(wire);
+
+  if (card === null) {
+    throw new Error(
+      'The card from the server could not be read, so it is not shown: a card with a guessed status ' +
+        'or expiry is one somebody acts on wrongly.',
+    );
+  }
+
+  return card;
+}
+
+function readHolder(wire: unknown): DigitalIdHolder {
+  const holder = toDigitalIdHolder(wire);
+
+  if (holder === null) {
+    throw new Error(
+      'The answer about this card could not be read, so nothing is shown rather than part of it.',
+    );
+  }
+
+  return holder;
 }

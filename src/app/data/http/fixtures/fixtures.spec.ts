@@ -36,6 +36,8 @@ import LINK from './link.json';
 import LINKS from './links.json';
 import MEDIA from './media.json';
 import APP_CONFIG from './app-config.json';
+import DIGITAL_ID_CARD from './digital-id-card.json';
+import DIGITAL_ID_HOLDER from './digital-id-holder.json';
 
 /**
  * **These fixtures are composed, not recorded** — and this file is why that is acceptable.
@@ -206,6 +208,8 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['home', HOME, 'HomeEnvelope'],
     ['media', MEDIA, 'MediaEnvelope'],
     ['app-config', APP_CONFIG, 'AppConfigEnvelope'],
+    ['digital-id-card', DIGITAL_ID_CARD, 'DigitalIdAdminEnvelope'],
+    ['digital-id-holder', DIGITAL_ID_HOLDER, 'DigitalIdHolderEnvelope'],
   ] as const)('%s conforms to %s', (_name, fixture, envelope) => {
     expect(schema(envelope)).toBeDefined();
     expect(problems(fixture, schema(envelope), 'body')).toEqual([]);

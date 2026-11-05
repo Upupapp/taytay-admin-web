@@ -241,6 +241,18 @@ export const PERMISSIONS = [
    * resident update the app or accept again.
    */
   'app-config.manage',
+
+  /*
+   * DIGITAL IDS (`DL-171`) — the server's keys, spelled as its `StaffCapability`.
+   *
+   * `digital-id.verify` checks the card a resident's QR code names; the server gives it to every
+   * staff account and to `admin`, so here every role holds it. A read: it changes no record, though
+   * the server notes each check in its own trail. `digital-id.manage` issues, suspends, revokes and
+   * replaces cards; the server gives it to `admin` alone, so only the system administrator holds it,
+   * by holding every key. Mutating: it decides whether a resident's card works.
+   */
+  'digital-id.verify',
+  'digital-id.manage',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -299,6 +311,8 @@ const INTAKE_PERMISSIONS: readonly Permission[] = [
   // residents. The roles that work at the MSWDO hold it; the barangay link, who works from a
   // barangay rather than at an office, and the auditor, whose role is read-only, do not.
   'office-inbox.manage',
+  // Mirrors the server (`DL-171`): every staff account checks a resident's digital ID.
+  'digital-id.verify',
 ];
 
 const SOCIAL_WORKER_PERMISSIONS: readonly Permission[] = [
@@ -428,6 +442,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'report.view',
       // A staff account at the office, so it answers the office's residents, as on the server.
       'office-inbox.manage',
+      'digital-id.verify',
     ],
   },
   'barangay-link': {
@@ -448,6 +463,8 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'request.view',
       'request.create',
       'referral.view',
+      // Every staff account checks a resident's digital ID on the server (`DL-171`).
+      'digital-id.verify',
     ],
   },
   auditor: {
@@ -489,6 +506,8 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'newsfeed.view-insights',
       'event.view',
       'event.view-insights',
+      // Every staff account checks a resident's digital ID on the server (`DL-171`); a read.
+      'digital-id.verify',
     ],
   },
 };

@@ -92,6 +92,8 @@ export type HotlineId = Branded<string, 'HotlineId'>;
 export type HomeBannerId = Branded<string, 'HomeBannerId'>;
 /** A link on the residents' app's home screen (`DL-170`). */
 export type QuickLinkId = Branded<string, 'QuickLinkId'>;
+/** A resident’s digital ID card, as the API numbers its record — not the card number (`DL-171`). */
+export type DigitalIdId = Branded<string, 'DigitalIdId'>;
 /** A conversation between one resident and one office (`DL-168`). */
 export type OfficeThreadId = Branded<string, 'OfficeThreadId'>;
 /** One message in an office conversation (`DL-168`). */

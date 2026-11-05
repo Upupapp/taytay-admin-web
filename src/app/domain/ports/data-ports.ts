@@ -38,6 +38,7 @@ export const DATA_PORTS = [
   'hotline',
   'home-screen',
   'app-config',
+  'digital-id',
 ] as const;
 
 export type DataPort = (typeof DATA_PORTS)[number];
@@ -78,6 +79,7 @@ export const DATA_PORT_HOLDINGS: Readonly<Record<DataPort, string>> = {
   hotline: 'the app’s hotlines',
   'home-screen': 'the app’s home screen',
   'app-config': 'the app’s settings',
+  'digital-id': 'residents’ digital IDs',
 };
 
 /**

@@ -1,0 +1,64 @@
+<section class="card digital-ids__section" aria-labelledby="card-check-heading">
+  <h2 id="card-check-heading" class="digital-ids__heading">{{ copy.heading }}</h2>
+  <p class="digital-ids__note">{{ copy.lead }}</p>
+  <p class="digital-ids__note">{{ copy.noCamera }}</p>
+
+  <form class="digital-ids__form" (submit)="$event.preventDefault(); check()">
+    <div class="field">
+      <label class="field__label" for="card-check-payload">{{ copy.label }}</label>
+      <textarea
+        id="card-check-payload"
+        class="field__input"
+        rows="3"
+        autocomplete="off"
+        spellcheck="false"
+        aria-describedby="card-check-hint"
+        [attr.maxlength]="maxLength"
+        [value]="payload()"
+        [disabled]="busy()"
+        (input)="typed($event)"
+      ></textarea>
+      <p id="card-check-hint" class="field__hint">{{ copy.hint }}</p>
+    </div>
+
+    <!-- What the check does, between the field and the button that sends it. -->
+    <div class="digital-ids__effects">
+      <p>{{ copy.effectsLead }}</p>
+      <ul>
+        @for (effect of effects; track $index) {
+          <li>{{ effect }}</li>
+        }
+      </ul>
+    </div>
+
+    <button type="submit" class="btn btn--primary" [disabled]="busy()">
+      {{ busy() ? copy.checking : copy.submit }}
+    </button>
+  </form>
+
+  @if (problem()) {
+    <p class="digital-ids__problem" role="alert">{{ problem() }}</p>
+  }
+
+  @if (holder(); as found) {
+    <section class="digital-ids__result" aria-labelledby="card-check-result">
+      <h3 id="card-check-result" class="digital-ids__subheading">{{ copy.resultHeading }}</h3>
+      <dl class="digital-ids__facts">
+        <dt>{{ copy.name }}</dt>
+        <dd>{{ found.name ?? copy.noName }}</dd>
+        <dt>{{ copy.status }}</dt>
+        <dd><app-status-badge [catalog]="catalog" [status]="found.status" /></dd>
+        <dt>{{ copy.expiry }}</dt>
+        <dd>{{ found.expired ? copy.expired : copy.notExpired }}</dd>
+        <dt>{{ copy.barangay }}</dt>
+        <dd>{{ found.barangayName ?? copy.noBarangay }}</dd>
+      </dl>
+      <p class="digital-ids__note">{{ inForce(found) ? copy.inForce : copy.notInForce }}</p>
+      <app-card-photo [photo]="found.photo" [whose]="found.name ?? copy.noName" />
+      <button type="button" class="btn" (click)="clear()">{{ copy.clear }}</button>
+    </section>
+  }
+
+  <!-- Always in the DOM, so a screen reader hears the outcome when the text arrives. -->
+  <p class="visually-hidden" role="status">{{ outcome() }}</p>
+</section>
