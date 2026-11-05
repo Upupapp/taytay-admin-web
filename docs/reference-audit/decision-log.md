@@ -6281,3 +6281,28 @@ adapter and screen specs); the HTTP adapters, the fixtures, the identity, the la
 tests in their own). One test timed out under the full suite's load — `events.spec.ts`, untouched by
 this entry, 5.8 s against a 5 s limit — and passed alone; the build and `check:bundle`, which `verify`
 runs after the tests, were run after it and are green.
+
+## DL-172 — the first real host showed an unstyled console: a nonce TAB 13 named and nobody built
+
+The staging console on LGUIDS-SHARED-LINODE loaded with no component styling. The policy is
+`style-src 'self'` with no `'unsafe-inline'` (rightly), and Angular injects component styles as
+`<style>` blocks; netlify.toml has said since TAB 13 that "the sanctioned answer is `ngCspNonce`
+with a per-response nonce", but nothing ever supplied one. Every earlier check ran without the
+policy in front of it — the unit tests, the bundle check, and the walkthrough recording, which
+was served by a plain static server — so the gap only showed on the first host that sent the CSP.
+
+**Staging is fixed the sanctioned way.** Its Caddy fills `ngCspNonce` on `<app-root>` with the
+request's own id (`templates`, `{http.request.uuid}`) and adds `'nonce-…'` to `style-src` in the
+same response. Checked in a browser: three `<style>` blocks, all carrying the nonce, the sign-in
+button styled, zero CSP violations. Still no `'unsafe-inline'`. The recipe is in taytay-backend
+`deploy/staging-shared-linode/`.
+
+**Netlify production is not fixed yet.** A static host cannot mint a per-response nonce; it needs
+an Edge Function that rewrites the attribute and the header together. Until one exists, a
+production deploy from this repository renders unstyled. Recorded as a launch blocker.
+
+**`base-uri 'none'` → `'self'`.** The same browser run reported one more violation: `index.html`
+carries `<base href="/">`, which `'none'` refuses, so a reload on a deep path resolved the
+script URLs relative to that path and fetched the shell instead of JavaScript. `'self'` admits
+the app's own base and still refuses a base pointing anywhere else — which is what the directive
+is for. `check:headers` requires the directive, not a value, and still passes.
