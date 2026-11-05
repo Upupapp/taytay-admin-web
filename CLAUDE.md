@@ -118,7 +118,11 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:events`, `check:contract`, `check:contract-drift`, `check:consumer-contract`,
 `check:mapper-adoption`, `check:permission-parity`, `check:environments`,
 `check:bundle`, `check:routes`, `check:response-shape`, `check:wire-adoption`,
-`check:port-adoption` and `check:scanners`.
+`check:port-adoption`, `check:scanners`, `check:unserved` and `check:verification`.
+`check:unserved` keeps a module whose port the active adapter set cannot serve out
+of the navigation and names it on one page (`DL-167`); `check:verification` holds
+the ID-review screen to its privacy rules — images only after a warning, fetched
+with the bearer in a header, discarded on leave (`DL-167`).
 Each enforces a rule a comment could not, and each was validated against planted
 regressions. Do not weaken one to make a change pass.
 
