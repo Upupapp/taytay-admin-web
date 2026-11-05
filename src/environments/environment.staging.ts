@@ -14,7 +14,7 @@ export const environment: AppEnvironment = {
   apiBaseUrl: 'https://api-staging.<approved-domain>/api/v1',
   dataSource: 'http',
   // The staging Firebase project's key, never production's. None has been supplied yet.
-  firebaseWebApiKey: null,
+  firebaseWebApiKey: 'AIzaSyDY7x3dvT_R6bAEG-Xd1-L8YpeumYIORZk',
   mockLatencyMs: 0,
   // On in staging on purpose: this is where a developer needs the detail a caseworker must never
   // see, and the data here is synthetic.

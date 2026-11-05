@@ -21,7 +21,7 @@ sign-in only, hosted on Linode.
 | 1 | CORS for browser clients, exact origins | backend | done `135ec41` |
 | 2 | `permissions` on `GET /me` from a table of the route guards; `POST /auth/sign-out` | backend | done `189b911` |
 | 3 | Transport: cursor paging, Node error codes, vendored `openapi.json`, `local-api` on port 3000; `GET me`, sign-out and the inbox served, the other eighteen ports bound to adapters that make no request | console | done (`DL-165`) |
-| 4 | Sign-in: Firebase Auth REST, tokens in memory; dev sign-in through the backend's mock verifier | console | done (`DL-166`): password sign-in, TOTP second factor and on-demand refresh built to Google's published REST reference; `local-api` signs in through the development verifier. **Not live anywhere yet**: no Firebase web API key has been supplied for staging or production, so both say sign-in is not configured; the TOTP flow has not been exercised against a project with Identity Platform TOTP enabled |
+| 4 | Sign-in: Firebase Auth REST, tokens in memory; dev sign-in through the backend's mock verifier | console | done (`DL-166`): password sign-in, TOTP second factor and on-demand refresh built to Google's published REST reference; `local-api` signs in through the development verifier. **Staging has a key** (`DL-169`); production has none and says sign-in is not configured; the TOTP flow has not been exercised against a project with Identity Platform TOTP enabled |
 | 5 | Unserved ports bound to adapters that say so; navigation withholds them; one page names them | console | done (`DL-165`, `DL-167`): the http set declares its eighteen unserved ports (`UNSERVED_PORTS`), the menu withholds every entry whose screen reads one, each such route leads to `/unavailable`, which names every withheld module and every port it lacks, and `check:unserved` holds the bindings, the declaration, the routes and the menu to one another |
 | 6a | Platform screen: residents' ID verification review | console | done (`DL-167`, [`docs/verification`](../verification/README.md)): queue by status, cursor-paged; review in a drawer; images only after a warning, read as bytes with the bearer in a header and revoked on leave; approve and reject through `StatusTransition` with what the API does shown before the button and the rejection's reader named; `verification.review` added unchanged from `StaffCapability`, held by the administrator alone. **Not run against a live API.** Open: whether the review should show the account's name and birth date (owner decision 7; the spec has no `GET admin/users/{id}`) |
 | 6b | Platform screen: the office inbox | console | done (`DL-168`, [`docs/inbox`](../inbox/README.md)): conversations newest activity first, cursor-paged, no preview of what a resident wrote in the list; one conversation by address, oldest first; replies in words; mark read (one mark for the whole office, said so); close behind a confirmation listing what the server does and asking no reason (it keeps none); attachments only after a warning, as bytes, revoked on leave; an empty first page asked about (`GET me`) so a staff account with no office is told so rather than shown an empty inbox; `office-inbox.manage` added unchanged. **Not run against a live API.** Not done: sending an image with a reply |
@@ -78,8 +78,12 @@ These are not engineering choices, and nothing below has been built.
 
 ## Things only a person can supply
 
-- The Firebase **web** app settings (API key, auth domain, project id, app id) for staging and
-  production. They are public identifiers, not secrets; restrict the key by HTTP referrer to the
-  console's origins in Google Cloud.
+- ~~Staging Firebase web settings~~ — done 2026-11-05 (`DL-169`): project `taytay-lgu-ids-staging`
+  under michaela@lguids.com.ph, key in `environment.staging.ts`, restricted to the Identity Toolkit
+  and Token Service APIs. Still owed: the **HTTP-referrer restriction** once the staging console has
+  an origin, and the **production** project and key.
+- The backend's Firebase **service-account key** for the staging VM (a secret: created by a person
+  in the Firebase console, placed only on the server).
+- Identity Platform (billing) if staff two-factor is wanted; TOTP is off until then.
 - The console's and the API's real hostnames, for `CORS_ALLOWED_ORIGINS` and the CSP.
 - A staff or admin account to test with.

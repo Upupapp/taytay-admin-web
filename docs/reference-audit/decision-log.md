@@ -5873,3 +5873,41 @@ The launch gate stays **NO-GO**: the eighteen unserved casework ports are unchan
 is green on Windows after this part: 110 spec files, 1,881 tests (106 and 1,843 after part 1 — four
 new spec files, for the domain model, the mapper, the mock adapter and the screen; the HTTP adapters,
 the fixtures, the permission matrix, the layout and the unserved modules gained tests in their own).
+
+## DL-169 — a staging Firebase project, made by the person who decides, and what it still lacks
+
+On 2026-11-05 Michaela Cailing, who directs this work, asked for the Firebase project to be created
+under her account rather than waiting for one to be supplied. `taytay-lgu-ids-staging` now exists
+under michaela@lguids.com.ph.
+
+### What it has
+
+- **Authentication** started, **email/password** on with a password required. A throwaway account
+  was created, signed in (`signInWithPassword` 200, one-hour ID token), refused with
+  `INVALID_LOGIN_CREDENTIALS` on a wrong password — so email-enumeration protection is on, which
+  `DL-166`'s mapping already expects — and deleted.
+- A **web app**, "Taytay Staff Console". Its browser key is in `environment.staging.ts` and its
+  sha256 in `tools/accepted-public-identifiers.json`, as `DL-166` requires.
+- The key is **restricted to two APIs**: Identity Toolkit and Token Service — the only two the
+  console calls.
+
+### What it does not have, and why
+
+- **No HTTP-referrer restriction.** The staging console has no approved origin yet. The entry in
+  `accepted-public-identifiers.json` says so rather than claiming a restriction that does not exist.
+- **No two-factor.** TOTP needs Identity Platform, and Google refused to initialise it without a
+  billing account (`BILLING_NOT_ENABLED`). Billing was not added on somebody's personal account to
+  get past it; staff sign in with a password until the office decides.
+- **No service-account key.** The backend's verifier needs one, and it is a real secret. It is made
+  by a person in the Firebase console and placed only on the staging VM (CLAUDE.md rule 5).
+- **No production project.** Staging and production never share a project (backend
+  `deploy-linode.md`).
+
+### And a staging build that would have broken under its own policy
+
+Building the staging configuration for the first time showed that it inherited Angular's default
+optimisation, which **inlines critical CSS** into `index.html` — and the staging CSP is
+`style-src 'self'`, so every staging page would have loaded unstyled. Production already set
+`inlineCritical: false` (TAB 13: "change the feature, not the policy"). Staging now has production's
+`optimization` and `budgets`, and `check:headers` and `check:bundle` both pass on a staging build.
+A build that is meant to rehearse production has to be built like it.
