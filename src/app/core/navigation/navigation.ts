@@ -186,6 +186,16 @@ export const NAVIGATION: readonly NavSection[] = [
         permissions: ['verification.review'],
         description: 'Residents asking to have their app account verified against an ID.',
       },
+      {
+        // `DL-168`. Staff hold the key only while assigned to an office; an account without one is
+        // told so on the page that names what it can open, never shown an empty inbox.
+        label: 'Office inbox',
+        route: '/inbox',
+        reads: ['office-inbox', 'office'],
+        glyph: 'OI',
+        permissions: ['office-inbox.manage'],
+        description: 'Residents writing to an office from the app, and the office’s replies.',
+      },
     ],
   },
   {

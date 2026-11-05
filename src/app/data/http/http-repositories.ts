@@ -33,6 +33,14 @@ import {
   type VerificationRepository,
   type VerificationRequest,
   type VerificationRequestId,
+  type InboxListing,
+  type MediaId,
+  type Office,
+  type OfficeInboxRepository,
+  type OfficeRepository,
+  type OfficeThread,
+  type OfficeThreadId,
+  type ThreadMessage,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -42,6 +50,8 @@ import { IdentityProvider } from './identity/identity.provider';
 import { invalidCredentials, signInUnavailable } from './identity/sign-in-messages';
 import { toServerIdentity } from './mappers/me.mapper';
 import { toNotification } from './mappers/notification.mapper';
+import { toOffice } from './mappers/office.mapper';
+import { toOfficeThread, toPostedMessage, toThreadMessage } from './mappers/office-thread.mapper';
 import { toVerificationRequest } from './mappers/verification.mapper';
 import { list } from './mappers/wire';
 import { unserved } from './unserved-repositories';
@@ -330,4 +340,143 @@ function readVerification(wire: unknown): VerificationRequest {
   }
 
   return request;
+}
+
+/**
+ * The office inbox (`DL-168`): residents writing to an office, answered by its staff.
+ *
+ * `office-inbox.manage` on the server — staff while assigned to an office, and administrators. Which
+ * conversations come back is the server's decision; nothing here filters by office.
+ */
+@Injectable()
+export class HttpOfficeInboxRepository implements OfficeInboxRepository {
+  private readonly api = inject(ApiClient);
+
+  /**
+   * One page, read whole or not at all — and an empty first page **asked about** before it is
+   * believed.
+   *
+   * `GET threads` answers a staff account with no office with an empty page, which is also what an
+   * office nobody has written to receives. So when the first page is empty the adapter asks `GET me`
+   * whether this account has an office, and answers `no-office` if it has none: an officer told "no
+   * conversations" concludes residents are quiet, when the truth is that this account cannot see
+   * them. A later empty page needs no question — the first page already answered it.
+   */
+  list(page: CursorRequest): Observable<InboxListing> {
+    return this.api.cursorPage(API_ENDPOINTS.threads, page).pipe(
+      map((answer): CursorPage<OfficeThread> => ({ ...answer, items: answer.items.map(readThread) })),
+      switchMap((answer) => {
+        const listing: InboxListing = { kind: 'threads', page: answer };
+        if (answer.items.length > 0 || (page.cursor ?? null) !== null) {
+          return of(listing);
+        }
+        return this.api
+          .item(API_ENDPOINTS.me)
+          .pipe(
+            map((me): InboxListing =>
+              toServerIdentity(me)?.awaitingOffice === true ? { kind: 'no-office' } : listing,
+            ),
+          );
+      }),
+    );
+  }
+
+  thread(id: OfficeThreadId): Observable<OfficeThread> {
+    return this.api.item(`${API_ENDPOINTS.threads}/${id}`).pipe(map(readThread));
+  }
+
+  /** Newest first, as the server orders them. A message it cannot read refuses the page. */
+  messages(id: OfficeThreadId, page: CursorRequest): Observable<CursorPage<ThreadMessage>> {
+    return this.api
+      .cursorPage(`${API_ENDPOINTS.threads}/${id}/messages`, page)
+      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readMessage) })));
+  }
+
+  /** The words as typed; the server trims them and refuses a closed conversation with `409`. */
+  reply(id: OfficeThreadId, body: string): Observable<ThreadMessage> {
+    return this.api
+      .post(`${API_ENDPOINTS.threads}/${id}/messages`, { body })
+      .pipe(map(readPosted));
+  }
+
+  markRead(id: OfficeThreadId): Observable<OfficeThread> {
+    return this.api.post(`${API_ENDPOINTS.threads}/${id}/read`, {}).pipe(map(readThread));
+  }
+
+  /** No body: the server accepts none, so there is no reason to send (`THREAD_CLOSE_EFFECTS`). */
+  close(id: OfficeThreadId): Observable<OfficeThread> {
+    return this.api.post(`${API_ENDPOINTS.threads}/${id}/close`, {}).pipe(map(readThread));
+  }
+
+  /**
+   * The bytes, with the bearer token in a header (`ApiClient.blob`). An image the message does not
+   * carry is refused here, without a request, rather than fetched by an id from somewhere else.
+   */
+  openAttachment(message: ThreadMessage, media: MediaId): Observable<Blob> {
+    return message.attachments.includes(media)
+      ? this.api.blob(`${API_ENDPOINTS.media}/${media}/content`)
+      : throwError(() => new Error('This message carries no such image.'));
+  }
+}
+
+/** The office directory, read in full (`DL-161`): a picker missing an office says it does not exist. */
+@Injectable()
+export class HttpOfficeRepository implements OfficeRepository {
+  private readonly api = inject(ApiClient);
+
+  list(): Observable<readonly Office[]> {
+    return this.api.everyPage(API_ENDPOINTS.offices).pipe(map((items) => items.map(readOffice)));
+  }
+}
+
+function readThread(wire: unknown): OfficeThread {
+  const thread = toOfficeThread(wire);
+
+  if (thread === null) {
+    throw new Error(
+      'A conversation from the server could not be read, so none is shown rather than some: a ' +
+        'conversation left out of this inbox is a resident nobody knows is waiting.',
+    );
+  }
+
+  return thread;
+}
+
+function readMessage(wire: unknown): ThreadMessage {
+  const message = toThreadMessage(wire);
+
+  if (message === null) {
+    throw new Error(
+      'A message from the server could not be read, so the conversation is not shown rather than ' +
+        'shown with a gap in it.',
+    );
+  }
+
+  return message;
+}
+
+function readPosted(wire: unknown): ThreadMessage {
+  const message = toPostedMessage(wire);
+
+  if (message === null) {
+    throw new Error(
+      'The server accepted the reply, but its answer could not be read. Open the conversation ' +
+        'again to see it before sending anything twice.',
+    );
+  }
+
+  return message;
+}
+
+function readOffice(wire: unknown): Office {
+  const office = toOffice(wire);
+
+  if (office === null) {
+    throw new Error(
+      'An office from the server could not be read, so the list is not shown rather than shown ' +
+        'without it: an office missing from a list reads as one that does not exist.',
+    );
+  }
+
+  return office;
 }

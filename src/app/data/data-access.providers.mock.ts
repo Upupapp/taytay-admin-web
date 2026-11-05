@@ -24,6 +24,8 @@ import {
   STAFF_REPOSITORY,
   UNSERVED_PORTS,
   VERIFICATION_REPOSITORY,
+  OFFICE_INBOX_REPOSITORY,
+  OFFICE_REPOSITORY,
 } from '@domain/index';
 
 import { MockAssistanceRequestRepository } from './mock/mock-assistance-request.repository';
@@ -47,6 +49,8 @@ import { MockResidentRepository } from './mock/mock-resident.repository';
 import { MockSavedViewRepository } from './mock/mock-saved-view.repository';
 import { MockStaffRepository } from './mock/mock-staff.repository';
 import { MockVerificationRepository } from './mock/mock-verification.repository';
+import { MockOfficeInboxRepository } from './mock/mock-office-inbox.repository';
+import { MockOfficeRepository } from './mock/mock-office.repository';
 
 /**
  * THE MOCK/HTTP SEAM — the mock half.
@@ -81,6 +85,8 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: BENEFICIARY_REPOSITORY, useClass: MockBeneficiaryRepository },
     { provide: FIELD_VISIT_REPOSITORY, useClass: MockFieldVisitRepository },
     { provide: VERIFICATION_REPOSITORY, useClass: MockVerificationRepository },
+    { provide: OFFICE_INBOX_REPOSITORY, useClass: MockOfficeInboxRepository },
+    { provide: OFFICE_REPOSITORY, useClass: MockOfficeRepository },
     // The mock serves every port, and says so rather than leaving the token unbound (`DL-167`).
     { provide: UNSERVED_PORTS, useValue: [] },
   ]);

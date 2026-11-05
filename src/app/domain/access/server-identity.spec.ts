@@ -21,6 +21,7 @@ function identity(overrides: Partial<ServerIdentity> = {}): ServerIdentity {
     barangayId: null,
     scope: 'own-barangay',
     permissions: ['resident.view', 'case.view'],
+    awaitingOffice: false,
     ...overrides,
   };
 }
@@ -52,6 +53,13 @@ describe('fromServerIdentity', () => {
     expect(user.permissions.has('resident.view')).toBe(true);
     expect(user.permissions.size).toBe(1);
     expect(user.unknownPermissions).toEqual(['kyc.approve', 'something.invented']);
+  });
+
+  it('carries what the server said about the account having no office, and grants nothing from it', () => {
+    const user = fromServerIdentity(identity({ awaitingOffice: true, permissions: [] }));
+
+    expect(user.awaitingOffice).toBe(true);
+    expect(user.permissions.size).toBe(0);
   });
 
   it('hides a feature whose key the server never sent', () => {

@@ -507,6 +507,27 @@ export const routes: Routes = [
           ),
       },
       {
+        // `DL-168`. The API grants `office-inbox.manage` to administrators, and to staff only while
+        // they are assigned to an office; these guards mirror it and are not the protection (rule 4).
+        // Both screens read the office directory too, to name the office a conversation went to.
+        path: 'inbox',
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            title: 'Office inbox — Taytay Social Welfare',
+            canActivate: [servedGuard('office-inbox', 'office'), permissionGuard('office-inbox.manage')],
+            loadComponent: () => import('@features/inbox/inbox-page').then((m) => m.InboxPage),
+          },
+          {
+            path: ':threadId',
+            title: 'Conversation — Taytay Social Welfare',
+            canActivate: [servedGuard('office-inbox', 'office'), permissionGuard('office-inbox.manage')],
+            loadComponent: () => import('@features/inbox/thread-page').then((m) => m.ThreadPage),
+          },
+        ],
+      },
+      {
         // Where every unserved module's address leads (`DL-167`). No permission: it names what the
         // server lacks, which is no secret about any record, and it is linked from the menu.
         path: 'unavailable',

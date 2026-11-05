@@ -10,7 +10,9 @@ import { apiHeadersInterceptor } from '@core/http/api.interceptors';
 import {
   asId,
   SignInError,
+  type MediaId,
   type NotificationId,
+  type OfficeThreadId,
   type VerificationRequestId,
 } from '@domain/index';
 
@@ -25,12 +27,20 @@ import SIGNED_OUT from './fixtures/signed-out.json';
 import VERIFICATION_APPROVED from './fixtures/verification-approved.json';
 import VERIFICATION_REJECTED from './fixtures/verification-rejected.json';
 import VERIFICATION_PAGE from './fixtures/verification-requests-page.json';
+import OFFICES_PAGE from './fixtures/offices-page.json';
+import THREAD from './fixtures/thread.json';
+import THREAD_MESSAGES_PAGE from './fixtures/thread-messages-page.json';
+import THREAD_REPLY from './fixtures/thread-reply.json';
+import THREADS_PAGE from './fixtures/threads-page.json';
 import {
   HttpNotificationRepository,
+  HttpOfficeInboxRepository,
+  HttpOfficeRepository,
   HttpSessionRefresher,
   HttpStaffRepository,
   HttpVerificationRepository,
 } from './http-repositories';
+import { toThreadMessage } from './mappers/office-thread.mapper';
 import { toVerificationRequest } from './mappers/verification.mapper';
 import { UnservedError } from './unserved-repositories';
 
@@ -66,6 +76,8 @@ describe('the Node adapters', () => {
         HttpNotificationRepository,
         HttpSessionRefresher,
         HttpVerificationRepository,
+        HttpOfficeInboxRepository,
+        HttpOfficeRepository,
       ],
     });
 
@@ -89,23 +101,50 @@ describe('the Node adapters', () => {
       http.expectOne({ method: 'GET', url: `${BASE}/me` }).flush(ME_ADMIN);
       const identity = await user;
 
-      // `audit.view` and, since DL-167, `verification.review` are the capabilities with a console
-      // key of the same name; the rest are kept aside as unknown, never translated.
-      expect([...(identity?.permissions ?? [])].sort()).toEqual(['audit.view', 'verification.review']);
+      // `audit.view`, `verification.review` (DL-167) and `office-inbox.manage` (DL-168) are the
+      // capabilities with a console key of the same name; the rest are kept aside as unknown,
+      // never translated.
+      expect([...(identity?.permissions ?? [])].sort()).toEqual([
+        'audit.view',
+        'office-inbox.manage',
+        'verification.review',
+      ]);
       expect(identity?.unknownPermissions).not.toContain('verification.review');
       expect(identity?.unknownPermissions).toContain('user.view');
       expect(identity?.roleLabel).toBe('Administrator');
+      // An administrator acts for every office, so it is never waiting for one.
+      expect(identity?.awaitingOffice).toBe(false);
     });
 
-    it('grants nothing a staff role would suggest when the server sent no matching key', async () => {
+    it('grants a staff account only the keys the server sent that the console knows', async () => {
       tokens.hold('fixture-token', null);
       const user = firstValueFrom(staff.currentUser());
 
       http.expectOne(`${BASE}/me`).flush(ME_STAFF);
       const identity = await user;
 
-      expect(identity?.permissions.size).toBe(0);
+      expect([...(identity?.permissions ?? [])]).toEqual(['office-inbox.manage']);
       expect(identity?.roleLabel).toBe('Staff');
+      expect(identity?.awaitingOffice).toBe(false);
+    });
+
+    it('says a staff account with no office is waiting for one, and grants it no inbox (DL-168)', async () => {
+      tokens.hold('fixture-token', null);
+      const user = firstValueFrom(staff.currentUser());
+
+      // What the server sends such an account: no office, and so neither office-bound key.
+      http.expectOne(`${BASE}/me`).flush({
+        ...ME_STAFF,
+        data: {
+          ...ME_STAFF.data,
+          office_id: null,
+          permissions: ['household.view-counts', 'digital-id.verify'],
+        },
+      });
+      const identity = await user;
+
+      expect(identity?.awaitingOffice).toBe(true);
+      expect(identity?.permissions.has('office-inbox.manage')).toBe(false);
     });
 
     it('reads no personal field, and never the home barangay as a scope', async () => {
@@ -184,7 +223,8 @@ describe('the Node adapters', () => {
         if (result.kind === 'authenticated') {
           expect(result.user.roleLabel).toBe('Staff');
           expect(result.user.role).toBeNull();
-          expect(result.user.permissions.size).toBe(0);
+          // The one server key a staff account at an office holds that the console knows (DL-168).
+          expect([...result.user.permissions]).toEqual(['office-inbox.manage']);
         }
         expect(tokens.hasToken()).toBe(true);
       });
@@ -457,6 +497,176 @@ describe('the Node adapters', () => {
       await expect(firstValueFrom(verification.openImage(request, 'id-back'))).rejects.toThrow(
         /no such image/,
       );
+    });
+  });
+
+  describe('the office inbox (DL-168)', () => {
+    let inbox: HttpOfficeInboxRepository;
+    const threadId = asId<OfficeThreadId>(THREAD.data.id);
+
+    beforeEach(() => {
+      inbox = TestBed.inject(HttpOfficeInboxRepository);
+      tokens.hold('fixture-token', null);
+    });
+
+    it('reads one cursor page, newest activity first, with no filter of its own', async () => {
+      const listing = firstValueFrom(inbox.list({ limit: 20 }));
+
+      const request = http.expectOne((r) => r.url === `${BASE}/threads`);
+      expect(request.request.method).toBe('GET');
+      expect(request.request.params.keys()).toEqual(['limit']);
+      request.flush(THREADS_PAGE);
+
+      const answer = await listing;
+      if (answer.kind !== 'threads') throw new Error('expected threads');
+      expect(answer.page.items.map((thread) => thread.subject)).toEqual([
+        'Requirements for burial assistance',
+        'Solo parent ID renewal',
+      ]);
+      expect(answer.page.hasMore).toBe(true);
+      expect(answer.page.nextCursor).toBe(THREADS_PAGE.meta.pagination.next_cursor);
+    });
+
+    it('keeps no preview of what the resident wrote', async () => {
+      const listing = firstValueFrom(inbox.list({ limit: 20 }));
+      http.expectOne((r) => r.url === `${BASE}/threads`).flush(THREADS_PAGE);
+
+      const said = JSON.stringify(await listing);
+      for (const row of THREADS_PAGE.data) {
+        expect(said).not.toContain(row.last_message_preview);
+      }
+    });
+
+    it('asks whether an empty first page means the account has no office, and says so', async () => {
+      const listing = firstValueFrom(inbox.list({ limit: 20 }));
+
+      http
+        .expectOne((r) => r.url === `${BASE}/threads`)
+        .flush({ data: [], meta: { pagination: { has_more: false, next_cursor: null } } });
+      http.expectOne(`${BASE}/me`).flush({
+        ...ME_STAFF,
+        data: { ...ME_STAFF.data, office_id: null, permissions: ['household.view-counts'] },
+      });
+
+      expect(await listing).toEqual({ kind: 'no-office' });
+    });
+
+    it('believes an empty first page once the account turns out to have an office', async () => {
+      const listing = firstValueFrom(inbox.list({ limit: 20 }));
+
+      http
+        .expectOne((r) => r.url === `${BASE}/threads`)
+        .flush({ data: [], meta: { pagination: { has_more: false, next_cursor: null } } });
+      http.expectOne(`${BASE}/me`).flush(ME_STAFF);
+
+      const answer = await listing;
+      expect(answer.kind === 'threads' ? answer.page.items : null).toEqual([]);
+    });
+
+    it('asks nothing more about an empty later page — the first one already answered', async () => {
+      const listing = firstValueFrom(inbox.list({ limit: 20, cursor: 'c-2' }));
+
+      http
+        .expectOne((r) => r.url === `${BASE}/threads`)
+        .flush({ data: [], meta: { pagination: { has_more: false, next_cursor: null } } });
+      http.expectNone(`${BASE}/me`);
+
+      expect((await listing).kind).toBe('threads');
+    });
+
+    it('refuses the page rather than leaving out a conversation it cannot read', async () => {
+      const listing = firstValueFrom(inbox.list({ limit: 20 }));
+      const [first, second] = THREADS_PAGE.data;
+
+      http
+        .expectOne((r) => r.url === `${BASE}/threads`)
+        .flush({ ...THREADS_PAGE, data: [first, { ...second, status: 'archived' }] });
+
+      await expect(listing).rejects.toThrow(/could not be read/);
+    });
+
+    it('reads one conversation and its messages by id', async () => {
+      const thread = firstValueFrom(inbox.thread(threadId));
+      http.expectOne({ method: 'GET', url: `${BASE}/threads/${threadId}` }).flush(THREAD);
+      expect((await thread).officeSlug).toBe('mswdo');
+
+      const messages = firstValueFrom(inbox.messages(threadId, { limit: 20 }));
+      const request = http.expectOne((r) => r.url === `${BASE}/threads/${threadId}/messages`);
+      expect(request.request.params.keys()).toEqual(['limit']);
+      request.flush(THREAD_MESSAGES_PAGE);
+      const page = await messages;
+      expect(page.items.map((message) => message.attachments.length)).toEqual([1, 0]);
+    });
+
+    it('sends a reply as the body the API reads, and nothing else', async () => {
+      const words = 'Please bring the death certificate and a valid ID.';
+      const sent = firstValueFrom(inbox.reply(threadId, words));
+
+      const request = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/threads/${threadId}/messages`,
+      });
+      expect(request.request.body).toEqual({ body: words });
+      request.flush(THREAD_REPLY, { status: 201, statusText: 'Created' });
+
+      expect((await sent).body).toBe(words);
+    });
+
+    it('marks read and closes with an empty body — the server keeps no reason', async () => {
+      const read = firstValueFrom(inbox.markRead(threadId));
+      const readRequest = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/threads/${threadId}/read`,
+      });
+      expect(readRequest.request.body).toEqual({});
+      readRequest.flush(THREAD);
+      expect((await read).unreadCount).toBe(0);
+
+      const closed = firstValueFrom(inbox.close(threadId));
+      const closeRequest = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/threads/${threadId}/close`,
+      });
+      expect(closeRequest.request.body).toEqual({});
+      closeRequest.flush({ ...THREAD, data: { ...THREAD.data, status: 'closed' } });
+      expect((await closed).status).toBe('closed');
+    });
+
+    it('reads an attachment as bytes, with the token in a header and never in the address', async () => {
+      const message = toThreadMessage(THREAD_MESSAGES_PAGE.data[0]);
+      if (message === null) throw new Error('fixture unreadable');
+      const [media] = message.attachments;
+      if (media === undefined) throw new Error('fixture has no attachment');
+      const image = firstValueFrom(inbox.openAttachment(message, media));
+
+      const sent = http.expectOne(`${BASE}/media/${media}/content`);
+      expect(sent.request.responseType).toBe('blob');
+      expect(sent.request.headers.get('Authorization')).toBe('Bearer fixture-token');
+      expect(sent.request.urlWithParams).not.toMatch(/token/i);
+      sent.flush(new Blob(['jpeg bytes'], { type: 'image/jpeg' }));
+
+      expect(await image).toBeInstanceOf(Blob);
+    });
+
+    it('asks for no image the message does not carry', async () => {
+      const message = toThreadMessage(THREAD_MESSAGES_PAGE.data[1]);
+      if (message === null) throw new Error('fixture unreadable');
+
+      await expect(
+        firstValueFrom(inbox.openAttachment(message, asId<MediaId>('someone-elses-image'))),
+      ).rejects.toThrow(/no such image/);
+    });
+  });
+
+  describe('the office directory (DL-168)', () => {
+    it('reads every page of it, at the largest page the server allows', async () => {
+      const offices = firstValueFrom(TestBed.inject(HttpOfficeRepository).list());
+
+      const request = http.expectOne((r) => r.url === `${BASE}/offices`);
+      expect(request.request.params.get('limit')).toBe('50');
+      request.flush(OFFICES_PAGE);
+
+      expect((await offices).map((office) => office.shortName)).toEqual(['MSWDO', null]);
     });
   });
 });

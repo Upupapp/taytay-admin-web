@@ -95,8 +95,33 @@ const emptyInbox: NotificationRepository = {
   markAllRead: (): Observable<readonly AppNotification[]> => of([]),
 };
 
+/**
+ * What the Node API makes of a staff account no office is linked to (`DL-168`): no office-bound key,
+ * and the console told why.
+ */
+const UNASSIGNED_STAFF: AuthenticatedUser = {
+  id: asId<StaffUserId>('staff-unassigned'),
+  displayName: 'Unassigned staff',
+  email: 'unassigned@example.gov.ph',
+  role: null,
+  roleLabel: 'Staff',
+  position: '',
+  barangayId: null,
+  scope: 'assigned-cases',
+  permissions: new Set(),
+  awaitingOffice: true,
+};
+
+const signedInUnassignedStaff: StaffRepository = {
+  ...signedInAdministrator,
+  currentUser: (): Observable<AuthenticatedUser | null> => of(UNASSIGNED_STAFF),
+};
+
 /** An administrator, so that nothing withheld below is withheld for want of a permission. */
-async function signIn(unserved: readonly DataPort[] | 'mock-set'): Promise<void> {
+async function signIn(
+  unserved: readonly DataPort[] | 'mock-set',
+  account: StaffRepository = signedInAdministrator,
+): Promise<void> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -104,7 +129,7 @@ async function signIn(unserved: readonly DataPort[] | 'mock-set'): Promise<void>
       ...(unserved === 'mock-set'
         ? [provideDataAccess()]
         : [{ provide: UNSERVED_PORTS, useValue: unserved }]),
-      { provide: STAFF_REPOSITORY, useValue: signedInAdministrator },
+      { provide: STAFF_REPOSITORY, useValue: account },
       { provide: NOTIFICATION_REPOSITORY, useValue: emptyInbox },
     ],
   });
@@ -182,8 +207,31 @@ describe('the http adapter set', () => {
     for (const item of WITHHELD) {
       expect(links, `${item.route} reads a port this API does not serve`).not.toContain(item.route);
     }
-    // ID verification (DL-167) is the module the Node API serves; the casework is not.
-    expect(links).toEqual(['/verification', '/unavailable']);
+    // ID verification (DL-167) and the office inbox (DL-168) are the modules the Node API serves;
+    // the casework is not.
+    expect(links).toEqual(['/verification', '/inbox', '/unavailable']);
+  });
+
+  it('tells a staff account with no office why it has no inbox, and who can fix it (DL-168)', async () => {
+    await signIn(UNSERVED_HTTP_PORTS, signedInUnassignedStaff);
+
+    expect(await menuLinks()).not.toContain('/inbox');
+
+    const fixture = TestBed.createComponent(UnservedPage);
+    await fixture.whenStable();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('is not assigned to an office');
+    expect(text).toContain('An administrator assigns staff accounts to offices');
+  });
+
+  it('says nothing about an office to an account that is not waiting for one', async () => {
+    await signIn(UNSERVED_HTTP_PORTS);
+    const fixture = TestBed.createComponent(UnservedPage);
+    await fixture.whenStable();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain(
+      'not assigned to an office',
+    );
   });
 
   it('names every withheld module, and every port it lacks, on that page', async () => {
@@ -198,6 +246,8 @@ describe('the http adapter set', () => {
     // A served module is offered under "What you can open", never listed as withheld.
     expect(text).not.toContain('ID verification.');
     expect(text).toContain('ID verification —');
+    expect(text).not.toContain('Office inbox.');
+    expect(text).toContain('Office inbox —');
     for (const port of UNSERVED_HTTP_PORTS) {
       expect(text.toLowerCase(), port).toContain(DATA_PORT_HOLDINGS[port].toLowerCase());
     }

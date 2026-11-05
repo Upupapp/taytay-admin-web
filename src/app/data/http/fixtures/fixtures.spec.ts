@@ -15,6 +15,11 @@ import VALIDATION_FAILED from './validation-failed.json';
 import VERIFICATION_APPROVED from './verification-approved.json';
 import VERIFICATION_REJECTED from './verification-rejected.json';
 import VERIFICATION_REQUESTS_PAGE from './verification-requests-page.json';
+import OFFICES_PAGE from './offices-page.json';
+import THREAD from './thread.json';
+import THREAD_MESSAGES_PAGE from './thread-messages-page.json';
+import THREAD_REPLY from './thread-reply.json';
+import THREADS_PAGE from './threads-page.json';
 
 /**
  * **These fixtures are composed, not recorded** — and this file is why that is acceptable.
@@ -164,6 +169,11 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['verification-requests-page', VERIFICATION_REQUESTS_PAGE, 'VerificationStaffListEnvelope'],
     ['verification-approved', VERIFICATION_APPROVED, 'VerificationStaffEnvelope'],
     ['verification-rejected', VERIFICATION_REJECTED, 'VerificationStaffEnvelope'],
+    ['threads-page', THREADS_PAGE, 'ThreadListEnvelope'],
+    ['thread', THREAD, 'ThreadEnvelope'],
+    ['thread-messages-page', THREAD_MESSAGES_PAGE, 'MessageListEnvelope'],
+    ['thread-reply', THREAD_REPLY, 'ThreadMessageEnvelope'],
+    ['offices-page', OFFICES_PAGE, 'OfficeListEnvelope'],
   ] as const)('%s conforms to %s', (_name, fixture, envelope) => {
     expect(schema(envelope)).toBeDefined();
     expect(problems(fixture, schema(envelope), 'body')).toEqual([]);

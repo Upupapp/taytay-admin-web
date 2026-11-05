@@ -17,7 +17,9 @@
  *   2. The model carries no ID number and no image address; the port hands out bytes (`Blob`), never
  *      a URL, and the http adapter reads them through `ApiClient.blob` — the bearer token in a
  *      header, never in an address.
- *   3. Only the review component makes object URLs, and it revokes them and does so on destroy.
+ *   3. Object URLs are made only through the shared `ObjectUrls` holder — the one file that calls
+ *      `URL.createObjectURL`, and which revokes what it made (`DL-168`). The review holds its own,
+ *      makes the images' addresses with it, revokes them all, and does so on destroy.
  *   4. An image is fetched only from the warning's own button: `openImage` is called in exactly one
  *      method, and the template calls that method only inside the warning modal.
  *   5. Nothing in the module writes to storage or the console, and no template binds an image
@@ -48,6 +50,7 @@ const DOMAIN = join(APP, 'domain', 'verification', 'verification-request.ts');
 const FEATURE = join(APP, 'features', 'verification');
 const REVIEW = join(FEATURE, 'verification-review.ts');
 const REVIEW_TEMPLATE = join(FEATURE, 'verification-review.html');
+const OBJECT_URLS = join(APP, 'shared', 'media', 'object-urls.ts');
 const MAPPER = join(APP, 'data', 'http', 'mappers', 'verification.mapper.ts');
 const MOCK = join(APP, 'data', 'mock', 'mock-verification.repository.ts');
 const SEED = join(APP, 'data', 'mock', 'seed', 'verification-requests.seed.ts');
@@ -192,25 +195,37 @@ if (httpClass === '') {
   }
 }
 
-/* ── 3. object URLs are the review's, and are revoked ────────────────────── */
+/* ── 3. object URLs come from the one holder, and are revoked ───────────── */
 
 const reviewCode = code(read(REVIEW));
+const holderCode = code(read(OBJECT_URLS));
 
-for (const file of moduleFiles.filter((f) => f !== REVIEW)) {
+/*
+ * The holder (`DL-168`) is shared by every screen that shows fetched bytes, so its promise is
+ * checked here as well as in `check:inbox`: it is the only maker, and it revokes what it made.
+ */
+for (const file of walk(APP).filter((f) => f !== OBJECT_URLS && !f.endsWith('.spec.ts'))) {
   if (/URL\s*\.\s*createObjectURL/.test(code(readFileSync(file, 'utf8')))) {
     failures.push(
-      `${shown(file)} makes an object URL. Only the review does, so that one place revokes them all.`,
+      `${shown(file)} makes an object URL itself. Only ObjectUrls does, so one place revokes them all.`,
     );
   }
 }
-if (!/URL\s*\.\s*createObjectURL/.test(reviewCode)) {
+if (
+  !/URL\s*\.\s*createObjectURL/.test(methodBody(holderCode, 'make') ?? '') ||
+  !/URL\s*\.\s*revokeObjectURL/.test(methodBody(holderCode, 'revokeAll') ?? '')
+) {
+  failures.push('ObjectUrls must make object URLs in make() and revoke them in revoke() and revokeAll().');
+}
+if (!/new\s+ObjectUrls\(\)/.test(reviewCode) || !/this\s*\.\s*objectUrls\s*\.\s*make\(/.test(reviewCode)) {
   failures.push(
-    'The review makes no object URL, so this check cannot vouch for how its images are shown.',
+    'The review does not make its images’ addresses with its own ObjectUrls, so this check ' +
+      'cannot vouch for how they are shown.',
   );
 }
-if (!/URL\s*\.\s*revokeObjectURL/.test(reviewCode)) {
+if (!/this\s*\.\s*objectUrls\s*\.\s*revokeAll\(\)/.test(reviewCode)) {
   failures.push(
-    'The review never revokes an object URL. A government ID would outlive the review in memory.',
+    'The review never revokes its object URLs. A government ID would outlive the review in memory.',
   );
 }
 if (

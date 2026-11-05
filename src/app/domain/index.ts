@@ -77,6 +77,8 @@ export * from './visits/field-visit';
 export * from './visits/visit-capture';
 export * from './visits/visit-observation';
 export * from './verification/verification-request';
+export * from './inbox/office-thread';
+export * from './offices/office';
 export * from './views/saved-view';
 export * from './work/office-alert';
 export * from './work/work-item';

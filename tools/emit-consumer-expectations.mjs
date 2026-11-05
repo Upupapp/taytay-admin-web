@@ -126,9 +126,9 @@ interactions.sort((a, b) => `${a.path} ${a.method}`.localeCompare(`${b.path} ${b
 /*
  * ── Held to the vendored spec ─────────────────────────────────────────────
  *
- * The object a mapper reads is the `data` of the operation's 200 answer — the item itself, or one
- * element of a list. Its declared properties are what the console may read; its `required` list is
- * what the console may depend on.
+ * The object a mapper reads is the `data` of the operation's success answer (200, else 201) — the
+ * item itself, or one element of a list. Its declared properties are what the console may read;
+ * its `required` list is what the console may depend on.
  */
 const spec = JSON.parse(readFileSync(join(ROOT, 'src/app/data/http/contract/openapi.json'), 'utf8'));
 
@@ -161,7 +161,12 @@ function payloadOf(method, path) {
   for (const [candidate, item] of Object.entries(spec.paths ?? {})) {
     if (normalise(candidate.replace(/^\/api\/v1\//, '')) !== normalise(path)) continue;
 
-    const answer = resolve(item[method.toLowerCase()]?.responses?.['200']?.content?.['application/json']?.schema);
+    // The success answer: `200`, or `201` where the operation creates and answers with nothing else
+    // — a reply to a conversation (`DL-168`). Without the fallback such a mapper could not be
+    // tagged at all, and an untagged mapper is one this comparison never reads.
+    const responses = item[method.toLowerCase()]?.responses;
+    const success = responses?.['200'] ?? responses?.['201'];
+    const answer = resolve(success?.content?.['application/json']?.schema);
     const data = resolve(answer?.properties?.data);
     return [data?.type].flat().includes('array') ? flatten(data.items) : flatten(data);
   }

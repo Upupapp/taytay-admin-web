@@ -74,6 +74,7 @@
       "optional": [
         "email",
         "name",
+        "office_id",
         "permissions"
       ]
     },
@@ -105,6 +106,119 @@
         "read_at",
         "title",
         "type"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "offices",
+      "consumer": "office.mapper.ts#toOffice",
+      "required": [
+        "id",
+        "name",
+        "slug"
+      ],
+      "optional": [
+        "short_name"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "threads",
+      "consumer": "office-thread.mapper.ts#toOfficeThread",
+      "required": [
+        "created_at",
+        "id",
+        "office_id",
+        "office_slug",
+        "resident_id",
+        "status",
+        "subject",
+        "unread_count",
+        "updated_at"
+      ],
+      "optional": [
+        "last_message_at"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "threads/{id}",
+      "consumer": "office-thread.mapper.ts#toOfficeThread",
+      "required": [
+        "created_at",
+        "id",
+        "office_id",
+        "office_slug",
+        "resident_id",
+        "status",
+        "subject",
+        "unread_count",
+        "updated_at"
+      ],
+      "optional": [
+        "last_message_at"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "threads/{id}/close",
+      "consumer": "office-thread.mapper.ts#toOfficeThread",
+      "required": [
+        "created_at",
+        "id",
+        "office_id",
+        "office_slug",
+        "resident_id",
+        "status",
+        "subject",
+        "unread_count",
+        "updated_at"
+      ],
+      "optional": [
+        "last_message_at"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "threads/{id}/messages",
+      "consumer": "office-thread.mapper.ts#toThreadMessage",
+      "required": [
+        "body",
+        "created_at",
+        "id",
+        "sender_id",
+        "thread_id"
+      ],
+      "optional": [
+        "attachments"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "threads/{id}/messages",
+      "consumer": "office-thread.mapper.ts#toPostedMessage",
+      "required": [
+        "message"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "threads/{id}/read",
+      "consumer": "office-thread.mapper.ts#toOfficeThread",
+      "required": [
+        "created_at",
+        "id",
+        "office_id",
+        "office_slug",
+        "resident_id",
+        "status",
+        "subject",
+        "unread_count",
+        "updated_at"
+      ],
+      "optional": [
+        "last_message_at"
       ]
     }
   ]

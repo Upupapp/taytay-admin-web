@@ -194,6 +194,15 @@ export const PERMISSIONS = [
    * granted it in the mock either. Mutating, not a read: it approves or rejects an identity.
    */
   'verification.review',
+
+  /*
+   * THE OFFICE INBOX (`DL-168`) — the server's key, spelled as its `StaffCapability`.
+   *
+   * The server gives it to `admin`, and to `staff` **only while the account is assigned to an
+   * office**: an unassigned staff account holds no key, and the console says why rather than
+   * showing an empty inbox. Mutating — it replies to residents and closes conversations.
+   */
+  'office-inbox.manage',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -248,6 +257,10 @@ const INTAKE_PERMISSIONS: readonly Permission[] = [
   'request.intake',
   'document.record',
   'referral.view',
+  // Mirrors the server (`DL-168`): every staff account assigned to an office answers that office's
+  // residents. The roles that work at the MSWDO hold it; the barangay link, who works from a
+  // barangay rather than at an office, and the auditor, whose role is read-only, do not.
+  'office-inbox.manage',
 ];
 
 const SOCIAL_WORKER_PERMISSIONS: readonly Permission[] = [
@@ -375,6 +388,8 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'release.schedule',
       'release.release',
       'report.view',
+      // A staff account at the office, so it answers the office's residents, as on the server.
+      'office-inbox.manage',
     ],
   },
   'barangay-link': {

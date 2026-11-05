@@ -79,6 +79,12 @@ describe('role definitions', () => {
       ['system-administrator'],
     );
   });
+
+  it('gives the office inbox to the roles that work at the office, as the API does (DL-168)', () => {
+    expect(ROLES.filter((role) => permissionsForRole(role).includes('office-inbox.manage'))).toEqual(
+      ['system-administrator', 'mswdo-head', 'social-worker', 'intake-officer', 'release-officer'],
+    );
+  });
 });
 
 describe('permission requirements', () => {

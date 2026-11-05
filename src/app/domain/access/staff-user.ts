@@ -51,6 +51,16 @@ export interface AuthenticatedUser {
    * session rather than per check.
    */
   readonly unknownPermissions?: readonly string[];
+  /**
+   * True for a server `staff` account that no office is linked to (`DL-168`).
+   *
+   * The server withholds the office inbox and news posting from such an account and answers its
+   * inbox with an empty list, so without this the console could only show nothing — and nothing
+   * reads as "residents are quiet". Carried so a screen can say what is true instead: the account
+   * is not assigned to an office, and an administrator assigns one. Absent in the mock, which has
+   * no offices, and for an administrator, who acts for every office. Nothing is granted from it.
+   */
+  readonly awaitingOffice?: boolean;
 }
 
 export interface StaffFilter {
@@ -111,6 +121,7 @@ export function fromServerIdentity(identity: ServerIdentity): AuthenticatedUser 
     scope: identity.scope,
     permissions: granted,
     unknownPermissions: unknown,
+    awaitingOffice: identity.awaitingOffice,
   };
 }
 
@@ -128,6 +139,8 @@ export interface ServerIdentity {
   readonly barangayId: BarangayId | null;
   readonly scope: DataScope;
   readonly permissions: readonly string[];
+  /** A `staff` account the server has linked to no office (`AuthenticatedUser.awaitingOffice`). */
+  readonly awaitingOffice: boolean;
 }
 
 /**

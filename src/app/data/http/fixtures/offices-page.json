@@ -1,0 +1,45 @@
+{
+  "data": [
+    {
+      "id": "3c9a7e21-5b84-4d1f-a0c6-1e2f3a4b5c66",
+      "name": "Municipal Social Welfare and Development Office",
+      "slug": "mswdo",
+      "short_name": "MSWDO",
+      "description": null,
+      "head": null,
+      "hours": "Monday to Friday, 8:00 to 17:00",
+      "phone": null,
+      "email": null,
+      "latitude": null,
+      "longitude": null,
+      "address": null,
+      "banner_media_id": null,
+      "hero_url": null,
+      "service_lines": [],
+      "category": null,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z"
+    },
+    {
+      "id": "3c9a7e21-5b84-4d1f-a0c6-1e2f3a4b5c67",
+      "name": "Municipal Health Office",
+      "slug": "mho",
+      "short_name": null,
+      "description": null,
+      "head": null,
+      "hours": null,
+      "phone": null,
+      "email": null,
+      "latitude": null,
+      "longitude": null,
+      "address": null,
+      "banner_media_id": null,
+      "hero_url": null,
+      "service_lines": [],
+      "category": null,
+      "created_at": "2026-09-01T00:00:00.000Z",
+      "updated_at": "2026-09-01T00:00:00.000Z"
+    }
+  ],
+  "meta": { "pagination": { "has_more": false, "next_cursor": null } }
+}

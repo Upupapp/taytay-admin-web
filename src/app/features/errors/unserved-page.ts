@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { RouterLink } from '@angular/router';
 
 import { PermissionService } from '@core/access/permission.service';
+import { SessionStore } from '@core/auth/session.store';
 import { ServedPorts } from '@core/access/served-ports';
 import { NAVIGATION, type NavItem } from '@core/navigation/navigation';
 import { DATA_PORT_HOLDINGS, type DataPort } from '@domain/index';
@@ -84,6 +85,9 @@ interface WithheldModule {
       } @else {
         <p>{{ copy.nothingAvailable }}</p>
       }
+      @if (awaitingOffice()) {
+        <p>{{ copy.awaitingOffice }}</p>
+      }
     </section>
   `,
   styles: `
@@ -104,6 +108,7 @@ interface WithheldModule {
 export class UnservedPage {
   private readonly served = inject(ServedPorts);
   private readonly permissions = inject(PermissionService);
+  private readonly session = inject(SessionStore);
 
   protected readonly copy = UNSERVED_COPY;
 
@@ -126,6 +131,12 @@ export class UnservedPage {
           .map((port) => DATA_PORT_HOLDINGS[port]),
       })),
   );
+
+  /**
+   * A staff account with no office lands here having been offered no inbox (`DL-168`). The reason
+   * is the server's, and an officer who is not told it concludes the inbox does not exist.
+   */
+  protected readonly awaitingOffice = computed(() => this.session.user()?.awaitingOffice === true);
 
   /** The same filter the menu applies, so this list and the menu never disagree. */
   protected readonly available = computed<readonly NavItem[]>(() =>

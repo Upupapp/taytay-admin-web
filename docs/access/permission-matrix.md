@@ -35,7 +35,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-71 permissions × 7 roles. `X` means the role holds the permission.
+72 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -116,6 +116,11 @@ self-registration), `DL-33` (accessible authentication).
 <!-- Residents' app, added by DL-167. The key is the Node API's own StaffCapability. -->
 
 | `verification.review`             | X     |       |       |       |       |       |      |
+
+<!-- Office inbox, added by DL-168. The server's own key: staff while assigned to an office, and
+     admin. The roles that work at the MSWDO hold it; the barangay link and the auditor do not. -->
+
+| `office-inbox.manage`             | X     | X     | X     | X     | X     |       |      |
 
 ---
 

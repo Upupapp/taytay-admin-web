@@ -47,6 +47,8 @@ const SEED_MARKERS = [
   'MOCK_LATENCY',
   // The verification seed's drawn placeholders (`DL-167`): a sample "ID" must never ship.
   'SAMPLE ONLY - NOT A REAL ID',
+  // The office inbox seed's drawn attachments (`DL-168`).
+  'SAMPLE ONLY - NOT A REAL ATTACHMENT',
   'mockLatencyMs":250',
 ];
 

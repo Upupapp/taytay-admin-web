@@ -21,7 +21,8 @@ sensitive things this console shows, so:
   travels in the `Authorization` header and never in an address. An `<img src>` pointed at the API
   could not send that header, and would need the token in the query string.
 - **Object URLs are made in one place and revoked.** `VerificationReview` turns the bytes into `blob:`
-  URLs and revokes every one when the images are hidden, when another request is opened in the same
+  URLs through its own `ObjectUrls` (`shared/media/object-urls.ts`, since `DL-168` the one file in
+  the console that makes one) and revokes every one when the images are hidden, when another request is opened in the same
   drawer, and when the review closes or the page is left. Nothing is written to storage.
 - **Nothing reaches a log.** A failure says only that the images could not be opened. The request
   carries no ID number — the API sends none — and the model is checked to keep it that way.
@@ -74,8 +75,10 @@ The API sends a request with the account id, the ID type, the images, the dates 
 resident wrote — and **not** the account holder's name, birth date or address. So this review can
 establish that the selfie shows the person on the ID and that the ID is legible and of the kind
 stated; it cannot compare the ID with what the account says about itself. The screen says this. Whether
-the review should also read the account (`GET admin/users/{id}`, `user.view`) is the owner's decision:
-it is more personal data on the screen, for a better-grounded decision.
+the review should also show the account's name and birth date is the owner's decision: it is more
+personal data on the screen, for a better-grounded decision. It would need the API as well — the
+vendored spec at `2736e28` has no `GET admin/users/{id}`, and `GET admin/users` omits birth dates
+(`DL-168`).
 
 ## Access
 
@@ -97,8 +100,8 @@ is the protection: the API refuses anybody else.
 ## Checks
 
 `check:verification` (in `verify`) holds the module to the above: no decision-shaped or identifying
-field on the model, no deciding function, bytes not URLs, object URLs made only by the review and
-revoked on hide and on destroy, `openImage` called only from the warning's own button, no storage or
+field on the model, no deciding function, bytes not URLs, object URLs made only through `ObjectUrls`
+and revoked on hide and on destroy, `openImage` called only from the warning's own button, no storage or
 console, no other image source, the reason sent as `notes`, the reader named, the consequences taken
 from the domain's list, and the key held by the administrator alone. Eighteen planted regressions,
 each caught.

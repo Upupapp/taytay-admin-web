@@ -64,5 +64,7 @@ export function toServerIdentity(wire: unknown): ServerIdentity | null {
     barangayId: null,
     scope: 'assigned-cases',
     permissions: list(field(wire, 'permissions'), str),
+    // An administrator acts for every office; only a staff account can be without one (`DL-168`).
+    awaitingOffice: role === 'staff' && str(field(wire, 'office_id')) === null,
   };
 }

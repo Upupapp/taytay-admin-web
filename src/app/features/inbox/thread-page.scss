@@ -1,0 +1,126 @@
+/* Layout only: every author, warning and outcome is text in the DOM, never colour alone. */
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-section);
+}
+
+.thread__back {
+  margin: 0;
+  font-size: 13px;
+}
+
+.thread__block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+}
+
+.thread__heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.thread__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-snug);
+  margin: 0;
+}
+
+.thread__facts dt {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.thread__facts dd {
+  margin: 0;
+}
+
+.thread__acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-snug);
+}
+
+.thread__note,
+.thread__problem,
+.thread__outcome {
+  margin: 0;
+  font-size: 13px;
+}
+
+.thread__note {
+  color: var(--c-text-muted);
+}
+
+.thread__messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.thread__message {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+  padding: var(--space-snug);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+}
+
+/* Indented as well as labelled, so who wrote it never rests on position or colour alone. */
+.thread__message--office {
+  margin-inline-start: var(--space-section);
+}
+
+.thread__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-snug);
+  margin: 0;
+  font-size: 12.5px;
+}
+
+.thread__body {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.thread__images {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-snug);
+}
+
+.thread__figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+  margin: 0;
+  font-size: 12.5px;
+}
+
+.thread__image {
+  max-inline-size: min(100%, 480px);
+  block-size: auto;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+}
+
+.thread__draft {
+  inline-size: 100%;
+}
+
+.thread__warning {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+}

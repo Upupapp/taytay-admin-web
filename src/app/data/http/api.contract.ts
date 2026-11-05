@@ -154,8 +154,15 @@ export const API_ENDPOINTS = {
    * by `status`; decided with `POST {id}/approve` and `POST {id}/reject` (`DL-167`).
    */
   verificationRequests: 'admin/verification-requests',
-  /** Stored images. Only `GET {id}/content` is read, as bytes, after a reviewer is warned. */
+  /** Stored images. Only `GET {id}/content` is read, as bytes, after a reader is warned. */
   media: 'media',
+  /**
+   * Residents' conversations with an office (`DL-168`, `office-inbox.manage`). Cursor-paged; one by
+   * `{id}`, its messages at `{id}/messages`, and `POST {id}/messages`, `{id}/read`, `{id}/close`.
+   */
+  threads: 'threads',
+  /** The office directory. Public and cursor-paged; read in full for a picker (`DL-161`). */
+  offices: 'offices',
 } as const;
 
 /** The one place `meta.pagination` becomes a domain `CursorPage`. */

@@ -82,6 +82,12 @@ export type VerificationRequestId = Branded<string, 'VerificationRequestId'>;
 export type AppAccountId = Branded<string, 'AppAccountId'>;
 /** An image the API stores — read as bytes through the data layer, never as a URL. */
 export type MediaId = Branded<string, 'MediaId'>;
+/** An LGU office in the residents' app's directory — the MSWDO is one of several (`DL-168`). */
+export type OfficeId = Branded<string, 'OfficeId'>;
+/** A conversation between one resident and one office (`DL-168`). */
+export type OfficeThreadId = Branded<string, 'OfficeThreadId'>;
+/** One message in an office conversation (`DL-168`). */
+export type ThreadMessageId = Branded<string, 'ThreadMessageId'>;
 
 /**
  * The single sanctioned way to turn an untyped string (route param, API payload)

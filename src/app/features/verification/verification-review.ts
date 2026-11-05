@@ -34,6 +34,8 @@ import {
   type StatusTransitionRequest,
   type TransitionGuidance,
 } from '@shared/cases/status-transition';
+import { ObjectUrls } from '@shared/media/object-urls';
+import { failureReason } from '@shared/state/failure-reason';
 import { failed, IDLE, LOADING, ready, type ViewState } from '@shared/state/view-state';
 import { Modal } from '@shared/ui/modal/modal';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
@@ -43,19 +45,8 @@ import { VERIFICATION_COPY } from './verification.copy';
 interface OpenedImage {
   readonly kind: VerificationImageKind;
   readonly label: string;
-  /** A `blob:` URL this component created, and the only place it is held, so it can be revoked. */
+  /** A `blob:` URL this component's `ObjectUrls` made, and the only place it is held. */
   readonly url: string;
-}
-
-/**
- * The sentence a refusal carries — an `Error` from the mock, an `ApiFailure` from the HTTP error
- * interceptor — or `null`. Only ever the server's or the adapter's own words: no request field, image
- * or identifier is in either.
- */
-function reasonGiven(failure: unknown): string | null {
-  const message: unknown =
-    failure !== null && typeof failure === 'object' ? Reflect.get(failure, 'message') : undefined;
-  return typeof message === 'string' && message.trim() !== '' ? message : null;
 }
 
 /**
@@ -66,10 +57,10 @@ function reasonGiven(failure: unknown): string | null {
  * They are **not loaded until the reviewer asks**, and asking opens a warning first — the
  * `openDocument` precedent (`DL-77`): reading a sensitive file is a separate act, said before it
  * happens. Only after "Show them" does the data layer fetch the bytes, with the bearer token in a
- * header (`ApiClient.blob`), never in a URL. The bytes become object URLs held in this component and
- * nowhere else, and every one is **revoked** when the images are hidden, when another request is
- * opened in this drawer, and when the component is destroyed — closing the review or leaving the
- * page. Nothing is written to storage, and a failure says only that the images could not be opened:
+ * header (`ApiClient.blob`), never in a URL. The bytes become object URLs made by this component's
+ * own `ObjectUrls` and held nowhere else, and every one is **revoked** when the images are hidden,
+ * when another request is opened in this drawer, and when the component is destroyed — closing the
+ * review or leaving the page. Nothing is written to storage, and a failure says only that the images could not be opened:
  * no image, address or identifier reaches a message or a log.
  *
  * ## A decision says what it does before it is made
@@ -93,6 +84,7 @@ function reasonGiven(failure: unknown): string | null {
 export class VerificationReview {
   private readonly repository = inject(VERIFICATION_REPOSITORY);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly objectUrls = new ObjectUrls();
 
   readonly request = input.required<VerificationRequest>();
 
@@ -178,7 +170,7 @@ export class VerificationReview {
               blobs.map(({ kind, blob }) => ({
                 kind,
                 label: VERIFICATION_IMAGE_LABELS[kind],
-                url: URL.createObjectURL(blob),
+                url: this.objectUrls.make(blob),
               })),
             ),
           );
@@ -216,19 +208,14 @@ export class VerificationReview {
       },
       error: (failure: unknown) => {
         this.busy.set(false);
-        this.outcome.set(this.copy.notRecorded(reasonGiven(failure) ?? this.copy.failed));
+        this.outcome.set(this.copy.notRecorded(failureReason(failure) ?? this.copy.failed));
       },
     });
   }
 
   /** Revokes every object URL this component made. Idempotent. */
   private discardImages(): void {
-    const current = this.images();
-    if (current.kind === 'ready') {
-      for (const image of current.value) {
-        URL.revokeObjectURL(image.url);
-      }
-    }
+    this.objectUrls.revokeAll();
     this.images.set(IDLE);
   }
 }

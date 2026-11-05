@@ -1,0 +1,40 @@
+/* Layout only. `.field`, `.card` and `.btn` are styles.scss's (DL-120) and are not redefined. */
+
+.inbox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+}
+
+.inbox__heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.inbox__no-office {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+}
+
+.inbox__no-office p {
+  margin: 0;
+}
+
+.inbox__note,
+.inbox__problem {
+  margin: 0;
+  font-size: 13px;
+}
+
+.inbox__note {
+  color: var(--c-text-muted);
+}
+
+.inbox__more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-snug);
+  margin-block-start: var(--space-snug);
+}

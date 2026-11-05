@@ -30,6 +30,8 @@ export const DATA_PORTS = [
   'staff',
   'notification',
   'verification',
+  'office-inbox',
+  'office',
 ] as const;
 
 export type DataPort = (typeof DATA_PORTS)[number];
@@ -62,6 +64,8 @@ export const DATA_PORT_HOLDINGS: Readonly<Record<DataPort, string>> = {
   staff: 'the staff directory',
   notification: 'notifications',
   verification: 'ID verification requests',
+  'office-inbox': 'the office inbox',
+  office: 'the office directory',
 };
 
 /**

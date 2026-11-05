@@ -34,6 +34,11 @@ export const UNSERVED_COPY = {
   nothingAvailable:
     'Nothing in the menu that your account may open is served by this API yet. Your inbox, under ' +
     'the bell at the top of the page, still works.',
+  // `DL-168`: the server's own reason this account cannot open the office inbox, said where it lands.
+  awaitingOffice:
+    'Your account is staff but is not assigned to an office, so the office inbox — which shows ' +
+    'an office’s conversations with residents — is not open to you. An administrator assigns ' +
+    'staff accounts to offices, under Users and roles; once you are assigned, sign in again.',
 } as const;
 
 /** "a", "a and b", "a, b and c" — a sentence, not a comma-separated dump. */

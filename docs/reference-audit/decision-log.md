@@ -5714,3 +5714,92 @@ The launch gate stays **NO-GO**. `npm run verify` is green on Windows: 102 spec 
 (98 and 1,732 after part 1 — four new spec files, for the domain model, the mapper, the mock adapter
 and the screen; the HTTP adapters, the fixtures, the permission matrix, the layout and the unserved
 modules gained tests in their own).
+
+## DL-168 — the office inbox and users and roles: two screens on what the Node API serves
+
+Step 6 of `docs/integration/node-api-migration.md`, after `DL-167`'s ID verification review. Two
+staff surfaces the API has served since `DL-164` and no screen has used: residents writing to an
+office, and the administrator deciding who is staff. Both are built the way the review was — shaped
+like the API's resource, privacy decided in the data layer, what an act does said before the button
+— and both move ports from "no screen" to "served", not from "unserved" to "served": the eighteen
+unserved casework ports are unchanged.
+
+### 1. The office inbox
+
+`GET threads` (cursor-paged; the server's scope: staff see their office's, an administrator every
+office's), `GET threads/{id}`, `GET threads/{id}/messages` (cursor-paged, newest first),
+`POST threads/{id}/messages`, `POST threads/{id}/read`, `POST threads/{id}/close`, and
+`GET media/{id}/content` for attachments, under `office-inbox.manage`. The office directory
+(`GET offices`, public) names the office each conversation went to. Two new ports, `office-inbox` and
+`office`, both served in the http set. The screen is described in
+[`docs/inbox/README.md`](../inbox/README.md); the decisions are these.
+
+- **What a resident wrote is read by opening it.** The API sends the first 140 characters of the
+  latest message with every row; the mapper does not read it and the model has no field for it, so
+  the list shows subjects, never words. Nothing in the module logs, stores or notifies — a toast that
+  quoted a message would put it on every screen nearby. A refusal repeats the server's sentence, never
+  what was being sent (`failureReason`, moved to `shared/state` because two features now use it).
+- **No name, said so.** A conversation carries the resident's account id and nothing else, and the
+  console has no read that names an account by id. The list says that what was written is shown, not
+  who wrote it. Whether staff should see a name is owner decision 8.
+- **Attachments follow the ID review exactly.** Loaded only after a warning; bytes through
+  `ApiClient.blob`, for a media id the message carries and no other; object URLs revoked on hide, on
+  another conversation and on leave. The object-URL handling the review had inline is now
+  `ObjectUrls` (`shared/media`) — CLAUDE.md §4: two features need it — and it is the one file in the
+  console that calls `URL.createObjectURL`. `check:verification` rule 3 was rewritten to hold the
+  review to the holder rather than to its own calls, and is no looser: four plants, each caught.
+- **An empty inbox is asked about before it is believed.** The API answers a staff account with no
+  office with an empty page, not a refusal — the same answer as an office nobody has written to. At
+  sign-in such an account holds no key and is offered no inbox; `GET me` now also says it has no
+  office (`AuthenticatedUser.awaitingOffice`, read from `office_id`, never granting anything), and the
+  page it lands on says it is not assigned and that an administrator assigns offices under Users and
+  roles. Mid-session — the assignment removed after sign-in — the adapter asks `GET me` before
+  believing an empty first page and answers `no-office`, which the list renders as that explanation
+  instead of the table. "No conversations" is said only to an account that has an office.
+- **A conversation has an address.** Unlike a verification request, one thread can be read by id, so
+  `/inbox/{id}` is a route a reload or a colleague's link answers. After every act it is read again,
+  never patched, and read **quietly** — what is on screen stays until the answer arrives, so the
+  reader's focus and the live region telling them the outcome are not wiped by a skeleton.
+- **Mark read is the office's mark.** The API keeps one `office_last_read_at` per conversation, so
+  marking read clears the count for every colleague; the screen says so before the button, and
+  opening a conversation does not mark it read. That `unread_count` also counts colleagues' replies is
+  a backend item, recorded in the migration doc.
+- **Close is confirmed and asks no reason.** The server records `thread.closed` against the account
+  and accepts no body, so there is nowhere for a reason to go; a box whose words go nowhere is a
+  record somebody believes exists. The confirmation lists what closing does
+  (`THREAD_CLOSE_EFFECTS`, read from the handler at `2736e28`) — including that the resident is not
+  told, and that nothing reopens it. `open → closed`, terminal (rule 7).
+- **Replies are words.** The API also accepts an image with a reply; sending one needs a multipart
+  upload no adapter has, and every contract check would have to learn it. Not done, and said on the
+  screen.
+- **One vocabulary.** `office-inbox.manage` joins `PERMISSIONS` as the server spells it (`DL-122`).
+  Mutating. In the mock it is held by the roles that work at the MSWDO — head, social worker, intake
+  officer, release officer — and the administrator; not by the barangay link, who works from a
+  barangay rather than at an office (the server's "no office" case), nor the auditor, whose role is
+  read-only. The mock does not model offices: every holder sees every seeded conversation, as an
+  administrator does on the server.
+- **The admin fixture was wrong.** `me-admin.json` listed thirteen capabilities; the backend's
+  `capabilitiesFor('admin')` returns all fifteen. It now carries `news.write` and
+  `office-inbox.manage`, and the sign-in tests say which server keys the console keeps.
+
+#### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:routes` | none | 7 endpoints, 16 composed requests, each served at its verb |
+| `check:response-shape` | none | 11 of 11 reads agree with their envelope |
+| `check:wire-adoption` | none | 8 of 8 bodies declared by their operation — `{ body }` for a reply, `{}` for read and close |
+| `check:query-params` | none | 11 reads, every key declared |
+| `check:consumer-contract` | the comparison reads a `201` answer where an operation has no `200` — a reply's `{ thread, message }` — so its mapper can be tagged rather than left unread | 13 interactions, 73 required fields |
+| `check:port-adoption` | none | 156 of 167 port methods reached; the 11 unreached unchanged |
+| `check:unserved` | none | 23 ports, 18 unserved; 52 routed screens, 20 menu entries |
+| `check:permission-parity` | none | 42 of 46 guards unreachable, the ceiling held — both new guards are reachable |
+| `check:access` | matrix row | 72 permissions × 7 roles |
+| `check:verification` | rule 3 against `ObjectUrls` | four plants, each caught |
+| `check:bundle` | the inbox seed's placeholder wording is a seed marker | — |
+| `check:inbox` | new, in `verify` — eight rules, see `docs/inbox/README.md` | twenty-four plants, each caught, every file restored byte for byte |
+
+`npm run verify` is green on Windows after this part: 106 spec files, 1,843 tests (102 and 1,790
+before — four new spec files, for the domain model, the mappers, the mock adapter and the two
+screens; the HTTP adapters, the fixtures, the identity, the permission matrix, the layout and the
+unserved modules gained tests in their own).

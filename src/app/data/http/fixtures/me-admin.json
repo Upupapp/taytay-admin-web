@@ -21,6 +21,8 @@
     "permissions": [
       "household.view-counts",
       "digital-id.verify",
+      "news.write",
+      "office-inbox.manage",
       "user.view",
       "user.change-role",
       "user.assign-office",

@@ -110,7 +110,19 @@ import type {
   MembershipChange,
 } from '../households/household';
 import type { HouseholdDetail, HouseholdSummary } from '../households/household-profile';
-import type { DocumentRequestId, DuplicatePairId, VerificationRequestId } from '../shared/ids';
+import type {
+  DocumentRequestId,
+  DuplicatePairId,
+  MediaId,
+  OfficeThreadId,
+  VerificationRequestId,
+} from '../shared/ids';
+import type {
+  InboxListing,
+  OfficeThread,
+  ThreadMessage,
+} from '../inbox/office-thread';
+import type { Office } from '../offices/office';
 import type {
   VerificationFilter,
   VerificationImageKind,
@@ -1375,3 +1387,59 @@ export interface VerificationRepository {
 export const VERIFICATION_REPOSITORY = new InjectionToken<VerificationRepository>(
   'VerificationRepository',
 );
+
+/* ── the office inbox (`DL-168`) ─────────────────────────────────────────── */
+
+/**
+ * Residents' conversations with an office, answered by its staff (`office-inbox.manage`).
+ *
+ * Whose conversations are listed is the **server's** decision: a staff account sees its own office's,
+ * an administrator every office's. Nothing here filters by office, because a filter the console
+ * applied would be a scope the server does not enforce (rule 4).
+ */
+export interface OfficeInboxRepository {
+  /**
+   * One cursor page, newest activity first as the server orders it — or `no-office` when an empty
+   * answer means the account has no office rather than that nobody wrote (`InboxListing`).
+   */
+  list(page: CursorRequest): Observable<InboxListing>;
+
+  /** One conversation, by id — the page a reload or a shared link must be able to answer. */
+  thread(id: OfficeThreadId): Observable<OfficeThread>;
+
+  /** One cursor page of its messages, newest first as the server orders them. */
+  messages(id: OfficeThreadId, page: CursorRequest): Observable<CursorPage<ThreadMessage>>;
+
+  /** Sends the office's reply. Refused by the server once the conversation is closed. */
+  reply(id: OfficeThreadId, body: string): Observable<ThreadMessage>;
+
+  /** Marks it read for **the whole office** — one mark, shared (`THREAD_READ_EFFECT`). */
+  markRead(id: OfficeThreadId): Observable<OfficeThread>;
+
+  /** Closes it for both sides. The server keeps who and when, and no reason (`THREAD_CLOSE_EFFECTS`). */
+  close(id: OfficeThreadId): Observable<OfficeThread>;
+
+  /**
+   * One image a message carries, as bytes — a **method rather than an address**, as with
+   * `VerificationRepository.openImage`: reading it is an act the data layer performs when somebody
+   * has asked, and an address to the API would need the bearer token, which belongs in no URL.
+   */
+  openAttachment(message: ThreadMessage, media: MediaId): Observable<Blob>;
+}
+
+export const OFFICE_INBOX_REPOSITORY = new InjectionToken<OfficeInboxRepository>(
+  'OfficeInboxRepository',
+);
+
+/* ── the office directory (`DL-168`) ─────────────────────────────────────── */
+
+export interface OfficeRepository {
+  /**
+   * **Every** office, or an error — never the first page presented as the whole (`DL-161`). Read by
+   * a picker and to name an office on screen, where a missing office reads as one that does not
+   * exist.
+   */
+  list(): Observable<readonly Office[]>;
+}
+
+export const OFFICE_REPOSITORY = new InjectionToken<OfficeRepository>('OfficeRepository');
