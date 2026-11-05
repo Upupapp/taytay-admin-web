@@ -225,6 +225,7 @@ describe('navigation when the API cannot serve a module', () => {
       'tulong-service',
       'hotline',
       'home-screen',
+      'app-config',
     ]);
     const fixture = TestBed.createComponent(AppNav);
     await fixture.whenStable();

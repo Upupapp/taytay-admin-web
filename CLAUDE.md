@@ -119,7 +119,8 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:mapper-adoption`, `check:permission-parity`, `check:environments`,
 `check:bundle`, `check:routes`, `check:response-shape`, `check:wire-adoption`,
 `check:port-adoption`, `check:scanners`, `check:unserved`, `check:verification`,
-`check:inbox`, `check:accounts`, `check:directory` and `check:home`.
+`check:inbox`, `check:accounts`, `check:directory`, `check:home` and
+`check:app-settings`.
 `check:unserved` keeps a module whose port the active adapter set cannot serve out
 of the navigation and names it on one page (`DL-167`); `check:verification` holds
 the ID-review screen to its privacy rules — images only after a warning, fetched
@@ -134,7 +135,10 @@ no reason collected, and one's own role never offered (`DL-168`);
 before its button, deleting only through a confirmation, refusing an image before
 it is sent, and never treating a Tulong page as a programme (`DL-170`);
 `check:home` holds the app's home screen to the same, and to saying — rather than
-collecting — that the API keeps no description of a banner's image (`DL-170`, `DL-125`).
+collecting — that the API keeps no description of a banner's image (`DL-170`, `DL-125`);
+`check:app-settings` sends a change to the app's settings only from a confirmation
+that lists what it does, and only once the administrator has acknowledged a change
+that can make every resident update the app or accept again (`DL-170`).
 Each enforces a rule a comment could not, and each was validated against planted
 regressions. Do not weaken one to make a change pass.
 

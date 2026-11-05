@@ -194,6 +194,10 @@ export const API_ENDPOINTS = {
   adminLinks: 'admin/home/links',
   /** The home screen as the app is given it — public, one object. */
   home: 'home',
+  /** The residents' app's settings — public, one object, read by every app (`DL-170`). */
+  appConfig: 'app/config',
+  /** The same settings, changed (`app-config.manage`): one JSON `PATCH` of only what changed. */
+  adminAppConfig: 'admin/app/config',
 } as const;
 
 /** The one place `meta.pagination` becomes a domain `CursorPage`. */

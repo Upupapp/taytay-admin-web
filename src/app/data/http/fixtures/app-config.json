@@ -1,0 +1,17 @@
+{
+  "data": {
+    "contact_line": "(02) 8000 0100",
+    "support_email": null,
+    "privacy_version": "placeholder",
+    "terms_version": "2026-01",
+    "minimum_app_version": "1.4.0",
+    "feature_flags": { "tulong_catalogue": "on", "show_digital_id": "true" },
+    "privacy_notice": {
+      "version": "placeholder",
+      "updated_at": "2026-01-01T00:00:00.000Z",
+      "body_markdown": "This is a placeholder privacy notice. The approved notice will replace this text."
+    },
+    "updated_at": "2026-10-01T00:00:00.000Z"
+  },
+  "meta": {}
+}

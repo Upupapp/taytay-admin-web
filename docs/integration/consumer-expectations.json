@@ -3,6 +3,23 @@
   "consumer": "Upupapp/taytay-admin-web",
   "interactions": [
     {
+      "method": "PATCH",
+      "path": "admin/app/config",
+      "consumer": "app-config.mapper.ts#toAppConfig",
+      "required": [
+        "feature_flags",
+        "updated_at"
+      ],
+      "optional": [
+        "contact_line",
+        "minimum_app_version",
+        "privacy_notice",
+        "privacy_version",
+        "support_email",
+        "terms_version"
+      ]
+    },
+    {
       "method": "GET",
       "path": "admin/home/banners",
       "consumer": "home.mapper.ts#toHomeBanner",
@@ -375,6 +392,23 @@
         "message",
         "notes",
         "reviewed_at"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "app/config",
+      "consumer": "app-config.mapper.ts#toAppConfig",
+      "required": [
+        "feature_flags",
+        "updated_at"
+      ],
+      "optional": [
+        "contact_line",
+        "minimum_app_version",
+        "privacy_notice",
+        "privacy_version",
+        "support_email",
+        "terms_version"
       ]
     },
     {

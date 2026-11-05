@@ -6051,3 +6051,65 @@ Described in [`docs/home-screen/README.md`](../home-screen/README.md); the decis
 `npm run verify` is green on Windows after this part: 119 spec files, 1,995 tests (115 and 1,960 after part 1 —
 four new spec files, for the domain, the mappers, the mock adapter and the screen; the HTTP adapters,
 the fixtures, the identity, the layout and the unserved modules gained tests in their own).
+
+### 3. The app's settings
+
+`GET app/config` (public) and `PATCH admin/app/config`, under `app-config.manage`. One new port,
+`app-config`, served in the http set; one route, `/app-settings`. Described in
+[`docs/app-settings/README.md`](../app-settings/README.md); the decisions are these.
+
+- **Every change is reviewed, and a change that can stop residents is acknowledged.** A newer oldest
+  app version can force every resident with an older app to update before using it; a new terms or
+  privacy version can make every resident accept again. "Review the change" opens a confirmation
+  listing what the change does, those first (`appConfigEffects`); for those three
+  (`asksEveryResident`) the button stays disabled until the administrator ticks that they understand,
+  and `confirm` refuses without it too. Nothing is sent from anywhere else.
+- **"Can", because the server enforces nothing.** No route refuses an old app or compares a resident's
+  accepted version with these; the app is given the values and decides. The sentences say what the
+  app is given and what that can make it do — this console cannot see the app.
+- **The privacy notice is the API's, not this screen's.** Its text is served from the API's own record
+  and changed by no route, so the screen shows its version and date, says its text is not changed
+  here, and warns when residents would be asked to accept a version other than the one served. The
+  mapper never reads the text.
+- **Only what changed is sent**, `null` to clear a setting or delete a flag, and the settings are read
+  again after a save rather than patched. The API's limits are checked before the review opens —
+  including the column's twenty characters for the oldest version, which its pattern does not hold.
+- **Flags are not secret**: the read is public, and the screen says so above them.
+- **No reason is asked for**, because the server's one audit entry keeps none — nor which setting
+  changed, which is a backend item.
+- **One vocabulary.** `app-config.manage` joins `PERMISSIONS` as the server spells it; the
+  administrator's alone, named by no role, mutating.
+
+#### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:wire-adoption` | none — the change is a `toWire…` mapper whose `AppConfigPatchWire` is held to `AppConfigPatch` | 23 of 23 bodies |
+| `check:routes` | none | 17 endpoints and 44 composed requests served at their verbs |
+| `check:response-shape`, `check:query-params` | none | 21 of 21 reads agree with their envelope; every key declared |
+| `check:consumer-contract` | none | 37 interactions, 191 required fields |
+| `check:port-adoption` | none | 185 of 196 port methods reached; the 11 unreached unchanged |
+| `check:unserved` | none | 29 ports, 18 unserved; 56 routed screens, 24 menu entries |
+| `check:permission-parity` | none | 42 of 50 guards unreachable, the ceiling held — the three new guards, one naming three keys, are all reachable |
+| `check:access` | one matrix row | 80 permissions × 7 roles |
+| `check:hardening` | none — its cap of twelve live regions was reached in part 2 and is held: a form's refusal is an alert shown when it happens, and a save that works is announced by the list beside it | 11 live regions, all polite |
+| `check:bundle` | the settings seed's reserved address is a seed marker | — |
+| `check:app-settings` | new, in `verify` — seven rules, see `docs/app-settings/README.md` | fifteen plants, each caught, every file restored byte for byte |
+
+### Not done, and whose it is
+
+- **The backend items** in `docs/integration/node-api-migration.md`: `OfficePatch` and `ServicePatch`
+  declaring less than their handlers accept; no admin list of Tulong pages; no banner removal for an
+  office; a silent hotline cap; no description of a home banner's image; stored images never
+  removed; a privacy notice no route can change; an audit entry that names no setting. Each is the
+  backend's to fix; the console says each on its screen meanwhile.
+- **Whether the app's settings should be enforced on the server** — an old app refused, an
+  unaccepted version refused — is the office's decision.
+- **Digital IDs, Balita and the audit trail** have no screen yet (step 6g).
+- **Not run against a live API**: built and tested against the vendored spec and composed fixtures.
+- `CLAUDE.md` §3 lists `check:directory`, `check:home` and `check:app-settings`.
+
+The launch gate stays **NO-GO**: the eighteen unserved casework ports are unchanged. `npm run verify`
+is green on Windows after this part: 123 spec files, 2,017 tests (119 and 1,995 after part
+2 — four new spec files, for the domain, the mapper, the mock adapter and the screen; the HTTP
+adapters, the fixtures, the identity, the layout and the unserved modules gained tests in their own).

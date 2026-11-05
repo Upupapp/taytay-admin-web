@@ -233,6 +233,14 @@ export const PERMISSIONS = [
    * holding every key. Mutating: it changes the first screen every resident sees.
    */
   'home.manage',
+
+  /*
+   * THE APP'S SETTINGS (`DL-170`) — the server's key, spelled as its `StaffCapability`. The contact
+   * details, the terms and privacy versions residents must accept, the oldest app allowed and the
+   * feature flags; the server gives it to `admin` alone. Mutating: one change can make every
+   * resident update the app or accept again.
+   */
+  'app-config.manage',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

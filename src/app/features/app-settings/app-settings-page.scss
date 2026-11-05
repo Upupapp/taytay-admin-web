@@ -1,0 +1,85 @@
+/* Layout only. `.field`, `.card`, `.check` and `.btn` are styles.scss's (DL-120) and are not redefined. */
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+}
+
+.settings__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+}
+
+.settings__group > .field + .field {
+  margin-block-start: 0;
+}
+
+.settings__group legend {
+  padding-inline: var(--space-1);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.settings__note,
+.settings__problem,
+.settings__outcome {
+  margin: 0;
+  font-size: 13px;
+}
+
+.settings__note {
+  color: var(--c-text-muted);
+}
+
+.settings__problem {
+  color: var(--tone-danger-fg);
+}
+
+.settings__flags {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.settings__flags th,
+.settings__flags td {
+  padding: var(--space-2);
+  border-block-end: 1px solid var(--c-border);
+  text-align: start;
+}
+
+.settings__new-flag {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr) auto;
+  gap: var(--space-2);
+  align-items: end;
+}
+
+.settings__new-flag > .field + .field {
+  margin-block-start: 0;
+}
+
+.settings__problems {
+  padding: var(--space-3);
+  border: 1px solid var(--tone-danger-fg);
+  border-radius: var(--radius-md);
+  background: var(--tone-danger-bg);
+  font-size: 13px;
+}
+
+.settings__problems p {
+  margin: 0 0 var(--space-1);
+  font-weight: 600;
+}
+
+.settings__problems ul,
+.settings__warning ul {
+  margin: 0 0 var(--space-2);
+  padding-inline-start: var(--space-5);
+}

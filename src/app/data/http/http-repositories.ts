@@ -71,6 +71,9 @@ import {
   type LinkDraft,
   type QuickLink,
   type QuickLinkId,
+  type AppConfig,
+  type AppConfigChanges,
+  type AppConfigRepository,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -88,6 +91,7 @@ import {
   toWireOfficeDraft,
 } from './mappers/directory-office.mapper';
 import { toHotline } from './mappers/hotline.mapper';
+import { toAppConfig, toWireAppConfigChanges } from './mappers/app-config.mapper';
 import {
   toHomeBanner,
   toHomePreview,
@@ -899,4 +903,38 @@ function readLink(wire: unknown): QuickLink {
   }
 
   return link;
+}
+
+/* ── the app's settings (`DL-170`) ───────────────────────────────────────── */
+
+/**
+ * The residents' app's settings: read where every app reads them (`GET app/config`, public), changed
+ * through `PATCH admin/app/config` (`app-config.manage`) with only what changed.
+ */
+@Injectable()
+export class HttpAppConfigRepository implements AppConfigRepository {
+  private readonly api = inject(ApiClient);
+
+  read(): Observable<AppConfig> {
+    return this.api.item(API_ENDPOINTS.appConfig).pipe(map(readAppConfig));
+  }
+
+  change(changes: AppConfigChanges): Observable<AppConfig> {
+    return this.api
+      .patch(API_ENDPOINTS.adminAppConfig, toWireAppConfigChanges(changes))
+      .pipe(map(readAppConfig));
+  }
+}
+
+function readAppConfig(wire: unknown): AppConfig {
+  const config = toAppConfig(wire);
+
+  if (config === null) {
+    throw new Error(
+      'The app’s settings from the server could not be read, so none are shown rather than some: a ' +
+        'setting shown as not set would be saved as not set by the next change.',
+    );
+  }
+
+  return config;
 }

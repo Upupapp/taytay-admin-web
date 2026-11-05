@@ -35,6 +35,7 @@ import HOME from './home.json';
 import LINK from './link.json';
 import LINKS from './links.json';
 import MEDIA from './media.json';
+import APP_CONFIG from './app-config.json';
 
 /**
  * **These fixtures are composed, not recorded** — and this file is why that is acceptable.
@@ -204,6 +205,7 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['link', LINK, 'LinkEnvelope'],
     ['home', HOME, 'HomeEnvelope'],
     ['media', MEDIA, 'MediaEnvelope'],
+    ['app-config', APP_CONFIG, 'AppConfigEnvelope'],
   ] as const)('%s conforms to %s', (_name, fixture, envelope) => {
     expect(schema(envelope)).toBeDefined();
     expect(problems(fixture, schema(envelope), 'body')).toEqual([]);

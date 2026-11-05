@@ -141,6 +141,7 @@ import type {
   LinkDraft,
   QuickLink,
 } from '../home/home-screen';
+import type { AppConfig, AppConfigChanges } from '../app-config/app-config';
 import type {
   VerificationFilter,
   VerificationImageKind,
@@ -1605,3 +1606,16 @@ export interface HomeScreenRepository {
 export const HOME_SCREEN_REPOSITORY = new InjectionToken<HomeScreenRepository>(
   'HomeScreenRepository',
 );
+
+/* ── the app's settings (`DL-170`) ───────────────────────────────────────── */
+
+/** The residents' app's settings (`app-config.manage`): read as every app reads them, and changed. */
+export interface AppConfigRepository {
+  /** The settings as every resident's app is given them now. */
+  read(): Observable<AppConfig>;
+
+  /** Changes only what `changes` names; `null` clears a setting or deletes a flag. */
+  change(changes: AppConfigChanges): Observable<AppConfig>;
+}
+
+export const APP_CONFIG_REPOSITORY = new InjectionToken<AppConfigRepository>('AppConfigRepository');

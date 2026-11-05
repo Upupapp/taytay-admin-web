@@ -223,6 +223,15 @@ export const NAVIGATION: readonly NavSection[] = [
         permissions: ['home.manage'],
         description: 'The banners and quick links on the Taytay app’s home screen.',
       },
+      {
+        // `DL-170`. One change here can make every resident update the app or accept again.
+        label: 'App settings',
+        route: '/app-settings',
+        reads: ['app-config'],
+        glyph: 'AS',
+        permissions: ['app-config.manage'],
+        description: 'Contact details, required versions and feature flags of the Taytay app.',
+      },
     ],
   },
   {

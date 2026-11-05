@@ -1,0 +1,253 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+
+<p class="settings__outcome" role="status" aria-live="polite">{{ outcome() }}</p>
+
+<app-async-content
+  [state]="state()"
+  [content]="settingsContent"
+  [skeletonLines]="8"
+  (retryRequested)="reload()"
+>
+  <ng-template #settingsContent>
+    @if (config(); as current) {
+      <form
+        class="card settings"
+        novalidate
+        [attr.aria-label]="copy.caption"
+        (submit)="$event.preventDefault(); review()"
+      >
+        <p class="settings__note">
+          {{ copy.lastChanged((current.updatedAt | date: 'medium') ?? '') }}
+        </p>
+
+        <fieldset class="settings__group">
+          <legend>{{ copy.contactHeading }}</legend>
+          <div class="field">
+            <label class="field__label" for="settings-contact-line">{{ copy.contactLine }}</label>
+            <p class="field__hint" id="settings-contact-line-hint">{{ copy.contactLineHint }}</p>
+            <input
+              id="settings-contact-line"
+              class="field__input"
+              type="tel"
+              autocomplete="off"
+              aria-describedby="settings-contact-line-hint"
+              [value]="contactLine()"
+              (input)="contactLine.set(text($event))"
+            />
+          </div>
+          <div class="field">
+            <label class="field__label" for="settings-support-email">{{ copy.supportEmail }}</label>
+            <p class="field__hint" id="settings-support-email-hint">{{ copy.supportEmailHint }}</p>
+            <input
+              id="settings-support-email"
+              class="field__input"
+              type="email"
+              autocomplete="off"
+              aria-describedby="settings-support-email-hint"
+              [value]="supportEmail()"
+              (input)="supportEmail.set(text($event))"
+            />
+          </div>
+        </fieldset>
+
+        <fieldset class="settings__group">
+          <legend>{{ copy.versionsHeading }}</legend>
+          <div class="field">
+            <label class="field__label" for="settings-terms">{{ copy.termsVersion }}</label>
+            <p class="field__hint" id="settings-terms-hint">{{ copy.termsVersionHint }}</p>
+            <input
+              id="settings-terms"
+              class="field__input"
+              autocomplete="off"
+              spellcheck="false"
+              aria-describedby="settings-terms-hint"
+              [value]="termsVersion()"
+              (input)="termsVersion.set(text($event))"
+            />
+          </div>
+          <div class="field">
+            <label class="field__label" for="settings-privacy">{{ copy.privacyVersion }}</label>
+            <p class="field__hint" id="settings-privacy-hint">
+              {{ copy.privacyVersionHint }}
+              {{
+                copy.noticeServed(
+                  current.privacyNotice.version,
+                  (current.privacyNotice.updatedAt | date: 'mediumDate') ?? ''
+                )
+              }}
+            </p>
+            <input
+              id="settings-privacy"
+              class="field__input"
+              autocomplete="off"
+              spellcheck="false"
+              aria-describedby="settings-privacy-hint"
+              [value]="privacyVersion()"
+              (input)="privacyVersion.set(text($event))"
+            />
+          </div>
+          <div class="field field--narrow">
+            <label class="field__label" for="settings-minimum">{{ copy.minimumAppVersion }}</label>
+            <p class="field__hint" id="settings-minimum-hint">{{ copy.minimumAppVersionHint }}</p>
+            <input
+              id="settings-minimum"
+              class="field__input"
+              autocomplete="off"
+              spellcheck="false"
+              inputmode="decimal"
+              aria-describedby="settings-minimum-hint"
+              [value]="minimumAppVersion()"
+              (input)="minimumAppVersion.set(text($event))"
+            />
+          </div>
+        </fieldset>
+
+        <fieldset class="settings__group">
+          <legend>{{ copy.flagsHeading }}</legend>
+          <p class="settings__note">{{ copy.flagsLead }}</p>
+          @if (current.featureFlags.length === 0) {
+            <p class="settings__note">{{ copy.noFlags }}</p>
+          } @else {
+            <table class="settings__flags">
+              <caption class="visually-hidden">
+                {{
+                  copy.flagsCaption
+                }}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">{{ copy.flagName }}</th>
+                  <th scope="col">{{ copy.flagValue }}</th>
+                  <th scope="col">{{ copy.flagDelete }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (flag of current.featureFlags; track flag.key) {
+                  <tr>
+                    <th scope="row">
+                      <code>{{ flag.key }}</code>
+                    </th>
+                    <td>
+                      <input
+                        class="field__input"
+                        autocomplete="off"
+                        [attr.aria-label]="copy.flagValueLabel(flag.key)"
+                        [value]="flagValues().get(flag.key) ?? flag.value"
+                        [disabled]="deletedFlags().has(flag.key)"
+                        (input)="setFlag(flag.key, text($event))"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="checkbox"
+                        [attr.aria-label]="copy.flagDeleteLabel(flag.key)"
+                        [checked]="deletedFlags().has(flag.key)"
+                        (change)="toggleDelete(flag.key, checked($event))"
+                      />
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+
+          @for (flag of newFlags(); track $index; let i = $index) {
+            <div class="settings__new-flag">
+              <div class="field">
+                <label class="field__label" [for]="'settings-new-flag-key-' + i">{{
+                  copy.newFlagName
+                }}</label>
+                <input
+                  class="field__input"
+                  autocomplete="off"
+                  spellcheck="false"
+                  [id]="'settings-new-flag-key-' + i"
+                  [value]="flag.key"
+                  (input)="setNewFlag(i, { key: text($event) })"
+                />
+              </div>
+              <div class="field">
+                <label class="field__label" [for]="'settings-new-flag-value-' + i">{{
+                  copy.newFlagValue
+                }}</label>
+                <input
+                  class="field__input"
+                  autocomplete="off"
+                  [id]="'settings-new-flag-value-' + i"
+                  [value]="flag.value"
+                  (input)="setNewFlag(i, { value: text($event) })"
+                />
+              </div>
+              <button
+                type="button"
+                class="btn btn--secondary"
+                [attr.aria-label]="copy.removeNewFlag(i + 1)"
+                (click)="removeNewFlag(i)"
+              >
+                ✕
+              </button>
+            </div>
+          }
+          <button type="button" class="btn btn--secondary" (click)="addFlag()">
+            {{ copy.addFlag }}
+          </button>
+        </fieldset>
+
+        @if (attempted() && problems().length > 0) {
+          <div class="settings__problems" role="alert">
+            <p>{{ copy.problemsLead }}</p>
+            <ul>
+              @for (message of problems(); track $index) {
+                <li>{{ message }}</li>
+              }
+            </ul>
+          </div>
+        }
+
+        @if (unchanged()) {
+          <p class="settings__note">{{ copy.unchanged }}</p>
+        } @else {
+          <button type="submit" class="btn btn--primary">{{ copy.review }}</button>
+        }
+      </form>
+    }
+  </ng-template>
+</app-async-content>
+
+@if (reviewing()) {
+  <app-modal [open]="true" [heading]="copy.reviewHeading" (dismissed)="cancel()">
+    <div modal-body class="settings__warning">
+      <p>{{ copy.effectsLead }}</p>
+      <ul>
+        @for (effect of effects(); track $index) {
+          <li>{{ effect }}</li>
+        }
+      </ul>
+      @if (needsAcknowledgement()) {
+        <label class="check">
+          <input
+            type="checkbox"
+            [checked]="acknowledged()"
+            (change)="acknowledged.set(checked($event))"
+          />
+          {{ copy.acknowledge }}
+        </label>
+      }
+      @if (problem(); as message) {
+        <p class="settings__problem" role="alert">{{ message }}</p>
+      }
+    </div>
+    <button type="button" modal-actions class="btn btn--secondary" (click)="cancel()">
+      {{ copy.cancel }}
+    </button>
+    <button
+      type="button"
+      modal-actions
+      class="btn btn--primary"
+      [disabled]="busy() || (needsAcknowledgement() && !acknowledged())"
+      (click)="confirm()"
+    >
+      {{ busy() ? copy.saving : copy.confirm }}
+    </button>
+  </app-modal>
+}

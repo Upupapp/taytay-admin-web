@@ -35,7 +35,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-79 permissions × 7 roles. `X` means the role holds the permission.
+80 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -137,6 +137,10 @@ self-registration), `DL-33` (accessible authentication).
 <!-- The residents' app home screen, added by DL-170. The server's own key, admin only. -->
 
 | `home.manage`                     | X     |       |       |       |       |       |      |
+
+<!-- The residents' app settings, added by DL-170. The server's own key, admin only. -->
+
+| `app-config.manage`               | X     |       |       |       |       |       |      |
 
 ---
 

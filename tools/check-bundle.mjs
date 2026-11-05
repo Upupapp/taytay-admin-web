@@ -56,6 +56,8 @@ const SEED_MARKERS = [
   // The home screen seed's reserved address and drawn banners (`DL-170`).
   'home.example.test',
   'SAMPLE BANNER - ',
+  // The settings seed's reserved address (`DL-170`).
+  'settings.example.test',
   'mockLatencyMs":250',
 ];
 

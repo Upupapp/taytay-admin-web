@@ -9,10 +9,10 @@ sign-in only, hosted on Linode.
 
 | | |
 |---|---|
-| Console ports the Node API serves fully | 0 of 20 casework ports; 8 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines, the home screen) |
+| Console ports the Node API serves fully | 0 of 20 casework ports; 9 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines, the home screen, the app's settings) |
 | Served in part (mostly different concepts with the same name) | 7 |
 | No endpoint at all | 13 — cases, requests, beneficiaries, visits, releases, referrals, families, saved views, dashboard, work, reports, search, events |
-| Node staff endpoints with no console screen | ~8 — digital IDs, audit, app configuration, Balita |
+| Node staff endpoints with no console screen | ~7 — digital IDs, audit, Balita |
 
 ## Plan
 
@@ -28,7 +28,8 @@ sign-in only, hosted on Linode.
 | 6c | Platform screen: users and roles | console | done (`DL-168`, [`docs/accounts`](../accounts/README.md)): every app account, a page at a time, showing name, email, role and office only; role and office changed in a drawer, what the server does shown before each button (digital ID revoked on any role but verified, `verified` skipping the ID review, console access, the next-request timing), no reason asked (the server keeps none), one's own role not offered; offices picked from the directory read in full; `user.view`, `user.change-role`, `user.assign-office` added unchanged, held by the administrator alone. **Not run against a live API.** No search: the API has none |
 | 6d | Platform screen: the app directory — offices, Tulong pages, hotlines | console | done (`DL-170`, [`docs/directory`](../directory/README.md)): offices and Tulong pages a page at a time, hotlines whole with the cap said; added and changed in a drawer, each form listing what the API does before its button; deletes only through a confirmation listing the effects, a refusal shown in the server's words; images chosen through one shared field that refuses past 5 MB or by the file's first bytes before sending, sent as `multipart/form-data` through the new `ApiClient.postForm`/`patchForm` (the contract checks learned form bodies and now read a `toWire…` mapper's keys); a Tulong page never modelled as a programme; `office.manage`, `service.manage`, `hotline.manage` added unchanged. **Not run against a live API.** Not possible on the published contract: changing an office's details after creation, clearing a short name, removing a banner, changing a page's address, category, eligibility, places or office, listing a hidden page (opened by its address instead) |
 | 6e | Platform screen: the app's home screen — banners and quick links | console | done (`DL-170`, [`docs/home-screen`](../home-screen/README.md)): every banner and link, in the app's order; added and changed in a drawer with what the API does before each button — an image stored before its banner and kept if the banner is refused, an old image never removed, every link shown; deletes only through a confirmation, hiding offered instead for a banner; a banner's image read as bytes and shown from object URLs; the screen says the app has **no description of a banner's image** because the API keeps none, rather than collecting one it would drop; a preview of `GET home` read again after every save; `home.manage` added unchanged. **Not run against a live API** |
-| 6f | Platform screens: app settings, digital IDs, Balita, audit | console | to do |
+| 6f | Platform screen: the app's settings | console | done (`DL-170`, [`docs/app-settings`](../app-settings/README.md)): contact line, support email, terms and privacy versions, the oldest app version, feature flags; only what changed is sent, `null` to clear; **every change reviewed** in a confirmation listing what it does, and a newer oldest version or a new terms or privacy version **acknowledged** before the button enables — it can stop residents using the app until they update or accept again; the privacy notice the API serves shown by version and date, with a warning when residents would be asked to accept another; flags said not secret; `app-config.manage` added unchanged. **Not run against a live API** |
+| 6g | Platform screens: digital IDs, Balita, audit | console | to do |
 | 7 | Re-point the contract checks at the Node spec, new baselines stated | console | done with step 3, in one commit, each old and new count stated (`DL-165`) |
 
 ## For the owner to decide
@@ -104,6 +105,18 @@ These are not engineering choices, and nothing below has been built.
 - The spec's banner `PATCH` body is `BannerWrite` (`title` required) while the handler takes a
   partial body, and `LinkWrite` requires nothing while the handler requires `label` and `href` on a
   create. The console sends what both accept; the spec and the handlers should agree.
+- **The privacy notice's text cannot be changed through the API** (`DL-170`): it is the placeholder
+  from `0018_account_gaps.sql` until somebody edits the database, and `privacy_version` is a separate
+  setting, so residents can be asked to accept a version whose text the API does not serve. A route to
+  publish the notice, setting both together, would close it.
+- **`app.config_updated` names no setting** and keeps no values, so the trail cannot say who raised
+  the oldest app version or changed the terms version. Recording the changed keys would be enough.
+- **`minimum_app_version` longer than 20 characters** passes the API's pattern and fails the
+  column's check (1 to 20 characters, `0010_screen_coverage.sql`), which the error handler does not
+  map; the console refuses it first.
+- **Nothing on the server enforces the versions.** No route refuses an old app or compares a
+  resident's accepted version with these; the app is trusted to. Whether that is enough is the
+  office's call.
 - A multipart request with an unexpected file field (`LIMIT_UNEXPECTED_FILE`) is not mapped by the
   error handler and answers `500`.
 

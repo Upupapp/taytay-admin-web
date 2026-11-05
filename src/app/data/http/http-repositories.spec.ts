@@ -54,8 +54,10 @@ import HOME from './fixtures/home.json';
 import LINK from './fixtures/link.json';
 import LINKS from './fixtures/links.json';
 import MEDIA from './fixtures/media.json';
+import APP_CONFIG from './fixtures/app-config.json';
 import {
   HttpAppAccountRepository,
+  HttpAppConfigRepository,
   HttpDirectoryOfficeRepository,
   HttpHomeScreenRepository,
   HttpHotlineRepository,
@@ -111,6 +113,7 @@ describe('the Node adapters', () => {
         HttpTulongServiceRepository,
         HttpHotlineRepository,
         HttpHomeScreenRepository,
+        HttpAppConfigRepository,
       ],
     });
 
@@ -135,9 +138,10 @@ describe('the Node adapters', () => {
       const identity = await user;
 
       // `audit.view`, `verification.review` (DL-167), `office-inbox.manage` and the three `user.*`
-      // keys (DL-168), and the directory's three and `home.manage` (DL-170) are the capabilities
-      // with a console key of the same name; the rest are kept aside as unknown, never translated.
+      // keys (DL-168), and the directory's three, `home.manage` and `app-config.manage` (DL-170) are
+      // the capabilities with a console key of the same name; the rest are kept aside as unknown.
       expect([...(identity?.permissions ?? [])].sort()).toEqual([
+        'app-config.manage',
         'audit.view',
         'home.manage',
         'hotline.manage',
@@ -1124,6 +1128,40 @@ describe('the Node adapters', () => {
       http.expectOne({ method: 'GET', url: `${BASE}/home` }).flush(HOME);
 
       expect(await preview).toMatchObject({ hotlines: 1, news: 1 });
+    });
+  });
+
+  describe('the app’s settings (DL-170)', () => {
+    beforeEach(() => tokens.hold('fixture-token', null));
+
+    it('reads the settings where every app reads them', async () => {
+      const settings = TestBed.inject(HttpAppConfigRepository);
+      const config = firstValueFrom(settings.read());
+      http.expectOne({ method: 'GET', url: `${BASE}/app/config` }).flush(APP_CONFIG);
+
+      expect((await config).featureFlags.map((flag) => flag.key)).toEqual([
+        'show_digital_id',
+        'tulong_catalogue',
+      ]);
+    });
+
+    it('sends only what changed, with null to clear and to delete a flag', async () => {
+      const settings = TestBed.inject(HttpAppConfigRepository);
+      const changed = firstValueFrom(
+        settings.change({
+          minimumAppVersion: '2.0',
+          supportEmail: null,
+          featureFlags: [{ key: 'tulong_catalogue', value: null }],
+        }),
+      );
+      const patch = http.expectOne({ method: 'PATCH', url: `${BASE}/admin/app/config` });
+      expect(JSON.parse(JSON.stringify(patch.request.body))).toEqual({
+        support_email: null,
+        minimum_app_version: '2.0',
+        feature_flags: { tulong_catalogue: null },
+      });
+      patch.flush(APP_CONFIG);
+      await changed;
     });
   });
 });
