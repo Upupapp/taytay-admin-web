@@ -5222,3 +5222,82 @@ The one piece worth knowing for next time: **the loss was silent.** `npm run typ
 afterwards, because reverting a coherent set of edits leaves a coherent tree. What surfaced it was a
 check reporting a state that could not follow from the code as written — the same instinct as
 `DL-145`, applied to a working tree instead of a ratchet.
+
+## DL-164 — the backend was replaced, and most of what this console asks for has no server
+
+On 2026-10-20 the owner replaced the Laravel backend with a Node service (`taytay-backend`
+`4e6e1f3`; the Laravel tree survives only at tag `laravel-archive`). Every snapshot this console
+vendors — `routes.published.json`, `response-envelopes.json`, `types.ts` — was taken from the
+Laravel tree before that commit. They describe an API that no longer runs, and every ratchet that
+reads them has been measuring against it since.
+
+### What the new API is
+
+It is the back office of the **residents' app**: accounts, ID verification, digital IDs, the office
+directory, Tulong information pages, Balita news, office messaging, households as counts. Its
+staff surface is `/api/v1/admin/*` plus a few `staff|admin` routes. It has **no** assistance
+request, case, referral, release, visit, programme, report, event or dashboard route.
+
+Measured port by port (`docs/integration/node-api-gap-map.md`): of twenty ports, **none** fits,
+**seven** fit in part, **thirteen** have no endpoint at all.
+
+### Looking alike is not fitting
+
+The seven partial fits are mostly different things with the same word on them, and wiring them would
+put wrong answers on screens that look right:
+
+- `GET /admin/users` is *people with an app account*, not the office's resident registry. A walk-in
+  applicant with no phone is not in it, and an officer who searches it concludes the office never
+  served them (`DL-112`'s failure, delivered by a list that looked complete).
+- A Tulong **service** is an information page with free-text eligibility. A **programme** carries
+  guidelines, weights, a responsibility and a funding holder (`DL-65`, `DL-66`). Rendering one as the
+  other invents policy fields or drops them.
+- Node news has no draft list for staff, no archive, no schedule, and no image description, so the
+  newsfeed module's `DL-124` and `DL-125` guarantees cannot be kept over it.
+
+So no port is force-fitted. A port is wired to the Node API only where the Node resource *is* the
+thing the port names.
+
+### What the console does instead
+
+1. **A platform area for what the API does serve.** New ports shaped like the Node resources —
+   verification review, the office inbox, users and roles, offices, services, hotlines, home
+   banners and links, digital IDs, audit, app configuration, Balita — built as their own features.
+   Today nobody can approve a resident's ID verification at all, because no screen exists for it.
+2. **Unserved ports say so.** In the `http` adapter set, a port with no route is bound to an adapter
+   that makes **no request** and fails with a sentence: this part of the console has no server yet.
+   Its navigation entry is withheld and one page names every module in that state, so an officer
+   never reads an empty screen as an empty record. Mock data never stands in (`DL-136`).
+3. **Permissions come from the server.** Node has two staff roles and no permission list, and this
+   console grants only keys the server sends (`fromServerIdentity` fails closed). The backend now
+   publishes `permissions` on `GET /me` from a table that describes its own route guards
+   (`src/auth/capabilities.ts`, probed route by route in `tests/capabilities.test.ts`). The console
+   never computes a permission from a role: that would be a second authority one folder away from
+   the one `check:auth` already forbids.
+4. **Sign-in is Firebase Auth over REST**, not the Firebase SDK. No dependency; the ID token stays in
+   `AuthTokenHolder`'s private field and the refresh token in the provider's, nothing reaches web
+   storage, and reload still signs out — ADR 0006's terms, which survive only at the backend's
+   archive tag and are restated here so they do not hang on it. Sign-out calls the new
+   `POST /api/v1/auth/sign-out`, which revokes the account's refresh tokens server-side.
+5. **Casework stays, and is not wired.** The thirteen modules keep their domain, their checks and
+   their mock adapters. Whether the Node API grows casework, or those screens are retired, is the
+   owner's decision; the proposal is in `docs/integration/node-api-migration.md`.
+
+### What this supersedes, and what it does not
+
+- `DL-156`'s "there is no `ApiResponse::collection`, so `collection<T>` is wrong wherever it
+  appears" was a fact about Laravel. Node answers several lists with a bare array and `meta: {}`
+  (barangays, news categories, banners, hotlines). For those, a list helper is right.
+- `DL-161` stands: a picker reads in full and refuses past a ceiling. The pages are now cursors of at
+  most fifty, with no total and no sort parameter, so a browsable list says "first fifty, more
+  available", never "page 1 of N".
+- Each re-pointed check is re-baselined **in its own commit**, stating the old count, the new count
+  and the cause — the API was replaced, the code did not regress. A hard rule stays hard: the
+  base-path rule passes by removing paths the API does not serve, never by becoming a baseline.
+- The launch gate stays **NO-GO**.
+
+### Done in the backend for this entry
+
+`135ec41` — CORS, exact-origin allowlist from `CORS_ALLOWED_ORIGINS`, no wildcard, no credentials.
+`189b911` — `permissions` on `GET /me` from `src/auth/capabilities.ts`, probed against the route
+guards for five roles, and `POST /api/v1/auth/sign-out`, which revokes the account's refresh tokens.
