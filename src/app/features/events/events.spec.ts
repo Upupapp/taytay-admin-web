@@ -30,6 +30,24 @@ import { EventComposerPage } from './event-composer-page';
 import { EventDetailPage } from './event-detail-page';
 import { EventListPage } from './event-list-page';
 
+/*
+ * The seed is anchored at 2026-08-01 and its upcoming events run to 2026-10-10. Read against the
+ * real clock they all became past events, and on 2026-11-05 two tests here failed on a tree nobody
+ * had changed — "has not happened" had quietly become false. The screens ask `new Date()`, so the
+ * spec pins `Date` to the week these tests were written in. Only `Date` is faked: timers and
+ * promises stay real, so TestBed and the mock latency behave as they always did.
+ */
+const SEED_PRESENT = new Date('2026-08-17T00:00:00.000Z');
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(SEED_PRESENT);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 const TEST_ENVIRONMENT: AppEnvironment = {
   name: 'local-mock',
   production: false,
