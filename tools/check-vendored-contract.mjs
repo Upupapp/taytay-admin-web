@@ -29,9 +29,14 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
+// Paths are compared against '/'-separated literals; on Windows `relative` answers with '\',
+// and a comparison that can never match fails on correct code or skips the file it guards.
+const posix = (path) => path.split(sep).join('/');
+
 const CONTRACT_DIR = join(ROOT, 'src/app/data/http/contract');
 
 const failures = [];
@@ -105,7 +110,7 @@ function walk(dir) {
 }
 
 for (const file of walk(join(ROOT, 'src'))) {
-  const path = relative(ROOT, file);
+  const path = posix(relative(ROOT, file));
   if (SEAM.some((dir) => path.startsWith(dir))) continue;
 
   if (/from ['"].*data\/http\/contract\/types['"]/.test(readFileSync(file, 'utf8'))) {

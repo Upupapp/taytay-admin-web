@@ -14,9 +14,14 @@
  */
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
+// Paths are compared against '/'-separated literals; on Windows `relative` answers with '\',
+// and a comparison that can never match fails on correct code or skips the file it guards.
+const posix = (path) => path.split(sep).join('/');
+
 const SRC = join(ROOT, 'src');
 
 /**
@@ -71,7 +76,7 @@ function stripComments(source) {
 
 const files = walk(SRC).map((f) => {
   const source = readFileSync(f, 'utf8');
-  return { path: relative(ROOT, f), source, code: stripComments(source) };
+  return { path: posix(relative(ROOT, f)), source, code: stripComments(source) };
 });
 
 const read = (path) => files.find((f) => f.path === path)?.code ?? '';

@@ -29,8 +29,9 @@
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 /** The writes the API refuses without an `Idempotency-Key`. */
 const MONEY_WRITES = ['createBatch', 'markReleased', 'acknowledge', 'deferRelease', 'changeStatus'];

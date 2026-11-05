@@ -41,8 +41,9 @@
 
 import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const PORTS = join(ROOT, 'src/app/domain/ports/repositories.ts');
 const BASELINE = join(ROOT, 'src/app/data/http/contract/unreached-ports.json');
 

@@ -27,7 +27,7 @@
  * Exit 0 = clean, 1 = at least one violation.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { join, dirname, extname } from 'node:path';
+import { join, dirname, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -83,7 +83,8 @@ const RECORDED_BY_A_PERSON = new Map([
 
 for (const file of intakeFiles) {
   const text = read(file);
-  const allowed = RECORDED_BY_A_PERSON.get(file) ?? new Set();
+  // The map is keyed with '/'; `walk` joins with the platform separator, '\' on Windows.
+  const allowed = RECORDED_BY_A_PERSON.get(file.split(sep).join('/')) ?? new Set();
   for (const [index, line] of text.split(/\r?\n/).entries()) {
     const found = DECISION_FIELD.exec(line);
     if (found !== null && !allowed.has(found[1])) {

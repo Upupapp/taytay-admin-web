@@ -32,8 +32,9 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SOURCE = join(ROOT, 'src/app/data/http/http-repositories.ts');
 const BASELINE = join(ROOT, 'src/app/data/http/contract/unmapped-writes.json');
 
