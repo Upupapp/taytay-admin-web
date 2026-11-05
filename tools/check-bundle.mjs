@@ -92,7 +92,9 @@ if (files.length === 0) {
  * development one is `main.js`. That is the cheapest honest signal available from the artefact
  * itself, which is the only thing this check is allowed to look at.
  */
-const isProductionArtefact = files.some((file) => /\/main-[A-Z0-9]{8,}\.js$/i.test(file));
+// Either separator: on Windows the walked paths use '\', and a '/'-only pattern calls every
+// production build a development one.
+const isProductionArtefact = files.some((file) => /[\\/]main-[A-Z0-9]{8,}\.js$/i.test(file));
 
 if (!isProductionArtefact) {
   console.error(
