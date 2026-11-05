@@ -23,6 +23,12 @@ import THREADS_PAGE from './threads-page.json';
 import USER_OFFICE_ASSIGNED from './user-office-assigned.json';
 import USER_ROLE_CHANGED from './user-role-changed.json';
 import USERS_PAGE from './users-page.json';
+import DELETED from './deleted.json';
+import HOTLINE from './hotline.json';
+import HOTLINES from './hotlines.json';
+import OFFICE from './office.json';
+import SERVICE from './service.json';
+import SERVICES_PAGE from './services-page.json';
 
 /**
  * **These fixtures are composed, not recorded** — and this file is why that is acceptable.
@@ -180,6 +186,12 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['users-page', USERS_PAGE, 'UserListEnvelope'],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
+    ['office', OFFICE, 'OfficeEnvelope'],
+    ['services-page', SERVICES_PAGE, 'ServiceListEnvelope'],
+    ['service', SERVICE, 'ServiceEnvelope'],
+    ['hotlines', HOTLINES, 'HotlineListEnvelope'],
+    ['hotline', HOTLINE, 'HotlineEnvelope'],
+    ['deleted', DELETED, 'DeletedEnvelope'],
   ] as const)('%s conforms to %s', (_name, fixture, envelope) => {
     expect(schema(envelope)).toBeDefined();
     expect(problems(fixture, schema(envelope), 'body')).toEqual([]);

@@ -1,0 +1,243 @@
+<form class="directory-form" novalidate (submit)="$event.preventDefault(); save()">
+  <div class="field">
+    <label class="field__label" for="office-name">{{ copy.name }}</label>
+    <input
+      id="office-name"
+      class="field__input"
+      autocomplete="off"
+      [value]="name()"
+      (input)="name.set(text($event))"
+    />
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="office-slug">{{ copy.slug }}</label>
+    <p class="field__hint" id="office-slug-hint">{{ copy.slugHint }}</p>
+    <input
+      id="office-slug"
+      class="field__input"
+      autocomplete="off"
+      spellcheck="false"
+      aria-describedby="office-slug-hint"
+      [value]="slug()"
+      (input)="slug.set(text($event))"
+    />
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="office-short-name">{{ copy.shortName }}</label>
+    <p class="field__hint" id="office-short-name-hint">
+      {{ copy.shortNameHint }}
+      @if (!creating()) {
+        {{ copy.shortNameKept }}
+      }
+    </p>
+    <input
+      id="office-short-name"
+      class="field__input"
+      autocomplete="off"
+      aria-describedby="office-short-name-hint"
+      [value]="shortName()"
+      (input)="shortName.set(text($event))"
+    />
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="office-category">{{ copy.category }}</label>
+    <p class="field__hint" id="office-category-hint">{{ copy.optional }}</p>
+    <input
+      id="office-category"
+      class="field__input"
+      autocomplete="off"
+      aria-describedby="office-category-hint"
+      [value]="category()"
+      (input)="category.set(text($event))"
+    />
+  </div>
+
+  @if (creating()) {
+    <div class="field">
+      <label class="field__label" for="office-description">{{ copy.description }}</label>
+      <textarea
+        id="office-description"
+        class="field__input"
+        rows="4"
+        [value]="description()"
+        (input)="description.set(text($event))"
+      ></textarea>
+    </div>
+    <div class="field">
+      <label class="field__label" for="office-head">{{ copy.head }}</label>
+      <input
+        id="office-head"
+        class="field__input"
+        autocomplete="off"
+        [value]="head()"
+        (input)="head.set(text($event))"
+      />
+    </div>
+    <div class="field">
+      <label class="field__label" for="office-hours">{{ copy.hours }}</label>
+      <input
+        id="office-hours"
+        class="field__input"
+        autocomplete="off"
+        [value]="hours()"
+        (input)="hours.set(text($event))"
+      />
+    </div>
+    <div class="field">
+      <label class="field__label" for="office-phone">{{ copy.phone }}</label>
+      <input
+        id="office-phone"
+        class="field__input"
+        type="tel"
+        autocomplete="off"
+        [value]="phone()"
+        (input)="phone.set(text($event))"
+      />
+    </div>
+    <div class="field">
+      <label class="field__label" for="office-email">{{ copy.email }}</label>
+      <input
+        id="office-email"
+        class="field__input"
+        type="email"
+        autocomplete="off"
+        [value]="email()"
+        (input)="email.set(text($event))"
+      />
+    </div>
+    <div class="field">
+      <label class="field__label" for="office-address">{{ copy.address }}</label>
+      <input
+        id="office-address"
+        class="field__input"
+        autocomplete="off"
+        [value]="address()"
+        (input)="address.set(text($event))"
+      />
+    </div>
+    <fieldset class="directory-form__group">
+      <legend>{{ copy.position }}</legend>
+      <p class="field__hint" id="office-position-hint">{{ copy.positionHint }}</p>
+      <div class="directory-form__pair">
+        <div class="field">
+          <label class="field__label" for="office-latitude">{{ copy.latitude }}</label>
+          <input
+            id="office-latitude"
+            class="field__input"
+            inputmode="decimal"
+            autocomplete="off"
+            aria-describedby="office-position-hint"
+            [value]="latitude()"
+            (input)="latitude.set(text($event))"
+          />
+        </div>
+        <div class="field">
+          <label class="field__label" for="office-longitude">{{ copy.longitude }}</label>
+          <input
+            id="office-longitude"
+            class="field__input"
+            inputmode="decimal"
+            autocomplete="off"
+            aria-describedby="office-position-hint"
+            [value]="longitude()"
+            (input)="longitude.set(text($event))"
+          />
+        </div>
+      </div>
+    </fieldset>
+  } @else if (office(); as current) {
+    <section class="directory-form__fixed" aria-labelledby="office-fixed-heading">
+      <h3 id="office-fixed-heading" class="directory-form__heading">{{ copy.fixedHeading }}</h3>
+      <p class="field__hint">{{ fixedLead }}</p>
+      <dl class="directory-form__facts">
+        <div>
+          <dt>{{ copy.description }}</dt>
+          <dd>{{ current.description ?? copy.notGiven }}</dd>
+        </div>
+        <div>
+          <dt>{{ copy.head }}</dt>
+          <dd>{{ current.head ?? copy.notGiven }}</dd>
+        </div>
+        <div>
+          <dt>{{ copy.hours }}</dt>
+          <dd>{{ current.hours ?? copy.notGiven }}</dd>
+        </div>
+        <div>
+          <dt>{{ copy.phone }}</dt>
+          <dd>{{ current.phone ?? copy.notGiven }}</dd>
+        </div>
+        <div>
+          <dt>{{ copy.email }}</dt>
+          <dd>{{ current.email ?? copy.notGiven }}</dd>
+        </div>
+        <div>
+          <dt>{{ copy.address }}</dt>
+          <dd>{{ current.address ?? copy.notGiven }}</dd>
+        </div>
+        <div>
+          <dt>{{ copy.position }}</dt>
+          <dd>
+            @if (current.latitude !== null && current.longitude !== null) {
+              {{ current.latitude }}, {{ current.longitude }}
+            } @else {
+              {{ copy.notGiven }}
+            }
+          </dd>
+        </div>
+      </dl>
+    </section>
+  }
+
+  <section class="directory-form__image" aria-labelledby="office-banner-heading">
+    <h3 id="office-banner-heading" class="directory-form__heading">{{ copy.banner }}</h3>
+    @if (!creating()) {
+      <p class="field__hint">{{ office()?.hasBanner ? copy.bannerCurrent : copy.bannerNone }}</p>
+    }
+    <p class="field__hint">{{ bannerLimit }}</p>
+    <app-image-file-field
+      inputId="office-banner"
+      [label]="copy.banner"
+      [hint]="copy.bannerHint"
+      [disabled]="busy()"
+      (chosen)="banner.set($event)"
+    />
+  </section>
+
+  @if (attempted() && problems().length > 0) {
+    <div class="directory-form__problems" role="alert">
+      <p>{{ copy.problemsLead }}</p>
+      <ul>
+        @for (problem of problems(); track $index) {
+          <li>{{ problem }}</li>
+        }
+      </ul>
+    </div>
+  }
+
+  @if (clearingIgnored()) {
+    <p class="field__hint">{{ copy.shortNameKept }}</p>
+  }
+
+  @if (unchanged()) {
+    <p class="directory-form__note">{{ copy.unchanged }}</p>
+  } @else {
+    <!-- What the server does, between the fields and the button that does it. -->
+    <div class="directory-form__effects">
+      <p>{{ effectsLead }}</p>
+      <ul>
+        @for (effect of effects(); track $index) {
+          <li>{{ effect }}</li>
+        }
+      </ul>
+    </div>
+    <button type="submit" class="btn btn--primary" [disabled]="busy()">
+      {{ busy() ? copy.saving : creating() ? copy.create : copy.save }}
+    </button>
+  }
+
+  <!-- Always in the DOM, so a screen reader hears the outcome when the text arrives. -->
+  <p class="directory-form__outcome" role="status" aria-live="polite">{{ outcome() }}</p>
+</form>

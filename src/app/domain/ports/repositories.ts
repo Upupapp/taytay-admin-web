@@ -114,9 +114,11 @@ import type {
   AppAccountId,
   DocumentRequestId,
   DuplicatePairId,
+  HotlineId,
   MediaId,
   OfficeId,
   OfficeThreadId,
+  TulongServiceId,
   VerificationRequestId,
 } from '../shared/ids';
 import type {
@@ -126,6 +128,9 @@ import type {
 } from '../inbox/office-thread';
 import type { Office } from '../offices/office';
 import type { AccountRole, AppAccount } from '../accounts/app-account';
+import type { DirectoryOffice, OfficeChanges, OfficeDraft } from '../directory/directory-office';
+import type { Hotline, HotlineChanges, HotlineDraft } from '../directory/hotline';
+import type { ServiceChanges, ServiceDraft, TulongService } from '../directory/tulong-service';
 import type {
   VerificationFilter,
   VerificationImageKind,
@@ -1471,3 +1476,80 @@ export interface AppAccountRepository {
 export const APP_ACCOUNT_REPOSITORY = new InjectionToken<AppAccountRepository>(
   'AppAccountRepository',
 );
+
+/* ── the residents' app directory (`DL-170`) ─────────────────────────────── */
+
+/**
+ * The offices of the residents' app directory, as an administrator keeps them (`office.manage`).
+ *
+ * Separate from `OfficeRepository`, which reads the directory **in full** to name an office in a
+ * picker: this one reads it **a page at a time**, as a list somebody browses, and changes it.
+ */
+export interface DirectoryOfficeRepository {
+  /** One cursor page, newest first as the server orders it. No total (`DL-161`). */
+  list(page: CursorRequest): Observable<CursorPage<DirectoryOffice>>;
+
+  /** Creates it, with a banner if one is given. */
+  create(draft: OfficeDraft, banner: Blob | null): Observable<DirectoryOffice>;
+
+  /** Changes what the contract lets a change carry, and replaces the banner if one is given. */
+  update(id: OfficeId, changes: OfficeChanges, banner: Blob | null): Observable<DirectoryOffice>;
+
+  /** Deletes it. Refused by the server while anything names the office (`OFFICE_EFFECTS.remove`). */
+  remove(id: OfficeId): Observable<void>;
+}
+
+export const DIRECTORY_OFFICE_REPOSITORY = new InjectionToken<DirectoryOfficeRepository>(
+  'DirectoryOfficeRepository',
+);
+
+/**
+ * Tulong pages (`service.manage`): what the app tells residents about a service. **Not** the
+ * console's programmes, and never read through `ProgramRepository` (`DL-164`).
+ */
+export interface TulongServiceRepository {
+  /**
+   * One cursor page of the app's catalogue, newest first. A page hidden from the catalogue and not
+   * featured is **not in it**: the API has no list for an administrator, only the residents' one.
+   */
+  list(page: CursorRequest): Observable<CursorPage<TulongService>>;
+
+  /** One page by its address, hidden or not — or `null` when the server says there is none. */
+  find(slug: string): Observable<TulongService | null>;
+
+  create(draft: ServiceDraft): Observable<TulongService>;
+
+  update(id: TulongServiceId, changes: ServiceChanges): Observable<TulongService>;
+
+  /** Sets the page's picture, replacing any it had. A separate act, applied at once. */
+  replaceImage(id: TulongServiceId, image: Blob): Observable<TulongService>;
+
+  /** Deletes it, and its picture. Nothing refers to a page, so the server never refuses it. */
+  remove(id: TulongServiceId): Observable<void>;
+}
+
+export const TULONG_SERVICE_REPOSITORY = new InjectionToken<TulongServiceRepository>(
+  'TulongServiceRepository',
+);
+
+/** What `HotlineRepository.list` answers: the lines the API sent, and whether it held some back. */
+export interface HotlineListing {
+  readonly hotlines: readonly Hotline[];
+  /** True when the answer is as long as the API's cap, so there may be lines it did not send. */
+  readonly mayBeIncomplete: boolean;
+}
+
+/** The numbers the app lists for residents to call (`hotline.manage`). */
+export interface HotlineRepository {
+  /** Every line, shown and hidden, as the API orders them — at most `HOTLINE_LIST_CAP`. */
+  list(): Observable<HotlineListing>;
+
+  create(draft: HotlineDraft): Observable<Hotline>;
+
+  update(id: HotlineId, changes: HotlineChanges): Observable<Hotline>;
+
+  remove(id: HotlineId): Observable<void>;
+}
+
+export const HOTLINE_REPOSITORY = new InjectionToken<HotlineRepository>('HotlineRepository');
+

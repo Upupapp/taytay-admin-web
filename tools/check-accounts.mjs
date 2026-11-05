@@ -218,7 +218,9 @@ if (!/\[own\]="isOwn\(account\)"/.test(pageTemplate)) {
 
 const permission = code(read(APP, 'domain', 'access', 'permission.ts'));
 const vocabulary = permission.slice(permission.indexOf('export const PERMISSIONS'), permission.indexOf('] as const;'));
-const roles = permission.slice(permission.indexOf('export const ROLE_DEFINITIONS'));
+// Everything after the vocabulary: the role definitions and the shared lists they spread, which a
+// slice from ROLE_DEFINITIONS would miss (INTAKE_PERMISSIONS is declared above it).
+const roles = permission.slice(permission.indexOf('] as const;'));
 for (const key of ['user.view', 'user.change-role', 'user.assign-office']) {
   if (!vocabulary.includes(`'${key}'`)) failures.push(`PERMISSIONS does not hold '${key}', the API's own key.`);
   if (roles.includes(`'${key}'`)) {

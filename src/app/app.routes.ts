@@ -538,6 +538,20 @@ export const routes: Routes = [
           import('@features/accounts/accounts-page').then((m) => m.AccountsPage),
       },
       {
+        // `DL-170`. The API grants `office.manage`, `service.manage` and `hotline.manage` to
+        // administrators alone; this guard opens for any of the three, as the menu entry does, and
+        // each section asks for its own. Not the protection (rule 4). The Tulong section reads the
+        // office directory as well, to name a page's office and offer one.
+        path: 'directory',
+        title: 'App directory — Taytay Social Welfare',
+        canActivate: [
+          servedGuard('directory-office', 'hotline', 'office', 'tulong-service'),
+          permissionGuard('office.manage', 'service.manage', 'hotline.manage'),
+        ],
+        loadComponent: () =>
+          import('@features/directory/directory-page').then((m) => m.DirectoryPage),
+      },
+      {
         // Where every unserved module's address leads (`DL-167`). No permission: it names what the
         // server lacks, which is no secret about any record, and it is linked from the menu.
         path: 'unavailable',

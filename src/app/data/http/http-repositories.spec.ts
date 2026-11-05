@@ -9,8 +9,11 @@ import { AuthTokenHolder } from '@core/auth/auth-token.holder';
 import { apiHeadersInterceptor } from '@core/http/api.interceptors';
 import {
   asId,
+  HOTLINE_LIST_CAP,
   SignInError,
   type AppAccountId,
+  type HotlineId,
+  type TulongServiceId,
   type MediaId,
   type NotificationId,
   type OfficeId,
@@ -37,13 +40,22 @@ import THREADS_PAGE from './fixtures/threads-page.json';
 import USER_OFFICE_ASSIGNED from './fixtures/user-office-assigned.json';
 import USER_ROLE_CHANGED from './fixtures/user-role-changed.json';
 import USERS_PAGE from './fixtures/users-page.json';
+import DELETED from './fixtures/deleted.json';
+import HOTLINE from './fixtures/hotline.json';
+import HOTLINES from './fixtures/hotlines.json';
+import OFFICE from './fixtures/office.json';
+import SERVICE from './fixtures/service.json';
+import SERVICES_PAGE from './fixtures/services-page.json';
 import {
   HttpAppAccountRepository,
+  HttpDirectoryOfficeRepository,
+  HttpHotlineRepository,
   HttpNotificationRepository,
   HttpOfficeInboxRepository,
   HttpOfficeRepository,
   HttpSessionRefresher,
   HttpStaffRepository,
+  HttpTulongServiceRepository,
   HttpVerificationRepository,
 } from './http-repositories';
 import { toThreadMessage } from './mappers/office-thread.mapper';
@@ -85,6 +97,9 @@ describe('the Node adapters', () => {
         HttpOfficeInboxRepository,
         HttpOfficeRepository,
         HttpAppAccountRepository,
+        HttpDirectoryOfficeRepository,
+        HttpTulongServiceRepository,
+        HttpHotlineRepository,
       ],
     });
 
@@ -109,11 +124,14 @@ describe('the Node adapters', () => {
       const identity = await user;
 
       // `audit.view`, `verification.review` (DL-167), `office-inbox.manage` and the three `user.*`
-      // keys (DL-168) are the capabilities with a console key of the same name; the rest are kept
-      // aside as unknown, never translated.
+      // keys (DL-168), and the directory's three (DL-170) are the capabilities with a console key of
+      // the same name; the rest are kept aside as unknown, never translated.
       expect([...(identity?.permissions ?? [])].sort()).toEqual([
         'audit.view',
+        'hotline.manage',
         'office-inbox.manage',
+        'office.manage',
+        'service.manage',
         'user.assign-office',
         'user.change-role',
         'user.view',
@@ -746,6 +764,216 @@ describe('the Node adapters', () => {
       expect(clearRequest.request.body).toEqual({ office_id: null });
       clearRequest.flush(USER_ROLE_CHANGED);
       expect((await cleared).officeId).toBeNull();
+    });
+  });
+
+  describe('the residents’ app directory (DL-170)', () => {
+    const officeId = asId<OfficeId>(OFFICE.data.id);
+    const serviceId = asId<TulongServiceId>(SERVICE.data.id);
+    const hotlineId = asId<HotlineId>(HOTLINE.data.id);
+    const png = () => new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], { type: 'image/png' });
+
+    beforeEach(() => tokens.hold('fixture-token', null));
+
+    /** The fields a form request carried, as text or as a file's type. */
+    function formOf(body: unknown): Record<string, string> {
+      expect(body).toBeInstanceOf(FormData);
+      const fields: Record<string, string> = {};
+      if (body instanceof FormData) {
+        body.forEach((value, name) => {
+          fields[name] = typeof value === 'string' ? value : `file:${value.type}`;
+        });
+      }
+      return fields;
+    }
+
+    it('reads the office directory a page at a time, from the public list', async () => {
+      const offices = TestBed.inject(HttpDirectoryOfficeRepository);
+      const page = firstValueFrom(offices.list({ limit: 20, cursor: null }));
+
+      const request = http.expectOne((r) => r.url === `${BASE}/offices`);
+      expect(request.request.params.get('limit')).toBe('20');
+      request.flush(OFFICES_PAGE);
+
+      expect((await page).items.map((office) => office.slug)).toEqual(['mswdo', 'mho']);
+    });
+
+    it('creates an office as a form, leaving out what was not given, with the banner as a file', async () => {
+      const offices = TestBed.inject(HttpDirectoryOfficeRepository);
+      const created = firstValueFrom(
+        offices.create(
+          {
+            name: 'Persons with Disability Affairs Office',
+            slug: 'pdao',
+            shortName: 'PDAO',
+            category: null,
+            description: null,
+            head: null,
+            hours: null,
+            phone: null,
+            email: null,
+            address: null,
+            latitude: 14.5574,
+            longitude: 121.1323,
+          },
+          png(),
+        ),
+      );
+
+      const request = http.expectOne({ method: 'POST', url: `${BASE}/admin/offices` });
+      expect(formOf(request.request.body)).toEqual({
+        name: 'Persons with Disability Affairs Office',
+        slug: 'pdao',
+        short_name: 'PDAO',
+        latitude: '14.5574',
+        longitude: '121.1323',
+        banner: 'file:image/png',
+      });
+      // The browser writes the multipart boundary; a Content-Type set here would lose it.
+      expect(request.request.headers.has('Content-Type')).toBe(false);
+      expect(request.request.headers.get('Authorization')).toBe('Bearer fixture-token');
+      request.flush(OFFICE, { status: 201, statusText: 'Created' });
+
+      expect((await created).hasBanner).toBe(true);
+    });
+
+    it('changes an office with only what OfficePatch declares', async () => {
+      const offices = TestBed.inject(HttpDirectoryOfficeRepository);
+      const changed = firstValueFrom(offices.update(officeId, { slug: 'pdao-office' }, null));
+
+      const request = http.expectOne({ method: 'PATCH', url: `${BASE}/admin/offices/${officeId}` });
+      expect(formOf(request.request.body)).toEqual({ slug: 'pdao-office' });
+      request.flush(OFFICE);
+
+      expect((await changed).id).toBe(officeId);
+    });
+
+    it('deletes an office, and passes the server’s refusal on in its own words', async () => {
+      const offices = TestBed.inject(HttpDirectoryOfficeRepository);
+      const removed = firstValueFrom(offices.remove(officeId));
+      http.expectOne({ method: 'DELETE', url: `${BASE}/admin/offices/${officeId}` }).flush(DELETED);
+      await expect(removed).resolves.toBeUndefined();
+
+      const refused = firstValueFrom(offices.remove(officeId));
+      http
+        .expectOne({ method: 'DELETE', url: `${BASE}/admin/offices/${officeId}` })
+        .flush(
+          {
+            error: {
+              code: 'CONFLICT',
+              message: 'That office still has staff or other records.',
+              details: {},
+              request_id: 'req-1',
+            },
+          },
+          { status: 409, statusText: 'Conflict' },
+        );
+      await expect(refused).rejects.toBeTruthy();
+    });
+
+    it('reads the Tulong catalogue a page at a time, and one page by its address', async () => {
+      const services = TestBed.inject(HttpTulongServiceRepository);
+      const page = firstValueFrom(services.list({ limit: 20, cursor: null }));
+      http.expectOne((r) => r.url === `${BASE}/services`).flush(SERVICES_PAGE);
+      const answer = await page;
+      expect(answer.hasMore).toBe(true);
+      expect(answer.items).toHaveLength(2);
+
+      const hidden = firstValueFrom(services.find('typhoon-relief-2025'));
+      http.expectOne({ method: 'GET', url: `${BASE}/services/typhoon-relief-2025` }).flush(SERVICE);
+      expect((await hidden)?.hiddenFromList).toBe(true);
+    });
+
+    it('says a missing page is missing, and a failure is a failure', async () => {
+      const services = TestBed.inject(HttpTulongServiceRepository);
+      const missing = firstValueFrom(services.find('nothing-here'));
+      http
+        .expectOne(`${BASE}/services/nothing-here`)
+        .flush(
+          { error: { code: 'NOT_FOUND', message: 'Not found.', details: {}, request_id: 'r' } },
+          { status: 404, statusText: 'Not Found' },
+        );
+      expect(await missing).toBeNull();
+
+      const failed = firstValueFrom(services.find('pwd-id'));
+      http.expectOne(`${BASE}/services/pwd-id`).flush(null, { status: 500, statusText: 'Error' });
+      await expect(failed).rejects.toBeTruthy();
+    });
+
+    it('sends a Tulong change as JSON with only what changed, and the picture as a form', async () => {
+      const services = TestBed.inject(HttpTulongServiceRepository);
+      const changed = firstValueFrom(services.update(serviceId, { hiddenFromList: false, badge: null }));
+      const patch = http.expectOne({ method: 'PATCH', url: `${BASE}/admin/services/${serviceId}` });
+      expect(JSON.parse(JSON.stringify(patch.request.body))).toEqual({
+        hidden_from_list: false,
+        badge: null,
+      });
+      patch.flush(SERVICE);
+      expect((await changed).id).toBe(serviceId);
+
+      const pictured = firstValueFrom(services.replaceImage(serviceId, png()));
+      const upload = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/services/${serviceId}/media`,
+      });
+      expect(formOf(upload.request.body)).toEqual({ file: 'file:image/png' });
+      upload.flush(SERVICE);
+      await pictured;
+
+      const removed = firstValueFrom(services.remove(serviceId));
+      http.expectOne({ method: 'DELETE', url: `${BASE}/admin/services/${serviceId}` }).flush(DELETED);
+      await expect(removed).resolves.toBeUndefined();
+    });
+
+    it('reads every hotline, and says when the answer is as long as the cap', async () => {
+      const hotlines = TestBed.inject(HttpHotlineRepository);
+      const listing = firstValueFrom(hotlines.list());
+      http.expectOne({ method: 'GET', url: `${BASE}/admin/hotlines` }).flush(HOTLINES);
+      expect(await listing).toMatchObject({ mayBeIncomplete: false });
+
+      const capped = firstValueFrom(hotlines.list());
+      const [line] = HOTLINES.data;
+      http.expectOne(`${BASE}/admin/hotlines`).flush({
+        ...HOTLINES,
+        data: Array.from({ length: HOTLINE_LIST_CAP }, (_, index) => ({
+          ...line,
+          id: `9b8a7c6d-5e4f-4a3b-8c2d-${String(index).padStart(12, '0')}`,
+        })),
+      });
+      expect((await capped).mayBeIncomplete).toBe(true);
+    });
+
+    it('creates, changes and deletes a hotline with the body the API reads', async () => {
+      const hotlines = TestBed.inject(HttpHotlineRepository);
+      const created = firstValueFrom(
+        hotlines.create({
+          name: 'Police station',
+          number: '(02) 8000 0112',
+          category: 'Emergency',
+          sortOrder: 2,
+          active: true,
+        }),
+      );
+      const post = http.expectOne({ method: 'POST', url: `${BASE}/admin/hotlines` });
+      expect(post.request.body).toEqual({
+        name: 'Police station',
+        number: '(02) 8000 0112',
+        category: 'Emergency',
+        sort_order: 2,
+        active: true,
+      });
+      post.flush(HOTLINE, { status: 201, statusText: 'Created' });
+      expect((await created).id).toBe(hotlineId);
+
+      const changed = firstValueFrom(hotlines.update(hotlineId, { active: false }));
+      const patch = http.expectOne({ method: 'PATCH', url: `${BASE}/admin/hotlines/${hotlineId}` });
+      expect(JSON.parse(JSON.stringify(patch.request.body))).toEqual({ active: false });
+      patch.flush(HOTLINE);
+      await changed;
+
+      const removed = firstValueFrom(hotlines.remove(hotlineId));
+      http.expectOne({ method: 'DELETE', url: `${BASE}/admin/hotlines/${hotlineId}` }).flush(DELETED);
+      await expect(removed).resolves.toBeUndefined();
     });
   });
 });

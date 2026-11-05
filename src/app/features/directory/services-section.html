@@ -1,0 +1,154 @@
+<section class="card directory-section" aria-labelledby="services-heading">
+  <div class="directory-section__head">
+    <h2 id="services-heading" class="directory-section__title">{{ copy.heading }}</h2>
+    <button type="button" class="btn btn--primary" (click)="add()">{{ copy.add }}</button>
+  </div>
+  <p class="directory-section__note">{{ copy.lead }}</p>
+  <p class="directory-section__note">{{ copy.hiddenNote }} {{ listCopy.order }}</p>
+  @if (offices.failed()) {
+    <p class="directory-section__note" role="status">{{ copy.officesUnnamed }}</p>
+  }
+
+  <form class="directory-section__find" (submit)="$event.preventDefault(); find()">
+    <div class="field">
+      <label class="field__label" for="service-find">{{ copy.findHeading }}</label>
+      <p class="field__hint" id="service-find-hint">{{ copy.findHint }}</p>
+      <input
+        id="service-find"
+        class="field__input"
+        autocomplete="off"
+        spellcheck="false"
+        aria-describedby="service-find-hint"
+        [value]="address()"
+        (input)="address.set(text($event))"
+      />
+    </div>
+    <button type="submit" class="btn btn--secondary" [disabled]="finding()">
+      {{ finding() ? copy.finding : copy.find }}
+    </button>
+  </form>
+  @if (findProblem(); as problem) {
+    <p class="directory-section__problem" role="alert">{{ problem }}</p>
+  }
+
+  <p class="directory-section__outcome" role="status" aria-live="polite">{{ outcome() }}</p>
+
+  <app-async-content
+    [state]="list.first()"
+    [content]="servicesContent"
+    [skeletonLines]="4"
+    (retryRequested)="list.reload()"
+  >
+    <ng-template #servicesContent>
+      <app-data-table
+        [columns]="columns()"
+        [rows]="list.rows()"
+        [rowKey]="rowKey"
+        [caption]="copy.caption"
+        [emptyHeading]="copy.emptyHeading"
+        [emptyMessage]="copy.emptyMessage"
+      />
+
+      @if (list.rows().length > 0) {
+        <div class="directory-section__more">
+          <p class="directory-section__note" role="status">
+            {{ listCopy.shown(list.rows().length, copy.noun) }}
+            {{ list.hasMore() ? listCopy.moreAvailable : listCopy.noMore }}
+          </p>
+          @if (list.hasMore()) {
+            <button
+              type="button"
+              class="btn btn--secondary"
+              [disabled]="list.loadingMore()"
+              (click)="list.showMore()"
+            >
+              {{ list.loadingMore() ? listCopy.loadingMore : listCopy.showMore }}
+            </button>
+          }
+          @if (list.moreFailed()) {
+            <p class="directory-section__problem" role="alert">{{ listCopy.moreFailed }}</p>
+          }
+        </div>
+      }
+    </ng-template>
+  </app-async-content>
+</section>
+
+<ng-template #nameCell let-service>
+  {{ service.name }}
+  <span class="directory-section__note">services/{{ service.slug }}</span>
+</ng-template>
+
+<ng-template #listingCell let-service>
+  <app-status-badge [catalog]="listingCatalog" [status]="listingOf(service)" />
+</ng-template>
+
+<ng-template #actionCell let-service>
+  <div class="directory-section__actions">
+    <button
+      type="button"
+      class="btn btn--secondary"
+      [attr.aria-label]="copy.editLabel(service.name)"
+      (click)="edit(service)"
+    >
+      {{ listCopy.edit }}
+    </button>
+    <button
+      type="button"
+      class="btn btn--secondary"
+      [attr.aria-label]="copy.removeLabel(service.name)"
+      (click)="askRemove(service)"
+    >
+      {{ listCopy.remove }}
+    </button>
+  </div>
+</ng-template>
+
+@if (editing() !== null) {
+  <app-drawer
+    [open]="true"
+    size="wide"
+    [heading]="drawerService() === null ? copy.createHeading : copy.editHeading"
+    (dismissed)="closeDrawer()"
+  >
+    <div drawer-body>
+      <app-service-form
+        [service]="drawerService()"
+        [offices]="offices.state()"
+        (saved)="onSaved($event)"
+      />
+    </div>
+  </app-drawer>
+}
+
+@if (removing(); as service) {
+  <app-modal
+    [open]="true"
+    [heading]="copy.removeHeading(service.name)"
+    (dismissed)="cancelRemove()"
+  >
+    <div modal-body class="directory-section__warning">
+      <p>{{ listCopy.effectsLead }}</p>
+      <ul>
+        @for (effect of removeEffects; track $index) {
+          <li>{{ effect }}</li>
+        }
+      </ul>
+      @if (removeProblem(); as problem) {
+        <p class="directory-section__problem" role="alert">{{ problem }}</p>
+      }
+    </div>
+    <button type="button" modal-actions class="btn btn--secondary" (click)="cancelRemove()">
+      {{ listCopy.cancel }}
+    </button>
+    <button
+      type="button"
+      modal-actions
+      class="btn btn--primary"
+      [disabled]="removeBusy()"
+      (click)="confirmRemove()"
+    >
+      {{ copy.removeConfirm(service.name) }}
+    </button>
+  </app-modal>
+}

@@ -9,10 +9,10 @@ sign-in only, hosted on Linode.
 
 | | |
 |---|---|
-| Console ports the Node API serves fully | 0 of 20 casework ports; 4 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts) |
+| Console ports the Node API serves fully | 0 of 20 casework ports; 7 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines) |
 | Served in part (mostly different concepts with the same name) | 7 |
 | No endpoint at all | 13 — cases, requests, beneficiaries, visits, releases, referrals, families, saved views, dashboard, work, reports, search, events |
-| Node staff endpoints with no console screen | ~28 — offices, services, hotlines, home banners and links, digital IDs, audit, app configuration |
+| Node staff endpoints with no console screen | ~16 — home banners and links, digital IDs, audit, app configuration, Balita |
 
 ## Plan
 
@@ -26,7 +26,8 @@ sign-in only, hosted on Linode.
 | 6a | Platform screen: residents' ID verification review | console | done (`DL-167`, [`docs/verification`](../verification/README.md)): queue by status, cursor-paged; review in a drawer; images only after a warning, read as bytes with the bearer in a header and revoked on leave; approve and reject through `StatusTransition` with what the API does shown before the button and the rejection's reader named; `verification.review` added unchanged from `StaffCapability`, held by the administrator alone. **Not run against a live API.** Open: whether the review should show the account's name and birth date (owner decision 7; the spec has no `GET admin/users/{id}`) |
 | 6b | Platform screen: the office inbox | console | done (`DL-168`, [`docs/inbox`](../inbox/README.md)): conversations newest activity first, cursor-paged, no preview of what a resident wrote in the list; one conversation by address, oldest first; replies in words; mark read (one mark for the whole office, said so); close behind a confirmation listing what the server does and asking no reason (it keeps none); attachments only after a warning, as bytes, revoked on leave; an empty first page asked about (`GET me`) so a staff account with no office is told so rather than shown an empty inbox; `office-inbox.manage` added unchanged. **Not run against a live API.** Not done: sending an image with a reply |
 | 6c | Platform screen: users and roles | console | done (`DL-168`, [`docs/accounts`](../accounts/README.md)): every app account, a page at a time, showing name, email, role and office only; role and office changed in a drawer, what the server does shown before each button (digital ID revoked on any role but verified, `verified` skipping the ID review, console access, the next-request timing), no reason asked (the server keeps none), one's own role not offered; offices picked from the directory read in full; `user.view`, `user.change-role`, `user.assign-office` added unchanged, held by the administrator alone. **Not run against a live API.** No search: the API has none |
-| 6d | Platform screens: directory, home, digital IDs, Balita, audit, app config | console | to do |
+| 6d | Platform screen: the app directory — offices, Tulong pages, hotlines | console | done (`DL-170`, [`docs/directory`](../directory/README.md)): offices and Tulong pages a page at a time, hotlines whole with the cap said; added and changed in a drawer, each form listing what the API does before its button; deletes only through a confirmation listing the effects, a refusal shown in the server's words; images chosen through one shared field that refuses past 5 MB or by the file's first bytes before sending, sent as `multipart/form-data` through the new `ApiClient.postForm`/`patchForm` (the contract checks learned form bodies and now read a `toWire…` mapper's keys); a Tulong page never modelled as a programme; `office.manage`, `service.manage`, `hotline.manage` added unchanged. **Not run against a live API.** Not possible on the published contract: changing an office's details after creation, clearing a short name, removing a banner, changing a page's address, category, eligibility, places or office, listing a hidden page (opened by its address instead) |
+| 6e | Platform screens: home, app settings, digital IDs, Balita, audit | console | to do |
 | 7 | Re-point the contract checks at the Node spec, new baselines stated | console | done with step 3, in one commit, each old and new count stated (`DL-165`) |
 
 ## For the owner to decide
@@ -68,13 +69,32 @@ These are not engineering choices, and nothing below has been built.
 - `app.set('trust proxy', 1)` behind nginx, or the 120-a-minute limiter is shared by every client.
 - Expose `Retry-After` through CORS (the console reads `details.retry_after` meanwhile).
 - `X-Client-Channel` is sent by both clients and read by nobody.
-- Media uploads are capped at 5 MB on the API and 10 MB in the console.
+- Media uploads are capped at 5 MB on the API and 10 MB in the console's casework document policy
+  (`DOCUMENT_UPLOAD_POLICY`, unserved). The app's images use `APP_IMAGE_POLICY`, which matches the API.
 - A thread's `unread_count` counts every message not sent by the reader, so a colleague's reply is
   "unread" to everybody else at the office until somebody marks the conversation read — while the
   read mark itself is one per office (`office_last_read_at`). Counting only the resident's messages
   would make the office's count mean "the resident is waiting".
 - `GET threads` answers a staff account with no office with an empty page rather than a refusal; the
   console asks `GET me` before believing it (`DL-168`). A `403` would say it directly.
+- **`OfficePatch` and `ServicePatch` under-declare** (`DL-170`). The handlers accept every create
+  field on a change (`offices/schemas.ts`, `services/schemas.ts`); the spec declares four for an
+  office and leaves a page's `slug`, `category`, `eligibility`, `locations` and `office_id` out.
+  The console sends only what the spec declares, so an office's description, head, hours, phone,
+  email, address and position, and those five page fields, cannot be changed after creation.
+  Declaring them in the spec fixes it without a code change on either side.
+- **No admin list of Tulong pages.** `GET services` leaves out `hidden_from_list` pages unless
+  `featured=true`; a hidden, unfeatured page is reachable only by its slug (`DL-170`). An admin list,
+  or a `hidden` filter, would let the console show every page.
+- **An office cannot lose its banner or its short name.** The banner is set only when a file is sent,
+  and a multipart change cannot carry `null`. `latitude`/`longitude` sent empty coerce to `0`
+  (`z.coerce.number`), so the console never sends them empty.
+- **An office's delete refusal does not say what names it** (`409` "still has staff or other
+  records"), and a deleted office's banner image is never removed from storage.
+- **Hotline lists stop at 100 with no word of more** (`HOTLINE_LIST_CAP`), for the app and the admin
+  list alike; the console says so when it receives a hundred.
+- A multipart request with an unexpected file field (`LIMIT_UNEXPECTED_FILE`) is not mapped by the
+  error handler and answers `500`.
 
 ## Things only a person can supply
 

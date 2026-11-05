@@ -64,7 +64,7 @@ const READ_HELPERS = {
 };
 
 /* Writes. Excluded because their arguments are a BODY, which `check:wire-adoption` owns. */
-const WRITE_HELPERS = new Set(['post', 'patch', 'delete']);
+const WRITE_HELPERS = new Set(['post', 'patch', 'postForm', 'patchForm', 'delete']);
 
 {
   const client = readFileSync(join(HTTP, 'api.client.ts'), 'utf8');

@@ -215,6 +215,17 @@ export const PERMISSIONS = [
   'user.view',
   'user.change-role',
   'user.assign-office',
+
+  /*
+   * THE RESIDENTS' APP DIRECTORY (`DL-170`) — the server's keys, spelled as its `StaffCapability`.
+   *
+   * The offices, Tulong pages and hotlines residents read in the app. The server gives all three to
+   * `admin` alone, so here only the system administrator holds them — by holding every key — and no
+   * role names them, in the mock either. Mutating: each one changes what every resident sees.
+   */
+  'office.manage',
+  'service.manage',
+  'hotline.manage',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

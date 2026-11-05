@@ -84,6 +84,10 @@ export type AppAccountId = Branded<string, 'AppAccountId'>;
 export type MediaId = Branded<string, 'MediaId'>;
 /** An LGU office in the residents' app's directory — the MSWDO is one of several (`DL-168`). */
 export type OfficeId = Branded<string, 'OfficeId'>;
+/** A Tulong page in the residents' app — information about a service, never a programme (`DL-170`). */
+export type TulongServiceId = Branded<string, 'TulongServiceId'>;
+/** An emergency or office number the residents' app lists (`DL-170`). */
+export type HotlineId = Branded<string, 'HotlineId'>;
 /** A conversation between one resident and one office (`DL-168`). */
 export type OfficeThreadId = Branded<string, 'OfficeThreadId'>;
 /** One message in an office conversation (`DL-168`). */

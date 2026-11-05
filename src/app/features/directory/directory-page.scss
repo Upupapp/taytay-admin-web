@@ -1,0 +1,29 @@
+/* Layout only. `.card` and `.btn` are styles.scss's (DL-120) and are not redefined. */
+
+.directory-tabs ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.directory-tabs__link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  color: var(--c-text);
+  text-decoration: none;
+}
+
+/* The current section is carried by the underline and the weight, not by colour alone. */
+.directory-tabs__link[aria-current='page'] {
+  border-color: var(--c-brand);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}

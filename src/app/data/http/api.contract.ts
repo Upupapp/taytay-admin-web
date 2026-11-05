@@ -168,6 +168,20 @@ export const API_ENDPOINTS = {
    * `PATCH {id}/office`. There is no read of one account.
    */
   adminUsers: 'admin/users',
+  /**
+   * The office directory, written (`DL-170`, `office.manage`): `POST` and `PATCH {id}` as forms,
+   * because they carry the banner; `DELETE {id}`. Read through `offices`, which is public.
+   */
+  adminOffices: 'admin/offices',
+  /**
+   * Tulong pages as residents read them — public, cursor-paged, leaving out a page hidden from the
+   * catalogue — and one by `{slug}`, hidden or not (`DL-170`).
+   */
+  services: 'services',
+  /** Tulong pages, written (`service.manage`): JSON, except `POST {id}/media`, a form. */
+  adminServices: 'admin/services',
+  /** Every hotline, shown and hidden, at most a hundred (`hotline.manage`); written as JSON. */
+  adminHotlines: 'admin/hotlines',
 } as const;
 
 /** The one place `meta.pagination` becomes a domain `CursorPage`. */

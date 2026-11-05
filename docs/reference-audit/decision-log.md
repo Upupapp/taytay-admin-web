@@ -5911,3 +5911,92 @@ optimisation, which **inlines critical CSS** into `index.html` — and the stagi
 `inlineCritical: false` (TAB 13: "change the feature, not the policy"). Staging now has production's
 `optimization` and `budgets`, and `check:headers` and `check:bundle` both pass on a staging build.
 A build that is meant to rehearse production has to be built like it.
+
+## DL-170 — what residents see in the app, kept here: the directory, the home screen, the app's settings
+
+Step 6 of `docs/integration/node-api-migration.md`, after `DL-168`. Three staff surfaces the API has
+served since `DL-164` and no screen has used, all admin only on the server, and all different from
+the screens before them in one way: **they change what every resident reads in the app.** An office
+leaves the directory, an emergency number changes, the app refuses to open until it is updated. So
+each screen says near its title that residents see it, and every act says what it does before the
+button that does it, in sentences read from the backend's handlers rather than assumed. Each moves
+ports from "no screen" to "served"; the eighteen unserved casework ports are unchanged.
+
+The backend was read at `2af2243`; its modules are unchanged since `2736e28`, the commit the vendored
+spec was taken from, so the domain's citations name `2736e28`.
+
+### 1. The app directory: offices, Tulong pages, hotlines
+
+`GET offices` and `GET services` (public, cursor-paged), `GET services/{slug}`, `GET admin/hotlines`,
+and the writes under `admin/offices`, `admin/services` and `admin/hotlines`, under `office.manage`,
+`service.manage` and `hotline.manage`. Three new ports — `directory-office`, `tulong-service`,
+`hotline` — served in the http set; the Tulong section also reads `office` for its picker. One route,
+`/directory`, with the section in the URL. Described in
+[`docs/directory/README.md`](../directory/README.md); the decisions are these.
+
+- **A Tulong page is not a programme** (`DL-164`). It is a page a resident reads — the API calls it
+  "information only", and there is no application endpoint — with eligibility as a paragraph nobody
+  evaluates. It has its own type, `TulongService`, its own port, and its own screen, and
+  `check:directory` fails the build if the directory names `Program`, `PROGRAM_REPOSITORY` or an
+  eligibility guideline, or the programmes module names a Tulong type. The section says, under its
+  title, that a page is not one of the office's assistance programmes.
+- **What an act does, before the button.** `OFFICE_EFFECTS`, `SERVICE_EFFECTS` and `HOTLINE_EFFECTS`
+  were read from the handlers, repositories and migrations, and the forms list them between the
+  fields and the button, growing with the change: a new address says old links stop working; a new
+  banner says the old one is deleted; hiding a page says it leaves this list too; featuring one says
+  the home screen shows the six newest; a changed hotline number is read back, old and new, in full.
+  Every act is audited with no reason, so none is asked for.
+- **Deletes are confirmed.** Only through a modal whose effects come before its button: an office's
+  delete is **refused while a staff account, a Balita article, a Tulong page or a conversation names
+  it** (four foreign keys, none cascading), and the refusal does not say which; a page's delete takes
+  its picture; a hotline's offers making it inactive instead. A refusal stays in the modal, in the
+  server's words.
+- **The contract decides what a change can carry, not the handler.** `OfficePatch` declares four
+  fields and `ServicePatch` leaves five out, though the handlers accept them all. The console sends
+  only what the spec declares (`check:wire-adoption`) — a field the contract does not declare is one
+  the server may drop while reporting success — and shows the rest as set at creation, saying why.
+  Recorded as a backend item: declaring them fixes it without code on either side.
+- **A hidden page is not in any list.** `GET services` leaves out a page hidden from the catalogue
+  unless it is featured, and there is no admin list. The section says so and offers the one read that
+  finds one, `GET services/{slug}`; hiding a page says beforehand that it will leave this list. A
+  hidden page must never read as a deleted one.
+- **A capped list says so.** `GET admin/hotlines` stops at a hundred with no word of more; a listing
+  that long carries `mayBeIncomplete`, and the section says there may be lines neither it nor the app
+  shows (`DL-161`'s rule, where the server gives no cursor to follow).
+- **The first form bodies.** Banners and pictures are files, so `ApiClient` gained `postForm` and
+  `patchForm` (`multipart/form-data`, no `Content-Type` set by the console, the bearer added by the
+  interceptor as for JSON). A form cannot say `null`, so an office's short name can be replaced but
+  not cleared, and an empty coordinate is never sent — the server would read it as `0`.
+- **An image is refused before it is sent.** One shared field, `ImageFileField` (`shared/media`), is
+  the only file input in any feature. It holds a file to `APP_IMAGE_POLICY` as the server does —
+  `MAX_IMAGE_BYTES`, five megabytes, and JPEG, PNG or WebP **by the first bytes**, not the name —
+  says what to do in an alert, and hands on nothing it refused. An accepted file is previewed from an
+  object URL made by `ObjectUrls`, given back on change and on destroy.
+- **No image address.** The API answers banner bytes at a public route on its host; no model carries
+  that address, no mapper reads `hero_url`, no directory template draws an `<img>`. A picture is said
+  as present or absent.
+- **A save sends a list back whole,** so a Tulong page with one contact of a kind the console does not
+  know is unreadable rather than shorter — dropping it would delete it on the next save.
+- **One vocabulary.** The three keys join `PERMISSIONS` as the server spells them, held by the system
+  administrator by holding every key, named by no role, mutating. The route and the menu entry open
+  for any of the three; each section is offered only to its own.
+
+#### The checks it had to satisfy, made stricter rather than looser
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:wire-adoption` | walks `postForm`/`patchForm`; **new**: the helper's media type must be the one the operation declares (a form to a form route, JSON to a JSON one); **new**: a `toWire…` mapper is no longer accepted on its name — its declared `…Wire` interface is read and every key held to the operation; the helper table is asserted against `ApiClient` | 17 of 17 bodies; seven plants, each caught (a form to a JSON route, JSON to a form route, an undeclared key on a create, a camelCase key, `description` on an office change, an unreadable mapper, an unknown helper) |
+| `check:permission-parity` | reads a guard naming several keys as one guard, unreachable if **any** key is outside `StaffCapability` | 42 of 48, the ceiling held; a planted unknown key beside two good ones caught |
+| `check:routes`, `check:response-shape`, `check:query-params`, `check:mapper-adoption` | the two form helpers added to each table, each asserted against `ApiClient` | 12 endpoints and 32 composed requests served at their verbs; 16 of 16 reads agree with their envelope; 16 reads, every key declared |
+| `check:consumer-contract` | none | 27 interactions, 157 required fields |
+| `check:port-adoption` | none | 173 of 184 port methods reached; the 11 unreached unchanged |
+| `check:unserved` | none | 27 ports, 18 unserved; 54 routed screens, 22 menu entries |
+| `check:access` | three matrix rows | 78 permissions × 7 roles |
+| `check:accounts`, `check:verification` | "named by no role" scanned from the end of `PERMISSIONS` rather than from `ROLE_DEFINITIONS`, which missed the shared lists declared above it | a key planted in `INTAKE_PERMISSIONS` or `SOCIAL_WORKER_PERMISSIONS` now caught; it was not before |
+| `check:bundle` | the directory seed's reserved address is a seed marker | — |
+| `check:directory` | new, in `verify` — ten rules, see `docs/directory/README.md` | twenty-six plants, each caught, every file restored byte for byte |
+
+`npm run verify` is green on Windows after this part: 115 spec files, 1,960 tests (110 and
+1,881 before — five new spec files, for the domain, the mappers, the mock adapters, the shared image
+field and the screen; the HTTP adapters, the fixtures, the identity, the layout and the unserved
+modules gained tests in their own).

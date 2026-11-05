@@ -4,6 +4,192 @@
   "interactions": [
     {
       "method": "GET",
+      "path": "admin/hotlines",
+      "consumer": "hotline.mapper.ts#toHotline",
+      "required": [
+        "active",
+        "category",
+        "id",
+        "name",
+        "number",
+        "sort_order",
+        "updated_at"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "admin/hotlines",
+      "consumer": "hotline.mapper.ts#toHotline",
+      "required": [
+        "active",
+        "category",
+        "id",
+        "name",
+        "number",
+        "sort_order",
+        "updated_at"
+      ],
+      "optional": []
+    },
+    {
+      "method": "PATCH",
+      "path": "admin/hotlines/{id}",
+      "consumer": "hotline.mapper.ts#toHotline",
+      "required": [
+        "active",
+        "category",
+        "id",
+        "name",
+        "number",
+        "sort_order",
+        "updated_at"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "admin/offices",
+      "consumer": "directory-office.mapper.ts#toDirectoryOffice",
+      "required": [
+        "id",
+        "name",
+        "slug",
+        "updated_at"
+      ],
+      "optional": [
+        "address",
+        "banner_media_id",
+        "category",
+        "description",
+        "email",
+        "head",
+        "hours",
+        "latitude",
+        "longitude",
+        "phone",
+        "short_name"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "admin/offices/{id}",
+      "consumer": "directory-office.mapper.ts#toDirectoryOffice",
+      "required": [
+        "id",
+        "name",
+        "slug",
+        "updated_at"
+      ],
+      "optional": [
+        "address",
+        "banner_media_id",
+        "category",
+        "description",
+        "email",
+        "head",
+        "hours",
+        "latitude",
+        "longitude",
+        "phone",
+        "short_name"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/services",
+      "consumer": "tulong-service.mapper.ts#toTulongService",
+      "required": [
+        "contacts",
+        "details",
+        "id",
+        "locations",
+        "name",
+        "requirements",
+        "slug",
+        "summary",
+        "updated_at"
+      ],
+      "optional": [
+        "badge",
+        "category",
+        "claim_steps",
+        "eligibility",
+        "featured",
+        "featured_headline",
+        "hidden_from_list",
+        "icon_key",
+        "legal_basis",
+        "media_id",
+        "office_id",
+        "schedule",
+        "tile_color"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "admin/services/{id}",
+      "consumer": "tulong-service.mapper.ts#toTulongService",
+      "required": [
+        "contacts",
+        "details",
+        "id",
+        "locations",
+        "name",
+        "requirements",
+        "slug",
+        "summary",
+        "updated_at"
+      ],
+      "optional": [
+        "badge",
+        "category",
+        "claim_steps",
+        "eligibility",
+        "featured",
+        "featured_headline",
+        "hidden_from_list",
+        "icon_key",
+        "legal_basis",
+        "media_id",
+        "office_id",
+        "schedule",
+        "tile_color"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/services/{id}/media",
+      "consumer": "tulong-service.mapper.ts#toTulongService",
+      "required": [
+        "contacts",
+        "details",
+        "id",
+        "locations",
+        "name",
+        "requirements",
+        "slug",
+        "summary",
+        "updated_at"
+      ],
+      "optional": [
+        "badge",
+        "category",
+        "claim_steps",
+        "eligibility",
+        "featured",
+        "featured_headline",
+        "hidden_from_list",
+        "icon_key",
+        "legal_basis",
+        "media_id",
+        "office_id",
+        "schedule",
+        "tile_color"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "admin/users",
       "consumer": "app-account.mapper.ts#toAppAccount",
       "required": [
@@ -153,6 +339,30 @@
     {
       "method": "GET",
       "path": "offices",
+      "consumer": "directory-office.mapper.ts#toDirectoryOffice",
+      "required": [
+        "id",
+        "name",
+        "slug",
+        "updated_at"
+      ],
+      "optional": [
+        "address",
+        "banner_media_id",
+        "category",
+        "description",
+        "email",
+        "head",
+        "hours",
+        "latitude",
+        "longitude",
+        "phone",
+        "short_name"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "offices",
       "consumer": "office.mapper.ts#toOffice",
       "required": [
         "id",
@@ -161,6 +371,68 @@
       ],
       "optional": [
         "short_name"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "services",
+      "consumer": "tulong-service.mapper.ts#toTulongService",
+      "required": [
+        "contacts",
+        "details",
+        "id",
+        "locations",
+        "name",
+        "requirements",
+        "slug",
+        "summary",
+        "updated_at"
+      ],
+      "optional": [
+        "badge",
+        "category",
+        "claim_steps",
+        "eligibility",
+        "featured",
+        "featured_headline",
+        "hidden_from_list",
+        "icon_key",
+        "legal_basis",
+        "media_id",
+        "office_id",
+        "schedule",
+        "tile_color"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "services/{slug}",
+      "consumer": "tulong-service.mapper.ts#toTulongService",
+      "required": [
+        "contacts",
+        "details",
+        "id",
+        "locations",
+        "name",
+        "requirements",
+        "slug",
+        "summary",
+        "updated_at"
+      ],
+      "optional": [
+        "badge",
+        "category",
+        "claim_steps",
+        "eligibility",
+        "featured",
+        "featured_headline",
+        "hidden_from_list",
+        "icon_key",
+        "legal_basis",
+        "media_id",
+        "office_id",
+        "schedule",
+        "tile_color"
       ]
     },
     {

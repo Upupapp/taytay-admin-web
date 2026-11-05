@@ -1,0 +1,35 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+
+@if (offered().length > 1) {
+  <nav class="directory-tabs" [attr.aria-label]="copy.sectionsLabel">
+    <ul>
+      @for (tab of offered(); track tab.key) {
+        <li>
+          <a
+            class="directory-tabs__link"
+            routerLink="."
+            [queryParams]="{ section: tab.key }"
+            [attr.aria-current]="current() === tab.key ? 'page' : null"
+          >
+            {{ copy.sections[tab.key] }}
+          </a>
+        </li>
+      }
+    </ul>
+  </nav>
+}
+
+@switch (current()) {
+  @case ('offices') {
+    <app-offices-section />
+  }
+  @case ('services') {
+    <app-services-section />
+  }
+  @case ('hotlines') {
+    <app-hotlines-section />
+  }
+  @default {
+    <p class="card">{{ copy.noSection }}</p>
+  }
+}

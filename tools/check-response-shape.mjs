@@ -147,7 +147,7 @@ const NEEDS = {
   blob: 'binary',
 };
 
-const WRITES = new Set(['post', 'patch', 'delete']);
+const WRITES = new Set(['post', 'patch', 'postForm', 'patchForm', 'delete']);
 
 const client = read(HTTP, 'api.client.ts');
 for (const [, helper] of client.matchAll(/^  ([a-zA-Z]\w*)\s*[<(]/gm)) {

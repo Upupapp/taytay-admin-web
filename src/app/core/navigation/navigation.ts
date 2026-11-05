@@ -205,6 +205,15 @@ export const NAVIGATION: readonly NavSection[] = [
         permissions: ['user.view'],
         description: 'Every residents’ app account, and who among them is staff.',
       },
+      {
+        // `DL-170`. What residents read in the app: offices, Tulong pages, hotlines.
+        label: 'App directory',
+        route: '/directory',
+        reads: ['directory-office', 'hotline', 'office', 'tulong-service'],
+        glyph: 'AD',
+        permissions: ['office.manage', 'service.manage', 'hotline.manage'],
+        description: 'The offices, Tulong pages and hotlines residents see in the Taytay app.',
+      },
     ],
   },
   {

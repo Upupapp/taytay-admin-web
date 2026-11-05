@@ -1,0 +1,46 @@
+{
+  "data": [
+    {
+      "id": "5a2b1c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+      "name": "Senior citizen ID",
+      "slug": "senior-citizen-id",
+      "category": "Senior citizens",
+      "summary": "How a resident aged sixty or over applies for the municipal senior ID.",
+      "details": "Bring the requirements to the MSWDO on a weekday.",
+      "eligibility": "Residents of the municipality aged sixty or over.",
+      "requirements": ["Proof of age", "Proof of residence"],
+      "contacts": [
+        { "type": "landline", "label": "Senior citizens desk", "value": "(02) 8000 0102" }
+      ],
+      "locations": [{ "name": "MSWDO", "address": "Municipal Hall, ground floor" }],
+      "office_id": "3c9a7e21-5b84-4d1f-a0c6-1e2f3a4b5c66",
+      "office_slug": "mswdo",
+      "media_id": "8e2f1d5b-3c4a-4b6f-8d9e-1f2a3b4c5d6e",
+      "featured": true,
+      "icon_key": "id-card",
+      "tile_color": "#1F6F8B",
+      "badge": null,
+      "legal_basis": null,
+      "claim_steps": ["Bring the requirements", "Have your photograph taken"],
+      "featured_headline": "Turning sixty? Get your senior ID",
+      "schedule": null,
+      "hero_url": "http://localhost:3000/api/v1/services/senior-citizen-id/hero",
+      "hidden_from_list": false,
+      "created_at": "2026-10-01T00:00:00.000Z",
+      "updated_at": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "5a2b1c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4e",
+      "name": "PWD ID",
+      "slug": "pwd-id",
+      "summary": "The identification card for persons with disability.",
+      "details": "Apply at the PDAO.",
+      "requirements": [],
+      "contacts": [],
+      "locations": [],
+      "created_at": "2026-09-30T00:00:00.000Z",
+      "updated_at": "2026-09-30T00:00:00.000Z"
+    }
+  ],
+  "meta": { "pagination": { "has_more": true, "next_cursor": "MjAyNi0wOS0zMHw1YTJi" } }
+}

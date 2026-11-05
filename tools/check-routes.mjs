@@ -160,6 +160,9 @@ const VERBS = {
   blob: 'GET',
   post: 'POST',
   patch: 'PATCH',
+  /** A body that carries a file (`DL-170`): judged at its verb exactly as a JSON body is. */
+  postForm: 'POST',
+  patchForm: 'PATCH',
   delete: 'DELETE',
 };
 

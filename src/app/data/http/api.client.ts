@@ -179,6 +179,35 @@ export class ApiClient {
   }
 
   /**
+   * A `POST` whose body is a form — `multipart/form-data` — because it carries a file: an office's
+   * banner, a Tulong page's picture (`DL-170`).
+   *
+   * The fields are a wire shape like any other body (`check:wire-adoption` holds them to the
+   * operation's form schema, and holds a JSON helper away from a form route and back). A field left
+   * `undefined` is not sent; a form cannot say `null`, so a field that must be cleared cannot travel
+   * this way. No `Content-Type` is set here: the browser writes it, with the boundary, and the bearer
+   * token is added by the interceptor exactly as for a JSON body.
+   */
+  postForm<TItem, TFields extends FormFields<TFields>>(
+    path: string,
+    fields: TFields,
+  ): Observable<TItem> {
+    return this.http
+      .post<ApiItemResponse<TItem>>(this.url(path), this.toFormData(fields))
+      .pipe(map((response) => response.data));
+  }
+
+  /** A `PATCH` whose body is a form, for the same reason as `postForm`. */
+  patchForm<TItem, TFields extends FormFields<TFields>>(
+    path: string,
+    fields: TFields,
+  ): Observable<TItem> {
+    return this.http
+      .patch<ApiItemResponse<TItem>>(this.url(path), this.toFormData(fields))
+      .pipe(map((response) => response.data));
+  }
+
+  /**
    * A DELETE that answers with what it changed. The body is optional because some removals are
    * recorded acts that carry a reason, and a reason about a family belongs in a body rather than a
    * URL that every proxy on the path logs (`DL-109`).
@@ -189,7 +218,23 @@ export class ApiClient {
       .pipe(map((response) => response.data));
   }
 
+  /** Text and files as form fields; anything else — `undefined` — is left out. */
+  private toFormData(fields: object): FormData {
+    const form = new FormData();
+    const entries: [string, unknown][] = Object.entries(fields);
+
+    for (const [name, value] of entries) {
+      if (typeof value === 'string' || value instanceof Blob) {
+        form.append(name, value);
+      }
+    }
+    return form;
+  }
+
   private url(path: string): string {
     return `${this.baseUrl}/${path.replace(/^\/+/, '')}`;
   }
 }
+
+/** A form body: every field text or a file, or `undefined` to leave it out. */
+export type FormFields<TFields> = { readonly [K in keyof TFields]: string | Blob | undefined };

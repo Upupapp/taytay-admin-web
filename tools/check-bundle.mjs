@@ -51,6 +51,8 @@ const SEED_MARKERS = [
   'SAMPLE ONLY - NOT A REAL ATTACHMENT',
   // Every seeded app account's address is at this reserved name (`DL-168`).
   'accounts.example.test',
+  // Every seeded directory address is at this reserved name (`DL-170`).
+  'directory.example.test',
   'mockLatencyMs":250',
 ];
 

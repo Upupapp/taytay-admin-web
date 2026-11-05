@@ -67,7 +67,16 @@ if (carried !== '#/components/schemas/StaffCapability') {
 }
 
 const routes = readFileSync(join(ROOT, ROUTES), 'utf8');
-const guards = [...routes.matchAll(/permissionGuard\(\s*'([a-z][a-z.-]+)'\s*\)/g)].map((m) => m[1]);
+/*
+ * A guard may name several keys and opens for any of them (`DL-170`: the app directory, one route
+ * for three keys). It is read as one guard, and it is unreachable if **any** key it names is outside
+ * what the server sends — stricter than the guard's own "any", because a key nobody can hold, listed
+ * beside one somebody can, reads as a grant that exists.
+ */
+const guardKeys = [
+  ...routes.matchAll(/permissionGuard\(\s*('[a-z][a-z.-]+'(?:\s*,\s*'[a-z][a-z.-]+')*)\s*,?\s*\)/g),
+].map((m) => [...m[1].matchAll(/'([a-z][a-z.-]+)'/g)].map((k) => k[1]));
+const guards = guardKeys.map((keys) => keys.join(' | '));
 const callSites = [...routes.matchAll(/permissionGuard\s*\(/g)].length;
 
 /*
@@ -81,7 +90,9 @@ if (guards.length === 0 || guards.length !== callSites) {
   process.exit(1);
 }
 
-const unreachable = guards.filter((key) => !granted.has(key));
+const unreachable = guardKeys
+  .filter((keys) => keys.some((key) => !granted.has(key)))
+  .map((keys) => keys.join(' | '));
 
 const detail =
   `  ${unreachable.length} of ${guards.length} guarded routes ask for a key the API never sends.\n` +

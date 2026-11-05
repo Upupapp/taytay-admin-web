@@ -1,0 +1,102 @@
+<section class="card directory-section" aria-labelledby="hotlines-heading">
+  <div class="directory-section__head">
+    <h2 id="hotlines-heading" class="directory-section__title">{{ copy.heading }}</h2>
+    <button type="button" class="btn btn--primary" (click)="add()">{{ copy.add }}</button>
+  </div>
+  <p class="directory-section__note">{{ copy.lead }}</p>
+
+  <p class="directory-section__outcome" role="status" aria-live="polite">{{ outcome() }}</p>
+
+  <app-async-content
+    [state]="listing()"
+    [content]="hotlinesContent"
+    [skeletonLines]="4"
+    (retryRequested)="reload()"
+  >
+    <ng-template #hotlinesContent>
+      <app-data-table
+        [columns]="columns()"
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [caption]="copy.caption"
+        [emptyHeading]="copy.emptyHeading"
+        [emptyMessage]="copy.emptyMessage"
+      />
+      @if (rows().length > 0) {
+        <p class="directory-section__note" role="status">{{ copy.count(rows().length) }}</p>
+      }
+      @if (mayBeIncomplete()) {
+        <p class="directory-section__problem" role="alert">{{ copy.capped(cap) }}</p>
+      }
+    </ng-template>
+  </app-async-content>
+</section>
+
+<ng-template #shownCell let-hotline>
+  <app-status-badge [catalog]="visibility" [status]="visibilityOf(hotline.active)" />
+</ng-template>
+
+<ng-template #actionCell let-hotline>
+  <div class="directory-section__actions">
+    <button
+      type="button"
+      class="btn btn--secondary"
+      [attr.aria-label]="copy.editLabel(hotline.name)"
+      (click)="edit(hotline)"
+    >
+      {{ listCopy.edit }}
+    </button>
+    <button
+      type="button"
+      class="btn btn--secondary"
+      [attr.aria-label]="copy.removeLabel(hotline.name)"
+      (click)="askRemove(hotline)"
+    >
+      {{ listCopy.remove }}
+    </button>
+  </div>
+</ng-template>
+
+@if (editing() !== null) {
+  <app-drawer
+    [open]="true"
+    [heading]="drawerHotline() === null ? copy.createHeading : copy.editHeading"
+    (dismissed)="closeDrawer()"
+  >
+    <div drawer-body>
+      <app-hotline-form [hotline]="drawerHotline()" (saved)="onSaved($event)" />
+    </div>
+  </app-drawer>
+}
+
+@if (removing(); as hotline) {
+  <app-modal
+    [open]="true"
+    [heading]="copy.removeHeading(hotline.name)"
+    (dismissed)="cancelRemove()"
+  >
+    <div modal-body class="directory-section__warning">
+      <p>{{ listCopy.effectsLead }}</p>
+      <ul>
+        @for (effect of removeEffects; track $index) {
+          <li>{{ effect }}</li>
+        }
+      </ul>
+      @if (removeProblem(); as problem) {
+        <p class="directory-section__problem" role="alert">{{ problem }}</p>
+      }
+    </div>
+    <button type="button" modal-actions class="btn btn--secondary" (click)="cancelRemove()">
+      {{ listCopy.cancel }}
+    </button>
+    <button
+      type="button"
+      modal-actions
+      class="btn btn--primary"
+      [disabled]="removeBusy()"
+      (click)="confirmRemove()"
+    >
+      {{ copy.removeConfirm(hotline.name) }}
+    </button>
+  </app-modal>
+}

@@ -46,6 +46,22 @@ import {
   type AppAccountId,
   type AppAccountRepository,
   type OfficeId,
+  HOTLINE_LIST_CAP,
+  type DirectoryOffice,
+  type DirectoryOfficeRepository,
+  type Hotline,
+  type HotlineChanges,
+  type HotlineDraft,
+  type HotlineId,
+  type HotlineListing,
+  type HotlineRepository,
+  type OfficeChanges,
+  type OfficeDraft,
+  type ServiceChanges,
+  type ServiceDraft,
+  type TulongService,
+  type TulongServiceId,
+  type TulongServiceRepository,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -57,6 +73,18 @@ import { toServerIdentity } from './mappers/me.mapper';
 import { toNotification } from './mappers/notification.mapper';
 import { toAppAccount } from './mappers/app-account.mapper';
 import { toOffice } from './mappers/office.mapper';
+import {
+  toDirectoryOffice,
+  toWireOfficeChanges,
+  toWireOfficeDraft,
+} from './mappers/directory-office.mapper';
+import { toHotline } from './mappers/hotline.mapper';
+import {
+  toTulongService,
+  toWireServiceChanges,
+  toWireServiceDraft,
+  toWireServiceImage,
+} from './mappers/tulong-service.mapper';
 import { toOfficeThread, toPostedMessage, toThreadMessage } from './mappers/office-thread.mapper';
 import { toVerificationRequest } from './mappers/verification.mapper';
 import { list } from './mappers/wire';
@@ -526,4 +554,173 @@ function readOffice(wire: unknown): Office {
   }
 
   return office;
+}
+
+/* ── the residents' app directory (`DL-170`) ─────────────────────────────── */
+
+/**
+ * The office directory, written. Admin only on the server (`office.manage`); read through the public
+ * `GET offices`, a page at a time. A create or a change is a **form**, because it may carry the
+ * banner — and the server refuses a form whose banner is too large or not an image, as
+ * `APP_IMAGE_POLICY` says before anything is sent.
+ */
+@Injectable()
+export class HttpDirectoryOfficeRepository implements DirectoryOfficeRepository {
+  private readonly api = inject(ApiClient);
+
+  /** One page, read whole or not at all: an office the mapper cannot read refuses the page. */
+  list(page: CursorRequest): Observable<CursorPage<DirectoryOffice>> {
+    return this.api
+      .cursorPage(API_ENDPOINTS.offices, page)
+      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readDirectoryOffice) })));
+  }
+
+  create(draft: OfficeDraft, banner: Blob | null): Observable<DirectoryOffice> {
+    return this.api
+      .postForm(API_ENDPOINTS.adminOffices, toWireOfficeDraft(draft, banner))
+      .pipe(map(readDirectoryOffice));
+  }
+
+  update(id: OfficeId, changes: OfficeChanges, banner: Blob | null): Observable<DirectoryOffice> {
+    return this.api
+      .patchForm(`${API_ENDPOINTS.adminOffices}/${id}`, toWireOfficeChanges(changes, banner))
+      .pipe(map(readDirectoryOffice));
+  }
+
+  remove(id: OfficeId): Observable<void> {
+    return this.api.delete(`${API_ENDPOINTS.adminOffices}/${id}`).pipe(map(() => undefined));
+  }
+}
+
+/**
+ * Tulong pages (`service.manage`). The list is the residents' own — `GET services`, which leaves out
+ * a page hidden from the catalogue — because the API has no other; one page is read by its address,
+ * which answers hidden ones too.
+ */
+@Injectable()
+export class HttpTulongServiceRepository implements TulongServiceRepository {
+  private readonly api = inject(ApiClient);
+
+  list(page: CursorRequest): Observable<CursorPage<TulongService>> {
+    return this.api
+      .cursorPage(API_ENDPOINTS.services, page)
+      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readTulongService) })));
+  }
+
+  /** A `404` is "no page at that address"; anything else is a failure, never an absence. */
+  find(slug: string): Observable<TulongService | null> {
+    return this.api
+      .optionalItem(`${API_ENDPOINTS.services}/${encodeURIComponent(slug)}`)
+      .pipe(map((wire) => (wire === null ? null : readTulongService(wire))));
+  }
+
+  create(draft: ServiceDraft): Observable<TulongService> {
+    return this.api
+      .post(API_ENDPOINTS.adminServices, toWireServiceDraft(draft))
+      .pipe(map(readTulongService));
+  }
+
+  update(id: TulongServiceId, changes: ServiceChanges): Observable<TulongService> {
+    return this.api
+      .patch(`${API_ENDPOINTS.adminServices}/${id}`, toWireServiceChanges(changes))
+      .pipe(map(readTulongService));
+  }
+
+  replaceImage(id: TulongServiceId, image: Blob): Observable<TulongService> {
+    return this.api
+      .postForm(`${API_ENDPOINTS.adminServices}/${id}/media`, toWireServiceImage(image))
+      .pipe(map(readTulongService));
+  }
+
+  remove(id: TulongServiceId): Observable<void> {
+    return this.api.delete(`${API_ENDPOINTS.adminServices}/${id}`).pipe(map(() => undefined));
+  }
+}
+
+/**
+ * Hotlines (`hotline.manage`). The admin list is every line, shown and hidden, answered whole and
+ * capped by the server at `HOTLINE_LIST_CAP` with no word of more — so an answer that long says it
+ * may be incomplete rather than presenting itself as the whole.
+ */
+@Injectable()
+export class HttpHotlineRepository implements HotlineRepository {
+  private readonly api = inject(ApiClient);
+
+  list(): Observable<HotlineListing> {
+    return this.api.list(API_ENDPOINTS.adminHotlines).pipe(
+      map((items) => ({
+        hotlines: items.map(readHotline),
+        mayBeIncomplete: items.length >= HOTLINE_LIST_CAP,
+      })),
+    );
+  }
+
+  create(draft: HotlineDraft): Observable<Hotline> {
+    return this.api
+      .post(API_ENDPOINTS.adminHotlines, {
+        name: draft.name,
+        number: draft.number,
+        category: draft.category,
+        sort_order: draft.sortOrder,
+        active: draft.active,
+      })
+      .pipe(map(readHotline));
+  }
+
+  /** A field left `undefined` is not serialised, so only what changed is sent. */
+  update(id: HotlineId, changes: HotlineChanges): Observable<Hotline> {
+    return this.api
+      .patch(`${API_ENDPOINTS.adminHotlines}/${id}`, {
+        name: changes.name,
+        number: changes.number,
+        category: changes.category,
+        sort_order: changes.sortOrder,
+        active: changes.active,
+      })
+      .pipe(map(readHotline));
+  }
+
+  remove(id: HotlineId): Observable<void> {
+    return this.api.delete(`${API_ENDPOINTS.adminHotlines}/${id}`).pipe(map(() => undefined));
+  }
+}
+
+function readDirectoryOffice(wire: unknown): DirectoryOffice {
+  const office = toDirectoryOffice(wire);
+
+  if (office === null) {
+    throw new Error(
+      'An office from the server could not be read, so the list is not shown rather than shown ' +
+        'without it: an office missing here reads as one the app does not list.',
+    );
+  }
+
+  return office;
+}
+
+function readTulongService(wire: unknown): TulongService {
+  const service = toTulongService(wire);
+
+  if (service === null) {
+    throw new Error(
+      'A Tulong page from the server could not be read — one of its contacts, places or lists is ' +
+        'in a form this console does not know — so none is shown rather than one that a save ' +
+        'would quietly cut short.',
+    );
+  }
+
+  return service;
+}
+
+function readHotline(wire: unknown): Hotline {
+  const hotline = toHotline(wire);
+
+  if (hotline === null) {
+    throw new Error(
+      'A hotline from the server could not be read, so the list is not shown rather than shown ' +
+        'without it: a number missing here is one nobody checks.',
+    );
+  }
+
+  return hotline;
 }

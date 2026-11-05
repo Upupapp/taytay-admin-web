@@ -1,0 +1,30 @@
+{
+  "data": {
+    "id": "5a2b1c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4f",
+    "name": "Typhoon relief packs, 2025",
+    "slug": "typhoon-relief-2025",
+    "category": null,
+    "summary": "A past distribution, kept for reference.",
+    "details": "Distributed in November 2025.",
+    "eligibility": null,
+    "requirements": [],
+    "contacts": [],
+    "locations": [],
+    "office_id": null,
+    "office_slug": null,
+    "media_id": null,
+    "featured": false,
+    "icon_key": null,
+    "tile_color": null,
+    "badge": null,
+    "legal_basis": null,
+    "claim_steps": [],
+    "featured_headline": null,
+    "schedule": null,
+    "hero_url": null,
+    "hidden_from_list": true,
+    "created_at": "2025-11-20T00:00:00.000Z",
+    "updated_at": "2026-11-05T02:00:00.000Z"
+  },
+  "meta": {}
+}

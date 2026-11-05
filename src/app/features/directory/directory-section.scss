@@ -1,0 +1,63 @@
+/* Layout only. `.field`, `.card` and `.btn` are styles.scss's (DL-120) and are not redefined. */
+
+.directory-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+}
+
+.directory-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-snug);
+}
+
+.directory-section__title {
+  margin: 0;
+  font-size: 16px;
+}
+
+.directory-section__note,
+.directory-section__problem,
+.directory-section__outcome {
+  margin: 0;
+  font-size: 13px;
+}
+
+.directory-section__note {
+  color: var(--c-text-muted);
+}
+
+.directory-section__problem {
+  color: var(--tone-danger-fg);
+}
+
+.directory-section__more,
+.directory-section__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-snug);
+}
+
+.directory-section__more {
+  margin-block-start: var(--space-snug);
+}
+
+.directory-section__actions {
+  justify-content: flex-end;
+}
+
+.directory-section__warning ul {
+  margin: 0 0 var(--space-2);
+  padding-inline-start: var(--space-5);
+}
+
+.directory-section__find {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-snug);
+}
