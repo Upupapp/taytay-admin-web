@@ -17,7 +17,6 @@ import {
   UnservedReferralRepository,
   UnservedReleaseRepository,
   UnservedReportRepository,
-  UnservedResidentRepository,
   UnservedSavedViewRepository,
   UnservedSearchRepository,
   UnservedWorkRepository,
@@ -29,7 +28,6 @@ import {
  * statically instead, by `check:routes`.
  */
 const UNSERVED = [
-  new UnservedResidentRepository(),
   new UnservedHouseholdRepository(),
   new UnservedFamilyRepository(),
   new UnservedCaseRepository(),
@@ -75,9 +73,10 @@ function everyCall(adapter: object): readonly { name: string; result: unknown }[
  * `new`, outside any injector, is the proof.
  */
 describe('the ports the API does not serve', () => {
-  it('covers eighteen ports and every method each declares', () => {
-    expect(UNSERVED).toHaveLength(18);
-    expect(UNSERVED.flatMap((adapter) => everyCall(adapter))).toHaveLength(146);
+  it('covers seventeen ports and every method each declares', () => {
+    // The resident registry left this list in casework phase 1b (`DL-174`).
+    expect(UNSERVED).toHaveLength(17);
+    expect(UNSERVED.flatMap((adapter) => everyCall(adapter))).toHaveLength(138);
   });
 
   it.each(UNSERVED.map((adapter) => [adapter.constructor.name, adapter] as const))(

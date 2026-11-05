@@ -126,6 +126,15 @@ export class ResidentFormPage {
 
   protected readonly isEdit = computed(() => this.id() !== undefined);
 
+  /**
+   * The PhilSys digits and the income are offered only to somebody who may read them: nobody
+   * records what they may not read, and the API refuses either from a writer without
+   * `resident.view-sensitive` (`DL-174`) — a barangay link, for one.
+   */
+  protected readonly recordsIdentity = computed(() =>
+    this.permissions.has('resident.view-sensitive'),
+  );
+
   /** Protected sectors are only offered to someone cleared to see them. */
   protected readonly offeredSectors = computed<readonly VulnerabilitySector[]>(() =>
     this.permissions.has('request.view-sensitive')

@@ -3,13 +3,11 @@ import { throwError, type Observable } from 'rxjs';
 
 import {
   ACCESS_CONTEXT,
-  barangayName,
   canReadRecord,
   discloseResident,
+  hasSensitiveSector,
   isInAgeGroup,
   isWithinBarangayScope,
-  formatPersonName,
-  paginate,
   PermissionDeniedError,
   ResidentDraftInvalidError,
   userHasPermission,
@@ -17,8 +15,8 @@ import {
   type AuthenticatedUser,
   type HouseholdMemberView,
   type Household,
-  type Page,
-  type PageRequest,
+  type CursorPage,
+  type CursorRequest,
   type Permission,
   type Resident,
   type ResidentDraft,
@@ -26,7 +24,6 @@ import {
   type ResidentId,
   type ResidentProfile,
   type ResidentRepository,
-  type ResidentSortField,
   type ResidentView,
 
   isSensitiveSector,
@@ -37,7 +34,6 @@ import { historySummaryFor } from './mock-assistance-history';
 import { denyUnless } from './mock-access';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
-import { matchesSearch, sortItems } from './mock-query';
 
 /**
  * The registry adapter.
@@ -59,14 +55,24 @@ export class MockResidentRepository implements ResidentRepository {
   private readonly access = inject(ACCESS_CONTEXT);
   private readonly store = inject(MockResidentStore);
 
-  list(
-    filter: ResidentFilter,
-    page: PageRequest<ResidentSortField>,
-  ): Observable<Page<ResidentView>> {
+  list(filter: ResidentFilter, page: CursorRequest): Observable<CursorPage<ResidentView>> {
     const user = this.access.currentUser();
-    const denied = denyUnless<Page<ResidentView>>(user, 'resident.view');
+    const denied = denyUnless<CursorPage<ResidentView>>(user, 'resident.view');
     if (denied) {
       return denied;
+    }
+
+    // A filter can only narrow what scope allows. Asking for another barangay is refused, as the
+    // API refuses it, rather than answered with an empty page that reads as "nobody there".
+    if (filter.barangayId !== undefined && !isWithinBarangayScope(user, filter.barangayId)) {
+      return throwError(() => new PermissionDeniedError('resident.view'));
+    }
+
+    // Listing who is in a protected sector is the disclosure itself, masked names or not; the API
+    // refuses the filter without the grant, and so does this (`DL-174`).
+    const cleared = userHasPermission(user, 'request.view-sensitive');
+    if (filter.sector !== undefined && isSensitiveSector(filter.sector) && !cleared) {
+      return throwError(() => new PermissionDeniedError('request.view-sensitive'));
     }
 
     // Out-of-scope records are *silently omitted* rather than refused: an error
@@ -76,22 +82,21 @@ export class MockResidentRepository implements ResidentRepository {
       .filter(
         (resident) =>
           isWithinBarangayScope(user, resident.address.barangayId) &&
-          matchesFilter(resident, filter),
+          matchesFilter(resident, filter, cleared),
       );
 
-    const sort = page.sort ?? { field: 'name' as const, direction: 'asc' as const };
-    const sorted = sortItems(
-      filtered,
-      (resident) => residentSortKey(resident, sort.field),
-      sort.direction,
-    );
-
-    const paged = paginate(sorted, page);
+    // The server's order, which a caller does not choose (`DL-174`): surname, given name, id.
+    const sorted = [...filtered].sort(byRegistryOrder);
+    // An offset stands in for the server's opaque cursor; it is never parsed outside this adapter.
+    const start = page.cursor ? Number.parseInt(page.cursor, 10) || 0 : 0;
+    const end = start + page.limit;
+    const hasMore = end < sorted.length;
     return this.latency.respond({
-      ...paged,
       // Only the page in hand is disclosed — the policy runs over 20 records,
       // not over the whole registry, so a large result set stays cheap.
-      items: paged.items.map((resident) => this.disclose(resident, user)),
+      items: sorted.slice(start, end).map((resident) => this.disclose(resident, user)),
+      hasMore,
+      nextCursor: hasMore ? String(end) : null,
     });
   }
 
@@ -144,6 +149,10 @@ export class MockResidentRepository implements ResidentRepository {
     if (!isWithinBarangayScope(user, draft.address.barangayId)) {
       return throwError(() => new PermissionDeniedError('resident.create'));
     }
+    const unreadable = refuseUnreadableWrites<Resident>(user, draft);
+    if (unreadable) {
+      return unreadable;
+    }
     const invalid = rejectIfInvalid<Resident>(draft);
     if (invalid) {
       return invalid;
@@ -185,11 +194,18 @@ export class MockResidentRepository implements ResidentRepository {
     return this.latency.respond(this.store.replace(existing, draft, user?.id ?? null));
   }
 
-  setActive(id: ResidentId, isActive: boolean): Observable<Resident> {
+  /**
+   * The reason is required here as on the server, and **not kept** — `MockResidentStore` has no
+   * history to hold it, the same thinness as the sectors' reasons below.
+   */
+  setActive(id: ResidentId, isActive: boolean, reason: string): Observable<Resident> {
     const user = this.access.currentUser();
     const denied = denyUnless<Resident>(user, 'resident.deactivate');
     if (denied) {
       return denied;
+    }
+    if (reason.trim().length === 0) {
+      return throwError(() => new Error('A reason is required to retire or restore a record.'));
     }
     const existing = this.store.find(id);
     if (!existing || !isWithinBarangayScope(user, existing.address.barangayId)) {
@@ -278,6 +294,23 @@ export class MockResidentRepository implements ResidentRepository {
 
 /* ── helpers ──────────────────────────────────────────────────────────────── */
 
+/**
+ * Nobody records what they may not read: a PhilSys number or an income needs
+ * `resident.view-sensitive`, as on the API (`DL-174`). An edit is already refused whenever anything
+ * is withheld from the editor, so this bites on a create.
+ */
+function refuseUnreadableWrites<TValue>(
+  user: AuthenticatedUser | null,
+  draft: ResidentDraft,
+): Observable<TValue> | null {
+  if (userHasPermission(user, 'resident.view-sensitive')) {
+    return null;
+  }
+  return draft.philsysLastFour !== null || draft.monthlyIncome !== null
+    ? throwError(() => new PermissionDeniedError('resident.view-sensitive'))
+    : null;
+}
+
 function rejectIfInvalid<TValue>(draft: ResidentDraft): Observable<TValue> | null {
   const problems = validateResidentDraft(draft);
   if (problems.length === 0) {
@@ -286,7 +319,7 @@ function rejectIfInvalid<TValue>(draft: ResidentDraft): Observable<TValue> | nul
   return throwError(() => new ResidentDraftInvalidError(problems));
 }
 
-function matchesFilter(resident: Resident, filter: ResidentFilter): boolean {
+function matchesFilter(resident: Resident, filter: ResidentFilter, cleared: boolean): boolean {
   if (!filter.includeInactive && !resident.isActive) {
     return false;
   }
@@ -302,26 +335,31 @@ function matchesFilter(resident: Resident, filter: ResidentFilter): boolean {
   if (filter.householdId && resident.householdId !== filter.householdId) {
     return false;
   }
-  return matchesSearch(
-    [
-      formatPersonName(resident.name),
-      resident.address.streetAddress,
-      barangayName(resident.address.barangayId),
-      resident.contact.mobile,
-    ],
-    filter.search,
+  return matchesNames(resident, filter.search, cleared);
+}
+
+/**
+ * The API's search (`DL-174`, `DL-109`): every word must be in the surname, or in a given or middle
+ * name the reader is shown. Not the street, the mobile number or the barangay — matching on a field
+ * discloses it even with no snippet shown — and not a protected record's given names for a reader
+ * who sees only "Mercado, M.".
+ */
+function matchesNames(resident: Resident, search: string | undefined, cleared: boolean): boolean {
+  const words = (search ?? '').trim().toLowerCase().split(/\s+/).filter((word) => word !== '');
+  const givenShown = cleared || !hasSensitiveSector(resident);
+  const given = givenShown ? [resident.name.first, resident.name.middle ?? ''] : [];
+  return words.every(
+    (word) =>
+      resident.name.last.toLowerCase().includes(word) ||
+      given.some((name) => name.toLowerCase().includes(word)),
   );
 }
 
-function residentSortKey(resident: Resident, field: ResidentSortField): string {
-  switch (field) {
-    case 'name':
-      return `${resident.name.last} ${resident.name.first}`;
-    case 'barangay':
-      return barangayName(resident.address.barangayId);
-    case 'birthDate':
-      return resident.birthDate;
-    case 'updatedAt':
-      return resident.audit.updatedAt;
-  }
+/** The API's order: surname, then given name, case-folded, then id — a total order, as a cursor needs. */
+function byRegistryOrder(a: Resident, b: Resident): number {
+  return (
+    a.name.last.toLowerCase().localeCompare(b.name.last.toLowerCase()) ||
+    a.name.first.toLowerCase().localeCompare(b.name.first.toLowerCase()) ||
+    (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+  );
 }

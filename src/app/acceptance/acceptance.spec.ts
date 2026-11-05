@@ -122,6 +122,8 @@ async function signedInAs(
 }
 
 const PAGE = { page: 1, pageSize: 500 } as const;
+/** The registry pages by cursor since `DL-174`; one large page reads the seeded set whole. */
+const RESIDENTS = { limit: 500, cursor: null } as const;
 
 /* ── The dataset itself ───────────────────────────────────────────────────── */
 
@@ -129,7 +131,7 @@ describe('the Taytay dataset', () => {
   it('reaches all five barangays with real records', async () => {
     await signedInAs('system-administrator');
     const residents = await firstValueFrom(
-      TestBed.inject(RESIDENT_REPOSITORY).list({}, PAGE),
+      TestBed.inject(RESIDENT_REPOSITORY).list({}, RESIDENTS),
     );
 
     const covered = new Set(residents.items.map((view) => view.resident.address.barangayId));
@@ -141,7 +143,7 @@ describe('the Taytay dataset', () => {
   it('holds enough records for a filtered list to be a real test', async () => {
     await signedInAs('system-administrator');
     const residents = await firstValueFrom(
-      TestBed.inject(RESIDENT_REPOSITORY).list({}, PAGE),
+      TestBed.inject(RESIDENT_REPOSITORY).list({}, RESIDENTS),
     );
 
     // Large enough that pagination, suppression and sorting are exercised by
@@ -152,7 +154,7 @@ describe('the Taytay dataset', () => {
   it('names nobody real: every record is a fictional Taytay resident', async () => {
     await signedInAs('system-administrator');
     const residents = await firstValueFrom(
-      TestBed.inject(RESIDENT_REPOSITORY).list({}, PAGE),
+      TestBed.inject(RESIDENT_REPOSITORY).list({}, RESIDENTS),
     );
 
     // A crude guard, but the one that matters: no placeholder that would show a
@@ -333,11 +335,11 @@ describe('scenario: a filter that matches nothing', () => {
   it('answers with an empty page rather than an error', async () => {
     await signedInAs('system-administrator');
     const residents = await firstValueFrom(
-      TestBed.inject(RESIDENT_REPOSITORY).list({ search: 'zzzzznobodyzzzzz' }, PAGE),
+      TestBed.inject(RESIDENT_REPOSITORY).list({ search: 'zzzzznobodyzzzzz' }, RESIDENTS),
     );
 
     expect(residents.items).toHaveLength(0);
-    expect(residents.totalItems).toBe(0);
+    expect(residents.hasMore).toBe(false);
   });
 
   it('answers a search that matches nothing with a real empty result', async () => {
@@ -356,13 +358,17 @@ describe('scenario: a filter that matches nothing', () => {
 describe('scenario: a large dataset, filtered', () => {
   it('pages a 200-plus registry rather than returning all of it', async () => {
     await signedInAs('system-administrator');
-    const firstPage = await firstValueFrom(
-      TestBed.inject(RESIDENT_REPOSITORY).list({}, { page: 1, pageSize: 25 }),
-    );
+    const repository = TestBed.inject(RESIDENT_REPOSITORY);
+    const firstPage = await firstValueFrom(repository.list({}, { limit: 25, cursor: null }));
 
     expect(firstPage.items).toHaveLength(25);
-    expect(firstPage.totalItems).toBeGreaterThan(200);
-    expect(firstPage.totalPages).toBeGreaterThan(1);
+    expect(firstPage.hasMore).toBe(true);
+    const secondPage = await firstValueFrom(
+      repository.list({}, { limit: 25, cursor: firstPage.nextCursor }),
+    );
+    expect(secondPage.items).toHaveLength(25);
+    const firstIds = new Set(firstPage.items.map((view) => view.resident.id));
+    expect(secondPage.items.some((view) => firstIds.has(view.resident.id))).toBe(false);
   });
 
   it('narrows by barangay without losing the total', async () => {
@@ -371,7 +377,7 @@ describe('scenario: a large dataset, filtered', () => {
     expect(sanJuan).toBeDefined();
 
     const filtered = await firstValueFrom(
-      TestBed.inject(RESIDENT_REPOSITORY).list({ barangayId: sanJuan!.id }, PAGE),
+      TestBed.inject(RESIDENT_REPOSITORY).list({ barangayId: sanJuan!.id }, RESIDENTS),
     );
 
     expect(filtered.items.length).toBeGreaterThan(0);
@@ -389,7 +395,7 @@ describe('scenario: a barangay-link account is confined to its barangay', () => 
     // means anything if the account actually carries a barangay.
     await signedInAs('barangay-link', 'staff-brgy-link', 'brgy-san-juan');
     const residents = await firstValueFrom(
-      TestBed.inject(RESIDENT_REPOSITORY).list({}, PAGE),
+      TestBed.inject(RESIDENT_REPOSITORY).list({}, RESIDENTS),
     );
 
     // Asserted non-empty first: `size <= 1` is also true of an empty result,
@@ -406,7 +412,7 @@ describe('scenario: a barangay-link account is confined to its barangay', () => 
     // account somebody forgot to finish setting up.
     await signedInAs('barangay-link', 'staff-brgy-link', null);
     const residents = await firstValueFrom(
-      TestBed.inject(RESIDENT_REPOSITORY).list({}, PAGE),
+      TestBed.inject(RESIDENT_REPOSITORY).list({}, RESIDENTS),
     );
 
     expect(residents.items).toHaveLength(0);

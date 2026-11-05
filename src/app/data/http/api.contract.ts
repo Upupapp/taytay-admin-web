@@ -177,6 +177,13 @@ export const API_ENDPOINTS = {
    */
   barangays: 'barangays',
   /**
+   * The office's resident registry (`DL-174`): people the MSWDO serves, not app accounts. Cursor-
+   * paged and alphabetical; one by `{id}`; `POST`, `PATCH {id}`, `POST {id}/deactivate` and
+   * `{id}/reactivate` with a reason, `POST {id}/sectors` and `{id}/sectors/{sector}/end` with a
+   * reason. Every answer is already redacted for the reader by the server.
+   */
+  officeResidents: 'office/residents',
+  /**
    * The office directory, written (`DL-170`, `office.manage`): `POST` and `PATCH {id}` as forms,
    * because they carry the banner; `DELETE {id}`. Read through `offices`, which is public.
    */

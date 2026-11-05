@@ -11,7 +11,12 @@ import {
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounce, distinctUntilChanged, of, switchMap, timer } from 'rxjs';
 
-import { RESIDENT_REPOSITORY, type BarangayId, type Page, type ResidentView } from '@domain/index';
+import {
+  RESIDENT_REPOSITORY,
+  type BarangayId,
+  type CursorPage,
+  type ResidentView,
+} from '@domain/index';
 import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
 
 let sequence = 0;
@@ -155,19 +160,20 @@ export class PersonPicker {
       ),
       switchMap((query) =>
         query.term.length < 2
-          ? of({ kind: 'ready', value: null } as ViewState<Page<ResidentView> | null>)
-          : toViewState<Page<ResidentView> | null>(
+          ? of({ kind: 'ready', value: null } as ViewState<CursorPage<ResidentView> | null>)
+          : toViewState<CursorPage<ResidentView> | null>(
               this.repository.list(
                 {
                   search: query.term,
                   ...(query.barangayId === null ? {} : { barangayId: query.barangayId }),
                 },
-                { page: 1, pageSize: RESULT_LIMIT, sort: { field: 'name', direction: 'asc' } },
+                // The first matches in the registry's own order, alphabetical by surname.
+                { limit: RESULT_LIMIT, cursor: null },
               ),
             ),
       ),
     ),
-    { initialValue: LOADING as ViewState<Page<ResidentView> | null> },
+    { initialValue: LOADING as ViewState<CursorPage<ResidentView> | null> },
   );
 
   protected readonly isLoading = computed(() => this.state().kind === 'loading');

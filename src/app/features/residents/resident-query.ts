@@ -1,24 +1,25 @@
 import {
-  DEFAULT_PAGE_SIZE,
   RESIDENT_AGE_GROUPS,
   TAYTAY_BARANGAYS,
   VULNERABILITY_SECTORS,
   type BarangayId,
-  type PageRequest,
   type ResidentAgeGroup,
   type ResidentFilter,
-  type ResidentSortField,
-  type SortDirection,
   type VulnerabilitySector,
 } from '@domain/index';
 
 /**
  * The URL is the filter (`DL-36`).
  *
- * Everything the list is showing — search, barangay, sector, age band, page,
- * sort — is readable from the address bar, which is what makes a saved view a
- * link, a drill-down from the dashboard land on the right rows, and the back
- * button behave. Nothing about the query is held privately in the component.
+ * Everything that decides which residents the list is showing — search,
+ * barangay, sector, age band — is readable from the address bar, which is what
+ * makes a saved view a link, a drill-down from the dashboard land on the right
+ * rows, and the back button behave. Nothing about the query is held privately in
+ * the component.
+ *
+ * There is no page or sort here since `DL-174`: the registry is read a cursor
+ * page at a time in the server's own order, and a cursor is a position in one
+ * reading, not an address anybody could return to.
  *
  * Malformed parameters degrade to *no filter* rather than throwing or guessing.
  * A page showing everything is recoverable; a page silently showing the wrong
@@ -26,16 +27,11 @@ import {
  */
 export interface ResidentQuery {
   readonly filter: ResidentFilter;
-  readonly page: PageRequest<ResidentSortField>;
 }
 
 export interface ParamReader {
   get(name: string): string | null;
 }
-
-const SORT_FIELDS: readonly ResidentSortField[] = ['name', 'barangay', 'birthDate', 'updatedAt'];
-
-export const DEFAULT_RESIDENT_SORT = { field: 'name', direction: 'asc' } as const;
 
 export function readResidentFilter(params: ParamReader): ResidentFilter {
   const filter: {
@@ -73,32 +69,13 @@ export function readResidentFilter(params: ParamReader): ResidentFilter {
   return filter;
 }
 
-export function readResidentPage(params: ParamReader): PageRequest<ResidentSortField> {
-  const page = Number.parseInt(params.get('page') ?? '', 10);
-  const sortParam = params.get('sort');
-  const directionParam = params.get('direction');
-
-  const field: ResidentSortField =
-    sortParam && (SORT_FIELDS as readonly string[]).includes(sortParam)
-      ? (sortParam as ResidentSortField)
-      : DEFAULT_RESIDENT_SORT.field;
-  const direction: SortDirection = directionParam === 'desc' ? 'desc' : 'asc';
-
-  return {
-    page: Number.isInteger(page) && page > 0 ? page : 1,
-    pageSize: DEFAULT_PAGE_SIZE,
-    sort: { field, direction },
-  };
-}
-
 export function readResidentQuery(params: ParamReader): ResidentQuery {
-  return { filter: readResidentFilter(params), page: readResidentPage(params) };
+  return { filter: readResidentFilter(params) };
 }
 
 /**
  * The filter as bare query params — what a saved view stores and what a chip
- * navigates to. Page and sort are deliberately excluded: "seniors in San Juan"
- * is a population, not a scroll position.
+ * navigates to: "seniors in San Juan" is a population, not a scroll position.
  */
 export function residentFilterParams(filter: ResidentFilter): Record<string, string> {
   const params: Record<string, string> = {};

@@ -88,6 +88,15 @@ import {
   type BalitaRepository,
   type PlatformAuditEntry,
   type PlatformAuditRepository,
+  ResidentDraftInvalidError,
+  validateResidentDraft,
+  type Resident,
+  type ResidentDraft,
+  type ResidentFilter,
+  type ResidentId,
+  type ResidentRepository,
+  type ResidentView,
+  type VulnerabilitySector,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -114,6 +123,15 @@ import {
   toWireNewsWrite,
 } from './mappers/balita.mapper';
 import { toPlatformAuditEntry } from './mappers/platform-audit.mapper';
+import {
+  toBarangayIndex,
+  toResident,
+  toResidentView,
+  toWireReason,
+  toWireResidentDraft,
+  toWireSectorRecord,
+  type BarangayIndex,
+} from './mappers/resident.mapper';
 import { toOffice } from './mappers/office.mapper';
 import {
   toDirectoryOffice,
@@ -1170,4 +1188,184 @@ function readAuditEntry(wire: unknown): PlatformAuditEntry {
   }
 
   return entry;
+}
+
+/* ── the office's resident registry (`DL-174`) ───────────────────────────── */
+
+/**
+ * The registry, served by the Node API since casework phase 1b: people the MSWDO serves, recorded
+ * by staff — not app accounts.
+ *
+ * **Redaction is the server's.** Every answer arrives already redacted for the signed-in account
+ * (`DL-38`); the mapper says what the server said and applies no rule of its own. A screen here
+ * cannot leak a field the server never sent.
+ *
+ * **Barangays are joined by name.** The API keys a barangay by its own id and these screens by
+ * `TAYTAY_BARANGAYS`; `GET barangays` is read once per adapter to join the two, and a failed read is
+ * not kept, so the next call asks again.
+ *
+ * `getProfile` makes no request: a profile is a resident **with** their household, families and
+ * assistance history, and the API serves none of those yet. An empty history would say the office
+ * never helped them (`DL-112`), so it refuses in words; every screen that reads it is withheld.
+ */
+@Injectable()
+export class HttpResidentRepository implements ResidentRepository {
+  private readonly api = inject(ApiClient);
+  private barangayIndex$: Observable<BarangayIndex> | null = null;
+
+  list(filter: ResidentFilter, page: CursorRequest): Observable<CursorPage<ResidentView>> {
+    const search = filter.search?.trim() ?? '';
+    if (search.length === 1) {
+      return throwError(() => new Error('Type at least two letters of a name to search the registry.'));
+    }
+    if (filter.householdId !== undefined) {
+      return throwError(
+        () => new Error('The registry cannot be read by household yet: the API holds no households.'),
+      );
+    }
+    return this.barangays().pipe(
+      switchMap((barangays) => {
+        const barangayId =
+          filter.barangayId === undefined ? undefined : barangays.toApi(filter.barangayId);
+        if (barangayId === null) {
+          return throwError(() => unknownBarangay());
+        }
+        return this.api
+          .cursorPage(API_ENDPOINTS.officeResidents, page, {
+            q: search === '' ? undefined : search,
+            barangay_id: barangayId,
+            sector: filter.sector,
+            age_group: filter.ageGroup,
+            include_inactive: filter.includeInactive === true ? 'true' : undefined,
+          })
+          .pipe(
+            map((answer) => ({
+              ...answer,
+              items: answer.items.map((wire) => readResidentView(wire, barangays)),
+            })),
+          );
+      }),
+    );
+  }
+
+  /** `null` for "not found **or** not yours" — the server answers both with a 404 (`DL-31`). */
+  getById(id: ResidentId): Observable<ResidentView | null> {
+    return this.barangays().pipe(
+      switchMap((barangays) =>
+        this.api
+          .optionalItem(`${API_ENDPOINTS.officeResidents}/${id}`)
+          .pipe(map((wire) => (wire === null ? null : readResidentView(wire, barangays)))),
+      ),
+    );
+  }
+
+  getProfile(): Observable<never> {
+    return unserved('a resident’s household, families and assistance history');
+  }
+
+  create(draft: ResidentDraft): Observable<Resident> {
+    return this.write(draft, (barangayId) =>
+      this.api.post(API_ENDPOINTS.officeResidents, toWireResidentDraft(draft, barangayId)),
+    );
+  }
+
+  update(id: ResidentId, draft: ResidentDraft): Observable<Resident> {
+    return this.write(draft, (barangayId) =>
+      this.api.patch(`${API_ENDPOINTS.officeResidents}/${id}`, toWireResidentDraft(draft, barangayId)),
+    );
+  }
+
+  /** Retiring and restoring are two routes, each with the reason the server keeps. */
+  setActive(id: ResidentId, isActive: boolean, reason: string): Observable<Resident> {
+    const saved = isActive
+      ? this.api.post(`${API_ENDPOINTS.officeResidents}/${id}/reactivate`, toWireReason(reason))
+      : this.api.post(`${API_ENDPOINTS.officeResidents}/${id}/deactivate`, toWireReason(reason));
+    return this.barangays().pipe(
+      switchMap((barangays) => saved.pipe(map((wire) => readResident(wire, barangays)))),
+    );
+  }
+
+  recordSector(id: ResidentId, sector: VulnerabilitySector, reason: string): Observable<void> {
+    return this.api
+      .post(`${API_ENDPOINTS.officeResidents}/${id}/sectors`, toWireSectorRecord(sector, reason))
+      .pipe(map((): void => undefined));
+  }
+
+  endSector(id: ResidentId, sector: VulnerabilitySector, reason: string): Observable<void> {
+    return this.api
+      .post(`${API_ENDPOINTS.officeResidents}/${id}/sectors/${sector}/end`, toWireReason(reason))
+      .pipe(map((): void => undefined));
+  }
+
+  /**
+   * The same rules as the form and the mock, before anything is sent, so a person is told what is
+   * wrong beside the field rather than by a round trip. The server validates on its own.
+   */
+  private write(
+    draft: ResidentDraft,
+    send: (barangayId: string) => Observable<unknown>,
+  ): Observable<Resident> {
+    const problems = validateResidentDraft(draft);
+    if (problems.length > 0) {
+      return throwError(() => new ResidentDraftInvalidError(problems));
+    }
+    return this.barangays().pipe(
+      switchMap((barangays) => {
+        const barangayId = barangays.toApi(draft.address.barangayId);
+        if (barangayId === null) {
+          return throwError(() => unknownBarangay());
+        }
+        return send(barangayId).pipe(map((wire) => readResident(wire, barangays)));
+      }),
+    );
+  }
+
+  /**
+   * Whole or not at all, and read once: a barangay missing from the join is one whose residents the
+   * console could not place, and it refuses them rather than guessing.
+   */
+  private barangays(): Observable<BarangayIndex> {
+    this.barangayIndex$ ??= this.api.list(API_ENDPOINTS.barangays).pipe(
+      map((rows) => toBarangayIndex(rows)),
+      catchError((error: unknown) => {
+        this.barangayIndex$ = null;
+        return throwError(() => error);
+      }),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    return this.barangayIndex$;
+  }
+}
+
+function unknownBarangay(): Error {
+  return new Error(
+    'That barangay is not one the API knows by the same name, so nothing was sent. The barangay ' +
+      'list on the server and this console\'s list need to agree first.',
+  );
+}
+
+function readResidentView(wire: unknown, barangays: BarangayIndex): ResidentView {
+  const view = toResidentView(wire, barangays);
+
+  if (view === null) {
+    throw new Error(
+      'A resident from the server could not be read, so none is shown rather than some: a person ' +
+        'left out of the registry is one an officer concludes was never registered.',
+    );
+  }
+
+  return view;
+}
+
+function readResident(wire: unknown, barangays: BarangayIndex): Resident {
+  const resident = toResident(wire, barangays);
+
+  if (resident === null) {
+    throw new Error(
+      'The server saved the record, but its answer could not be read. Open the registry again ' +
+        'to see it before saving anything twice.',
+    );
+  }
+
+  return resident;
 }

@@ -113,29 +113,31 @@
                 }
               </select>
             </label>
-            <label class="field">
-              <span class="field__label">{{ copy.philsys }}</span>
-              <input
-                class="field__input"
-                type="text"
-                inputmode="numeric"
-                maxlength="4"
-                [value]="model().philsysLastFour"
-                (input)="onText('philsysLastFour', $event)"
-              />
-              <span class="field__hint">{{ copy.philsysHint }}</span>
-            </label>
-            <label class="field">
-              <span class="field__label">{{ copy.monthlyIncome }}</span>
-              <input
-                class="field__input"
-                type="number"
-                min="0"
-                step="1"
-                [value]="model().monthlyIncome"
-                (input)="onText('monthlyIncome', $event)"
-              />
-            </label>
+            @if (recordsIdentity()) {
+              <label class="field">
+                <span class="field__label">{{ copy.philsys }}</span>
+                <input
+                  class="field__input"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="4"
+                  [value]="model().philsysLastFour"
+                  (input)="onText('philsysLastFour', $event)"
+                />
+                <span class="field__hint">{{ copy.philsysHint }}</span>
+              </label>
+              <label class="field">
+                <span class="field__label">{{ copy.monthlyIncome }}</span>
+                <input
+                  class="field__input"
+                  type="number"
+                  min="0"
+                  step="1"
+                  [value]="model().monthlyIncome"
+                  (input)="onText('monthlyIncome', $event)"
+                />
+              </label>
+            }
           </div>
         </fieldset>
 

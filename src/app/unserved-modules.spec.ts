@@ -21,7 +21,6 @@ import {
   UnservedReferralRepository,
   UnservedReleaseRepository,
   UnservedReportRepository,
-  UnservedResidentRepository,
   UnservedSavedViewRepository,
   UnservedSearchRepository,
   UnservedWorkRepository,
@@ -153,7 +152,6 @@ const WITHHELD = MENU.filter((item) =>
 
 describe('the http adapter set', () => {
   const adapters = [
-    UnservedResidentRepository,
     UnservedHouseholdRepository,
     UnservedFamilyRepository,
     UnservedCaseRepository,

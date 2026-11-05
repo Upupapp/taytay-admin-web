@@ -45,7 +45,7 @@
       <span class="filters__label">{{ copy.sector }}</span>
       <select class="filters__input" (change)="onSector($event)">
         <option value="" [selected]="!filter().sector">{{ copy.allSectors }}</option>
-        @for (sector of sectors; track sector) {
+        @for (sector of sectors(); track sector) {
           <option [value]="sector" [selected]="filter().sector === sector">
             {{ sectorLabel(sector) }}
           </option>
@@ -79,7 +79,14 @@
     }
   </div>
 
-  <p class="filters__hint" id="resident-search-hint">{{ copy.searchHint }}</p>
+  <p class="filters__hint" id="resident-search-hint">{{ copy.searchHint }} {{ copy.order }}</p>
+
+  @if (failure(); as message) {
+    <div class="residents__problem" role="alert">
+      <p>{{ message }}</p>
+      <button type="button" class="btn" (click)="retry()">{{ copy.tryAgain }}</button>
+    </div>
+  }
 
   <app-data-table
     [caption]="copy.caption"
@@ -87,16 +94,33 @@
     [rows]="rows()"
     [rowKey]="rowKey"
     [loading]="isLoading()"
-    [page]="page()"
-    [sort]="sort()"
     [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
     [emptyHeading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
     [emptyMessage]="hasFilters() ? copy.noResultsMessage : copy.emptyMessage"
     [emptyActionLabel]="hasFilters() ? copy.clear : null"
-    (sortChanged)="onSortChanged($event)"
-    (pageChanged)="onPageChanged($event)"
     (emptyActionSelected)="clearFilters()"
   />
+
+  @if (rows().length > 0) {
+    <div class="residents__more">
+      <p class="filters__hint" role="status">
+        {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
+      </p>
+      @if (hasMore()) {
+        <button
+          type="button"
+          class="btn btn--secondary"
+          [disabled]="loadingMore()"
+          (click)="showMore()"
+        >
+          {{ loadingMore() ? copy.loadingMore : copy.showMore }}
+        </button>
+      }
+      @if (moreFailed()) {
+        <p class="residents__problem" role="alert">{{ copy.moreFailed }}</p>
+      }
+    </div>
+  }
 </div>
 
 <!-- The name is the way into the record. Making it the link — rather than the

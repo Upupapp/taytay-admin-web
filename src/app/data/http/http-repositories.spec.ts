@@ -9,11 +9,16 @@ import { AuthTokenHolder } from '@core/auth/auth-token.holder';
 import { apiHeadersInterceptor } from '@core/http/api.interceptors';
 import {
   asId,
+  asIsoDate,
+  centavos,
   HOTLINE_LIST_CAP,
   PERMISSIONS,
   SignInError,
   type AppAccountId,
   type BarangayId,
+  type HouseholdId,
+  type ResidentDraft,
+  type ResidentId,
   type BalitaArticleId,
   type DigitalIdId,
   type HomeBannerId,
@@ -66,6 +71,8 @@ import NEWS from './fixtures/news.json';
 import NEWS_PAGE from './fixtures/news-page.json';
 import NEWS_CATEGORIES from './fixtures/news-categories.json';
 import AUDIT_PAGE from './fixtures/audit-page.json';
+import OFFICE_RESIDENT from './fixtures/office-resident.json';
+import OFFICE_RESIDENTS_PAGE from './fixtures/office-residents-page.json';
 import {
   HttpAppAccountRepository,
   HttpAppConfigRepository,
@@ -78,6 +85,7 @@ import {
   HttpOfficeInboxRepository,
   HttpOfficeRepository,
   HttpPlatformAuditRepository,
+  HttpResidentRepository,
   HttpSessionRefresher,
   HttpStaffRepository,
   HttpTulongServiceRepository,
@@ -131,6 +139,7 @@ describe('the Node adapters', () => {
         HttpDigitalIdRepository,
         HttpBalitaRepository,
         HttpPlatformAuditRepository,
+        HttpResidentRepository,
       ],
     });
 
@@ -837,6 +846,224 @@ describe('the Node adapters', () => {
         .expectOne({ method: 'GET', url: `${BASE}/barangays` })
         .flush({ data: [{ id: null, code: 'X', name: 'Nowhere' }], meta: {} });
       await expect(broken).rejects.toThrow(/could not be read/);
+    });
+  });
+
+  describe('the office resident registry (DL-174)', () => {
+    let residents: HttpResidentRepository;
+    const DOLORES_API = '6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01';
+    const SAN_JUAN_API = '6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04';
+    const BARANGAYS = {
+      data: [
+        { id: DOLORES_API, code: 'dolores', name: 'Dolores' },
+        { id: SAN_JUAN_API, code: 'san-juan', name: 'San Juan' },
+      ],
+      meta: {},
+    };
+    const savedId = asId<ResidentId>(OFFICE_RESIDENT.data.id);
+
+    const barangays = (): void => {
+      http.expectOne({ method: 'GET', url: `${BASE}/barangays` }).flush(BARANGAYS);
+    };
+
+    const draft = (): ResidentDraft => ({
+      name: { first: ' Maria ', middle: 'Santos', last: 'Dela Cruz', suffix: '' },
+      sex: 'female',
+      birthDate: asIsoDate('1990-04-02'),
+      civilStatus: 'married',
+      address: {
+        barangayId: asId<BarangayId>('brgy-dolores'),
+        purokOrSitio: 'Purok 3',
+        streetAddress: '12 Rizal Ave.',
+      },
+      contact: { mobile: '09170000103', email: null },
+      sectors: ['senior-citizen'],
+      philsysLastFour: '1290',
+      monthlyIncome: centavos(850050),
+      householdId: null,
+    });
+
+    beforeEach(() => {
+      residents = TestBed.inject(HttpResidentRepository);
+      tokens.hold('fixture-token', null);
+    });
+
+    it('reads a cursor page as the server redacted it, naming barangays as this console does', async () => {
+      const page = firstValueFrom(residents.list({}, { limit: 20, cursor: null }));
+      barangays();
+      const request = http.expectOne((r) => r.url === `${BASE}/office/residents`);
+      expect(request.request.params.keys()).toEqual(['limit']);
+      request.flush(OFFICE_RESIDENTS_PAGE);
+
+      const answer = await page;
+      expect(answer.hasMore).toBe(true);
+      expect(answer.nextCursor).toBe(OFFICE_RESIDENTS_PAGE.meta.pagination.next_cursor);
+      const [masked, plain] = answer.items;
+      // The server sent the surname and an initial; nothing here can print more.
+      expect(masked?.listedName).toBe('Villanueva, R.');
+      expect(masked?.fullName).toBe('Villanueva, R.');
+      expect(masked?.isProtected).toBe(true);
+      expect(masked?.withheld).toEqual(['protectedSectors', 'contact', 'exactAddress']);
+      expect(masked?.resident.address.barangayId).toBe('brgy-dolores');
+      expect(masked?.resident.monthlyIncome).toEqual(centavos(320000));
+      expect(plain?.listedName).toBe('Ygot Jr., Jose Ramos');
+      expect(plain?.resident.address.barangayId).toBe('brgy-san-juan');
+      expect(plain?.resident.sectors).toEqual(['senior-citizen', 'pwd']);
+    });
+
+    it('sends the filter as the API names it, and the barangay as the API keys it', async () => {
+      const page = firstValueFrom(
+        residents.list(
+          {
+            search: '  dela cruz ',
+            barangayId: asId<BarangayId>('brgy-san-juan'),
+            sector: 'pwd',
+            ageGroup: 'senior',
+            includeInactive: true,
+          },
+          { limit: 20, cursor: 'abc' },
+        ),
+      );
+      barangays();
+      const request = http.expectOne((r) => r.url === `${BASE}/office/residents`);
+      const params = request.request.params;
+      expect(params.keys().sort()).toEqual(
+        ['age_group', 'barangay_id', 'cursor', 'include_inactive', 'limit', 'q', 'sector'].sort(),
+      );
+      expect(params.get('q')).toBe('dela cruz');
+      expect(params.get('barangay_id')).toBe(SAN_JUAN_API);
+      expect(params.get('include_inactive')).toBe('true');
+      request.flush({ data: [], meta: { pagination: { has_more: false, next_cursor: null } } });
+      expect((await page).items).toEqual([]);
+    });
+
+    it('asks nothing for a one-letter search or a household it cannot filter by', async () => {
+      await expect(
+        firstValueFrom(residents.list({ search: 'm' }, { limit: 20, cursor: null })),
+      ).rejects.toThrow(/two letters/);
+      await expect(
+        firstValueFrom(
+          residents.list({ householdId: asId<HouseholdId>('h-1') }, { limit: 20, cursor: null }),
+        ),
+      ).rejects.toThrow(/households/);
+    });
+
+    it('refuses the page rather than leave out a record it cannot read', async () => {
+      const [first, second] = OFFICE_RESIDENTS_PAGE.data;
+      const unreadable = [
+        { ...second, sectors: ['senior-citizen', 'astronaut'] },
+        { ...second, withheld: ['birth_date'] },
+        // A barangay the API has and this console does not name: placed nowhere, not guessed at.
+        { ...second, barangay_id: '00000000-0000-4000-8000-000000000000' },
+      ];
+      for (const [index, broken] of unreadable.entries()) {
+        const page = firstValueFrom(residents.list({}, { limit: 20, cursor: null }));
+        if (index === 0) {
+          // Read once per adapter and kept.
+          barangays();
+        }
+        http
+          .expectOne((r) => r.url === `${BASE}/office/residents`)
+          .flush({ ...OFFICE_RESIDENTS_PAGE, data: [first, broken] });
+        await expect(page).rejects.toThrow(/could not be read/);
+      }
+    });
+
+    it('reads one record, and a 404 as nobody it may see', async () => {
+      const found = firstValueFrom(residents.getById(savedId));
+      barangays();
+      http.expectOne({ method: 'GET', url: `${BASE}/office/residents/${savedId}` }).flush(OFFICE_RESIDENT);
+      expect((await found)?.resident.philsysLastFour).toBe('1290');
+
+      const missing = firstValueFrom(residents.getById(asId<ResidentId>('nobody')));
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/office/residents/nobody` })
+        .flush({ error: { code: 'NOT_FOUND' } }, { status: 404, statusText: 'Not Found' });
+      expect(await missing).toBeNull();
+    });
+
+    it('creates with the flat body the API reads: centavos, no sectors, no household', async () => {
+      const created = firstValueFrom(residents.create(draft()));
+      barangays();
+      const request = http.expectOne({ method: 'POST', url: `${BASE}/office/residents` });
+      expect(request.request.body).toEqual({
+        first_name: 'Maria',
+        middle_name: 'Santos',
+        last_name: 'Dela Cruz',
+        suffix: null,
+        sex: 'female',
+        birth_date: '1990-04-02',
+        civil_status: 'married',
+        barangay_id: DOLORES_API,
+        purok_or_sitio: 'Purok 3',
+        street_address: '12 Rizal Ave.',
+        mobile: '09170000103',
+        email: null,
+        philsys_last_four: '1290',
+        monthly_income_centavos: 850050,
+      });
+      request.flush(OFFICE_RESIDENT);
+      expect((await created).id).toBe(savedId);
+    });
+
+    it('validates before sending, as the form and the mock do', async () => {
+      await expect(
+        firstValueFrom(residents.create({ ...draft(), philsysLastFour: '123456789012' })),
+      ).rejects.toThrow(/need correcting/);
+    });
+
+    it('updates with the same body, at the record', async () => {
+      const updated = firstValueFrom(residents.update(savedId, draft()));
+      barangays();
+      const request = http.expectOne({ method: 'PATCH', url: `${BASE}/office/residents/${savedId}` });
+      expect(Object.keys(request.request.body as object)).not.toContain('sectors');
+      request.flush(OFFICE_RESIDENT);
+      expect((await updated).name.last).toBe('Dela Cruz');
+    });
+
+    it('retires and restores through two routes, each with its reason', async () => {
+      const retired = firstValueFrom(residents.setActive(savedId, false, '  Moved to Antipolo. '));
+      barangays();
+      const retire = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/office/residents/${savedId}/deactivate`,
+      });
+      expect(retire.request.body).toEqual({ reason: 'Moved to Antipolo.' });
+      retire.flush({ ...OFFICE_RESIDENT, data: { ...OFFICE_RESIDENT.data, is_active: false } });
+      expect((await retired).isActive).toBe(false);
+
+      const restored = firstValueFrom(residents.setActive(savedId, true, 'Returned.'));
+      const restore = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/office/residents/${savedId}/reactivate`,
+      });
+      expect(restore.request.body).toEqual({ reason: 'Returned.' });
+      restore.flush(OFFICE_RESIDENT);
+      expect((await restored).isActive).toBe(true);
+    });
+
+    it('records and ends a sector, each as its own act with a reason', async () => {
+      const recorded = firstValueFrom(residents.recordSector(savedId, 'pwd', ' PWD ID seen. '));
+      const record = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/office/residents/${savedId}/sectors`,
+      });
+      expect(record.request.body).toEqual({ sector: 'pwd', reason: 'PWD ID seen.' });
+      record.flush(OFFICE_RESIDENT);
+      await recorded;
+
+      const ended = firstValueFrom(residents.endSector(savedId, 'pwd', 'Card expired.'));
+      const end = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/office/residents/${savedId}/sectors/pwd/end`,
+      });
+      expect(end.request.body).toEqual({ reason: 'Card expired.' });
+      end.flush(OFFICE_RESIDENT);
+      await ended;
+    });
+
+    it('refuses a profile in words and asks nothing: the API holds no household or history yet', async () => {
+      await expect(firstValueFrom(residents.getProfile())).rejects.toThrow(/does not serve/);
     });
   });
 

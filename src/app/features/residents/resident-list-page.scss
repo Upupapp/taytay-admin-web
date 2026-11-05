@@ -106,3 +106,17 @@
 .sectors__none {
   color: var(--c-text-subtle);
 }
+
+.residents__more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-base);
+  padding: var(--space-base);
+}
+
+.residents__problem {
+  margin: 0;
+  padding: 0 var(--space-base);
+  font-size: 13px;
+}

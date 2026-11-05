@@ -13,8 +13,12 @@ export const RESIDENTS_COPY = {
     subtitle: 'The registry every case, payout and referral is filed against.',
     caption: 'Residents registered with the MSWDO',
     search: 'Search',
-    searchPlaceholder: 'Name, address or mobile number',
-    searchHint: 'Searches names, street addresses, barangay and mobile numbers.',
+    searchPlaceholder: 'Surname or given name',
+    // Names only (`DL-174`, `DL-109`): a match on an address or a number would say what is in a
+    // record the screen does not show, and a protected record's given name is not matched for a
+    // reader shown only its initial.
+    searchHint:
+      'Searches surnames and given names — every word you type must match. Addresses and numbers are not searched.',
     barangay: 'Barangay',
     allBarangays: 'All barangays',
     sector: 'Sector',
@@ -37,6 +41,15 @@ export const RESIDENTS_COPY = {
     active: 'Active',
     restricted: 'Restricted',
     none: '—',
+    order: 'Alphabetical by surname, then given name.',
+    shown: (count: number) => `${count} shown.`,
+    moreAvailable: 'More are available.',
+    noMore: 'That is every resident matching these filters.',
+    showMore: 'Show more',
+    tryAgain: 'Try again',
+    loadingMore: 'Loading more…',
+    moreFailed:
+      'The next residents could not be loaded. The ones above are still correct; try again.',
   },
 
   detail: {
@@ -61,6 +74,9 @@ export const RESIDENTS_COPY = {
     restoreConfirmHeading: 'Restore this record?',
     restoreConfirmBody: 'The resident will appear in the active registry again.',
     restoreConfirm: 'Restore record',
+    statusReasonLabel: 'Reason',
+    statusReasonHint:
+      'Required. Kept with the change on the record, with your name, for whoever reads it next.',
     cancel: 'Cancel',
     notFoundHeading: 'That resident is not available',
     notFoundMessage:

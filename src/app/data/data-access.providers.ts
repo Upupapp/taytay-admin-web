@@ -47,6 +47,7 @@ import {
   HttpDigitalIdRepository,
   HttpBalitaRepository,
   HttpPlatformAuditRepository,
+  HttpResidentRepository,
   HttpHotlineRepository,
   HttpTulongServiceRepository,
   HttpNotificationRepository,
@@ -72,7 +73,6 @@ import {
   UnservedReferralRepository,
   UnservedReleaseRepository,
   UnservedReportRepository,
-  UnservedResidentRepository,
   UnservedSavedViewRepository,
   UnservedSearchRepository,
   UnservedWorkRepository,
@@ -102,20 +102,21 @@ import {
  * names no mock class at all, and `angular.json` swaps in `data-access.providers.mock.ts` for the
  * one configuration that wants them.
  *
- * ## Fourteen ports served, eighteen unserved
+ * ## Fifteen ports served, seventeen unserved
  *
  * The Node API serves the signed-in account, its inbox, residents' ID verification review
  * (`DL-167`), the office inbox, the office directory and app accounts with their roles (`DL-168`),
  * the directory as an administrator keeps it, Tulong pages, hotlines, the home screen and the
  * app's settings (`DL-170`), residents’ digital IDs, Balita and the API's audit trail (`DL-171`),
- * and nothing else this console has a port for (`DL-164`). Every other port is bound to an `Unserved…` adapter that makes no request and
+ * and the office's resident registry (`DL-174`), and nothing else this console has a port for
+ * (`DL-164`). Every other port is bound to an `Unserved…` adapter that makes no request and
  * fails with a sentence saying so (`DL-165`). A port moves from that list to an `Http…` adapter
  * only when the API serves the thing the port names — not something with the same word on it.
  */
 
 export function provideDataAccess(): EnvironmentProviders {
   return makeEnvironmentProviders([
-    { provide: RESIDENT_REPOSITORY, useClass: UnservedResidentRepository },
+    { provide: RESIDENT_REPOSITORY, useClass: HttpResidentRepository },
     { provide: PROGRAM_REPOSITORY, useClass: UnservedProgramRepository },
     { provide: ASSISTANCE_REQUEST_REPOSITORY, useClass: UnservedAssistanceRequestRepository },
     { provide: RELEASE_REPOSITORY, useClass: UnservedReleaseRepository },

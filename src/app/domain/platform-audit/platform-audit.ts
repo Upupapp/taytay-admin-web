@@ -25,7 +25,7 @@ export interface PlatformAuditEntry {
 }
 
 /**
- * Every action the API records at `2736e28`, in words. Read from the backend's
+ * Every action the API records at `6544381`, in words. Read from the backend's
  * `audit.record(...)` calls; a code not here is shown as given and said to have no description in
  * this console, never dropped or guessed at.
  */
@@ -53,6 +53,12 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'office.created': 'Added an office to the directory',
   'office.deleted': 'Deleted an office from the directory',
   'office.updated': 'Changed an office in the directory',
+  'office_resident.created': 'Recorded a resident in the office registry',
+  'office_resident.deactivated': 'Retired a resident’s registry record',
+  'office_resident.reactivated': 'Restored a resident’s registry record',
+  'office_resident.sector_ended': 'Ended a resident’s sector membership',
+  'office_resident.sector_recorded': 'Recorded a resident’s sector membership',
+  'office_resident.updated': 'Changed a resident’s registry record',
   'password.reset_completed': 'Reset their password',
   'service.created': 'Added a Tulong page',
   'service.deleted': 'Deleted a Tulong page',

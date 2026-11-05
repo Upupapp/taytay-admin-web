@@ -183,6 +183,12 @@ export class ResidentDetailPage {
 
   protected readonly retiring = signal(false);
   protected readonly restoring = signal(false);
+  /**
+   * Why the record leaves or returns to the registry. Required, and kept with the change on the
+   * server (`DL-174`): one asked for each time, never carried from the last decision.
+   */
+  protected readonly statusReason = signal('');
+  protected readonly hasStatusReason = computed(() => this.statusReason().trim().length > 0);
 
   /* ── formatting ─────────────────────────────────────────────────────────── */
 
@@ -225,25 +231,38 @@ export class ResidentDetailPage {
   /* ── retiring and restoring ─────────────────────────────────────────────── */
 
   protected askRetire(): void {
+    this.statusReason.set('');
     this.retiring.set(true);
   }
 
   protected askRestore(): void {
+    this.statusReason.set('');
     this.restoring.set(true);
   }
 
+  protected typeStatusReason(event: Event): void {
+    this.statusReason.set((event.target as HTMLTextAreaElement).value);
+  }
+
   protected confirmRetire(): void {
+    if (!this.hasStatusReason()) {
+      return;
+    }
     this.setActive(false);
     this.retiring.set(false);
   }
 
   protected confirmRestore(): void {
+    if (!this.hasStatusReason()) {
+      return;
+    }
     this.setActive(true);
     this.restoring.set(false);
   }
 
   private setActive(isActive: boolean): void {
-    this.repository.setActive(asId<ResidentId>(this.id()), isActive).subscribe({
+    const reason = this.statusReason().trim();
+    this.repository.setActive(asId<ResidentId>(this.id()), isActive, reason).subscribe({
       next: () => {
         this.notifications.success(
           isActive ? 'Record restored to the active registry.' : 'Record retired.',

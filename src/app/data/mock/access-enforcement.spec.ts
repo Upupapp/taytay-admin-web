@@ -74,21 +74,20 @@ function signedInAs(user: AuthenticatedUser | null) {
  * passing test means the refusal survives even when the UI is bypassed.
  */
 
+/** The resident registry pages by cursor since `DL-174`. */
+const FIRST_PAGE = { limit: 20, cursor: null } as const;
+
 describe('data-scope enforcement', () => {
   it('lets a municipality-wide role list residents across barangays', async () => {
     signedInAs(authenticated('intake-officer'));
-    const page = await firstValueFrom(
-      TestBed.inject(MockResidentRepository).list({}, DEFAULT_PAGE_REQUEST),
-    );
+    const page = await firstValueFrom(TestBed.inject(MockResidentRepository).list({}, FIRST_PAGE));
     const barangays = new Set(page.items.map((r) => r.resident.address.barangayId));
     expect(barangays.size).toBeGreaterThan(1);
   });
 
   it('confines a barangay link to its own barangay', async () => {
     signedInAs(authenticated('barangay-link', SAN_JUAN));
-    const page = await firstValueFrom(
-      TestBed.inject(MockResidentRepository).list({}, DEFAULT_PAGE_REQUEST),
-    );
+    const page = await firstValueFrom(TestBed.inject(MockResidentRepository).list({}, FIRST_PAGE));
     expect(page.items.length).toBeGreaterThan(0);
     for (const view of page.items) {
       expect(view.resident.address.barangayId).toBe(SAN_JUAN);
@@ -96,16 +95,18 @@ describe('data-scope enforcement', () => {
   });
 
   it('cannot be widened by asking for another barangay explicitly', async () => {
-    // The obvious bypass: edit the filter. The adapter re-checks scope, so the
-    // filter can only ever narrow what scope already allows.
+    // The obvious bypass: edit the filter. The adapter re-checks scope and refuses the question,
+    // as the API does (`DL-174`): an empty page would read as "nobody in Dolores", which is a
+    // claim about Dolores rather than about this account.
     signedInAs(authenticated('barangay-link', SAN_JUAN));
-    const page = await firstValueFrom(
-      TestBed.inject(MockResidentRepository).list(
-        { barangayId: asId<BarangayId>('brgy-dolores') },
-        DEFAULT_PAGE_REQUEST,
+    await expect(
+      firstValueFrom(
+        TestBed.inject(MockResidentRepository).list(
+          { barangayId: asId<BarangayId>('brgy-dolores') },
+          FIRST_PAGE,
+        ),
       ),
-    );
-    expect(page.items).toHaveLength(0);
+    ).rejects.toThrow(PermissionDeniedError);
   });
 
   it('reports an out-of-scope record as absent, not as forbidden', async () => {
@@ -140,7 +141,7 @@ describe('permission enforcement on reads', () => {
     // release-officer holds resident.view, so use a user with none.
     signedInAs(null);
     await expect(
-      firstValueFrom(TestBed.inject(MockResidentRepository).list({}, DEFAULT_PAGE_REQUEST)),
+      firstValueFrom(TestBed.inject(MockResidentRepository).list({}, FIRST_PAGE)),
     ).rejects.toThrow(PermissionDeniedError);
   });
 

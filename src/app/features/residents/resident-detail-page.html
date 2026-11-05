@@ -438,10 +438,29 @@
         [description]="copy.retireConfirmBody"
         size="small"
       >
+        <div modal-body class="field">
+          <label class="field__label" for="resident-retire-reason">{{ copy.statusReasonLabel }}</label>
+          <textarea
+            id="resident-retire-reason"
+            class="field__input"
+            rows="3"
+            maxlength="500"
+            aria-describedby="resident-retire-reason-hint"
+            [value]="statusReason()"
+            (input)="typeStatusReason($event)"
+          ></textarea>
+          <p class="field__hint" id="resident-retire-reason-hint">{{ copy.statusReasonHint }}</p>
+        </div>
         <button modal-actions type="button" class="btn" (click)="retiring.set(false)">
           {{ copy.cancel }}
         </button>
-        <button modal-actions type="button" class="btn btn--primary" (click)="confirmRetire()">
+        <button
+          modal-actions
+          type="button"
+          class="btn btn--primary"
+          [disabled]="!hasStatusReason()"
+          (click)="confirmRetire()"
+        >
           {{ copy.retireConfirm }}
         </button>
       </app-modal>
@@ -452,10 +471,29 @@
         [description]="copy.restoreConfirmBody"
         size="small"
       >
+        <div modal-body class="field">
+          <label class="field__label" for="resident-restore-reason">{{ copy.statusReasonLabel }}</label>
+          <textarea
+            id="resident-restore-reason"
+            class="field__input"
+            rows="3"
+            maxlength="500"
+            aria-describedby="resident-restore-reason-hint"
+            [value]="statusReason()"
+            (input)="typeStatusReason($event)"
+          ></textarea>
+          <p class="field__hint" id="resident-restore-reason-hint">{{ copy.statusReasonHint }}</p>
+        </div>
         <button modal-actions type="button" class="btn" (click)="restoring.set(false)">
           {{ copy.cancel }}
         </button>
-        <button modal-actions type="button" class="btn btn--primary" (click)="confirmRestore()">
+        <button
+          modal-actions
+          type="button"
+          class="btn btn--primary"
+          [disabled]="!hasStatusReason()"
+          (click)="confirmRestore()"
+        >
           {{ copy.restoreConfirm }}
         </button>
       </app-modal>

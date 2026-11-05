@@ -9,8 +9,8 @@ sign-in only, hosted on Linode.
 
 | | |
 |---|---|
-| Console ports the Node API serves fully | 0 of 20 casework ports; 12 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines, the home screen, the app's settings; `DL-171` digital IDs, Balita, the audit trail) |
-| Served in part (mostly different concepts with the same name) | 7 |
+| Console ports the Node API serves fully | 1 of 20 casework ports — the resident registry (`DL-174`), less `getProfile`, which needs households and history; 12 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines, the home screen, the app's settings; `DL-171` digital IDs, Balita, the audit trail) |
+| Served in part (mostly different concepts with the same name) | 6 — the resident port left this row for the one above (`DL-174`) |
 | No endpoint at all | 13 — cases, requests, beneficiaries, visits, releases, referrals, families, saved views, dashboard, work, reports, search, events |
 | Node staff endpoints with no console screen | 0 — step 6 is complete (`DL-171`) |
 
@@ -33,6 +33,8 @@ sign-in only, hosted on Linode.
 | 6h | Platform screen: Balita | console | done (`DL-171`, [`docs/balita`](../balita/README.md)): the residents' published list, pinned first, a page at a time; an article written and changed in a drawer as a form with its cover; what publishing, saving a draft, taking an article off and pinning do shown **above each button** — publishing cannot be recalled from anybody who read it, and sends no notification; drafts kept in the page's memory with their IDs, and one opened by its ID, because the API lists none; no cover description, said; `news.write` added unchanged, not the newsfeed's keys. **Not run against a live API** |
 | 6i | Platform screen: the app's audit trail | console | done (`DL-171`, [`docs/platform-audit`](../platform-audit/README.md)): `GET admin/audit` newest first, fifty at a time with "more available"; each row's six fields and nothing beside them — the action in words for all thirty-three codes and the code as given, the account and record by id, no lookup; the page says the API keeps no earlier or later value and no reason; separate from the unserved governance trail; `audit.view` as the server spells it. **Not run against a live API**. **Step 6 is complete**: every staff route the Node API serves has a screen |
 | 7 | Re-point the contract checks at the Node spec, new baselines stated | console | done with step 3, in one commit, each old and new count stated (`DL-165`) |
+| 8 | Casework phase 1a: office roles on staff accounts, casework keys and scope on `/me`; an office role narrows the platform keys and the routes check the key | backend + console | done (`DL-173`, `DL-174`): `taytay-backend` `7996668`, `a4fa8d9`, `ee83617`. The auditor and the barangay link hold no Balita or inbox key; the head and the auditor read the audit trail |
+| 9 | Casework phase 1b: the office's resident registry | backend + console | done (`DL-174`): `taytay-backend` `6544381` — `/api/v1/office/residents`, redacted and scoped on the server, sectors and retirements as append-only histories with reasons; `HttpResidentRepository` in the console, `resident` out of `UNSERVED_PORTS`. **The Residents menu entry stays withheld** — its list also reads `saved-view`, its record `family` and `field-visit`. **Not run against a live API.** For the owner: the social worker's `assigned-cases` scope is refused until cases exist; saved views, or a list without its bar, to bring the list back |
 
 ## For the owner to decide
 
@@ -175,5 +177,11 @@ check green (the server enforces what the console only displays):
 **Phase 1a done** (`DL-173`, `taytay-backend` `7996668`): office roles on staff accounts, the casework
 keys and the data scope on `/me` decided by the server from a table its test compares with
 `ROLE_DEFINITIONS`, separation of duties enforced there, `requirePermission` for the routes to come,
-and the office role given on Users and roles with a reason the server keeps. The registry,
-households and programmes of phase 1 are next.
+and the office role given on Users and roles with a reason the server keeps. Finished in
+`a4fa8d9` as the owner decided (`DL-174`): an office role narrows the platform keys too, and the
+routes those keys describe check the key.
+
+**Phase 1b done** (`DL-174`, `taytay-backend` `6544381`): the office's resident registry — people
+the MSWDO serves, not app accounts — redacted and scoped on the server, served to the console through
+`HttpResidentRepository`. Households, families and programmes of phase 1 are next; until households
+and the assistance history exist, a resident's profile is refused rather than shown empty.

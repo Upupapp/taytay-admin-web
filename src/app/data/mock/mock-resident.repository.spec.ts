@@ -9,7 +9,6 @@ import {
   type HouseholdComposition,
   type HouseholdMemberView,
   asIsoDate,
-  DEFAULT_PAGE_REQUEST,
   isResidentDraftInvalid,
   PermissionDeniedError,
   pesos,
@@ -138,7 +137,7 @@ describe('the registry redacts on the way out, not in the template', () => {
   it('redacts inside a paged list too, not only on the detail record', async () => {
     signedInAs(authenticated('intake-officer'));
     const page = await firstValueFrom(
-      repo().list({ barangayId: SAN_ISIDRO }, { page: 1, pageSize: 100 }),
+      repo().list({ barangayId: SAN_ISIDRO }, { limit: 100, cursor: null }),
     );
     const found = page.items.find((view) => view.resident.id === PROTECTED);
     expect(found?.resident.sectors).not.toContain('vawc-survivor');
@@ -146,26 +145,60 @@ describe('the registry redacts on the way out, not in the template', () => {
 });
 
 describe('the registry is large enough to need paging', () => {
-  it('serves a bounded page rather than everything', async () => {
+  it('serves a bounded cursor page rather than everything, and says more are available', async () => {
     signedInAs(authenticated('intake-officer'));
-    const page = await firstValueFrom(repo().list({}, DEFAULT_PAGE_REQUEST));
-    expect(page.items).toHaveLength(page.pageSize);
-    expect(page.totalItems).toBeGreaterThan(100);
-    expect(page.totalPages).toBeGreaterThan(1);
+    const page = await firstValueFrom(repo().list({}, { limit: 20, cursor: null }));
+    expect(page.items).toHaveLength(20);
+    expect(page.hasMore).toBe(true);
+    expect(page.nextCursor).not.toBeNull();
   });
 
   it('keeps a stable order across pages, so nobody is shown twice or never', async () => {
     signedInAs(authenticated('intake-officer'));
-    const first = await firstValueFrom(repo().list({}, { page: 1, pageSize: 25 }));
-    const second = await firstValueFrom(repo().list({}, { page: 2, pageSize: 25 }));
+    const first = await firstValueFrom(repo().list({}, { limit: 25, cursor: null }));
+    const second = await firstValueFrom(repo().list({}, { limit: 25, cursor: first.nextCursor }));
     const ids = new Set([...first.items, ...second.items].map((view) => view.resident.id));
     expect(ids.size).toBe(50);
+  });
+
+  it('orders the registry as the API does: surname, then given name', async () => {
+    signedInAs(authenticated('intake-officer'));
+    const page = await firstValueFrom(repo().list({}, { limit: 60, cursor: null }));
+    const surnames = page.items.map((view) => view.resident.name.last.toLowerCase());
+    expect(surnames).toEqual([...surnames].sort((a, b) => a.localeCompare(b)));
+  });
+
+  it('searches names only, never a protected given name it does not show (DL-174)', async () => {
+    signedInAs(authenticated('intake-officer'));
+    const protectedRecord = await firstValueFrom(
+      repo().list({ barangayId: SAN_ISIDRO }, { limit: 200, cursor: null }),
+    );
+    const masked = protectedRecord.items.find((view) => view.resident.id === PROTECTED);
+    expect(masked?.isProtected).toBe(true);
+
+    signedInAs(authenticated('social-worker'));
+    const cleared = await firstValueFrom(repo().getById(PROTECTED));
+    const firstName = cleared?.resident.name.first ?? '';
+    expect(firstName.length).toBeGreaterThan(1);
+
+    signedInAs(authenticated('intake-officer'));
+    const byGiven = await firstValueFrom(
+      repo().list({ search: firstName }, { limit: 500, cursor: null }),
+    );
+    expect(byGiven.items.some((view) => view.resident.id === PROTECTED)).toBe(false);
+  });
+
+  it('refuses a protected-sector filter without request.view-sensitive', async () => {
+    signedInAs(authenticated('intake-officer'));
+    await expect(
+      firstValueFrom(repo().list({ sector: 'vawc-survivor' }, { limit: 20, cursor: null })),
+    ).rejects.toThrow(PermissionDeniedError);
   });
 
   it('filters by age band and by sector together', async () => {
     signedInAs(authenticated('intake-officer'));
     const page = await firstValueFrom(
-      repo().list({ ageGroup: 'senior', sector: 'senior-citizen' }, { page: 1, pageSize: 200 }),
+      repo().list({ ageGroup: 'senior', sector: 'senior-citizen' }, { limit: 200, cursor: null }),
     );
     expect(page.items.length).toBeGreaterThan(0);
     for (const view of page.items) {
@@ -175,11 +208,11 @@ describe('the registry is large enough to need paging', () => {
 
   it('hides retired records unless they are asked for', async () => {
     signedInAs(authenticated('intake-officer'));
-    const active = await firstValueFrom(repo().list({}, { page: 1, pageSize: 500 }));
+    const active = await firstValueFrom(repo().list({}, { limit: 1000, cursor: null }));
     const withRetired = await firstValueFrom(
-      repo().list({ includeInactive: true }, { page: 1, pageSize: 500 }),
+      repo().list({ includeInactive: true }, { limit: 1000, cursor: null }),
     );
-    expect(withRetired.totalItems).toBeGreaterThan(active.totalItems);
+    expect(withRetired.items.length).toBeGreaterThan(active.items.length);
     expect(active.items.every((view) => view.resident.isActive)).toBe(true);
   });
 });
@@ -278,7 +311,7 @@ describe('writes are permission- and scope-checked in the adapter', () => {
     signedInAs(authenticated('intake-officer'));
     const created = await firstValueFrom(repo().create(draft()));
     const page = await firstValueFrom(
-      repo().list({ includeInactive: true }, { page: 1, pageSize: 1000 }),
+      repo().list({ includeInactive: true }, { limit: 1000, cursor: null }),
     );
     const matches = page.items.filter((view) => view.resident.id === created.id);
     expect(matches).toHaveLength(1);
@@ -342,17 +375,26 @@ describe('writes are permission- and scope-checked in the adapter', () => {
   it('refuses retirement without resident.deactivate', async () => {
     signedInAs(authenticated('intake-officer'));
     await expect(
-      firstValueFrom(repo().setActive(asId<ResidentId>('res-0001'), false)),
+      firstValueFrom(repo().setActive(asId<ResidentId>('res-0001'), false, 'Moved away.')),
     ).rejects.toThrow(PermissionDeniedError);
+  });
+
+  it('refuses to retire or restore without a reason', async () => {
+    signedInAs(authenticated('mswdo-head'));
+    await expect(
+      firstValueFrom(repo().setActive(asId<ResidentId>('res-0004'), false, '   ')),
+    ).rejects.toThrow(/reason/);
   });
 
   it('retires rather than deletes, so history stays attributable', async () => {
     signedInAs(authenticated('mswdo-head'));
-    const retired = await firstValueFrom(repo().setActive(asId<ResidentId>('res-0004'), false));
+    const retired = await firstValueFrom(
+      repo().setActive(asId<ResidentId>('res-0004'), false, 'Moved to Antipolo.'),
+    );
     expect(retired.isActive).toBe(false);
     const stillThere = await firstValueFrom(repo().getById(asId<ResidentId>('res-0004')));
     expect(stillThere).not.toBeNull();
-    await firstValueFrom(repo().setActive(asId<ResidentId>('res-0004'), true));
+    await firstValueFrom(repo().setActive(asId<ResidentId>('res-0004'), true, 'Returned.'));
   });
 
   it('refuses every write when anonymous', async () => {

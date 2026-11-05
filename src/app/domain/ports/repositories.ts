@@ -101,7 +101,6 @@ import type {
   Resident,
   ResidentDraft,
   ResidentFilter,
-  ResidentSortField,
   VulnerabilitySector,
 } from '../residents/resident';
 import type {
@@ -252,10 +251,12 @@ import type {
  * typed.
  */
 export interface ResidentRepository {
-  list(
-    filter: ResidentFilter,
-    page: PageRequest<ResidentSortField>,
-  ): Observable<Page<ResidentView>>;
+  /**
+   * One cursor page, alphabetical by surname then given name — the server's order, not one a
+   * caller picks (`DL-174`). The Node API pages by cursor and sends no total, so this says "more
+   * are available" and never "page 2 of 9" (`DL-161`).
+   */
+  list(filter: ResidentFilter, page: CursorRequest): Observable<CursorPage<ResidentView>>;
   getById(id: ResidentId): Observable<ResidentView | null>;
   /**
    * Resident, household, family and assistance history in one call — the
@@ -265,8 +266,12 @@ export interface ResidentRepository {
   getProfile(id: ResidentId): Observable<ResidentProfile | null>;
   create(draft: ResidentDraft): Observable<Resident>;
   update(id: ResidentId, draft: ResidentDraft): Observable<Resident>;
-  /** Registry records are retired, never deleted: history must stay attributable. */
-  setActive(id: ResidentId, isActive: boolean): Observable<Resident>;
+  /**
+   * Registry records are retired, never deleted: history must stay attributable. Retiring and
+   * restoring each carry a reason, kept with the change on the server (`DL-174`): a record that
+   * left the registry with no word as to why is one nobody can safely bring back.
+   */
+  setActive(id: ResidentId, isActive: boolean, reason: string): Observable<Resident>;
 
   /**
    * Records that a resident belongs to a statutory sector.

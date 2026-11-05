@@ -24,6 +24,8 @@ import USER_OFFICE_ASSIGNED from './user-office-assigned.json';
 import USER_OFFICE_ROLE_CHANGED from './user-office-role-changed.json';
 import USER_ROLE_CHANGED from './user-role-changed.json';
 import USERS_PAGE from './users-page.json';
+import OFFICE_RESIDENT from './office-resident.json';
+import OFFICE_RESIDENTS_PAGE from './office-residents-page.json';
 import DELETED from './deleted.json';
 import HOTLINE from './hotline.json';
 import HOTLINES from './hotlines.json';
@@ -200,6 +202,8 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['thread-reply', THREAD_REPLY, 'ThreadMessageEnvelope'],
     ['offices-page', OFFICES_PAGE, 'OfficeListEnvelope'],
     ['users-page', USERS_PAGE, 'UserListEnvelope'],
+    ['office-residents-page', OFFICE_RESIDENTS_PAGE, 'OfficeResidentListEnvelope'],
+    ['office-resident', OFFICE_RESIDENT, 'OfficeResidentEnvelope'],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
     ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],

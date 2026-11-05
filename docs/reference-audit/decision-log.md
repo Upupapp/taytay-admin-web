@@ -6393,3 +6393,120 @@ backend was changed first, at `taytay-backend` `7996668`, and that spec is the o
 | `check:hardening` | the office role speaks through the panel's live region | 12 live regions, the cap held |
 | `fixtures.spec.ts` | reads `oneOf` as `anyOf`, so `office_role` and `scope` are held to their schema rather than waved through | — |
 | `check:routes`, `check:wire-adoption`, `check:response-shape` | none | the two new requests served at their verbs, the body declared, `barangays` read with `list` |
+
+## DL-174 — the resident registry is served: redacted by the server, read a cursor page at a time
+
+Phase 1b of the casework decided on 6 November 2026 (`docs/integration/node-api-migration.md`,
+"Decided 2026-11-06"), and the end of phase 1a. Backend `taytay-backend` `a4fa8d9` (office roles
+narrow the platform keys), `ee83617` (a test that followed from it) and `6544381` (the registry);
+the spec vendored here is `6544381`'s.
+
+### Phase 1a, finished as the owner decided (supersedes `DL-173` choices 2 and 3)
+
+- **An office role narrows the fifteen platform keys.** A staff account with an office role holds
+  only the platform keys `ROLE_DEFINITIONS` gives that role — still only while it has the office
+  `news.write` and `office-inbox.manage` need. The auditor and the barangay link hold neither; the
+  head and the auditor hold `audit.view`. A staff account with no office role keeps the tier's keys.
+  No office role holds `household.view-counts`, which this console has no word for; the backend's
+  parity test now compares the platform keys with this table too, and fails on any difference but
+  that one, which it names.
+- **The routes check the key, not the tier.** News writes, `GET admin/audit`, `GET households`,
+  `POST digital-id/verify` and the thread routes use `requirePermission`; a verified resident still
+  opens their own threads. A staff account without `office-inbox.manage` is now **403** on the
+  threads where it used to get an empty page — the inbox screen never asks without the key, and its
+  "no office" sentence after an empty first page stays as a second line of defence.
+- `audit.view` against the API is therefore the head's and the auditor's as well as the
+  administrator's: the platform audit screen now opens for them, as this table always said.
+
+### What the server now decides about residents
+
+- **People the office serves, not app accounts.** `office_residents` holds what `ResidentDraft`
+  types, PhilSys as the last four digits only (a column that could hold the full PSN is refused by
+  its own check) and income as integer centavos. Sectors are an append-only history of acts —
+  recorded and ended, each with an actor, a time and a reason — and current membership is the latest
+  act. Retiring and restoring keep their reason. The database refuses `UPDATE`/`DELETE` of both
+  histories and `DELETE` of a resident, whoever asks.
+- **Redaction is the server's** (`DL-38`, now on the far side of the wire). Without
+  `resident.view-sensitive` the PSN digits and the income are `null`; on a protected record without
+  `request.view-sensitive` the protected sectors, contact and exact address are `null`, and **only
+  the surname and the initial of the given name are sent** (`given_name_masked`). `withheld` and
+  `is_protected` say what was held back and why.
+- **The keys are this console's**: `resident.view`, `resident.create`, `resident.update`,
+  `resident.deactivate`; recording or ending `vawc-survivor` or `cicl` also needs
+  `request.view-sensitive`, refused before the record is read.
+- **Scope**: `own-barangay` reads its barangay and answers elsewhere as not found (`DL-31`), and a
+  filter, a new record or a move outside it is refused. **`assigned-cases` — the social worker — is
+  refused on every registry route**: a caseload is decided by case assignment, the API holds no cases
+  yet, and either guess is wrong. The mock serves the social worker the whole registry; against the
+  API that screen shows the server's sentence. **For the owner**: whether a social worker should read
+  the whole registry until cases exist.
+
+### What the console now does
+
+- **`HttpResidentRepository`** replaces `UnservedResidentRepository`, and `resident` leaves
+  `UNSERVED_PORTS` (seventeen remain). Every read goes through `resident.mapper.ts`, which applies no
+  disclosure rule of its own — a second copy of the rule is one that eventually disagrees — and every
+  write body through `toWireResidentDraft`, `toWireReason` or `toWireSectorRecord`: flat where the
+  draft nests, centavos as `Money` holds them, no sectors and no household.
+- **Barangays are joined by name.** The API keys a barangay by its own id; the screens use
+  `TAYTAY_BARANGAYS`. `GET barangays` is read once per adapter and the two are joined on the name. A
+  barangay whose name matches none refuses the record rather than placing a person somewhere else.
+- **`getProfile` makes no request.** A profile is a resident with their household, families and
+  assistance history, none of which the API serves; an empty history would say the office never
+  helped them (`DL-112`). It refuses in the unserved sentence, and every screen that reads it is
+  withheld already.
+- **The port changed in two places.** `list` takes a `CursorRequest` and answers a `CursorPage`: the
+  API pages by cursor, sends no total and orders the registry itself, alphabetically by surname. The
+  list shows "20 shown. More are available." and a "Show more" button, never "page 2 of 9"
+  (`DL-161`); page and sort left the URL, which keeps only the filter (`DL-36`); the picker asks for
+  the first matches. `setActive` takes a **reason**, asked for in the retire and restore
+  confirmations and required before the button acts.
+- **The mock was brought to the server's rules** so a screen is not built against a looser boundary:
+  search matches names only, every word, and never a protected given name the reader is shown only
+  as an initial (it used to match street, barangay and mobile — a match on a field discloses it,
+  `DL-109`); a protected-sector filter without `request.view-sensitive` is refused (it used to list
+  the masked members of the sector, which is the disclosure itself); a barangay filter outside the
+  account's scope is refused rather than answered with an empty page; a PSN or income from a writer
+  without `resident.view-sensitive` is refused, and the form no longer offers those two fields to
+  such a writer; the order is the server's. The list offers the protected sectors as filters only
+  to a reader cleared for them.
+
+### Where the API's model differs from this console's, recorded rather than smoothed
+
+1. **No household.** `Resident.householdId` is `null` from the API, and a household filter is refused
+   in words before any request: households are a later phase.
+2. **The masked given name is an initial on the record itself**, where the mock kept the full name
+   and masked only the display strings. A template printing `resident.name.first` gets "R".
+3. **Street is always recorded**, so a masked record always lists `exactAddress` as withheld; the mock
+   lists it only when something was on file.
+4. **Ending a sector that is not held is a 409** on the API and a quiet no-op in the mock; recording
+   one already held is answered as done by both.
+5. **The reasons are kept by the API and dropped by the mock**, which has no history to hold them —
+   the same thinness the mock already recorded for sectors.
+6. **A barangay link's scope is still the API's barangay id** (`DL-173`), while resident records are
+   read in this console's ids. Nothing on a reachable screen compares the two yet; the first screen
+   that does must join them the same way.
+
+### What is still withheld in the `http` configuration, and why
+
+Serving the port does not by itself bring the screens back, because `check:unserved` holds every
+screen to every port it reads: **the Residents list also reads `saved-view`** (its saved-views bar)
+and **the resident record reads `family` and `field-visit`**, all unserved. So the Residents menu
+entry stays withheld; `/residents/new` and `/residents/{id}/edit` are no longer withheld, but no
+menu entry leads to them and saving one navigates to the record, which is. **For the owner**: serve
+saved views (phase 6 brought forward) or decide the list may stand without its bar against the API —
+either brings the list back. This commit does neither, because the check is right that a screen
+reading an unserved port can fail.
+
+### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:routes` | `UNSERVED_CEILING` lowered 18 → 17 | every new request at a real route and verb |
+| `check:unserved` | the resident binding and declaration removed together | 17 unserved, all declared; 59 screens guarding what they read |
+| `check:wire-adoption` | three new `toWire…` mappers, called at each request | 38/38 bodies mapped and declared |
+| `check:response-shape` | `office/residents` read with `cursorPage`, one with `optionalItem`, `barangays` with `list` | 32/32 |
+| `check:query-params` | `q`, `barangay_id`, `sector`, `age_group`, `include_inactive`, as the operation declares | 32 reads |
+| `check:mapper-adoption` | every read through `resident.mapper.ts` | 0 typed calls |
+| `check:consumer-contract` | regenerated | 62 interactions, 273 required fields |
+| `fixtures.spec.ts` | `office-residents-page.json` and `office-resident.json` held to their schemas | — |

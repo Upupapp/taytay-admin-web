@@ -529,6 +529,13 @@
       ]
     },
     {
+      "method": "GET",
+      "path": "barangays",
+      "consumer": "resident.mapper.ts#toBarangayIndex",
+      "required": [],
+      "optional": []
+    },
+    {
       "method": "POST",
       "path": "digital-id/verify",
       "consumer": "digital-id.mapper.ts#toDigitalIdHolder",
@@ -735,6 +742,102 @@
         "read_at",
         "title",
         "type"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/residents",
+      "consumer": "resident.mapper.ts#toResidentView",
+      "required": [
+        "withheld"
+      ],
+      "optional": [
+        "given_name_masked",
+        "is_protected"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/residents",
+      "consumer": "resident.mapper.ts#toResidentView",
+      "required": [
+        "withheld"
+      ],
+      "optional": [
+        "given_name_masked",
+        "is_protected"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/residents/{id}",
+      "consumer": "resident.mapper.ts#toResidentView",
+      "required": [
+        "withheld"
+      ],
+      "optional": [
+        "given_name_masked",
+        "is_protected"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "office/residents/{id}",
+      "consumer": "resident.mapper.ts#toResidentView",
+      "required": [
+        "withheld"
+      ],
+      "optional": [
+        "given_name_masked",
+        "is_protected"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/residents/{id}/deactivate",
+      "consumer": "resident.mapper.ts#toResidentView",
+      "required": [
+        "withheld"
+      ],
+      "optional": [
+        "given_name_masked",
+        "is_protected"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/residents/{id}/reactivate",
+      "consumer": "resident.mapper.ts#toResidentView",
+      "required": [
+        "withheld"
+      ],
+      "optional": [
+        "given_name_masked",
+        "is_protected"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/residents/{id}/sectors",
+      "consumer": "resident.mapper.ts#toResidentView",
+      "required": [
+        "withheld"
+      ],
+      "optional": [
+        "given_name_masked",
+        "is_protected"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/residents/{id}/sectors/{sector}/end",
+      "consumer": "resident.mapper.ts#toResidentView",
+      "required": [
+        "withheld"
+      ],
+      "optional": [
+        "given_name_masked",
+        "is_protected"
       ]
     },
     {

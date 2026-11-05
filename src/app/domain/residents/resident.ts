@@ -205,8 +205,6 @@ export function isResidentFilterActive(filter: ResidentFilter): boolean {
   );
 }
 
-export type ResidentSortField = 'name' | 'barangay' | 'birthDate' | 'updatedAt';
-
 /* ── Formatting and derived facts ─────────────────────────────────────────── */
 
 export function formatPersonName(name: PersonName): string {

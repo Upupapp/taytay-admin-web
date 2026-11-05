@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { throwError, type Observable } from 'rxjs';
 
 import {
-  type ResidentRepository,
   type HouseholdRepository,
   type FamilyRepository,
   type CaseRepository,
@@ -74,43 +73,6 @@ export class UnservedError extends Error {
 
 export function unserved(module: string): Observable<never> {
   return throwError(() => new UnservedError(module));
-}
-
-@Injectable()
-export class UnservedResidentRepository implements ResidentRepository {
-  static readonly port: DataPort = 'resident';
-
-  list(): Observable<never> {
-    return unserved('the resident registry');
-  }
-
-  getById(): Observable<never> {
-    return unserved('the resident registry');
-  }
-
-  getProfile(): Observable<never> {
-    return unserved('the resident registry');
-  }
-
-  create(): Observable<never> {
-    return unserved('the resident registry');
-  }
-
-  update(): Observable<never> {
-    return unserved('the resident registry');
-  }
-
-  setActive(): Observable<never> {
-    return unserved('the resident registry');
-  }
-
-  recordSector(): Observable<never> {
-    return unserved('the resident registry');
-  }
-
-  endSector(): Observable<never> {
-    return unserved('the resident registry');
-  }
 }
 
 @Injectable()
@@ -763,7 +725,6 @@ export class UnservedDashboardRepository implements DashboardRepository {
  * mock one: a spec can import this list, and could not import the binding.
  */
 export const UNSERVED_HTTP_PORTS: readonly DataPort[] = [
-  UnservedResidentRepository.port,
   UnservedHouseholdRepository.port,
   UnservedFamilyRepository.port,
   UnservedCaseRepository.port,

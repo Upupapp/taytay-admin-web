@@ -1,0 +1,62 @@
+{
+  "data": [
+    {
+      "id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c01",
+      "first_name": "R",
+      "middle_name": null,
+      "last_name": "Villanueva",
+      "suffix": null,
+      "sex": "female",
+      "birth_date": "1984-03-09",
+      "civil_status": "separated",
+      "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+      "purok_or_sitio": null,
+      "street_address": null,
+      "mobile": null,
+      "email": null,
+      "sectors": ["solo-parent"],
+      "philsys_last_four": "4821",
+      "monthly_income_centavos": 320000,
+      "is_active": true,
+      "is_protected": true,
+      "given_name_masked": true,
+      "withheld": ["protected_sectors", "contact", "exact_address"],
+      "created_at": "2026-11-06T01:00:00.000Z",
+      "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+      "updated_at": "2026-11-06T01:05:00.000Z",
+      "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+    },
+    {
+      "id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c02",
+      "first_name": "Jose",
+      "middle_name": "Ramos",
+      "last_name": "Ygot",
+      "suffix": "Jr.",
+      "sex": "male",
+      "birth_date": "1950-11-20",
+      "civil_status": "widowed",
+      "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04",
+      "purok_or_sitio": "Purok 2",
+      "street_address": "18 Ilang-Ilang St.",
+      "mobile": "09170000102",
+      "email": null,
+      "sectors": ["senior-citizen", "pwd"],
+      "philsys_last_four": null,
+      "monthly_income_centavos": null,
+      "is_active": true,
+      "is_protected": false,
+      "given_name_masked": false,
+      "withheld": [],
+      "created_at": "2026-11-05T01:00:00.000Z",
+      "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+      "updated_at": "2026-11-05T01:00:00.000Z",
+      "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "has_more": true,
+      "next_cursor": "cmVzaWRlbnR8N2QxYzJiM2EtNGU1Zi00YTZiLThjN2QtOGU5ZjBhMWIyYzAy"
+    }
+  }
+}

@@ -36,7 +36,7 @@ import type { AppEnvironment } from '@env/environment.model';
 import { ResidentDetailPage } from './resident-detail-page';
 import { ResidentFormPage } from './resident-form-page';
 import { ResidentListPage } from './resident-list-page';
-import { readResidentFilter, readResidentPage, residentFilterParams } from './resident-query';
+import { readResidentFilter, readResidentQuery, residentFilterParams } from './resident-query';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
   name: 'local-mock',
@@ -188,10 +188,11 @@ describe('the resident filter lives in the URL', () => {
     ).toEqual({});
   });
 
-  it('falls back to a sane page and sort when the URL is nonsense', () => {
-    const page = readResidentPage(params({ page: '-3', sort: 'shoeSize', direction: 'sideways' }));
-    expect(page.page).toBe(1);
-    expect(page.sort).toEqual({ field: 'name', direction: 'asc' });
+  it('reads no page or sort from the URL: the order is the server’s', () => {
+    // DL-174: a cursor is a position in one reading, not an address anybody could return to.
+    expect(readResidentQuery(params({ page: '3', sort: 'birthDate', direction: 'desc' }))).toEqual({
+      filter: {},
+    });
   });
 
   it('round-trips a filter through the parameters a saved view would store', () => {
@@ -209,11 +210,35 @@ describe('the resident filter lives in the URL', () => {
 });
 
 describe('the resident list', () => {
-  it('renders a page of rows rather than the whole registry', async () => {
+  it('renders a page of rows rather than the whole registry, and says more are available', async () => {
     const element = html(await openList());
     const rows = element.querySelectorAll('tbody tr');
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.length).toBeLessThanOrEqual(20);
+    const status = element.querySelector('.residents__more [role="status"]');
+    expect(status?.textContent).toContain('20 shown.');
+    expect(status?.textContent).toContain('More are available.');
+    expect(element.textContent).not.toMatch(/page \d+ of/i);
+  });
+
+  it('follows the cursor when asked for more, keeping the rows already shown', async () => {
+    const fixture = await openList();
+    const element = html(fixture);
+    const before = element.querySelectorAll('tbody tr').length;
+    const more = Array.from(element.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Show more',
+    );
+    more?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(element.querySelectorAll('tbody tr').length).toBeGreaterThan(before);
+  });
+
+  it('offers a protected sector as a filter only to a role cleared for it', async () => {
+    const options = (element: HTMLElement) =>
+      Array.from(element.querySelectorAll('option')).map((option) => option.textContent?.trim());
+    expect(options(html(await openList('intake-officer')))).not.toContain('VAWC survivor');
+    expect(options(html(await openList('social-worker')))).toContain('VAWC survivor');
   });
 
   it('applies the filter that arrived in the URL', async () => {

@@ -511,6 +511,156 @@
         }
       }
     },
+    "/api/v1/office/residents": {
+      "get": {
+        "operationId": "listOfficeResidents",
+        "summary": "List the office's resident registry",
+        "description": "Needs resident.view. The people the MSWDO serves, recorded by staff; not app accounts. Alphabetical by surname, then given name. Each row is redacted for the reader (see OfficeResident). An own-barangay account sees only its barangay; an assigned-cases account is 403, because its caseload depends on cases this API does not hold yet. Retired records are left out unless include_inactive=true. q matches every word against the surname and the given and middle names the reader may see: a protected record's given names are not matched for a reader without request.view-sensitive. Filtering by a protected sector needs request.view-sensitive.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string", "minLength": 2, "maxLength": 100 } },
+          { "name": "barangay_id", "in": "query", "schema": { "type": "string", "format": "uuid" } },
+          { "name": "sector", "in": "query", "schema": { "$ref": "#/components/schemas/VulnerabilitySector" } },
+          { "name": "age_group", "in": "query", "description": "child 0-17, youth 18-30, adult 31-59, senior 60+, in whole years on today's date in Asia/Manila.", "schema": { "type": "string", "enum": ["child", "youth", "adult", "senior"] } },
+          { "name": "include_inactive", "in": "query", "schema": { "type": "string", "enum": ["true", "false"], "default": "false" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 20 } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "A page of residents, as this reader may see them.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeResidentListEnvelope" } } } },
+          "403": { "description": "Without the key; an assigned-cases account (cases are not served, so its residents cannot be told apart); a barangay outside the account's own; a protected sector without request.view-sensitive.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "A query value or the cursor is not valid.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      },
+      "post": {
+        "operationId": "createOfficeResident",
+        "summary": "Record a resident in the office's registry",
+        "description": "Needs resident.create. Sectors are not part of the body: each is recorded with its own reason. A PhilSys number (last four digits only) or an income needs resident.view-sensitive as well, so nobody records what they may not read. An own-barangay account records only in its barangay. Audit office_resident.created.",
+        "security": [{ "firebaseIdToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeResidentCreate" } } }
+        },
+        "responses": {
+          "201": { "description": "Recorded; the record as this writer may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeResidentEnvelope" } } } },
+          "403": { "description": "Without the key; an assigned-cases account (cases are not served, so its residents cannot be told apart); a barangay outside the account's own; identity or means without resident.view-sensitive.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "A field is not valid, or the barangay does not exist.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/residents/{id}": {
+      "get": {
+        "operationId": "getOfficeResident",
+        "summary": "Read one resident",
+        "description": "Needs resident.view. Redacted for the reader. A record outside the reader's barangay answers 404, exactly as one that does not exist.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "The record as this reader may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeResidentEnvelope" } } } },
+          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "Not found, or not in the reader's scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      },
+      "patch": {
+        "operationId": "updateOfficeResident",
+        "summary": "Change a resident's details",
+        "description": "Needs resident.update. Absent fields are left as they are; null clears an optional one. Refused when the record has any detail this writer is not shown: saving would replace what was withheld. A PhilSys number or an income needs resident.view-sensitive. Both the record and a new barangay must be in the writer's scope. A change that changes nothing answers 200 and records nothing; otherwise audit office_resident.updated.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeResidentPatch" } } }
+        },
+        "responses": {
+          "200": { "description": "Saved, or already as asked.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeResidentEnvelope" } } } },
+          "403": { "description": "Without the key; an assigned-cases account (cases are not served, so its residents cannot be told apart); details withheld from this writer; a barangay outside the account's own; identity or means without resident.view-sensitive.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "Not found, or not in the writer's scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "A field is not valid, or no field was sent.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/residents/{id}/deactivate": {
+      "post": {
+        "operationId": "deactivateOfficeResident",
+        "summary": "Retire a resident's record",
+        "description": "Needs resident.deactivate. Retired, never deleted. The reason is required and kept with the change in an append-only history; audit office_resident.deactivated.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReasonBody" } } }
+        },
+        "responses": {
+          "200": { "description": "Retired.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeResidentEnvelope" } } } },
+          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "Not found, or not in scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "Already retired.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "No reason.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/residents/{id}/reactivate": {
+      "post": {
+        "operationId": "reactivateOfficeResident",
+        "summary": "Restore a retired record",
+        "description": "Needs resident.deactivate. The reason is required and kept, as for retiring; audit office_resident.reactivated.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReasonBody" } } }
+        },
+        "responses": {
+          "200": { "description": "Restored.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeResidentEnvelope" } } } },
+          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "Not found, or not in scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "Already active.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "No reason.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/residents/{id}/sectors": {
+      "post": {
+        "operationId": "recordOfficeResidentSector",
+        "summary": "Record that a resident belongs to a sector",
+        "description": "Needs resident.update; vawc-survivor and cicl also need request.view-sensitive, refused before the record is read. The reason (what was checked: a Senior Citizen ID, a PWD card) is required and kept in the sector's append-only history; audit office_resident.sector_recorded. A sector already held answers 200 and records nothing.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeResidentSectorRecord" } } }
+        },
+        "responses": {
+          "200": { "description": "Recorded, or already held.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeResidentEnvelope" } } } },
+          "403": { "description": "Without the key; a protected sector without request.view-sensitive; an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "Not found, or not in scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "Unknown sector, or no reason.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/residents/{id}/sectors/{sector}/end": {
+      "post": {
+        "operationId": "endOfficeResidentSector",
+        "summary": "End a resident's membership of a sector",
+        "description": "Needs resident.update; vawc-survivor and cicl also need request.view-sensitive. The reason is required and kept; the recorded membership stays in the history. Audit office_resident.sector_ended.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "sector", "in": "path", "required": true, "schema": { "$ref": "#/components/schemas/VulnerabilitySector" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReasonBody" } } }
+        },
+        "responses": {
+          "200": { "description": "Ended.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeResidentEnvelope" } } } },
+          "403": { "description": "Without the key; a protected sector without request.view-sensitive; an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "Not found, or not in scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "The sector is not held.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "Unknown sector, or no reason.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
     "/api/v1/news": {
       "get": {
         "operationId": "listNews",
@@ -530,7 +680,7 @@
       "post": {
         "operationId": "createNews",
         "summary": "Post a Balita article",
-        "description": "Staff may post only for their own office. Admins choose the office. Drafts are hidden from the public list.",
+        "description": "Needs news.write. Staff may post only for their own office. Admins choose the office. Drafts are hidden from the public list.",
         "security": [{ "firebaseIdToken": [] }],
         "requestBody": {
           "required": true,
@@ -765,7 +915,7 @@
       "get": {
         "operationId": "listThreads",
         "summary": "List message threads",
-        "description": "A verified resident sees their threads. Staff see their office inbox. Admins see every thread. Each row includes subject, last_message_preview (first 140 characters), last_message_at, and unread_count.",
+        "description": "A verified resident sees their threads. An account with office-inbox.manage sees its office inbox (admins every thread); a staff account without the key is 403. Each row includes subject, last_message_preview (first 140 characters), last_message_at, and unread_count.",
         "security": [{ "firebaseIdToken": [] }],
         "parameters": [
           { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 20 } },
@@ -1094,7 +1244,7 @@
       "get": {
         "operationId": "listAudit",
         "summary": "List privileged actions",
-        "description": "Admin only. Rows store actor, action code, and subject id. They do not store addresses, notes, or message text.",
+        "description": "Needs audit.view: admin, and a staff account whose office role is mswdo-head or auditor. Rows store actor, action code, and subject id. They do not store addresses, notes, or message text.",
         "security": [{ "firebaseIdToken": [] }],
         "parameters": [
           { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 20 } },
@@ -1412,7 +1562,7 @@
         "post": {
           "operationId": "verifyDigitalId",
           "summary": "Scan a digital ID QR",
-          "description": "Staff and admin. Checks the signature and the QR expiry. A bad or expired code is 422 and returns no holder. A valid code returns the name, photo, status, whether the card itself is past expires_at, and the barangay. Audit digital_id.scanned.",
+          "description": "Needs digital-id.verify: admin and every staff account. Checks the signature and the QR expiry. A bad or expired code is 422 and returns no holder. A valid code returns the name, photo, status, whether the card itself is past expires_at, and the barangay. Audit digital_id.scanned.",
           "security": [
             {
               "firebaseIdToken": []
@@ -1759,7 +1909,7 @@
         "get": {
           "operationId": "listHouseholds",
           "summary": "List households in a barangay",
-          "description": "Staff and admin. barangay_id is required. Rows are id, barangay_id, member_count, and created_at. Names, birthdates, and addresses are omitted.",
+          "description": "Needs household.view-counts: admin, and a staff account with no office role. barangay_id is required. Rows are id, barangay_id, member_count, and created_at. Names, birthdates, and addresses are omitted.",
           "security": [
             {
               "firebaseIdToken": []
@@ -2649,7 +2799,7 @@
       },
       "StaffCapability": {
         "type": "string",
-        "description": "Platform capabilities, decided by the account role and, for staff, whether an office is assigned.",
+        "description": "Platform capabilities, decided by the account role and, for staff, whether an office is assigned. A staff account with an office role holds only the ones that role names.",
         "enum": ["household.view-counts", "digital-id.verify", "news.write", "office-inbox.manage", "user.view", "user.change-role", "user.assign-office", "verification.review", "digital-id.manage", "office.manage", "service.manage", "home.manage", "hotline.manage", "app-config.manage", "audit.view"]
       },
       "CaseworkPermission": {
@@ -3074,6 +3224,121 @@
         "properties": {
           "office_role": { "oneOf": [{ "$ref": "#/components/schemas/OfficeRole" }, { "type": "null" }] },
           "scope_barangay_id": { "type": ["string", "null"], "format": "uuid", "description": "Required for barangay-link; refused for any other role." },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 500, "description": "Why, in words. Kept with the change." }
+        }
+      },
+      "VulnerabilitySector": {
+        "type": "string",
+        "description": "Statutory sectors, in the staff console's ids. vawc-survivor (RA 9262) and cicl (RA 9344) are protected: recording, ending, filtering by or reading one needs request.view-sensitive.",
+        "enum": ["senior-citizen", "pwd", "solo-parent", "four-ps", "indigenous-people", "unemployed", "out-of-school-youth", "vawc-survivor", "cicl", "displaced-worker"]
+      },
+      "OfficeResident": {
+        "type": "object",
+        "description": "A resident of the office's registry, as this reader may see it. Redacted here, not by the client: without resident.view-sensitive, philsys_last_four and monthly_income_centavos are null; on a protected record (is_protected) without request.view-sensitive, the protected sectors, contact, purok and street are null, middle_name and suffix are null, and first_name is the initial only (given_name_masked). withheld names what was held back that is recorded, so a client can say so rather than show a blank that reads as not recorded.",
+        "required": ["id", "first_name", "middle_name", "last_name", "suffix", "sex", "birth_date", "civil_status", "barangay_id", "purok_or_sitio", "street_address", "mobile", "email", "sectors", "philsys_last_four", "monthly_income_centavos", "is_active", "is_protected", "given_name_masked", "withheld", "created_at", "created_by", "updated_at", "updated_by"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "first_name": { "type": "string", "description": "The initial only when given_name_masked." },
+          "middle_name": { "type": ["string", "null"] },
+          "last_name": { "type": "string" },
+          "suffix": { "type": ["string", "null"] },
+          "sex": { "type": "string", "enum": ["female", "male"] },
+          "birth_date": { "type": "string", "format": "date" },
+          "civil_status": { "type": "string", "enum": ["single", "married", "widowed", "separated", "annulled", "cohabiting"] },
+          "barangay_id": { "type": "string", "format": "uuid", "description": "A row of GET /api/v1/barangays." },
+          "purok_or_sitio": { "type": ["string", "null"] },
+          "street_address": { "type": ["string", "null"], "description": "Always recorded; null only when withheld." },
+          "mobile": { "type": ["string", "null"] },
+          "email": { "type": ["string", "null"] },
+          "sectors": { "type": "array", "items": { "$ref": "#/components/schemas/VulnerabilitySector" }, "description": "Current memberships the reader may see." },
+          "philsys_last_four": { "type": ["string", "null"], "pattern": "^[0-9]{4}$", "description": "The last four digits of a PhilSys number (RA 11055). The full number is never held." },
+          "monthly_income_centavos": { "type": ["integer", "null"], "minimum": 0, "description": "Integer centavos." },
+          "is_active": { "type": "boolean" },
+          "is_protected": { "type": "boolean", "description": "Under vawc-survivor or cicl. Said even when the sector is withheld." },
+          "given_name_masked": { "type": "boolean" },
+          "withheld": { "type": "array", "items": { "type": "string", "enum": ["philsys_last_four", "monthly_income", "protected_sectors", "contact", "exact_address"] } },
+          "created_at": { "type": "string", "format": "date-time" },
+          "created_by": { "type": "string", "format": "uuid" },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "updated_by": { "type": "string", "format": "uuid" }
+        }
+      },
+      "OfficeResidentEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": { "$ref": "#/components/schemas/OfficeResident" },
+          "meta": { "type": "object" }
+        }
+      },
+      "OfficeResidentListEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/OfficeResident" } },
+          "meta": {
+            "type": "object",
+            "properties": { "pagination": { "$ref": "#/components/schemas/Pagination" } }
+          }
+        }
+      },
+      "OfficeResidentCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["first_name", "last_name", "sex", "birth_date", "civil_status", "barangay_id", "street_address"],
+        "properties": {
+          "first_name": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "middle_name": { "type": ["string", "null"], "minLength": 1, "maxLength": 100 },
+          "last_name": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "suffix": { "type": ["string", "null"], "minLength": 1, "maxLength": 20 },
+          "sex": { "type": "string", "enum": ["female", "male"] },
+          "birth_date": { "type": "string", "format": "date", "description": "Not in the future, not before 1900." },
+          "civil_status": { "type": "string", "enum": ["single", "married", "widowed", "separated", "annulled", "cohabiting"] },
+          "barangay_id": { "type": "string", "format": "uuid" },
+          "purok_or_sitio": { "type": ["string", "null"], "minLength": 1, "maxLength": 80 },
+          "street_address": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "mobile": { "type": ["string", "null"], "pattern": "^(\\+?63|0)9\\d{2}[- ]?\\d{3}[- ]?\\d{4}$" },
+          "email": { "type": ["string", "null"], "format": "email", "maxLength": 200 },
+          "philsys_last_four": { "type": ["string", "null"], "pattern": "^[0-9]{4}$", "description": "Needs resident.view-sensitive when not null." },
+          "monthly_income_centavos": { "type": ["integer", "null"], "minimum": 0, "description": "Integer centavos. Needs resident.view-sensitive when not null." }
+        }
+      },
+      "OfficeResidentPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "description": "Any of the create fields. Absent leaves a field as it is; null clears an optional one.",
+        "properties": {
+          "first_name": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "middle_name": { "type": ["string", "null"], "minLength": 1, "maxLength": 100 },
+          "last_name": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "suffix": { "type": ["string", "null"], "minLength": 1, "maxLength": 20 },
+          "sex": { "type": "string", "enum": ["female", "male"] },
+          "birth_date": { "type": "string", "format": "date" },
+          "civil_status": { "type": "string", "enum": ["single", "married", "widowed", "separated", "annulled", "cohabiting"] },
+          "barangay_id": { "type": "string", "format": "uuid" },
+          "purok_or_sitio": { "type": ["string", "null"], "minLength": 1, "maxLength": 80 },
+          "street_address": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "mobile": { "type": ["string", "null"], "pattern": "^(\\+?63|0)9\\d{2}[- ]?\\d{3}[- ]?\\d{4}$" },
+          "email": { "type": ["string", "null"], "format": "email", "maxLength": 200 },
+          "philsys_last_four": { "type": ["string", "null"], "pattern": "^[0-9]{4}$" },
+          "monthly_income_centavos": { "type": ["integer", "null"], "minimum": 0 }
+        }
+      },
+      "OfficeResidentSectorRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sector", "reason"],
+        "properties": {
+          "sector": { "$ref": "#/components/schemas/VulnerabilitySector" },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 500, "description": "What was checked. Kept in the sector's history." }
+        }
+      },
+      "ReasonBody": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reason"],
+        "properties": {
           "reason": { "type": "string", "minLength": 1, "maxLength": 500, "description": "Why, in words. Kept with the change." }
         }
       },
