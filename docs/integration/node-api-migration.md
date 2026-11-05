@@ -153,3 +153,21 @@ These are not engineering choices, and nothing below has been built.
 - Identity Platform (billing) if staff two-factor is wanted; TOTP is off until then.
 - The console's and the API's real hostnames, for `CORS_ALLOWED_ORIGINS` and the CSP.
 - A staff or admin account to test with.
+
+## Decided 2026-11-06: casework is built on the Node API
+
+Michaela Cailing, who directs this work, decided owner question 1: **keep the casework** and build
+it into `taytay-backend`, rather than retire the screens. Built in phases, each usable on its own,
+each replacing the matching `Unserved*` adapters with real ones and keeping every console doctrine
+check green (the server enforces what the console only displays):
+
+1. **Foundation** — the office's resident registry (not app accounts), households and families,
+   programmes with guidelines and responsibility (`DL-65`, `DL-66`), and **granular staff roles**
+   (intake officer, social worker, MSWDO head, release officer, barangay link, auditor) published
+   as permissions on `/me`, with separation of duties enforced server-side.
+2. **Assistance requests** — intake → assessment → approval, requirements and documents
+   (append-only versions, `DL-77`), advisory evidence that decides nothing (`DL-60`).
+3. **Cases** — tasks, notes (protected tier, `DL-58`), events appended in the same act (`DL-54`).
+4. **Releases** — integer centavos, batches as plans (`DL-90`), self-release warning (`DL-91`).
+5. **Referrals and field visits** — lawful basis inside the row lock (`DL-140`), observation kinds (`DL-85`).
+6. **Dashboard, work queues, reports, search, saved views, events.**
