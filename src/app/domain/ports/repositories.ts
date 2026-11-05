@@ -110,7 +110,12 @@ import type {
   MembershipChange,
 } from '../households/household';
 import type { HouseholdDetail, HouseholdSummary } from '../households/household-profile';
-import type { DocumentRequestId, DuplicatePairId } from '../shared/ids';
+import type { DocumentRequestId, DuplicatePairId, VerificationRequestId } from '../shared/ids';
+import type {
+  VerificationFilter,
+  VerificationImageKind,
+  VerificationRequest,
+} from '../verification/verification-request';
 import type {
   Family,
   FamilyFilter,
@@ -154,7 +159,7 @@ import type {
   ServiceProviderFilter,
 } from '../referrals/service-provider';
 import type { SavedView, SavedViewDraft, SavedViewResource } from '../views/saved-view';
-import type { Page, PageRequest } from '../shared/pagination';
+import type { CursorPage, CursorRequest, Page, PageRequest } from '../shared/pagination';
 import type {
   AssistanceRequestId,
   AuditEntryId,
@@ -1338,3 +1343,35 @@ export interface DashboardRepository {
 }
 
 export const DASHBOARD_REPOSITORY = new InjectionToken<DashboardRepository>('DashboardRepository');
+
+/**
+ * Residents' app identity reviews (`DL-167`) — the first port shaped like a Node API resource
+ * rather than like casework.
+ */
+export interface VerificationRepository {
+  /**
+   * One cursor page of the queue, newest first as the server orders it. Browsable, so a page: the
+   * screen says more are available, never "page 1 of N" — the server sends no total (`DL-161`).
+   */
+  list(filter: VerificationFilter, page: CursorRequest): Observable<CursorPage<VerificationRequest>>;
+
+  /** Marks the account verified. The note is for the office; the resident never sees it. */
+  approve(id: VerificationRequestId, note: string): Observable<VerificationRequest>;
+
+  /** Refuses it. The resident reads `reason` in the app as what was wrong. */
+  reject(id: VerificationRequestId, reason: string): Observable<VerificationRequest>;
+
+  /**
+   * One image of a request — a government ID or a face — as bytes.
+   *
+   * A **method rather than a URL on the model**, as with `openDocument`: reading one is an act the
+   * data layer performs when a reviewer has asked and been warned, never something a template can
+   * reach by binding an address. A URL to the API would also need the bearer token, which belongs
+   * in no URL (rule 5).
+   */
+  openImage(request: VerificationRequest, kind: VerificationImageKind): Observable<Blob>;
+}
+
+export const VERIFICATION_REPOSITORY = new InjectionToken<VerificationRepository>(
+  'VerificationRepository',
+);

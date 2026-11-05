@@ -35,7 +35,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-70 permissions × 7 roles. `X` means the role holds the permission.
+71 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -112,6 +112,10 @@ self-registration), `DL-33` (accessible authentication).
 | `event.export-registrants`      | X     | X     |       |       |       |       |      |
 | `event.mark-attendance`           | X     | X     |       |       |       |       |      |
 | `event.view-insights`             | X     | X     |       |       |       |       | X    |
+
+<!-- Residents' app, added by DL-167. The key is the Node API's own StaffCapability. -->
+
+| `verification.review`             | X     |       |       |       |       |       |      |
 
 ---
 

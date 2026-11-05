@@ -9,10 +9,10 @@ sign-in only, hosted on Linode.
 
 | | |
 |---|---|
-| Console ports the Node API serves fully | 0 of 20 |
+| Console ports the Node API serves fully | 0 of 20 casework ports; 1 platform port added (`DL-167`, verification review) |
 | Served in part (mostly different concepts with the same name) | 7 |
 | No endpoint at all | 13 — cases, requests, beneficiaries, visits, releases, referrals, families, saved views, dashboard, work, reports, search, events |
-| Node staff endpoints with no console screen | ~40 — verification review, office inbox, users and roles, offices, services, hotlines, home banners and links, digital IDs, audit, app configuration |
+| Node staff endpoints with no console screen | ~37 — office inbox, users and roles, offices, services, hotlines, home banners and links, digital IDs, audit, app configuration |
 
 ## Plan
 
@@ -23,7 +23,8 @@ sign-in only, hosted on Linode.
 | 3 | Transport: cursor paging, Node error codes, vendored `openapi.json`, `local-api` on port 3000; `GET me`, sign-out and the inbox served, the other eighteen ports bound to adapters that make no request | console | done (`DL-165`) |
 | 4 | Sign-in: Firebase Auth REST, tokens in memory; dev sign-in through the backend's mock verifier | console | done (`DL-166`): password sign-in, TOTP second factor and on-demand refresh built to Google's published REST reference; `local-api` signs in through the development verifier. **Not live anywhere yet**: no Firebase web API key has been supplied for staging or production, so both say sign-in is not configured; the TOTP flow has not been exercised against a project with Identity Platform TOTP enabled |
 | 5 | Unserved ports bound to adapters that say so; navigation withholds them; one page names them | console | done (`DL-165`, `DL-167`): the http set declares its eighteen unserved ports (`UNSERVED_PORTS`), the menu withholds every entry whose screen reads one, each such route leads to `/unavailable`, which names every withheld module and every port it lacks, and `check:unserved` holds the bindings, the declaration, the routes and the menu to one another |
-| 6 | Platform screens: verification review first, then office inbox, users and roles, directory, home, digital IDs, Balita, audit, app config | console | to do |
+| 6a | Platform screen: residents' ID verification review | console | done (`DL-167`, [`docs/verification`](../verification/README.md)): queue by status, cursor-paged; review in a drawer; images only after a warning, read as bytes with the bearer in a header and revoked on leave; approve and reject through `StatusTransition` with what the API does shown before the button and the rejection's reader named; `verification.review` added unchanged from `StaffCapability`, held by the administrator alone. **Not run against a live API.** Open: whether the review should also read the account (`GET admin/users/{id}`) |
+| 6b | Platform screens: office inbox, users and roles, directory, home, digital IDs, Balita, audit, app config | console | to do |
 | 7 | Re-point the contract checks at the Node spec, new baselines stated | console | done with step 3, in one commit, each old and new count stated (`DL-165`) |
 
 ## For the owner to decide

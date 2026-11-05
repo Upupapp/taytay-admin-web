@@ -140,13 +140,30 @@ const resolve = (schema) => {
 
 const normalise = (path) => path.replace(/\{[^}]+\}/g, '{}');
 
+/**
+ * `allOf` is one object written in parts — `VerificationRequestStaff` is the citizen view plus
+ * `notes` (`DL-167`). Its properties, and its required list, are the union of the parts': allOf
+ * demands every part, so a field one part requires the whole requires. Without this the staff view
+ * read as "no response object", and the comparison had nothing to hold the mapper to.
+ */
+function flatten(schema) {
+  const resolved = resolve(schema);
+  if (!Array.isArray(resolved?.allOf)) return resolved;
+  const parts = resolved.allOf.map(flatten);
+  return {
+    type: 'object',
+    properties: Object.assign({}, ...parts.map((part) => part?.properties ?? {}), resolved.properties ?? {}),
+    required: [...new Set([...parts.flatMap((part) => part?.required ?? []), ...(resolved.required ?? [])])],
+  };
+}
+
 function payloadOf(method, path) {
   for (const [candidate, item] of Object.entries(spec.paths ?? {})) {
     if (normalise(candidate.replace(/^\/api\/v1\//, '')) !== normalise(path)) continue;
 
     const answer = resolve(item[method.toLowerCase()]?.responses?.['200']?.content?.['application/json']?.schema);
     const data = resolve(answer?.properties?.data);
-    return [data?.type].flat().includes('array') ? resolve(data.items) : data;
+    return [data?.type].flat().includes('array') ? flatten(data.items) : flatten(data);
   }
   return undefined;
 }

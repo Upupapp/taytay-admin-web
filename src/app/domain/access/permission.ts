@@ -183,6 +183,17 @@ export const PERMISSIONS = [
   'event.view-insights',
 
   'settings.manage',
+
+  /*
+   * RESIDENTS' APP — the first key that is the server's own (`DL-167`).
+   *
+   * Spelled exactly as the Node API's `StaffCapability`, because `fromServerIdentity` keeps only
+   * keys the server sends and one vocabulary is the rule (`DL-122`): a console key that merely
+   * resembled it would be a grant nobody can ever hold. The server gives it to `admin` alone, so
+   * here only the system administrator holds it — by holding every key — and no other role is
+   * granted it in the mock either. Mutating, not a read: it approves or rejects an identity.
+   */
+  'verification.review',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

@@ -1,0 +1,76 @@
+/* Layout only: every label, warning and outcome is text in the DOM. */
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-section);
+}
+
+.review__block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+}
+
+.review__heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.review__facts {
+  display: grid;
+  gap: var(--space-snug);
+  margin: 0;
+}
+
+.review__facts dt {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.review__facts dd {
+  margin: 0;
+}
+
+.review__words {
+  white-space: pre-line;
+}
+
+.review__note,
+.review__caution,
+.review__problem,
+.review__outcome {
+  margin: 0;
+  font-size: 13px;
+}
+
+.review__caution {
+  font-weight: 600;
+}
+
+.review__images {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-snug);
+}
+
+.review__figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+  margin: 0;
+  font-size: 12.5px;
+}
+
+.review__image {
+  inline-size: 100%;
+  block-size: auto;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+}
+
+.review__warning {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+}

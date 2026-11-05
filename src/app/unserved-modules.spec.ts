@@ -121,6 +121,11 @@ async function menuLinks(): Promise<readonly (string | null)[]> {
 
 const MENU = NAVIGATION.flatMap((section) => section.items);
 
+/** The menu entries the http set withholds: every one reading a port it does not serve. */
+const WITHHELD = MENU.filter((item) =>
+  item.reads.some((port) => UNSERVED_HTTP_PORTS.includes(port)),
+);
+
 describe('the http adapter set', () => {
   const adapters = [
     UnservedResidentRepository,
@@ -170,16 +175,15 @@ describe('the http adapter set', () => {
     },
   );
 
-  it('leaves no casework module in the menu, and links the page that names them', async () => {
+  it('leaves no casework module in the menu, keeps what it serves, and links the page', async () => {
     await signIn(UNSERVED_HTTP_PORTS);
     const links = await menuLinks();
 
-    for (const item of MENU) {
-      expect(links, `${item.route} reads a port this API does not serve`).not.toContain(
-        item.route,
-      );
+    for (const item of WITHHELD) {
+      expect(links, `${item.route} reads a port this API does not serve`).not.toContain(item.route);
     }
-    expect(links).toEqual(['/unavailable']);
+    // ID verification (DL-167) is the module the Node API serves; the casework is not.
+    expect(links).toEqual(['/verification', '/unavailable']);
   });
 
   it('names every withheld module, and every port it lacks, on that page', async () => {
@@ -188,9 +192,12 @@ describe('the http adapter set', () => {
     await fixture.whenStable();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
 
-    for (const item of MENU) {
+    for (const item of WITHHELD) {
       expect(text, item.label).toContain(`${item.label}.`);
     }
+    // A served module is offered under "What you can open", never listed as withheld.
+    expect(text).not.toContain('ID verification.');
+    expect(text).toContain('ID verification —');
     for (const port of UNSERVED_HTTP_PORTS) {
       expect(text.toLowerCase(), port).toContain(DATA_PORT_HOLDINGS[port].toLowerCase());
     }

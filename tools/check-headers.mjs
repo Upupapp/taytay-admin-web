@@ -38,6 +38,10 @@
  * 5. HSTS is absent until somebody confirms the certificate chain, because it cannot be undone.
  * 6. The production build emits no inline `<style>` or `<script>`, which is what makes rule 2
  *    affordable.
+ * 8. `img-src` is exactly `'self' data: blob:` (`DL-167`). `blob:` is how a reviewer sees a
+ *    resident's ID: fetched as bytes with the bearer token in a header, shown from an object URL the
+ *    page made. A remote origin here would be the other way — an `<img src>` pointed at the API,
+ *    which cannot send a header, and so would need the token in the URL.
  * 7. `connect-src` names `'self'`, exactly one API origin, and exactly the identity provider's two
  *    endpoints (`DL-166`) — nothing more, so a token cannot be posted to any other Google API.
  */
@@ -71,6 +75,9 @@ const COMPANION_HEADERS = ['X-Content-Type-Options', 'Referrer-Policy', 'Permiss
  * place an injected script could post a stolen token to.
  */
 const IDENTITY_ORIGINS = ['https://identitytoolkit.googleapis.com', 'https://securetoken.googleapis.com'];
+
+/** Exactly these, in any order (`DL-167`): rule 8. */
+const IMAGE_SOURCES = ["'self'", 'data:', 'blob:'];
 
 const failures = [];
 
@@ -164,6 +171,17 @@ for (const file of files) {
             `    it leaves, and the sign-in form reports an outage that is really this file.`,
         );
       }
+    }
+
+    // ── 8. img-src: the page's own images, data: icons, and object URLs the page made ──
+    const images = (/img-src\s+([^;]*)/.exec(policy)?.[1] ?? '').trim().split(/\s+/).filter(Boolean);
+
+    if (images.length !== IMAGE_SOURCES.length || !IMAGE_SOURCES.every((source) => images.includes(source))) {
+      failures.push(
+        `${file}: img-src must be exactly ${IMAGE_SOURCES.join(' ')}; it is ${images.join(' ') || 'empty'}.\n` +
+          `    Without blob: a reviewer cannot see the ID they were warned about (DL-167); with a remote\n` +
+          `    origin, an <img src> could reach the API, which only a token in the URL would let it read.`,
+      );
     }
 
     const others = connect.filter((source) => source !== "'self'" && !IDENTITY_ORIGINS.includes(source));

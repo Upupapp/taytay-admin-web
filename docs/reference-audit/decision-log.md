@@ -5646,3 +5646,71 @@ guard sends the reader to that page, which is where a first-time reader should s
 before — `served-ports.spec.ts` for the guard and the declaration, `unserved-modules.spec.ts` for
 both adapter sets and every menu entry against its route; the layout spec gained the withheld menu,
 the dashboard crumb and the search trigger).
+
+### 2. ID verification review — the first screen built on what the Node API serves
+
+`GET admin/verification-requests` (cursor-paged, `?status=`), `POST …/{id}/approve`,
+`POST …/{id}/reject` and `GET media/{id}/content`, admin only (`verification.review`). Shaped like the
+resource, not like casework: a `VerificationRequest` is an **app account** asking to be verified, never
+a `ResidentId` or a case (`DL-164`). The whole screen is described in
+[`docs/verification/README.md`](../verification/README.md); the decisions are these.
+
+- **One vocabulary.** `verification.review` joins `PERMISSIONS` spelled exactly as the API's
+  `StaffCapability`, so `fromServerIdentity` keeps it when `/me` sends it (`DL-122`). The API grants it
+  to `admin` alone; here the system administrator holds it by holding every key and no role names it.
+  It is mutating. `check:permission-parity` holds at 42 unreachable guards of 44 — the new guard is
+  reachable, the first one besides `audit.view`.
+- **The lifecycle is defined once** (rule 7): `pending → approved | rejected`, `rejected → pending` as
+  the **resident's** move, `approved` terminal. The office's moves are `VERIFICATION_REVIEW_MOVES`.
+- **A person decides.** No score, confidence, match or suggestion anywhere — the sixth surface where a
+  signal could become a verdict, after `DL-42`, `DL-60`, `DL-66`, `DL-78` and `DL-98`.
+- **The images are a government ID and a face.** Loaded only when asked, after a warning (the
+  `openDocument` precedent, `DL-77`); read as a `Blob` through the new `ApiClient.blob`, with the bearer
+  token in a header and never in an address; shown from object URLs made only by the review and revoked
+  on hide, on switching request and on destroy; never stored, never logged. CSP `img-src` gains
+  `blob:` and nothing else.
+- **A decision says what it does before it is made.** `StatusTransition` gained per-destination
+  guidance: the consequences — `VERIFICATION_DECISION_EFFECTS`, read from the backend's handlers at
+  `2736e28` and cited beside the list — appear between the choice and the button, which they describe,
+  and the reason's label names its reader: the office for an approval, **the resident** for a
+  rejection. The API makes an approval's note optional; this console asks for a sentence, as for every
+  recorded move (`DL-54`). The outcome is announced in a live region.
+- **A browsable list, a page at a time** (`DL-161`): "Showing 20 requests. More are available.", and
+  "Show more" follows the cursor. A request the mapper cannot read **refuses the page** instead of
+  dropping out of it — one fewer row is a resident waiting on a review nobody knows is owed.
+- **No record by address.** The API cannot read one request, so the review is a drawer beside the
+  queue, and after a decision the queue is read again rather than patched.
+- **The menu, again.** The port is served in the http set, so `check:unserved` now holds 21 ports, 18
+  unserved, and 19 menu entries. An administrator in the `http` configuration sees "ID verification"
+  and "Not connected yet"; any other account still sees only the latter.
+
+#### The checks it had to satisfy, made stricter rather than looser
+
+| Check | Change | Planted regression, caught |
+| --- | --- | --- |
+| `check:routes` | `blob` judged as `GET`; 5 endpoints, 9 composed requests, all served at their verb | a reject path renamed |
+| `check:response-shape` | a new envelope, `binary` — a `200` whose every media type is non-JSON with `format: binary` — matched both ways | `item` on the media route; `blob` on the list route |
+| `check:consumer-contract` | reads `allOf` as one object (union of properties and of required), so the staff view is checked rather than reported as no object; 6 interactions, 28 required fields | a field the API does not send; a required field the API may omit |
+| `check:wire-adoption` | unchanged rule; the two bodies are literals checked against `ReviewNotes` / `RejectNotes` | `note` for `notes` |
+| `check:query-params` | `blob` classified; `status` declared by the operation | `state` for `status` |
+| `check:mapper-adoption` | `blob` listed so the surface comparison stays exact | — |
+| `check:headers` | rule 8: `img-src` is exactly `'self' data: blob:` | `blob:` removed; a remote origin added |
+| `check:bundle` | the seed's placeholder wording is a seed marker | — |
+| `check:verification` | new, in `verify` — see `docs/verification/README.md` | eighteen, each caught |
+| `check:port-adoption` | 148 of 159 port methods reached; the 11 unreached unchanged | — |
+
+The fixtures validator in `fixtures.spec.ts` learned `allOf` the same way, and a drift test proves it
+is not vacuous: before, a fixture against a composed schema was checked against nothing.
+
+#### Not done, and whose it is
+
+- **Account details on the review** (`GET admin/users/{id}`, `user.view`): more personal data on the
+  screen for a better-grounded decision — the owner's call.
+- **The reviewer's name** on a decided request: the staff directory is unserved.
+- **Not run against a live API**: built and tested against the vendored spec and composed fixtures.
+- `CLAUDE.md` §3 does not list `check:unserved` or `check:verification`; the owner's to amend.
+
+The launch gate stays **NO-GO**. `npm run verify` is green on Windows: 102 spec files, 1,790 tests
+(98 and 1,732 after part 1 — four new spec files, for the domain model, the mapper, the mock adapter
+and the screen; the HTTP adapters, the fixtures, the permission matrix, the layout and the unserved
+modules gained tests in their own).

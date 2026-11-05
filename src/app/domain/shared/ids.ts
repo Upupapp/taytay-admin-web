@@ -73,6 +73,15 @@ export type IdentityResolutionId = Branded<string, 'IdentityResolutionId'>;
  * once somebody has run a detection and the office has taken it on (`DL-148`).
  */
 export type DuplicatePairId = Branded<string, 'DuplicatePairId'>;
+/** A residents' app identity review (`DL-167`). */
+export type VerificationRequestId = Branded<string, 'VerificationRequestId'>;
+/**
+ * An account in the residents' app. **Not a `ResidentId`**: an app account is a person with a phone,
+ * not a record in the office's registry, and the two are kept apart on purpose (`DL-164`).
+ */
+export type AppAccountId = Branded<string, 'AppAccountId'>;
+/** An image the API stores — read as bytes through the data layer, never as a URL. */
+export type MediaId = Branded<string, 'MediaId'>;
 
 /**
  * The single sanctioned way to turn an untyped string (route param, API payload)

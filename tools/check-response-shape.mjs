@@ -22,6 +22,12 @@
  * | `item` / `optionalItem`   | an object                             | `item`         |
  * | `cursorPage` / `everyPage`| an array plus `meta.pagination`       | `cursor-page`  |
  * | `list`                    | an array, `meta: {}`                  | `list`         |
+ * | `blob`                    | no envelope at all: bytes             | `binary`       |
+ *
+ * `binary` (`DL-167`) is a `200` whose every content type is a non-JSON media type with a
+ * `format: binary` schema — `GET media/{id}/content` and nothing else today. It is matched both
+ * ways: `blob` on a JSON route would hand a screen an envelope as if it were an image, and a JSON
+ * helper on a binary route would try to read `data` off a JPEG.
  *
  * ## `list` is right on Node, exactly where the spec says so
  *
@@ -64,9 +70,18 @@ const resolve = (schema) => {
   return resolve(ref.replace(/^#\//, '').split('/').reduce((node, key) => node?.[key], spec));
 };
 
-/** `item`, `list`, `cursor-page`, or `undeclared` when the spec says nothing a helper can match. */
+/** `item`, `list`, `cursor-page`, `binary`, or `undeclared` when the spec says nothing a helper can match. */
 function envelopeOf(operation) {
-  const schema = resolve(operation?.responses?.['200']?.content?.['application/json']?.schema);
+  const content = operation?.responses?.['200']?.content ?? {};
+  const mediaTypes = Object.keys(content);
+  if (
+    mediaTypes.length > 0 &&
+    mediaTypes.every((type) => type !== 'application/json' && resolve(content[type]?.schema)?.format === 'binary')
+  ) {
+    return 'binary';
+  }
+
+  const schema = resolve(content['application/json']?.schema);
   const data = resolve(schema?.properties?.data);
   const meta = resolve(schema?.properties?.meta);
 
@@ -128,6 +143,8 @@ const NEEDS = {
   /** Follows `next_cursor`, so it needs the same envelope `cursorPage` does. */
   everyPage: 'cursor-page',
   list: 'list',
+  /** Bytes, not an envelope: only a route whose every answer is a binary media type. */
+  blob: 'binary',
 };
 
 const WRITES = new Set(['post', 'patch', 'delete']);

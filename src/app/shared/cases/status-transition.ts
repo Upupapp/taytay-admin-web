@@ -10,6 +10,22 @@ export interface StatusTransitionRequest<TStatus extends string> {
 }
 
 /**
+ * What one destination means, said before anybody confirms it (`DL-167`).
+ *
+ * For a lifecycle whose moves do something outside the record — a resident is told, an account
+ * changes, a card is issued — the consequences are shown between the choice and the button, and
+ * the reason's label names who will read it. Said after the click, the same sentences are an
+ * apology; said before, they are information somebody can act on.
+ */
+export interface TransitionGuidance {
+  /** Replaces the generic reason label — above all to say who will read these words. */
+  readonly reasonLabel: string;
+  readonly reasonHint: string;
+  /** What the system of record does on this move, in the order it happens. */
+  readonly consequences: readonly string[];
+}
+
+/**
  * The only sanctioned way to move a record through a lifecycle.
  *
  * Three things it refuses to let a screen do wrong:
@@ -46,7 +62,7 @@ export interface StatusTransitionRequest<TStatus extends string> {
       } @else {
         <div class="transition__field">
           <label class="transition__label" [attr.for]="destinationId()">
-            {{ copy.destination }}
+            {{ destinationLabel() }}
           </label>
           <select
             class="transition__select"
@@ -64,19 +80,35 @@ export interface StatusTransitionRequest<TStatus extends string> {
           }
         </div>
 
+        @if (chosenGuidance(); as guide) {
+          <div class="transition__consequences" [id]="consequencesId()">
+            <p class="transition__label">{{ copy.consequences }}</p>
+            <ul class="transition__effects">
+              @for (line of guide.consequences; track $index) {
+                <li>{{ line }}</li>
+              }
+            </ul>
+          </div>
+        }
+
         <div class="transition__field">
-          <label class="transition__label" [attr.for]="reasonId()">{{ copy.reason }}</label>
+          <label class="transition__label" [attr.for]="reasonId()">{{
+            chosenGuidance()?.reasonLabel ?? copy.reason
+          }}</label>
           <textarea
             class="transition__reason"
             rows="3"
             [id]="reasonId()"
             [attr.aria-describedby]="reasonHintId()"
             [attr.aria-invalid]="showReasonProblem() ? 'true' : null"
-            [placeholder]="copy.reasonPlaceholder"
+            [placeholder]="chosenGuidance() ? '' : copy.reasonPlaceholder"
+            [attr.maxlength]="maximumReasonLength()"
             [value]="reason()"
             (input)="onReason($event)"
           ></textarea>
-          <p class="transition__hint" [id]="reasonHintId()">{{ copy.reasonHint }}</p>
+          <p class="transition__hint" [id]="reasonHintId()">
+            {{ chosenGuidance()?.reasonHint ?? copy.reasonHint }}
+          </p>
           @if (showReasonProblem()) {
             <p class="transition__problem" role="alert">{{ copy.reasonTooShort }}</p>
           }
@@ -87,9 +119,10 @@ export interface StatusTransitionRequest<TStatus extends string> {
             type="button"
             class="btn btn--primary"
             [disabled]="!canConfirm()"
+            [attr.aria-describedby]="chosenGuidance() ? consequencesId() : null"
             (click)="submit()"
           >
-            {{ copy.confirm }}
+            {{ confirmLabel() }}
           </button>
         </div>
       }
@@ -110,6 +143,12 @@ export class StatusTransition<TStatus extends string> {
   /** Widened past the default's literal type: other lifecycles word this differently. */
   readonly heading = input<string>(CASE_COPY.transition.heading);
   readonly minimumReasonLength = input(8);
+  /** A server's limit, when it has one: words cut off by a 422 are words nobody reads. */
+  readonly maximumReasonLength = input<number | null>(null);
+  /** Per destination; a destination with none keeps the generic wording. */
+  readonly guidance = input<Partial<Record<TStatus, TransitionGuidance>>>({});
+  readonly destinationLabel = input<string>(CASE_COPY.transition.destination);
+  readonly confirmLabel = input<string>(CASE_COPY.transition.confirm);
   readonly busy = input(false);
   /** Unique per instance so two controls on one page keep distinct labels. */
   readonly idPrefix = input('status-transition');
@@ -126,6 +165,7 @@ export class StatusTransition<TStatus extends string> {
   protected readonly destinationId = computed(() => `${this.idPrefix()}-destination`);
   protected readonly reasonId = computed(() => `${this.idPrefix()}-reason`);
   protected readonly reasonHintId = computed(() => `${this.idPrefix()}-reason-hint`);
+  protected readonly consequencesId = computed(() => `${this.idPrefix()}-consequences`);
 
   protected readonly legal = computed(() => nextStatuses(this.transitions(), this.current()));
 
@@ -152,9 +192,16 @@ export class StatusTransition<TStatus extends string> {
     return to === null ? null : (this.catalog()[to]?.description ?? null);
   });
 
-  protected readonly reasonOk = computed(
-    () => this.reason().trim().length >= this.minimumReasonLength(),
-  );
+  protected readonly chosenGuidance = computed<TransitionGuidance | null>(() => {
+    const to = this.destination();
+    return to === null ? null : (this.guidance()[to] ?? null);
+  });
+
+  protected readonly reasonOk = computed(() => {
+    const length = this.reason().trim().length;
+    const maximum = this.maximumReasonLength();
+    return length >= this.minimumReasonLength() && (maximum === null || length <= maximum);
+  });
   protected readonly showReasonProblem = computed(() => this.reasonTouched() && !this.reasonOk());
   protected readonly canConfirm = computed(
     () => this.destination() !== null && this.reasonOk() && !this.busy(),

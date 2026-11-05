@@ -156,6 +156,8 @@ const VERBS = {
   list: 'GET',
   item: 'GET',
   optionalItem: 'GET',
+  /** Image bytes (`DL-167`): a read, judged at its verb like any other. */
+  blob: 'GET',
   post: 'POST',
   patch: 'PATCH',
   delete: 'DELETE',

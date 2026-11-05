@@ -25,12 +25,14 @@ import {
   SIGN_IN_METHOD,
   STAFF_REPOSITORY,
   UNSERVED_PORTS,
+  VERIFICATION_REPOSITORY,
 } from '@domain/index';
 
 import {
   HttpNotificationRepository,
   HttpSessionRefresher,
   HttpStaffRepository,
+  HttpVerificationRepository,
 } from './http/http-repositories';
 import { identitySignInMethod } from './http/identity/identity.provider';
 import {
@@ -78,10 +80,10 @@ import {
  * names no mock class at all, and `angular.json` swaps in `data-access.providers.mock.ts` for the
  * one configuration that wants them.
  *
- * ## Two ports served, eighteen unserved
+ * ## Three ports served, eighteen unserved
  *
- * The Node API serves the signed-in account and its inbox and nothing else this console has a port
- * for (`DL-164`). Every other port is bound to an `Unserved…` adapter that makes no request and
+ * The Node API serves the signed-in account, its inbox and residents' ID verification review
+ * (`DL-167`), and nothing else this console has a port for (`DL-164`). Every other port is bound to an `Unserved…` adapter that makes no request and
  * fails with a sentence saying so (`DL-165`). A port moves from that list to an `Http…` adapter
  * only when the API serves the thing the port names — not something with the same word on it.
  */
@@ -95,6 +97,7 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: REFERRAL_REPOSITORY, useClass: UnservedReferralRepository },
     { provide: STAFF_REPOSITORY, useClass: HttpStaffRepository },
     { provide: NOTIFICATION_REPOSITORY, useClass: HttpNotificationRepository },
+    { provide: VERIFICATION_REPOSITORY, useClass: HttpVerificationRepository },
     { provide: DASHBOARD_REPOSITORY, useClass: UnservedDashboardRepository },
     { provide: WORK_REPOSITORY, useClass: UnservedWorkRepository },
     { provide: REPORT_REPOSITORY, useClass: UnservedReportRepository },

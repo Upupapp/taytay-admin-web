@@ -24,8 +24,9 @@ import { dateTime, field, id, str, text } from './wire';
  *   would be the console raising an alarm nobody raised — and an inbox that cries wolf is one
  *   people stop reading, which is how the one real alert gets missed.
  * - **No action.** `subject_id` names a verification request or a message thread, and this console
- *   has no screen for either yet. A link to a route that does not exist is worse than no link: the
- *   user concludes the record is gone. The action arrives with the screen it points at.
+ *   has no address for either: office threads have no screen yet, and verification review opens in
+ *   a drawer because the API cannot read one request by id (`DL-167`). A link to a route that does
+ *   not exist is worse than no link: the user concludes the record is gone.
  * - **An unrecognised `type` is kept**, as `general`. Dropping it would show one fewer message with
  *   no error anywhere; showing it plainly loses nothing.
  *

@@ -4,6 +4,66 @@
   "interactions": [
     {
       "method": "GET",
+      "path": "admin/verification-requests",
+      "consumer": "verification.mapper.ts#toVerificationRequest",
+      "required": [
+        "id",
+        "id_front_media_id",
+        "id_type",
+        "selfie_media_id",
+        "status",
+        "submitted_at",
+        "user_id"
+      ],
+      "optional": [
+        "id_back_media_id",
+        "message",
+        "notes",
+        "reviewed_at"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/verification-requests/{id}/approve",
+      "consumer": "verification.mapper.ts#toVerificationRequest",
+      "required": [
+        "id",
+        "id_front_media_id",
+        "id_type",
+        "selfie_media_id",
+        "status",
+        "submitted_at",
+        "user_id"
+      ],
+      "optional": [
+        "id_back_media_id",
+        "message",
+        "notes",
+        "reviewed_at"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/verification-requests/{id}/reject",
+      "consumer": "verification.mapper.ts#toVerificationRequest",
+      "required": [
+        "id",
+        "id_front_media_id",
+        "id_type",
+        "selfie_media_id",
+        "status",
+        "submitted_at",
+        "user_id"
+      ],
+      "optional": [
+        "id_back_media_id",
+        "message",
+        "notes",
+        "reviewed_at"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "me",
       "consumer": "me.mapper.ts#toServerIdentity",
       "required": [

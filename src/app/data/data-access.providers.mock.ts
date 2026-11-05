@@ -23,6 +23,7 @@ import {
   SAVED_VIEW_REPOSITORY,
   STAFF_REPOSITORY,
   UNSERVED_PORTS,
+  VERIFICATION_REPOSITORY,
 } from '@domain/index';
 
 import { MockAssistanceRequestRepository } from './mock/mock-assistance-request.repository';
@@ -45,6 +46,7 @@ import { MockReferralRepository } from './mock/mock-referral.repository';
 import { MockResidentRepository } from './mock/mock-resident.repository';
 import { MockSavedViewRepository } from './mock/mock-saved-view.repository';
 import { MockStaffRepository } from './mock/mock-staff.repository';
+import { MockVerificationRepository } from './mock/mock-verification.repository';
 
 /**
  * THE MOCK/HTTP SEAM — the mock half.
@@ -78,6 +80,7 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: CASE_REPOSITORY, useClass: MockCaseRepository },
     { provide: BENEFICIARY_REPOSITORY, useClass: MockBeneficiaryRepository },
     { provide: FIELD_VISIT_REPOSITORY, useClass: MockFieldVisitRepository },
+    { provide: VERIFICATION_REPOSITORY, useClass: MockVerificationRepository },
     // The mock serves every port, and says so rather than leaving the token unbound (`DL-167`).
     { provide: UNSERVED_PORTS, useValue: [] },
   ]);

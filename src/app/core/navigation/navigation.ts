@@ -173,6 +173,22 @@ export const NAVIGATION: readonly NavSection[] = [
     ],
   },
   {
+    // `DL-167`. The first module built on what the Node API serves: the residents' app's back
+    // office. Its own section because it acts on app accounts, not on the office's registry, and a
+    // reader of the Casework section should never take one for the other (`DL-164`).
+    title: 'Residents’ app',
+    items: [
+      {
+        label: 'ID verification',
+        route: '/verification',
+        reads: ['verification'],
+        glyph: 'IV',
+        permissions: ['verification.review'],
+        description: 'Residents asking to have their app account verified against an ID.',
+      },
+    ],
+  },
+  {
     title: 'Administration',
     items: [
       {

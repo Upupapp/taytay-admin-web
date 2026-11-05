@@ -53,7 +53,11 @@ const source = readFileSync(join(ROOT, ADAPTERS), 'utf8');
  * client's surface, because a check that enumerates the helpers it inspects has missed the next one
  * four times (`DL-162`).
  */
-const HELPERS = ['cursorPage', 'everyPage', 'list', 'item', 'optionalItem', 'post', 'patch', 'delete'];
+/*
+ * `blob` (`DL-167`) answers `Blob` and takes no type argument, so it can assert no domain shape; it
+ * is listed so the surface comparison below stays exact rather than so it can be found guilty.
+ */
+const HELPERS = ['cursorPage', 'everyPage', 'list', 'item', 'optionalItem', 'blob', 'post', 'patch', 'delete'];
 
 const client = readFileSync(join(ROOT, 'src/app/data/http/api.client.ts'), 'utf8');
 const surface = [...client.matchAll(/^  ([a-zA-Z]\w*)\s*[<(]/gm)].map((m) => m[1]);

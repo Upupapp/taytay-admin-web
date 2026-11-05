@@ -496,6 +496,17 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'verification',
+        title: 'ID verification — Taytay Social Welfare',
+        // The API grants `verification.review` to administrators alone, and this guard mirrors it.
+        // It is not the protection: the API refuses anybody else whatever this console shows (rule 4).
+        canActivate: [servedGuard('verification'), permissionGuard('verification.review')],
+        loadComponent: () =>
+          import('@features/verification/verification-queue-page').then(
+            (m) => m.VerificationQueuePage,
+          ),
+      },
+      {
         // Where every unserved module's address leads (`DL-167`). No permission: it names what the
         // server lacks, which is no secret about any record, and it is linked from the menu.
         path: 'unavailable',

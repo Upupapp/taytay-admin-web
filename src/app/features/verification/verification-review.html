@@ -1,0 +1,123 @@
+<section class="review__block" aria-labelledby="review-details">
+  <h3 id="review-details" class="review__heading">{{ copy.detailsHeading }}</h3>
+  <dl class="review__facts">
+    <div>
+      <dt>{{ copy.status }}</dt>
+      <dd><app-status-badge [catalog]="catalog" [status]="request().status" /></dd>
+    </div>
+    <div>
+      <dt>{{ copy.idType }}</dt>
+      <dd>{{ idTypeLabel() }}</dd>
+    </div>
+    <div>
+      <dt>{{ copy.submitted }}</dt>
+      <dd>
+        <time [attr.datetime]="request().submittedAt">
+          {{ request().submittedAt | date: 'd MMM y, HH:mm' }}
+        </time>
+      </dd>
+    </div>
+    @if (request().reviewedAt; as reviewedAt) {
+      <div>
+        <dt>{{ copy.reviewed }}</dt>
+        <dd>
+          <time [attr.datetime]="reviewedAt">{{ reviewedAt | date: 'd MMM y, HH:mm' }}</time>
+        </dd>
+      </div>
+    }
+    @if (request().residentMessage; as message) {
+      <div>
+        <dt>{{ copy.residentMessage }}</dt>
+        <dd class="review__words">{{ message }}</dd>
+      </div>
+    }
+    @if (request().reviewNote; as note) {
+      <div>
+        <dt>
+          {{ request().status === 'rejected' ? copy.reviewNoteForResident : copy.reviewNote }}
+        </dt>
+        <dd class="review__words">{{ note }}</dd>
+      </div>
+    }
+  </dl>
+</section>
+
+<section class="review__block" aria-labelledby="review-images">
+  <h3 id="review-images" class="review__heading">{{ copy.imagesHeading }}</h3>
+
+  @let state = images();
+  @if (state.kind === 'idle') {
+    <p class="review__note">{{ copy.imagesClosed }}</p>
+    <button type="button" class="btn btn--secondary" (click)="askToOpen()">
+      {{ copy.openImages }}
+    </button>
+  } @else if (state.kind === 'loading') {
+    <p class="review__note" role="status">{{ copy.imagesLoading }}</p>
+  } @else if (state.kind === 'error') {
+    <p class="review__problem" role="alert">{{ copy.imagesFailed }}</p>
+    <button type="button" class="btn btn--secondary" (click)="askToOpen()">
+      {{ copy.openImages }}
+    </button>
+  } @else if (state.kind === 'ready') {
+    <p class="review__note">{{ copy.imagesKept }}</p>
+    <div class="review__images">
+      @for (image of state.value; track image.kind) {
+        <figure class="review__figure">
+          <img class="review__image" [src]="image.url" [alt]="image.label" />
+          <figcaption>{{ image.label }}</figcaption>
+        </figure>
+      }
+    </div>
+    <button type="button" class="btn btn--secondary" (click)="hideImages()">
+      {{ copy.hideImages }}
+    </button>
+  }
+</section>
+
+<section class="review__block" aria-labelledby="review-decision">
+  <h3 id="review-decision" class="review__heading">{{ copy.decisionHeading }}</h3>
+
+  @if (decidable()) {
+    @if (!opened()) {
+      <p class="review__caution">{{ copy.notOpened }}</p>
+    }
+    <app-status-transition
+      [catalog]="catalog"
+      [transitions]="transitions"
+      [current]="request().status"
+      [permitted]="moves"
+      [heading]="copy.decisionPrompt"
+      [destinationLabel]="copy.destinationLabel"
+      [confirmLabel]="copy.confirm"
+      [guidance]="guidance"
+      [minimumReasonLength]="limits.minimum"
+      [maximumReasonLength]="limits.maximum"
+      [busy]="busy()"
+      idPrefix="verification-decision"
+      (confirmed)="decide($event)"
+    />
+  } @else if (request().status === 'rejected') {
+    <p class="review__note">{{ copy.awaitingResident }}</p>
+  } @else {
+    <p class="review__note">{{ copy.alreadyDecided }}</p>
+  }
+
+  <!-- Always in the DOM, so a screen reader hears the outcome when the text arrives. -->
+  <p class="review__outcome" role="status" aria-live="polite">{{ outcome() }}</p>
+</section>
+
+@if (warningOpen()) {
+  <app-modal [open]="true" [heading]="copy.warningHeading" (dismissed)="cancelOpen()">
+    <div modal-body class="review__warning">
+      @for (sentence of copy.warning; track $index) {
+        <p>{{ sentence }}</p>
+      }
+    </div>
+    <button type="button" modal-actions class="btn btn--secondary" (click)="cancelOpen()">
+      {{ copy.warningCancel }}
+    </button>
+    <button type="button" modal-actions class="btn btn--primary" (click)="confirmOpen()">
+      {{ copy.warningProceed }}
+    </button>
+  </app-modal>
+}

@@ -109,6 +109,7 @@ export const CASE_COPY = {
     confirm: 'Record the move',
     cancel: 'Cancel',
     describes: 'What this status means',
+    consequences: 'What happens when you confirm',
   },
 
   timeline: {

@@ -74,3 +74,18 @@
   display: flex;
   gap: var(--space-compact);
 }
+
+.transition__consequences {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-micro);
+  padding: var(--space-snug);
+  border-inline-start: 3px solid var(--c-border-strong);
+  background: var(--c-surface-muted, var(--c-surface));
+}
+
+.transition__effects {
+  margin: 0;
+  padding-inline-start: var(--space-base);
+  font-size: 13px;
+}

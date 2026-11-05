@@ -217,6 +217,7 @@ describe('navigation when the API cannot serve a module', () => {
       'report',
       'newsfeed',
       'event',
+      'verification',
     ]);
     const fixture = TestBed.createComponent(AppNav);
     await fixture.whenStable();

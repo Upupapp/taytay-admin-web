@@ -7,7 +7,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import { AuthTokenHolder } from '@core/auth/auth-token.holder';
 import { apiHeadersInterceptor } from '@core/http/api.interceptors';
-import { asId, SignInError, type NotificationId } from '@domain/index';
+import {
+  asId,
+  SignInError,
+  type NotificationId,
+  type VerificationRequestId,
+} from '@domain/index';
 
 import ME_ADMIN from './fixtures/me-admin.json';
 import ME_RESIDENT from './fixtures/me-resident.json';
@@ -17,7 +22,16 @@ import NOTIFICATIONS_PAGE_1 from './fixtures/notifications-page-1.json';
 import NOTIFICATIONS_PAGE_2 from './fixtures/notifications-page-2.json';
 import NOTIFICATIONS_READ_ALL from './fixtures/notifications-read-all.json';
 import SIGNED_OUT from './fixtures/signed-out.json';
-import { HttpNotificationRepository, HttpSessionRefresher, HttpStaffRepository } from './http-repositories';
+import VERIFICATION_APPROVED from './fixtures/verification-approved.json';
+import VERIFICATION_REJECTED from './fixtures/verification-rejected.json';
+import VERIFICATION_PAGE from './fixtures/verification-requests-page.json';
+import {
+  HttpNotificationRepository,
+  HttpSessionRefresher,
+  HttpStaffRepository,
+  HttpVerificationRepository,
+} from './http-repositories';
+import { toVerificationRequest } from './mappers/verification.mapper';
 import { UnservedError } from './unserved-repositories';
 
 const BASE = 'https://api.example.gov.ph/api/v1';
@@ -51,6 +65,7 @@ describe('the Node adapters', () => {
         HttpStaffRepository,
         HttpNotificationRepository,
         HttpSessionRefresher,
+        HttpVerificationRepository,
       ],
     });
 
@@ -74,9 +89,11 @@ describe('the Node adapters', () => {
       http.expectOne({ method: 'GET', url: `${BASE}/me` }).flush(ME_ADMIN);
       const identity = await user;
 
-      // `audit.view` is the one capability with a console key of the same name.
-      expect([...(identity?.permissions ?? [])]).toEqual(['audit.view']);
-      expect(identity?.unknownPermissions).toContain('verification.review');
+      // `audit.view` and, since DL-167, `verification.review` are the capabilities with a console
+      // key of the same name; the rest are kept aside as unknown, never translated.
+      expect([...(identity?.permissions ?? [])].sort()).toEqual(['audit.view', 'verification.review']);
+      expect(identity?.unknownPermissions).not.toContain('verification.review');
+      expect(identity?.unknownPermissions).toContain('user.view');
       expect(identity?.roleLabel).toBe('Administrator');
     });
 
@@ -343,6 +360,103 @@ describe('the Node adapters', () => {
       http.expectOne((r) => r.url === `${BASE}/notifications`).flush(NOTIFICATIONS_PAGE_2);
 
       expect(await inbox).toHaveLength(1);
+    });
+  });
+
+  describe('ID verification review (DL-167)', () => {
+    let verification: HttpVerificationRepository;
+
+    beforeEach(() => {
+      verification = TestBed.inject(HttpVerificationRepository);
+      tokens.hold('fixture-token', null);
+    });
+
+    it('reads one cursor page, filtered by status, and says more are available', async () => {
+      const page = firstValueFrom(verification.list({ status: 'pending' }, { limit: 20 }));
+
+      const request = http.expectOne((r) => r.url === `${BASE}/admin/verification-requests`);
+      expect(request.request.method).toBe('GET');
+      expect(request.request.params.keys().sort()).toEqual(['limit', 'status']);
+      expect(request.request.params.get('status')).toBe('pending');
+      request.flush(VERIFICATION_PAGE);
+
+      const answer = await page;
+      expect(answer.items.map((item) => item.idType)).toEqual(['drivers-license', 'umid']);
+      expect(answer.hasMore).toBe(true);
+      expect(answer.nextCursor).toBe(VERIFICATION_PAGE.meta.pagination.next_cursor);
+    });
+
+    it('sends no status at all for every status, and the cursor it was given', async () => {
+      const page = firstValueFrom(verification.list({ status: null }, { limit: 20, cursor: 'c-2' }));
+
+      const request = http.expectOne((r) => r.url === `${BASE}/admin/verification-requests`);
+      expect(request.request.params.keys().sort()).toEqual(['cursor', 'limit']);
+      request.flush(VERIFICATION_PAGE);
+      await page;
+    });
+
+    it('refuses the page rather than leaving out a request it cannot read', async () => {
+      const page = firstValueFrom(verification.list({ status: 'pending' }, { limit: 20 }));
+      const [first, second] = VERIFICATION_PAGE.data;
+
+      http
+        .expectOne((r) => r.url === `${BASE}/admin/verification-requests`)
+        .flush({ ...VERIFICATION_PAGE, data: [first, { ...second, selfie_media_id: null }] });
+
+      await expect(page).rejects.toThrow(/could not be read/);
+    });
+
+    it('approves with the note in notes, which the resident never sees', async () => {
+      const id = asId<VerificationRequestId>(VERIFICATION_APPROVED.data.id);
+      const decided = firstValueFrom(verification.approve(id, 'Selfie matches the ID photo.'));
+
+      const request = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/verification-requests/${id}/approve`,
+      });
+      expect(request.request.body).toEqual({ notes: 'Selfie matches the ID photo.' });
+      request.flush(VERIFICATION_APPROVED);
+
+      expect((await decided).status).toBe('approved');
+    });
+
+    it('rejects with the reason in notes, which is what the resident reads', async () => {
+      const id = asId<VerificationRequestId>(VERIFICATION_REJECTED.data.id);
+      const reason = 'The licence has expired. Please send a current government ID.';
+      const decided = firstValueFrom(verification.reject(id, reason));
+
+      const request = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/verification-requests/${id}/reject`,
+      });
+      expect(request.request.body).toEqual({ notes: reason });
+      request.flush(VERIFICATION_REJECTED);
+
+      expect((await decided).reviewNote).toBe(reason);
+    });
+
+    it('reads an image as bytes, with the token in a header and never in the address', async () => {
+      const request = toVerificationRequest(VERIFICATION_PAGE.data[0]);
+      if (request === null) throw new Error('fixture unreadable');
+      const image = firstValueFrom(verification.openImage(request, 'selfie'));
+
+      const sent = http.expectOne(`${BASE}/media/${request.images.selfie}/content`);
+      expect(sent.request.method).toBe('GET');
+      expect(sent.request.responseType).toBe('blob');
+      expect(sent.request.headers.get('Authorization')).toBe('Bearer fixture-token');
+      expect(sent.request.urlWithParams).not.toMatch(/token/i);
+      sent.flush(new Blob(['jpeg bytes'], { type: 'image/jpeg' }));
+
+      expect(await image).toBeInstanceOf(Blob);
+    });
+
+    it('asks for no image a request does not carry', async () => {
+      const request = toVerificationRequest(VERIFICATION_PAGE.data[1]);
+      if (request === null) throw new Error('fixture unreadable');
+
+      await expect(firstValueFrom(verification.openImage(request, 'id-back'))).rejects.toThrow(
+        /no such image/,
+      );
     });
   });
 });

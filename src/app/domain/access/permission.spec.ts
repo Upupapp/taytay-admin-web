@@ -73,6 +73,12 @@ describe('role definitions', () => {
       }
     }
   });
+
+  it('gives ID verification review to the administrator alone, as the API does (DL-167)', () => {
+    expect(ROLES.filter((role) => permissionsForRole(role).includes('verification.review'))).toEqual(
+      ['system-administrator'],
+    );
+  });
 });
 
 describe('permission requirements', () => {

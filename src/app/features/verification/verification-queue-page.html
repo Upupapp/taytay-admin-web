@@ -1,0 +1,95 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+
+<section class="card queue" aria-labelledby="verification-queue-heading">
+  <h2 id="verification-queue-heading" class="visually-hidden">{{ copy.caption }}</h2>
+
+  <div class="queue__toolbar">
+    <div class="field field--narrow">
+      <label class="field__label" for="verification-status">{{ copy.filterLabel }}</label>
+      <select
+        id="verification-status"
+        class="field__input"
+        [value]="filterValue()"
+        (change)="onFilter($event)"
+      >
+        @for (status of statuses; track status) {
+          <option [value]="status" [selected]="status === filterValue()">
+            {{ catalog[status].label }}
+          </option>
+        }
+        <option value="all" [selected]="filterValue() === 'all'">{{ copy.filterAll }}</option>
+      </select>
+    </div>
+    <p class="queue__note">{{ copy.order }}</p>
+  </div>
+
+  <p class="queue__note">{{ copy.noAccountDetail }}</p>
+
+  <app-async-content
+    [state]="first()"
+    [content]="queueContent"
+    [skeletonLines]="6"
+    (retryRequested)="reload()"
+  >
+    <ng-template #queueContent>
+      <app-data-table
+        [columns]="columns()"
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [caption]="copy.caption"
+        [emptyHeading]="copy.emptyHeading"
+        [emptyMessage]="emptyMessage()"
+      />
+
+      @if (rows().length > 0) {
+        <div class="queue__more">
+          <p class="queue__note" role="status">
+            {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
+          </p>
+          @if (hasMore()) {
+            <button
+              type="button"
+              class="btn btn--secondary"
+              [disabled]="loadingMore()"
+              (click)="showMore()"
+            >
+              {{ loadingMore() ? copy.loadingMore : copy.showMore }}
+            </button>
+          }
+          @if (moreFailed()) {
+            <p class="queue__problem" role="alert">{{ copy.moreFailed }}</p>
+          }
+        </div>
+      }
+    </ng-template>
+  </app-async-content>
+</section>
+
+<ng-template #submittedCell let-request>
+  <time [attr.datetime]="request.submittedAt">
+    {{ request.submittedAt | date: 'd MMM y, HH:mm' }}
+  </time>
+</ng-template>
+
+<ng-template #statusCell let-request>
+  <app-status-badge [catalog]="catalog" [status]="request.status" />
+</ng-template>
+
+<ng-template #actionCell let-request>
+  <button
+    type="button"
+    class="btn btn--secondary"
+    [attr.aria-label]="reviewLabel(request)"
+    (click)="open(request)"
+  >
+    {{ copy.review }}
+  </button>
+</ng-template>
+
+@if (selected(); as request) {
+  <app-drawer [open]="true" size="wide" [heading]="copy.drawerHeading" (dismissed)="close()">
+    <div drawer-body>
+      <app-verification-review [request]="request" (decided)="onDecided($event)" />
+    </div>
+  </app-drawer>
+}

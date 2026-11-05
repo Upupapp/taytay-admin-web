@@ -45,6 +45,8 @@ const SEED_MARKERS = [
   'Nicanor',
   'Bautista family',
   'MOCK_LATENCY',
+  // The verification seed's drawn placeholders (`DL-167`): a sample "ID" must never ship.
+  'SAMPLE ONLY - NOT A REAL ID',
   'mockLatencyMs":250',
 ];
 

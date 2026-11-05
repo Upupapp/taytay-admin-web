@@ -154,6 +154,18 @@ export class ApiClient {
     );
   }
 
+  /**
+   * Bytes the API answers with instead of an envelope — today only `GET media/{id}/content`.
+   *
+   * Fetched like every other request, so the bearer token travels in the `Authorization` header the
+   * interceptor adds and **never in a URL** (rule 5). The alternative, an `<img src>` pointed at the
+   * API, cannot carry a header at all: it would need the token in the query string, where every
+   * proxy and history entry keeps it. The caller turns the blob into an object URL it must revoke.
+   */
+  blob(path: string): Observable<Blob> {
+    return this.http.get(this.url(path), { responseType: 'blob' });
+  }
+
   post<TItem, TBody = unknown>(path: string, body: TBody): Observable<TItem> {
     return this.http
       .post<ApiItemResponse<TItem>>(this.url(path), body)

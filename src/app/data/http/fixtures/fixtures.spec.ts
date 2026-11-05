@@ -12,6 +12,9 @@ import NOTIFICATIONS_READ_ALL from './notifications-read-all.json';
 import RATE_LIMITED from './rate-limited.json';
 import SIGNED_OUT from './signed-out.json';
 import VALIDATION_FAILED from './validation-failed.json';
+import VERIFICATION_APPROVED from './verification-approved.json';
+import VERIFICATION_REJECTED from './verification-rejected.json';
+import VERIFICATION_REQUESTS_PAGE from './verification-requests-page.json';
 
 /**
  * **These fixtures are composed, not recorded** — and this file is why that is acceptable.
@@ -57,9 +60,35 @@ function kindOf(value: unknown): string {
   return typeof value;
 }
 
+/**
+ * `allOf` is one object written in parts (`VerificationRequestStaff` is the citizen view plus
+ * `notes`, `DL-167`): its properties and required fields are the union of the parts'. Checked
+ * part by part instead, each closed part would refuse the other's fields; skipped, as it was before
+ * this existed, a fixture against it was checked against nothing at all.
+ */
+function flatten(raw: unknown): unknown {
+  const schema = resolve(raw);
+  const parts = at(schema, 'allOf');
+  if (!Array.isArray(parts)) {
+    return schema;
+  }
+  const flat = parts.map(flatten);
+  const properties: Record<string, unknown> = {};
+  const required = new Set<string>();
+  for (const part of flat) {
+    const own = at(part, 'properties');
+    if (own !== null && typeof own === 'object') Object.assign(properties, own);
+    const needs = at(part, 'required');
+    for (const key of Array.isArray(needs) ? needs : []) {
+      if (typeof key === 'string') required.add(key);
+    }
+  }
+  return { type: 'object', properties, required: [...required] };
+}
+
 /** What is wrong with `value` against `schema`, as sentences. Empty when it conforms. */
 function problems(value: unknown, raw: unknown, where: string): readonly string[] {
-  const schema = resolve(raw);
+  const schema = flatten(raw);
   const anyOf = at(schema, 'anyOf');
 
   if (Array.isArray(anyOf)) {
@@ -132,9 +161,30 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['validation-failed', VALIDATION_FAILED, 'ErrorEnvelope'],
     ['rate-limited', RATE_LIMITED, 'ErrorEnvelope'],
     ['code-locked', CODE_LOCKED, 'ErrorEnvelope'],
+    ['verification-requests-page', VERIFICATION_REQUESTS_PAGE, 'VerificationStaffListEnvelope'],
+    ['verification-approved', VERIFICATION_APPROVED, 'VerificationStaffEnvelope'],
+    ['verification-rejected', VERIFICATION_REJECTED, 'VerificationStaffEnvelope'],
   ] as const)('%s conforms to %s', (_name, fixture, envelope) => {
     expect(schema(envelope)).toBeDefined();
     expect(problems(fixture, schema(envelope), 'body')).toEqual([]);
+  });
+
+  it('holds a composed schema to every part of it, not to none', () => {
+    const drifted = {
+      ...VERIFICATION_APPROVED,
+      data: { ...VERIFICATION_APPROVED.data, status: 'verified', match_score: 0.97 },
+    };
+    const missing = Object.fromEntries(
+      Object.entries(VERIFICATION_APPROVED.data).filter(([key]) => key !== 'selfie_media_id'),
+    );
+
+    expect(problems(drifted, schema('VerificationStaffEnvelope'), 'body')).toEqual([
+      'body.data.status is "verified", which the schema does not list',
+      'body.data.match_score is not declared by the schema',
+    ]);
+    expect(
+      problems({ data: missing, meta: {} }, schema('VerificationStaffEnvelope'), 'body'),
+    ).toEqual(['body.data.selfie_media_id is required']);
   });
 
   it('catches a fixture that drifts, so a green run means something', () => {

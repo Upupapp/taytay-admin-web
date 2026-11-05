@@ -16,7 +16,10 @@ import { AuthTokenHolder } from '@core/auth/auth-token.holder';
 import type { SessionRefresher } from '@core/auth/session-refresher';
 import {
   fromServerIdentity,
+  mediaFor,
   SignInError,
+  type CursorPage,
+  type CursorRequest,
   type AppNotification,
   type AuthenticatedUser,
   type MfaCredentials,
@@ -25,6 +28,11 @@ import {
   type SignInCredentials,
   type SignInOutcome,
   type StaffRepository,
+  type VerificationFilter,
+  type VerificationImageKind,
+  type VerificationRepository,
+  type VerificationRequest,
+  type VerificationRequestId,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -34,15 +42,16 @@ import { IdentityProvider } from './identity/identity.provider';
 import { invalidCredentials, signInUnavailable } from './identity/sign-in-messages';
 import { toServerIdentity } from './mappers/me.mapper';
 import { toNotification } from './mappers/notification.mapper';
+import { toVerificationRequest } from './mappers/verification.mapper';
 import { list } from './mappers/wire';
 import { unserved } from './unserved-repositories';
 
 /**
  * The adapters the Node API actually serves.
  *
- * Two ports of twenty: the signed-in account and its inbox — and sign-in itself, through the
- * identity provider in `identity/` (`DL-166`). Every other port is bound in the
- * `http` configuration to an adapter that makes no request and says so (`unserved-repositories.ts`,
+ * Three ports of twenty-one: the signed-in account and its inbox — and sign-in itself, through the
+ * identity provider in `identity/` (`DL-166`) — and residents' ID verification review
+ * (`DL-167`). Every other port is bound in the `http` configuration to an adapter that makes no request and says so (`unserved-repositories.ts`,
  * `DL-164`, `DL-165`). The Laravel adapters that stood here called forty paths of an API that was
  * retired on 2026-10-20; they are recoverable from git at `990edfa` and nowhere else, because code
  * kept "for later" against a server that no longer exists is a surface nothing is reading.
@@ -257,4 +266,68 @@ export class HttpNotificationRepository implements NotificationRepository {
       .post(`${API_ENDPOINTS.notifications}/read`, {})
       .pipe(switchMap(() => this.listForCurrentUser()));
   }
+}
+
+/**
+ * Residents' ID verification review (`DL-167`) — the first port the Node API serves because the
+ * resource *is* the thing the port names, not something with the same word on it.
+ *
+ * Admin only on the server (`verification.review`); the route guard mirrors it, and the API refuses
+ * anybody else whatever this console shows.
+ */
+@Injectable()
+export class HttpVerificationRepository implements VerificationRepository {
+  private readonly api = inject(ApiClient);
+
+  /**
+   * One cursor page, read **whole or not at all**: a request the mapper cannot read refuses the
+   * page. Dropping it would show one fewer resident waiting for an answer, with no error anywhere —
+   * and that resident would wait indefinitely for a review nobody can see is owed.
+   */
+  list(
+    filter: VerificationFilter,
+    page: CursorRequest,
+  ): Observable<CursorPage<VerificationRequest>> {
+    return this.api
+      .cursorPage(API_ENDPOINTS.verificationRequests, page, { status: filter.status ?? undefined })
+      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readVerification) })));
+  }
+
+  approve(id: VerificationRequestId, note: string): Observable<VerificationRequest> {
+    return this.api
+      .post(`${API_ENDPOINTS.verificationRequests}/${id}/approve`, { notes: note })
+      .pipe(map(readVerification));
+  }
+
+  /** `notes` is the reason the resident reads in the app (`issues` on their copy). */
+  reject(id: VerificationRequestId, reason: string): Observable<VerificationRequest> {
+    return this.api
+      .post(`${API_ENDPOINTS.verificationRequests}/${id}/reject`, { notes: reason })
+      .pipe(map(readVerification));
+  }
+
+  /**
+   * The bytes, with the bearer token in a header (`ApiClient.blob`). An image the request does not
+   * carry is refused here, without a request, rather than asked for by a missing id.
+   */
+  openImage(request: VerificationRequest, kind: VerificationImageKind): Observable<Blob> {
+    const media = mediaFor(request, kind);
+
+    return media === null
+      ? throwError(() => new Error('This request carries no such image.'))
+      : this.api.blob(`${API_ENDPOINTS.media}/${media}/content`);
+  }
+}
+
+function readVerification(wire: unknown): VerificationRequest {
+  const request = toVerificationRequest(wire);
+
+  if (request === null) {
+    throw new Error(
+      'A verification request from the server could not be read, so none is shown rather than ' +
+        'some: a request left out of this list would wait for a review nobody knows is owed.',
+    );
+  }
+
+  return request;
 }

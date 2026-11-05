@@ -149,6 +149,13 @@ export const API_ENDPOINTS = {
   signOut: 'auth/sign-out',
   /** The caller's own inbox. Cursor-paged; marking read is `POST {id}/read` and `POST read`. */
   notifications: 'notifications',
+  /**
+   * Residents' ID verification requests, admin only (`verification.review`). Cursor-paged, filtered
+   * by `status`; decided with `POST {id}/approve` and `POST {id}/reject` (`DL-167`).
+   */
+  verificationRequests: 'admin/verification-requests',
+  /** Stored images. Only `GET {id}/content` is read, as bytes, after a reviewer is warned. */
+  media: 'media',
 } as const;
 
 /** The one place `meta.pagination` becomes a domain `CursorPage`. */
