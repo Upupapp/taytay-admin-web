@@ -4,6 +4,48 @@
   "interactions": [
     {
       "method": "GET",
+      "path": "admin/users",
+      "consumer": "app-account.mapper.ts#toAppAccount",
+      "required": [
+        "id",
+        "role"
+      ],
+      "optional": [
+        "email",
+        "name",
+        "office_id"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "admin/users/{id}/office",
+      "consumer": "app-account.mapper.ts#toAppAccount",
+      "required": [
+        "id",
+        "role"
+      ],
+      "optional": [
+        "email",
+        "name",
+        "office_id"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "admin/users/{id}/role",
+      "consumer": "app-account.mapper.ts#toAppAccount",
+      "required": [
+        "id",
+        "role"
+      ],
+      "optional": [
+        "email",
+        "name",
+        "office_id"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "admin/verification-requests",
       "consumer": "verification.mapper.ts#toVerificationRequest",
       "required": [

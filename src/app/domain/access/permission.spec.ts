@@ -80,6 +80,14 @@ describe('role definitions', () => {
     );
   });
 
+  it('gives users and roles to the administrator alone, as the API does (DL-168)', () => {
+    for (const key of ['user.view', 'user.change-role', 'user.assign-office'] as const) {
+      expect(ROLES.filter((role) => permissionsForRole(role).includes(key)), key).toEqual([
+        'system-administrator',
+      ]);
+    }
+  });
+
   it('gives the office inbox to the roles that work at the office, as the API does (DL-168)', () => {
     expect(ROLES.filter((role) => permissionsForRole(role).includes('office-inbox.manage'))).toEqual(
       ['system-administrator', 'mswdo-head', 'social-worker', 'intake-officer', 'release-officer'],

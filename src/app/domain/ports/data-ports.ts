@@ -32,6 +32,7 @@ export const DATA_PORTS = [
   'verification',
   'office-inbox',
   'office',
+  'app-account',
 ] as const;
 
 export type DataPort = (typeof DATA_PORTS)[number];
@@ -66,6 +67,7 @@ export const DATA_PORT_HOLDINGS: Readonly<Record<DataPort, string>> = {
   verification: 'ID verification requests',
   'office-inbox': 'the office inbox',
   office: 'the office directory',
+  'app-account': 'app accounts and their roles',
 };
 
 /**

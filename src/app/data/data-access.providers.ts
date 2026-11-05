@@ -28,9 +28,11 @@ import {
   VERIFICATION_REPOSITORY,
   OFFICE_INBOX_REPOSITORY,
   OFFICE_REPOSITORY,
+  APP_ACCOUNT_REPOSITORY,
 } from '@domain/index';
 
 import {
+  HttpAppAccountRepository,
   HttpNotificationRepository,
   HttpOfficeInboxRepository,
   HttpOfficeRepository,
@@ -84,11 +86,11 @@ import {
  * names no mock class at all, and `angular.json` swaps in `data-access.providers.mock.ts` for the
  * one configuration that wants them.
  *
- * ## Five ports served, eighteen unserved
+ * ## Six ports served, eighteen unserved
  *
  * The Node API serves the signed-in account, its inbox, residents' ID verification review
- * (`DL-167`), the office inbox and the office directory (`DL-168`), and nothing else this console
- * has a port for (`DL-164`). Every other port is bound to an `Unserved…` adapter that makes no request and
+ * (`DL-167`), the office inbox, the office directory and app accounts with their roles (`DL-168`),
+ * and nothing else this console has a port for (`DL-164`). Every other port is bound to an `Unserved…` adapter that makes no request and
  * fails with a sentence saying so (`DL-165`). A port moves from that list to an `Http…` adapter
  * only when the API serves the thing the port names — not something with the same word on it.
  */
@@ -105,6 +107,7 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: VERIFICATION_REPOSITORY, useClass: HttpVerificationRepository },
     { provide: OFFICE_INBOX_REPOSITORY, useClass: HttpOfficeInboxRepository },
     { provide: OFFICE_REPOSITORY, useClass: HttpOfficeRepository },
+    { provide: APP_ACCOUNT_REPOSITORY, useClass: HttpAppAccountRepository },
     { provide: DASHBOARD_REPOSITORY, useClass: UnservedDashboardRepository },
     { provide: WORK_REPOSITORY, useClass: UnservedWorkRepository },
     { provide: REPORT_REPOSITORY, useClass: UnservedReportRepository },

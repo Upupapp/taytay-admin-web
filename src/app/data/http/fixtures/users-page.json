@@ -1,0 +1,27 @@
+{
+  "data": [
+    {
+      "id": "0f1e2d3c-4b5a-4968-8776-655443322101",
+      "name": "Teresita Valdez",
+      "email": "teresita.valdez@example.invalid",
+      "mobile": "+639170000101",
+      "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+      "verification_status": "verified",
+      "role": "staff",
+      "office_id": "3c9a7e21-5b84-4d1f-a0c6-1e2f3a4b5c66",
+      "created_at": "2026-10-30T02:00:00.000Z"
+    },
+    {
+      "id": "0f1e2d3c-4b5a-4968-8776-655443322102",
+      "name": null,
+      "email": "resident.two@example.invalid",
+      "mobile": null,
+      "barangay_id": null,
+      "verification_status": "unverified",
+      "role": "registered",
+      "office_id": null,
+      "created_at": "2026-10-29T02:00:00.000Z"
+    }
+  ],
+  "meta": { "pagination": { "has_more": true, "next_cursor": "eyJjcmVhdGVkQXQiOiIyMDI2LTEwLTI5In0" } }
+}

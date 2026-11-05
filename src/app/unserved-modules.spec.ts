@@ -207,9 +207,9 @@ describe('the http adapter set', () => {
     for (const item of WITHHELD) {
       expect(links, `${item.route} reads a port this API does not serve`).not.toContain(item.route);
     }
-    // ID verification (DL-167) and the office inbox (DL-168) are the modules the Node API serves;
-    // the casework is not.
-    expect(links).toEqual(['/verification', '/inbox', '/unavailable']);
+    // ID verification (DL-167), the office inbox and users and roles (DL-168) are the modules the
+    // Node API serves; the casework is not.
+    expect(links).toEqual(['/verification', '/inbox', '/users', '/unavailable']);
   });
 
   it('tells a staff account with no office why it has no inbox, and who can fix it (DL-168)', async () => {
@@ -248,6 +248,8 @@ describe('the http adapter set', () => {
     expect(text).toContain('ID verification —');
     expect(text).not.toContain('Office inbox.');
     expect(text).toContain('Office inbox —');
+    expect(text).not.toContain('Users and roles.');
+    expect(text).toContain('Users and roles —');
     for (const port of UNSERVED_HTTP_PORTS) {
       expect(text.toLowerCase(), port).toContain(DATA_PORT_HOLDINGS[port].toLowerCase());
     }

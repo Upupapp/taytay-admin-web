@@ -203,6 +203,18 @@ export const PERMISSIONS = [
    * showing an empty inbox. Mutating — it replies to residents and closes conversations.
    */
   'office-inbox.manage',
+
+  /*
+   * USERS AND ROLES (`DL-168`) — the server's keys, spelled as its `StaffCapability`.
+   *
+   * Every residents' app account, residents included, and who among them is staff. The server
+   * gives all three to `admin` alone, so here only the system administrator holds them — by
+   * holding every key — and no role names them, in the mock either. `user.view` reads; the other
+   * two change who may use this console.
+   */
+  'user.view',
+  'user.change-role',
+  'user.assign-office',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

@@ -220,6 +220,7 @@ describe('navigation when the API cannot serve a module', () => {
       'verification',
       'office-inbox',
       'office',
+      'app-account',
     ]);
     const fixture = TestBed.createComponent(AppNav);
     await fixture.whenStable();

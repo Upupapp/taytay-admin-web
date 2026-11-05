@@ -35,7 +35,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-72 permissions × 7 roles. `X` means the role holds the permission.
+75 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -121,6 +121,12 @@ self-registration), `DL-33` (accessible authentication).
      admin. The roles that work at the MSWDO hold it; the barangay link and the auditor do not. -->
 
 | `office-inbox.manage`             | X     | X     | X     | X     | X     |       |      |
+
+<!-- Users and roles, added by DL-168. The server's own keys, admin only. -->
+
+| `user.view`                       | X     |       |       |       |       |       |      |
+| `user.change-role`                | X     |       |       |       |       |       |      |
+| `user.assign-office`              | X     |       |       |       |       |       |      |
 
 ---
 

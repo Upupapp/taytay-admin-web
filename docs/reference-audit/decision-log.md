@@ -5803,3 +5803,73 @@ office's), `GET threads/{id}`, `GET threads/{id}/messages` (cursor-paged, newest
 before — four new spec files, for the domain model, the mappers, the mock adapter and the two
 screens; the HTTP adapters, the fixtures, the identity, the permission matrix, the layout and the
 unserved modules gained tests in their own).
+
+### 2. Users and roles
+
+`GET admin/users` (cursor-paged, newest first), `PATCH admin/users/{id}/role` and
+`PATCH admin/users/{id}/office`, admin only (`user.view`, `user.change-role`, `user.assign-office`),
+with the office directory as the picker. The spec has **no** `GET admin/users/{id}`, so there is no
+record by address. One new port, `app-account`, served in the http set. The screen is described in
+[`docs/accounts/README.md`](../accounts/README.md); the decisions are these.
+
+- **The minimum, because most rows are residents.** Name, email, role and office. The API also sends
+  a mobile number and a home barangay; neither is mapped (CLAUDE.md §6.1), and the screen says what it
+  leaves out. `verification_status` is not read either: for a resident the role says it, and this
+  screen does not decide it.
+- **What a change does, before the button.** `ROLE_CHANGE_EFFECTS` and `ROLE_CHANGE_ALWAYS` were read
+  from the handler, the repository and the capability table at `2736e28`, and two of them are easy to
+  miss in the code: **every role but `verified` revokes the account's digital ID** — promoting a
+  verified resident to staff included — and **`verified` marks an account verified without an ID
+  review**, issuing no digital ID. The change applies at the person's next request, because the
+  database role replaces the token's; a console they have open keeps its menu until reloaded, but the
+  server already refuses. The office link survives a role change, unused, and applies again if the
+  account becomes staff again.
+- **No reason, said so.** Both changes are audited (`user.role_changed`, `user.office_assigned`)
+  against the administrator with no reason, so — as with closing a conversation — none is asked for,
+  and the effects say the server keeps none.
+- **Not one's own role.** The server refuses it with `403` whoever asks; the panel does not offer it
+  and says another administrator can, and the method refuses it as well.
+- **An office only for staff.** The picker is offered only on a staff account; a leftover link on any
+  other role is shown as unused. Clearing a staff account's office is the act that produces part 1's
+  "not assigned to an office", and its effects say so.
+- **A drawer beside the list,** as for an ID review, and the list read again after a change.
+- **A role the console does not know refuses the page.** The spec types `UserListItem.role` as a bare
+  string; a role outside the four `RoleChange` lists is one this screen cannot say anything true about
+  changing.
+- **One vocabulary.** The three keys join `PERMISSIONS` as the server spells them; held by the system
+  administrator alone, by holding every key, and named by no role. `user.view` is a read; the other
+  two are mutating.
+- **The office directory, shared.** Part 1 named offices with a helper in the inbox's folder; with a
+  second feature reading the directory it moved to `shared/offices` (CLAUDE.md §4).
+
+#### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:routes` | none | 8 endpoints, 19 composed requests, each served at its verb |
+| `check:response-shape` | none | 12 of 12 reads agree with their envelope |
+| `check:wire-adoption` | none | 10 of 10 bodies declared — `{ role }`, `{ office_id }` |
+| `check:query-params` | none | 12 reads, every key declared |
+| `check:consumer-contract` | none | 16 interactions, 79 required fields |
+| `check:port-adoption` | none | 159 of 170 port methods reached; the 11 unreached unchanged |
+| `check:unserved` | none | 24 ports, 18 unserved; 53 routed screens, 21 menu entries |
+| `check:permission-parity` | none | 42 of 47 guards unreachable, the ceiling held — the new guard is reachable |
+| `check:access` | three matrix rows | 75 permissions × 7 roles |
+| `check:bundle` | the account seed's reserved address is a seed marker | — |
+| `check:inbox` | its `console` pattern matches a call, not the word — the copy says "this console." | twenty-four plants, still each caught |
+| `check:accounts` | new, in `verify` — seven rules, see `docs/accounts/README.md` | twenty-one plants, each caught, every file restored byte for byte |
+
+#### Not done, and whose it is
+
+- **Sending an image with a reply** (part 1): the API accepts one; the console would need a multipart
+  upload that no adapter has.
+- **A resident's name in the inbox, an account's name and birth date in the ID review**: more personal
+  data on screen, and the API sends neither — owner decisions 7 and 8 in
+  `docs/integration/node-api-migration.md`.
+- **Search among accounts**: the API's list takes a cursor and nothing else.
+- **Not run against a live API**: built and tested against the vendored spec and composed fixtures.
+
+The launch gate stays **NO-GO**: the eighteen unserved casework ports are unchanged. `npm run verify`
+is green on Windows after this part: 110 spec files, 1,881 tests (106 and 1,843 after part 1 — four
+new spec files, for the domain model, the mapper, the mock adapter and the screen; the HTTP adapters,
+the fixtures, the permission matrix, the layout and the unserved modules gained tests in their own).

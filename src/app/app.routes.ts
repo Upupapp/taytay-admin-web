@@ -528,6 +528,16 @@ export const routes: Routes = [
         ],
       },
       {
+        // `DL-168`. The API grants `user.view` — and the two keys that change an account — to
+        // administrators alone; this guard mirrors it and is not the protection (rule 4). The screen
+        // reads the office directory too, to name a staff account's office and to offer one.
+        path: 'users',
+        title: 'Users and roles — Taytay Social Welfare',
+        canActivate: [servedGuard('app-account', 'office'), permissionGuard('user.view')],
+        loadComponent: () =>
+          import('@features/accounts/accounts-page').then((m) => m.AccountsPage),
+      },
+      {
         // Where every unserved module's address leads (`DL-167`). No permission: it names what the
         // server lacks, which is no secret about any record, and it is linked from the menu.
         path: 'unavailable',

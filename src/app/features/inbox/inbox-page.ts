@@ -21,6 +21,7 @@ import {
   type InboxListing,
   type OfficeThread,
 } from '@domain/index';
+import { officeDirectory } from '@shared/offices/office-directory';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
@@ -29,7 +30,6 @@ import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { INBOX_COPY } from './inbox.copy';
-import { officeNamer } from './office-names';
 
 /** One page at a time from the server; the API's own default, and well under its ceiling. */
 const PAGE_SIZE = 20;
@@ -90,7 +90,7 @@ export class InboxPage {
     { initialValue: LOADING as ViewState<InboxListing> },
   );
 
-  private readonly directory = officeNamer(this.offices.list());
+  private readonly directory = officeDirectory(this.offices.list());
   protected readonly officesUnnamed = this.directory.failed;
 
   protected readonly firstPage = computed<CursorPage<OfficeThread> | null>(() => {
@@ -117,7 +117,7 @@ export class InboxPage {
     {
       key: 'office',
       header: this.copy.columnOffice,
-      value: (thread) => this.directory.name(thread),
+      value: (thread) => this.directory.name(thread.officeId, thread.officeSlug),
     },
     { key: 'latest', header: this.copy.columnLatest, cell: this.latestCell() },
     {

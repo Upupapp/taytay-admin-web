@@ -118,15 +118,18 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:events`, `check:contract`, `check:contract-drift`, `check:consumer-contract`,
 `check:mapper-adoption`, `check:permission-parity`, `check:environments`,
 `check:bundle`, `check:routes`, `check:response-shape`, `check:wire-adoption`,
-`check:port-adoption`, `check:scanners`, `check:unserved`, `check:verification` and
-`check:inbox`.
+`check:port-adoption`, `check:scanners`, `check:unserved`, `check:verification`,
+`check:inbox` and `check:accounts`.
 `check:unserved` keeps a module whose port the active adapter set cannot serve out
 of the navigation and names it on one page (`DL-167`); `check:verification` holds
 the ID-review screen to its privacy rules — images only after a warning, fetched
 with the bearer in a header, discarded on leave (`DL-167`); `check:inbox` holds the
 office inbox to its own — no preview of what a resident wrote in the list, nothing
 logged or notified, attachments only after a warning and revoked on leave, an empty
-inbox asked about before it is shown, no reason collected for a close (`DL-168`).
+inbox asked about before it is shown, no reason collected for a close (`DL-168`);
+`check:accounts` holds users and roles to the minimum — name, email, role, office for
+every app account — with what a role or office change does shown before its button,
+no reason collected, and one's own role never offered (`DL-168`).
 Each enforces a rule a comment could not, and each was validated against planted
 regressions. Do not weaken one to make a change pass.
 

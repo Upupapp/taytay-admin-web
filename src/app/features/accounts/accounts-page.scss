@@ -1,0 +1,29 @@
+/* Layout only. `.field`, `.card` and `.btn` are styles.scss's (DL-120) and are not redefined. */
+
+.accounts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+}
+
+.accounts__note,
+.accounts__problem {
+  margin: 0;
+  font-size: 13px;
+}
+
+.accounts__note {
+  color: var(--c-text-muted);
+}
+
+.accounts__you {
+  font-weight: 600;
+}
+
+.accounts__more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-snug);
+  margin-block-start: var(--space-snug);
+}

@@ -41,6 +41,11 @@ import {
   type OfficeThread,
   type OfficeThreadId,
   type ThreadMessage,
+  type AccountRole,
+  type AppAccount,
+  type AppAccountId,
+  type AppAccountRepository,
+  type OfficeId,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -50,6 +55,7 @@ import { IdentityProvider } from './identity/identity.provider';
 import { invalidCredentials, signInUnavailable } from './identity/sign-in-messages';
 import { toServerIdentity } from './mappers/me.mapper';
 import { toNotification } from './mappers/notification.mapper';
+import { toAppAccount } from './mappers/app-account.mapper';
 import { toOffice } from './mappers/office.mapper';
 import { toOfficeThread, toPostedMessage, toThreadMessage } from './mappers/office-thread.mapper';
 import { toVerificationRequest } from './mappers/verification.mapper';
@@ -427,6 +433,47 @@ export class HttpOfficeRepository implements OfficeRepository {
   list(): Observable<readonly Office[]> {
     return this.api.everyPage(API_ENDPOINTS.offices).pipe(map((items) => items.map(readOffice)));
   }
+}
+
+/**
+ * Users and roles (`DL-168`): every residents' app account, and who among them is staff.
+ *
+ * Admin only on the server (`user.view`, `user.change-role`, `user.assign-office`). The role is sent
+ * as the domain holds it — the domain's four roles are the API's own `RoleChange` values.
+ */
+@Injectable()
+export class HttpAppAccountRepository implements AppAccountRepository {
+  private readonly api = inject(ApiClient);
+
+  /** One page, read whole or not at all: an account the mapper cannot read refuses the page. */
+  list(page: CursorRequest): Observable<CursorPage<AppAccount>> {
+    return this.api
+      .cursorPage(API_ENDPOINTS.adminUsers, page)
+      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readAccount) })));
+  }
+
+  changeRole(id: AppAccountId, role: AccountRole): Observable<AppAccount> {
+    return this.api.patch(`${API_ENDPOINTS.adminUsers}/${id}/role`, { role }).pipe(map(readAccount));
+  }
+
+  assignOffice(id: AppAccountId, office: OfficeId | null): Observable<AppAccount> {
+    return this.api
+      .patch(`${API_ENDPOINTS.adminUsers}/${id}/office`, { office_id: office })
+      .pipe(map(readAccount));
+  }
+}
+
+function readAccount(wire: unknown): AppAccount {
+  const account = toAppAccount(wire);
+
+  if (account === null) {
+    throw new Error(
+      'An account from the server could not be read, so none is shown rather than some: an ' +
+        'account left out of this list is one nobody can see is staff.',
+    );
+  }
+
+  return account;
 }
 
 function readThread(wire: unknown): OfficeThread {

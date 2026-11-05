@@ -49,6 +49,8 @@ const SEED_MARKERS = [
   'SAMPLE ONLY - NOT A REAL ID',
   // The office inbox seed's drawn attachments (`DL-168`).
   'SAMPLE ONLY - NOT A REAL ATTACHMENT',
+  // Every seeded app account's address is at this reserved name (`DL-168`).
+  'accounts.example.test',
   'mockLatencyMs":250',
 ];
 

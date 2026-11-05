@@ -111,9 +111,11 @@ import type {
 } from '../households/household';
 import type { HouseholdDetail, HouseholdSummary } from '../households/household-profile';
 import type {
+  AppAccountId,
   DocumentRequestId,
   DuplicatePairId,
   MediaId,
+  OfficeId,
   OfficeThreadId,
   VerificationRequestId,
 } from '../shared/ids';
@@ -123,6 +125,7 @@ import type {
   ThreadMessage,
 } from '../inbox/office-thread';
 import type { Office } from '../offices/office';
+import type { AccountRole, AppAccount } from '../accounts/app-account';
 import type {
   VerificationFilter,
   VerificationImageKind,
@@ -1443,3 +1446,28 @@ export interface OfficeRepository {
 }
 
 export const OFFICE_REPOSITORY = new InjectionToken<OfficeRepository>('OfficeRepository');
+
+/* ── users and roles (`DL-168`) ──────────────────────────────────────────── */
+
+/**
+ * Every residents' app account, and the two changes an administrator makes to one: its role, and —
+ * for staff — its office. `user.view`, `user.change-role`, `user.assign-office`: administrators
+ * alone, on the server.
+ */
+export interface AppAccountRepository {
+  /** One cursor page, newest first as the server orders it. No total (`DL-161`). */
+  list(page: CursorRequest): Observable<CursorPage<AppAccount>>;
+
+  /**
+   * Changes the role. Refused by the server for the caller's own account. No reason is taken: the
+   * server keeps none (`ROLE_CHANGE_ALWAYS`).
+   */
+  changeRole(id: AppAccountId, role: AccountRole): Observable<AppAccount>;
+
+  /** Links a staff account to an office, or clears the link with `null`. Staff only, on the server. */
+  assignOffice(id: AppAccountId, office: OfficeId | null): Observable<AppAccount>;
+}
+
+export const APP_ACCOUNT_REPOSITORY = new InjectionToken<AppAccountRepository>(
+  'AppAccountRepository',
+);

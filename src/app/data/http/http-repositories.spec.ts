@@ -10,8 +10,10 @@ import { apiHeadersInterceptor } from '@core/http/api.interceptors';
 import {
   asId,
   SignInError,
+  type AppAccountId,
   type MediaId,
   type NotificationId,
+  type OfficeId,
   type OfficeThreadId,
   type VerificationRequestId,
 } from '@domain/index';
@@ -32,7 +34,11 @@ import THREAD from './fixtures/thread.json';
 import THREAD_MESSAGES_PAGE from './fixtures/thread-messages-page.json';
 import THREAD_REPLY from './fixtures/thread-reply.json';
 import THREADS_PAGE from './fixtures/threads-page.json';
+import USER_OFFICE_ASSIGNED from './fixtures/user-office-assigned.json';
+import USER_ROLE_CHANGED from './fixtures/user-role-changed.json';
+import USERS_PAGE from './fixtures/users-page.json';
 import {
+  HttpAppAccountRepository,
   HttpNotificationRepository,
   HttpOfficeInboxRepository,
   HttpOfficeRepository,
@@ -78,6 +84,7 @@ describe('the Node adapters', () => {
         HttpVerificationRepository,
         HttpOfficeInboxRepository,
         HttpOfficeRepository,
+        HttpAppAccountRepository,
       ],
     });
 
@@ -101,16 +108,19 @@ describe('the Node adapters', () => {
       http.expectOne({ method: 'GET', url: `${BASE}/me` }).flush(ME_ADMIN);
       const identity = await user;
 
-      // `audit.view`, `verification.review` (DL-167) and `office-inbox.manage` (DL-168) are the
-      // capabilities with a console key of the same name; the rest are kept aside as unknown,
-      // never translated.
+      // `audit.view`, `verification.review` (DL-167), `office-inbox.manage` and the three `user.*`
+      // keys (DL-168) are the capabilities with a console key of the same name; the rest are kept
+      // aside as unknown, never translated.
       expect([...(identity?.permissions ?? [])].sort()).toEqual([
         'audit.view',
         'office-inbox.manage',
+        'user.assign-office',
+        'user.change-role',
+        'user.view',
         'verification.review',
       ]);
-      expect(identity?.unknownPermissions).not.toContain('verification.review');
-      expect(identity?.unknownPermissions).toContain('user.view');
+      expect(identity?.unknownPermissions).not.toContain('user.view');
+      expect(identity?.unknownPermissions).toContain('digital-id.manage');
       expect(identity?.roleLabel).toBe('Administrator');
       // An administrator acts for every office, so it is never waiting for one.
       expect(identity?.awaitingOffice).toBe(false);
@@ -667,6 +677,75 @@ describe('the Node adapters', () => {
       request.flush(OFFICES_PAGE);
 
       expect((await offices).map((office) => office.shortName)).toEqual(['MSWDO', null]);
+    });
+  });
+
+  describe('users and roles (DL-168)', () => {
+    let accounts: HttpAppAccountRepository;
+    const accountId = asId<AppAccountId>(USER_ROLE_CHANGED.data.id);
+
+    beforeEach(() => {
+      accounts = TestBed.inject(HttpAppAccountRepository);
+      tokens.hold('fixture-token', null);
+    });
+
+    it('reads one cursor page and keeps only name, email, role and office', async () => {
+      const page = firstValueFrom(accounts.list({ limit: 20 }));
+
+      const request = http.expectOne((r) => r.url === `${BASE}/admin/users`);
+      expect(request.request.method).toBe('GET');
+      expect(request.request.params.keys()).toEqual(['limit']);
+      request.flush(USERS_PAGE);
+
+      const answer = await page;
+      expect(answer.hasMore).toBe(true);
+      expect(answer.items.map((account) => account.role)).toEqual(['staff', 'registered']);
+      const said = JSON.stringify(answer);
+      for (const personal of [USERS_PAGE.data[0]?.mobile, USERS_PAGE.data[0]?.barangay_id]) {
+        expect(said).not.toContain(personal);
+      }
+    });
+
+    it('refuses the page rather than leaving out an account whose role it does not know', async () => {
+      const page = firstValueFrom(accounts.list({ limit: 20 }));
+      const [first, second] = USERS_PAGE.data;
+
+      http
+        .expectOne((r) => r.url === `${BASE}/admin/users`)
+        .flush({ ...USERS_PAGE, data: [first, { ...second, role: 'guest' }] });
+
+      await expect(page).rejects.toThrow(/could not be read/);
+    });
+
+    it('changes a role with the body the API reads, and nothing else', async () => {
+      const changed = firstValueFrom(accounts.changeRole(accountId, 'staff'));
+
+      const request = http.expectOne({ method: 'PATCH', url: `${BASE}/admin/users/${accountId}/role` });
+      expect(request.request.body).toEqual({ role: 'staff' });
+      request.flush(USER_ROLE_CHANGED);
+
+      expect((await changed).role).toBe('staff');
+    });
+
+    it('assigns an office by id, and clears it with null', async () => {
+      const office = asId<OfficeId>(USER_OFFICE_ASSIGNED.data.office_id);
+      const assigned = firstValueFrom(accounts.assignOffice(accountId, office));
+      const request = http.expectOne({
+        method: 'PATCH',
+        url: `${BASE}/admin/users/${accountId}/office`,
+      });
+      expect(request.request.body).toEqual({ office_id: office });
+      request.flush(USER_OFFICE_ASSIGNED);
+      expect((await assigned).officeId).toBe(office);
+
+      const cleared = firstValueFrom(accounts.assignOffice(accountId, null));
+      const clearRequest = http.expectOne({
+        method: 'PATCH',
+        url: `${BASE}/admin/users/${accountId}/office`,
+      });
+      expect(clearRequest.request.body).toEqual({ office_id: null });
+      clearRequest.flush(USER_ROLE_CHANGED);
+      expect((await cleared).officeId).toBeNull();
     });
   });
 });

@@ -1,0 +1,84 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+
+<section class="card accounts" aria-labelledby="accounts-heading">
+  <h2 id="accounts-heading" class="visually-hidden">{{ copy.caption }}</h2>
+
+  <p class="accounts__note">{{ copy.order }} {{ copy.minimum }}</p>
+  @if (directory.failed()) {
+    <p class="accounts__note" role="status">{{ copy.officesUnnamed }}</p>
+  }
+
+  <app-async-content
+    [state]="first()"
+    [content]="accountsContent"
+    [skeletonLines]="6"
+    (retryRequested)="reload()"
+  >
+    <ng-template #accountsContent>
+      <app-data-table
+        [columns]="columns()"
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [caption]="copy.caption"
+        [emptyHeading]="copy.emptyHeading"
+        [emptyMessage]="copy.emptyMessage"
+      />
+
+      @if (rows().length > 0) {
+        <div class="accounts__more">
+          <p class="accounts__note" role="status">
+            {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
+          </p>
+          @if (hasMore()) {
+            <button
+              type="button"
+              class="btn btn--secondary"
+              [disabled]="loadingMore()"
+              (click)="showMore()"
+            >
+              {{ loadingMore() ? copy.loadingMore : copy.showMore }}
+            </button>
+          }
+          @if (moreFailed()) {
+            <p class="accounts__problem" role="alert">{{ copy.moreFailed }}</p>
+          }
+        </div>
+      }
+    </ng-template>
+  </app-async-content>
+</section>
+
+<ng-template #nameCell let-account>
+  {{ account.name ?? copy.noName }}
+  @if (isOwn(account)) {
+    <strong class="accounts__you">({{ copy.you }})</strong>
+  }
+</ng-template>
+
+<ng-template #roleCell let-account>
+  <app-status-badge [catalog]="catalog" [status]="account.role" />
+</ng-template>
+
+<ng-template #actionCell let-account>
+  <button
+    type="button"
+    class="btn btn--secondary"
+    [attr.aria-label]="manageLabel(account)"
+    (click)="open(account)"
+  >
+    {{ copy.manage }}
+  </button>
+</ng-template>
+
+@if (selected(); as account) {
+  <app-drawer [open]="true" size="wide" [heading]="copy.drawerHeading" (dismissed)="close()">
+    <div drawer-body>
+      <app-account-panel
+        [account]="account"
+        [offices]="directory.state()"
+        [own]="isOwn(account)"
+        (changed)="onChanged($event)"
+      />
+    </div>
+  </app-drawer>
+}

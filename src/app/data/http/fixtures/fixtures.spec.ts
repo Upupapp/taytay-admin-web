@@ -20,6 +20,9 @@ import THREAD from './thread.json';
 import THREAD_MESSAGES_PAGE from './thread-messages-page.json';
 import THREAD_REPLY from './thread-reply.json';
 import THREADS_PAGE from './threads-page.json';
+import USER_OFFICE_ASSIGNED from './user-office-assigned.json';
+import USER_ROLE_CHANGED from './user-role-changed.json';
+import USERS_PAGE from './users-page.json';
 
 /**
  * **These fixtures are composed, not recorded** — and this file is why that is acceptable.
@@ -174,6 +177,9 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['thread-messages-page', THREAD_MESSAGES_PAGE, 'MessageListEnvelope'],
     ['thread-reply', THREAD_REPLY, 'ThreadMessageEnvelope'],
     ['offices-page', OFFICES_PAGE, 'OfficeListEnvelope'],
+    ['users-page', USERS_PAGE, 'UserListEnvelope'],
+    ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
+    ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
   ] as const)('%s conforms to %s', (_name, fixture, envelope) => {
     expect(schema(envelope)).toBeDefined();
     expect(problems(fixture, schema(envelope), 'body')).toEqual([]);

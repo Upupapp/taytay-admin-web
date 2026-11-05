@@ -33,6 +33,7 @@ import {
   type ThreadMessage,
 } from '@domain/index';
 import { ObjectUrls } from '@shared/media/object-urls';
+import { officeDirectory } from '@shared/offices/office-directory';
 import { failureReason } from '@shared/state/failure-reason';
 import {
   failed,
@@ -48,7 +49,6 @@ import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { INBOX_COPY } from './inbox.copy';
-import { officeNamer } from './office-names';
 
 /** Messages a page; the API's own default. */
 const PAGE_SIZE = 20;
@@ -145,13 +145,16 @@ export class ThreadPage {
         this.loadingEarlier.set(false);
       }),
       switchMap(({ id, quiet }) =>
-        quietly(toViewState(this.repository.messages(id, { limit: PAGE_SIZE, cursor: null })), quiet),
+        quietly(
+          toViewState(this.repository.messages(id, { limit: PAGE_SIZE, cursor: null })),
+          quiet,
+        ),
       ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<ThreadMessage>> },
   );
 
-  private readonly directory = officeNamer(inject(OFFICE_REPOSITORY).list());
+  private readonly directory = officeDirectory(inject(OFFICE_REPOSITORY).list());
 
   protected readonly current = computed(() => valueOf(this.thread()));
   protected readonly open = computed(() => {
@@ -160,15 +163,12 @@ export class ThreadPage {
   });
   protected readonly officeName = computed(() => {
     const thread = this.current();
-    return thread === null ? '' : this.directory.name(thread);
+    return thread === null ? '' : this.directory.name(thread.officeId, thread.officeSlug);
   });
 
   /** Oldest first — a conversation is read in the order it was written. */
   protected readonly messages = computed<readonly ThreadMessage[]>(() =>
-    [
-      ...(valueOf(this.newest())?.items ?? []),
-      ...this.earlierPages().flatMap((page) => page.items),
-    ]
+    [...(valueOf(this.newest())?.items ?? []), ...this.earlierPages().flatMap((page) => page.items)]
       .slice()
       .sort((a, b) => a.sentAt.localeCompare(b.sentAt) || a.id.localeCompare(b.id)),
   );

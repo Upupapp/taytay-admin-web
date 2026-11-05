@@ -163,6 +163,11 @@ export const API_ENDPOINTS = {
   threads: 'threads',
   /** The office directory. Public and cursor-paged; read in full for a picker (`DL-161`). */
   offices: 'offices',
+  /**
+   * Every app account, admin only (`DL-168`). Cursor-paged; `PATCH {id}/role` and
+   * `PATCH {id}/office`. There is no read of one account.
+   */
+  adminUsers: 'admin/users',
 } as const;
 
 /** The one place `meta.pagination` becomes a domain `CursorPage`. */

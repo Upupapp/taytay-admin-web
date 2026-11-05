@@ -196,6 +196,15 @@ export const NAVIGATION: readonly NavSection[] = [
         permissions: ['office-inbox.manage'],
         description: 'Residents writing to an office from the app, and the office’s replies.',
       },
+      {
+        // `DL-168`. Every app account, residents included, and who among them is staff.
+        label: 'Users and roles',
+        route: '/users',
+        reads: ['app-account', 'office'],
+        glyph: 'UR',
+        permissions: ['user.view'],
+        description: 'Every residents’ app account, and who among them is staff.',
+      },
     ],
   },
   {

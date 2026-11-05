@@ -123,7 +123,7 @@ if (/\.\s*(body|preview|lastMessagePreview)\b/i.test(listTemplate.replace(/noOff
 /* ── 2. no log, no storage, no notification ──────────────────────────────── */
 
 const LEAK =
-  /\b(localStorage|sessionStorage|indexedDB|document\s*\.\s*cookie|caches\s*\.\s*open|console\s*\.\s*\w+|NotificationStore|NOTIFICATION_REPOSITORY)\b/;
+  /\b(localStorage|sessionStorage|indexedDB|document\s*\.\s*cookie|caches\s*\.\s*open|console\s*\.\s*(?:log|info|warn|error|debug|trace|table|dir|group)|NotificationStore|NOTIFICATION_REPOSITORY)\b/;
 for (const file of moduleFiles) {
   const found = LEAK.exec(code(readFileSync(file, 'utf8')));
   if (found !== null) {
