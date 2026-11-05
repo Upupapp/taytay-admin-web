@@ -22,6 +22,7 @@ import {
   RESIDENT_REPOSITORY,
   SAVED_VIEW_REPOSITORY,
   STAFF_REPOSITORY,
+  UNSERVED_PORTS,
 } from '@domain/index';
 
 import { MockAssistanceRequestRepository } from './mock/mock-assistance-request.repository';
@@ -77,5 +78,7 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: CASE_REPOSITORY, useClass: MockCaseRepository },
     { provide: BENEFICIARY_REPOSITORY, useClass: MockBeneficiaryRepository },
     { provide: FIELD_VISIT_REPOSITORY, useClass: MockFieldVisitRepository },
+    // The mock serves every port, and says so rather than leaving the token unbound (`DL-167`).
+    { provide: UNSERVED_PORTS, useValue: [] },
   ]);
 }

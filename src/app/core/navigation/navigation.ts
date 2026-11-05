@@ -1,15 +1,22 @@
-import type { Permission } from '@domain/index';
+import type { DataPort, Permission } from '@domain/index';
 
 /**
  * Sidebar definition.
  *
  * The nav is data, not markup: adding a feature means adding an entry here and
  * a lazy route in `app.routes.ts`. `permissions` mirrors the route guard so a
- * user is never shown a link that would bounce them to /forbidden.
+ * user is never shown a link that would bounce them to /forbidden, and `reads`
+ * mirrors its served guard so nobody is offered a module the API cannot serve.
  */
 export interface NavItem {
   readonly label: string;
   readonly route: string;
+  /**
+   * Every port the screen at `route` reads, exactly as its route's `servedGuard` lists them. An
+   * entry is withheld when the bound adapter set cannot serve one of them (`DL-167`), and
+   * `check:unserved` holds this list to the route and the route to the screen.
+   */
+  readonly reads: readonly DataPort[];
   /** Two-letter glyph rendered in the sidebar. Keeps the shell icon-library free. */
   readonly glyph: string;
   readonly permissions: readonly Permission[];
@@ -28,6 +35,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Dashboard',
         route: '/dashboard',
+        reads: ['dashboard'],
         glyph: 'DB',
         permissions: ['dashboard.view'],
         description: 'Office-wide caseload and payout position.',
@@ -35,6 +43,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'My work',
         route: '/work',
+        reads: ['case', 'work'],
         glyph: 'WK',
         permissions: ['dashboard.view'],
         description: 'What you owe today, across every module.',
@@ -42,6 +51,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Cases',
         route: '/cases',
+        reads: ['case'],
         glyph: 'CS',
         permissions: ['case.view'],
         description: 'The continuing file on a household, and what is owed next.',
@@ -49,6 +59,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Assistance requests',
         route: '/assistance-requests',
+        reads: ['assistance-request'],
         glyph: 'AR',
         permissions: ['request.view'],
         description: 'Intake, assessment, endorsement and approval.',
@@ -56,6 +67,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Residents',
         route: '/residents',
+        reads: ['resident', 'saved-view'],
         glyph: 'RS',
         permissions: ['resident.view'],
         // Was "Beneficiary and household registry" before TAB 13. The two are
@@ -66,6 +78,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Beneficiaries',
         route: '/beneficiaries',
+        reads: ['beneficiary', 'program', 'saved-view'],
         glyph: 'BN',
         permissions: ['beneficiary.view'],
         description: 'Who the office has served, and what they have received.',
@@ -73,6 +86,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Households',
         route: '/households',
+        reads: ['household'],
         glyph: 'HH',
         permissions: ['household.view'],
         description: 'Families as a unit, with the indicators behind each one.',
@@ -80,6 +94,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Families',
         route: '/families',
+        reads: ['family'],
         glyph: 'FM',
         permissions: ['family.view'],
         description: 'Family units and the relationships between people.',
@@ -87,6 +102,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Field visits',
         route: '/visits',
+        reads: ['field-visit'],
         glyph: 'FV',
         permissions: ['case.view'],
         description: 'Home visits, what was found, and what is owed next.',
@@ -94,6 +110,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Referrals',
         route: '/referrals',
+        reads: ['referral', 'resident'],
         glyph: 'RF',
         permissions: ['referral.view'],
         description: 'Cases routed to partner offices and agencies.',
@@ -106,6 +123,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Programs',
         route: '/programs',
+        reads: ['program'],
         glyph: 'PG',
         permissions: ['program.view'],
         description: 'Assistance programmes, eligibility and requirements.',
@@ -113,6 +131,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Releases',
         route: '/releases',
+        reads: ['release'],
         // Was 'DS', an abbreviation of the noun this console no longer uses (DL-132).
         glyph: 'RL',
         permissions: ['release.view'],
@@ -121,6 +140,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Reports',
         route: '/reports',
+        reads: ['report'],
         glyph: 'RP',
         permissions: ['report.view'],
         description: 'Statutory and management reporting.',
@@ -137,6 +157,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Newsfeed',
         route: '/newsfeed',
+        reads: ['newsfeed'],
         glyph: 'NF',
         permissions: ['newsfeed.view'],
         description: 'What the office has published, and what residents said back.',
@@ -144,6 +165,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Events',
         route: '/events',
+        reads: ['event'],
         glyph: 'EV',
         permissions: ['event.view'],
         description: 'Municipal activities, registrations and attendance.',
@@ -156,6 +178,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Staff and roles',
         route: '/administration/staff',
+        reads: ['governance'],
         glyph: 'ST',
         permissions: ['staff.view'],
         description: 'Accounts, roles and data scope.',
@@ -163,6 +186,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Audit trail',
         route: '/administration/audit',
+        reads: ['governance'],
         glyph: 'AU',
         permissions: ['audit.view'],
         description: 'Who accessed or changed what, and when.',
@@ -170,6 +194,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Settings',
         route: '/administration/settings',
+        reads: ['governance'],
         glyph: 'SE',
         permissions: ['settings.manage'],
         description: 'Reference data and office configuration.',

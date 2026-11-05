@@ -21,6 +21,8 @@ import {
   type StaffUser,
   type StaffUserId,
   type SignInOutcome,
+  UNSERVED_PORTS,
+  type DataPort,
 } from '@domain/index';
 
 import { AppNav } from './navigation/app-nav';
@@ -58,7 +60,8 @@ function staffRepository(user: StaffUser | null): StaffRepository {
     list: (): Observable<Page<StaffUser>> => of(emptyPage<StaffUser>()),
     getById: (): Observable<StaffUser | null> => of(user),
     currentUser: (): Observable<AuthenticatedUser | null> => of(authenticated),
-    signIn: (): Observable<SignInOutcome> => of({ kind: 'authenticated', user: authenticated as AuthenticatedUser }),
+    signIn: (): Observable<SignInOutcome> =>
+      of({ kind: 'authenticated', user: authenticated as AuthenticatedUser }),
     completeMfa: (): Observable<AuthenticatedUser> => of(authenticated as AuthenticatedUser),
     signOut: (): Observable<void> => of(undefined),
   };
@@ -75,7 +78,10 @@ const notificationRepository: NotificationRepository = {
 @Component({ template: 'stub' })
 class StubPage {}
 
-async function configure(role: StaffRole | null = 'system-administrator') {
+async function configure(
+  role: StaffRole | null = 'system-administrator',
+  unserved: readonly DataPort[] = [],
+) {
   TestBed.resetTestingModule();
   const viewport = new FakeViewportService();
   TestBed.configureTestingModule({
@@ -88,6 +94,7 @@ async function configure(role: StaffRole | null = 'system-administrator') {
       { provide: STAFF_REPOSITORY, useValue: staffRepository(role ? staffUser(role) : null) },
       { provide: NOTIFICATION_REPOSITORY, useValue: notificationRepository },
       { provide: ViewportService, useValue: viewport },
+      { provide: UNSERVED_PORTS, useValue: unserved },
     ],
   });
   await firstValueFrom(TestBed.inject(SessionStore).load());
@@ -152,6 +159,95 @@ describe('navigation reachability', () => {
       'a.nav__link[aria-current="page"]',
     );
     expect(current?.getAttribute('href')).toBe('/residents');
+  });
+});
+
+/* ── modules the API cannot serve (DL-167) ──────────────────────────────────── */
+
+describe('navigation when the API cannot serve a module', () => {
+  async function hrefsFor(unserved: readonly DataPort[]): Promise<readonly (string | null)[]> {
+    await configure('system-administrator', unserved);
+    const fixture = TestBed.createComponent(AppNav);
+    await fixture.whenStable();
+    return Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLAnchorElement>('a.nav__link'),
+    ).map((a) => a.getAttribute('href'));
+  }
+
+  it('withholds every entry whose screen reads an unserved port, and only those', async () => {
+    const hrefs = await hrefsFor(['resident']);
+
+    for (const item of NAVIGATION.flatMap((section) => section.items)) {
+      if (item.reads.includes('resident')) {
+        expect(hrefs, `${item.route} reads the resident registry`).not.toContain(item.route);
+      } else {
+        expect(hrefs, `${item.route} reads nothing unserved`).toContain(item.route);
+      }
+    }
+    // Residents, Households, Families and Referrals all read it; Cases does not.
+    expect(hrefs).not.toContain('/referrals');
+    expect(hrefs).toContain('/cases');
+  });
+
+  it('links the page that names what was withheld, so nothing is left out unexplained', async () => {
+    const hrefs = await hrefsFor(['resident']);
+    expect(hrefs).toContain('/unavailable');
+  });
+
+  it('offers no such link when everything is served', async () => {
+    const hrefs = await hrefsFor([]);
+    expect(hrefs).not.toContain('/unavailable');
+  });
+
+  it('says the server is why the menu is empty, not the role', async () => {
+    await configure('system-administrator', [
+      'governance',
+      'dashboard',
+      'work',
+      'case',
+      'assistance-request',
+      'resident',
+      'beneficiary',
+      'household',
+      'family',
+      'field-visit',
+      'referral',
+      'program',
+      'release',
+      'report',
+      'newsfeed',
+      'event',
+    ]);
+    const fixture = TestBed.createComponent(AppNav);
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelectorAll('.nav__section')).toHaveLength(0);
+    expect(element.querySelector('.nav__empty')?.textContent?.trim()).toBe(
+      LAYOUT_COPY.navEmptyUnserved,
+    );
+  });
+
+  it('drops the dashboard crumb when the dashboard is not served', async () => {
+    await configure('system-administrator', ['dashboard']);
+    await TestBed.inject(Router).navigateByUrl('/residents');
+    const fixture = TestBed.createComponent(AppBreadcrumb);
+    await fixture.whenStable();
+    const links = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLAnchorElement>('a'),
+    ).map((a) => a.getAttribute('href'));
+
+    expect(links).not.toContain('/dashboard');
+    expect(buildCrumbs('/residents', null).map((c) => c.label)).toEqual(['Casework', 'Residents']);
+  });
+
+  it('withholds the search trigger, and its shortcut, when search is not served', async () => {
+    await configure('system-administrator', ['search']);
+    const fixture = TestBed.createComponent(AppTopbar);
+    await fixture.whenStable();
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('app-global-search-trigger'),
+    ).toBeNull();
   });
 });
 

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 
+import { ServedPorts } from '@core/access/served-ports';
 import { NotificationStore } from '@core/notifications/notification.store';
 
 import { AppBreadcrumb } from '../breadcrumb/app-breadcrumb';
@@ -38,7 +39,9 @@ import { LAYOUT_COPY } from '../layout.copy';
 
       <div class="topbar__spacer"></div>
 
-      <app-global-search-trigger (activated)="searchActivated.emit()" />
+      @if (searchServed) {
+        <app-global-search-trigger (activated)="searchActivated.emit()" />
+      }
 
       <button
         type="button"
@@ -57,6 +60,12 @@ import { LAYOUT_COPY } from '../layout.copy';
 })
 export class AppTopbar {
   protected readonly notifications = inject(NotificationStore);
+
+  /**
+   * The trigger, and its Ctrl+K shortcut with it, is withheld when the API serves no search
+   * (`DL-167`): it leads to one screen, and that screen could only refuse.
+   */
+  protected readonly searchServed = inject(ServedPorts).servesAll(['search']);
 
   readonly navOpen = input(false);
 

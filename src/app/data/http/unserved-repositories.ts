@@ -20,6 +20,7 @@ import {
   type NewsfeedRepository,
   type EventRepository,
   type DashboardRepository,
+  type DataPort,
 } from '@domain/index';
 
 /**
@@ -77,6 +78,8 @@ export function unserved(module: string): Observable<never> {
 
 @Injectable()
 export class UnservedResidentRepository implements ResidentRepository {
+  static readonly port: DataPort = 'resident';
+
   list(): Observable<never> {
     return unserved('the resident registry');
   }
@@ -112,6 +115,8 @@ export class UnservedResidentRepository implements ResidentRepository {
 
 @Injectable()
 export class UnservedHouseholdRepository implements HouseholdRepository {
+  static readonly port: DataPort = 'household';
+
   list(): Observable<never> {
     return unserved('households');
   }
@@ -135,6 +140,8 @@ export class UnservedHouseholdRepository implements HouseholdRepository {
 
 @Injectable()
 export class UnservedFamilyRepository implements FamilyRepository {
+  static readonly port: DataPort = 'family';
+
   list(): Observable<never> {
     return unserved('families and relationships');
   }
@@ -170,6 +177,8 @@ export class UnservedFamilyRepository implements FamilyRepository {
 
 @Injectable()
 export class UnservedCaseRepository implements CaseRepository {
+  static readonly port: DataPort = 'case';
+
   list(): Observable<never> {
     return unserved('cases');
   }
@@ -217,6 +226,8 @@ export class UnservedCaseRepository implements CaseRepository {
 
 @Injectable()
 export class UnservedSavedViewRepository implements SavedViewRepository {
+  static readonly port: DataPort = 'saved-view';
+
   listFor(): Observable<never> {
     return unserved('saved views');
   }
@@ -232,6 +243,8 @@ export class UnservedSavedViewRepository implements SavedViewRepository {
 
 @Injectable()
 export class UnservedProgramRepository implements ProgramRepository {
+  static readonly port: DataPort = 'program';
+
   list(): Observable<never> {
     return unserved('programmes');
   }
@@ -263,6 +276,8 @@ export class UnservedProgramRepository implements ProgramRepository {
 
 @Injectable()
 export class UnservedAssistanceRequestRepository implements AssistanceRequestRepository {
+  static readonly port: DataPort = 'assistance-request';
+
   list(): Observable<never> {
     return unserved('assistance requests');
   }
@@ -342,6 +357,8 @@ export class UnservedAssistanceRequestRepository implements AssistanceRequestRep
 
 @Injectable()
 export class UnservedBeneficiaryRepository implements BeneficiaryRepository {
+  static readonly port: DataPort = 'beneficiary';
+
   list(): Observable<never> {
     return unserved('the beneficiary registry');
   }
@@ -377,6 +394,8 @@ export class UnservedBeneficiaryRepository implements BeneficiaryRepository {
 
 @Injectable()
 export class UnservedFieldVisitRepository implements FieldVisitRepository {
+  static readonly port: DataPort = 'field-visit';
+
   list(): Observable<never> {
     return unserved('field visits');
   }
@@ -412,6 +431,8 @@ export class UnservedFieldVisitRepository implements FieldVisitRepository {
 
 @Injectable()
 export class UnservedReleaseRepository implements ReleaseRepository {
+  static readonly port: DataPort = 'release';
+
   list(): Observable<never> {
     return unserved('releases and payouts');
   }
@@ -467,6 +488,8 @@ export class UnservedReleaseRepository implements ReleaseRepository {
 
 @Injectable()
 export class UnservedReferralRepository implements ReferralRepository {
+  static readonly port: DataPort = 'referral';
+
   list(): Observable<never> {
     return unserved('referrals');
   }
@@ -530,6 +553,8 @@ export class UnservedReferralRepository implements ReferralRepository {
 
 @Injectable()
 export class UnservedWorkRepository implements WorkRepository {
+  static readonly port: DataPort = 'work';
+
   myQueue(): Observable<never> {
     return unserved('work queues');
   }
@@ -545,6 +570,8 @@ export class UnservedWorkRepository implements WorkRepository {
 
 @Injectable()
 export class UnservedReportRepository implements ReportRepository {
+  static readonly port: DataPort = 'report';
+
   catalogue(): Observable<never> {
     return unserved('reports');
   }
@@ -560,6 +587,8 @@ export class UnservedReportRepository implements ReportRepository {
 
 @Injectable()
 export class UnservedSearchRepository implements SearchRepository {
+  static readonly port: DataPort = 'search';
+
   search(): Observable<never> {
     return unserved('search');
   }
@@ -567,6 +596,8 @@ export class UnservedSearchRepository implements SearchRepository {
 
 @Injectable()
 export class UnservedGovernanceRepository implements GovernanceRepository {
+  static readonly port: DataPort = 'governance';
+
   accounts(): Observable<never> {
     return unserved('staff accounts, the audit trail and privacy governance');
   }
@@ -602,6 +633,8 @@ export class UnservedGovernanceRepository implements GovernanceRepository {
 
 @Injectable()
 export class UnservedNewsfeedRepository implements NewsfeedRepository {
+  static readonly port: DataPort = 'newsfeed';
+
   list(): Observable<never> {
     return unserved('the newsfeed');
   }
@@ -649,6 +682,8 @@ export class UnservedNewsfeedRepository implements NewsfeedRepository {
 
 @Injectable()
 export class UnservedEventRepository implements EventRepository {
+  static readonly port: DataPort = 'event';
+
   list(): Observable<never> {
     return unserved('events');
   }
@@ -708,7 +743,42 @@ export class UnservedEventRepository implements EventRepository {
 
 @Injectable()
 export class UnservedDashboardRepository implements DashboardRepository {
+  static readonly port: DataPort = 'dashboard';
+
   summary(): Observable<never> {
     return unserved('the dashboard');
   }
 }
+
+/**
+ * The ports this adapter set says it cannot serve, bound to `UNSERVED_PORTS` by
+ * `data-access.providers.ts` (`DL-167`).
+ *
+ * Read from the classes rather than written out as words, so an entry cannot name a port its class
+ * does not stand in for. That this list and the `useClass: Unserved…` bindings name the same ports
+ * is `check:unserved`'s rule 1: a port bound here and missing from the list would keep its
+ * navigation entry, and every officer who followed it would meet a refusal.
+ *
+ * Here rather than in `data-access.providers.ts` because the test build swaps that file for the
+ * mock one: a spec can import this list, and could not import the binding.
+ */
+export const UNSERVED_HTTP_PORTS: readonly DataPort[] = [
+  UnservedResidentRepository.port,
+  UnservedHouseholdRepository.port,
+  UnservedFamilyRepository.port,
+  UnservedCaseRepository.port,
+  UnservedSavedViewRepository.port,
+  UnservedProgramRepository.port,
+  UnservedAssistanceRequestRepository.port,
+  UnservedBeneficiaryRepository.port,
+  UnservedFieldVisitRepository.port,
+  UnservedReleaseRepository.port,
+  UnservedReferralRepository.port,
+  UnservedWorkRepository.port,
+  UnservedReportRepository.port,
+  UnservedSearchRepository.port,
+  UnservedGovernanceRepository.port,
+  UnservedNewsfeedRepository.port,
+  UnservedEventRepository.port,
+  UnservedDashboardRepository.port,
+];

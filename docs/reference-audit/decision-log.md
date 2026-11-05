@@ -5580,3 +5580,69 @@ The launch gate stays **NO-GO**. `npm run verify` is green on Windows: 96 spec f
 `HttpTestingController`, the development verifier, and renewal end to end through the real
 interceptors; the staff adapter, the token holder, `fromServerIdentity` and the sign-in screen gained
 tests in their own).
+
+## DL-167 — a module the API cannot serve leaves the menu and is named; ID verification gets a screen
+
+Step 5 of `docs/integration/node-api-migration.md`, and the first platform screen of step 6. `DL-164`
+promised both: unserved ports "say so", their navigation entries are withheld, and one page names
+every module in that state — and nobody can approve a resident's ID verification because no screen
+exists for it.
+
+### 1. Unserved modules leave the navigation, and one page names them
+
+Until now the menu offered all eighteen unserved modules in the `http` configuration, and each ended
+in the sentence `DL-165` put in its adapter. That was honest per screen and wrong as a console: an
+officer opened "Cases", read an error, and concluded the screen was broken — or, where a screen
+handles its failure quietly, read an empty table as an office with no cases (`DL-112`).
+
+- **The data layer declares what it cannot serve.** `UNSERVED_PORTS` is a domain token holding
+  `DataPort` keys — one per repository token, spelled from it (`ASSISTANCE_REQUEST_REPOSITORY` is
+  `assistance-request`). Both adapter sets bind it: the http set to `UNSERVED_HTTP_PORTS`, built
+  from a `static port` on each `Unserved…` class; the mock set to `[]`. It has **no default**, so a
+  set that forgets to say fails at the first screen rather than offering every link. Features learn
+  nothing about adapters (rule 3): they ask `ServedPorts`, in `core/access`.
+- **The unit is the port, not the module.** The data layer knows ports; the menu knows modules. Each
+  `NavItem` now lists the ports its screen `reads`, and each route carries a `servedGuard` listing the
+  same ports — every port the screen reads, not only its main one, because a screen that loads its
+  list and not the picker beside it fails half-way and reads as a record with a piece missing. The
+  guard comes **before** the permission guard: "this module has no server" is truer than "you may not
+  open it", since nobody could.
+- **One page names them.** `/unavailable` ("Not connected yet") lists every withheld module with its
+  description and, in words, the ports it lacks; then every unserved port; then what the reader can
+  open. It never says "no records", "empty" or "none found" — claims about the office it cannot make.
+  It lists every withheld module whatever the reader's role: what the server lacks is no secret about
+  any record, and a role-filtered list would have two officers describe one console differently. The
+  menu links it whenever anything is withheld, so an absent module is never unexplained.
+- **Rule 8 holds for ports as it does for permissions.** The menu filters by both; the global search
+  trigger (and its Ctrl+K) is withheld when search is not served; the breadcrumb drops its
+  "Dashboard" root when the dashboard is not served, because a link labelled Dashboard that lands on
+  a page explaining there is no dashboard is the bounce rule 8 forbids, in a quieter place.
+
+`check:unserved` (new, in `verify`) holds the three lists to one another, because no compiler can:
+
+| Rule | Planted regression, caught |
+| --- | --- |
+| 1. The `Unserved…` bindings are exactly `UNSERVED_HTTP_PORTS`; each class stands for the port it is bound to; the http set binds the token to that list and the mock set to `[]` | a class dropped from the list; a class claiming another port; either binding removed |
+| 2. `DATA_PORTS` names every repository token, and nothing else | a key removed |
+| 3. Every routed screen guards exactly the ports it reads — directly, through its own feature's files, or through a shared component it names | the case list's guard removed |
+| 4. Every menu entry reads exactly what its route guards | an entry's `reads` emptied; an entry's `reads` removed |
+| 5. No port read by `core/` is unserved — core runs on every screen, so no route could withhold it | a core file reading the resident registry |
+| — `UNSERVED_ROUTE` is a routed screen | the route renamed |
+
+Ten plants, each caught, each file restored byte for byte. Rule 3 reads source text, so it is a
+floor: a port reached through a service it does not follow is not seen. Where a shared file exports
+two classes it lends both its ports, which over-reports — the safe direction, withholding a module
+that might have worked rather than offering one that cannot.
+
+With the http set every one of the eighteen menu entries is withheld: each reads a port the Node API
+does not serve. An account in the `http` configuration sees only "Not connected yet", and the page
+says the inbox still works. The landing route stays `/dashboard`; in the `http` configuration its
+guard sends the reader to that page, which is where a first-time reader should start.
+
+`check:access` is unchanged and still meaningful: no permission moved. `CLAUDE.md` §3 does not list
+`check:unserved`; the constitution is the owner's to amend (`DL-165`).
+
+`npm run verify` is green on Windows after this part: 98 spec files, 1,732 tests (96 and 1,674
+before — `served-ports.spec.ts` for the guard and the declaration, `unserved-modules.spec.ts` for
+both adapter sets and every menu entry against its route; the layout spec gained the withheld menu,
+the dashboard crumb and the search trigger).

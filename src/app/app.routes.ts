@@ -5,12 +5,15 @@ import {
   authenticatedGuard,
   permissionGuard,
 } from '@core/access/access.guards';
+import { servedGuard } from '@core/access/served-ports';
 /**
  * Routing skeleton.
  *
  * Rules that later TABs inherit:
  *  - every feature route is lazy (`loadComponent` / `loadChildren`);
  *  - every route carries the same permission its nav entry declares;
+ *  - every route lists, in `servedGuard`, every port its screen reads, as its nav entry
+ *    does, so a module the API cannot serve is withheld from both (`DL-167`);
  *  - authenticated routes live under the `Shell`, unauthenticated ones do not;
  *  - a screen a later TAB will build gets a placeholder, never a dead link.
  *
@@ -44,7 +47,7 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'My work — Taytay Social Welfare',
-            canActivate: [permissionGuard('dashboard.view')],
+            canActivate: [servedGuard('case', 'work'), permissionGuard('dashboard.view')],
             loadComponent: () =>
               import('@features/work/work-queue-page').then((m) => m.WorkQueuePage),
           },
@@ -53,7 +56,7 @@ export const routes: Routes = [
             title: 'The team’s work — Taytay Social Welfare',
             // Seeing a colleague's caseload is supervision, not a default. The
             // adapter re-checks this; hiding the link is not protection.
-            canActivate: [permissionGuard('staff.view')],
+            canActivate: [servedGuard('work'), permissionGuard('staff.view')],
             loadComponent: () =>
               import('@features/work/team-queue-page').then((m) => m.TeamQueuePage),
           },
@@ -64,7 +67,9 @@ export const routes: Routes = [
         title: 'Search — Taytay Social Welfare',
         // Nothing beyond being signed in: every group inside is gated by its
         // own record type, so a narrower guard here would only hide the screen
-        // that explains which types an account cannot search (`DL-112`).
+        // that explains which types an account cannot search (`DL-112`). Withheld whole when the
+        // API serves no search at all (`DL-167`).
+        canActivate: [servedGuard('search')],
         loadComponent: () => import('@features/search/search-page').then((m) => m.SearchPage),
       },
       {
@@ -79,7 +84,7 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         title: 'Dashboard — Taytay Social Welfare',
-        canActivate: [permissionGuard('dashboard.view')],
+        canActivate: [servedGuard('dashboard'), permissionGuard('dashboard.view')],
         loadComponent: () =>
           import('@features/dashboard/dashboard-page').then((m) => m.DashboardPage),
       },
@@ -92,28 +97,31 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Residents — Taytay Social Welfare',
-            canActivate: [permissionGuard('resident.view')],
+            canActivate: [servedGuard('resident', 'saved-view'), permissionGuard('resident.view')],
             loadComponent: () =>
               import('@features/residents/resident-list-page').then((m) => m.ResidentListPage),
           },
           {
             path: 'new',
             title: 'Register a resident — Taytay Social Welfare',
-            canActivate: [permissionGuard('resident.create')],
+            canActivate: [servedGuard('resident'), permissionGuard('resident.create')],
             loadComponent: () =>
               import('@features/residents/resident-form-page').then((m) => m.ResidentFormPage),
           },
           {
             path: ':id/edit',
             title: 'Edit resident — Taytay Social Welfare',
-            canActivate: [permissionGuard('resident.update')],
+            canActivate: [servedGuard('resident'), permissionGuard('resident.update')],
             loadComponent: () =>
               import('@features/residents/resident-form-page').then((m) => m.ResidentFormPage),
           },
           {
             path: ':id',
             title: 'Resident — Taytay Social Welfare',
-            canActivate: [permissionGuard('resident.view')],
+            canActivate: [
+              servedGuard('family', 'field-visit', 'resident'),
+              permissionGuard('resident.view'),
+            ],
             loadComponent: () =>
               import('@features/residents/resident-detail-page').then((m) => m.ResidentDetailPage),
           },
@@ -128,7 +136,10 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Beneficiaries — Taytay Social Welfare',
-            canActivate: [permissionGuard('beneficiary.view')],
+            canActivate: [
+              servedGuard('beneficiary', 'program', 'saved-view'),
+              permissionGuard('beneficiary.view'),
+            ],
             loadComponent: () =>
               import('@features/beneficiaries/beneficiary-list-page').then(
                 (m) => m.BeneficiaryListPage,
@@ -137,7 +148,10 @@ export const routes: Routes = [
           {
             path: 'duplicates',
             title: 'Possible duplicates — Taytay Social Welfare',
-            canActivate: [permissionGuard('beneficiary.review-duplicates')],
+            canActivate: [
+              servedGuard('beneficiary'),
+              permissionGuard('beneficiary.review-duplicates'),
+            ],
             loadComponent: () =>
               import('@features/beneficiaries/duplicate-review-page').then(
                 (m) => m.DuplicateReviewPage,
@@ -146,7 +160,7 @@ export const routes: Routes = [
           {
             path: ':id',
             title: 'Beneficiary — Taytay Social Welfare',
-            canActivate: [permissionGuard('beneficiary.view')],
+            canActivate: [servedGuard('beneficiary'), permissionGuard('beneficiary.view')],
             loadComponent: () =>
               import('@features/beneficiaries/beneficiary-detail-page').then(
                 (m) => m.BeneficiaryDetailPage,
@@ -161,14 +175,14 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Households — Taytay Social Welfare',
-            canActivate: [permissionGuard('household.view')],
+            canActivate: [servedGuard('household'), permissionGuard('household.view')],
             loadComponent: () =>
               import('@features/households/household-list-page').then((m) => m.HouseholdListPage),
           },
           {
             path: ':id',
             title: 'Household — Taytay Social Welfare',
-            canActivate: [permissionGuard('household.view')],
+            canActivate: [servedGuard('household', 'resident'), permissionGuard('household.view')],
             loadComponent: () =>
               import('@features/households/household-detail-page').then(
                 (m) => m.HouseholdDetailPage,
@@ -183,14 +197,14 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Families — Taytay Social Welfare',
-            canActivate: [permissionGuard('family.view')],
+            canActivate: [servedGuard('family'), permissionGuard('family.view')],
             loadComponent: () =>
               import('@features/families/family-list-page').then((m) => m.FamilyListPage),
           },
           {
             path: ':id',
             title: 'Family — Taytay Social Welfare',
-            canActivate: [permissionGuard('family.view')],
+            canActivate: [servedGuard('family', 'resident'), permissionGuard('family.view')],
             loadComponent: () =>
               import('@features/families/family-detail-page').then((m) => m.FamilyDetailPage),
           },
@@ -203,14 +217,14 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Cases — Taytay Social Welfare',
-            canActivate: [permissionGuard('case.view')],
+            canActivate: [servedGuard('case'), permissionGuard('case.view')],
             loadComponent: () =>
               import('@features/cases/case-list-page').then((m) => m.CaseListPage),
           },
           {
             path: ':id',
             title: 'Case — Taytay Social Welfare',
-            canActivate: [permissionGuard('case.view')],
+            canActivate: [servedGuard('case'), permissionGuard('case.view')],
             loadComponent: () =>
               import('@features/cases/case-workspace-page').then((m) => m.CaseWorkspacePage),
           },
@@ -224,26 +238,35 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Assistance requests — Taytay Social Welfare',
-            canActivate: [permissionGuard('request.view')],
+            canActivate: [servedGuard('assistance-request'), permissionGuard('request.view')],
             loadComponent: () =>
               import('@features/requests/request-list-page').then((m) => m.RequestListPage),
           },
           {
             path: 'new',
             title: 'New assistance request — Taytay Social Welfare',
-            canActivate: [permissionGuard('request.create')],
+            canActivate: [
+              servedGuard('assistance-request', 'program', 'resident'),
+              permissionGuard('request.create'),
+            ],
             loadComponent: () => import('@features/requests/intake-page').then((m) => m.IntakePage),
           },
           {
             path: ':id/edit',
             title: 'Unfinished intake — Taytay Social Welfare',
-            canActivate: [permissionGuard('request.create')],
+            canActivate: [
+              servedGuard('assistance-request', 'program', 'resident'),
+              permissionGuard('request.create'),
+            ],
             loadComponent: () => import('@features/requests/intake-page').then((m) => m.IntakePage),
           },
           {
             path: ':id',
             title: 'Assistance request — Taytay Social Welfare',
-            canActivate: [permissionGuard('request.view')],
+            canActivate: [
+              servedGuard('assistance-request', 'program', 'resident'),
+              permissionGuard('request.view'),
+            ],
             loadComponent: () =>
               import('@features/requests/assessment-page').then((m) => m.AssessmentPage),
           },
@@ -256,14 +279,14 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Programmes — Taytay Social Welfare',
-            canActivate: [permissionGuard('program.view')],
+            canActivate: [servedGuard('program'), permissionGuard('program.view')],
             loadComponent: () =>
               import('@features/programs/program-list-page').then((m) => m.ProgramListPage),
           },
           {
             path: ':id',
             title: 'Programme — Taytay Social Welfare',
-            canActivate: [permissionGuard('program.view')],
+            canActivate: [servedGuard('program'), permissionGuard('program.view')],
             loadComponent: () =>
               import('@features/programs/program-detail-page').then((m) => m.ProgramDetailPage),
           },
@@ -277,21 +300,21 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Releases — Taytay Social Welfare',
-            canActivate: [permissionGuard('release.view')],
+            canActivate: [servedGuard('release'), permissionGuard('release.view')],
             loadComponent: () =>
               import('@features/releases/release-list-page').then((m) => m.ReleaseListPage),
           },
           {
             path: 'sessions',
             title: 'Payout sessions — Taytay Social Welfare',
-            canActivate: [permissionGuard('release.view')],
+            canActivate: [servedGuard('release'), permissionGuard('release.view')],
             loadComponent: () =>
               import('@features/releases/payout-session-page').then((m) => m.PayoutSessionPage),
           },
           {
             path: ':id',
             title: 'Release — Taytay Social Welfare',
-            canActivate: [permissionGuard('release.view')],
+            canActivate: [servedGuard('release'), permissionGuard('release.view')],
             loadComponent: () =>
               import('@features/releases/release-detail-page').then((m) => m.ReleaseDetailPage),
           },
@@ -313,14 +336,14 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Referrals — Taytay Social Welfare',
-            canActivate: [permissionGuard('referral.view')],
+            canActivate: [servedGuard('referral', 'resident'), permissionGuard('referral.view')],
             loadComponent: () =>
               import('@features/referrals/referral-list-page').then((m) => m.ReferralListPage),
           },
           {
             path: 'providers',
             title: 'Service providers — Taytay Social Welfare',
-            canActivate: [permissionGuard('referral.view')],
+            canActivate: [servedGuard('referral'), permissionGuard('referral.view')],
             loadComponent: () =>
               import('@features/referrals/provider-directory-page').then(
                 (m) => m.ProviderDirectoryPage,
@@ -329,7 +352,7 @@ export const routes: Routes = [
           {
             path: ':id',
             title: 'Referral — Taytay Social Welfare',
-            canActivate: [permissionGuard('referral.view')],
+            canActivate: [servedGuard('referral'), permissionGuard('referral.view')],
             loadComponent: () =>
               import('@features/referrals/referral-detail-page').then((m) => m.ReferralDetailPage),
           },
@@ -342,14 +365,14 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Field visits — Taytay Social Welfare',
-            canActivate: [permissionGuard('visit.view')],
+            canActivate: [servedGuard('field-visit'), permissionGuard('visit.view')],
             loadComponent: () =>
               import('@features/visits/visit-list-page').then((m) => m.VisitListPage),
           },
           {
             path: ':id',
             title: 'Field visit — Taytay Social Welfare',
-            canActivate: [permissionGuard('visit.view')],
+            canActivate: [servedGuard('field-visit'), permissionGuard('visit.view')],
             loadComponent: () =>
               import('@features/visits/visit-detail-page').then((m) => m.VisitDetailPage),
           },
@@ -363,7 +386,7 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Newsfeed — Taytay Social Welfare',
-            canActivate: [permissionGuard('newsfeed.view')],
+            canActivate: [servedGuard('newsfeed'), permissionGuard('newsfeed.view')],
             loadComponent: () =>
               import('@features/newsfeed/post-list-page').then((m) => m.PostListPage),
           },
@@ -373,14 +396,14 @@ export const routes: Routes = [
             // Writing costs `create`; putting it out costs `publish`, on the
             // detail screen. A post reaches every resident and cannot be
             // unsent (`DL-124`).
-            canActivate: [permissionGuard('newsfeed.create')],
+            canActivate: [servedGuard('newsfeed'), permissionGuard('newsfeed.create')],
             loadComponent: () =>
               import('@features/newsfeed/post-composer-page').then((m) => m.PostComposerPage),
           },
           {
             path: ':id',
             title: 'Post — Taytay Social Welfare',
-            canActivate: [permissionGuard('newsfeed.view')],
+            canActivate: [servedGuard('newsfeed'), permissionGuard('newsfeed.view')],
             loadComponent: () =>
               import('@features/newsfeed/post-detail-page').then((m) => m.PostDetailPage),
           },
@@ -394,7 +417,7 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Events — Taytay Social Welfare',
-            canActivate: [permissionGuard('event.view')],
+            canActivate: [servedGuard('event'), permissionGuard('event.view')],
             loadComponent: () =>
               import('@features/events/event-list-page').then((m) => m.EventListPage),
           },
@@ -403,14 +426,14 @@ export const routes: Routes = [
             title: 'Create an event — Taytay Social Welfare',
             // Writing costs `create`; putting it in the resident app costs
             // `publish`, on the detail screen.
-            canActivate: [permissionGuard('event.create')],
+            canActivate: [servedGuard('event'), permissionGuard('event.create')],
             loadComponent: () =>
               import('@features/events/event-composer-page').then((m) => m.EventComposerPage),
           },
           {
             path: ':id',
             title: 'Event — Taytay Social Welfare',
-            canActivate: [permissionGuard('event.view')],
+            canActivate: [servedGuard('event'), permissionGuard('event.view')],
             loadComponent: () =>
               import('@features/events/event-detail-page').then((m) => m.EventDetailPage),
           },
@@ -423,14 +446,14 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Reports — Taytay Social Welfare',
-            canActivate: [permissionGuard('report.view')],
+            canActivate: [servedGuard('report'), permissionGuard('report.view')],
             loadComponent: () =>
               import('@features/reports/report-hub-page').then((m) => m.ReportHubPage),
           },
           {
             path: ':id',
             title: 'Report — Taytay Social Welfare',
-            canActivate: [permissionGuard('report.view')],
+            canActivate: [servedGuard('report'), permissionGuard('report.view')],
             loadComponent: () =>
               import('@features/reports/report-view-page').then((m) => m.ReportViewPage),
           },
@@ -443,7 +466,7 @@ export const routes: Routes = [
           {
             path: 'staff',
             title: 'Staff and roles — Taytay Social Welfare',
-            canActivate: [permissionGuard('staff.view')],
+            canActivate: [servedGuard('governance'), permissionGuard('staff.view')],
             loadComponent: () =>
               import('@features/administration/staff-page').then((m) => m.StaffPage),
           },
@@ -459,18 +482,25 @@ export const routes: Routes = [
           {
             path: 'audit',
             title: 'Audit trail — Taytay Social Welfare',
-            canActivate: [permissionGuard('audit.view')],
+            canActivate: [servedGuard('governance'), permissionGuard('audit.view')],
             loadComponent: () =>
               import('@features/administration/audit-page').then((m) => m.AuditPage),
           },
           {
             path: 'settings',
             title: 'Data governance — Taytay Social Welfare',
-            canActivate: [permissionGuard('settings.manage')],
+            canActivate: [servedGuard('governance'), permissionGuard('settings.manage')],
             loadComponent: () =>
               import('@features/administration/governance-page').then((m) => m.GovernancePage),
           },
         ],
+      },
+      {
+        // Where every unserved module's address leads (`DL-167`). No permission: it names what the
+        // server lacks, which is no secret about any record, and it is linked from the menu.
+        path: 'unavailable',
+        title: 'Not connected yet — Taytay Social Welfare',
+        loadComponent: () => import('@features/errors/unserved-page').then((m) => m.UnservedPage),
       },
       {
         path: 'forbidden',

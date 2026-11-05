@@ -38,6 +38,7 @@ export * from './households/household-vulnerability';
 export * from './households/poverty-threshold';
 export * from './notifications/notification';
 export * from './ports/access-context';
+export * from './ports/data-ports';
 export * from './ports/repositories';
 export * from './ports/sign-in-method';
 export * from './programs/eligibility-guidance';

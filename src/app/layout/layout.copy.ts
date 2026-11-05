@@ -13,6 +13,10 @@ export const LAYOUT_COPY = {
   navToggleOpen: 'Open navigation',
   navToggleClose: 'Close navigation',
   navEmpty: 'No sections are available for this role.',
+  // `DL-167`: a module the API cannot serve is withheld, and this link says which and why.
+  navUnserved: 'Not connected yet',
+  navUnservedDescription: 'Parts of the console the API it is connected to does not serve.',
+  navEmptyUnserved: 'Nothing this account may open is served by the API yet.',
 
   // Breadcrumb
   breadcrumbLandmark: 'Breadcrumb',

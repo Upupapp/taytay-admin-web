@@ -24,6 +24,7 @@ import {
   SAVED_VIEW_REPOSITORY,
   SIGN_IN_METHOD,
   STAFF_REPOSITORY,
+  UNSERVED_PORTS,
 } from '@domain/index';
 
 import {
@@ -51,6 +52,7 @@ import {
   UnservedSavedViewRepository,
   UnservedSearchRepository,
   UnservedWorkRepository,
+  UNSERVED_HTTP_PORTS,
 } from './http/unserved-repositories';
 /**
  * THE MOCK/HTTP SEAM — the HTTP half.
@@ -106,6 +108,9 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: CASE_REPOSITORY, useClass: UnservedCaseRepository },
     { provide: BENEFICIARY_REPOSITORY, useClass: UnservedBeneficiaryRepository },
     { provide: FIELD_VISIT_REPOSITORY, useClass: UnservedFieldVisitRepository },
+    // Which of the above make no request, said once for the navigation and the routes (`DL-167`):
+    // a module that cannot be served leaves the menu, and its address explains why.
+    { provide: UNSERVED_PORTS, useValue: UNSERVED_HTTP_PORTS },
     // Sign-in (`DL-166`): which identity provider answers is decided by which file angular.json
     // swapped in — Firebase, or the development verifier for `local-api` — never by a runtime flag.
     { provide: SIGN_IN_METHOD, useFactory: identitySignInMethod },
