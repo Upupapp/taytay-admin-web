@@ -35,6 +35,7 @@ const TEST_ENVIRONMENT: AppEnvironment = {
   appName: 'Test',
   apiBaseUrl: '/api',
   dataSource: 'mock',
+  firebaseWebApiKey: null,
   mockLatencyMs: 0,
   enableDevTools: false,
 };

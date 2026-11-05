@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import { AuthTokenHolder } from '@core/auth/auth-token.holder';
+import { apiHeadersInterceptor } from '@core/http/api.interceptors';
 import { asId, SignInError, type NotificationId } from '@domain/index';
 
 import ME_ADMIN from './fixtures/me-admin.json';
@@ -16,10 +17,16 @@ import NOTIFICATIONS_PAGE_1 from './fixtures/notifications-page-1.json';
 import NOTIFICATIONS_PAGE_2 from './fixtures/notifications-page-2.json';
 import NOTIFICATIONS_READ_ALL from './fixtures/notifications-read-all.json';
 import SIGNED_OUT from './fixtures/signed-out.json';
-import { HttpNotificationRepository, HttpStaffRepository } from './http-repositories';
+import { HttpNotificationRepository, HttpSessionRefresher, HttpStaffRepository } from './http-repositories';
 import { UnservedError } from './unserved-repositories';
 
 const BASE = 'https://api.example.gov.ph/api/v1';
+const SIGN_IN = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword';
+const FINALIZE = 'https://identitytoolkit.googleapis.com/v2/accounts/mfaSignIn:finalize';
+const REFRESH = 'https://securetoken.googleapis.com/v1/token';
+const CREDENTIALS = { email: 'staff.member@example.invalid', password: 'a-password-of-sufficient-length' };
+const UNIFORM_REFUSAL =
+  'Those sign-in details were not recognised. Check the email address and password, then try again.';
 
 /**
  * The two ports the Node API serves, exercised against fixtures composed from the vendored spec
@@ -35,11 +42,15 @@ describe('the Node adapters', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withInterceptors([apiHeadersInterceptor])),
         provideHttpClientTesting(),
-        { provide: APP_ENVIRONMENT, useValue: { apiBaseUrl: BASE, dataSource: 'http' } },
+        {
+          provide: APP_ENVIRONMENT,
+          useValue: { apiBaseUrl: BASE, dataSource: 'http', firebaseWebApiKey: 'test-web-api-key' },
+        },
         HttpStaffRepository,
         HttpNotificationRepository,
+        HttpSessionRefresher,
       ],
     });
 
@@ -122,11 +133,129 @@ describe('the Node adapters', () => {
       expect(await user).toBeNull();
     });
 
-    it('says sign-in is not connected yet, and sends nothing', async () => {
-      await expect(firstValueFrom(staff.signIn())).rejects.toSatisfy(
-        (error: unknown) => error instanceof SignInError && error.reason === 'unavailable',
-      );
-      await expect(firstValueFrom(staff.completeMfa())).rejects.toThrow(/not available yet/);
+    describe('signing in (DL-166)', () => {
+      /** Answers Google's sign-in with tokens, as a correct password would. */
+      function passwordAccepted(): void {
+        http
+          .expectOne((req) => req.url === SIGN_IN)
+          .flush({ idToken: 'id-token-1', refreshToken: 'refresh-1', expiresIn: '3600', localId: 'uid-1' });
+      }
+
+      async function refusal(source: Promise<unknown>): Promise<SignInError> {
+        try {
+          await source;
+        } catch (error: unknown) {
+          if (error instanceof SignInError) {
+            return error;
+          }
+          throw error;
+        }
+        throw new Error('expected a refusal');
+      }
+
+      it('signs a staff member in: Google proves the password, the API says who it is', async () => {
+        const outcome = firstValueFrom(staff.signIn(CREDENTIALS));
+
+        passwordAccepted();
+        const me = http.expectOne(`${BASE}/me`);
+        // The ID token is presented to the API — and only to the API.
+        expect(me.request.headers.get('Authorization')).toBe('Bearer id-token-1');
+        me.flush(ME_STAFF);
+
+        const result = await outcome;
+        expect(result.kind).toBe('authenticated');
+        if (result.kind === 'authenticated') {
+          expect(result.user.roleLabel).toBe('Staff');
+          expect(result.user.role).toBeNull();
+          expect(result.user.permissions.size).toBe(0);
+        }
+        expect(tokens.hasToken()).toBe(true);
+      });
+
+      it('refuses a resident with the wrong-password message, drops everything locally, and revokes nothing', async () => {
+        const outcome = firstValueFrom(staff.signIn(CREDENTIALS));
+
+        passwordAccepted();
+        http.expectOne(`${BASE}/me`).flush(ME_RESIDENT);
+
+        const refused = await refusal(outcome);
+        expect(refused.reason).toBe('invalid-credentials');
+        expect(refused.message).toBe(UNIFORM_REFUSAL);
+        expect(tokens.hasToken()).toBe(false);
+        // Revoking would sign the resident out of the app on their phone.
+        http.expectNone(`${BASE}/auth/sign-out`);
+
+        // And the refresh token went with it: nothing can renew a session that was never granted.
+        await refusal(firstValueFrom(TestBed.inject(HttpSessionRefresher).refresh()));
+        http.expectNone((req) => req.url === REFRESH);
+      });
+
+      it('refuses a closed staff account the same way', async () => {
+        const outcome = firstValueFrom(staff.signIn(CREDENTIALS));
+
+        passwordAccepted();
+        http.expectOne(`${BASE}/me`).flush({ ...ME_STAFF, data: { ...ME_STAFF.data, closed: true } });
+
+        expect((await refusal(outcome)).message).toBe(UNIFORM_REFUSAL);
+        expect(tokens.hasToken()).toBe(false);
+        http.expectNone(`${BASE}/auth/sign-out`);
+      });
+
+      it('says sign-in is unavailable when the API cannot answer, and keeps no token', async () => {
+        const outcome = firstValueFrom(staff.signIn(CREDENTIALS));
+
+        passwordAccepted();
+        http.expectOne(`${BASE}/me`).flush(null, { status: 503, statusText: 'Service Unavailable' });
+
+        expect((await refusal(outcome)).reason).toBe('unavailable');
+        expect(tokens.hasToken()).toBe(false);
+      });
+
+      it('passes a wrong password through as the uniform refusal, without asking the API', async () => {
+        const outcome = firstValueFrom(staff.signIn(CREDENTIALS));
+
+        http
+          .expectOne((req) => req.url === SIGN_IN)
+          .flush({ error: { code: 400, message: 'INVALID_LOGIN_CREDENTIALS' } }, { status: 400, statusText: 'Bad Request' });
+
+        expect((await refusal(outcome)).message).toBe(UNIFORM_REFUSAL);
+        http.expectNone(`${BASE}/me`);
+      });
+
+      it('completes a second factor, then asks the API who it is', async () => {
+        const outcome = firstValueFrom(staff.signIn(CREDENTIALS));
+        http
+          .expectOne((req) => req.url === SIGN_IN)
+          .flush({ mfaPendingCredential: 'pending-1', mfaInfo: [{ mfaEnrollmentId: 'totp-1', totpInfo: {} }] });
+
+        const first = await outcome;
+        if (first.kind !== 'mfa-required') {
+          throw new Error('expected a second factor');
+        }
+        expect(tokens.hasToken()).toBe(false);
+
+        const user = firstValueFrom(staff.completeMfa({ challenge: first.challenge.challenge, code: '123456' }));
+        http.expectOne((req) => req.url === FINALIZE).flush({ idToken: 'id-token-mfa', refreshToken: 'refresh-mfa' });
+        const me = http.expectOne(`${BASE}/me`);
+        expect(me.request.headers.get('Authorization')).toBe('Bearer id-token-mfa');
+        me.flush(ME_ADMIN);
+
+        expect((await user).roleLabel).toBe('Administrator');
+      });
+
+      it('makes the identity provider forget the refresh token at sign-out', async () => {
+        const outcome = firstValueFrom(staff.signIn(CREDENTIALS));
+        passwordAccepted();
+        http.expectOne(`${BASE}/me`).flush(ME_STAFF);
+        await outcome;
+
+        const done = firstValueFrom(staff.signOut());
+        http.expectOne(`${BASE}/auth/sign-out`).flush(SIGNED_OUT);
+        await done;
+
+        await refusal(firstValueFrom(TestBed.inject(HttpSessionRefresher).refresh()));
+        http.expectNone((req) => req.url === REFRESH);
+      });
     });
 
     it('revokes with the credential it is revoking, then drops it', async () => {

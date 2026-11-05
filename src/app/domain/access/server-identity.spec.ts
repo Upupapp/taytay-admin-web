@@ -79,6 +79,17 @@ describe('fromServerIdentity', () => {
     expect(user.permissions.has('resident.view')).toBe(true);
   });
 
+  it("labels a server role the console does not have in the server's words, never as an auditor (DL-166)", () => {
+    // The Node API's two staff roles are none of the console's seven. The old fallback labelled
+    // every Node administrator "auditor" — the one role defined by what it may not do.
+    const admin = fromServerIdentity(identity({ roles: ['admin'], roleLabel: 'Administrator', permissions: [] }));
+
+    expect(admin.role).toBeNull();
+    expect(admin.roleLabel).toBe('Administrator');
+    // And nothing is granted for being one.
+    expect(admin.permissions.size).toBe(0);
+  });
+
   it('carries the barangay the server assigned', () => {
     const user = fromServerIdentity(identity({ barangayId: 'brgy-dolores' as BarangayId }));
 

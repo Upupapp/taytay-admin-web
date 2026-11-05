@@ -1,0 +1,12 @@
+{
+  "doctrine": "DL-166. A public identifier that ships in the bundle by design — today only a Firebase web API key — is accepted by the sha256 of its value, recorded here by the person who supplied it. A key is not a secret, but an unrecorded one in the artefact is one nobody classified: check:bundle and check:environments both fail on it. Record a key only once it is restricted in Google Cloud to the console's origins and to the Identity Toolkit and Token Service APIs. Staging and production are separate Firebase projects with separate keys. No key has been supplied, so the list is empty.",
+  "entry": {
+    "sha256": "hex sha256 of the exact key string",
+    "kind": "firebase-web-api-key",
+    "environment": "production | staging",
+    "firebaseProject": "project id the key names",
+    "restrictedTo": "origins and APIs, as configured in Google Cloud",
+    "recordedBy": "who supplied it, and when"
+  },
+  "identifiers": []
+}

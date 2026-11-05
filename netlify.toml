@@ -47,9 +47,13 @@
 # Applied to every path. The CSP is the baseline from
 # `taytay-backend/docs/architecture/deployment-topology.md`, unchanged.
 #
-# `connect-src` names ONE API origin. Never a wildcard, and never the production API from
-# a staging or preview host — a preview that can reach production contradicts the whole
-# point of a preview.
+# `connect-src` names ONE API origin and the identity provider's TWO endpoints — Firebase
+# Authentication's sign-in (`identitytoolkit.googleapis.com`) and token refresh
+# (`securetoken.googleapis.com`), which staff sign-in calls directly (DL-166). Exact origins,
+# never a wildcard: `*.googleapis.com` would admit every Google API, storage buckets included,
+# as a place an injected script could send a token. Never the production API from a staging or
+# preview host — a preview that can reach production contradicts the whole point of a preview.
+# `check:headers` holds every policy to exactly these sources.
 #
 # `style-src` deliberately does NOT carry 'unsafe-inline'. Angular emits component styles
 # as inline <style> blocks, and the sanctioned answer is `ngCspNonce` with a per-response
@@ -59,7 +63,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://api.<approved-domain>; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; upgrade-insecure-requests"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://api.<approved-domain> https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; upgrade-insecure-requests"
 
     # A referrer carrying a case identifier to a third party is a personal-data leak.
     Referrer-Policy = "strict-origin-when-cross-origin"
@@ -120,7 +124,7 @@
 [[context.deploy-preview.headers]]
   for = "/*"
   [context.deploy-preview.headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://api-staging.<approved-domain>; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; upgrade-insecure-requests"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://api-staging.<approved-domain> https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; upgrade-insecure-requests"
 
     # Previews carry synthetic data and unreleased screens. Keeping them out of search
     # results is not secrecy, it is not publishing a half-built welfare console under the

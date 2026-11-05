@@ -17,6 +17,24 @@ export interface AppEnvironment {
   readonly appName: string;
   readonly apiBaseUrl: string;
   readonly dataSource: DataSourceKind;
+  /**
+   * The Firebase project's **Web API key**, or `null` when none has been supplied for this build.
+   *
+   * A public identifier, not a secret: it names the Firebase project to Google's sign-in endpoints
+   * and ships in every browser that opens the console, as it does in every Firebase web app. What
+   * protects an account is the password and the API's verification of the ID token, never the
+   * secrecy of this value. Its exposure is limited by restricting the key in Google Cloud to the
+   * console's origins and to the Identity Toolkit and Token Service APIs — a manual step on the
+   * deployment checklist (`DL-166`).
+   *
+   * `check:environments` classifies this one field by name and shape, so a credential is never let
+   * through by a field name the credential rule happens to miss. Staging and production must name
+   * **different** projects: a staging console signing into production identities is a staging
+   * console holding production credentials.
+   *
+   * While it is `null`, the HTTP configuration says sign-in is not configured and sends nothing.
+   */
+  readonly firebaseWebApiKey: string | null;
   /** Artificial delay applied by mock repositories so loading states are exercised. */
   readonly mockLatencyMs: number;
   readonly enableDevTools: boolean;

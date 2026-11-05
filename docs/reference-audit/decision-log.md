@@ -5451,3 +5451,132 @@ The launch gate stays **NO-GO**. `npm run verify` is green on Windows: 93 spec f
 (104 and 1,709 before — seventeen Laravel-era spec files went with the code they tested; six came
 in, for the Node adapters, the `me` mapper, the fixtures, the unserved ports, the interceptor, and
 the `WriteIntent` rule, which moved to the domain when the transport stopped carrying the key).
+
+## DL-166 — staff sign in through Firebase's REST API, and nothing about it outlives the tab
+
+Step 4 of `docs/integration/node-api-migration.md`. The Node API has no sign-in route: it verifies a
+Firebase ID token on every request (`verifyIdToken(token, checkRevoked=true)`). So the console signs
+in at Google and presents what Google issued. `DL-164` decided it would do so over Firebase
+Authentication's REST API rather than the SDK (`node-api-transport-design.md` §4); this entry is what
+was built, what it was checked against, and what is still nobody's fact. It closes two of `DL-165`'s
+"not done" items: Firebase sign-in, and the `auditor` label on a role the console does not know.
+
+### What was built
+
+- **An identity provider seam**, `src/app/data/http/identity/`, used only by the staff adapter.
+  `identity.provider.ts` signs in at `identitytoolkit.googleapis.com/v1/accounts:signInWithPassword`,
+  refreshes at `securetoken.googleapis.com/v1/token` (form-encoded), and finishes a TOTP second factor
+  at `identitytoolkit.googleapis.com/v2/accounts/mfaSignIn:finalize`. Its calls go out on
+  `new HttpClient(inject(HttpBackend))`, past every interceptor, so Google never receives the API's
+  bearer token or `X-Client-Channel` and the error interceptor never reports Google's refusals as the
+  API's.
+- **Two private fields and no third home.** The ID token goes to `AuthTokenHolder.#token`, as
+  before. The refresh token stays in the provider's `#refreshToken`: no getter, never in the grant the
+  provider returns, never in web storage. The pending second-factor credential proves a password was
+  right, so it stays in `#pending` and the screen is handed an opaque handle. Reload signs out, as
+  ADR 0006 accepted — restated in `DL-164` so it does not hang on the backend's archive tag.
+- **Google's refusals, in the console's words.** `INVALID_LOGIN_CREDENTIALS`, `EMAIL_NOT_FOUND`,
+  `INVALID_PASSWORD`, `USER_DISABLED` — and `INVALID_EMAIL`, because the form's address check is
+  permissive and Google's is not — are one uniform message. `TOO_MANY_ATTEMPTS_TRY_LATER` is
+  `throttled`, with no wait stated because Google states none. Anything else is `unavailable`. A 400
+  at the second step is `second-factor-refused`: the same key and project already answered the first
+  step, so it refuses the code or a lapsed attempt, not the configuration.
+- **`HttpStaffRepository.signIn`**: provider → `tokens.hold` → `GET me` → identity. A resident's
+  account or a closed one is refused with the **same** message as a wrong password, and its tokens
+  are dropped **locally only** — revoking would sign that resident out of the app on their phone, and
+  would tell whoever typed the address that it has an account. `completeMfa` does the same after the
+  second factor. `signOut` also makes the provider forget the refresh token.
+- **Renewal on demand.** `apiHeadersInterceptor` asks `SESSION_REFRESHER` (a core token, bound in the
+  HTTP adapter set to `HttpSessionRefresher`) for a new token when a request to the API finds the
+  current one within 60 s of expiry. Every request that finds it so shares one refresh; none waits on
+  a timer, and nothing renews in the background (`DL-118`). When renewal fails the credentials are
+  dropped, the session is ended and the user goes to sign-in with their screen as the return address —
+  and the waiting request is **not sent**, failing as the API's own 401 would.
+- **The development verifier**, `identity.provider.mock-verifier.ts`, swapped in by `angular.json` for
+  `build:local-api` and nothing else (the `DL-136` technique). It composes `mock:<role>:<subject>`
+  from the typed email (lower-cased, `@` as `.`, cut to the backend's `[A-Za-z0-9._-]{1,64}`) and a
+  staff/admin choice on screen; the password is not read, and the screen says so, and says the role
+  is recorded only the first time that subject reaches the API. No credential literal is committed.
+  The API still decides: `GET me` refuses a resident's role here too.
+- **The screen says which of these it is** (`SIGN_IN_METHOD`, a domain token): a password form; no
+  form at all and a plain sentence when no key was supplied; or the development verifier. The
+  explanations come from the adapter, so no development wording is in a production bundle.
+- **The role label** (design doc item 14). `fromServerIdentity` labelled a role it did not know
+  `auditor`, so every Node administrator was an auditor wherever a role showed. `AuthenticatedUser.role`
+  is now `StaffRole | null`, and the label is the server's own (`Staff`, `Administrator`). Nothing is
+  granted from either — permissions come only from `/me.permissions`, and `check:auth` rule 6 still
+  forbids computing them from a role.
+- **The Web API key** is `firebaseWebApiKey: string | null` in every environment, and `null` in all
+  four. It is a public identifier, not a secret: it names the Firebase project to Google and ships in
+  every browser, and what limits it is a restriction in Google Cloud to the console's origins and the
+  Identity Toolkit and Token Service APIs. While it is `null` the provider sends nothing and the screen
+  says sign-in is not configured — never a request with an invented key.
+- **CSP.** `connect-src` in all three policies (`netlify.toml` production and deploy preview,
+  `public/_headers`) gains exactly `https://identitytoolkit.googleapis.com` and
+  `https://securetoken.googleapis.com`. Not `*.googleapis.com`, which would admit every Google API —
+  storage buckets among them — as somewhere an injected script could post a token.
+
+### Verified against Google's published reference, 2026-11-05
+
+- Sign-in body and answer (`idToken`, `refreshToken`, `expiresIn` as a string of seconds), refresh
+  body and answer (`id_token`, `refresh_token`, `expires_in`), the error envelope and "the error code
+  is obtained from the message field":
+  https://firebase.google.com/docs/reference/rest/auth
+- `INVALID_LOGIN_CREDENTIALS` under email enumeration protection, on by default for projects created
+  from 15 September 2023:
+  https://cloud.google.com/identity-platform/docs/admin/email-enumeration-protection
+- `mfaPendingCredential` and `mfaInfo[]` on the sign-in answer:
+  https://cloud.google.com/identity-platform/docs/reference/rest/v1/accounts/signInWithPassword
+- A TOTP enrolment is one carrying `totpInfo` (an empty object), identified by `mfaEnrollmentId`:
+  https://cloud.google.com/identity-platform/docs/reference/rest/v1/MfaEnrollment
+- `mfaSignIn:finalize` takes `{ mfaPendingCredential, mfaEnrollmentId, totpVerificationInfo:
+  { verificationCode } }` and answers `idToken` and `refreshToken` with **no** `expiresIn`, so the
+  lifetime is read from the token's `exp` claim (seconds since the epoch, per
+  https://firebase.google.com/docs/auth/admin/verify-id-tokens):
+  https://cloud.google.com/identity-platform/docs/reference/rest/v2/accounts.mfaSignIn/finalize
+- `mfaSignIn:start` carries only an SMS option, so a TOTP sign-in does not call it:
+  https://cloud.google.com/identity-platform/docs/reference/rest/v2/accounts.mfaSignIn/start
+
+`TOO_MANY_ATTEMPTS_TRY_LATER` is listed on the REST page only under sign-up; it is mapped for sign-in
+as the design doc asked, and costs nothing if Google never sends it there.
+
+### What the checks now hold
+
+| Check | New rule | Planted regressions, each caught |
+| --- | --- | --- |
+| `check:auth` | 2b: the refresh token is `#refreshToken` in the provider, with no getter, method or property named for it, and the grant model never names one | a public `refreshToken` field; the private field renamed; `refreshToken` in `IdentityGrant` |
+| `check:auth` | 2c: no Firebase SDK import, and no `firebase`/`@firebase/*`/`@angular/fire` dependency | `import … from 'firebase/auth'`; `firebase` in `package.json` |
+| `check:auth` | 2d: a `mock:` credential is composed only in the swapped file; nothing imports that file; only `build:local-api` swaps it in | `` `mock:` `` in the real provider; an import of the verifier; the replacement added to `production` |
+| `check:environments` | 8: `firebaseWebApiKey` is classified by name **and** shape (`AIza` + 35) and must be stated, `null` included; any other field whose name *contains* a credential word fails (`stripeSecretKey` no longer escapes `apiKey`); local configurations carry none; staging and production differ; a supplied key needs its fingerprint recorded | an invented key; `stripeSecretKey`; the field removed; a valid-shaped unrecorded key; one key in staging and production; a key in `local-api` |
+| `check:bundle` | the development verifier's wording is absent from the production artefact and still present in its own file; a Google API key passes only if its sha256 is in `tools/accepted-public-identifiers.json` (empty — no key exists) | the wording appended to a built chunk; the wording removed from the source; an unrecorded key in a chunk — and, as a control, the same key recorded passes |
+| `check:headers` | 7: every `connect-src` is `'self'`, exactly one API origin, and exactly the identity provider's two endpoints | an endpoint removed; `https://*.googleapis.com` added; an extra origin |
+| `check:contract` | 3: `data/http/identity/` may build URLs on the two identity origins and no other | another absolute URL in the identity folder |
+
+Twenty-one plants, every one caught, every file restored byte for byte. The swap was also proved from
+the other side: a `local-api` build compiles with the verifier in place, its bundle carries the
+verifier's wording, and no JavaScript in it names `identitytoolkit` — the Firebase provider is not
+there.
+
+Every existing rule keeps its strictness; rule 6 (no permission computed from a role) is unchanged
+and covers `data/http/identity/` already.
+
+### What is not done, and whose it is
+
+- **No key exists.** Staging and production say "sign-in is not configured" until a person supplies
+  each project's Web API key, restricts it in Google Cloud, and records its fingerprint. Until then the
+  `http` configurations sign nobody in, honestly.
+- **TOTP has not run against a live project.** It is built to the published reference and tested
+  against it, but whether the office's Firebase project is upgraded to Identity Platform with TOTP
+  enabled nobody has confirmed (design doc R7). Until it is, staff sign in with a password alone. An
+  account whose only second factor is SMS is told the console cannot accept it.
+- **No expiry is shown for a second-factor attempt**, because Google does not publish how long a
+  pending credential lasts.
+- **Sign-out revokes every device of that account**, including a staff member's own residents' app
+  (R5) — the API's behaviour, unchanged here.
+- **Unsaved work is still lost** when a session ends, as it was before (TAB 02's deferred item).
+
+The launch gate stays **NO-GO**. `npm run verify` is green on Windows: 96 spec files, 1,674 tests
+(93 and 1,628 before — three new spec files, for the Firebase provider against
+`HttpTestingController`, the development verifier, and renewal end to end through the real
+interceptors; the staff adapter, the token holder, `fromServerIdentity` and the sign-in screen gained
+tests in their own).

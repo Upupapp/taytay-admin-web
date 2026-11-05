@@ -38,6 +38,8 @@
  * 5. HSTS is absent until somebody confirms the certificate chain, because it cannot be undone.
  * 6. The production build emits no inline `<style>` or `<script>`, which is what makes rule 2
  *    affordable.
+ * 7. `connect-src` names `'self'`, exactly one API origin, and exactly the identity provider's two
+ *    endpoints (`DL-166`) — nothing more, so a token cannot be posted to any other Google API.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -62,6 +64,13 @@ const REQUIRED_DIRECTIVES = [
 const FORBIDDEN = ["'unsafe-inline'", "'unsafe-eval'", "'unsafe-hashes'", 'data: script-src'];
 
 const COMPANION_HEADERS = ['X-Content-Type-Options', 'Referrer-Policy', 'Permissions-Policy'];
+
+/**
+ * Firebase Authentication's REST endpoints: sign-in, and token refresh (`DL-166`). Named exactly.
+ * `https://*.googleapis.com` would admit every Google API — storage buckets among them — as a
+ * place an injected script could post a stolen token to.
+ */
+const IDENTITY_ORIGINS = ['https://identitytoolkit.googleapis.com', 'https://securetoken.googleapis.com'];
 
 const failures = [];
 
@@ -142,6 +151,29 @@ for (const file of files) {
     // A wildcard host in a fetch directive is the same weakening wearing a different hat.
     if (/(?:script|connect|style|img)-src[^;]*\s\*(?:\s|;|$)/.test(policy)) {
       failures.push(`${file}: a policy allows a wildcard source. Name the exact origins.`);
+    }
+
+    // ── 7. connect-src: self, one API, the identity provider's two endpoints ──
+    const connect = (/connect-src\s+([^;]*)/.exec(policy)?.[1] ?? '').trim().split(/\s+/).filter(Boolean);
+
+    for (const origin of IDENTITY_ORIGINS) {
+      if (!connect.includes(origin)) {
+        failures.push(
+          `${file}: connect-src omits ${origin}.\n` +
+            `    Staff sign-in calls it directly (DL-166); without it the browser blocks the request before\n` +
+            `    it leaves, and the sign-in form reports an outage that is really this file.`,
+        );
+      }
+    }
+
+    const others = connect.filter((source) => source !== "'self'" && !IDENTITY_ORIGINS.includes(source));
+
+    if (others.length !== 1 || !/^https:\/\/[^\s*/]+$/.test(others[0] ?? '')) {
+      failures.push(
+        `${file}: connect-src must name exactly one API origin besides 'self' and the identity provider's\n` +
+          `    two endpoints; it names ${others.length === 0 ? 'none' : others.join(' ')}. Every extra origin is\n` +
+          `    somewhere an injected script can send a bearer token.`,
+      );
     }
   }
 

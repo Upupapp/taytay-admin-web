@@ -12,7 +12,42 @@ import type { AuthenticatedUser } from './staff-user';
 export interface SignInCredentials {
   readonly email: string;
   readonly password: string;
+  /**
+   * Read by the development verifier and by nothing else (`DL-166`).
+   *
+   * Against a backend running `AUTH_VERIFIER=mock`, the console presents a credential naming the
+   * role the API should record **the first time** that subject reaches it; afterwards the API's
+   * own record wins. The Firebase provider ignores this field: a real role is never asked for by
+   * the person signing in, it is whatever the API already holds.
+   */
+  readonly developmentRoleClaim?: DevelopmentRoleClaim;
 }
+
+/** The two roles a development credential may ask the API to record for a new subject. */
+export type DevelopmentRoleClaim = 'staff' | 'admin';
+
+/**
+ * How this build signs somebody in, so the sign-in screen can say so rather than offer a form
+ * that cannot work.
+ *
+ * - `password` — email and password, checked by the identity provider.
+ * - `not-configured` — this build has no identity provider configured (no Firebase web API key
+ *   was supplied). The screen says so and sends nothing: a request with an invented key would
+ *   fail at Google with a message that means nothing to an intake officer.
+ * - `development-verifier` — `local-api` only, against a backend that accepts development
+ *   credentials. The password is not checked by anything, and the screen says that too.
+ *
+ * The explanations are written by the adapter that knows them, as a refusal's message is, so a
+ * production bundle carries no development wording at all (`check:bundle`).
+ */
+export type SignInMethod =
+  | { readonly kind: 'password' }
+  | { readonly kind: 'not-configured'; readonly explanation: string }
+  | {
+      readonly kind: 'development-verifier';
+      readonly explanation: readonly string[];
+      readonly roleClaims: readonly DevelopmentRoleClaim[];
+    };
 
 /**
  * Why a sign-in failed.
@@ -86,7 +121,11 @@ export interface MfaChallenge {
   readonly expiresInMinutes: number;
 }
 
-/** The second step. `code` is a TOTP code or a recovery code. */
+/**
+ * The second step. `code` is the six-digit code from an authenticator app. There are no recovery
+ * codes: the identity provider issues none, and a hint promising one sends somebody looking for
+ * a sheet of paper that does not exist.
+ */
 export interface MfaCredentials {
   readonly challenge: string;
   readonly code: string;

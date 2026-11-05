@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, type Provider } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -7,8 +7,8 @@ import { safeReturnUrl, RETURN_URL_PARAM } from '@core/access/access.guards';
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
-import { ACCESS_CONTEXT, NOTIFICATION_REPOSITORY, STAFF_REPOSITORY } from '@domain/index';
-import type { AppNotification, NotificationRepository } from '@domain/index';
+import { ACCESS_CONTEXT, NOTIFICATION_REPOSITORY, SIGN_IN_METHOD, STAFF_REPOSITORY } from '@domain/index';
+import type { AppNotification, NotificationRepository, SignInCredentials, SignInMethod } from '@domain/index';
 import { MockStaffRepository, MOCK_MFA_CODE } from '@data/mock/mock-staff.repository';
 import type { AppEnvironment } from '@env/environment.model';
 import { of, type Observable } from 'rxjs';
@@ -22,6 +22,7 @@ const TEST_ENVIRONMENT: AppEnvironment = {
   appName: 'Test',
   apiBaseUrl: '/api',
   dataSource: 'mock',
+  firebaseWebApiKey: null,
   mockLatencyMs: 0,
   enableDevTools: false,
 };
@@ -41,7 +42,7 @@ class StubPage {}
 const KNOWN_EMAIL = 'teodoro.lim@taytay.example.gov.ph';
 const ANY_PASSWORD = 'a-password-of-sufficient-length';
 
-async function setUp(): Promise<ComponentFixture<SignInPage>> {
+async function setUp(extra: readonly Provider[] = []): Promise<ComponentFixture<SignInPage>> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -55,6 +56,7 @@ async function setUp(): Promise<ComponentFixture<SignInPage>> {
       { provide: ACCESS_CONTEXT, useExisting: SessionState },
       { provide: STAFF_REPOSITORY, useClass: MockStaffRepository },
       { provide: NOTIFICATION_REPOSITORY, useValue: notifications },
+      ...extra,
     ],
   });
   await TestBed.inject(Router).navigateByUrl('/sign-in');
@@ -361,5 +363,61 @@ describe('session lifecycle', () => {
     await firstValueFrom(session.signOut());
     expect(session.isAuthenticated()).toBe(false);
     expect(TestBed.inject(SessionState).currentUser()).toBeNull();
+  });
+});
+
+describe('how this build signs in (DL-166)', () => {
+  function method(value: SignInMethod): Provider {
+    return { provide: SIGN_IN_METHOD, useValue: value };
+  }
+
+  it('offers no form when no identity provider is configured, and says so', async () => {
+    const element = (await setUp([method({ kind: 'not-configured', explanation: 'Nobody can sign in here yet.' })]))
+      .nativeElement as HTMLElement;
+
+    expect(element.querySelector('form')).toBeNull();
+    expect(element.textContent).toContain(AUTH_COPY.notConfiguredHeading);
+    expect(element.textContent).toContain('Nobody can sign in here yet.');
+  });
+
+  it('shows the development verifier for what it is, and sends the chosen role with the address', async () => {
+    const fixture = await setUp([
+      method({
+        kind: 'development-verifier',
+        roleClaims: ['staff', 'admin'],
+        explanation: ['Explained by the adapter.'],
+      }),
+    ]);
+    const element = fixture.nativeElement as HTMLElement;
+    const sent: SignInCredentials[] = [];
+    const store = TestBed.inject(SessionStore);
+    const original = store.signIn.bind(store);
+    store.signIn = (credentials: SignInCredentials) => {
+      sent.push(credentials);
+      return original(credentials);
+    };
+
+    expect(element.textContent).toContain('Explained by the adapter.');
+    expect(element.querySelector<HTMLInputElement>('#sign-in-password')?.required).toBe(false);
+    expect(element.textContent).toContain(AUTH_COPY.passwordNotCheckedHint);
+
+    const radios = element.querySelectorAll<HTMLInputElement>('input[name="role-claim"]');
+    expect(radios).toHaveLength(2);
+    expect(radios[0]?.checked).toBe(true);
+    radios[1]?.dispatchEvent(new Event('change'));
+
+    type(fixture, '#sign-in-email', KNOWN_EMAIL);
+    await submit(fixture);
+
+    // No password was typed, and none was asked for.
+    expect(sent).toEqual([{ email: KNOWN_EMAIL, password: '', developmentRoleClaim: 'admin' }]);
+  });
+
+  it('asks for a password, and sends no role, when signing in for real', async () => {
+    const fixture = await setUp([method({ kind: 'password' })]);
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(element.querySelector('input[name="role-claim"]')).toBeNull();
+    expect(element.querySelector<HTMLInputElement>('#sign-in-password')?.required).toBe(true);
   });
 });

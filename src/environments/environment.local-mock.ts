@@ -16,6 +16,8 @@ export const environment: AppEnvironment = {
   // it takes to become `local-api`.
   apiBaseUrl: 'http://localhost:3000/api/v1',
   dataSource: 'mock',
+  // The mock adapters never reach an identity provider.
+  firebaseWebApiKey: null,
   mockLatencyMs: 250,
   enableDevTools: true,
 };

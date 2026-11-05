@@ -18,6 +18,9 @@ export const environment: AppEnvironment = {
   appName: 'Taytay Social Welfare',
   apiBaseUrl: 'https://api.<approved-domain>/api/v1',
   dataSource: 'http',
+  // No key has been supplied for the production Firebase project. Until a person supplies one, the
+  // console says sign-in is not configured and sends nothing (`DL-166`).
+  firebaseWebApiKey: null,
   mockLatencyMs: 0,
   enableDevTools: false,
 };

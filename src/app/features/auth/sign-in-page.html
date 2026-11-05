@@ -17,7 +17,14 @@
       </div>
     }
 
-    @if (awaitingCode()) {
+    @if (notConfigured; as unavailable) {
+      <!-- No identity provider is configured for this build. A form here could only fail, so
+           there is none: the screen says what is true and who to ask. -->
+      <section class="sign-in__notice" aria-labelledby="sign-in-not-configured">
+        <h2 id="sign-in-not-configured" class="sign-in__step-title">{{ copy.notConfiguredHeading }}</h2>
+        <p>{{ unavailable.explanation }}</p>
+      </section>
+    } @else if (awaitingCode()) {
       <!-- The second factor. One labelled field, paste-friendly, nothing that
            auto-advances: six boxes that move focus per digit are announced as
            six unlabelled inputs and strand anybody who mistypes. -->
@@ -64,6 +71,15 @@
     <!-- No onpaste handler anywhere in this form: blocking paste would defeat
          password managers, which is the Mechanism this screen relies on to
          satisfy WCAG 3.3.8. -->
+    @if (development; as dev) {
+      <section class="sign-in__notice" aria-labelledby="sign-in-development">
+        <h2 id="sign-in-development" class="sign-in__step-title">{{ copy.developmentHeading }}</h2>
+        @for (line of dev.explanation; track line) {
+          <p>{{ line }}</p>
+        }
+      </section>
+    }
+
     <form class="sign-in__form" novalidate (submit)="submit($event)">
       <div class="field">
         <label class="field__label" for="sign-in-email">{{ copy.emailLabel }}</label>
@@ -94,7 +110,8 @@
             name="password"
             autocomplete="current-password"
             spellcheck="false"
-            required
+            [required]="development === null"
+            [attr.aria-describedby]="development ? 'sign-in-password-hint' : null"
             [value]="password()"
             (input)="onPassword($event)"
           />
@@ -107,7 +124,28 @@
             {{ passwordVisible() ? copy.hidePassword : copy.showPassword }}
           </button>
         </div>
+        @if (development) {
+          <p id="sign-in-password-hint" class="field__hint">{{ copy.passwordNotCheckedHint }}</p>
+        }
       </div>
+
+      @if (development; as dev) {
+        <fieldset class="field sign-in__role-claim">
+          <legend class="field__label">{{ copy.roleClaimLegend }}</legend>
+          @for (claim of dev.roleClaims; track claim) {
+            <label class="sign-in__role-option">
+              <input
+                type="radio"
+                name="role-claim"
+                [value]="claim"
+                [checked]="roleClaim() === claim"
+                (change)="onRoleClaim(claim)"
+              />
+              {{ copy.roleClaimLabels[claim] }}
+            </label>
+          }
+        </fieldset>
+      }
 
       <button type="submit" class="btn btn--primary sign-in__submit" [disabled]="submitting()">
         {{ submitting() ? copy.submitting : copy.submit }}

@@ -5,7 +5,13 @@ import { map } from 'rxjs';
 
 import { RETURN_URL_PARAM, safeReturnUrl } from '@core/access/access.guards';
 import { SessionStore } from '@core/auth/session.store';
-import { isPlausibleEmail, isPlausiblePassword } from '@domain/index';
+import {
+  isPlausibleEmail,
+  isPlausiblePassword,
+  SIGN_IN_METHOD,
+  type DevelopmentRoleClaim,
+  type SignInCredentials,
+} from '@domain/index';
 import { BRAND_COPY } from '@shared/brand/brand.copy';
 import { MunicipalSeal } from '@shared/brand/municipal-seal';
 
@@ -30,6 +36,11 @@ import { AUTH_COPY } from './auth.copy';
  * There is also **no registration form**. Accounts are provisioned by an
  * administrator (`DL-32`); the screen says so rather than leaving a user
  * hunting for a link that does not exist.
+ *
+ * What the form offers depends on how this build signs in (`SIGN_IN_METHOD`,
+ * `DL-166`): a password; nothing at all, said plainly, when no identity provider
+ * is configured; or, in `local-api` only, the development verifier, which checks
+ * no password and asks which role a new account should be recorded with.
  */
 @Component({
   selector: 'app-sign-in-page',
@@ -42,9 +53,16 @@ export class SignInPage {
   private readonly session = inject(SessionStore);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly method = inject(SIGN_IN_METHOD);
 
   protected readonly copy = AUTH_COPY;
   protected readonly brand = BRAND_COPY;
+
+  /** Set when this build has no identity provider: the screen explains, and offers no form. */
+  protected readonly notConfigured = this.method.kind === 'not-configured' ? this.method : null;
+  /** Set in `local-api` only. */
+  protected readonly development = this.method.kind === 'development-verifier' ? this.method : null;
+  protected readonly roleClaim = signal<DevelopmentRoleClaim>('staff');
 
   protected readonly email = signal('');
   protected readonly password = signal('');
@@ -83,26 +101,32 @@ export class SignInPage {
     this.clearMessages();
   }
 
+  protected onRoleClaim(claim: DevelopmentRoleClaim): void {
+    this.roleClaim.set(claim);
+  }
+
   protected togglePasswordVisible(): void {
     this.passwordVisible.update((visible) => !visible);
   }
 
   protected submit(event: Event): void {
     event.preventDefault();
-    if (this.submitting()) {
+    if (this.submitting() || this.notConfigured !== null) {
       return;
     }
 
     const email = this.email().trim();
     const password = this.password();
+    const development = this.development;
 
     // Shape errors are named specifically, because they are about what the
-    // user typed. Credential errors never are.
+    // user typed. Credential errors never are. The development verifier reads
+    // no password, so it asks for none.
     const problems: string[] = [];
     if (!isPlausibleEmail(email)) {
       problems.push(this.copy.emailRequired);
     }
-    if (!isPlausiblePassword(password)) {
+    if (development === null && !isPlausiblePassword(password)) {
       problems.push(this.copy.passwordRequired);
     }
     if (problems.length > 0) {
@@ -110,8 +134,13 @@ export class SignInPage {
       return;
     }
 
+    const credentials: SignInCredentials =
+      development === null
+        ? { email, password }
+        : { email, password, developmentRoleClaim: this.roleClaim() };
+
     this.submitting.set(true);
-    this.session.signIn({ email, password }).subscribe({
+    this.session.signIn(credentials).subscribe({
       next: (signedIn) => {
         this.submitting.set(false);
         // Cleared whichever way this went: on success it is no longer needed,

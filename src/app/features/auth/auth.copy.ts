@@ -51,7 +51,9 @@ export const AUTH_COPY = {
   codeSubtitle:
     'Your password was accepted. Enter the six-digit code from your authenticator app to finish signing in.',
   codeLabel: 'Authentication code',
-  codeHint: 'Six digits, or one of your recovery codes if you cannot use your authenticator.',
+  // No recovery codes: the identity provider issues none, and a hint promising one sends somebody
+  // looking for a sheet of paper that does not exist.
+  codeHint: 'The six digits your authenticator app shows now.',
   codeRequired: 'Enter the code from your authenticator app.',
   codeSubmit: 'Verify and sign in',
   codeSubmitting: 'Verifying…',
@@ -64,7 +66,7 @@ export const AUTH_COPY = {
   codeRefused: 'That code was not accepted. Start again and request a new one.',
 
   recoveryHelp:
-    'Lost your authenticator? Use a recovery code, or contact the MSWDO administrator to have your second factor reset.',
+    'Lost your authenticator? Contact the MSWDO administrator to have your second factor reset.',
 
   /**
    * Throttling. Says nothing about the account — only about this caller's rate
@@ -72,4 +74,15 @@ export const AUTH_COPY = {
    */
   throttled: (seconds: number): string =>
     `Too many sign-in attempts. Try again in ${seconds} second${seconds === 1 ? '' : 's'}.`,
+
+  /*
+   * How this build signs in (`DL-166`). The explanations themselves come from the adapter that
+   * knows them, so the development wording never reaches a production bundle; these are only the
+   * frame around them.
+   */
+  notConfiguredHeading: 'Sign-in is not available here',
+  developmentHeading: 'Development sign-in',
+  roleClaimLegend: 'Role to record for a new account',
+  roleClaimLabels: { staff: 'Staff', admin: 'Administrator' },
+  passwordNotCheckedHint: 'Not checked in this build. Any text will do.',
 } as const;

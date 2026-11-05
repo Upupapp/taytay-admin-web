@@ -47,11 +47,22 @@ export class AuthTokenHolder {
   }
 
   /**
+   * Whether the token lapses within `ms` — or already has. Asked before an API request, so a token
+   * about to expire is renewed rather than sent to be refused (`DL-166`).
+   *
+   * `false` without a token, and `false` for an unknown expiry: nothing is renewed on a guess.
+   */
+  expiresWithin(ms: number, now: number = Date.now()): boolean {
+    return this.#token !== null && this.#expiresAt !== null && this.#expiresAt.getTime() - now <= ms;
+  }
+
+  /**
    * Drops the token.
    *
-   * **This is not sign-out.** Sign-out is `DELETE auth/tokens/current`, and the
-   * server revoking the token is what ends the session; this only forgets it
-   * locally. The adapter calls this *after* the API confirms, never instead.
+   * **This is not sign-out.** Sign-out is `POST auth/sign-out`, and the server
+   * revoking the account's refresh tokens is what ends the session; this only
+   * forgets the token locally. The adapter calls this once the API has answered,
+   * never instead of asking (`DL-165`).
    */
   clear(): void {
     this.#token = null;

@@ -21,7 +21,7 @@ sign-in only, hosted on Linode.
 | 1 | CORS for browser clients, exact origins | backend | done `135ec41` |
 | 2 | `permissions` on `GET /me` from a table of the route guards; `POST /auth/sign-out` | backend | done `189b911` |
 | 3 | Transport: cursor paging, Node error codes, vendored `openapi.json`, `local-api` on port 3000; `GET me`, sign-out and the inbox served, the other eighteen ports bound to adapters that make no request | console | done (`DL-165`) |
-| 4 | Sign-in: Firebase Auth REST, tokens in memory; dev sign-in through the backend's mock verifier | console | to do |
+| 4 | Sign-in: Firebase Auth REST, tokens in memory; dev sign-in through the backend's mock verifier | console | done (`DL-166`): password sign-in, TOTP second factor and on-demand refresh built to Google's published REST reference; `local-api` signs in through the development verifier. **Not live anywhere yet**: no Firebase web API key has been supplied for staging or production, so both say sign-in is not configured; the TOTP flow has not been exercised against a project with Identity Platform TOTP enabled |
 | 5 | Unserved ports bound to adapters that say so; navigation withholds them; one page names them | console | in part: the adapters are bound (`DL-165`); navigation and the page are to do |
 | 6 | Platform screens: verification review first, then office inbox, users and roles, directory, home, digital IDs, Balita, audit, app config | console | to do |
 | 7 | Re-point the contract checks at the Node spec, new baselines stated | console | done with step 3, in one commit, each old and new count stated (`DL-165`) |

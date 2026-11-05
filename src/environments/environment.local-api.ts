@@ -13,6 +13,9 @@ export const environment: AppEnvironment = {
   appName: 'Taytay Social Welfare',
   apiBaseUrl: 'http://localhost:3000/api/v1',
   dataSource: 'http',
+  // `local-api` signs in through the development verifier swapped in by angular.json, which needs no
+  // key: it presents `mock:` credentials to a backend running `AUTH_VERIFIER=mock`.
+  firebaseWebApiKey: null,
   mockLatencyMs: 0,
   enableDevTools: true,
 };

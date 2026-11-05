@@ -1,15 +1,22 @@
-import { HttpErrorResponse, type HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, type HttpInterceptorFn, type HttpRequest } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { catchError, switchMap, throwError } from 'rxjs';
 
 import { RETURN_URL_PARAM } from '../access/access.guards';
 import { APP_ENVIRONMENT } from '../config/app-environment.token';
 
 import { readApiError, type ApiFailure } from './api-failure';
 import { AuthTokenHolder } from '../auth/auth-token.holder';
+import { SESSION_REFRESHER } from '../auth/session-refresher';
 import { SessionStore } from '../auth/session.store';
 import { NotificationStore } from '../notifications/notification.store';
+
+/**
+ * How close to its expiry a token is renewed rather than sent. A minute covers a request that
+ * leaves now and is verified a few seconds later, on a server whose clock is not this one's.
+ */
+export const REFRESH_MARGIN_MS = 60_000;
 
 /**
  * The headers an API call carries — and only an API call.
@@ -33,7 +40,8 @@ import { NotificationStore } from '../notifications/notification.store';
  *
  * The bearer token comes from `AuthTokenHolder`, which keeps it in a private field and exposes no
  * getter. This interceptor never reads, stores or logs the token itself — it asks for a header and
- * attaches whatever it is given.
+ * attaches whatever it is given. The identity provider's own calls to Google never pass through
+ * here at all: they go out on the bare `HttpBackend` (`DL-166`).
  */
 export const apiHeadersInterceptor: HttpInterceptorFn = (request, next) => {
   const base = inject(APP_ENVIRONMENT).apiBaseUrl.replace(/\/+$/, '');
@@ -43,17 +51,65 @@ export const apiHeadersInterceptor: HttpInterceptorFn = (request, next) => {
   }
 
   const tokens = inject(AuthTokenHolder);
+  const refresher = inject(SESSION_REFRESHER, { optional: true });
 
-  return next(
+  // Read when the request leaves, not when the interceptor ran: after a renewal the header must
+  // carry the new token, never the one that prompted it.
+  const decorated = (): HttpRequest<unknown> =>
     request.clone({
       setHeaders: {
         Accept: 'application/json',
         'X-Client-Channel': 'admin-console',
         ...tokens.authorization(),
       },
+    });
+
+  /*
+   * A token about to lapse is renewed first, on demand (`DL-166`): no timer, nothing in the
+   * background (`DL-118`). Every request that finds it near expiry awaits the same renewal.
+   *
+   * When it cannot be renewed the session is over, and this request is **not sent** — sent with a
+   * dying token it would be refused, and sent without one it would be an unauthenticated request
+   * the API can only refuse. It fails as the API's own 401 would, and leaves for sign-in the same
+   * way, with the current screen as the return address.
+   */
+  if (refresher === null || !tokens.expiresWithin(REFRESH_MARGIN_MS)) {
+    return next(decorated());
+  }
+
+  const session = inject(SessionStore);
+  const router = inject(Router);
+
+  return refresher.refresh().pipe(
+    catchError(() => {
+      returnToSignIn(session, router);
+      return throwError(() => SESSION_LAPSED);
     }),
+    switchMap(() => next(decorated())),
   );
 };
+
+/** What a request refused before it left says: the API's own code for it, and no request id. */
+const SESSION_LAPSED: ApiFailure = {
+  code: 'UNAUTHENTICATED',
+  status: 401,
+  message: 'Your session has ended and could not be renewed. Sign in again to continue.',
+  details: null,
+  requestId: null,
+  retryAfterSeconds: null,
+};
+
+/**
+ * Ends the session locally and goes to sign-in, carrying the current URL so the user comes back
+ * to the screen they were on. Local only: `signOut()` would call `POST auth/sign-out` with a
+ * credential that no longer works.
+ */
+function returnToSignIn(session: SessionStore, router: Router): void {
+  session.endExpiredSession();
+  void router.navigate(['/sign-in'], {
+    queryParams: { [RETURN_URL_PARAM]: router.url },
+  });
+}
 
 /**
  * Turns a failure into one user-visible message and one navigation decision, so
@@ -103,10 +159,7 @@ export const httpErrorInterceptor: HttpInterceptorFn = (request, next) => {
            * they were on rather than the dashboard. What it does **not** yet
            * carry is unsaved work — see the deferred item in TAB 02's report.
            */
-          session.endExpiredSession();
-          void router.navigate(['/sign-in'], {
-            queryParams: { [RETURN_URL_PARAM]: router.url },
-          });
+          returnToSignIn(session, router);
           break;
 
         case 'FORBIDDEN':

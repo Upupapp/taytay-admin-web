@@ -13,6 +13,8 @@ export const environment: AppEnvironment = {
   appName: 'Taytay Social Welfare (staging)',
   apiBaseUrl: 'https://api-staging.<approved-domain>/api/v1',
   dataSource: 'http',
+  // The staging Firebase project's key, never production's. None has been supplied yet.
+  firebaseWebApiKey: null,
   mockLatencyMs: 0,
   // On in staging on purpose: this is where a developer needs the detail a caseworker must never
   // see, and the data here is synthetic.

@@ -143,12 +143,23 @@ for (const path of readdirSync(join(ROOT, 'src/environments'))
 // purpose: the rule still covers every adapter, including the file transport, which builds its
 // own URLs from the environment rather than through ApiClient because FormData and upload
 // progress are outside what ApiClient does.
+//
+// ONE OTHER EXCEPTION, as narrow (`DL-166`): the identity provider signs in at Google, which is not
+// the API and has no base for ApiClient to own. Its folder may name Firebase Authentication's two
+// REST origins and nothing else — any other absolute URL there still fails.
+const IDENTITY_DIR = 'src/app/data/http/identity/';
+const IDENTITY_ORIGINS = ['https://identitytoolkit.googleapis.com/', 'https://securetoken.googleapis.com/'];
+
 for (const { path, code } of files) {
   if (!path.startsWith('src/app/data/http/')) continue;
   if (path.endsWith('.spec.ts')) continue;
 
   for (const [index, line] of code.split('\n').entries()) {
-    if (/['"`]https?:\/\//.test(line)) {
+    const urls = [...line.matchAll(/['"`](https?:\/\/[^'"`]*)/g)].map((match) => match[1]);
+    const identity = path.startsWith(IDENTITY_DIR) && urls.length > 0
+      && urls.every((url) => IDENTITY_ORIGINS.some((origin) => url.startsWith(origin)));
+
+    if (urls.length > 0 && !identity) {
       fail(path, `line ${index + 1}: builds an absolute URL. Go through ApiClient, which owns the versioned base.`);
     }
     if (/['"`]\/api\//.test(line)) {

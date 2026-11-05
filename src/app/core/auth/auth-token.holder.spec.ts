@@ -50,4 +50,25 @@ describe('AuthTokenHolder', () => {
     expect(JSON.stringify(holder)).not.toContain('secret-token');
     expect(Object.keys(holder)).toHaveLength(0);
   });
+
+  it('says a token is about to lapse only when it knows the expiry (DL-166)', () => {
+    const holder = new AuthTokenHolder();
+    const now = Date.parse('2026-11-05T01:00:00.000Z');
+
+    expect(holder.expiresWithin(60_000, now)).toBe(false);
+
+    holder.hold('fixture-token', new Date(now + 30_000));
+    expect(holder.expiresWithin(60_000, now)).toBe(true);
+    expect(holder.expiresWithin(10_000, now)).toBe(false);
+
+    holder.hold('fixture-token', new Date(now - 1_000));
+    expect(holder.expiresWithin(60_000, now)).toBe(true);
+
+    // An unknown expiry is never renewed on a guess.
+    holder.hold('fixture-token', null);
+    expect(holder.expiresWithin(60_000, now)).toBe(false);
+
+    holder.clear();
+    expect(holder.expiresWithin(60_000, now)).toBe(false);
+  });
 });

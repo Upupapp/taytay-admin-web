@@ -100,3 +100,30 @@
   color: var(--c-text-muted);
   font-size: 12.5px;
 }
+
+// How this build signs in (DL-166): stated in the page's own voice, not as an error, because
+// nothing has gone wrong — it is a fact about this installation.
+.sign-in__notice {
+  margin-block-start: var(--space-base);
+  padding: var(--space-snug) var(--space-base);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+}
+
+.sign-in__notice p + p {
+  margin-block-start: var(--space-1);
+}
+
+.sign-in__role-claim {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.sign-in__role-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-compact);
+  min-block-size: 44px;
+}

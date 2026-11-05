@@ -1,6 +1,7 @@
 import type { EnvironmentProviders } from '@angular/core';
 import { makeEnvironmentProviders } from '@angular/core';
 
+import { SESSION_REFRESHER } from '@core/auth/session-refresher';
 import {
   ASSISTANCE_REQUEST_REPOSITORY,
   BENEFICIARY_REPOSITORY,
@@ -21,10 +22,16 @@ import {
   REFERRAL_REPOSITORY,
   RESIDENT_REPOSITORY,
   SAVED_VIEW_REPOSITORY,
+  SIGN_IN_METHOD,
   STAFF_REPOSITORY,
 } from '@domain/index';
 
-import { HttpNotificationRepository, HttpStaffRepository } from './http/http-repositories';
+import {
+  HttpNotificationRepository,
+  HttpSessionRefresher,
+  HttpStaffRepository,
+} from './http/http-repositories';
+import { identitySignInMethod } from './http/identity/identity.provider';
 import {
   UnservedAssistanceRequestRepository,
   UnservedBeneficiaryRepository,
@@ -99,5 +106,9 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: CASE_REPOSITORY, useClass: UnservedCaseRepository },
     { provide: BENEFICIARY_REPOSITORY, useClass: UnservedBeneficiaryRepository },
     { provide: FIELD_VISIT_REPOSITORY, useClass: UnservedFieldVisitRepository },
+    // Sign-in (`DL-166`): which identity provider answers is decided by which file angular.json
+    // swapped in — Firebase, or the development verifier for `local-api` — never by a runtime flag.
+    { provide: SIGN_IN_METHOD, useFactory: identitySignInMethod },
+    { provide: SESSION_REFRESHER, useClass: HttpSessionRefresher },
   ]);
 }

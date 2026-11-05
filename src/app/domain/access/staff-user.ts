@@ -27,7 +27,17 @@ export interface AuthenticatedUser {
   readonly id: StaffUserId;
   readonly displayName: string;
   readonly email: string;
-  readonly role: StaffRole;
+  /**
+   * One of the console's seven roles, or `null` when the server's role is not one of them.
+   *
+   * The Node API has two staff roles, `staff` and `admin`, and neither is any of the seven. This
+   * used to fall back to `'auditor'`, which labelled every Node administrator an auditor wherever a
+   * role was shown — and an auditor is the one role defined by what it may *not* do. `null` says
+   * what is true: the console has no role of its own for this account (`DL-166`). Nothing decides
+   * from this field; authorization asks about `permissions`.
+   */
+  readonly role: StaffRole | null;
+  /** How the role is said on screen. From the server's own role when it is not one of the seven. */
   readonly roleLabel: string;
   readonly position: string;
   readonly barangayId: BarangayId | null;
@@ -92,7 +102,9 @@ export function fromServerIdentity(identity: ServerIdentity): AuthenticatedUser 
     email: identity.email,
     // The role is presentation only from here on: it labels the account on
     // screen and nothing branches on it. Authorization asks about permissions.
-    role: role ?? 'auditor',
+    // A role the console does not have is said in the server's words, never
+    // relabelled as the nearest console role.
+    role,
     roleLabel: role ? ROLE_DEFINITIONS[role].label : identity.roleLabel,
     position: identity.position,
     barangayId: identity.barangayId,

@@ -1,20 +1,37 @@
 import { inject, Injectable } from '@angular/core';
-import { finalize, map, of, switchMap, throwError, type Observable } from 'rxjs';
+import {
+  catchError,
+  defer,
+  finalize,
+  map,
+  of,
+  shareReplay,
+  switchMap,
+  tap,
+  throwError,
+  type Observable,
+} from 'rxjs';
 
 import { AuthTokenHolder } from '@core/auth/auth-token.holder';
+import type { SessionRefresher } from '@core/auth/session-refresher';
 import {
   fromServerIdentity,
   SignInError,
   type AppNotification,
   type AuthenticatedUser,
+  type MfaCredentials,
   type NotificationId,
   type NotificationRepository,
+  type SignInCredentials,
   type SignInOutcome,
   type StaffRepository,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
 import { API_ENDPOINTS } from './api.contract';
+import type { IdentityGrant, IdentityPort } from './identity/identity.model';
+import { IdentityProvider } from './identity/identity.provider';
+import { invalidCredentials, signInUnavailable } from './identity/sign-in-messages';
 import { toServerIdentity } from './mappers/me.mapper';
 import { toNotification } from './mappers/notification.mapper';
 import { list } from './mappers/wire';
@@ -23,7 +40,8 @@ import { unserved } from './unserved-repositories';
 /**
  * The adapters the Node API actually serves.
  *
- * Two ports of twenty: the signed-in account and its inbox. Every other port is bound in the
+ * Two ports of twenty: the signed-in account and its inbox — and sign-in itself, through the
+ * identity provider in `identity/` (`DL-166`). Every other port is bound in the
  * `http` configuration to an adapter that makes no request and says so (`unserved-repositories.ts`,
  * `DL-164`, `DL-165`). The Laravel adapters that stood here called forty paths of an API that was
  * retired on 2026-10-20; they are recoverable from git at `990edfa` and nowhere else, because code
@@ -33,22 +51,11 @@ import { unserved } from './unserved-repositories';
  * (`check:mapper-adoption`).
  */
 
-/**
- * What the sign-in form says until the identity provider is connected.
- *
- * The Node API has no sign-in route: a staff member signs in with Firebase and presents the ID
- * token, and the console's Firebase sign-in is the next change, not this one. Until it lands, the
- * honest answer is that sign-in is not connected — "try again shortly" would send somebody back to
- * a form that cannot succeed.
- */
-const SIGN_IN_NOT_CONNECTED =
-  'Sign-in is not available yet: this console cannot sign in to the new server until its ' +
-  'identity provider is connected. Contact the MSWDO administrator.';
-
 @Injectable()
 export class HttpStaffRepository implements StaffRepository {
   private readonly api = inject(ApiClient);
   private readonly tokens = inject(AuthTokenHolder);
+  private readonly identity: IdentityPort = inject(IdentityProvider);
 
   /**
    * `GET admin/users` lists every account in the residents' app, not the office's staff, and only
@@ -91,12 +98,27 @@ export class HttpStaffRepository implements StaffRepository {
     );
   }
 
-  signIn(): Observable<SignInOutcome> {
-    return throwError(() => new SignInError('unavailable', SIGN_IN_NOT_CONNECTED));
+  /**
+   * Firebase sign-in, then the API's own answer about who that is (`DL-166`).
+   *
+   * The identity provider proves the password; only `GET me` says whether the account may hold a
+   * console session. The ID token is held **before** that request, because the request is how it is
+   * presented — and dropped, locally, if the answer is no.
+   */
+  signIn(credentials: SignInCredentials): Observable<SignInOutcome> {
+    return this.identity.signIn(credentials).pipe(
+      switchMap((first) =>
+        first.kind === 'second-factor'
+          ? of<SignInOutcome>({ kind: 'mfa-required', challenge: first.challenge })
+          : this.establish(first.grant).pipe(
+              map((user): SignInOutcome => ({ kind: 'authenticated', user })),
+            ),
+      ),
+    );
   }
 
-  completeMfa(): Observable<AuthenticatedUser> {
-    return throwError(() => new SignInError('unavailable', SIGN_IN_NOT_CONNECTED));
+  completeMfa(credentials: MfaCredentials): Observable<AuthenticatedUser> {
+    return this.identity.finalizeMfa(credentials).pipe(switchMap((grant) => this.establish(grant)));
   }
 
   /**
@@ -112,13 +134,86 @@ export class HttpStaffRepository implements StaffRepository {
    */
   signOut(): Observable<void> {
     if (!this.tokens.hasToken()) {
+      this.identity.forget();
       return of(undefined);
     }
 
     return this.api.post(API_ENDPOINTS.signOut, {}).pipe(
       map(() => undefined),
-      finalize(() => this.tokens.clear()),
+      finalize(() => {
+        this.tokens.clear();
+        // The refresh token too: revoked by the request above, and of no use to anybody after it.
+        this.identity.forget();
+      }),
     );
+  }
+
+  /**
+   * Holds the grant, asks the API who it belongs to, and refuses an account that may not hold a
+   * console session.
+   *
+   * A resident's account or a closed one gets the **same** message as a wrong password, and its
+   * credentials are dropped **locally only**. Revoking them would sign that resident out of the
+   * app on their phone for having typed their password into the wrong website — and would tell
+   * whoever typed it that the address has an account.
+   */
+  private establish(grant: IdentityGrant): Observable<AuthenticatedUser> {
+    return defer(() => {
+      this.tokens.hold(grant.idToken, grant.expiresAt);
+
+      return this.api.item(API_ENDPOINTS.me);
+    }).pipe(
+      map((wire) => {
+        const identity = toServerIdentity(wire);
+
+        if (identity === null) {
+          throw invalidCredentials();
+        }
+
+        return fromServerIdentity(identity);
+      }),
+      catchError((error: unknown) => {
+        this.tokens.clear();
+        this.identity.forget();
+        // The API's own failure was already reported by the error interceptor; the form says only
+        // that sign-in did not complete.
+        return throwError(() => (error instanceof SignInError ? error : signInUnavailable()));
+      }),
+    );
+  }
+}
+
+/**
+ * Renews the ID token from the identity provider's refresh token, once per renewal however many
+ * requests are waiting for it (`SESSION_REFRESHER`, `DL-166`).
+ *
+ * Here rather than in the provider because holding a token is the staff adapters' act alone
+ * (`check:auth` rule 4). On failure the credential is dropped — a session that cannot be renewed
+ * is over — and the interceptor ends it and sends nobody's request.
+ */
+@Injectable()
+export class HttpSessionRefresher implements SessionRefresher {
+  private readonly tokens = inject(AuthTokenHolder);
+  private readonly identity: IdentityPort = inject(IdentityProvider);
+  private inFlight: Observable<void> | null = null;
+
+  refresh(): Observable<void> {
+    this.inFlight ??= this.identity.refresh().pipe(
+      tap((grant) => this.tokens.hold(grant.idToken, grant.expiresAt)),
+      map((): void => undefined),
+      catchError((error: unknown) => {
+        this.tokens.clear();
+        this.identity.forget();
+        return throwError(() => error);
+      }),
+      finalize(() => {
+        this.inFlight = null;
+      }),
+      // Shared, and replayed to a caller that arrives as it finishes: one refresh token spent once.
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+
+    return this.inFlight;
   }
 }
 

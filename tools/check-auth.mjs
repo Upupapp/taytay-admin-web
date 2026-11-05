@@ -109,6 +109,118 @@ if (holder === '') {
   }
 }
 
+// ── 2b. The refresh token has one home too, and no way out of it ─────────────
+//
+// `DL-166`. The Firebase refresh token is longer-lived than the ID token and renews it for as long
+// as the account stands, so it gets the access token's treatment and more: a private field of the
+// identity provider, no getter, no method or property named for it, never in the grant the provider
+// hands the staff adapter (which would put it one `hold()` away from a second home).
+const PROVIDER_PATH = 'src/app/data/http/identity/identity.provider.ts';
+const GRANT_PATH = 'src/app/data/http/identity/identity.model.ts';
+const provider = files.find((f) => f.path === PROVIDER_PATH)?.code ?? '';
+const grantModel = files.find((f) => f.path === GRANT_PATH)?.code ?? '';
+
+if (provider === '') {
+  fail(PROVIDER_PATH, 'missing. The refresh token must have exactly one home, and this is it.');
+} else {
+  if (!/#refreshToken\b/.test(provider)) {
+    fail(PROVIDER_PATH, 'the refresh token must be a private class field (#refreshToken), not a property a caller can reach.');
+  }
+  if (
+    /\bget\s+refreshToken\b|\brefreshToken\s*\(\s*\)|\b(?:public|protected|private|readonly|static)\s+(?:readonly\s+)?refreshToken\b|^\s*refreshToken\s*[:=]/m.test(
+      provider,
+    )
+  ) {
+    fail(PROVIDER_PATH, 'exposes the refresh token through a getter, method or property. It is read only by refresh(), from #refreshToken.');
+  }
+  if (/signal\s*<[^>]*>\s*\(/.test(provider)) {
+    fail(PROVIDER_PATH, 'holds state in a signal. A signal is readable by every component that injects the service.');
+  }
+}
+
+if (grantModel === '') {
+  fail(GRANT_PATH, 'missing. The grant shape is what keeps the refresh token out of the staff adapter.');
+} else if (/refresh_?token/i.test(grantModel)) {
+  fail(GRANT_PATH, 'names a refresh token in the grant or port. The provider keeps it; nothing it returns may carry it.');
+}
+
+// ── 2c. No Firebase SDK ───────────────────────────────────────────────────────
+//
+// `DL-166`, after node-api-transport-design.md §4: sign-in is Firebase Auth over REST. The SDK's
+// default persistence is IndexedDB, its heartbeat writes there regardless, and it hands any
+// injector holding `Auth` an object whose tokens are public — every one of them a second home for a
+// credential. Refused as an import and as a dependency, so it cannot arrive as either.
+const FIREBASE_IMPORT = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)['"](?:firebase|@firebase\/[^'"]+|firebase\/[^'"]+|@angular\/fire(?:\/[^'"]+)?)['"]/;
+
+for (const { path, code } of files) {
+  if (FIREBASE_IMPORT.test(code)) {
+    fail(path, 'imports the Firebase SDK. Sign-in is Firebase Auth over REST, held in two private fields (DL-166).');
+  }
+}
+
+{
+  const manifest = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+  const declared = Object.keys({ ...manifest.dependencies, ...manifest.devDependencies });
+  const sdk = declared.filter((name) => name === 'firebase' || name.startsWith('@firebase/') || name === '@angular/fire');
+
+  if (sdk.length > 0) {
+    fail('package.json', `depends on ${sdk.join(', ')}. Sign-in is Firebase Auth over REST; the SDK is refused (DL-166).`);
+  }
+}
+
+// ── 2d. The development credential exists in one swapped file, for one configuration ──
+//
+// `DL-166`. Against a backend running `AUTH_VERIFIER=mock`, `mock:<role>:<subject>` is a working
+// credential with whatever role it names. The file that composes one is swapped in by angular.json
+// for `local-api` and nothing else, so no production or staging build imports it (the DL-136
+// technique). That only holds while the composition lives in that file alone and no other module
+// imports it — a helper "for tests" in a shared file would ship.
+const VERIFIER_PATH = 'src/app/data/http/identity/identity.provider.mock-verifier.ts';
+const VERIFIER_SPEC = 'src/app/data/http/identity/identity.provider.mock-verifier.spec.ts';
+
+if (!files.some((f) => f.path === VERIFIER_PATH)) {
+  fail(VERIFIER_PATH, 'missing, so the place the development credential may be composed could not be checked.');
+}
+
+for (const { path, code } of files) {
+  if (path === VERIFIER_PATH || path === VERIFIER_SPEC) continue;
+
+  if (/['"`]mock:/.test(code)) {
+    fail(path, 'composes a development (`mock:`) credential. Only the swapped-in local-api identity provider may.');
+  }
+
+  if (/identity\.provider\.mock-verifier['"]/.test(code)) {
+    fail(path, 'imports the development identity provider. Only angular.json may bring it in, by file replacement.');
+  }
+}
+
+{
+  const workspace = JSON.parse(readFileSync(join(ROOT, 'angular.json'), 'utf8'));
+  const using = [];
+
+  for (const [project, definition] of Object.entries(workspace.projects ?? {})) {
+    for (const [target, spec] of Object.entries(definition.architect ?? {})) {
+      for (const [configuration, options] of Object.entries({ '(default)': spec.options ?? {}, ...(spec.configurations ?? {}) })) {
+        for (const replacement of options.fileReplacements ?? []) {
+          if (String(replacement.with ?? '').endsWith('identity.provider.mock-verifier.ts')) {
+            using.push(`${project}:${target}:${configuration}`);
+          }
+        }
+      }
+    }
+  }
+
+  const wrong = using.filter((where) => !where.endsWith(':build:local-api'));
+
+  if (using.length === 0) {
+    fail('angular.json', 'no configuration swaps in the development identity provider, so local-api would sign in through Firebase with no key.');
+  }
+
+  if (wrong.length > 0) {
+    fail('angular.json', `swaps in the development identity provider for ${wrong.join(', ')}. It belongs to build:local-api alone.`);
+  }
+}
+
 // ── 3. Nothing produces an authenticated user without a credential ───────────
 //
 // The removed `signInAs` is the shape this looks for: any method that returns an

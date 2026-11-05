@@ -25,6 +25,7 @@
  * which legitimately appears in comments and type names.
  */
 
+import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -46,6 +47,33 @@ const SEED_MARKERS = [
   'MOCK_LATENCY',
   'mockLatencyMs":250',
 ];
+
+/**
+ * Wording that exists only in the development identity provider (`DL-166`).
+ *
+ * `identity.provider.mock-verifier.ts` composes `mock:<role>:<subject>` credentials, which a
+ * backend running `AUTH_VERIFIER=mock` accepts with whatever role they name. `angular.json` swaps
+ * it in for `local-api` alone, so a production build never imports it — and this is the proof
+ * taken from the artefact rather than from the configuration. A string literal survives
+ * minification where a class name does not, so the marker is the sentence the screen shows.
+ *
+ * The marker is also required to still be **in** that file: a rewording that dropped it would
+ * leave this check looking for a sentence nothing contains, passing for ever.
+ */
+const DEVELOPMENT_VERIFIER = 'src/app/data/http/identity/identity.provider.mock-verifier.ts';
+const DEVELOPMENT_MARKERS = ['Development mock verifier'];
+
+/**
+ * Public identifiers a person has accepted into the artefact (`DL-166`), by the sha256 of the
+ * value: a Firebase web API key ships in the bundle by design, and is not a secret, but one
+ * nobody recorded is one nobody classified. No key has been supplied, so the list is empty and
+ * every Google API key in the artefact still fails.
+ */
+const ACCEPTED_PATH = 'tools/accepted-public-identifiers.json';
+const acceptedFingerprints = new Set(
+  (JSON.parse(readFileSync(join(ROOT, ACCEPTED_PATH), 'utf8')).identifiers ?? []).map((entry) => entry.sha256),
+);
+const fingerprint = (value) => createHash('sha256').update(value).digest('hex');
 
 function bundleFiles(dir) {
   const out = [];
@@ -120,10 +148,11 @@ if (!isProductionArtefact) {
  * So these are **shaped** patterns rather than entropy: a bundle is full of high-entropy strings
  * that are hashes, and a check that cries wolf on those is a check somebody turns off.
  */
+const GOOGLE_API_KEY = /\bAIza[0-9A-Za-z_-]{35}\b/g;
+
 const SECRET_PATTERNS = [
   [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, 'a private key'],
   [/\bAKIA[0-9A-Z]{16}\b/, 'an AWS access key id'],
-  [/\bAIza[0-9A-Za-z_-]{35}\b/, 'a Google API key'],
   [/\bghp_[A-Za-z0-9]{36}\b/, 'a GitHub personal access token'],
   [/\bgithub_pat_[A-Za-z0-9_]{20,}/, 'a GitHub fine-grained token'],
   [/\bsk_(?:live|test)_[A-Za-z0-9]{16,}/, 'a Stripe secret key'],
@@ -136,8 +165,48 @@ const SECRET_PATTERNS = [
 
 const failures = [];
 
+{
+  let verifier = '';
+
+  try {
+    verifier = readFileSync(join(ROOT, DEVELOPMENT_VERIFIER), 'utf8');
+  } catch {
+    // Reported below.
+  }
+
+  for (const marker of DEVELOPMENT_MARKERS) {
+    if (!verifier.includes(marker)) {
+      failures.push(
+        `${DEVELOPMENT_VERIFIER} no longer contains the marker "${marker}".\n` +
+          `    This check looks for it in the artefact; a marker nothing contains passes for ever.\n` +
+          `    Keep the sentence, or move the marker to wording the file still has.`,
+      );
+    }
+  }
+}
+
 for (const file of files) {
   const source = readFileSync(file, 'utf8');
+
+  for (const [key] of source.matchAll(GOOGLE_API_KEY)) {
+    if (!acceptedFingerprints.has(fingerprint(key))) {
+      failures.push(
+        `${relative(ROOT, file)} contains a Google API key that nobody recorded in ${ACCEPTED_PATH}.\n` +
+          `    A Firebase web API key is public by design, and is accepted by recording its fingerprint\n` +
+          `    (sha256 ${fingerprint(key)}) once it is restricted in Google Cloud. Any other Google key is a leak.`,
+      );
+    }
+  }
+
+  for (const marker of DEVELOPMENT_MARKERS) {
+    if (source.includes(marker)) {
+      failures.push(
+        `${relative(ROOT, file)} contains the development verifier's wording "${marker}".\n` +
+          `    The local-api identity provider reached a production build. It composes credentials a\n` +
+          `    mock-verifying backend accepts with any role; only angular.json's local-api replacement may bring it in.`,
+      );
+    }
+  }
 
   for (const [pattern, description] of SECRET_PATTERNS) {
     if (pattern.test(source)) {
@@ -170,5 +239,5 @@ const bytes = files.reduce((total, file) => total + statSync(file).size, 0);
 
 console.log(
   `Bundle check passed (${files.length} files, ${(bytes / 1024).toFixed(0)} kB, ` +
-    'no seed markers, no credential-shaped strings).',
+    'no seed markers, no development verifier, no unrecorded or credential-shaped strings).',
 );
