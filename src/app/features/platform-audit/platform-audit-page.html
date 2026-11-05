@@ -1,0 +1,73 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <button type="button" page-actions class="btn" (click)="reload()">{{ copy.newest }}</button>
+</app-page-header>
+
+<section class="card audit" aria-labelledby="audit-heading">
+  <h2 id="audit-heading" class="visually-hidden">{{ copy.caption }}</h2>
+
+  <ul class="audit__limits">
+    @for (limit of limits; track $index) {
+      <li>{{ limit }}</li>
+    }
+  </ul>
+
+  <app-async-content
+    [state]="first()"
+    [content]="trailContent"
+    [skeletonLines]="8"
+    (retryRequested)="reload()"
+  >
+    <ng-template #trailContent>
+      <app-data-table
+        [columns]="columns()"
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [caption]="copy.caption"
+        [emptyHeading]="copy.emptyHeading"
+        [emptyMessage]="copy.emptyMessage"
+      />
+
+      @if (rows().length > 0) {
+        <div class="audit__more">
+          <p class="audit__note" role="status">
+            {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
+          </p>
+          @if (hasMore()) {
+            <button type="button" class="btn" [disabled]="loadingMore()" (click)="showMore()">
+              {{ loadingMore() ? copy.loadingMore : copy.showMore }}
+            </button>
+          }
+          @if (moreFailed()) {
+            <p class="audit__problem" role="alert">{{ copy.moreFailed }}</p>
+          }
+        </div>
+      }
+    </ng-template>
+  </app-async-content>
+</section>
+
+<ng-template #whenCell let-entry>
+  {{ entry.at | date: 'd MMM y, h:mm:ss a' }}
+</ng-template>
+
+<ng-template #actionCell let-entry>
+  {{ describe(entry) }}
+  <code class="audit__code">{{ entry.action }}</code>
+</ng-template>
+
+<ng-template #actorCell let-entry>
+  @if (entry.actorId; as actor) {
+    <code class="audit__code">{{ actor }}</code>
+  } @else {
+    {{ copy.noActor }}
+  }
+</ng-template>
+
+<ng-template #subjectCell let-entry>
+  {{ entry.subjectType }}
+  @if (entry.subjectId; as subject) {
+    <code class="audit__code">{{ subject }}</code>
+  } @else {
+    <span class="audit__note">{{ copy.noSubject }}</span>
+  }
+</ng-template>

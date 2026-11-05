@@ -96,6 +96,8 @@ export type QuickLinkId = Branded<string, 'QuickLinkId'>;
 export type DigitalIdId = Branded<string, 'DigitalIdId'>;
 /** A Balita article in the residents' app — not a newsfeed post (`DL-171`, `DL-164`). */
 export type BalitaArticleId = Branded<string, 'BalitaArticleId'>;
+/** A row of the Node API's audit trail — not the governance module's `AuditEntry` (`DL-171`). */
+export type PlatformAuditEntryId = Branded<string, 'PlatformAuditEntryId'>;
 /** A conversation between one resident and one office (`DL-168`). */
 export type OfficeThreadId = Branded<string, 'OfficeThreadId'>;
 /** One message in an office conversation (`DL-168`). */

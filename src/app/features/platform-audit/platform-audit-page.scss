@@ -1,0 +1,31 @@
+/* Layout only: every action, account and record is text in the DOM. */
+
+.audit,
+.audit__more {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-snug);
+}
+
+.audit__limits {
+  margin: 0;
+  font-size: 13px;
+  color: var(--c-text-muted);
+}
+
+.audit__note,
+.audit__problem {
+  margin: 0;
+  font-size: 13px;
+}
+
+.audit__note {
+  color: var(--c-text-muted);
+}
+
+.audit__code {
+  display: block;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}

@@ -6220,3 +6220,64 @@ Described in [`docs/balita/README.md`](../balita/README.md); the decisions are t
 A fix rode beside this part (`bd60a32`): the digital IDs page's drawer was never opened and its
 panel sat outside the drawer's body slot, so "Open the card" showed nothing; the panel's own tests had
 built it directly. It is opened now, and a page-level test opens a card from the list.
+
+### 3. The app's audit trail
+
+`GET admin/audit` (cursor-paged, newest first; `audit.view`, administrators alone). One new port,
+`platform-audit`, served in the http set. One route, `/app-audit`, beside — not replacing — the
+governance audit page, which stays unserved. Described in
+[`docs/platform-audit/README.md`](../platform-audit/README.md); the decisions are these.
+
+- **A row is six things, and the screen shows those six** (`DL-114`). Who acted, what they did, to
+  which record, when. The API keeps no earlier or later value and no reason; `PlatformAuditEntry` has
+  no field that could hold one, the mapper reads exactly the six fields, and the page says so above
+  the table.
+- **Ids as given, nothing looked up beside them.** The actor and the record are shown by id. The page
+  injects one port, so no name, email or record is fetched to decorate a row and the trail discloses
+  nothing it does not hold. The screen's spec provides only that port, so a page that looked anything
+  up would not build.
+- **The action in words, the code either way.** All thirty-three codes the API records at `2736e28`
+  have a sentence; a code this console does not know is shown as given and said to be undescribed,
+  never dropped or guessed at.
+- **Not the governance trail.** Its own model, port and route; `check:platform-audit` fails if the
+  module names `GOVERNANCE_REPOSITORY`, `AuditRow` or `AuditEntryDetail`.
+- **`audit.view` is a key both vocabularies already shared.** The server gives it to administrators
+  alone. In the mock the head and the auditor keep it for the governance page, where `DL-114` put it,
+  so in `local-mock` they open this screen as well; against the API only an administrator receives
+  it. Taking it from them would have broken the governance doctrine to make a mock match; recorded
+  here instead, and the easiest choice to reverse.
+
+#### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:routes` | none | 22 endpoints and 59 composed requests served at their verbs |
+| `check:response-shape`, `check:query-params` | none | 28 of 28 reads; the trail a cursor page, `limit` and `cursor` declared |
+| `check:consumer-contract` | regenerated | 51 interactions, 263 required fields |
+| `check:port-adoption` | none | 201 of 212 port methods reached; the one new method by the screen, the 11 unreached unchanged |
+| `check:unserved` | none | 32 ports, 18 unserved; 59 routed screens, 27 menu entries |
+| `check:permission-parity` | none | 42 of 53 guards unreachable, the ceiling held |
+| `check:access` | none — `audit.view` was already a key and a matrix row | 83 permissions × 7 roles |
+| `check:bundle` | the seed's row ids, `audit-sample-`, are a seed marker | — |
+| `check:platform-audit` | new, in `verify` — seven rules, see `docs/platform-audit/README.md` | ten plants, each caught, every file restored |
+
+### Not done, and whose it is
+
+- **The backend items** in `docs/integration/node-api-migration.md`: no reason kept for an act on a
+  digital ID; no way to lift a suspension; no list of cards; no photo can be chosen; no list of Balita
+  drafts; no description of a cover; a category or cover that cannot be removed; an audit trail with
+  no filter, no values and no reasons. Each is the backend's to fix; each screen says so meanwhile.
+- **Not run against a live API**: built and tested against the vendored spec and composed fixtures.
+- **Step 6 is complete.** Every staff route the Node API serves has a screen. The eighteen casework
+  ports remain unserved, and whether the API grows casework or those screens retire is the owner's
+  decision (`DL-164`).
+- `CLAUDE.md` §3 lists `check:digital-ids`, `check:balita` and `check:platform-audit`.
+
+The launch gate stays **NO-GO**: the eighteen unserved casework ports are unchanged. `npm run verify`
+ran once on Windows after this part: lint, typecheck and every check green; 132 spec files, 2,081
+tests (123 and 2,017 before `DL-171` — nine new spec files: the digital ID and Balita domains, mappers and
+mock adapters, and the three screens (the audit trail's domain, mapper and mock are covered by its
+adapter and screen specs); the HTTP adapters, the fixtures, the identity, the layout and the unserved modules gained
+tests in their own). One test timed out under the full suite's load — `events.spec.ts`, untouched by
+this entry, 5.8 s against a 5 s limit — and passed alone; the build and `check:bundle`, which `verify`
+runs after the tests, were run after it and are green.

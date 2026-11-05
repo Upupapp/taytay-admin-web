@@ -591,6 +591,15 @@ export const routes: Routes = [
         loadComponent: () => import('@features/balita/balita-page').then((m) => m.BalitaPage),
       },
       {
+        // `DL-171`. The API grants `audit.view` to administrators alone; this guard mirrors it and is
+        // not the protection (rule 4). Not the governance audit page, which has no server.
+        path: 'app-audit',
+        title: 'App audit trail — Taytay Social Welfare',
+        canActivate: [servedGuard('platform-audit'), permissionGuard('audit.view')],
+        loadComponent: () =>
+          import('@features/platform-audit/platform-audit-page').then((m) => m.PlatformAuditPage),
+      },
+      {
         // Where every unserved module's address leads (`DL-167`). No permission: it names what the
         // server lacks, which is no secret about any record, and it is linked from the menu.
         path: 'unavailable',

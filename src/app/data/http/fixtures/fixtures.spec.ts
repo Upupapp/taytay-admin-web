@@ -41,6 +41,7 @@ import DIGITAL_ID_HOLDER from './digital-id-holder.json';
 import NEWS from './news.json';
 import NEWS_PAGE from './news-page.json';
 import NEWS_CATEGORIES from './news-categories.json';
+import AUDIT_PAGE from './audit-page.json';
 
 /**
  * **These fixtures are composed, not recorded** — and this file is why that is acceptable.
@@ -216,6 +217,7 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['news', NEWS, 'NewsEnvelope'],
     ['news-page', NEWS_PAGE, 'NewsListEnvelope'],
     ['news-categories', NEWS_CATEGORIES, 'NewsCategoryListEnvelope'],
+    ['audit-page', AUDIT_PAGE, 'AuditListEnvelope'],
   ] as const)('%s conforms to %s', (_name, fixture, envelope) => {
     expect(schema(envelope)).toBeDefined();
     expect(problems(fixture, schema(envelope), 'body')).toEqual([]);

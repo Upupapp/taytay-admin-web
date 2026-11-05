@@ -250,6 +250,15 @@ export const NAVIGATION: readonly NavSection[] = [
         permissions: ['news.write'],
         description: 'Write and publish the news residents read in the Taytay app.',
       },
+      {
+        // `DL-171`. Who did what through the app's API, and when. Not the governance trail.
+        label: 'App audit trail',
+        route: '/app-audit',
+        reads: ['platform-audit'],
+        glyph: 'AT',
+        permissions: ['audit.view'],
+        description: 'Who did what through the Taytay app’s API, and when. Read-only.',
+      },
     ],
   },
   {

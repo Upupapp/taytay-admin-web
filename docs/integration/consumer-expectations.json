@@ -20,6 +20,21 @@
       ]
     },
     {
+      "method": "GET",
+      "path": "admin/audit",
+      "consumer": "platform-audit.mapper.ts#toPlatformAuditEntry",
+      "required": [
+        "action",
+        "created_at",
+        "id",
+        "subject_type"
+      ],
+      "optional": [
+        "actor_id",
+        "subject_id"
+      ]
+    },
+    {
       "method": "POST",
       "path": "admin/digital-ids/{id}/reissue",
       "consumer": "digital-id.mapper.ts#toDigitalIdCard",

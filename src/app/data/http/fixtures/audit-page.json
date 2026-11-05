@@ -1,0 +1,26 @@
+{
+  "data": [
+    {
+      "id": "6b1e1c3a-1d2e-4f3a-8b4c-5d6e7f8a9b01",
+      "actor_id": "0b8f6c1e-4a52-4d0e-9a8e-2c41f1a0c002",
+      "action": "user.role_changed",
+      "subject_type": "user",
+      "subject_id": "0f1e2d3c-4b5a-4968-8776-655443322102",
+      "created_at": "2026-11-05T01:00:00.000Z"
+    },
+    {
+      "id": "6b1e1c3a-1d2e-4f3a-8b4c-5d6e7f8a9b02",
+      "actor_id": null,
+      "action": "app.config_updated",
+      "subject_type": "app_config",
+      "subject_id": null,
+      "created_at": "2026-11-05T00:30:00.000Z"
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "has_more": true,
+      "next_cursor": "fixture-cursor-2"
+    }
+  }
+}

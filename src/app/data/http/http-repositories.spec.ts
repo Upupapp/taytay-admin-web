@@ -62,6 +62,7 @@ import DIGITAL_ID_HOLDER from './fixtures/digital-id-holder.json';
 import NEWS from './fixtures/news.json';
 import NEWS_PAGE from './fixtures/news-page.json';
 import NEWS_CATEGORIES from './fixtures/news-categories.json';
+import AUDIT_PAGE from './fixtures/audit-page.json';
 import {
   HttpAppAccountRepository,
   HttpAppConfigRepository,
@@ -73,6 +74,7 @@ import {
   HttpNotificationRepository,
   HttpOfficeInboxRepository,
   HttpOfficeRepository,
+  HttpPlatformAuditRepository,
   HttpSessionRefresher,
   HttpStaffRepository,
   HttpTulongServiceRepository,
@@ -125,6 +127,7 @@ describe('the Node adapters', () => {
         HttpAppConfigRepository,
         HttpDigitalIdRepository,
         HttpBalitaRepository,
+        HttpPlatformAuditRepository,
       ],
     });
 
@@ -1352,6 +1355,35 @@ describe('the Node adapters', () => {
       expect(request.request.responseType).toBe('blob');
       request.flush(new Blob(['x']));
       expect(await cover).toBeInstanceOf(Blob);
+    });
+  });
+
+  describe('the app’s audit trail (DL-171)', () => {
+    beforeEach(() => tokens.hold('fixture-token', null));
+
+    it('reads a page newest first, every row whole, and nothing beside a row', async () => {
+      const trail = TestBed.inject(HttpPlatformAuditRepository);
+      const page = firstValueFrom(trail.list({ limit: 50, cursor: null }));
+      const request = http.expectOne((candidate) => candidate.url === `${BASE}/admin/audit`);
+      expect(request.request.params.get('limit')).toBe('50');
+      request.flush(AUDIT_PAGE);
+      const answer = await page;
+
+      expect(answer.items.map((entry) => entry.action)).toEqual([
+        'user.role_changed',
+        'app.config_updated',
+      ]);
+      expect(answer.items[1]?.actorId).toBeNull();
+      expect(answer.hasMore).toBe(true);
+    });
+
+    it('refuses the page rather than showing it with a row missing', async () => {
+      const trail = TestBed.inject(HttpPlatformAuditRepository);
+      const page = firstValueFrom(trail.list({ limit: 50, cursor: null }));
+      http
+        .expectOne((candidate) => candidate.url === `${BASE}/admin/audit`)
+        .flush({ ...AUDIT_PAGE, data: [{ ...AUDIT_PAGE.data[0], action: '' }] });
+      await expect(page).rejects.toThrow('could not be read');
     });
   });
 });

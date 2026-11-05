@@ -40,6 +40,7 @@ export const DATA_PORTS = [
   'app-config',
   'digital-id',
   'balita',
+  'platform-audit',
 ] as const;
 
 export type DataPort = (typeof DATA_PORTS)[number];
@@ -82,6 +83,7 @@ export const DATA_PORT_HOLDINGS: Readonly<Record<DataPort, string>> = {
   'app-config': 'the app’s settings',
   'digital-id': 'residents’ digital IDs',
   balita: 'the app’s Balita',
+  'platform-audit': 'the app’s audit trail',
 };
 
 /**

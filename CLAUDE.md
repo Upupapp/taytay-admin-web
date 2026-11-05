@@ -120,7 +120,8 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:bundle`, `check:routes`, `check:response-shape`, `check:wire-adoption`,
 `check:port-adoption`, `check:scanners`, `check:unserved`, `check:verification`,
 `check:inbox`, `check:accounts`, `check:directory`, `check:home`,
-`check:app-settings`, `check:digital-ids` and `check:balita`.
+`check:app-settings`, `check:digital-ids`, `check:balita` and
+`check:platform-audit`.
 `check:unserved` keeps a module whose port the active adapter set cannot serve out
 of the navigation and names it on one page (`DL-167`); `check:verification` holds
 the ID-review screen to its privacy rules — images only after a warning, fetched
@@ -145,7 +146,9 @@ holds every act on a card behind a confirmation that says first what it does to 
 card in the app (`DL-171`); `check:balita` warns before every publish that a
 published article cannot be recalled from those who read it, keeps Balita apart from
 the unserved newsfeed, and says — rather than collects — that the API keeps no
-description of a cover (`DL-171`, `DL-124`, `DL-125`).
+description of a cover (`DL-171`, `DL-124`, `DL-125`); `check:platform-audit` holds
+the app's audit trail to the six things a row records — no value, no reason, ids as
+given, nothing looked up beside a row, never the governance trail (`DL-171`, `DL-114`).
 Each enforces a rule a comment could not, and each was validated against planted
 regressions. Do not weaken one to make a change pass.
 

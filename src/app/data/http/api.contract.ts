@@ -213,6 +213,8 @@ export const API_ENDPOINTS = {
   news: 'news',
   /** Balita's five categories, a bare list. */
   newsCategories: 'news/categories',
+  /** The API's audit trail (`audit.view`, `DL-171`). Cursor-paged, newest first; read-only. */
+  adminAudit: 'admin/audit',
 } as const;
 
 /** The one place `meta.pagination` becomes a domain `CursorPage`. */

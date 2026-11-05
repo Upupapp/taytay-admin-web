@@ -84,6 +84,8 @@ import {
   type BalitaChanges,
   type BalitaDraft,
   type BalitaRepository,
+  type PlatformAuditEntry,
+  type PlatformAuditRepository,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -105,6 +107,7 @@ import {
   toWireNewsPatch,
   toWireNewsWrite,
 } from './mappers/balita.mapper';
+import { toPlatformAuditEntry } from './mappers/platform-audit.mapper';
 import { toOffice } from './mappers/office.mapper';
 import {
   toDirectoryOffice,
@@ -1104,4 +1107,36 @@ function readArticle(wire: unknown): BalitaArticle {
   }
 
   return article;
+}
+
+/**
+ * The API's audit trail (`audit.view`, `DL-171`) — administrators alone on the server. Read-only:
+ * this adapter has no write, because the trail has none.
+ */
+@Injectable()
+export class HttpPlatformAuditRepository implements PlatformAuditRepository {
+  private readonly api = inject(ApiClient);
+
+  /**
+   * One page, read whole or not at all: a row the mapper cannot read refuses the page. A trail with a
+   * row quietly missing is one that cannot be trusted about any row.
+   */
+  list(page: CursorRequest): Observable<CursorPage<PlatformAuditEntry>> {
+    return this.api
+      .cursorPage(API_ENDPOINTS.adminAudit, page)
+      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readAuditEntry) })));
+  }
+}
+
+function readAuditEntry(wire: unknown): PlatformAuditEntry {
+  const entry = toPlatformAuditEntry(wire);
+
+  if (entry === null) {
+    throw new Error(
+      'A row of the audit trail could not be read, so the page is not shown rather than shown ' +
+        'without it: a trail with a row missing cannot be trusted about the others.',
+    );
+  }
+
+  return entry;
 }

@@ -63,6 +63,8 @@ const SEED_MARKERS = [
   'TAY-SAMPLE-',
   // The Balita seed's article titles (`DL-171`).
   'SAMPLE BALITA - ',
+  // The audit trail seed's row ids (`DL-171`).
+  'audit-sample-',
   'mockLatencyMs":250',
 ];
 

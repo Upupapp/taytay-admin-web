@@ -34,6 +34,7 @@ import {
   APP_CONFIG_REPOSITORY,
   DIGITAL_ID_REPOSITORY,
   BALITA_REPOSITORY,
+  PLATFORM_AUDIT_REPOSITORY,
   HOTLINE_REPOSITORY,
   TULONG_SERVICE_REPOSITORY,
 } from '@domain/index';
@@ -45,6 +46,7 @@ import {
   HttpAppConfigRepository,
   HttpDigitalIdRepository,
   HttpBalitaRepository,
+  HttpPlatformAuditRepository,
   HttpHotlineRepository,
   HttpTulongServiceRepository,
   HttpNotificationRepository,
@@ -100,12 +102,12 @@ import {
  * names no mock class at all, and `angular.json` swaps in `data-access.providers.mock.ts` for the
  * one configuration that wants them.
  *
- * ## Thirteen ports served, eighteen unserved
+ * ## Fourteen ports served, eighteen unserved
  *
  * The Node API serves the signed-in account, its inbox, residents' ID verification review
  * (`DL-167`), the office inbox, the office directory and app accounts with their roles (`DL-168`),
  * the directory as an administrator keeps it, Tulong pages, hotlines, the home screen and the
- * app's settings (`DL-170`), residents’ digital IDs and Balita (`DL-171`),
+ * app's settings (`DL-170`), residents’ digital IDs, Balita and the API's audit trail (`DL-171`),
  * and nothing else this console has a port for (`DL-164`). Every other port is bound to an `Unserved…` adapter that makes no request and
  * fails with a sentence saying so (`DL-165`). A port moves from that list to an `Http…` adapter
  * only when the API serves the thing the port names — not something with the same word on it.
@@ -131,6 +133,7 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: APP_CONFIG_REPOSITORY, useClass: HttpAppConfigRepository },
     { provide: DIGITAL_ID_REPOSITORY, useClass: HttpDigitalIdRepository },
     { provide: BALITA_REPOSITORY, useClass: HttpBalitaRepository },
+    { provide: PLATFORM_AUDIT_REPOSITORY, useClass: HttpPlatformAuditRepository },
     { provide: DASHBOARD_REPOSITORY, useClass: UnservedDashboardRepository },
     { provide: WORK_REPOSITORY, useClass: UnservedWorkRepository },
     { provide: REPORT_REPOSITORY, useClass: UnservedReportRepository },

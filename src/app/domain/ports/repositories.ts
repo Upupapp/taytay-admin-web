@@ -145,6 +145,7 @@ import type {
 } from '../home/home-screen';
 import type { AppConfig, AppConfigChanges } from '../app-config/app-config';
 import type { DigitalIdCard, DigitalIdHolder } from '../digital-ids/digital-id';
+import type { PlatformAuditEntry } from '../platform-audit/platform-audit';
 import type {
   BalitaArticle,
   BalitaCategory,
@@ -1688,3 +1689,18 @@ export interface BalitaRepository {
 }
 
 export const BALITA_REPOSITORY = new InjectionToken<BalitaRepository>('BalitaRepository');
+
+/* ── the app's audit trail (`DL-171`) ───────────────────────────────────── */
+
+/**
+ * The Node API's audit trail (`audit.view`): read-only, newest first. **Not `GovernanceRepository`**,
+ * whose trail belongs to the unserved governance module (`DL-164`).
+ */
+export interface PlatformAuditRepository {
+  /** One cursor page, newest first. No total (`DL-161`). */
+  list(page: CursorRequest): Observable<CursorPage<PlatformAuditEntry>>;
+}
+
+export const PLATFORM_AUDIT_REPOSITORY = new InjectionToken<PlatformAuditRepository>(
+  'PlatformAuditRepository',
+);

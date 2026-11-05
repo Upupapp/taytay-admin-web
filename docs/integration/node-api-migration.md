@@ -9,10 +9,10 @@ sign-in only, hosted on Linode.
 
 | | |
 |---|---|
-| Console ports the Node API serves fully | 0 of 20 casework ports; 11 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines, the home screen, the app's settings; `DL-171` digital IDs, Balita) |
+| Console ports the Node API serves fully | 0 of 20 casework ports; 12 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines, the home screen, the app's settings; `DL-171` digital IDs, Balita, the audit trail) |
 | Served in part (mostly different concepts with the same name) | 7 |
 | No endpoint at all | 13 — cases, requests, beneficiaries, visits, releases, referrals, families, saved views, dashboard, work, reports, search, events |
-| Node staff endpoints with no console screen | 1 — the audit trail |
+| Node staff endpoints with no console screen | 0 — step 6 is complete (`DL-171`) |
 
 ## Plan
 
@@ -31,7 +31,7 @@ sign-in only, hosted on Linode.
 | 6f | Platform screen: the app's settings | console | done (`DL-170`, [`docs/app-settings`](../app-settings/README.md)): contact line, support email, terms and privacy versions, the oldest app version, feature flags; only what changed is sent, `null` to clear; **every change reviewed** in a confirmation listing what it does, and a newer oldest version or a new terms or privacy version **acknowledged** before the button enables — it can stop residents using the app until they update or accept again; the privacy notice the API serves shown by version and date, with a warning when residents would be asked to accept another; flags said not secret; `app-config.manage` added unchanged. **Not run against a live API** |
 | 6g | Platform screen: digital IDs | console | done (`DL-171`, [`docs/digital-ids`](../digital-ids/README.md)): a resident's QR code checked from a pasted or typed payload — no camera — showing only what the API answers, the photo only after a warning, the code emptied as it is sent and nothing kept or logged; an account's current card read through the app accounts' verified residents, and issued, suspended, revoked or replaced behind a confirmation that says first what each does to the card in the app; `digital-id.verify` (every role, a read) and `digital-id.manage` added unchanged. **Not run against a live API** |
 | 6h | Platform screen: Balita | console | done (`DL-171`, [`docs/balita`](../balita/README.md)): the residents' published list, pinned first, a page at a time; an article written and changed in a drawer as a form with its cover; what publishing, saving a draft, taking an article off and pinning do shown **above each button** — publishing cannot be recalled from anybody who read it, and sends no notification; drafts kept in the page's memory with their IDs, and one opened by its ID, because the API lists none; no cover description, said; `news.write` added unchanged, not the newsfeed's keys. **Not run against a live API** |
-| 6i | Platform screen: the audit trail | console | to do |
+| 6i | Platform screen: the app's audit trail | console | done (`DL-171`, [`docs/platform-audit`](../platform-audit/README.md)): `GET admin/audit` newest first, fifty at a time with "more available"; each row's six fields and nothing beside them — the action in words for all thirty-three codes and the code as given, the account and record by id, no lookup; the page says the API keeps no earlier or later value and no reason; separate from the unserved governance trail; `audit.view` as the server spells it. **Not run against a live API**. **Step 6 is complete**: every staff route the Node API serves has a screen |
 | 7 | Re-point the contract checks at the Node spec, new baselines stated | console | done with step 3, in one commit, each old and new count stated (`DL-165`) |
 
 ## For the owner to decide
@@ -136,6 +136,9 @@ These are not engineering choices, and nothing below has been built.
   give a resident who cannot see it. An `alt_text` on `news`, required with a cover, would close it.
 - **A Balita category or cover cannot be removed** once set: `NewsPatch` takes neither as `null`, and
   a form cannot say `null`.
+- **The audit trail has no filter** (`DL-171`) — by actor, action, record or date — so an
+  administrator looking for one act reads from the newest down. It also keeps no values and no
+  reasons, so it can say a role changed but not from what, or a card was suspended but not why.
 - A multipart request with an unexpected file field (`LIMIT_UNEXPECTED_FILE`) is not mapped by the
   error handler and answers `500`.
 

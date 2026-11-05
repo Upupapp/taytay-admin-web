@@ -88,6 +88,7 @@ export * from './home/home-screen';
 export * from './app-config/app-config';
 export * from './digital-ids/digital-id';
 export * from './balita/balita-article';
+export * from './platform-audit/platform-audit';
 export * from './media/image-policy';
 export * from './views/saved-view';
 export * from './work/office-alert';
