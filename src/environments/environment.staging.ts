@@ -11,7 +11,7 @@ export const environment: AppEnvironment = {
   name: 'staging',
   production: false,
   appName: 'Taytay Social Welfare (staging)',
-  apiBaseUrl: 'https://api-staging.<approved-domain>/api/v1',
+  apiBaseUrl: 'https://taytay-api.139-162-51-165.sslip.io/api/v1',
   dataSource: 'http',
   // The staging Firebase project's key, never production's. None has been supplied yet.
   firebaseWebApiKey: 'AIzaSyDY7x3dvT_R6bAEG-Xd1-L8YpeumYIORZk',

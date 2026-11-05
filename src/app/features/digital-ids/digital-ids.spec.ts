@@ -2,7 +2,7 @@ import { signal } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError, type Observable } from 'rxjs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { PermissionService } from '@core/access/permission.service';
 import {
@@ -152,6 +152,13 @@ function button(root: ParentNode, name: string): HTMLButtonElement | null {
 }
 
 const COPY = DIGITAL_IDS_COPY;
+
+/*
+ * The photo test waits for a blob and an object URL. Inside the full suite on a low-memory machine
+ * that wait plus the screen's first compile went past the default 5 s limit on a correct tree.
+ * A timeout is not an assertion, so it is raised for this file only (as in events.spec.ts).
+ */
+vi.setConfig({ testTimeout: 20_000 });
 
 describe('DigitalIdsPage — checking a card (DL-171)', () => {
   it('says no camera is needed, and what a check does, before its button', async () => {
