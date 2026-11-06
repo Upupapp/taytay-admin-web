@@ -167,7 +167,11 @@ describe('permission enforcement on lifecycle transitions', () => {
   it('lets the MSWDO head approve an endorsed request', async () => {
     signedInAs(authenticated('mswdo-head'));
     const updated = await firstValueFrom(
-      TestBed.inject(MockAssistanceRequestRepository).changeStatus(REQ_ENDORSED, 'approved', null),
+      TestBed.inject(MockAssistanceRequestRepository).changeStatus(
+        REQ_ENDORSED,
+        'approved',
+        'Within the ceiling.',
+      ),
     );
     expect(updated.status).toBe('approved');
   });

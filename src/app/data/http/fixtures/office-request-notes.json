@@ -1,0 +1,25 @@
+{
+  "data": [
+    {
+      "id": "7e6d5c4b-3a29-4180-9f7e-6d5c4b3a2902",
+      "request_id": "8f1e2d3c-4b5a-4968-8776-1a2b3c4d5e02",
+      "author_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+      "author_name": "Ramon Cruz",
+      "sensitivity": "protected",
+      "body": null,
+      "is_withheld": true,
+      "created_at": "2026-11-04T08:00:00.000Z"
+    },
+    {
+      "id": "7e6d5c4b-3a29-4180-9f7e-6d5c4b3a2901",
+      "request_id": "8f1e2d3c-4b5a-4968-8776-1a2b3c4d5e02",
+      "author_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+      "author_name": null,
+      "sensitivity": "routine",
+      "body": "Applicant will bring the pharmacy receipts on Monday.",
+      "is_withheld": false,
+      "created_at": "2026-11-04T01:10:00.000Z"
+    }
+  ],
+  "meta": {}
+}

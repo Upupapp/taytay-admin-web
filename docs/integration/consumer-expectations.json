@@ -746,6 +746,215 @@
     },
     {
       "method": "GET",
+      "path": "office/assistance-requests",
+      "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
+      "required": [
+        "barangay_id",
+        "channel",
+        "created_at",
+        "id",
+        "requirements",
+        "resident_id",
+        "status",
+        "status_history",
+        "updated_at",
+        "withheld"
+      ],
+      "optional": [
+        "created_by",
+        "is_protected",
+        "program_id",
+        "reason_for_request",
+        "reference_number",
+        "referred_by",
+        "requested_amount_centavos",
+        "submitted_at",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/assistance-requests",
+      "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
+      "required": [
+        "barangay_id",
+        "channel",
+        "created_at",
+        "id",
+        "requirements",
+        "resident_id",
+        "status",
+        "status_history",
+        "updated_at",
+        "withheld"
+      ],
+      "optional": [
+        "created_by",
+        "is_protected",
+        "program_id",
+        "reason_for_request",
+        "reference_number",
+        "referred_by",
+        "requested_amount_centavos",
+        "submitted_at",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/assistance-requests/{id}",
+      "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
+      "required": [
+        "barangay_id",
+        "channel",
+        "created_at",
+        "id",
+        "requirements",
+        "resident_id",
+        "status",
+        "status_history",
+        "updated_at",
+        "withheld"
+      ],
+      "optional": [
+        "created_by",
+        "is_protected",
+        "program_id",
+        "reason_for_request",
+        "reference_number",
+        "referred_by",
+        "requested_amount_centavos",
+        "submitted_at",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "office/assistance-requests/{id}",
+      "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
+      "required": [
+        "barangay_id",
+        "channel",
+        "created_at",
+        "id",
+        "requirements",
+        "resident_id",
+        "status",
+        "status_history",
+        "updated_at",
+        "withheld"
+      ],
+      "optional": [
+        "created_by",
+        "is_protected",
+        "program_id",
+        "reason_for_request",
+        "reference_number",
+        "referred_by",
+        "requested_amount_centavos",
+        "submitted_at",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/assistance-requests/{id}/advisory",
+      "consumer": "assistance-request.mapper.ts#toIntakeAdvisory",
+      "required": [
+        "computed_at",
+        "not_read",
+        "records_read",
+        "signals"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/assistance-requests/{id}/file",
+      "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
+      "required": [
+        "barangay_id",
+        "channel",
+        "created_at",
+        "id",
+        "requirements",
+        "resident_id",
+        "status",
+        "status_history",
+        "updated_at",
+        "withheld"
+      ],
+      "optional": [
+        "created_by",
+        "is_protected",
+        "program_id",
+        "reason_for_request",
+        "reference_number",
+        "referred_by",
+        "requested_amount_centavos",
+        "submitted_at",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/assistance-requests/{id}/notes",
+      "consumer": "assistance-request.mapper.ts#toRequestNote",
+      "required": [
+        "body",
+        "created_at",
+        "id",
+        "request_id",
+        "sensitivity"
+      ],
+      "optional": [
+        "author_id",
+        "author_name",
+        "is_withheld"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/assistance-requests/{id}/status",
+      "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
+      "required": [
+        "barangay_id",
+        "channel",
+        "created_at",
+        "id",
+        "requirements",
+        "resident_id",
+        "status",
+        "status_history",
+        "updated_at",
+        "withheld"
+      ],
+      "optional": [
+        "created_by",
+        "is_protected",
+        "program_id",
+        "reason_for_request",
+        "reference_number",
+        "referred_by",
+        "requested_amount_centavos",
+        "submitted_at",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/assistance-requests/advisory",
+      "consumer": "assistance-request.mapper.ts#toIntakeAdvisory",
+      "required": [
+        "computed_at",
+        "not_read",
+        "records_read",
+        "signals"
+      ],
+      "optional": []
+    },
+    {
+      "method": "GET",
       "path": "office/families",
       "consumer": "family.mapper.ts#toFamilySummary",
       "required": [],

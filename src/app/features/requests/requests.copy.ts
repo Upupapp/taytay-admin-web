@@ -5,27 +5,44 @@ export const REQUESTS_COPY = {
     subtitle: 'Intake, assessment, endorsement and approval of one intervention at a time.',
     caption: 'Assistance requests recorded by the MSWDO',
     startIntake: 'Start an intake',
-    draftsHeading: 'Your unfinished intakes',
+    // Not "your": the office record lists every unfinished intake the reader's scope covers,
+    // whoever began it, so a colleague's half-done intake can be finished rather than retyped.
+    draftsHeading: 'Unfinished intakes',
     draftsNote:
       'A draft is not a request. Nothing has been filed, nobody has been given a control number, and the applicant is not waiting on an answer yet.',
     noDrafts: 'No unfinished intakes.',
+    loadingDrafts: 'Reading the unfinished intakes…',
+    moreDrafts: (count: number) =>
+      `The ${count} most recent are shown, and there are more. Finish or file these to see the rest.`,
     resume: 'Resume',
     search: 'Search',
-    searchPlaceholder: 'Control number, applicant or reason',
+    // A control number and nothing else: a match on the reason says what is in somebody's file (DL-109).
+    searchPlaceholder: 'Part of a control number, e.g. TAY-2026',
+    searchHint: 'Searches control numbers only, never what a request is for.',
+    order: 'Newest filing first.',
     status: 'Status',
     allStatuses: 'Any status',
     openOnly: 'Open requests only',
     clear: 'Clear filters',
     columnReference: 'Control number',
     columnApplicant: 'Applicant',
-    columnProgramme: 'Programme',
+    columnReason: 'What it is for',
     columnStatus: 'Status',
     columnRequested: 'Requested',
     unnamedDraft: 'Not yet filed',
+    withheld: 'Withheld — protected record',
+    notGiven: 'Not given yet',
     emptyHeading: 'No requests yet',
     emptyMessage: 'Requests appear here once an intake has been filed.',
     noResultsHeading: 'No requests match those filters',
     noResultsMessage: 'Try a different status, or clear the filters.',
+    shown: (count: number) => `${count} shown.`,
+    moreAvailable: 'More are available.',
+    noMore: 'That is every request matching these filters.',
+    showMore: 'Show more',
+    loadingMore: 'Loading more…',
+    moreFailed: 'The next requests could not be loaded. The ones above are still correct; try again.',
+    tryAgain: 'Try again',
   },
 
   intake: {
@@ -88,6 +105,15 @@ export const REQUESTS_COPY = {
     reviewNote: 'Check this reads the way you would want it read back to you.',
     outstandingHeading: 'Still to do',
     readyToFile: 'Everything needed is here.',
+
+    advisoryFailed:
+      'The duplicate and previous-assistance check could not be read, so nothing is shown here — which is not a finding that nothing was found. The office record reads it again when the request is filed.',
+    refused: 'The office record did not accept this:',
+    withheldHeading: 'This intake is a protected record',
+    withheldDraft:
+      'Part of this unfinished intake is withheld from your account, because the person it is for is under a protected sector. It cannot be continued from a copy you are not shown in full — saving it would erase what was withheld. A colleague cleared for protected records can finish it.',
+    resumeFailedHeading: 'This intake could not be opened',
+    backToList: 'Back to requests',
   },
 
   assessment: {
@@ -109,7 +135,19 @@ export const REQUESTS_COPY = {
     recommended: 'Recommended',
     filedOn: 'Filed',
     reason: 'What it is for',
+    referredBy: 'Referred by',
     notSet: '—',
+    withheld: 'Withheld — protected record',
+    remarksWithheld: 'Remarks withheld — protected record',
+    protectedNote:
+      'The person this request is for is under a protected sector, so its words — why they came, who referred them, the reasons for each move and any remarks — are withheld from your account. They are recorded; a colleague cleared for protected records can read them.',
+    advisoryNotRead:
+      'The duplicate and previous-assistance check reads this person’s whole assistance history, so it is read by the staff who file requests, not by every account that can open one.',
+    advisoryFailed:
+      'The duplicate and previous-assistance check could not be read, so nothing is shown here — which is not a finding that nothing was found.',
+    historyHeading: 'History',
+    noHistory: 'No move has been recorded yet.',
+    noReasonGiven: 'No reason was recorded with this move.',
 
     documentsHeading: 'Documents',
     documentsNote: 'Verify what was presented, or waive it with a reason.',

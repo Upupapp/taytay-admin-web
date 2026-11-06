@@ -2,7 +2,6 @@ import { firstValueFrom, isObservable } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
 import {
-  UnservedAssistanceRequestRepository,
   UnservedBeneficiaryRepository,
   UnservedCaseRepository,
   UnservedDashboardRepository,
@@ -25,7 +24,6 @@ import {
  */
 const UNSERVED = [
   new UnservedCaseRepository(),
-  new UnservedAssistanceRequestRepository(),
   new UnservedBeneficiaryRepository(),
   new UnservedFieldVisitRepository(),
   new UnservedReleaseRepository(),
@@ -65,11 +63,13 @@ function everyCall(adapter: object): readonly { name: string; result: unknown }[
  * `new`, outside any injector, is the proof.
  */
 describe('the ports the API does not serve', () => {
-  it('covers thirteen ports and every method each declares', () => {
+  it('covers twelve ports and every method each declares', () => {
     // The resident registry left this list in casework phase 1b (`DL-174`); the household register,
-    // saved views and families in phase 1c; programmes in phase 1d (`DL-176`), taking seven methods.
-    expect(UNSERVED).toHaveLength(13);
-    expect(UNSERVED.flatMap((adapter) => everyCall(adapter))).toHaveLength(115);
+    // saved views and families in phase 1c; programmes in phase 1d (`DL-176`), taking seven methods;
+    // assistance requests in phase 2a (`DL-177`), taking nineteen — their phase 2b methods refuse
+    // from the served adapter now, and are held to that in http-assistance-requests.spec.ts.
+    expect(UNSERVED).toHaveLength(12);
+    expect(UNSERVED.flatMap((adapter) => everyCall(adapter))).toHaveLength(96);
   });
 
   it.each(UNSERVED.map((adapter) => [adapter.constructor.name, adapter] as const))(

@@ -1,0 +1,26 @@
+{
+  "data": {
+    "signals": [
+      {
+        "code": "open-request-same-programme",
+        "tone": "caution",
+        "rule": "An unfinished request already exists for this person under this programme.",
+        "finding": "1 open request under the same programme.",
+        "references": ["TAY-2026-000106 · AICS medical assistance"]
+      }
+    ],
+    "computed_at": "2026-11-06T02:00:00.000Z",
+    "records_read": 1,
+    "not_read": [
+      {
+        "source": "releases",
+        "because": "Payouts are not held by this system yet, so this check could not see assistance already handed over to this person or to anybody at their address. That is not a finding that none was."
+      },
+      {
+        "source": "cases",
+        "because": "Cases are not held by this system yet, so this check could not see an open case about this person. That is not a finding that there is none."
+      }
+    ]
+  },
+  "meta": {}
+}

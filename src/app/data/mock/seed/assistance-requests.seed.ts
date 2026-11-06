@@ -68,6 +68,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     programId: asId<ProgramId>('prog-aics-medical'),
     barangayId: brgy('san-juan'),
     status: 'endorsed',
+    channel: 'walk-in',
+    referredBy: null,
     requestedAmount: pesos(9000),
     approvedAmount: null,
     reasonForRequest:
@@ -235,6 +237,9 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     ],
     decisionRemarks: null,
     submittedAt: daysBeforeAnchor(13, 11),
+    // Stored unredacted; the repository discloses it for its reader (DL-38, DL-177).
+    isProtected: false,
+    withheld: [],
     audit: stamp(13, 8),
   },
   {
@@ -244,6 +249,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     programId: asId<ProgramId>('prog-aics-medical'),
     barangayId: brgy('dolores'),
     status: 'intake-review',
+    channel: 'walk-in',
+    referredBy: null,
     requestedAmount: pesos(6500),
     approvedAmount: null,
     reasonForRequest: 'Physical therapy sessions following a workplace injury.',
@@ -327,6 +334,9 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     ],
     decisionRemarks: null,
     submittedAt: daysBeforeAnchor(4, 14),
+    // Stored unredacted; the repository discloses it for its reader (DL-38, DL-177).
+    isProtected: false,
+    withheld: [],
     audit: stamp(4, 3),
   },
   {
@@ -336,6 +346,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     programId: asId<ProgramId>('prog-educational'),
     barangayId: brgy('santa-ana'),
     status: 'scheduled',
+    channel: 'encoded',
+    referredBy: null,
     requestedAmount: pesos(3000),
     approvedAmount: pesos(3000),
     reasonForRequest: 'School-opening expenses for two learners in elementary school.',
@@ -435,6 +447,9 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     ],
     decisionRemarks: 'Approved at the full amount.',
     submittedAt: daysBeforeAnchor(27),
+    // Stored unredacted; the repository discloses it for its reader (DL-38, DL-177).
+    isProtected: false,
+    withheld: [],
     audit: stamp(27, 14),
   },
   {
@@ -444,6 +459,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     programId: asId<ProgramId>('prog-livelihood'),
     barangayId: brgy('muzon'),
     status: 'returned',
+    channel: 'walk-in',
+    referredBy: null,
     requestedAmount: pesos(15000),
     approvedAmount: null,
     reasonForRequest: 'Capital for a small sari-sari store after being laid off.',
@@ -511,6 +528,9 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     ],
     decisionRemarks: null,
     submittedAt: daysBeforeAnchor(36),
+    // Stored unredacted; the repository discloses it for its reader (DL-38, DL-177).
+    isProtected: false,
+    withheld: [],
     audit: stamp(36, 33),
   },
   {
@@ -520,6 +540,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     programId: asId<ProgramId>('prog-aics-burial'),
     barangayId: brgy('dolores'),
     status: 'completed',
+    channel: 'walk-in',
+    referredBy: null,
     requestedAmount: pesos(8000),
     approvedAmount: pesos(8000),
     reasonForRequest: 'Funeral costs for a deceased spouse.',
@@ -651,6 +673,9 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     ],
     decisionRemarks: 'Approved at the full amount.',
     submittedAt: daysBeforeAnchor(59),
+    // Stored unredacted; the repository discloses it for its reader (DL-38, DL-177).
+    isProtected: false,
+    withheld: [],
     audit: stamp(59, 44),
   },
   {
@@ -660,6 +685,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     programId: asId<ProgramId>('prog-solo-parent'),
     barangayId: brgy('san-isidro'),
     status: 'assessment',
+    channel: 'barangay-referral',
+    referredBy: 'Barangay San Isidro VAW desk',
     requestedAmount: pesos(1000),
     approvedAmount: null,
     reasonForRequest: 'Monthly solo parent support and referral for protective services.',
@@ -727,6 +754,9 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     ],
     decisionRemarks: null,
     submittedAt: daysBeforeAnchor(7),
+    // Stored unredacted; the repository discloses it for its reader (DL-38, DL-177).
+    isProtected: false,
+    withheld: [],
     audit: stamp(7, 5),
   },
   {
@@ -736,6 +766,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     programId: asId<ProgramId>('prog-food-relief'),
     barangayId: brgy('santa-ana'),
     status: 'submitted',
+    channel: 'barangay-referral',
+    referredBy: 'Barangay Santa Ana disaster desk',
     requestedAmount: null,
     approvedAmount: null,
     reasonForRequest: 'Household displaced by flooding along the riverside.',
@@ -771,6 +803,9 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     ],
     decisionRemarks: null,
     submittedAt: daysBeforeAnchor(1),
+    // Stored unredacted; the repository discloses it for its reader (DL-38, DL-177).
+    isProtected: false,
+    withheld: [],
     audit: stamp(1, 1),
   },
 ];

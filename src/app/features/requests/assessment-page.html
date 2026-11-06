@@ -17,6 +17,9 @@
       <div class="assessment__main">
         <section class="card assessment__block" aria-labelledby="request-heading">
           <h2 class="assessment__heading" id="request-heading">{{ copy.requestHeading }}</h2>
+          @if (request.withheld.length > 0) {
+            <p class="assessment__note" role="note">{{ copy.protectedNote }}</p>
+          }
           <dl class="assessment__facts">
             <dt>{{ copy.programme }}</dt>
             <dd>{{ programmeName(request) }}</dd>
@@ -44,8 +47,21 @@
                 <time [attr.datetime]="filed">{{ filed | date: 'd MMM y, HH:mm' }}</time>
               </dd>
             }
+            <dt>{{ copy.channel }}</dt>
+            <dd>{{ channelLabel(request) }}</dd>
+            @if (withheld(request, 'referredBy')) {
+              <dt>{{ copy.referredBy }}</dt>
+              <dd class="assessment__withheld">{{ copy.withheld }}</dd>
+            } @else if (request.referredBy; as referrer) {
+              <dt>{{ copy.referredBy }}</dt>
+              <dd>{{ referrer }}</dd>
+            }
             <dt>{{ copy.reason }}</dt>
-            <dd>{{ request.reasonForRequest }}</dd>
+            @if (withheld(request, 'reasonForRequest')) {
+              <dd class="assessment__withheld">{{ copy.withheld }}</dd>
+            } @else {
+              <dd>{{ request.reasonForRequest || copy.notSet }}</dd>
+            }
           </dl>
         </section>
 
@@ -60,6 +76,11 @@
             <span class="completion__counts">{{ completionSummary(request) }}</span>
             <span class="completion__hint">{{ documentCopy.completionHint }}</span>
           </p>
+
+          @if (documentWorkUnavailable(); as message) {
+            <!-- Said once, in place of the acts it explains (DL-177). -->
+            <p class="assessment__notconnected" role="note">{{ message }}</p>
+          }
 
           <ul class="documents">
             @for (requirement of request.requirements; track requirement.id) {
@@ -84,7 +105,7 @@
                         {{ requirement.appliesWhen }}
                       </p>
                     }
-                    @if (canReviewDocuments()) {
+                    @if (canReviewDocuments() && !documentWorkUnavailable()) {
                       <label class="field">
                         <span class="field__label">{{ documentCopy.applicabilityReason }}</span>
                         <input
@@ -121,167 +142,171 @@
                   </p>
                 }
 
-                <app-document-panel
-                  [document]="requirement.document"
-                  [canDownload]="canDownloadDocuments()"
-                  [canUpload]="canRecordDocuments()"
-                  [uploading]="uploading()"
-                  [percent]="uploadPercent()"
-                  (openRequested)="askToOpen(requirement.id, $event)"
-                  (versionSubmitted)="recordDocument(request, requirement.id, $event)"
-                />
+                @if (!documentWorkUnavailable()) {
+                  <app-document-panel
+                    [document]="requirement.document"
+                    [canDownload]="canDownloadDocuments()"
+                    [canUpload]="canRecordDocuments()"
+                    [uploading]="uploading()"
+                    [percent]="uploadPercent()"
+                    (openRequested)="askToOpen(requirement.id, $event)"
+                    (versionSubmitted)="recordDocument(request, requirement.id, $event)"
+                  />
 
-                <!--
-                  What the office ASKED FOR, beside what it received.
-                  Kept next to the requirement it belongs to: a request exists because this slot is
-                  unfilled, and a list somewhere else would need reading alongside this one
-                  (`DL-151`).
-                -->
-                <div class="asked">
-                  <p class="asked__heading">{{ documentCopy.askHeading }}</p>
+                  <!--
+                    What the office ASKED FOR, beside what it received.
+                    Kept next to the requirement it belongs to: a request exists because this slot is
+                    unfilled, and a list somewhere else would need reading alongside this one
+                    (`DL-151`).
+                  -->
+                  <div class="asked">
+                    <p class="asked__heading">{{ documentCopy.askHeading }}</p>
 
-                  @let asked = requestsFor(requirement.id);
-                  @if (asked.length === 0) {
-                    <p class="asked__none">{{ documentCopy.noRequests }}</p>
-                  } @else {
-                    <ul class="asked__list">
-                      @for (entry of asked; track entry.id) {
-                        <li class="asked__item">
-                          <p class="asked__message">{{ entry.message }}</p>
-                          <p class="asked__meta">
-                            {{ requestStateLabels[entry.state] }} &middot;
-                            {{ channelLabels[entry.channel] }}
-                            @if (entry.neededBy) {
-                              &middot; {{ documentCopy.neededByLabel }}
-                              {{ entry.neededBy | date: 'd MMM y' }}
-                            }
-                          </p>
-                          @if (entry.withdrawnReason) {
-                            <p class="asked__meta">{{ entry.withdrawnReason }}</p>
-                          }
-                          @if (entry.state === 'open' && canRecordDocuments()) {
-                            @if (withdrawing() === entry.id) {
-                              <div class="asked__form">
-                                <label class="field">
-                                  <span class="field__label">
-                                    {{ documentCopy.withdrawHeading }}
-                                  </span>
-                                  <input
-                                    type="text"
-                                    class="field__input"
-                                    [value]="withdrawReason()"
-                                    (input)="withdrawReason.set($any($event.target).value)"
-                                  />
-                                  <span class="field__hint">{{ documentCopy.withdrawHint }}</span>
-                                </label>
-                                <div class="asked__actions">
-                                  <button type="button" class="btn" (click)="closeWithdraw()">
-                                    {{ documentCopy.askCancel }}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    class="btn btn--primary"
-                                    [disabled]="withdrawReason().trim() === '' || submitting()"
-                                    (click)="confirmWithdraw()"
-                                  >
-                                    {{ documentCopy.withdrawConfirm }}
-                                  </button>
-                                </div>
-                              </div>
-                            } @else {
-                              <button
-                                type="button"
-                                class="btn btn--small"
-                                (click)="openWithdraw(entry.id)"
-                              >
-                                {{ documentCopy.withdraw }}
-                              </button>
-                            }
-                          }
-                        </li>
-                      }
-                    </ul>
-                  }
-
-                  @if (canRecordDocuments()) {
-                    @if (askingFor() === requirement.id) {
-                      <div class="asked__form">
-                        <p class="asked__intro">{{ documentCopy.askIntro }}</p>
-
-                        <label class="field field--narrow">
-                          <span class="field__label">{{ documentCopy.askChannel }}</span>
-                          <select
-                            class="field__input"
-                            [value]="askChannel()"
-                            (change)="askChannel.set($any($event.target).value)"
-                          >
-                            @for (channel of channels; track channel) {
-                              <option [value]="channel" [selected]="channel === askChannel()">
-                                {{ channelLabels[channel] }}
-                              </option>
-                            }
-                          </select>
-                        </label>
-
-                        <label class="field">
-                          <span class="field__label">{{ documentCopy.askMessage }}</span>
-                          <textarea
-                            class="field__input"
-                            rows="2"
-                            [placeholder]="documentCopy.askMessagePlaceholder"
-                            [value]="askMessage()"
-                            (input)="askMessage.set($any($event.target).value)"
-                          ></textarea>
-                        </label>
-
-                        <label class="field field--narrow">
-                          <span class="field__label">{{ documentCopy.askNeededBy }}</span>
-                          <input
-                            type="date"
-                            class="field__input"
-                            [value]="askNeededBy()"
-                            (input)="askNeededBy.set($any($event.target).value)"
-                          />
-                        </label>
-
-                        @if (askProblems().length > 0) {
-                          <ul class="asked__problems" role="status">
-                            @for (problem of askProblems(); track problem) {
-                              <li>{{ documentCopy.requestProblems[problem] }}</li>
-                            }
-                          </ul>
-                        }
-
-                        <div class="asked__actions">
-                          <button type="button" class="btn" (click)="closeAsk()">
-                            {{ documentCopy.askCancel }}
-                          </button>
-                          <button
-                            type="button"
-                            class="btn btn--primary"
-                            [disabled]="askProblems().length > 0 || submitting()"
-                            (click)="sendAsk()"
-                          >
-                            {{ documentCopy.askSend }}
-                          </button>
-                        </div>
-                      </div>
+                    @let asked = requestsFor(requirement.id);
+                    @if (asked.length === 0) {
+                      <p class="asked__none">{{ documentCopy.noRequests }}</p>
                     } @else {
-                      <button
-                        type="button"
-                        class="btn btn--small"
-                        (click)="openAsk(requirement.id)"
-                      >
-                        {{ documentCopy.ask }}
-                      </button>
+                      <ul class="asked__list">
+                        @for (entry of asked; track entry.id) {
+                          <li class="asked__item">
+                            <p class="asked__message">{{ entry.message }}</p>
+                            <p class="asked__meta">
+                              {{ requestStateLabels[entry.state] }} &middot;
+                              {{ channelLabels[entry.channel] }}
+                              @if (entry.neededBy) {
+                                &middot; {{ documentCopy.neededByLabel }}
+                                {{ entry.neededBy | date: 'd MMM y' }}
+                              }
+                            </p>
+                            @if (entry.withdrawnReason) {
+                              <p class="asked__meta">{{ entry.withdrawnReason }}</p>
+                            }
+                            @if (entry.state === 'open' && canRecordDocuments()) {
+                              @if (withdrawing() === entry.id) {
+                                <div class="asked__form">
+                                  <label class="field">
+                                    <span class="field__label">
+                                      {{ documentCopy.withdrawHeading }}
+                                    </span>
+                                    <input
+                                      type="text"
+                                      class="field__input"
+                                      [value]="withdrawReason()"
+                                      (input)="withdrawReason.set($any($event.target).value)"
+                                    />
+                                    <span class="field__hint">{{ documentCopy.withdrawHint }}</span>
+                                  </label>
+                                  <div class="asked__actions">
+                                    <button type="button" class="btn" (click)="closeWithdraw()">
+                                      {{ documentCopy.askCancel }}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      class="btn btn--primary"
+                                      [disabled]="withdrawReason().trim() === '' || submitting()"
+                                      (click)="confirmWithdraw()"
+                                    >
+                                      {{ documentCopy.withdrawConfirm }}
+                                    </button>
+                                  </div>
+                                </div>
+                              } @else {
+                                <button
+                                  type="button"
+                                  class="btn btn--small"
+                                  (click)="openWithdraw(entry.id)"
+                                >
+                                  {{ documentCopy.withdraw }}
+                                </button>
+                              }
+                            }
+                          </li>
+                        }
+                      </ul>
                     }
-                  }
-                </div>
 
-                @if (requirement.remarks) {
+                    @if (canRecordDocuments()) {
+                      @if (askingFor() === requirement.id) {
+                        <div class="asked__form">
+                          <p class="asked__intro">{{ documentCopy.askIntro }}</p>
+
+                          <label class="field field--narrow">
+                            <span class="field__label">{{ documentCopy.askChannel }}</span>
+                            <select
+                              class="field__input"
+                              [value]="askChannel()"
+                              (change)="askChannel.set($any($event.target).value)"
+                            >
+                              @for (channel of channels; track channel) {
+                                <option [value]="channel" [selected]="channel === askChannel()">
+                                  {{ channelLabels[channel] }}
+                                </option>
+                              }
+                            </select>
+                          </label>
+
+                          <label class="field">
+                            <span class="field__label">{{ documentCopy.askMessage }}</span>
+                            <textarea
+                              class="field__input"
+                              rows="2"
+                              [placeholder]="documentCopy.askMessagePlaceholder"
+                              [value]="askMessage()"
+                              (input)="askMessage.set($any($event.target).value)"
+                            ></textarea>
+                          </label>
+
+                          <label class="field field--narrow">
+                            <span class="field__label">{{ documentCopy.askNeededBy }}</span>
+                            <input
+                              type="date"
+                              class="field__input"
+                              [value]="askNeededBy()"
+                              (input)="askNeededBy.set($any($event.target).value)"
+                            />
+                          </label>
+
+                          @if (askProblems().length > 0) {
+                            <ul class="asked__problems" role="status">
+                              @for (problem of askProblems(); track problem) {
+                                <li>{{ documentCopy.requestProblems[problem] }}</li>
+                              }
+                            </ul>
+                          }
+
+                          <div class="asked__actions">
+                            <button type="button" class="btn" (click)="closeAsk()">
+                              {{ documentCopy.askCancel }}
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn--primary"
+                              [disabled]="askProblems().length > 0 || submitting()"
+                              (click)="sendAsk()"
+                            >
+                              {{ documentCopy.askSend }}
+                            </button>
+                          </div>
+                        </div>
+                      } @else {
+                        <button
+                          type="button"
+                          class="btn btn--small"
+                          (click)="openAsk(requirement.id)"
+                        >
+                          {{ documentCopy.ask }}
+                        </button>
+                      }
+                    }
+                  </div>
+                }
+
+                @if (withheld(request, 'requirementRemarks')) {
+                  <p class="assessment__note assessment__withheld">{{ copy.remarksWithheld }}</p>
+                } @else if (requirement.remarks) {
                   <p class="assessment__note">{{ requirement.remarks }}</p>
                 }
-                @if (canReviewDocuments()) {
+                @if (canReviewDocuments() && !documentWorkUnavailable()) {
                   <label class="field">
                     <span class="field__label">{{ copy.remarks }}</span>
                     <input
@@ -334,207 +359,212 @@
             <h2 class="assessment__heading" id="study-heading">{{ copy.studyHeading }}</h2>
             <p class="assessment__note">{{ copy.studyNote }}</p>
 
-            <h3 class="assessment__subheading">{{ copy.formHeading }}</h3>
-            <p class="assessment__note">{{ copy.formIntro }}</p>
+            @if (studyUnavailable(); as message) {
+              <!-- Never a form whose save goes nowhere (DL-32, DL-177). -->
+              <p class="assessment__notconnected" role="note">{{ message }}</p>
+            } @else {
+              <h3 class="assessment__subheading">{{ copy.formHeading }}</h3>
+              <p class="assessment__note">{{ copy.formIntro }}</p>
 
-            @if (openAssessment(); as opened) {
-              <p class="assessment__pinned">
-                {{ template()?.label ?? opened.templateCode }} &middot; version
-                {{ opened.templateVersion }}
-              </p>
+              @if (openAssessment(); as opened) {
+                <p class="assessment__pinned">
+                  {{ template()?.label ?? opened.templateCode }} &middot; version
+                  {{ opened.templateVersion }}
+                </p>
 
-              @if (template(); as form) {
-                @if (form.status === 'placeholder-pending-lgu-approval') {
-                  <p class="assessment__provisional" role="note">{{ copy.formProvisional }}</p>
+                @if (template(); as form) {
+                  @if (form.status === 'placeholder-pending-lgu-approval') {
+                    <p class="assessment__provisional" role="note">{{ copy.formProvisional }}</p>
+                  }
+
+                  @for (question of form.questions; track question.code) {
+                    <!--
+                      Associated by `for`/`id` rather than by wrapping alone. The control sits inside
+                      an `@switch`, which the a11y lint cannot see through — and an explicit
+                      association is the stronger guarantee anyway: it survives the markup being
+                      rearranged, which implicit nesting does not.
+                    -->
+                    <label class="field" [attr.for]="'answer-' + question.code">
+                      <span class="field__label">
+                        {{ question.label }}@if (question.required) {<span aria-hidden="true">&nbsp;*</span>}
+                      </span>
+                      @switch (question.kind) {
+                        @case ('choice') {
+                          <select
+                            class="field__input"
+                            [id]="'answer-' + question.code"
+                            [attr.aria-required]="question.required"
+                            (change)="onAnswer(question.code, $event)"
+                          >
+                            <option value="">{{ copy.notSet }}</option>
+                            @for (choice of question.choices; track choice) {
+                              <option [value]="choice" [selected]="answers()[question.code] === choice">
+                                {{ choice }}
+                              </option>
+                            }
+                          </select>
+                        }
+                        @case ('integer') {
+                          <input
+                            type="number"
+                            [id]="'answer-' + question.code"
+                            min="0"
+                            step="1"
+                            class="field__input"
+                            [attr.aria-required]="question.required"
+                            [value]="answers()[question.code] ?? ''"
+                            (input)="onAnswer(question.code, $event)"
+                          />
+                        }
+                        @default {
+                          <textarea
+                            class="field__input"
+                            [id]="'answer-' + question.code"
+                            rows="2"
+                            [attr.aria-required]="question.required"
+                            [value]="answers()[question.code] ?? ''"
+                            (input)="onAnswer(question.code, $event)"
+                          ></textarea>
+                        }
+                      }
+                    </label>
+                  }
+
+                  <div class="assessment__actions">
+                    <button
+                      type="button"
+                      class="btn"
+                      [disabled]="submitting()"
+                      (click)="saveAnswers()"
+                    >
+                      {{ copy.saveAnswers }}
+                    </button>
+                  </div>
                 }
+              } @else {
+                <p class="assessment__note">{{ copy.notOpened }}</p>
 
-                @for (question of form.questions; track question.code) {
-                  <!--
-                    Associated by `for`/`id` rather than by wrapping alone. The control sits inside
-                    an `@switch`, which the a11y lint cannot see through — and an explicit
-                    association is the stronger guarantee anyway: it survives the markup being
-                    rearranged, which implicit nesting does not.
-                  -->
-                  <label class="field" [attr.for]="'answer-' + question.code">
-                    <span class="field__label">
-                      {{ question.label }}@if (question.required) {<span aria-hidden="true">&nbsp;*</span>}
-                    </span>
-                    @switch (question.kind) {
-                      @case ('choice') {
-                        <select
-                          class="field__input"
-                          [id]="'answer-' + question.code"
-                          [attr.aria-required]="question.required"
-                          (change)="onAnswer(question.code, $event)"
-                        >
-                          <option value="">{{ copy.notSet }}</option>
-                          @for (choice of question.choices; track choice) {
-                            <option [value]="choice" [selected]="answers()[question.code] === choice">
-                              {{ choice }}
-                            </option>
-                          }
-                        </select>
-                      }
-                      @case ('integer') {
-                        <input
-                          type="number"
-                          [id]="'answer-' + question.code"
-                          min="0"
-                          step="1"
-                          class="field__input"
-                          [attr.aria-required]="question.required"
-                          [value]="answers()[question.code] ?? ''"
-                          (input)="onAnswer(question.code, $event)"
-                        />
-                      }
-                      @default {
-                        <textarea
-                          class="field__input"
-                          [id]="'answer-' + question.code"
-                          rows="2"
-                          [attr.aria-required]="question.required"
-                          [value]="answers()[question.code] ?? ''"
-                          (input)="onAnswer(question.code, $event)"
-                        ></textarea>
-                      }
+                <label class="field field--narrow">
+                  <span class="field__label">{{ copy.chooseTemplate }}</span>
+                  <select
+                    class="field__input"
+                    [value]="chosenTemplate()"
+                    (change)="chosenTemplate.set($any($event.target).value)"
+                  >
+                    <option value="">{{ copy.notSet }}</option>
+                    @for (candidate of templates(); track candidate.code) {
+                      <option [value]="candidate.code">
+                        {{ candidate.label }} ({{ candidate.version }})
+                      </option>
                     }
-                  </label>
-                }
+                  </select>
+                </label>
 
                 <div class="assessment__actions">
                   <button
                     type="button"
                     class="btn"
-                    [disabled]="submitting()"
-                    (click)="saveAnswers()"
+                    [disabled]="chosenTemplate() === '' || submitting()"
+                    (click)="openForm()"
                   >
-                    {{ copy.saveAnswers }}
+                    {{ copy.openForm }}
                   </button>
                 </div>
               }
-            } @else {
-              <p class="assessment__note">{{ copy.notOpened }}</p>
+
+              <label class="field">
+                <span class="field__label">{{ copy.findings }}</span>
+                <textarea
+                  class="field__input"
+                  rows="6"
+                  [placeholder]="copy.findingsPlaceholder"
+                  [value]="findings()"
+                  (input)="onFindings($event)"
+                ></textarea>
+              </label>
+
+              <!--
+                Stated before the two controls, not after.
+                Somebody deciding whether to type an amount reads a notice above the box; somebody
+                who has already typed one dismisses a notice below it. The same ordering the publish
+                warning uses (`DL-124`), for the same reason.
+              -->
+              <div class="assessment__notrecorded" role="note">
+                <p class="assessment__notrecorded-heading">{{ copy.notRecordedHeading }}</p>
+                <p>{{ copy.notRecorded }}</p>
+              </div>
+
+              <label class="check">
+                <input type="checkbox" [checked]="homeVisit()" (change)="onHomeVisit($event)" />
+                <span>{{ copy.homeVisit }}</span>
+              </label>
 
               <label class="field field--narrow">
-                <span class="field__label">{{ copy.chooseTemplate }}</span>
+                <span class="field__label">{{ copy.recommendedAmount }}</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  class="field__input"
+                  [value]="recommendedValue()"
+                  (input)="onRecommended($event)"
+                />
+              </label>
+
+              <label class="field field--narrow">
+                <span class="field__label">{{ copy.recommendation }}</span>
                 <select
                   class="field__input"
-                  [value]="chosenTemplate()"
-                  (change)="chosenTemplate.set($any($event.target).value)"
+                  [value]="recommendation()"
+                  (change)="onRecommendation($event)"
                 >
-                  <option value="">{{ copy.notSet }}</option>
-                  @for (candidate of templates(); track candidate.code) {
-                    <option [value]="candidate.code">
-                      {{ candidate.label }} ({{ candidate.version }})
+                  @for (choice of recommendationChoices; track choice) {
+                    <option [value]="choice" [selected]="choice === recommendation()">
+                      {{ recommendationLabels[choice] }}
                     </option>
                   }
                 </select>
+                <span class="field__hint">{{ copy.recommendationNote }}</span>
               </label>
+
+              @if (recommendation() === 'recommend-deny') {
+                <label class="field">
+                  <span class="field__label">{{ copy.recommendationReason }}</span>
+                  <textarea
+                    class="field__input"
+                    rows="3"
+                    [placeholder]="copy.recommendationReasonPlaceholder"
+                    [value]="reason()"
+                    (input)="onReason($event)"
+                  ></textarea>
+                </label>
+              }
+
+              @if (unanswered().length > 0 || assessmentProblems().length > 0) {
+                <div class="assessment__blockers" role="status">
+                  <p>{{ copy.stillNeeded }}</p>
+                  <ul>
+                    @for (question of unanswered(); track question.code) {
+                      <li>{{ question.label }}</li>
+                    }
+                    @for (problem of assessmentProblems(); track problem) {
+                      <li>{{ problem }}</li>
+                    }
+                  </ul>
+                </div>
+              }
 
               <div class="assessment__actions">
                 <button
                   type="button"
-                  class="btn"
-                  [disabled]="chosenTemplate() === '' || submitting()"
-                  (click)="openForm()"
+                  class="btn btn--primary"
+                  [disabled]="!canSaveStudy()"
+                  (click)="saveStudy()"
                 >
-                  {{ copy.openForm }}
+                  {{ copy.saveStudy }}
                 </button>
               </div>
             }
-
-            <label class="field">
-              <span class="field__label">{{ copy.findings }}</span>
-              <textarea
-                class="field__input"
-                rows="6"
-                [placeholder]="copy.findingsPlaceholder"
-                [value]="findings()"
-                (input)="onFindings($event)"
-              ></textarea>
-            </label>
-
-            <!--
-              Stated before the two controls, not after.
-              Somebody deciding whether to type an amount reads a notice above the box; somebody
-              who has already typed one dismisses a notice below it. The same ordering the publish
-              warning uses (`DL-124`), for the same reason.
-            -->
-            <div class="assessment__notrecorded" role="note">
-              <p class="assessment__notrecorded-heading">{{ copy.notRecordedHeading }}</p>
-              <p>{{ copy.notRecorded }}</p>
-            </div>
-
-            <label class="check">
-              <input type="checkbox" [checked]="homeVisit()" (change)="onHomeVisit($event)" />
-              <span>{{ copy.homeVisit }}</span>
-            </label>
-
-            <label class="field field--narrow">
-              <span class="field__label">{{ copy.recommendedAmount }}</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                class="field__input"
-                [value]="recommendedValue()"
-                (input)="onRecommended($event)"
-              />
-            </label>
-
-            <label class="field field--narrow">
-              <span class="field__label">{{ copy.recommendation }}</span>
-              <select
-                class="field__input"
-                [value]="recommendation()"
-                (change)="onRecommendation($event)"
-              >
-                @for (choice of recommendationChoices; track choice) {
-                  <option [value]="choice" [selected]="choice === recommendation()">
-                    {{ recommendationLabels[choice] }}
-                  </option>
-                }
-              </select>
-              <span class="field__hint">{{ copy.recommendationNote }}</span>
-            </label>
-
-            @if (recommendation() === 'recommend-deny') {
-              <label class="field">
-                <span class="field__label">{{ copy.recommendationReason }}</span>
-                <textarea
-                  class="field__input"
-                  rows="3"
-                  [placeholder]="copy.recommendationReasonPlaceholder"
-                  [value]="reason()"
-                  (input)="onReason($event)"
-                ></textarea>
-              </label>
-            }
-
-            @if (unanswered().length > 0 || assessmentProblems().length > 0) {
-              <div class="assessment__blockers" role="status">
-                <p>{{ copy.stillNeeded }}</p>
-                <ul>
-                  @for (question of unanswered(); track question.code) {
-                    <li>{{ question.label }}</li>
-                  }
-                  @for (problem of assessmentProblems(); track problem) {
-                    <li>{{ problem }}</li>
-                  }
-                </ul>
-              </div>
-            }
-
-            <div class="assessment__actions">
-              <button
-                type="button"
-                class="btn btn--primary"
-                [disabled]="!canSaveStudy()"
-                (click)="saveStudy()"
-              >
-                {{ copy.saveStudy }}
-              </button>
-            </div>
           </section>
         }
       </div>
@@ -558,7 +588,14 @@
         </section>
 
         <section class="card assessment__block">
-          <app-advisory-panel [advisory]="advisory()" />
+          @if (!readsAdvisory()) {
+            <p class="assessment__note" role="note">{{ copy.advisoryNotRead }}</p>
+          } @else if (advisoryFailure(); as message) {
+            <!-- Never the empty panel: a check that could not be read is not "nothing found". -->
+            <p class="assessment__notconnected" role="alert">{{ copy.advisoryFailed }} {{ message }}</p>
+          } @else {
+            <app-advisory-panel [advisory]="advisory()" />
+          }
         </section>
 
         <section class="card assessment__block" aria-labelledby="readiness-heading">
@@ -588,6 +625,35 @@
             (confirmed)="onTransition($event)"
           />
         </div>
+
+        <section class="card assessment__block" aria-labelledby="history-heading">
+          <h2 class="assessment__heading" id="history-heading">{{ copy.historyHeading }}</h2>
+          @if (request.statusHistory.length === 0) {
+            <p class="assessment__note">{{ copy.noHistory }}</p>
+          } @else {
+            <!-- An ordered list, oldest first, no connectors (DL-56). -->
+            <ol class="history">
+              @for (change of request.statusHistory; track $index) {
+                <li class="history__item">
+                  <p class="history__move">{{ moveLabel(change) }}</p>
+                  <p class="history__who">
+                    <time [attr.datetime]="change.occurredAt">
+                      {{ change.occurredAt | date: 'd MMM y, HH:mm' }}
+                    </time>
+                    · {{ change.actorName }}
+                  </p>
+                  @if (withheld(request, 'statusReasons')) {
+                    <p class="history__reason assessment__withheld">{{ copy.withheld }}</p>
+                  } @else if (change.reason) {
+                    <p class="history__reason">{{ change.reason }}</p>
+                  } @else {
+                    <p class="history__reason history__reason--absent">{{ copy.noReasonGiven }}</p>
+                  }
+                </li>
+              }
+            </ol>
+          }
+        </section>
       </aside>
     </div>
   }

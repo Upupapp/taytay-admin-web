@@ -218,6 +218,15 @@ export const API_ENDPOINTS = {
    */
   officeRequirementTemplates: 'office/requirement-templates',
   /**
+   * Assistance requests (casework phase 2a, `DL-177`): cursor-paged — filed requests newest filing
+   * first, drafts only with `status=draft` — by `q` (part of a control number), `status`,
+   * `program_id`, `barangay_id`, `open_only`; one by `{id}`; `POST` and `PATCH {id}` with the whole
+   * draft; `POST {id}/file` with the acknowledgement or none; `POST {id}/status` with a reason;
+   * `advisory?resident_id&program_id` and `{id}/advisory`; `{id}/notes`, whole. Redacted by the
+   * server. The assessment and the document review are not served (phase 2b).
+   */
+  officeAssistanceRequests: 'office/assistance-requests',
+  /**
    * The office directory, written (`DL-170`, `office.manage`): `POST` and `PATCH {id}` as forms,
    * because they carry the banner; `DELETE {id}`. Read through `offices`, which is public.
    */

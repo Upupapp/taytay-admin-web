@@ -348,3 +348,50 @@
   color: var(--c-text);
   font-size: 13px;
 }
+
+/* Not connected yet, said where the section would be — a note, not an alarm (DL-177). */
+.assessment__notconnected {
+  margin: 0;
+  padding: var(--space-3);
+  border-left: 3px solid var(--c-border-strong);
+  background: var(--c-surface-muted);
+  color: var(--c-text);
+  font-size: 13px;
+}
+
+/* Withheld is said in words; the style only sets it apart from text somebody wrote. */
+.assessment__withheld {
+  color: var(--c-text-muted);
+  font-style: italic;
+}
+
+.history {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-compact);
+}
+
+.history__item {
+  padding-block-end: var(--space-compact);
+  border-block-end: 1px solid var(--c-border);
+}
+
+.history__move,
+.history__who,
+.history__reason {
+  margin: 0;
+  font-size: 13px;
+}
+
+.history__move {
+  font-weight: 600;
+}
+
+.history__who,
+.history__reason--absent {
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}

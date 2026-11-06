@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map, of, switchMap } from 'rxjs';
 
 import { SessionStore } from '@core/auth/session.store';
+import { describeFailure, isApiFailure } from '@core/http/api-failure';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   REQUIREMENT_OBLIGATION_LABELS,
@@ -33,8 +34,10 @@ import {
   stepIndex,
   type AdvisoryAcknowledgement,
   type AssistanceProgram,
+  type AssistanceRequest,
   type AssistanceRequestId,
   type AssistanceRequestStatus,
+  type IntakeAdvisory,
   type IntakeChannel,
   type IntakeDraft,
   type IntakeProblem,
@@ -49,7 +52,7 @@ import { AdvisoryPanel } from '@shared/intake/advisory-panel';
 import { INTAKE_COPY } from '@shared/intake/intake.copy';
 import { PersonPicker } from '@shared/residents/person-picker';
 import { ResidentSummaryCard } from '@shared/residents/resident-summary-card';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { LOADING, ready, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 
@@ -156,18 +159,35 @@ export class IntakePage {
 
   /* ── the advisory ───────────────────────────────────────────────────────── */
 
-  protected readonly advisory = toSignal(
+  /** Bumped when the server says the check changed since it was read, so it is read again. */
+  private readonly advisoryReads = signal(0);
+
+  /**
+   * Held as a view state, so a check that could not be read is said where the panel would be
+   * rather than breaking the screen — and never shown as "nothing found".
+   */
+  private readonly advisoryState = toSignal(
     toObservable(
-      computed(() => ({ residentId: this.draft().residentId, programId: this.draft().programId })),
+      computed(() => ({
+        residentId: this.draft().residentId,
+        programId: this.draft().programId,
+        read: this.advisoryReads(),
+      })),
     ).pipe(
       switchMap((query) =>
         query.residentId === null
-          ? of(EMPTY_ADVISORY)
-          : this.requests.advisoryFor(query.residentId, query.programId),
+          ? of(ready(EMPTY_ADVISORY))
+          : toViewState(this.requests.advisoryFor(query.residentId, query.programId)),
       ),
     ),
-    { initialValue: EMPTY_ADVISORY },
+    { initialValue: ready(EMPTY_ADVISORY) as ViewState<IntakeAdvisory> },
   );
+
+  protected readonly advisory = computed(() => valueOf(this.advisoryState()) ?? EMPTY_ADVISORY);
+  protected readonly advisoryFailure = computed(() => {
+    const state = this.advisoryState();
+    return state.kind === 'error' ? state.message : null;
+  });
 
   protected readonly cautionList = computed(() => cautions(this.advisory()));
   protected readonly mustAcknowledge = computed(() => needsAcknowledgement(this.advisory()));
@@ -196,30 +216,55 @@ export class IntakePage {
 
   /* ── resuming ───────────────────────────────────────────────────────────── */
 
-  private readonly resumed = toSignal(
+  private readonly resumedState = toSignal(
     toObservable(computed(() => this.id())).pipe(
       switchMap((id) =>
-        id === undefined ? of(null) : this.requests.getById(asId<AssistanceRequestId>(id)),
+        id === undefined
+          ? of(ready(null))
+          : toViewState(this.requests.getById(asId<AssistanceRequestId>(id))),
       ),
     ),
-    { initialValue: null },
+    { initialValue: ready(null) as ViewState<AssistanceRequest | null> },
   );
+
+  /** Why the draft could not be read, said in place of a form that would start from nothing. */
+  protected readonly resumeFailure = computed(() => {
+    const state = this.resumedState();
+    return state.kind === 'error' ? state.message : null;
+  });
+
+  /**
+   * A draft whose words are withheld from this reader. Offering its form would be offering a save
+   * the server refuses — and a save from a redacted copy would erase the reason that was withheld
+   * (`DL-177`) — so the screen says so instead.
+   */
+  protected readonly withheldDraft = computed(() => {
+    const request = valueOf(this.resumedState()) ?? null;
+    return request !== null && request.status === 'draft' && request.withheld.length > 0;
+  });
+
+  /** The server's refusal in its own words, kept on screen beside the buttons it answers. */
+  protected readonly refusal = signal<readonly string[]>([]);
 
   constructor() {
     // A resumed draft repopulates the form once, from the record. The screen
     // never keeps a second copy of the truth.
-    toObservable(this.resumed)
+    toObservable(this.resumedState)
       .pipe(takeUntilDestroyed())
-      .subscribe((request) => {
-        if (request === null || request.status !== 'draft') {
+      .subscribe((state) => {
+        const request = valueOf(state) ?? null;
+        if (request === null || request.status !== 'draft' || request.withheld.length > 0) {
           return;
         }
         this.draftId.set(request.id);
         this.draft.set({
           residentId: request.residentId,
-          programId: request.programId,
-          channel: 'walk-in',
-          referredBy: null,
+          // `''` is a draft that has not chosen a programme yet (`DL-63`).
+          programId: request.programId.length === 0 ? null : request.programId,
+          // Restored, not reset: the server keeps what it is sent, and re-saving a referral as a
+          // walk-in would rewrite how the applicant reached the office (`DL-61`).
+          channel: request.channel,
+          referredBy: request.referredBy,
           reasonForRequest: request.reasonForRequest,
           requestedAmount: request.requestedAmount,
           requirements: request.requirements.map((requirement) => ({
@@ -359,6 +404,7 @@ export class IntakePage {
       return;
     }
     this.submitting.set(true);
+    this.refusal.set([]);
     this.requests.saveDraft(this.draft(), this.draftId()).subscribe({
       next: (saved) => {
         this.submitting.set(false);
@@ -376,6 +422,7 @@ export class IntakePage {
       return;
     }
     this.submitting.set(true);
+    this.refusal.set([]);
     const acknowledgement = this.acknowledgement();
 
     this.requests.saveDraft(this.draft(), this.draftId()).subscribe({
@@ -394,9 +441,26 @@ export class IntakePage {
     });
   }
 
+  /**
+   * The refusal in the server's words (`DL-177`): each sentence it sent, keyed by the console's own
+   * intake problem codes, or its message when it sent none. A validation refusal raises no toast —
+   * the form owns it — so without this the screen would say nothing at all.
+   */
   private fail(failure: unknown): void {
     this.submitting.set(false);
-    this.notifications.error(failure instanceof Error ? failure.message : this.copy.failed);
+    if (isApiFailure(failure)) {
+      const sentences = Object.values(failure.details ?? {}).flat();
+      this.refusal.set(sentences.length > 0 ? sentences : [describeFailure(failure)]);
+      // The duplicate check changed since it was read: read it again, so the encoder answers
+      // the check as it stands.
+      if (failure.status === 409) {
+        this.advisoryReads.update((n) => n + 1);
+      }
+      return;
+    }
+    const message = failure instanceof Error ? failure.message : this.copy.failed;
+    this.refusal.set([message]);
+    this.notifications.error(message);
   }
 
   /* ── formatting ─────────────────────────────────────────────────────────── */

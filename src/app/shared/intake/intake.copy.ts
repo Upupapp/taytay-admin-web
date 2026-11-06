@@ -87,6 +87,7 @@ export const INTAKE_COPY = {
     recordsRead: (count: number) => `${count} record${count === 1 ? '' : 's'} read.`,
     ruleLabel: 'Rule applied:',
     recordsLabel: 'Records read:',
+    unreadHeading: 'Not read by this check:',
   },
 
   acknowledgement: {

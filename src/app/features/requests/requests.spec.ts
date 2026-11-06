@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, type Type } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { firstValueFrom, of, type Observable } from 'rxjs';
@@ -6,6 +6,7 @@ import { firstValueFrom, of, type Observable } from 'rxjs';
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
+import { unserved } from '@data/http/unserved-repositories';
 import { MockAssistanceRequestRepository } from '@data/mock/mock-assistance-request.repository';
 import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
 import { MockProgramRepository } from '@data/mock/mock-program.repository';
@@ -18,10 +19,15 @@ import {
   RESIDENT_REPOSITORY,
   STAFF_REPOSITORY,
   asId,
+  asIsoDateTime,
+  EMPTY_ADVISORY,
+  EMPTY_INTAKE_DRAFT,
   emptyPage,
   toAuthenticatedUser,
   type AuthenticatedUser,
   type Page,
+  type ProgramId,
+  type ResidentId,
   type StaffRepository,
   type StaffRole,
   type StaffUser,
@@ -29,6 +35,8 @@ import {
   type SignInOutcome,
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
+
+import { AdvisoryPanel } from '@shared/intake/advisory-panel';
 
 import { AssessmentPage } from './assessment-page';
 import { IntakePage } from './intake-page';
@@ -82,20 +90,25 @@ function staffRepository(user: StaffUser): StaffRepository {
 @Component({ template: 'stub' })
 class StubPage {}
 
-async function configure(role: StaffRole, id = 'staff-intake'): Promise<void> {
+async function configure(
+  role: StaffRole,
+  id = 'staff-intake',
+  requests: Type<unknown> = MockAssistanceRequestRepository,
+): Promise<void> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
       provideRouter([
         { path: 'assistance-requests', component: RequestListPage },
         { path: 'assistance-requests/new', component: IntakePage },
+        { path: 'assistance-requests/:id/edit', component: IntakePage },
         { path: 'assistance-requests/:id', component: AssessmentPage },
         { path: '**', component: StubPage },
       ]),
       { provide: APP_ENVIRONMENT, useValue: TEST_ENVIRONMENT },
       { provide: ACCESS_CONTEXT, useExisting: SessionState },
       { provide: STAFF_REPOSITORY, useValue: staffRepository(staffUser(role, id)) },
-      { provide: ASSISTANCE_REQUEST_REPOSITORY, useClass: MockAssistanceRequestRepository },
+      { provide: ASSISTANCE_REQUEST_REPOSITORY, useClass: requests },
       { provide: RESIDENT_REPOSITORY, useClass: MockResidentRepository },
       { provide: PROGRAM_REPOSITORY, useClass: MockProgramRepository },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
@@ -115,11 +128,20 @@ async function openIntake(
   return fixture;
 }
 
+async function resumeIntake(id: string, query = ''): Promise<ComponentFixture<IntakePage>> {
+  await TestBed.inject(Router).navigateByUrl(`/assistance-requests/${id}/edit${query}`);
+  const fixture = TestBed.createComponent(IntakePage);
+  fixture.componentRef.setInput('id', id);
+  await fixture.whenStable();
+  return fixture;
+}
+
 async function openAssessment(
   id: string,
   role: StaffRole = 'social-worker',
+  requests: Type<unknown> = MockAssistanceRequestRepository,
 ): Promise<ComponentFixture<AssessmentPage>> {
-  await configure(role, 'staff-sw-1');
+  await configure(role, 'staff-sw-1', requests);
   await TestBed.inject(Router).navigateByUrl(`/assistance-requests/${id}`);
   const fixture = TestBed.createComponent(AssessmentPage);
   fixture.componentRef.setInput('id', id);
@@ -155,10 +177,14 @@ describe('the request list filter lives in the URL', () => {
     expect(readRequestQuery(params({ status: 'pondering' })).filter).toEqual({});
   });
 
-  it('defaults to newest filed first', () => {
-    const query = readRequestQuery(params({ page: '-2', sort: 'vibes' }));
-    expect(query.page.page).toBe(1);
-    expect(query.page.sort).toEqual({ field: 'submittedAt', direction: 'desc' });
+  it('keeps the filter and nothing else — the server orders and pages the list (DL-36)', () => {
+    expect(readRequestQuery(params({ page: '2', sort: 'status', direction: 'asc' }))).toEqual({
+      filter: {},
+    });
+  });
+
+  it('never filters the table to drafts, which are read above it', () => {
+    expect(readRequestQuery(params({ status: 'draft' })).filter).toEqual({});
   });
 });
 
@@ -176,6 +202,33 @@ describe('the request list', () => {
     const element = html(await openList());
     const start = element.querySelector<HTMLAnchorElement>('.btn--primary');
     expect(start?.getAttribute('href')).toBe('/assistance-requests/new');
+  });
+
+  it('offers no intake to a role that cannot file one, rather than a link that bounces', async () => {
+    const element = html(await openList('auditor'));
+    expect(element.querySelector('a[href="/assistance-requests/new"]')).toBeNull();
+  });
+
+  it('says how many are shown, never a page count', async () => {
+    const element = html(await openList());
+    const hint = element.querySelector('.requests__more [role="status"]');
+    expect(hint?.textContent).toMatch(/\d+ shown\./);
+    expect(element.textContent).not.toMatch(/page \d+ of \d+/i);
+  });
+
+  it('says a protected request’s reason is withheld, never a blank', async () => {
+    // The intake officer is not cleared for protected records; req-0006 is a VAWC survivor's.
+    const element = html(await openList('intake-officer'));
+    expect(element.querySelector('app-data-table')?.textContent).toContain(
+      'Withheld — protected record',
+    );
+  });
+
+  it('searches control numbers only, and says so', async () => {
+    const element = html(await openList());
+    const search = element.querySelector<HTMLInputElement>('input[type="search"]');
+    expect(search?.placeholder).toContain('control number');
+    expect(element.textContent).toContain('never what a request is for');
   });
 });
 
@@ -254,6 +307,114 @@ describe('the intake flow', () => {
     );
     expect(buttons.length).toBe(1);
   });
+
+  it('restores how the request reached the office when a draft is resumed', async () => {
+    // It used to reset to a walk-in, and a server that keeps what it is sent would have kept that.
+    await configure('intake-officer');
+    const saved = await firstValueFrom(
+      TestBed.inject(ASSISTANCE_REQUEST_REPOSITORY).saveDraft(
+        {
+          ...EMPTY_INTAKE_DRAFT,
+          residentId: asId<ResidentId>('res-0006'),
+          channel: 'barangay-referral',
+          referredBy: 'Brgy. Dolores — Kagawad Santos',
+          reasonForRequest: 'Burial costs for a deceased parent',
+        },
+        null,
+      ),
+    );
+    const element = html(await resumeIntake(saved.id, '?step=review'));
+    expect(element.textContent).toContain('Brgy. Dolores — Kagawad Santos');
+    expect(element.querySelector('.review')?.textContent).toContain('Barangay referral');
+  });
+
+  it('says a protected draft is withheld instead of offering a form the server would refuse', async () => {
+    // The intake officer is not cleared for protected records; res-0005 is a VAWC survivor.
+    await configure('intake-officer');
+    const saved = await firstValueFrom(
+      TestBed.inject(ASSISTANCE_REQUEST_REPOSITORY).saveDraft(
+        {
+          ...EMPTY_INTAKE_DRAFT,
+          residentId: asId<ResidentId>('res-0005'),
+          reasonForRequest: 'Support while the protection order is processed',
+        },
+        null,
+      ),
+    );
+    expect(saved.withheld.length).toBeGreaterThan(0);
+
+    const element = html(await resumeIntake(saved.id));
+    expect(element.querySelector('#withheld-heading')).not.toBeNull();
+    expect(element.textContent).toContain('A colleague cleared for protected records');
+    const save = [...element.querySelectorAll('button')].find((button) =>
+      button.textContent?.includes('Save and finish later'),
+    );
+    expect(save).toBeUndefined();
+  });
+
+  it('puts the refusal on the screen in the record’s own words', async () => {
+    await configure('intake-officer');
+    const requests = TestBed.inject(ASSISTANCE_REQUEST_REPOSITORY);
+    const saved = await firstValueFrom(
+      requests.saveDraft(
+        {
+          ...EMPTY_INTAKE_DRAFT,
+          residentId: asId<ResidentId>('res-0006'),
+          programId: asId<ProgramId>('prog-aics-burial'),
+          reasonForRequest: 'Burial costs for a deceased parent',
+        },
+        null,
+      ),
+    );
+    const fixture = await resumeIntake(saved.id, '?step=review');
+    // Filed by a colleague while this screen was open: saving over it is now refused.
+    await firstValueFrom(requests.submitIntake(saved.id, null));
+
+    const save = [...html(fixture).querySelectorAll<HTMLButtonElement>('button')].find(
+      (button) => button.textContent?.includes('Save and finish later'),
+    );
+    save?.click();
+    await fixture.whenStable();
+    expect(html(fixture).querySelector('.intake__refusal')?.textContent).toContain(
+      'already been filed',
+    );
+  });
+});
+
+/* ── The duplicate check names what it could not read ─────────────────────── */
+
+describe('the advisory panel', () => {
+  it('renders every source the check could not read, beside the signals', async () => {
+    TestBed.resetTestingModule();
+    const fixture = TestBed.createComponent(AdvisoryPanel);
+    fixture.componentRef.setInput('advisory', {
+      ...EMPTY_ADVISORY,
+      computedAt: asIsoDateTime('2026-11-06T00:00:00.000Z'),
+      unread: [
+        { source: 'releases', because: 'Payouts are not held by this system yet.' },
+        { source: 'cases', because: 'Cases are not held by this system yet.' },
+      ],
+    });
+    await fixture.whenStable();
+    const element = html(fixture);
+    const unread = element.querySelector('.advisory__unread');
+    expect(unread?.getAttribute('role')).toBe('note');
+    expect(unread?.textContent).toContain('Payouts are not held by this system yet.');
+    expect(unread?.textContent).toContain('Cases are not held by this system yet.');
+    // Ran and found nothing in what it read — not "choose a person", which is the empty check.
+    expect(element.querySelector('.advisory__clear')?.textContent).toContain('Nothing found');
+  });
+
+  it('says a check has not run yet only for the empty advisory', async () => {
+    TestBed.resetTestingModule();
+    const fixture = TestBed.createComponent(AdvisoryPanel);
+    fixture.componentRef.setInput('advisory', EMPTY_ADVISORY);
+    await fixture.whenStable();
+    expect(html(fixture).querySelector('.advisory__clear')?.textContent).toContain(
+      'Choose a person',
+    );
+    expect(html(fixture).querySelector('.advisory__unread')).toBeNull();
+  });
 });
 
 /* ── The assessment workspace ─────────────────────────────────────────────── */
@@ -305,6 +466,78 @@ describe('the assessment workspace', () => {
   it('says so plainly when the request is not available', async () => {
     const element = html(await openAssessment('req-nope'));
     expect(element.textContent).toContain('That request is not available');
+  });
+
+  it('lists every move with its reason, oldest first', async () => {
+    const element = html(await openAssessment(ENDORSED));
+    const history = element.querySelector('#history-heading')?.parentElement;
+    const moves = [...(history?.querySelectorAll('.history__move') ?? [])].map((node) =>
+      node.textContent?.trim(),
+    );
+    expect(moves.length).toBeGreaterThan(0);
+    expect(moves.at(-1)).toContain('Endorsed');
+  });
+
+  it('says a protected request’s words are withheld, never a blank', async () => {
+    // req-0006 is a VAWC survivor's; the intake officer is not cleared for protected records.
+    const element = html(await openAssessment('req-0006', 'intake-officer'));
+    const facts = element.querySelector('#request-heading')?.parentElement;
+    expect(facts?.textContent).toContain('Withheld — protected record');
+    expect(facts?.textContent).toContain('under a protected sector');
+    const history = element.querySelector('#history-heading')?.parentElement;
+    expect(history?.querySelector('.history__reason')?.textContent).toContain('Withheld');
+  });
+
+  it('does not ask for the duplicate check on behalf of a role that does not file', async () => {
+    const element = html(await openAssessment(ENDORSED, 'auditor'));
+    expect(element.querySelector('app-advisory-panel')).toBeNull();
+    expect(element.textContent).toContain('read by the staff who file requests');
+  });
+});
+
+/* ── Phase 2b not connected: said in place, and nothing else breaks (DL-177) ── */
+
+const NOT_YET = 'a request’s assessment or the review of its documents yet';
+
+/** The served port with its phase 2b reads unserved, as the http adapter answers them. */
+class PhaseTwoBNotConnected extends MockAssistanceRequestRepository {
+  override listAssessmentTemplates(): Observable<never> {
+    return unserved(NOT_YET);
+  }
+
+  override listDocumentRequests(): Observable<never> {
+    return unserved(NOT_YET);
+  }
+}
+
+describe('the request record where the assessment is not connected yet', () => {
+  it('says so in place of the case study, and offers no form whose save goes nowhere', async () => {
+    const element = html(await openAssessment(ENDORSED, 'social-worker', PhaseTwoBNotConnected));
+    const study = element.querySelector('#study-heading')?.parentElement;
+    expect(study?.querySelector('[role="note"]')?.textContent).toContain(NOT_YET);
+    expect(study?.querySelector('textarea')).toBeNull();
+    expect(element.textContent).not.toContain('Save the case study');
+  });
+
+  it('says so once in the documents, and offers none of the acts on them', async () => {
+    const element = html(await openAssessment(ENDORSED, 'social-worker', PhaseTwoBNotConnected));
+    const documents = element.querySelector('#documents-heading')?.parentElement;
+    expect(documents?.querySelector('.assessment__notconnected')?.textContent).toContain(NOT_YET);
+    // The checklist itself is the request's, and still read.
+    expect(documents?.querySelectorAll('.documents__item').length).toBeGreaterThan(0);
+    expect(documents?.querySelector('app-document-panel')).toBeNull();
+    const buttons = [...(documents?.querySelectorAll('button') ?? [])].map((button) =>
+      button.textContent?.trim(),
+    );
+    expect(buttons).not.toContain('Verify');
+  });
+
+  it('still shows the request, its history, the check and the move', async () => {
+    const element = html(await openAssessment(ENDORSED, 'social-worker', PhaseTwoBNotConnected));
+    expect(element.textContent).toContain('TAY-2026-000841');
+    expect(element.querySelector('#history-heading')).not.toBeNull();
+    expect(element.querySelector('app-advisory-panel')).not.toBeNull();
+    expect(element.querySelector('.transition')).not.toBeNull();
   });
 });
 

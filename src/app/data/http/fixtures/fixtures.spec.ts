@@ -39,6 +39,11 @@ import OFFICE_PROGRAM from './office-program.json';
 import OFFICE_PROGRAM_REFUSAL from './office-program-refusal.json';
 import OFFICE_PROGRAM_TEMPLATES from './office-program-templates.json';
 import OFFICE_PROGRAMS_PAGE from './office-programs-page.json';
+import OFFICE_REQUEST from './office-request.json';
+import OFFICE_REQUEST_ADVISORY from './office-request-advisory.json';
+import OFFICE_REQUEST_NOTES from './office-request-notes.json';
+import OFFICE_REQUEST_REFUSAL from './office-request-refusal.json';
+import OFFICE_REQUESTS_PAGE from './office-requests-page.json';
 import OFFICE_REQUIREMENT_TEMPLATE from './office-requirement-template.json';
 import OFFICE_REQUIREMENT_TEMPLATE_REFUSAL from './office-requirement-template-refusal.json';
 import OFFICE_REQUIREMENT_TEMPLATES from './office-requirement-templates.json';
@@ -248,6 +253,11 @@ describe('the Node fixtures, held to the vendored spec', () => {
       'OfficeRequirementTemplateEnvelope',
     ],
     ['office-requirement-template-refusal', OFFICE_REQUIREMENT_TEMPLATE_REFUSAL, 'ErrorEnvelope'],
+    ['office-requests-page', OFFICE_REQUESTS_PAGE, 'OfficeRequestListEnvelope'],
+    ['office-request', OFFICE_REQUEST, 'OfficeRequestEnvelope'],
+    ['office-request-advisory', OFFICE_REQUEST_ADVISORY, 'OfficeRequestAdvisoryEnvelope'],
+    ['office-request-notes', OFFICE_REQUEST_NOTES, 'OfficeRequestNoteListEnvelope'],
+    ['office-request-refusal', OFFICE_REQUEST_REFUSAL, 'OfficeRequestRefusalEnvelope'],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
     ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],

@@ -136,6 +136,37 @@ describe('the duplicate check reports evidence and decides nothing', () => {
   it('distinguishes "not checked yet" from "checked and found nothing"', () => {
     expect(EMPTY_ADVISORY.recordsRead).toBe(0);
     expect(EMPTY_ADVISORY.signals).toEqual([]);
+    expect(EMPTY_ADVISORY.unread).toEqual([]);
+  });
+
+  it('names no unread source when it read every one it was given', () => {
+    expect(assessIntake(input({ requests: [request()] })).unread).toEqual([]);
+  });
+});
+
+/* ── Filed requests only (DL-177) ─────────────────────────────────────────── */
+
+describe('a draft is not a request, and the check does not count one', () => {
+  it('does not flag an unfiled draft as an open request under the same programme', () => {
+    // Counting it would flag the very draft being filed as its own duplicate, and leave an
+    // abandoned draft raising a caution against its applicant for ever.
+    const advisory = assessIntake(
+      input({ requests: [request({ status: 'draft', submittedAt: null })] }),
+    );
+    expect(advisory.signals).toEqual([]);
+    expect(needsAcknowledgement(advisory)).toBe(false);
+  });
+
+  it('does not count a draft among the records read', () => {
+    const advisory = assessIntake(
+      input({ requests: [request(), request({ status: 'draft', submittedAt: null })] }),
+    );
+    expect(advisory.recordsRead).toBe(1);
+  });
+
+  it('still flags the same request once it is filed', () => {
+    const advisory = assessIntake(input({ requests: [request({ status: 'submitted' })] }));
+    expect(codeOf(advisory)).toContain('open-request-same-programme');
   });
 });
 
@@ -408,6 +439,8 @@ describe('the case study', () => {
     programId: MEDICAL,
     barangayId: asId('brgy-san-juan'),
     status: 'assessment',
+    channel: 'walk-in',
+    referredBy: null,
     requestedAmount: pesos(9000),
     approvedAmount: null,
     reasonForRequest: 'Maintenance medicines',
@@ -417,6 +450,8 @@ describe('the case study', () => {
     statusHistory: [],
     decisionRemarks: null,
     submittedAt: NOW,
+    isProtected: false,
+    withheld: [],
     audit: { createdAt: NOW, createdBy: null, updatedAt: NOW, updatedBy: null },
   };
 

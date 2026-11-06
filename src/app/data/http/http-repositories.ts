@@ -99,6 +99,16 @@ import {
   type VulnerabilitySector,
   ASSISTANCE_HISTORY_NOT_CONNECTED,
   PROGRAM_UTILIZATION_NOT_CONNECTED,
+  STATUS_MOVE_NEEDS_REASON,
+  type AdvisoryAcknowledgement,
+  type AssistanceRequest,
+  type AssistanceRequestFilter,
+  type AssistanceRequestId,
+  type AssistanceRequestRepository,
+  type AssistanceRequestStatus,
+  type IntakeAdvisory,
+  type IntakeDraft,
+  type RequestNote,
   type AssistanceProgram,
   type ProgramDraft,
   type ProgramFilter,
@@ -227,6 +237,14 @@ import {
   toWireRequirementTemplate,
   toWireRequirementTemplatePatch,
 } from './mappers/program.mapper';
+import {
+  toAssistanceRequest,
+  toIntakeAdvisory,
+  toRequestNote,
+  toWireRequestDraft,
+  toWireRequestFiling,
+  toWireStatusMove,
+} from './mappers/assistance-request.mapper';
 import { toSavedView, toWireSavedViewDraft } from './mappers/saved-view.mapper';
 import { toVerificationRequest } from './mappers/verification.mapper';
 import { list } from './mappers/wire';
@@ -2144,4 +2162,262 @@ function readRequirementTemplate(wire: unknown): RequirementTemplate {
     );
   }
   return template;
+}
+
+/* ── assistance requests (casework phase 2a) ─────────────────────────────── */
+
+/** Who the eleven phase 2b methods name in their refusal: "…does not serve {this}." */
+const ASSESSMENT_NOT_CONNECTED = 'a request’s assessment or the review of its documents yet';
+
+/**
+ * Assistance requests over the API (casework phase 2a, `DL-177`): intake, filing and the
+ * lifecycle, served; the assessment and the document review, not connected yet.
+ *
+ * **Redaction is the server's.** A request whose person is under a protected sector arrives with its
+ * words withheld from a reader without `request.view-sensitive`, and `withheld` saying which; the
+ * mapper says what the server said (`DL-38`). The server also refuses a save over such a draft, and
+ * the intake screen says so before offering a form.
+ *
+ * **The lifecycle is the server's**, held in the console's own transition table there and compared
+ * by its tests. Every move needs a reason, refused here in words before anything is sent; a move to
+ * `scheduled` or `released` is refused there with a sentence, because payouts are phase 4.
+ *
+ * **Barangays are joined by name**, as the registry's are (`DL-174`).
+ *
+ * **Phase 2b is not connected.** The assessment, reviewing a document, recording its file, ruling on
+ * a conditional one, asking the applicant for one and opening one have no route yet. Each of those
+ * methods makes no request and answers with the unserved refusal, so the record screen shows that
+ * sentence where the section would be — never an empty form whose save goes nowhere (`DL-32`).
+ */
+@Injectable()
+export class HttpAssistanceRequestRepository implements AssistanceRequestRepository {
+  private readonly api = inject(ApiClient);
+  private readonly barangayJoin = new BarangayJoin();
+
+  list(filter: AssistanceRequestFilter, page: CursorRequest): Observable<CursorPage<AssistanceRequest>> {
+    const search = filter.search?.trim() ?? '';
+    if (search.length === 1) {
+      return throwError(
+        () => new Error('Type at least two characters of a control number to search the requests.'),
+      );
+    }
+    if (filter.assignedTo !== undefined) {
+      return throwError(
+        () =>
+          new Error(
+            'The request list cannot be filtered by who it is assigned to: the office record holds ' +
+              'no assignee yet, so nothing was sent.',
+          ),
+      );
+    }
+    return this.barangays().pipe(
+      switchMap((barangays) => {
+        const barangayId =
+          filter.barangayId === undefined ? undefined : barangays.toApi(filter.barangayId);
+        if (barangayId === null) {
+          return throwError(() => unknownBarangay());
+        }
+        return this.api
+          .cursorPage(API_ENDPOINTS.officeAssistanceRequests, page, {
+            q: search === '' ? undefined : search,
+            status: filter.status,
+            program_id: filter.programId,
+            barangay_id: barangayId,
+            open_only: filter.openOnly === true ? 'true' : undefined,
+          })
+          .pipe(
+            map((answer) => ({
+              ...answer,
+              items: answer.items.map((wire) => readAssistanceRequest(wire, barangays)),
+            })),
+          );
+      }),
+    );
+  }
+
+  /** `null` for "not found **or** not yours" — the server answers both with a 404 (`DL-31`). */
+  getById(id: AssistanceRequestId): Observable<AssistanceRequest | null> {
+    return this.barangays().pipe(
+      switchMap((barangays) =>
+        this.api
+          .optionalItem(`${API_ENDPOINTS.officeAssistanceRequests}/${id}`)
+          .pipe(map((wire) => (wire === null ? null : readAssistanceRequest(wire, barangays)))),
+      ),
+    );
+  }
+
+  /** Whole, newest first, a withheld body `null` and the entry still listed (`DL-58`). */
+  listNotes(id: AssistanceRequestId): Observable<readonly RequestNote[]> {
+    return this.api
+      .list(`${API_ENDPOINTS.officeAssistanceRequests}/${id}/notes`)
+      .pipe(map((rows) => rows.map(readRequestNote)));
+  }
+
+  changeStatus(
+    id: AssistanceRequestId,
+    to: AssistanceRequestStatus,
+    reason: string | null,
+  ): Observable<AssistanceRequest> {
+    const words = reason?.trim() ?? '';
+    if (words === '') {
+      return throwError(() => new Error(STATUS_MOVE_NEEDS_REASON));
+    }
+    return this.saved(
+      this.api.post(
+        `${API_ENDPOINTS.officeAssistanceRequests}/${id}/status`,
+        toWireStatusMove(to, words),
+      ),
+    );
+  }
+
+  /** Before a request exists: the person, and the programme once one is chosen (`DL-60`). */
+  advisoryFor(residentId: ResidentId, programId: ProgramId | null): Observable<IntakeAdvisory> {
+    const read =
+      programId === null
+        ? this.api.item(`${API_ENDPOINTS.officeAssistanceRequests}/advisory`, {
+            resident_id: residentId,
+          })
+        : this.api.item(`${API_ENDPOINTS.officeAssistanceRequests}/advisory`, {
+            resident_id: residentId,
+            program_id: programId,
+          });
+    return read.pipe(map(readAdvisory));
+  }
+
+  /** A filed request names its own person and programme, and is not counted against itself. */
+  advisoryForCase(id: AssistanceRequestId): Observable<IntakeAdvisory> {
+    return this.api
+      .item(`${API_ENDPOINTS.officeAssistanceRequests}/${id}/advisory`)
+      .pipe(map(readAdvisory));
+  }
+
+  /** The whole draft every time: `PATCH` replaces it whole, and the server builds the checklist. */
+  saveDraft(draft: IntakeDraft, id: AssistanceRequestId | null): Observable<AssistanceRequest> {
+    const residentId = draft.residentId;
+    if (residentId === null) {
+      return throwError(() => new Error('A draft needs to name the person it is for.'));
+    }
+    return this.saved(
+      id === null
+        ? this.api.post(API_ENDPOINTS.officeAssistanceRequests, toWireRequestDraft(draft, residentId))
+        : this.api.patch(
+            `${API_ENDPOINTS.officeAssistanceRequests}/${id}`,
+            toWireRequestDraft(draft, residentId),
+          ),
+    );
+  }
+
+  /** Files the draft and issues its control number; the server reads the duplicate check again. */
+  submitIntake(
+    id: AssistanceRequestId,
+    acknowledgement: AdvisoryAcknowledgement | null,
+  ): Observable<AssistanceRequest> {
+    return this.saved(
+      this.api.post(
+        `${API_ENDPOINTS.officeAssistanceRequests}/${id}/file`,
+        toWireRequestFiling(acknowledgement),
+      ),
+    );
+  }
+
+  /* ── phase 2b: no route yet, so no request ─────────────────────────────── */
+
+  listAssessmentTemplates(): Observable<never> {
+    return unserved(ASSESSMENT_NOT_CONNECTED);
+  }
+
+  openAssessment(): Observable<never> {
+    return unserved(ASSESSMENT_NOT_CONNECTED);
+  }
+
+  answerAssessment(): Observable<never> {
+    return unserved(ASSESSMENT_NOT_CONNECTED);
+  }
+
+  recordAssessment(): Observable<never> {
+    return unserved(ASSESSMENT_NOT_CONNECTED);
+  }
+
+  reviewRequirement(): Observable<never> {
+    return unserved(ASSESSMENT_NOT_CONNECTED);
+  }
+
+  recordDocument(): Observable<never> {
+    return unserved(ASSESSMENT_NOT_CONNECTED);
+  }
+
+  decideApplicability(): Observable<never> {
+    return unserved(ASSESSMENT_NOT_CONNECTED);
+  }
+
+  requestDocument(): Observable<never> {
+    return unserved(ASSESSMENT_NOT_CONNECTED);
+  }
+
+  listDocumentRequests(): Observable<never> {
+    return unserved(ASSESSMENT_NOT_CONNECTED);
+  }
+
+  withdrawDocumentRequest(): Observable<never> {
+    return unserved(ASSESSMENT_NOT_CONNECTED);
+  }
+
+  openDocument(): Observable<never> {
+    return unserved(ASSESSMENT_NOT_CONNECTED);
+  }
+
+  /** A write's answer, read with the barangay join — read first, so a failed join sends nothing. */
+  private saved(call: Observable<unknown>): Observable<AssistanceRequest> {
+    return this.barangays().pipe(
+      switchMap((barangays) => call.pipe(map((wire) => readSavedRequest(wire, barangays)))),
+    );
+  }
+
+  private barangays(): Observable<BarangayIndex> {
+    return this.barangayJoin.read();
+  }
+}
+
+function readAssistanceRequest(wire: unknown, barangays: BarangayIndex): AssistanceRequest {
+  const request = toAssistanceRequest(wire, barangays);
+  if (request === null) {
+    throw new Error(
+      'An assistance request from the server could not be read, so none is shown rather than ' +
+        'some: a request left out of the list is one an officer concludes was never filed.',
+    );
+  }
+  return request;
+}
+
+function readSavedRequest(wire: unknown, barangays: BarangayIndex): AssistanceRequest {
+  const request = toAssistanceRequest(wire, barangays);
+  if (request === null) {
+    throw new Error(
+      'The server kept the request, but its answer could not be read. Open the request list ' +
+        'again to see it before saving anything twice.',
+    );
+  }
+  return request;
+}
+
+function readRequestNote(wire: unknown): RequestNote {
+  const note = toRequestNote(wire);
+  if (note === null) {
+    throw new Error(
+      'A note from the server could not be read, so none is shown: a file missing an entry reads ' +
+        'as complete (DL-58).',
+    );
+  }
+  return note;
+}
+
+function readAdvisory(wire: unknown): IntakeAdvisory {
+  const advisory = toIntakeAdvisory(wire);
+  if (advisory === null) {
+    throw new Error(
+      'The duplicate check from the server could not be read, so none is shown: a check that says ' +
+        'less than it found reads as "nothing found".',
+    );
+  }
+  return advisory;
 }

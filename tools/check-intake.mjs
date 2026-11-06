@@ -164,8 +164,34 @@ const assistanceBinding = /provide:\s*ASSISTANCE_REQUEST_REPOSITORY,\s*useClass:
   read('src/app/data/data-access.providers.ts'),
 )?.[1];
 
+/*
+ * Since casework phase 2a (`DL-177`) the port is served — intake, filing, the lifecycle — while the
+ * assessment is not, so the binding is a served adapter whose assessment save still refuses before
+ * anything is sent. The premise of the rule is that refusal, so it is read from the adapter's own
+ * source rather than inferred from its name: the body of its `recordAssessment` must answer with
+ * `unserved(`. A served adapter whose `recordAssessment` sends anything — with no `toWireAssessment`
+ * this check can hold to the screen — is the blind case, and fails.
+ */
+function recordAssessmentRefuses(className) {
+  for (const file of httpFiles) {
+    const source = read(file);
+    const start = source.search(new RegExp(`export class ${className}\\b`));
+    if (start < 0) continue;
+    const classEnd = source.indexOf('\n}\n', start);
+    const body = source.slice(start, classEnd < 0 ? undefined : classEnd);
+    const method = /\n {2}recordAssessment\s*\([^)]*\)[^{]*\{([\s\S]*?)\n {2}\}\n/.exec(body);
+    return method !== null && /^\s*return unserved\(/.test(method[1]) && !/this\.api\b/.test(method[1]);
+  }
+  return false;
+}
+
 if (assessmentMapper === null && assistanceBinding === 'UnservedAssistanceRequestRepository') {
   notes.push('not-recorded: no assessment endpoint is served — the http adapter refuses the save, so nothing is silently discarded');
+} else if (assessmentMapper === null && assistanceBinding !== undefined && recordAssessmentRefuses(assistanceBinding)) {
+  notes.push(
+    `not-recorded: no assessment endpoint is served — ${assistanceBinding}.recordAssessment answers unserved(…) ` +
+      'before anything is sent, so nothing is silently discarded',
+  );
 } else if (assessmentMapper === null) {
   problems.push(
     `ASSISTANCE_REQUEST_REPOSITORY is bound to ${assistanceBinding ?? 'nothing readable'} and no ` +

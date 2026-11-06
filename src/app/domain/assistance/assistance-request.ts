@@ -1,5 +1,6 @@
 import type { AuditStamp } from '../shared/audit';
 import type { AssessmentRecommendation } from '../intake/assessment';
+import type { IntakeChannel } from '../intake/intake-draft';
 import type { CaseNoteSensitivity } from '../cases/case-note';
 import type {
   AssistanceRequestId,
@@ -313,16 +314,74 @@ export interface SocialWorkerAssessment {
   readonly recommendationReason: string | null;
 }
 
+/**
+ * What a request may withhold from the person reading it (`DL-38`, `DL-177`).
+ *
+ * A request is protected when its person is under `vawc-survivor` or `cicl` today, and it is the
+ * request's **words** that say what happened to them — why they came, who sent them, why it was
+ * returned, why a document was excused, what the notes say. So those are what is held back from a
+ * reader without `request.view-sensitive`, by the data layer: the reason reads `''`, the referrer
+ * `null`, the history's reasons and the requirements' remarks `null`, and every note's body
+ * `null`. Listed, so a screen says "withheld" where the words would be and never shows a blank
+ * that reads as "none was given".
+ */
+export type RequestWithheldField =
+  | 'reasonForRequest'
+  | 'referredBy'
+  | 'statusReasons'
+  | 'requirementRemarks'
+  | 'notes';
+
+export const REQUEST_WITHHELD_FIELDS: readonly RequestWithheldField[] = [
+  'reasonForRequest',
+  'referredBy',
+  'statusReasons',
+  'requirementRemarks',
+  'notes',
+];
+
+/**
+ * Why a move was refused before anything was sent. The office record keeps every move with its
+ * words, and the API refuses one without them: a history that says a request was returned and
+ * not why is one the next worker cannot act on (`DL-177`).
+ */
+export const STATUS_MOVE_NEEDS_REASON =
+  'Say why the request is moving. Every move is kept with its reason, and nothing was sent.';
+
+/**
+ * The API's refusal of a save over a draft whose words are withheld from the writer, in its words
+ * (`DL-177`): a draft saved from a redacted copy would erase the reason that was withheld.
+ */
+export const WITHHELD_DRAFT_REFUSAL =
+  'Part of this request is withheld from your account, so it cannot be saved over. A colleague ' +
+  'cleared for protected records can.';
+
+export function isWithheldFromReader(
+  request: Pick<AssistanceRequest, 'withheld'>,
+  field: RequestWithheldField,
+): boolean {
+  return request.withheld.includes(field);
+}
+
 export interface AssistanceRequest {
   readonly id: AssistanceRequestId;
-  /** Human-facing control number printed on the applicant's copy. */
+  /** Human-facing control number printed on the applicant's copy. `''` while a draft. */
   readonly referenceNumber: string;
   readonly residentId: ResidentId;
+  /** `''` only on a draft that has not chosen a programme yet, as `referenceNumber` is. */
   readonly programId: ProgramId;
   readonly barangayId: BarangayId;
   readonly status: AssistanceRequestStatus;
+  /**
+   * How the request reached the office (`DL-61`). Kept on the record: a resumed draft that forgot
+   * it would be re-saved as a walk-in, and the server keeps what it is sent.
+   */
+  readonly channel: IntakeChannel;
+  /** Who sent the applicant, when somebody did. `null` too when withheld — see `withheld`. */
+  readonly referredBy: string | null;
   readonly requestedAmount: Money | null;
   readonly approvedAmount: Money | null;
+  /** `''` when withheld from this reader — read `withheld` before reading it as "none given". */
   readonly reasonForRequest: string;
   readonly assignedTo: StaffUserId | null;
   readonly requirements: readonly SubmittedRequirement[];
@@ -330,9 +389,21 @@ export interface AssistanceRequest {
   readonly statusHistory: readonly StatusChange[];
   readonly decisionRemarks: string | null;
   readonly submittedAt: IsoDateTime | null;
+  /** The person is under a protected sector today, so the request's words are protected. */
+  readonly isProtected: boolean;
+  /** What the data layer held back from this reader. Empty when nothing was. */
+  readonly withheld: readonly RequestWithheldField[];
   readonly audit: AuditStamp;
 }
 
+/**
+ * What the request list can be narrowed by. `search` is **part of a control number** and nothing
+ * else: the reason is a sentence somebody wrote about a family, and a match on it says what is in
+ * their file (`DL-109`).
+ *
+ * `status: 'draft'` lists unfinished intakes and only those; any other filter lists filed
+ * requests only. A draft is not a request, and is never counted among them (`DL-63`, `DL-177`).
+ */
 export interface AssistanceRequestFilter {
   readonly search?: string;
   readonly status?: AssistanceRequestStatus;
@@ -341,8 +412,6 @@ export interface AssistanceRequestFilter {
   readonly assignedTo?: StaffUserId;
   readonly openOnly?: boolean;
 }
-
-export type AssistanceRequestSortField = 'referenceNumber' | 'status' | 'submittedAt' | 'updatedAt';
 
 /**
  * Documents this applicant still owes.

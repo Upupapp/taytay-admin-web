@@ -11,9 +11,10 @@ import {
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import type { Observable } from 'rxjs';
 import { RouterLink } from '@angular/router';
-import { catchError, firstValueFrom, of, switchMap, filter, tap } from 'rxjs';
+import { firstValueFrom, of, switchMap, filter, tap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
+import { describeFailure, isApiFailure } from '@core/http/api-failure';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   CONDITIONAL_APPLICABILITY_LABELS,
@@ -60,6 +61,10 @@ import {
   type AssistanceRequest,
   type AssistanceRequestId,
   type AssistanceRequestStatus,
+  type IntakeAdvisory,
+  type RequestWithheldField,
+  type StatusChange,
+  isWithheldFromReader,
   type RequirementId,
   type RequirementStatus,
   type ResidentProfile,
@@ -72,7 +77,7 @@ import { AdvisoryPanel } from '@shared/intake/advisory-panel';
 import { INTAKE_COPY } from '@shared/intake/intake.copy';
 import { ResidentSummaryCard } from '@shared/residents/resident-summary-card';
 import { StatusTransition, type StatusTransitionRequest } from '@shared/cases/status-transition';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { LOADING, ready, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -155,18 +160,33 @@ export class AssessmentPage {
     { initialValue: null as ResidentProfile | null },
   );
 
-  protected readonly advisory = toSignal(
-    toObservable(this.request).pipe(
-      switchMap((request) =>
-        request === null
-          ? of(EMPTY_ADVISORY)
-          : // The case exists here, so the advisory is read at the path the API publishes.
-            // Intake cannot do the same: it needs the advisory before a case exists (`DL-153`).
-            this.requests.advisoryForCase(request.id),
+  /**
+   * The duplicate check reads one named person's whole assistance history, so it is the filers'
+   * (`request.create`, `DL-60`) and is not asked for on anybody else's behalf: the API would refuse
+   * it, and a refusal there takes the reader off this page.
+   */
+  protected readonly readsAdvisory = computed(() => this.permissions.has('request.create'));
+
+  /** Held as a view state, so a check that could not be read is said in place, never as "nothing found". */
+  private readonly advisoryState = toSignal(
+    toObservable(
+      computed(() => ({ request: this.request(), reads: this.readsAdvisory() })),
+    ).pipe(
+      switchMap(({ request, reads }) =>
+        request === null || !reads
+          ? of(ready(EMPTY_ADVISORY))
+          : // The request exists here, so the check is read for it, not counting it against itself.
+            toViewState(this.requests.advisoryForCase(request.id)),
       ),
     ),
-    { initialValue: EMPTY_ADVISORY },
+    { initialValue: ready(EMPTY_ADVISORY) as ViewState<IntakeAdvisory> },
   );
+
+  protected readonly advisory = computed(() => valueOf(this.advisoryState()) ?? EMPTY_ADVISORY);
+  protected readonly advisoryFailure = computed(() => {
+    const state = this.advisoryState();
+    return state.kind === 'error' ? state.message : null;
+  });
 
   protected readonly canAssess = computed(() => this.permissions.has('request.assess'));
   protected readonly canReviewDocuments = computed(() => this.permissions.has('request.intake'));
@@ -203,8 +223,27 @@ export class AssessmentPage {
    * `placeholder-pending-lgu-approval` and the screen says so — the `DL-68`/`DL-105` pattern: a
    * provisional instrument states that it is provisional until somebody records the check.
    */
-  protected readonly templates = toSignal(this.requests.listAssessmentTemplates(), {
-    initialValue: [] as readonly AssessmentTemplate[],
+  private readonly templateState = toSignal(
+    toObservable(this.canAssess).pipe(
+      switchMap((assesses) =>
+        assesses
+          ? toViewState(this.requests.listAssessmentTemplates())
+          : of(ready([] as readonly AssessmentTemplate[])),
+      ),
+    ),
+    { initialValue: LOADING as ViewState<readonly AssessmentTemplate[]> },
+  );
+
+  protected readonly templates = computed(() => valueOf(this.templateState()) ?? []);
+
+  /**
+   * Why the case study cannot be written here — said in place of the whole form (`DL-177`). Where
+   * the assessment is not connected, a form whose save goes nowhere is worse than none: whoever
+   * fills it in reasonably believes the office record now holds it (`DL-32`).
+   */
+  protected readonly studyUnavailable = computed(() => {
+    const state = this.templateState();
+    return state.kind === 'error' ? state.message : null;
   });
 
   protected readonly chosenTemplate = signal<string>('');
@@ -318,6 +357,20 @@ export class AssessmentPage {
     );
   }
 
+  /** Withheld by the data layer from this reader — said as withheld, never as a blank (`DL-38`). */
+  protected withheld(request: AssistanceRequest, field: RequestWithheldField): boolean {
+    return isWithheldFromReader(request, field);
+  }
+
+  protected channelLabel(request: AssistanceRequest): string {
+    return INTAKE_COPY.channelLabel[request.channel];
+  }
+
+  protected moveLabel(change: StatusChange): string {
+    const to = ASSISTANCE_STATUS_CATALOG[change.to].label;
+    return change.from === null ? to : `${ASSISTANCE_STATUS_CATALOG[change.from].label} → ${to}`;
+  }
+
   protected readonly findingsOk = computed(() => isValidFindings(this.findings()));
   /**
    * The button is disabled by what is *missing*, and every reason is on screen beside it.
@@ -387,16 +440,26 @@ export class AssessmentPage {
    * Every method here existed, mapped and routed, and was reachable from no screen (`DL-151`).
    */
 
-  protected readonly documentRequests = toSignal(
-    toObservable(this.reloads).pipe(
-      switchMap(() =>
-        this.requests
-          .listDocumentRequests(asId<AssistanceRequestId>(this.id()))
-          .pipe(catchError(() => of([] as readonly DocumentRequest[]))),
+  /**
+   * The document workflow — what was asked for, and the acts of reviewing, recording, ruling and
+   * opening — is read through its own list. Where that list cannot be read (not connected yet,
+   * `DL-177`, or failed), the acts on it are not offered and the reason is said once, in place:
+   * an empty "nothing asked for" would assert something about the applicant nobody checked.
+   */
+  private readonly documentState = toSignal(
+    toObservable(computed(() => ({ id: this.id(), nonce: this.reloads() }))).pipe(
+      switchMap(({ id }) =>
+        toViewState(this.requests.listDocumentRequests(asId<AssistanceRequestId>(id))),
       ),
     ),
-    { initialValue: [] as readonly DocumentRequest[] },
+    { initialValue: LOADING as ViewState<readonly DocumentRequest[]> },
   );
+
+  protected readonly documentRequests = computed(() => valueOf(this.documentState()) ?? []);
+  protected readonly documentWorkUnavailable = computed(() => {
+    const state = this.documentState();
+    return state.kind === 'error' ? state.message : null;
+  });
 
   /** Open first — what the applicant still owes is what a clerk needs to see. */
   protected requestsFor(requirementId: RequirementId): readonly DocumentRequest[] {
@@ -711,6 +774,14 @@ export class AssessmentPage {
       },
       error: (failure: unknown) => {
         this.submitting.set(false);
+        if (isApiFailure(failure)) {
+          // A conflict or a refusal has already been said, in the server's words, by the HTTP
+          // layer; a validation refusal is left to the screen, so it is said here.
+          if (failure.status === 422 || failure.code === 'VALIDATION_FAILED') {
+            this.notifications.error(describeFailure(failure));
+          }
+          return;
+        }
         this.notifications.error(failure instanceof Error ? failure.message : this.copy.failed);
       },
     });

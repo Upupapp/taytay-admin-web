@@ -82,3 +82,18 @@
 .advisory__references {
   overflow-wrap: anywhere;
 }
+
+.advisory__unread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-compact);
+  padding-block-start: var(--space-compact);
+  border-block-start: 1px solid var(--c-border);
+}
+
+.advisory__unread-list {
+  margin: 0;
+  padding-inline-start: var(--space-base);
+  color: var(--c-text);
+  font-size: 12.5px;
+}

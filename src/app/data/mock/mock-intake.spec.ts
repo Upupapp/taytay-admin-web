@@ -178,9 +178,7 @@ describe('a draft is saved, resumed and never duplicated', () => {
     expect(second.id).toBe(first.id);
     expect(second.requestedAmount?.centavos).toBe(400_000);
 
-    const drafts = await firstValueFrom(
-      repo().list({ status: 'draft' }, { page: 1, pageSize: 50 }),
-    );
+    const drafts = await firstValueFrom(repo().list({ status: 'draft' }, { limit: 50, cursor: null }));
     expect(drafts.items.filter((request) => request.id === first.id).length).toBe(1);
   });
 
@@ -280,11 +278,12 @@ describe('filing a request', () => {
 
   it('rejects a token acknowledgement', async () => {
     signedInAs(authenticated('intake-officer'));
+    const advisory = await firstValueFrom(repo().advisoryFor(AURORA, MEDICAL));
     const draft = await firstValueFrom(repo().saveDraft(draftFor(AURORA, MEDICAL), null));
     await expect(
       firstValueFrom(
         repo().submitIntake(draft.id, {
-          codes: [],
+          codes: cautions(advisory).map((signal) => signal.code),
           reason: 'ok',
           actorId: null,
           actorName: 'Liezl Padilla',
@@ -309,7 +308,43 @@ describe('filing a request', () => {
           acknowledgedAt: asIsoDateTime(new Date()),
         }),
       ),
-    ).rejects.toThrow(/nothing to acknowledge/);
+    ).rejects.toThrow(/changed since it was read/);
+  });
+
+  it('refuses an acknowledgement that answers a check other than the one that stands now', async () => {
+    // The API refuses a stale answer (409) rather than keep a reason for a caution it never saw.
+    signedInAs(authenticated('intake-officer'));
+    const draft = await firstValueFrom(repo().saveDraft(draftFor(AURORA, MEDICAL), null));
+    await expect(
+      firstValueFrom(
+        repo().submitIntake(draft.id, {
+          codes: ['open-case'],
+          reason: 'Answered the check as it was this morning',
+          actorId: null,
+          actorName: 'Liezl Padilla',
+          acknowledgedAt: asIsoDateTime(new Date()),
+        }),
+      ),
+    ).rejects.toThrow(/changed since it was read/);
+  });
+
+  it('does not count an unfiled draft against its applicant (DL-177)', async () => {
+    // Joselito has no history. A draft of his own must not flag the next one as a duplicate.
+    signedInAs(authenticated('intake-officer'));
+    await firstValueFrom(repo().saveDraft(draftFor(JOSELITO, BURIAL), null));
+    const advisory = await firstValueFrom(repo().advisoryFor(JOSELITO, BURIAL));
+    expect(advisory.signals).toEqual([]);
+    expect(advisory.unread).toEqual([]);
+  });
+
+  it('does not count a filed request against itself on its own record', async () => {
+    signedInAs(authenticated('intake-officer'));
+    const draft = await firstValueFrom(repo().saveDraft(draftFor(JOSELITO, BURIAL), null));
+    const filed = await firstValueFrom(repo().submitIntake(draft.id, null));
+    const advisory = await firstValueFrom(repo().advisoryForCase(filed.id));
+    expect(advisory.signals.map((signal) => signal.code)).not.toContain(
+      'open-request-same-programme',
+    );
   });
 
   it('absorbs a retried submit rather than filing twice', async () => {

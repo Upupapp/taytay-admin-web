@@ -171,7 +171,7 @@ describe('scenario: an existing resident applies for assistance', () => {
   it('links the request to a resident who is really on file', async () => {
     await signedInAs('system-administrator');
     const requests = await firstValueFrom(
-      TestBed.inject(ASSISTANCE_REQUEST_REPOSITORY).list({}, PAGE),
+      TestBed.inject(ASSISTANCE_REQUEST_REPOSITORY).list({}, { limit: 50, cursor: null }),
     );
     const residents = TestBed.inject(RESIDENT_REPOSITORY);
 

@@ -282,10 +282,12 @@ for (const [pattern, what] of [
  * fifteen the same day (casework phase 1c), when it began serving the household register and saved
  * views, and to fourteen on 6 November 2026, when it began serving families and the relationships
  * between people (casework phase 1c), and to thirteen on 6 November 2026, when it began serving the
- * programme catalogue (casework phase 1d, `DL-176`). LOWER THIS as a port is served (or retired by the owner); never raise it. Raising it means
+ * programme catalogue (casework phase 1d, `DL-176`), and to twelve the same day, when it began serving
+ * assistance requests (casework phase 2a, `DL-177`). LOWER THIS as a port is served (or retired by
+ * the owner); never raise it. Raising it means
  * a screen that worked against the API has stopped.
  */
-const UNSERVED_CEILING = 13;
+const UNSERVED_CEILING = 12;
 
 if (unservedBindings.length > UNSERVED_CEILING) {
   failures.push(

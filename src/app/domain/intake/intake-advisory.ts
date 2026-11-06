@@ -77,11 +77,31 @@ export interface IntakeSignal {
   readonly references: readonly string[];
 }
 
+/** A source of the office record the check could not read (`DL-177`). */
+export type AdvisorySource = 'releases' | 'cases';
+
+export const ADVISORY_SOURCES: readonly AdvisorySource[] = ['releases', 'cases'];
+
+/**
+ * What the check did **not** read, and why — so its silence is not read as "never helped".
+ *
+ * Three of the six signals are counted from payouts and cases. Where those are not held, a check
+ * that simply found nothing would tell an encoder nobody at this address was ever helped, which is
+ * a wrong answer delivered with confidence (`DL-112`). So each gap is named with a sentence, and the
+ * panel renders it beside the signals.
+ */
+export interface AdvisoryGap {
+  readonly source: AdvisorySource;
+  readonly because: string;
+}
+
 export interface IntakeAdvisory {
   readonly signals: readonly IntakeSignal[];
   readonly computedAt: IsoDateTime;
   /** How many records were examined, so silence can be told from ignorance. */
   readonly recordsRead: number;
+  /** The sources that could not be read. Empty when every one was. */
+  readonly unread: readonly AdvisoryGap[];
 }
 
 /** Nothing read yet — distinct from "read everything and found nothing". */
@@ -89,6 +109,7 @@ export const EMPTY_ADVISORY: IntakeAdvisory = {
   signals: [],
   computedAt: asIsoDateTime('1970-01-01T00:00:00.000Z'),
   recordsRead: 0,
+  unread: [],
 };
 
 export function cautions(advisory: IntakeAdvisory): readonly IntakeSignal[] {
@@ -188,7 +209,13 @@ export interface AdvisoryInput {
  */
 export function assessIntake(input: AdvisoryInput): IntakeAdvisory {
   const signals: IntakeSignal[] = [];
-  const mine = input.requests.filter((request) => request.residentId === input.residentId);
+  /*
+   * Filed requests only, as the server reads them (`DL-63`, `DL-177`). A draft is not a request:
+   * counting one flags the very draft being filed as its own duplicate, and leaves an abandoned
+   * draft raising a caution against its applicant for ever.
+   */
+  const filed = input.requests.filter((request) => request.submittedAt !== null);
+  const mine = filed.filter((request) => request.residentId === input.residentId);
 
   const open = mine.filter((request) => !isTerminalAssistanceStatus(request.status));
   const openSame = open.filter((request) => request.programId === input.programId);
@@ -292,7 +319,9 @@ export function assessIntake(input: AdvisoryInput): IntakeAdvisory {
   return {
     signals,
     computedAt: input.now,
-    recordsRead: input.requests.length + input.releases.length + input.cases.length,
+    recordsRead: filed.length + input.releases.length + input.cases.length,
+    // Every source is read here; a caller that could not read one says so itself.
+    unread: [],
   };
 }
 

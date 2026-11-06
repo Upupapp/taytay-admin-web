@@ -1,0 +1,15 @@
+{
+  "error": {
+    "code": "VALIDATION_FAILED",
+    "message": "This request cannot be filed as it stands.",
+    "details": {
+      "reason-too-short": [
+        "Say a little more about why the applicant came — 12 characters or more."
+      ],
+      "missing-mandatory-requirement": [
+        "Record each owed document as presented, or excuse it with a reason: Funeral contract."
+      ]
+    },
+    "request_id": "req-requests-1"
+  }
+}

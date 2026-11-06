@@ -15,7 +15,6 @@ import {
   documentVersionProblems,
   DocumentVersionInvalidError,
   assessIntake,
-  EMPTY_ADVISORY,
   assessmentProblems,
   acceptsAnswer,
   unansweredRequired,
@@ -23,13 +22,20 @@ import {
   type AssessmentTemplate,
   type OpenAssessment,
   canTransition,
+  cautions,
+  isOutstandingObligation,
+  REASON_MIN_LENGTH,
+  REQUEST_WITHHELD_FIELDS,
+  STATUS_MOVE_NEEDS_REASON,
+  userHasPermission,
+  WITHHELD_DRAFT_REFUSAL,
+  type CursorPage,
+  type CursorRequest,
   isCaseOpen,
   isTerminalAssistanceStatus,
   isValidAcknowledgement,
   isValidFindings,
   isWithinBarangayScope,
-  needsAcknowledgement,
-  paginate,
   PermissionDeniedError,
   permissionForTransition,
   todayAsIsoDate,
@@ -39,7 +45,6 @@ import {
   type AssistanceRequestFilter,
   type AssistanceRequestId,
   type AssistanceRequestRepository,
-  type AssistanceRequestSortField,
   type AssistanceRequestStatus,
   type ConditionalApplicability,
   type DocumentAccessGrant,
@@ -53,8 +58,6 @@ import {
   type IntakeDraft,
   type IntakeRequirementEntry,
   type Money,
-  type Page,
-  type PageRequest,
   type PriorRelease,
   type Permission,
   type PriorRequest,
@@ -81,7 +84,7 @@ import { denyUnless } from './mock-access';
 import { MockCaseStore } from './mock-case.store';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
-import { matchesSearch, sortItems } from './mock-query';
+import { sortItems } from './mock-query';
 
 /**
  * In-memory assistance-request store.
@@ -107,18 +110,31 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
   /** Control numbers issued at filing. */
   private serial = 0;
 
-  list(
-    filter: AssistanceRequestFilter,
-    page: PageRequest<AssistanceRequestSortField>,
-  ): Observable<Page<AssistanceRequest>> {
+  /**
+   * One cursor page in the server's order (`DL-177`): filed requests newest filing first, or —
+   * only when `status` is `'draft'` — unfinished intakes newest first. A draft is not a request,
+   * and is never listed or counted among them (`DL-63`).
+   */
+  list(filter: AssistanceRequestFilter, page: CursorRequest): Observable<CursorPage<AssistanceRequest>> {
     const user = this.access.currentUser();
-    const denied = denyUnless<Page<AssistanceRequest>>(user, 'request.view');
+    const denied = denyUnless<CursorPage<AssistanceRequest>>(user, 'request.view');
     if (denied) {
       return denied;
     }
 
+    // A filter can only narrow what scope allows. Asking for another barangay is refused, as the
+    // API refuses it, rather than answered with an empty page that reads as "none there".
+    if (filter.barangayId !== undefined && !isWithinBarangayScope(user, filter.barangayId)) {
+      return throwError(() => new PermissionDeniedError('request.view'));
+    }
+
+    const drafts = filter.status === 'draft';
+    const search = filter.search?.trim().toLowerCase() ?? '';
     const filtered = this.requests.filter((request) => {
       if (!isWithinBarangayScope(user, request.barangayId)) {
+        return false;
+      }
+      if (drafts ? request.status !== 'draft' : request.referenceNumber === '') {
         return false;
       }
       if (filter.status && request.status !== filter.status) {
@@ -136,20 +152,27 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       if (filter.openOnly && isTerminalAssistanceStatus(request.status)) {
         return false;
       }
-      return matchesSearch(
-        [request.referenceNumber, request.reasonForRequest, request.decisionRemarks],
-        filter.search,
-      );
+      // Part of a control number and nothing else: a match on the reason would say what is in
+      // somebody's file (`DL-109`). It used to match the reason and the decision remarks.
+      return search === '' || request.referenceNumber.toLowerCase().includes(search);
     });
 
-    const sort = page.sort ?? { field: 'submittedAt' as const, direction: 'desc' as const };
-    const sorted = sortItems(
-      filtered,
-      (request) => requestSortKey(request, sort.field),
-      sort.direction,
+    const key = (request: AssistanceRequest): string =>
+      (drafts ? request.audit.createdAt : request.submittedAt) ?? '';
+    const sorted = [...filtered].sort(
+      (a, b) => key(b).localeCompare(key(a)) || b.id.localeCompare(a.id),
     );
-
-    return this.latency.respond(paginate(sorted, page));
+    // The id of the last row read stands in for the server's opaque cursor.
+    const after = page.cursor ? sorted.findIndex((request) => request.id === page.cursor) : -1;
+    const rest = sorted.slice(after + 1);
+    const items = rest.slice(0, Math.max(1, page.limit));
+    const hasMore = rest.length > items.length;
+    const last = items[items.length - 1];
+    return this.latency.respond({
+      items: items.map((request) => this.disclose(request)),
+      hasMore,
+      nextCursor: hasMore && last !== undefined ? last.id : null,
+    });
   }
 
   getById(id: AssistanceRequestId): Observable<AssistanceRequest | null> {
@@ -157,25 +180,29 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     if (!request || !canReadRecord(this.access.currentUser(), 'request.view', request.barangayId)) {
       return this.latency.respond(null);
     }
-    return this.latency.respond(request);
+    return this.latency.respond(this.disclose(request));
   }
 
   /**
    * Withheld in the data layer, and the entry is still listed (`DL-58`, `DL-38`).
    *
-   * The mock used to hand every note back whole, so `isWithheld` was a field nobody had seen true
-   * and any screen written against it was written against a file where nothing is ever held back.
-   * A protected note now comes back with `body: null` for a reader without
-   * `case-note.view-protected`, and stays in the list — because a caseworker who cannot see that a
-   * restricted entry exists reads the file as complete and acts as though nothing happened.
+   * Two tiers, as the API holds them: a protected note's body is withheld from a reader without
+   * `case-note.view-protected`, and **every** note's body on a protected request from a reader
+   * without `request.view-sensitive` (`DL-177`) — a routine note about a VAWC survivor's visit says
+   * what happened to her as plainly as the reason does.
    */
   listNotes(id: AssistanceRequestId): Observable<readonly RequestNote[]> {
     const user = this.access.currentUser();
-    const mayReadProtected = user?.permissions.has('case-note.view-protected') ?? false;
+    const request = this.requests.find((candidate) => candidate.id === id);
+    if (request === undefined || !canReadRecord(user, 'request.view', request.barangayId)) {
+      return throwError(() => new Error('That request was not found.'));
+    }
+    const mayReadProtected = userHasPermission(user, 'case-note.view-protected');
+    const wordsWithheld = this.disclose(request).withheld.includes('notes');
 
     const notes = MOCK_REQUEST_NOTES.filter((note) => note.requestId === id).map(
       (note): RequestNote => {
-        const cleared = note.sensitivity === 'routine' || mayReadProtected;
+        const cleared = (note.sensitivity === 'routine' || mayReadProtected) && !wordsWithheld;
         return cleared ? note : { ...note, body: null, isWithheld: true };
       },
     );
@@ -191,19 +218,31 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     // The action is refused here as well as hidden in the UI. Approving is
     // gated on `request.approve` and releasing on `release.release`, which
     // is what keeps DL-08 true even if a button is somehow reachable.
-    const denied = denyUnless<AssistanceRequest>(
-      this.access.currentUser(),
-      permissionForTransition(to),
-    );
+    const user = this.access.currentUser();
+    const denied = denyUnless<AssistanceRequest>(user, permissionForTransition(to));
     if (denied) {
       return denied;
     }
 
-    const index = this.requests.findIndex((request) => request.id === id);
-    const current = this.requests[index];
+    // Every move carries its words, as the API requires: a history that says a request was
+    // returned and not why is one the next worker cannot act on (`DL-177`).
+    const words = reason?.trim() ?? '';
+    if (words === '') {
+      return throwError(() => new Error(STATUS_MOVE_NEEDS_REASON));
+    }
+    if (to === 'submitted') {
+      return throwError(
+        () => new Error('Filing is its own act, and issues the control number. File the draft instead.'),
+      );
+    }
 
-    if (index < 0 || current === undefined) {
-      return throwError(() => new Error(`Assistance request ${id} was not found.`));
+    const current = this.requests.find((request) => request.id === id);
+    if (current === undefined || !isWithinBarangayScope(user, current.barangayId)) {
+      return throwError(() => new Error('That request was not found.'));
+    }
+    // A move to where the request already is answers as it stands, as the API answers it.
+    if (current.status === to) {
+      return this.latency.respond(this.disclose(current));
     }
 
     if (!canTransition(ASSISTANCE_STATUS_TRANSITIONS, current.status, to)) {
@@ -219,9 +258,9 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     const change: StatusChange = {
       from: current.status,
       to,
-      reason,
-      actorId: current.assignedTo,
-      actorName: 'Mock session user',
+      reason: words,
+      actorId: user?.id ?? null,
+      actorName: user?.displayName ?? 'Unknown',
       occurredAt: asIsoDateTime(new Date()),
     };
 
@@ -229,14 +268,31 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       ...current,
       status: to,
       statusHistory: [...current.statusHistory, change],
-      audit: { ...current.audit, updatedAt: change.occurredAt },
+      audit: { ...current.audit, updatedAt: change.occurredAt, updatedBy: user?.id ?? null },
     };
 
     this.requests = this.requests.map((request) => (request.id === id ? updated : request));
-    return this.latency.respond(updated);
+    return this.latency.respond(this.disclose(updated));
   }
 
   /* ── Intake ─────────────────────────────────────────────────────────────── */
+
+  /**
+   * The same check for a request already filed, which names its own person and programme. The
+   * request itself is not counted: a filed request is open, and would flag itself (`DL-177`).
+   */
+  advisoryForCase(id: AssistanceRequestId): Observable<IntakeAdvisory> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<IntakeAdvisory>(user, 'request.create');
+    if (denied) {
+      return denied;
+    }
+    const request = this.requests.find((entry) => entry.id === id);
+    if (request === undefined || !isWithinBarangayScope(user, request.barangayId)) {
+      return throwError(() => new Error('That request was not found.'));
+    }
+    return this.advisoryOver(request.residentId, request.programId, request.id);
+  }
 
   /**
    * Duplicate and previous-assistance context.
@@ -246,59 +302,13 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
    * sharper disclosure than browsing the request list, and only the roles that
    * actually file a request need it (minimisation, `DL-60`).
    */
-  /** A filed request already names its resident and programme, so this is the same advisory. */
-  advisoryForCase(id: AssistanceRequestId): Observable<IntakeAdvisory> {
-    const request = this.requests.find((entry) => entry.id === id);
-
-    return request === undefined
-      ? this.latency.respond(EMPTY_ADVISORY)
-      : this.advisoryFor(request.residentId, request.programId);
-  }
-
   advisoryFor(residentId: ResidentId, programId: ProgramId | null): Observable<IntakeAdvisory> {
     const user = this.access.currentUser();
     const denied = denyUnless<IntakeAdvisory>(user, 'request.create');
     if (denied) {
       return denied;
     }
-
-    const resident = this.residents.find(residentId);
-    if (!resident || !isWithinBarangayScope(user, resident.address.barangayId)) {
-      return throwError(() => new PermissionDeniedError('request.create'));
-    }
-
-    const household =
-      resident.householdId === null
-        ? undefined
-        : this.residents.findHousehold(resident.householdId);
-    const householdResidentIds = (household?.members ?? []).map((member) => member.residentId);
-
-    return this.latency.respond(
-      assessIntake({
-        residentId,
-        householdId: resident.householdId,
-        programId,
-        requests: this.requests.map(toPriorRequest),
-        releases: MOCK_DISBURSEMENTS.filter(
-          (payout) =>
-            payout.releasedAt !== null && payout.status !== 'voided' && payout.amount !== null,
-        ).map((payout): PriorRelease => ({
-          requestId: payout.requestId,
-          residentId: payout.residentId,
-          // Narrowed by the filter above; the assertion is the type system's
-          // price for not being able to see that.
-          amount: payout.amount as Money,
-          releasedAt: payout.releasedAt ?? payout.audit.updatedAt,
-        })),
-        cases: this.cases.casesForResident(residentId).map((record) => ({
-          referenceNumber: record.referenceNumber,
-          isOpen: isCaseOpen(record.status),
-        })),
-        householdResidentIds,
-        today: todayAsIsoDate(),
-        now: asIsoDateTime(new Date()),
-      }),
-    );
+    return this.advisoryOver(residentId, programId, null);
   }
 
   /**
@@ -330,7 +340,14 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
 
     if (existing !== undefined) {
       if (existing.status !== 'draft') {
-        return throwError(() => new Error('That request has already been filed.'));
+        return throwError(
+          () => new Error('That request has already been filed, and is kept as it was filed.'),
+        );
+      }
+      // Nobody writes over what they may not read: a draft saved from a redacted copy would erase
+      // the reason that was withheld from its writer (`DL-177`).
+      if (this.disclose(existing).withheld.length > 0) {
+        return throwError(() => new Error(WITHHELD_DRAFT_REFUSAL));
       }
       const updated: AssistanceRequest = {
         ...existing,
@@ -341,7 +358,7 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       this.requests = this.requests.map((request) =>
         request.id === existing.id ? updated : request,
       );
-      return this.latency.respond(updated);
+      return this.latency.respond(this.disclose(updated));
     }
 
     this.sequence += 1;
@@ -359,6 +376,8 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       statusHistory: [],
       decisionRemarks: null,
       submittedAt: null,
+      isProtected: false,
+      withheld: [],
       audit: {
         createdAt: now,
         createdBy: user?.id ?? null,
@@ -367,16 +386,18 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       },
     };
     this.requests = [...this.requests, created];
-    return this.latency.respond(created);
+    return this.latency.respond(this.disclose(created));
   }
 
   /**
-   * Files the draft.
+   * Files the draft, refusing an intake record that does not yet say what happened at the
+   * counter — with the API's words, keyed as the API keys them (`DL-177`).
    *
-   * The acknowledgement is demanded exactly when the advisory raised a caution,
-   * and refused when it did not — a stored "reason for proceeding" against a
-   * request nothing was flagged on would make the record say something untrue.
-   * Nothing here refuses the submission on the strength of a signal (`DL-60`).
+   * The acknowledgement is demanded exactly when the advisory raised a caution, and an
+   * acknowledgement against a check that has changed since it was read — a new caution, or none
+   * where one was answered — is refused rather than kept: a stored "reason for proceeding" against
+   * a request nothing was flagged on would make the record say something untrue. Nothing here
+   * refuses the submission on the strength of a signal (`DL-60`).
    */
   submitIntake(
     id: AssistanceRequestId,
@@ -396,10 +417,11 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     // stands rather than a refusal an encoder cannot act on (`DL-51` carried
     // forward).
     if (current.status !== 'draft') {
-      return this.latency.respond(current);
+      return this.latency.respond(this.disclose(current));
     }
-    if (current.programId === null || current.reasonForRequest.trim().length === 0) {
-      return throwError(() => new Error('The request is not complete enough to file.'));
+    const incomplete = filingProblems(current);
+    if (incomplete.length > 0) {
+      return throwError(() => new Error(incomplete.join(' ')));
     }
 
     const advisoryProblem = this.acknowledgementProblem(current, acknowledgement);
@@ -432,7 +454,7 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       audit: { ...current.audit, updatedAt: now, updatedBy: user?.id ?? null },
     };
     this.requests = this.requests.map((request) => (request.id === id ? filed : request));
-    return this.latency.respond(filed);
+    return this.latency.respond(this.disclose(filed));
   }
 
   /*
@@ -996,36 +1018,80 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
   /* ── assembly ───────────────────────────────────────────────────────────── */
 
   /**
-   * Recomputes the advisory server-side at submission and compares it with what
-   * the encoder answered. The screen's copy is a convenience; this is the
-   * check, because a client that decides for itself whether an acknowledgement
-   * was needed can be told not to need one.
+   * The acknowledgement against the check as it stands now, by the API's rules (`DL-177`). The
+   * screen's copy of the advisory is a convenience; this is the check, because a client that
+   * decides for itself whether an acknowledgement was needed can be told not to need one.
    */
   private acknowledgementProblem(
     request: AssistanceRequest,
     acknowledgement: AdvisoryAcknowledgement | null,
   ): Observable<AssistanceRequest> | null {
-    const resident = this.residents.find(request.residentId);
-    const household =
-      resident?.householdId == null
-        ? undefined
-        : this.residents.findHousehold(resident.householdId);
+    const raised = cautions(this.assess(request.residentId, request.programId, request.id)).map(
+      (signal) => signal.code,
+    );
+    if (raised.length === 0 && acknowledgement === null) {
+      return null;
+    }
+    if (acknowledgement === null) {
+      return throwError(
+        () => new Error('This request needs a note about the duplicate check before it can be filed.'),
+      );
+    }
+    const answered = new Set(acknowledgement.codes);
+    if (raised.length === 0 || raised.some((code) => !answered.has(code))) {
+      return throwError(
+        () =>
+          new Error('The duplicate check has changed since it was read. Read it again before filing.'),
+      );
+    }
+    if (!isValidAcknowledgement(acknowledgement.reason)) {
+      return throwError(() => new Error('Say a little more about why this is going ahead.'));
+    }
+    return null;
+  }
 
-    const advisory = assessIntake({
-      residentId: request.residentId,
-      householdId: resident?.householdId ?? null,
-      programId: request.programId,
-      requests: this.requests.filter((other) => other.id !== request.id).map(toPriorRequest),
+  private advisoryOver(
+    residentId: ResidentId,
+    programId: ProgramId | null,
+    except: AssistanceRequestId | null,
+  ): Observable<IntakeAdvisory> {
+    const resident = this.residents.find(residentId);
+    if (!resident || !isWithinBarangayScope(this.access.currentUser(), resident.address.barangayId)) {
+      return throwError(() => new PermissionDeniedError('request.create'));
+    }
+    return this.latency.respond(this.assess(residentId, programId, except));
+  }
+
+  /**
+   * The domain's check over this store. Reads releases and cases, which the mock holds, so it has
+   * no gap to name; the API names two (`DL-177`).
+   */
+  private assess(
+    residentId: ResidentId,
+    programId: ProgramId | null,
+    except: AssistanceRequestId | null,
+  ): IntakeAdvisory {
+    const resident = this.residents.find(residentId);
+    const householdId = resident?.householdId ?? null;
+    const household = householdId === null ? undefined : this.residents.findHousehold(householdId);
+
+    return assessIntake({
+      residentId,
+      householdId,
+      programId,
+      requests: this.requests.filter((other) => other.id !== except).map(toPriorRequest),
       releases: MOCK_DISBURSEMENTS.filter(
         (payout) =>
           payout.releasedAt !== null && payout.status !== 'voided' && payout.amount !== null,
-      ).map((payout) => ({
+      ).map((payout): PriorRelease => ({
         requestId: payout.requestId,
         residentId: payout.residentId,
+        // Narrowed by the filter above; the assertion is the type system's
+        // price for not being able to see that.
         amount: payout.amount as Money,
         releasedAt: payout.releasedAt ?? payout.audit.updatedAt,
       })),
-      cases: this.cases.casesForResident(request.residentId).map((record) => ({
+      cases: this.cases.casesForResident(residentId).map((record) => ({
         referenceNumber: record.referenceNumber,
         isOpen: isCaseOpen(record.status),
       })),
@@ -1033,33 +1099,39 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       today: todayAsIsoDate(),
       now: asIsoDateTime(new Date()),
     });
+  }
 
-    if (needsAcknowledgement(advisory)) {
-      if (acknowledgement === null) {
-        return throwError(
-          () =>
-            new Error(
-              'This request needs a note about the duplicate check before it can be filed.',
-            ),
-        );
-      }
-      if (!isValidAcknowledgement(acknowledgement.reason)) {
-        return throwError(() => new Error('Say a little more about why this is going ahead.'));
-      }
-    } else if (acknowledgement !== null) {
-      return throwError(
-        () => new Error('Nothing was flagged on this request, so there is nothing to acknowledge.'),
-      );
+  /**
+   * The request as this reader may see it, as the API discloses it (`DL-38`, `DL-177`): protected
+   * when its person is under a protected sector **today**, and then its words withheld from a
+   * reader without `request.view-sensitive`. Stored whole; withheld on the way out.
+   */
+  private disclose(request: AssistanceRequest): AssistanceRequest {
+    const resident = this.residents.find(request.residentId);
+    const isProtected = resident !== undefined && hasSensitiveSector(resident);
+    if (!isProtected || userHasPermission(this.access.currentUser(), 'request.view-sensitive')) {
+      return { ...request, isProtected, withheld: [] };
     }
-    return null;
+    return {
+      ...request,
+      isProtected,
+      withheld: REQUEST_WITHHELD_FIELDS,
+      reasonForRequest: '',
+      referredBy: null,
+      statusHistory: request.statusHistory.map((change) => ({ ...change, reason: null })),
+      requirements: request.requirements.map((requirement) => ({ ...requirement, remarks: null })),
+    };
   }
 
   private fieldsFrom(draft: IntakeDraft, barangayId: AssistanceRequest['barangayId']) {
+    const referredBy = draft.referredBy?.trim() ?? '';
     return {
       residentId: draft.residentId ?? asId<ResidentId>(''),
       programId: draft.programId ?? asId<ProgramId>(''),
       barangayId,
       status: 'draft' as const,
+      channel: draft.channel,
+      referredBy: referredBy === '' ? null : referredBy,
       requestedAmount: draft.requestedAmount,
       reasonForRequest: draft.reasonForRequest.trim(),
     };
@@ -1067,6 +1139,39 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
 }
 
 /* ── helpers ───────────────────────────────────────────────────────────────── */
+
+/**
+ * What the API refuses at filing, in its words (`DL-177`): a programme, a reason somebody could
+ * act on, and every document owed either presented or excused with a reason. Excusing is always
+ * open to the encoder, so this refuses an intake record, never an applicant.
+ */
+function filingProblems(request: AssistanceRequest): readonly string[] {
+  const problems: string[] = [];
+  if (request.programId.length === 0) {
+    problems.push('Choose the programme before filing.');
+  }
+  const reason = request.reasonForRequest.trim();
+  if (reason === '') {
+    problems.push('Say why the applicant came.');
+  } else if (reason.length < REASON_MIN_LENGTH) {
+    problems.push(
+      `Say a little more about why the applicant came — ${REASON_MIN_LENGTH} characters or more.`,
+    );
+  }
+  const owed = request.requirements.filter(
+    (requirement) =>
+      isOutstandingObligation(requirement.obligation, requirement.applicability) &&
+      requirement.status === 'pending',
+  );
+  if (owed.length > 0) {
+    problems.push(
+      `Record each owed document as presented, or excuse it with a reason: ${owed
+        .map((entry) => entry.label)
+        .join(', ')}.`,
+    );
+  }
+  return problems;
+}
 
 function toPriorRequest(request: AssistanceRequest): PriorRequest {
   return {
@@ -1150,22 +1255,6 @@ function statusOf(entry: IntakeRequirementEntry): RequirementStatus {
     return 'waived';
   }
   return entry.presented ? 'submitted' : 'pending';
-}
-
-function requestSortKey(
-  request: AssistanceRequest,
-  field: AssistanceRequestSortField,
-): string | null {
-  switch (field) {
-    case 'referenceNumber':
-      return request.referenceNumber;
-    case 'status':
-      return request.status;
-    case 'submittedAt':
-      return request.submittedAt;
-    case 'updatedAt':
-      return request.audit.updatedAt;
-  }
 }
 
 /**

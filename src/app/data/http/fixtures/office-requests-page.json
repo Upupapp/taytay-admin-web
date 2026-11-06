@@ -1,0 +1,127 @@
+{
+  "data": [
+    {
+      "id": "8f1e2d3c-4b5a-4968-8776-1a2b3c4d5e01",
+      "reference_number": "TAY-2026-000107",
+      "resident_id": "3c2b1a09-8f7e-4d6c-9b5a-1f2e3d4c5b01",
+      "program_id": "5b0e7c1e-2f4a-4c3e-9a51-0d6c1f2a7b10",
+      "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+      "status": "assessment",
+      "channel": "barangay-referral",
+      "referred_by": null,
+      "reason_for_request": null,
+      "requested_amount_centavos": 500000,
+      "submitted_at": "2026-11-05T02:14:00.000Z",
+      "requirements": [
+        {
+          "id": "1d2c3b4a-5f6e-4d7c-8b9a-0e1f2a3b4c01",
+          "code": "valid-id",
+          "label": "Valid government ID",
+          "obligation": "required",
+          "applies_when": null,
+          "applicability": "undecided",
+          "status": "waived",
+          "submitted_at": null,
+          "remarks": null
+        }
+      ],
+      "status_history": [
+        {
+          "from": "draft",
+          "to": "submitted",
+          "reason": null,
+          "actor_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+          "actor_name": "Liezl Padilla",
+          "occurred_at": "2026-11-05T02:14:00.000Z"
+        },
+        {
+          "from": "intake-review",
+          "to": "assessment",
+          "reason": null,
+          "actor_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+          "actor_name": null,
+          "occurred_at": "2026-11-05T05:40:00.000Z"
+        }
+      ],
+      "is_protected": true,
+      "withheld": [
+        "reason_for_request",
+        "referred_by",
+        "status_reasons",
+        "requirement_remarks",
+        "notes"
+      ],
+      "created_at": "2026-11-05T01:58:00.000Z",
+      "created_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+      "updated_at": "2026-11-05T05:40:00.000Z",
+      "updated_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02"
+    },
+    {
+      "id": "8f1e2d3c-4b5a-4968-8776-1a2b3c4d5e02",
+      "reference_number": "TAY-2026-000106",
+      "resident_id": "3c2b1a09-8f7e-4d6c-9b5a-1f2e3d4c5b02",
+      "program_id": "5b0e7c1e-2f4a-4c3e-9a51-0d6c1f2a7b10",
+      "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04",
+      "status": "endorsed",
+      "channel": "walk-in",
+      "referred_by": null,
+      "reason_for_request": "Maintenance medicines after a hypertension confinement.",
+      "requested_amount_centavos": null,
+      "submitted_at": "2026-11-04T01:00:00.000Z",
+      "requirements": [
+        {
+          "id": "1d2c3b4a-5f6e-4d7c-8b9a-0e1f2a3b4c02",
+          "code": "medical-certificate",
+          "label": "Medical certificate",
+          "obligation": "required",
+          "applies_when": null,
+          "applicability": "undecided",
+          "status": "submitted",
+          "submitted_at": "2026-11-04T01:00:00.000Z",
+          "remarks": null
+        },
+        {
+          "id": "1d2c3b4a-5f6e-4d7c-8b9a-0e1f2a3b4c03",
+          "code": "guardianship",
+          "label": "Proof of guardianship",
+          "obligation": "conditional",
+          "applies_when": "When the applicant claims for a minor in their care.",
+          "applicability": "does-not-apply",
+          "status": "waived",
+          "submitted_at": null,
+          "remarks": "The applicant claims for herself."
+        }
+      ],
+      "status_history": [
+        {
+          "from": "draft",
+          "to": "submitted",
+          "reason": null,
+          "actor_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+          "actor_name": "Liezl Padilla",
+          "occurred_at": "2026-11-04T01:00:00.000Z"
+        },
+        {
+          "from": "assessment",
+          "to": "endorsed",
+          "reason": "Assessed at the counter; the bills are in hand.",
+          "actor_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+          "actor_name": "Ramon Cruz",
+          "occurred_at": "2026-11-04T07:20:00.000Z"
+        }
+      ],
+      "is_protected": false,
+      "withheld": [],
+      "created_at": "2026-11-04T00:42:00.000Z",
+      "created_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+      "updated_at": "2026-11-04T07:20:00.000Z",
+      "updated_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02"
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "has_more": true,
+      "next_cursor": "b2ZmaWNlX3JlcXVlc3R8OGYxZTJkM2MtNGI1YS00OTY4LTg3NzYtMWEyYjNjNGQ1ZTAy"
+    }
+  }
+}

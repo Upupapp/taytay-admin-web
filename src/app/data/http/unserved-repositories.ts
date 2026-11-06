@@ -3,7 +3,6 @@ import { throwError, type Observable } from 'rxjs';
 
 import {
   type CaseRepository,
-  type AssistanceRequestRepository,
   type BeneficiaryRepository,
   type FieldVisitRepository,
   type ReleaseRepository,
@@ -117,87 +116,6 @@ export class UnservedCaseRepository implements CaseRepository {
 
   rescheduleTask(): Observable<never> {
     return unserved('cases');
-  }
-}
-
-@Injectable()
-export class UnservedAssistanceRequestRepository implements AssistanceRequestRepository {
-  static readonly port: DataPort = 'assistance-request';
-
-  list(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  getById(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  listNotes(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  changeStatus(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  advisoryFor(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  advisoryForCase(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  saveDraft(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  submitIntake(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  listAssessmentTemplates(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  openAssessment(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  answerAssessment(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  recordAssessment(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  reviewRequirement(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  recordDocument(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  decideApplicability(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  requestDocument(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  listDocumentRequests(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  withdrawDocumentRequest(): Observable<never> {
-    return unserved('assistance requests');
-  }
-
-  openDocument(): Observable<never> {
-    return unserved('assistance requests');
   }
 }
 
@@ -610,7 +528,6 @@ export class UnservedDashboardRepository implements DashboardRepository {
  */
 export const UNSERVED_HTTP_PORTS: readonly DataPort[] = [
   UnservedCaseRepository.port,
-  UnservedAssistanceRequestRepository.port,
   UnservedBeneficiaryRepository.port,
   UnservedFieldVisitRepository.port,
   UnservedReleaseRepository.port,

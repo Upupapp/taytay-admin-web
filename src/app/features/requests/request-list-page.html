@@ -1,5 +1,10 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a page-actions class="btn btn--primary" routerLink="/assistance-requests/new">
+  <a
+    page-actions
+    *appHasPermission="'request.create'"
+    class="btn btn--primary"
+    routerLink="/assistance-requests/new"
+  >
     {{ copy.startIntake }}
   </a>
 </app-page-header>
@@ -10,18 +15,32 @@
   <h2 class="drafts__heading" id="drafts-heading">{{ copy.draftsHeading }}</h2>
   <p class="drafts__note">{{ copy.draftsNote }}</p>
 
-  @if (drafts().length === 0) {
+  @if (draftFailure(); as message) {
+    <p class="drafts__problem" role="alert">{{ message }}</p>
+  } @else if (draftState().kind === 'loading') {
+    <p class="drafts__empty" role="status">{{ copy.loadingDrafts }}</p>
+  } @else if (drafts().length === 0) {
     <p class="drafts__empty">{{ copy.noDrafts }}</p>
   } @else {
     <ul class="drafts__list">
       @for (draft of drafts(); track draft.id) {
         <li class="drafts__item">
           <span class="drafts__label">{{ copy.unnamedDraft }}</span>
-          <span class="drafts__reason">{{ draft.reasonForRequest || '—' }}</span>
-          <a class="btn btn--subtle" [routerLink]="resumeLink(draft)">{{ copy.resume }}</a>
+          <span class="drafts__reason">{{ reasonText(draft) }}</span>
+          <a
+            *appHasPermission="'request.create'"
+            class="btn btn--subtle"
+            [routerLink]="resumeLink(draft)"
+          >
+            {{ copy.resume }}
+          </a>
         </li>
       }
     </ul>
+    @if (moreDrafts()) {
+      <!-- Said, never hidden: a draft left off the list is one nobody resumes. -->
+      <p class="drafts__more" role="note">{{ copy.moreDrafts(drafts().length) }}</p>
+    }
   }
 </section>
 
@@ -32,6 +51,7 @@
       <input
         type="search"
         class="filters__input"
+        aria-describedby="request-search-hint"
         [placeholder]="copy.searchPlaceholder"
         [value]="searchText()"
         (input)="onSearch($event)"
@@ -60,22 +80,48 @@
     }
   </div>
 
+  <p class="requests__hint" id="request-search-hint">{{ copy.searchHint }} {{ copy.order }}</p>
+
+  @if (failure(); as message) {
+    <div class="requests__problem" role="alert">
+      <p>{{ message }}</p>
+      <button type="button" class="btn" (click)="retry()">{{ copy.tryAgain }}</button>
+    </div>
+  }
+
   <app-data-table
     [caption]="copy.caption"
     [columns]="columns()"
     [rows]="rows()"
     [rowKey]="rowKey"
     [loading]="isLoading()"
-    [page]="page()"
-    [sort]="sort()"
     [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
     [emptyHeading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
     [emptyMessage]="hasFilters() ? copy.noResultsMessage : copy.emptyMessage"
     [emptyActionLabel]="hasFilters() ? copy.clear : null"
-    (sortChanged)="onSortChanged($event)"
-    (pageChanged)="onPageChanged($event)"
     (emptyActionSelected)="clearFilters()"
   />
+
+  @if (rows().length > 0) {
+    <div class="requests__more">
+      <p class="requests__hint" role="status">
+        {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
+      </p>
+      @if (hasMore()) {
+        <button
+          type="button"
+          class="btn btn--secondary"
+          [disabled]="loadingMore()"
+          (click)="showMore()"
+        >
+          {{ loadingMore() ? copy.loadingMore : copy.showMore }}
+        </button>
+      }
+      @if (moreFailed()) {
+        <p class="requests__problem" role="alert">{{ copy.moreFailed }}</p>
+      }
+    </div>
+  }
 </div>
 
 <ng-template #referenceCell let-request>

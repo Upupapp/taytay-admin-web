@@ -46,7 +46,6 @@ import type { TeamQueue, WorkQueue } from '../work/work-queue';
 import type {
   AssistanceRequest,
   AssistanceRequestFilter,
-  AssistanceRequestSortField,
   AssistanceRequestStatus,
   RequestNote,
   RequirementStatus,
@@ -596,10 +595,14 @@ export const PROGRAM_REPOSITORY = new InjectionToken<ProgramRepository>('Program
  * twice on a slow connection gets one request, not two (`DL-63`).
  */
 export interface AssistanceRequestRepository {
+  /**
+   * One cursor page in the server's order — filed requests newest filing first, or drafts newest
+   * first when `status` is `'draft'` — never a total and never "page 2 of 9" (`DL-161`, `DL-177`).
+   */
   list(
     filter: AssistanceRequestFilter,
-    page: PageRequest<AssistanceRequestSortField>,
-  ): Observable<Page<AssistanceRequest>>;
+    page: CursorRequest,
+  ): Observable<CursorPage<AssistanceRequest>>;
   getById(id: AssistanceRequestId): Observable<AssistanceRequest | null>;
   listNotes(id: AssistanceRequestId): Observable<readonly RequestNote[]>;
   changeStatus(

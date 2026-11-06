@@ -3655,6 +3655,845 @@
           }
         }
       }
+    },
+    "/api/v1/office/assistance-requests": {
+      "get": {
+        "operationId": "listOfficeRequests",
+        "summary": "Assistance requests, a cursor page at a time",
+        "description": "Needs request.view; assigned-cases is refused (no cases are held to tell a caseload); own-barangay reads its barangay. Filed requests newest filing first; drafts only with status=draft, newest first. q matches the control number only — never the reason. Each request is redacted for the reader.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 40
+            },
+            "description": "Part of a control number."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeRequestStatus"
+            }
+          },
+          {
+            "name": "program_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "barangay_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Outside an own-barangay reader’s barangay is 403."
+          },
+          {
+            "name": "resident_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "open_only",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequestListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without request.view, a caseload scope, or a barangay outside the reader’s.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A malformed query or cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createOfficeRequestDraft",
+        "summary": "Save a new draft",
+        "description": "Needs request.create. No control number: nothing is filed. The person must be in the writer’s scope and the programme active; the checklist is the programme’s documents (template then its own) with the answers applied by code. Audited office_request.draft_created.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeRequestDraft"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The draft.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without request.create, or a caseload scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A malformed field, a person not on file or out of scope, a programme not open to requests, or a document the programme does not ask for.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assistance-requests/advisory": {
+      "get": {
+        "operationId": "getOfficeIntakeAdvisory",
+        "summary": "The duplicate check before a request exists",
+        "description": "Needs request.create. For the person (in scope) and, when chosen, the programme. Decides nothing (DL-60).",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "resident_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "program_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The advisory.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequestAdvisoryEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without request.create, or a caseload scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such person in the reader’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A malformed query.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assistance-requests/{id}": {
+      "get": {
+        "operationId": "getOfficeRequest",
+        "summary": "Read one request",
+        "description": "Needs request.view. Out of scope answers as not found.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request, redacted for the reader.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without request.view, or a caseload scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in the reader’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateOfficeRequestDraft",
+        "summary": "Save over a draft",
+        "description": "Needs request.create. Replaces the draft whole. A writer from whom part of the request is withheld cannot save over it (403). A filed request is kept as filed (409). Audited office_request.draft_updated.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeRequestDraft"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The draft.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without request.create, a caseload scope, or part of the request withheld from the writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in the writer’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already filed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "As for a new draft.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assistance-requests/{id}/file": {
+      "post": {
+        "operationId": "fileOfficeRequest",
+        "summary": "File a draft",
+        "description": "Needs request.create. Appends draft→submitted to the history and issues the control number in one act; already filed answers as it stands. The duplicate check is read again here: a caution needs an acknowledgement answering it, kept with who and when; none flagged needs none. Refused while the intake record is incomplete — never on the strength of a signal. Audited office_request.filed.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeRequestFiling"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request, filed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without request.create, or a caseload scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in the writer’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The duplicate check has changed since it was read: read it again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "An incomplete intake record (OfficeRequestRefusalEnvelope), a caution not acknowledged, or an acknowledgement too short.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/OfficeRequestRefusalEnvelope"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assistance-requests/{id}/status": {
+      "post": {
+        "operationId": "moveOfficeRequest",
+        "summary": "Move a request through its lifecycle",
+        "description": "Needs request.view and the key the console’s TRANSITION_PERMISSIONS names for the status moved into — request.approve and release.release are never held together. Only along office_request_transitions; appended with who, when and why, and the database sets the status from the history. Already there answers as it stands. Filing is its own act (409); scheduled and released wait for payouts, which this API does not hold yet (409). Audited office_request.status_changed.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeRequestStatusMove"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request as it now stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key for the status moved into, or a caseload scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in the reader’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not a legal move from where the request is, filing, or a payout move not served yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A malformed body or no reason.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assistance-requests/{id}/advisory": {
+      "get": {
+        "operationId": "getOfficeRequestAdvisory",
+        "summary": "The duplicate check for a filed request",
+        "description": "Needs request.create. Reads the person’s other filed requests. Decides nothing (DL-60).",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The advisory.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequestAdvisoryEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without request.create, or a caseload scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in the reader’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assistance-requests/{id}/notes": {
+      "get": {
+        "operationId": "listOfficeRequestNotes",
+        "summary": "Notes on a request",
+        "description": "Needs request.view. Whole, newest first. A protected note’s body is withheld without case-note.view-protected, and every note’s body on a protected request without request.view-sensitive; the entries are still listed (DL-58).",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The notes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequestNoteListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without request.view, or a caseload scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in the reader’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "addOfficeRequestNote",
+        "summary": "Append a note",
+        "description": "Needs case.note; a protected note needs case-note.view-protected, and a protected request request.view-sensitive — nobody writes what they may not read. Appended, never edited or removed. Audited office_request.note_added.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeRequestNoteWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The notes, as the writer may read them.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequestNoteListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the keys above, or a caseload scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in the writer’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A malformed body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -7190,6 +8029,683 @@
                 }
               }
             }
+          }
+        ]
+      },
+      "OfficeRequestStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "submitted",
+          "intake-review",
+          "returned",
+          "assessment",
+          "endorsed",
+          "approved",
+          "rejected",
+          "scheduled",
+          "released",
+          "completed",
+          "cancelled",
+          "expired"
+        ],
+        "description": "The console's AssistanceRequestStatus. Moves follow office_request_transitions, the console's ASSISTANCE_STATUS_TRANSITIONS; a test compares the two."
+      },
+      "OfficeRequestRequirement": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "One document the programme asked for when the draft was last saved, and what the counter recorded. Label, obligation and circumstances are the programme’s. Reviewing a document and recording its file are not served yet.",
+        "required": [
+          "id",
+          "code",
+          "label",
+          "obligation",
+          "applies_when",
+          "applicability",
+          "status",
+          "submitted_at",
+          "remarks"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "obligation": {
+            "type": "string",
+            "enum": [
+              "required",
+              "optional",
+              "conditional"
+            ]
+          },
+          "applies_when": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A conditional document’s circumstances, in words. Nothing evaluates them."
+          },
+          "applicability": {
+            "type": "string",
+            "enum": [
+              "undecided",
+              "applies",
+              "does-not-apply"
+            ],
+            "description": "As somebody at the counter said, for a conditional document; undecided for every other."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "submitted",
+              "waived"
+            ]
+          },
+          "submitted_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "remarks": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why it was excused. Withheld (null) on a protected request from a reader without request.view-sensitive."
+          }
+        }
+      },
+      "OfficeRequestStatusChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to",
+          "reason",
+          "actor_id",
+          "actor_name",
+          "occurred_at"
+        ],
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/OfficeRequestStatus"
+          },
+          "to": {
+            "$ref": "#/components/schemas/OfficeRequestStatus"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why. Withheld (null) on a protected request from a reader without request.view-sensitive; null on a filing nothing was flagged on."
+          },
+          "actor_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "actor_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OfficeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "An assistance request, already redacted for the reader. Not sent, because nothing here records them yet: the approved amount, the assignee, the assessment and the decision remarks — the console reads their absence as none recorded.",
+        "required": [
+          "id",
+          "reference_number",
+          "resident_id",
+          "program_id",
+          "barangay_id",
+          "status",
+          "channel",
+          "referred_by",
+          "reason_for_request",
+          "requested_amount_centavos",
+          "submitted_at",
+          "requirements",
+          "status_history",
+          "is_protected",
+          "withheld",
+          "created_at",
+          "created_by",
+          "updated_at",
+          "updated_by"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference_number": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "TAY-YYYY-NNNNNN, issued at filing. Null while a draft (DL-63)."
+          },
+          "resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "program_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Null only on a draft that has not chosen one."
+          },
+          "barangay_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The person’s barangay when the draft was last saved; kept once filed."
+          },
+          "status": {
+            "$ref": "#/components/schemas/OfficeRequestStatus"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "walk-in",
+              "barangay-referral",
+              "encoded",
+              "online"
+            ]
+          },
+          "referred_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Withheld (null) on a protected request from an uncleared reader."
+          },
+          "reason_for_request": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Withheld (null) on a protected request from an uncleared reader; may be empty on a draft."
+          },
+          "requested_amount_centavos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Integer centavos. What was asked for."
+          },
+          "submitted_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeRequestRequirement"
+            }
+          },
+          "status_history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeRequestStatusChange"
+            },
+            "description": "Oldest first. Append-only."
+          },
+          "is_protected": {
+            "type": "boolean",
+            "description": "The person is under vawc-survivor or cicl today."
+          },
+          "withheld": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "reason_for_request",
+                "referred_by",
+                "status_reasons",
+                "requirement_remarks",
+                "notes"
+              ]
+            },
+            "description": "What was withheld from this reader, so a screen says so rather than showing a blank."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_by": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "OfficeRequestEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeRequest"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeRequestListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeRequest"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "pagination": {
+                "$ref": "#/components/schemas/Pagination"
+              }
+            }
+          }
+        }
+      },
+      "OfficeRequestDraft": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "The console's IntakeDraft. Every part may be unfinished; completeness is asked for at filing. Replaces the draft whole.",
+        "required": [
+          "resident_id",
+          "program_id",
+          "channel",
+          "referred_by",
+          "reason_for_request",
+          "requested_amount_centavos",
+          "requirements"
+        ],
+        "properties": {
+          "resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "program_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "An active programme, or null while not chosen."
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "walk-in",
+              "barangay-referral",
+              "encoded"
+            ],
+            "description": "online is the resident app’s and is not chosen by staff."
+          },
+          "referred_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "reason_for_request": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "requested_amount_centavos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 2000000000
+          },
+          "requirements": {
+            "type": "array",
+            "maxItems": 60,
+            "description": "Answers by code, for documents the programme asks for. Documents not answered are recorded as still owed.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "code",
+                "presented",
+                "waived_reason",
+                "applicability"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "presented": {
+                  "type": "boolean"
+                },
+                "waived_reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 500,
+                  "description": "Empty is a waiver begun and not explained: recorded as still owed."
+                },
+                "applicability": {
+                  "type": "string",
+                  "enum": [
+                    "undecided",
+                    "applies",
+                    "does-not-apply"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "OfficeRequestFiling": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "acknowledgement"
+        ],
+        "properties": {
+          "acknowledgement": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "codes",
+              "reason"
+            ],
+            "description": "Required exactly when the duplicate check raises a caution; its codes must answer every caution. Kept with who and when.",
+            "properties": {
+              "codes": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 10,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            }
+          }
+        }
+      },
+      "OfficeRequestStatusMove": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "to",
+          "reason"
+        ],
+        "properties": {
+          "to": {
+            "$ref": "#/components/schemas/OfficeRequestStatus"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
+      },
+      "OfficeRequestAdvisory": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "The duplicate and previous-assistance check (DL-60). Decides nothing: no score, no total, no eligible, no recommendation. Reads filed requests only — a draft is not a request.",
+        "required": [
+          "signals",
+          "computed_at",
+          "records_read",
+          "not_read"
+        ],
+        "properties": {
+          "signals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "code",
+                "tone",
+                "rule",
+                "finding",
+                "references"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "enum": [
+                    "open-request-same-programme",
+                    "open-request-other-programme",
+                    "granted-same-programme-recently",
+                    "assistance-within-lookback",
+                    "household-assisted-recently",
+                    "open-case"
+                  ]
+                },
+                "tone": {
+                  "type": "string",
+                  "enum": [
+                    "note",
+                    "caution"
+                  ],
+                  "description": "Neither refuses anybody. A caution asks the encoder for a sentence before filing."
+                },
+                "rule": {
+                  "type": "string"
+                },
+                "finding": {
+                  "type": "string"
+                },
+                "references": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "computed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "records_read": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "not_read": {
+            "type": "array",
+            "description": "Sources the check could not read, and why — so silence is not read as a finding.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "because"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "releases",
+                    "cases"
+                  ]
+                },
+                "because": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "OfficeRequestAdvisoryEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeRequestAdvisory"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeRequestNote": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "request_id",
+          "author_id",
+          "author_name",
+          "sensitivity",
+          "body",
+          "is_withheld",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "author_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "author_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sensitivity": {
+            "type": "string",
+            "enum": [
+              "routine",
+              "protected"
+            ]
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null when withheld from this reader; the entry is still listed (DL-58)."
+          },
+          "is_withheld": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OfficeRequestNoteListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeRequestNote"
+            },
+            "description": "Whole, newest first."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeRequestNoteWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sensitivity",
+          "body"
+        ],
+        "properties": {
+          "sensitivity": {
+            "type": "string",
+            "enum": [
+              "routine",
+              "protected"
+            ]
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "OfficeRequestRefusalEnvelope": {
+        "description": "A 422 refusal to file. Nothing was written. Each key of error.details is one of the console's IntakeProblemCodes — no-programme, no-reason, reason-too-short, missing-mandatory-requirement, unacknowledged-caution — or a field (program_id, acknowledgement.reason), its value one sentence.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ErrorEnvelope"
           }
         ]
       }
