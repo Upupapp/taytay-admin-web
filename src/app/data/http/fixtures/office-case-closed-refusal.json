@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "CONFLICT",
+    "message": "This case is closed. A closed case is kept as it ended; a situation that recurs is opened as a new case continuing this one.",
+    "details": {},
+    "request_id": "req_7f3a9c1e2b4d"
+  }
+}

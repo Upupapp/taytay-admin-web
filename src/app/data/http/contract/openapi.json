@@ -5745,6 +5745,1212 @@
           }
         }
       }
+    },
+    "/api/v1/office/cases": {
+      "get": {
+        "operationId": "listOfficeCases",
+        "summary": "List cases",
+        "description": "Needs case.view. Newest opened first, a page at a time; no total is sent. A social worker (assigned-cases) is answered only for the cases assigned to them; any other case answers as not found (404).",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "queue",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeCaseQueue"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 40
+            },
+            "description": "Part of a case reference. Nothing else is searched."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeCaseStatus"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeCaseCategory"
+            }
+          },
+          {
+            "name": "barangay_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Outside an own-barangay reader’s barangay is 403."
+          },
+          {
+            "name": "assigned_to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Ignored for a caseload, which always reads its own."
+          },
+          {
+            "name": "resident_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The cases about one person."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of cases.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeCaseListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or the case’s words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "openOfficeCase",
+        "summary": "Open a case",
+        "description": "Needs case.manage, and is refused to a caseload (403): opening one reads the registry. Opened at intake and assigned to nobody, about a resident in the writer’s scope; one person may be the subject of two open cases. Each linked request is its own request-linked event. Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. Audited office_case.opened.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeCaseOpen"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The case, opened.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeCaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or the case’s words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A linked request already belongs to another case.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/cases/queue-counts": {
+      "get": {
+        "operationId": "countOfficeCaseQueues",
+        "summary": "Count every case queue",
+        "description": "Needs case.view. Every queue, counted under the list’s own scope and filters (the queue itself aside), so a badge and the list it opens agree. A social worker (assigned-cases) is answered only for the cases assigned to them; any other case answers as not found (404).",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 40
+            },
+            "description": "Part of a case reference. Nothing else is searched."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeCaseStatus"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeCaseCategory"
+            }
+          },
+          {
+            "name": "barangay_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Outside an own-barangay reader’s barangay is 403."
+          },
+          {
+            "name": "assigned_to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Ignored for a caseload, which always reads its own."
+          },
+          {
+            "name": "resident_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The cases about one person."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One count per queue.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeCaseQueueCountListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or the case’s words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/cases/assignees": {
+      "get": {
+        "operationId": "listOfficeCaseAssignees",
+        "summary": "Who a case may be given to",
+        "description": "Needs case.manage, and is refused to a caseload (403). The active social workers, by id and name — a scoped read, not the staff register.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The social workers.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeCaseAssigneeListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or the case’s words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/cases/{id}": {
+      "get": {
+        "operationId": "getOfficeCase",
+        "summary": "One case, with everything a caseworker needs to act",
+        "description": "Needs case.view. A social worker (assigned-cases) is answered only for the cases assigned to them; any other case answers as not found (404).",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The case.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeCaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or the case’s words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such case in the reader’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/cases/{id}/status": {
+      "post": {
+        "operationId": "moveOfficeCase",
+        "summary": "Move a case through its lifecycle",
+        "description": "Needs case.view and the key the console’s CASE_TRANSITION_PERMISSIONS names for the status moved into: case.close for closed, case.manage for the rest. Only along office_case_transitions (409 otherwise). Closing is refused while a task is open (409). Already there answers as it stands. Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. A social worker (assigned-cases) is answered only for the cases assigned to them; any other case answers as not found (404). On a case about a person under a protected sector, every write needs request.view-sensitive (403): nobody adds to what they may not read. A closed case is kept as it ended: every write on one is 409. Audited office_case.status_changed.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeCaseStatusWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The case as it now stands, read after the change, as this reader may see it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeCaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or the case’s words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such case in the reader’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not a legal move, a task is still open, or the case is closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/cases/{id}/assignment": {
+      "post": {
+        "operationId": "assignOfficeCase",
+        "summary": "Give a case to a social worker, or to nobody",
+        "description": "Needs case.manage, and is refused to a caseload (403). The assignee is an open social worker’s account (422 otherwise), or null. Assigning to whoever holds it answers as it stands. Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. On a case about a person under a protected sector, every write needs request.view-sensitive (403): nobody adds to what they may not read. A closed case is kept as it ended: every write on one is 409. Audited office_case.assigned or office_case.unassigned.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeCaseAssignmentWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The case as it now stands, read after the change, as this reader may see it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeCaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or the case’s words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such case in the reader’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The case is closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/cases/{id}/notes": {
+      "post": {
+        "operationId": "addOfficeCaseNote",
+        "summary": "Add a note to a case",
+        "description": "Needs case.note; a protected note also needs case-note.view-protected (403). Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. A social worker (assigned-cases) is answered only for the cases assigned to them; any other case answers as not found (404). On a case about a person under a protected sector, every write needs request.view-sensitive (403): nobody adds to what they may not read. A closed case is kept as it ended: every write on one is 409. Audited office_case.note_added.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeCaseNoteWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The case as it now stands, read after the change, as this reader may see it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeCaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or the case’s words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such case in the reader’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The case is closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/cases/{id}/tasks": {
+      "post": {
+        "operationId": "addOfficeCaseTask",
+        "summary": "Set a task on a case",
+        "description": "Needs case.manage. The task is owed by the writer, whoever holds the case, or nobody yet (422 otherwise). Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. A social worker (assigned-cases) is answered only for the cases assigned to them; any other case answers as not found (404). On a case about a person under a protected sector, every write needs request.view-sensitive (403): nobody adds to what they may not read. A closed case is kept as it ended: every write on one is 409. Audited office_case.task_added.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeCaseTaskWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The case as it now stands, read after the change, as this reader may see it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeCaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or the case’s words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such case in the reader’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The case is closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/cases/{id}/tasks/{taskId}/complete": {
+      "post": {
+        "operationId": "completeOfficeCaseTask",
+        "summary": "Complete a task, saying what happened",
+        "description": "Needs case.manage, on an open task of this case (404 if not on it). Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. A social worker (assigned-cases) is answered only for the cases assigned to them; any other case answers as not found (404). On a case about a person under a protected sector, every write needs request.view-sensitive (403): nobody adds to what they may not read. A closed case is kept as it ended: every write on one is 409. Audited office_case.task_completed.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeCaseTaskCompletion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The case as it now stands, read after the change, as this reader may see it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeCaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or the case’s words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such case in the reader’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task is done or cancelled, or the case is closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/cases/{id}/tasks/{taskId}/assignment": {
+      "post": {
+        "operationId": "assignOfficeCaseTask",
+        "summary": "Hand a task to somebody, or to nobody",
+        "description": "Needs case.manage, on an open task. The writer, whoever holds the case, or null (422 otherwise). Already so answers as it stands. Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. A social worker (assigned-cases) is answered only for the cases assigned to them; any other case answers as not found (404). On a case about a person under a protected sector, every write needs request.view-sensitive (403): nobody adds to what they may not read. A closed case is kept as it ended: every write on one is 409. Audited office_case.task_reassigned.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeCaseTaskAssignmentWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The case as it now stands, read after the change, as this reader may see it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeCaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or the case’s words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such case in the reader’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task is done or cancelled, or the case is closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/cases/{id}/tasks/{taskId}/reschedule": {
+      "post": {
+        "operationId": "rescheduleOfficeCaseTask",
+        "summary": "Move a task’s due date, with a reason",
+        "description": "Needs case.manage, on an open task. A recorded change of date, never a hidden timer. Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. A social worker (assigned-cases) is answered only for the cases assigned to them; any other case answers as not found (404). On a case about a person under a protected sector, every write needs request.view-sensitive (403): nobody adds to what they may not read. A closed case is kept as it ended: every write on one is 409. Audited office_case.task_rescheduled.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeCaseTaskReschedule"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The case as it now stands, read after the change, as this reader may see it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeCaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or the case’s words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such case in the reader’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task is done or cancelled, or the case is closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/cases/{id}/requests": {
+      "post": {
+        "operationId": "linkOfficeCaseRequest",
+        "summary": "Name a request this case covers",
+        "description": "Needs case.manage. A filed request the writer may read, about the subject or somebody in the subject’s household today (422 otherwise), and in no other case (409): a request is one intervention in one case. A link is never removed. Already linked here answers as it stands. Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. A social worker (assigned-cases) is answered only for the cases assigned to them; any other case answers as not found (404). On a case about a person under a protected sector, every write needs request.view-sensitive (403): nobody adds to what they may not read. A closed case is kept as it ended: every write on one is 409. Audited office_case.request_linked.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeCaseRequestLink"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The case as it now stands, read after the change, as this reader may see it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeCaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or the case’s words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such case in the reader’s scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request belongs to another case, or the case is closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10975,6 +12181,1097 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 500
+          }
+        }
+      },
+      "OfficeCaseStatus": {
+        "type": "string",
+        "enum": [
+          "intake",
+          "assessment",
+          "intervention",
+          "monitoring",
+          "on-hold",
+          "referred-out",
+          "closed"
+        ],
+        "description": "The console’s CaseStatus. closed is terminal: there is no reopening, and a recurrence is a new case naming the old one."
+      },
+      "OfficeCaseCategory": {
+        "type": "string",
+        "enum": [
+          "crisis-intervention",
+          "child-protection",
+          "family-welfare",
+          "older-persons",
+          "disability-support",
+          "gender-based-violence",
+          "livelihood"
+        ],
+        "description": "How a supervisor finds a file. Drives nothing."
+      },
+      "OfficeCaseTaskKind": {
+        "type": "string",
+        "enum": [
+          "home-visit",
+          "document",
+          "assessment",
+          "follow-up",
+          "referral",
+          "review"
+        ]
+      },
+      "OfficeCaseQueue": {
+        "type": "string",
+        "enum": [
+          "mine",
+          "unassigned",
+          "overdue",
+          "due-soon",
+          "stalled",
+          "all"
+        ],
+        "description": "The console’s queues, counted on the municipality’s calendar. Closed cases fall out of every queue but all. due-soon is within 7 days; stalled is 30 days or more since anything was recorded."
+      },
+      "OfficeCaseWithheld": {
+        "type": "string",
+        "enum": [
+          "summary",
+          "reasons",
+          "task_words",
+          "notes",
+          "household_context"
+        ],
+        "description": "summary, reasons, task_words and notes: the case is about a person under vawc-survivor or cicl today and the reader lacks request.view-sensitive. household_context: the reader’s scope is a caseload, which a case does not widen to the registry — household_id is null and the household is not named."
+      },
+      "OfficeCaseTask": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "case_id",
+          "title",
+          "kind",
+          "status",
+          "due_on",
+          "assigned_to",
+          "assigned_to_name",
+          "completed_at",
+          "completed_by",
+          "completed_by_name",
+          "outcome",
+          "created_at",
+          "created_by",
+          "updated_at",
+          "updated_by"
+        ],
+        "description": "What the office undertook to do, by when, and who owes it. The next action is the open task due soonest — never derived from the status.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "case_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null when withheld: see withheld.task_words."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/OfficeCaseTaskKind"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "done",
+              "cancelled"
+            ]
+          },
+          "due_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "assigned_to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "assigned_to_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "completed_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "completed_by_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What happened, in the words of whoever completed it. Null while open, or when withheld."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_by": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "OfficeCaseNote": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "case_id",
+          "author_id",
+          "author_name",
+          "sensitivity",
+          "body",
+          "is_withheld",
+          "created_at"
+        ],
+        "description": "Listed for every reader of the case. The body is null, and is_withheld true, for a protected note read without case-note.view-protected, or any note on a protected person’s case read without request.view-sensitive.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "case_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "author_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "author_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sensitivity": {
+            "type": "string",
+            "enum": [
+              "routine",
+              "protected"
+            ]
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_withheld": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OfficeCaseEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "case_id",
+          "kind",
+          "from_status",
+          "to_status",
+          "reason",
+          "actor_id",
+          "actor_name",
+          "occurred_at",
+          "note_id",
+          "task_id",
+          "request_id",
+          "staff_user_id",
+          "staff_user_name",
+          "due_on"
+        ],
+        "description": "One immutable line of the case’s history: identifiers and enum values, and the reason. Never edited or deleted.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "case_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "case-opened",
+              "status-changed",
+              "assigned",
+              "unassigned",
+              "note-added",
+              "task-added",
+              "task-completed",
+              "task-reassigned",
+              "task-rescheduled",
+              "request-linked"
+            ]
+          },
+          "from_status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OfficeCaseStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to_status": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OfficeCaseStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null when withheld: see withheld.reasons. For task-completed it is the outcome."
+          },
+          "actor_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "actor_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "note_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "task_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "request_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "staff_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Who was given the case or the task; null for unassigned and for a task returned to nobody."
+          },
+          "staff_user_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "due_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The new date of a rescheduled task."
+          }
+        }
+      },
+      "OfficeCase": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "reference_number",
+          "subject_resident_id",
+          "subject",
+          "household_id",
+          "barangay_id",
+          "category",
+          "status",
+          "summary",
+          "assigned_to",
+          "assigned_to_name",
+          "linked_request_ids",
+          "continues_case_id",
+          "opened_on",
+          "closed_on",
+          "next_action",
+          "open_task_count",
+          "open_request_count",
+          "last_activity_at",
+          "is_protected",
+          "withheld",
+          "created_at",
+          "created_by",
+          "updated_at",
+          "updated_by"
+        ],
+        "description": "A case as a list or a queue shows it, already redacted for the reader.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference_number": {
+            "type": "string",
+            "description": "CASE-YYYY-NNNNNN, issued when the case is opened."
+          },
+          "subject_resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "subject": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OfficeResident"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The person the case is about, as the resident registry discloses them to this reader."
+          },
+          "household_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The subject’s household today; null when they have none, or when withheld (household_context)."
+          },
+          "barangay_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The subject’s barangay when the case was opened, kept."
+          },
+          "category": {
+            "$ref": "#/components/schemas/OfficeCaseCategory"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OfficeCaseStatus"
+          },
+          "summary": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The presenting problem. Null when withheld (summary)."
+          },
+          "assigned_to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "assigned_to_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "linked_request_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Every request the case names, in the order linked — including any this reader may not read."
+          },
+          "continues_case_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The closed case this one continues. Never a reopening."
+          },
+          "opened_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "closed_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "next_action": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OfficeCaseTask"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "open_task_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "open_request_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Linked requests not over, among those this reader may read."
+          },
+          "last_activity_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The latest of the case’s events and the moves of the requests it names."
+          },
+          "is_protected": {
+            "type": "boolean"
+          },
+          "withheld": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeCaseWithheld"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_by": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "OfficeCaseWorkspace": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "reference_number",
+          "subject_resident_id",
+          "subject",
+          "household_id",
+          "barangay_id",
+          "category",
+          "status",
+          "summary",
+          "assigned_to",
+          "assigned_to_name",
+          "linked_request_ids",
+          "continues_case_id",
+          "opened_on",
+          "closed_on",
+          "next_action",
+          "open_task_count",
+          "open_request_count",
+          "last_activity_at",
+          "is_protected",
+          "withheld",
+          "created_at",
+          "created_by",
+          "updated_at",
+          "updated_by",
+          "tasks",
+          "notes",
+          "events",
+          "requests"
+        ],
+        "description": "Everything a caseworker needs to act, in one read. Every mutation answers with this, read after the change.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference_number": {
+            "type": "string",
+            "description": "CASE-YYYY-NNNNNN, issued when the case is opened."
+          },
+          "subject_resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "subject": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OfficeResident"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The person the case is about, as the resident registry discloses them to this reader."
+          },
+          "household_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The subject’s household today; null when they have none, or when withheld (household_context)."
+          },
+          "barangay_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The subject’s barangay when the case was opened, kept."
+          },
+          "category": {
+            "$ref": "#/components/schemas/OfficeCaseCategory"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OfficeCaseStatus"
+          },
+          "summary": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The presenting problem. Null when withheld (summary)."
+          },
+          "assigned_to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "assigned_to_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "linked_request_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Every request the case names, in the order linked — including any this reader may not read."
+          },
+          "continues_case_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The closed case this one continues. Never a reopening."
+          },
+          "opened_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "closed_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "next_action": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OfficeCaseTask"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "open_task_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "open_request_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Linked requests not over, among those this reader may read."
+          },
+          "last_activity_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The latest of the case’s events and the moves of the requests it names."
+          },
+          "is_protected": {
+            "type": "boolean"
+          },
+          "withheld": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeCaseWithheld"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeCaseTask"
+            },
+            "description": "Every task, due date first."
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeCaseNote"
+            },
+            "description": "Newest first."
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeCaseEvent"
+            },
+            "description": "Newest first."
+          },
+          "requests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeRequest"
+            },
+            "description": "The linked requests this reader may read under the request’s own scope and key (request.view), newest filed first, each disclosed as GET /office/assistance-requests/{id} discloses it. A case is never a way round a request’s scope."
+          }
+        }
+      },
+      "OfficeCaseListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeCase"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "pagination": {
+                "$ref": "#/components/schemas/Pagination"
+              }
+            }
+          }
+        }
+      },
+      "OfficeCaseEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeCaseWorkspace"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeCaseQueueCount": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "queue",
+          "count"
+        ],
+        "properties": {
+          "queue": {
+            "$ref": "#/components/schemas/OfficeCaseQueue"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "OfficeCaseQueueCountListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeCaseQueueCount"
+            },
+            "description": "Every queue, in the console’s order."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeCaseAssignee": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "OfficeCaseAssigneeListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeCaseAssignee"
+            },
+            "description": "Open staff accounts in the social-worker role, by name. Their id and name, nothing more."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeCaseOpen": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subject_resident_id",
+          "category",
+          "summary",
+          "continues_case_id",
+          "linked_request_ids",
+          "reason"
+        ],
+        "properties": {
+          "subject_resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "$ref": "#/components/schemas/OfficeCaseCategory"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 500
+          },
+          "continues_case_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "A closed case this one continues (422 if open or unreadable)."
+          },
+          "linked_request_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "maxItems": 20,
+            "description": "Filed requests about the subject or somebody in the subject’s household, each readable by the writer and in no other case."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 1000,
+            "description": "Why, in 8 characters or more (the console’s CASE_REASON_MIN_LENGTH). Kept on the event."
+          }
+        }
+      },
+      "OfficeCaseStatusWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "to",
+          "reason"
+        ],
+        "properties": {
+          "to": {
+            "$ref": "#/components/schemas/OfficeCaseStatus"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 1000,
+            "description": "Why, in 8 characters or more (the console’s CASE_REASON_MIN_LENGTH). Kept on the event."
+          }
+        }
+      },
+      "OfficeCaseAssignmentWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "assignee_id",
+          "reason"
+        ],
+        "properties": {
+          "assignee_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "An open social worker’s account, or null for nobody."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 1000,
+            "description": "Why, in 8 characters or more (the console’s CASE_REASON_MIN_LENGTH). Kept on the event."
+          }
+        }
+      },
+      "OfficeCaseNoteWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "body",
+          "sensitivity",
+          "reason"
+        ],
+        "properties": {
+          "body": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 4000
+          },
+          "sensitivity": {
+            "type": "string",
+            "enum": [
+              "routine",
+              "protected"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 1000,
+            "description": "Why, in 8 characters or more (the console’s CASE_REASON_MIN_LENGTH). Kept on the event."
+          }
+        }
+      },
+      "OfficeCaseTaskWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "kind",
+          "due_on",
+          "assignee_id",
+          "reason"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "kind": {
+            "$ref": "#/components/schemas/OfficeCaseTaskKind"
+          },
+          "due_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "assignee_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The writer, whoever holds the case, or null: a task is owed by somebody who can see the case."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 1000,
+            "description": "Why, in 8 characters or more (the console’s CASE_REASON_MIN_LENGTH). Kept on the event."
+          }
+        }
+      },
+      "OfficeCaseTaskCompletion": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 1000,
+            "description": "The outcome: what actually happened."
+          }
+        }
+      },
+      "OfficeCaseTaskAssignmentWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "assignee_id",
+          "reason"
+        ],
+        "properties": {
+          "assignee_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The writer, whoever holds the case, or null."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 1000,
+            "description": "Why, in 8 characters or more (the console’s CASE_REASON_MIN_LENGTH). Kept on the event."
+          }
+        }
+      },
+      "OfficeCaseTaskReschedule": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "due_on",
+          "reason"
+        ],
+        "properties": {
+          "due_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 1000,
+            "description": "Why, in 8 characters or more (the console’s CASE_REASON_MIN_LENGTH). Kept on the event."
+          }
+        }
+      },
+      "OfficeCaseRequestLink": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "reason"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 1000,
+            "description": "Why, in 8 characters or more (the console’s CASE_REASON_MIN_LENGTH). Kept on the event."
           }
         }
       }

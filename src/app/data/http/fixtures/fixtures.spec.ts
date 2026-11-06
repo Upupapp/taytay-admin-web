@@ -49,6 +49,12 @@ import OFFICE_DOCUMENT_REQUESTS from './office-document-requests.json';
 import OFFICE_ASSESSMENT_TEMPLATES from './office-assessment-templates.json';
 import OFFICE_OPEN_ASSESSMENT from './office-open-assessment.json';
 import OFFICE_SOCIAL_WORKERS from './office-social-workers.json';
+import OFFICE_CASES_PAGE from './office-cases-page.json';
+import OFFICE_CASE from './office-case.json';
+import OFFICE_CASE_CASELOAD from './office-case-caseload.json';
+import OFFICE_CASE_CLOSED_REFUSAL from './office-case-closed-refusal.json';
+import OFFICE_CASE_QUEUE_COUNTS from './office-case-queue-counts.json';
+import OFFICE_CASE_ASSIGNEES from './office-case-assignees.json';
 import OFFICE_DOCUMENT_GRANT from './office-document-grant.json';
 import OFFICE_REQUIREMENT_TEMPLATE from './office-requirement-template.json';
 import OFFICE_REQUIREMENT_TEMPLATE_REFUSAL from './office-requirement-template-refusal.json';
@@ -274,6 +280,12 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['office-open-assessment', OFFICE_OPEN_ASSESSMENT, 'OfficeOpenAssessmentEnvelope'],
     ['office-social-workers', OFFICE_SOCIAL_WORKERS, 'OfficeSocialWorkerListEnvelope'],
     ['office-document-grant', OFFICE_DOCUMENT_GRANT, 'OfficeDocumentGrantEnvelope'],
+    ['office-cases-page', OFFICE_CASES_PAGE, 'OfficeCaseListEnvelope'],
+    ['office-case', OFFICE_CASE, 'OfficeCaseEnvelope'],
+    ['office-case-caseload', OFFICE_CASE_CASELOAD, 'OfficeCaseEnvelope'],
+    ['office-case-closed-refusal', OFFICE_CASE_CLOSED_REFUSAL, 'ErrorEnvelope'],
+    ['office-case-queue-counts', OFFICE_CASE_QUEUE_COUNTS, 'OfficeCaseQueueCountListEnvelope'],
+    ['office-case-assignees', OFFICE_CASE_ASSIGNEES, 'OfficeCaseAssigneeListEnvelope'],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
     ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],

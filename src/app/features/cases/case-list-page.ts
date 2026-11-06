@@ -8,24 +8,26 @@ import {
   TemplateRef,
   viewChild,
 } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map, switchMap, tap } from 'rxjs';
 
+import { PermissionService } from '@core/access/permission.service';
 import {
   CASE_CATEGORIES,
   CASE_QUEUE_IDS,
   CASE_REPOSITORY,
   CASE_STATUS_CATALOG,
-  emptyPage,
+  assignsCases,
   isCaseFilterActive,
+  isCaseFieldWithheld,
   TAYTAY_BARANGAYS,
   type CaseCategory,
+  type CaseFilter,
   type CaseQueueId,
   type CaseStatus,
   type CaseSummary,
-  type Page,
-  type SortSpec,
+  type CursorPage,
 } from '@domain/index';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { CASE_COPY } from '@shared/cases/case.copy';
@@ -38,6 +40,7 @@ import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { CASES_COPY } from './cases.copy';
 import { readCaseQuery } from './case-query';
 
+const PAGE_SIZE = 20;
 
 /**
  * The case list, read as a set of work queues.
@@ -47,6 +50,11 @@ import { readCaseQuery } from './case-query';
  * and something a refresh cannot lose. The counts come from the repository
  * under the same scope and filters as the list itself, so a badge and the page
  * it opens cannot disagree.
+ *
+ * Paged as the office record pages it (`DL-179`): newest opened first, one cursor page at a time,
+ * "show more" following the cursor and the count said as "shown, more available" — never "page 1
+ * of N", because the server sends no total (`DL-161`). No column sorts, because the server takes
+ * no sort.
  */
 @Component({
   selector: 'app-case-list-page',
@@ -59,13 +67,24 @@ export class CaseListPage {
   private readonly repository = inject(CASE_REPOSITORY);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly permissions = inject(PermissionService);
 
   protected readonly copy = CASES_COPY.list;
+
+  /** A caseload reads only the cases assigned to it (`DL-179`), so it has no unassigned queue. */
+  protected readonly isCaseload = computed(() => this.permissions.scope() === 'assigned-cases');
+  /** Opening a case is an assigner's: `case.manage`, and not a caseload (`DL-179`). */
+  protected readonly opensCases = computed(() =>
+    assignsCases(this.permissions.scope(), this.permissions.has('case.manage')),
+  );
   protected readonly shared = CASE_COPY;
   protected readonly statusCatalog = CASE_STATUS_CATALOG;
   protected readonly barangays = TAYTAY_BARANGAYS;
   protected readonly categories = CASE_CATEGORIES;
-  protected readonly queues = CASE_QUEUE_IDS;
+  protected readonly queues = computed(() =>
+    CASE_QUEUE_IDS.filter((queue) => queue !== 'unassigned' || !this.isCaseload()),
+  );
   protected readonly statuses: readonly CaseStatus[] = [
     'intake',
     'assessment',
@@ -90,12 +109,24 @@ export class CaseListPage {
 
   protected readonly searchText = signal(this.query().filter.search ?? '');
 
+  /** Further pages of the reading the first page began; emptied whenever the filter changes. */
+  private readonly further = signal<readonly CursorPage<CaseSummary>[]>([]);
+  protected readonly loadingMore = signal(false);
+  protected readonly moreFailed = signal(false);
+
   protected readonly state = toSignal(
     toObservable(this.query).pipe(
-      tap((query) => this.searchText.set(query.filter.search ?? '')),
-      switchMap((query) => toViewState(this.repository.list(query.filter, query.page))),
+      tap((query) => {
+        this.searchText.set(query.filter.search ?? '');
+        this.further.set([]);
+        this.moreFailed.set(false);
+        this.loadingMore.set(false);
+      }),
+      switchMap((query) =>
+        toViewState(this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null })),
+      ),
     ),
-    { initialValue: LOADING as ViewState<Page<CaseSummary>> },
+    { initialValue: LOADING as ViewState<CursorPage<CaseSummary>> },
   );
 
   protected readonly counts = toSignal(
@@ -106,34 +137,36 @@ export class CaseListPage {
   );
 
   protected readonly isLoading = computed(() => this.state().kind === 'loading');
-  protected readonly page = computed(() => valueOf(this.state()) ?? emptyPage<CaseSummary>());
-  protected readonly rows = computed(() => this.page().items);
+  protected readonly failure = computed(() => {
+    const state = this.state();
+    return state.kind === 'error' ? state.message : null;
+  });
+  protected readonly rows = computed<readonly CaseSummary[]>(() => [
+    ...(valueOf(this.state())?.items ?? []),
+    ...this.further().flatMap((page) => page.items),
+  ]);
+  private readonly lastPage = computed(
+    () => this.further().at(-1) ?? valueOf(this.state()) ?? null,
+  );
+  protected readonly hasMore = computed(() => {
+    const last = this.lastPage();
+    return last !== null && last.hasMore && last.nextCursor !== null;
+  });
   protected readonly filter = computed(() => this.query().filter);
   protected readonly activeQueue = computed<CaseQueueId>(() => this.filter().queue ?? 'all');
-  protected readonly sort = computed<SortSpec | null>(() => this.query().page.sort ?? null);
   protected readonly hasFilters = computed(() => isCaseFilterActive(this.filter()));
 
   protected readonly rowKey = (summary: CaseSummary): string => summary.record.id;
 
   protected readonly columns = computed<readonly TableColumn<CaseSummary>[]>(() => [
-    {
-      key: 'reference',
-      header: this.copy.columnReference,
-      sortField: 'reference',
-      cell: this.referenceCell(),
-    },
+    { key: 'reference', header: this.copy.columnReference, cell: this.referenceCell() },
     {
       key: 'subject',
       header: this.copy.columnSubject,
       value: (summary) => summary.subject.listedName,
     },
-    { key: 'status', header: this.copy.columnStatus, sortField: 'status', cell: this.statusCell() },
-    {
-      key: 'nextAction',
-      header: this.copy.columnNextAction,
-      sortField: 'nextAction',
-      cell: this.nextActionCell(),
-    },
+    { key: 'status', header: this.copy.columnStatus, cell: this.statusCell() },
+    { key: 'nextAction', header: this.copy.columnNextAction, cell: this.nextActionCell() },
     {
       key: 'assigned',
       header: this.copy.columnAssigned,
@@ -170,6 +203,15 @@ export class CaseListPage {
     return days < 0 ? this.copy.overdueBy(Math.abs(days)) : this.copy.dueIn(days);
   }
 
+  /** A withheld title says withheld; a blank would read as a task nobody described (`DL-179`). */
+  protected nextActionTitle(summary: CaseSummary): string | null {
+    if (summary.nextAction === null) {
+      return null;
+    }
+    return summary.nextAction.title ??
+      (isCaseFieldWithheld(summary.record, 'taskWords') ? this.copy.withheld : null);
+  }
+
   protected isOverdue(summary: CaseSummary): boolean {
     const days = summary.facts.daysUntilNextAction;
     return days !== null && days < 0;
@@ -180,7 +222,7 @@ export class CaseListPage {
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => {
+    this.destroyRef.onDestroy(() => {
       if (this.searchTimer !== null) {
         clearTimeout(this.searchTimer);
       }
@@ -220,22 +262,37 @@ export class CaseListPage {
     void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
   }
 
-  protected onSortChanged(sort: SortSpec): void {
-    this.patch({ sort: sort.field, direction: sort.direction });
-  }
-
-  protected onPageChanged(page: number): void {
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { page: page > 1 ? String(page) : null },
-      queryParamsHandling: 'merge',
-    });
+  /** Follows the cursor one page further, for the filter the first page was read with. */
+  protected showMore(): void {
+    const cursor = this.lastPage()?.nextCursor ?? null;
+    if (cursor === null || this.loadingMore()) {
+      return;
+    }
+    const filter: CaseFilter = this.filter();
+    this.loadingMore.set(true);
+    this.moreFailed.set(false);
+    this.repository
+      .list(filter, { limit: PAGE_SIZE, cursor })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (page) => {
+          // The filter changed meanwhile: this page continues a list nobody is looking at.
+          if (filter === this.filter()) {
+            this.further.update((pages) => [...pages, page]);
+          }
+          this.loadingMore.set(false);
+        },
+        error: () => {
+          this.loadingMore.set(false);
+          this.moreFailed.set(true);
+        },
+      });
   }
 
   private patch(changes: Readonly<Record<string, string | null>>): void {
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { ...changes, page: null },
+      queryParams: changes,
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });

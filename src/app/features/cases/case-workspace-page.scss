@@ -1,9 +1,11 @@
 .workspace__missing,
-.workspace__closed {
+.workspace__closed,
+.workspace__protected {
   padding: var(--space-base);
 }
 
-.workspace__closed {
+.workspace__closed,
+.workspace__protected {
   margin-block-end: var(--space-base);
   color: var(--c-text-muted);
   font-size: 13px;
@@ -90,6 +92,7 @@
 }
 
 .workspace__members,
+.workspace__families,
 .workspace__tasks,
 .workspace__notes {
   margin: 0;
@@ -217,4 +220,23 @@
 
 textarea.form__input {
   resize: vertical;
+}
+
+.workspace__closed p {
+  margin: 0 0 var(--space-compact);
+}
+
+.workspace__task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-compact);
+}
+
+.workspace__close-blocked {
+  margin-block-start: var(--space-compact);
+}
+
+.workspace__problem {
+  margin: 0;
+  font-size: 13px;
 }

@@ -241,6 +241,19 @@ export const routes: Routes = [
               import('@features/cases/case-list-page').then((m) => m.CaseListPage),
           },
           {
+            // `new` must precede `:id`, or "new" is read as a case id. The subject is found with
+            // the person picker and the requests offered from the request list, so the form reads
+            // all three (`DL-179`).
+            path: 'new',
+            title: 'Open a case — Taytay Social Welfare',
+            canActivate: [
+              servedGuard('case', 'resident', 'assistance-request'),
+              permissionGuard('case.manage'),
+            ],
+            loadComponent: () =>
+              import('@features/cases/case-open-page').then((m) => m.CaseOpenPage),
+          },
+          {
             path: ':id',
             title: 'Case — Taytay Social Welfare',
             canActivate: [servedGuard('case'), permissionGuard('case.view')],

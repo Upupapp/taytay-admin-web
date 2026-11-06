@@ -48,7 +48,7 @@ export const CASE_COPY = {
 
   queueDescription: {
     mine: 'Cases assigned to you and still open.',
-    unassigned: 'Open cases nobody owns yet. Assign one to pick it up.',
+    unassigned: 'Open cases nobody holds yet, waiting to be given to a social worker.',
     overdue: 'The next action was due before today.',
     'due-soon': 'The next action falls due within seven days.',
     stalled: 'Nothing has been recorded for thirty days or more.',
@@ -79,12 +79,13 @@ export const CASE_COPY = {
     'case-opened': 'Case opened',
     'status-changed': 'Status changed',
     assigned: 'Assigned',
-    unassigned: 'Returned to the unassigned pool',
+    unassigned: 'Taken off a caseload — nobody holds it',
     'note-added': 'Note added',
     'task-added': 'Task added',
     'task-reassigned': 'Task handed over',
     'task-rescheduled': 'Task date moved',
     'task-completed': 'Task completed',
+    'request-linked': 'Assistance request named in this case',
     'request-status-changed': 'Assistance request moved',
   } satisfies Record<CaseEventKind, string>,
 
@@ -123,6 +124,8 @@ export const CASE_COPY = {
     by: 'by',
     reasonGiven: 'Reason given',
     noReason: 'No reason was recorded.',
+    /** The reason exists and is not this reader's (`DL-179`) — never "no reason was recorded". */
+    reasonWithheld: 'Reason withheld from your account.',
     movedFrom: 'from',
     movedTo: 'to',
   },

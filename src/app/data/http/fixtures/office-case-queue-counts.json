@@ -1,0 +1,29 @@
+{
+  "data": [
+    {
+      "queue": "mine",
+      "count": 3
+    },
+    {
+      "queue": "unassigned",
+      "count": 4
+    },
+    {
+      "queue": "overdue",
+      "count": 1
+    },
+    {
+      "queue": "due-soon",
+      "count": 2
+    },
+    {
+      "queue": "stalled",
+      "count": 0
+    },
+    {
+      "queue": "all",
+      "count": 12
+    }
+  ],
+  "meta": {}
+}

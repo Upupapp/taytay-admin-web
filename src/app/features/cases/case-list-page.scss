@@ -132,3 +132,31 @@
   color: var(--c-text-muted);
   font-size: 12px;
 }
+
+.cases__note {
+  margin: 0;
+  padding: var(--space-snug) var(--space-base);
+  border-block-end: 1px solid var(--c-border);
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+.cases__hint {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.cases__more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-base);
+  padding: var(--space-base);
+}
+
+.cases__problem {
+  margin: 0;
+  padding: 0 var(--space-base);
+  font-size: 13px;
+}

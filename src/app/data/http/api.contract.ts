@@ -228,6 +228,15 @@ export const API_ENDPOINTS = {
    * `…/documents` (a form) and `…/documents/{vid}/access`; `{id}/document-requests`, `…/withdraw`.
    */
   officeAssistanceRequests: 'office/assistance-requests',
+  /**
+   * Cases (casework phase 3, `DL-179`): cursor-paged, newest opened first, by `q` (part of a case
+   * reference), `queue`, `status`, `category`, `barangay_id`, `assigned_to`, `resident_id`;
+   * `queue-counts` and `assignees`, answered whole; one by `{id}`, the workspace; `POST` to open
+   * one; `{id}/status`, `{id}/assignment`, `{id}/notes`, `{id}/tasks` and each task's `complete`,
+   * `assignment` and `reschedule`, and `{id}/requests` — every write with a reason, answered with
+   * the workspace. Redacted for the reader by the server.
+   */
+  officeCases: 'office/cases',
   /** The open social-worker accounts a request can be assigned to (`DL-178`, `request.assess`). */
   officeSocialWorkers: 'office/social-workers',
   /** The published assessment forms, current versions, answered whole (`DL-178`). */
@@ -315,11 +324,20 @@ export function toQueryParams(
     params['cursor'] = request.cursor;
   }
 
+  return { ...params, ...toFilterParams(filter) };
+}
+
+/**
+ * A filter as query parameters: a key whose value is absent is left out rather than sent empty, so
+ * an optional filter that was not chosen narrows nothing (the queue counts take the list's
+ * optional filters, `DL-179`).
+ */
+export function toFilterParams(filter: Record<string, unknown>): Record<string, string> {
+  const params: Record<string, string> = {};
   for (const [key, value] of Object.entries(filter)) {
     if (value !== undefined && value !== null && value !== '') {
       params[key] = String(value);
     }
   }
-
   return params;
 }

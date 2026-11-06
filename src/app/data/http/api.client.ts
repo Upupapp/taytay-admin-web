@@ -8,6 +8,7 @@ import type { CursorPage, CursorRequest } from '@domain/index';
 import {
   MAX_LIMIT,
   toCursorPage,
+  toFilterParams,
   toQueryParams,
   type ApiCursorPageResponse,
   type ApiItemResponse,
@@ -120,9 +121,9 @@ export class ApiClient {
    * cursor-paged route it would read the first twenty rows and present them as the whole list.
    * `check:response-shape` holds each read to the envelope its route declares.
    */
-  list<TItem>(path: string, params: Record<string, string> = {}): Observable<readonly TItem[]> {
+  list<TItem>(path: string, params: Record<string, unknown> = {}): Observable<readonly TItem[]> {
     return this.http
-      .get<ApiListResponse<TItem>>(this.url(path), { params })
+      .get<ApiListResponse<TItem>>(this.url(path), { params: toFilterParams(params) })
       .pipe(map((response) => response.data));
   }
 

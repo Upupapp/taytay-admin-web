@@ -11,10 +11,13 @@ export const CASES_COPY = {
      */
     banner:
       'A case is the office’s continuing involvement with a household. An assistance request is one intervention inside it — a case usually outlives several.',
+    caseloadNote:
+      'These are the cases assigned to you. A case reaches your caseload when intake or the head gives it to you; the unassigned ones are theirs to give out.',
+    open: 'Open a case',
     queuesHeading: 'Work queues',
     queuesNote: 'Counts are computed under the same filters as the list below.',
-    search: 'Search',
-    searchPlaceholder: 'Case number, subject, worker or summary',
+    search: 'Case number',
+    searchPlaceholder: 'Part of a case number, e.g. 2026-0001',
     status: 'Status',
     allStatuses: 'Any status',
     category: 'Category',
@@ -36,6 +39,14 @@ export const CASES_COPY = {
     dueIn: (days: number) =>
       days === 0 ? 'Due today' : `Due in ${days} day${days === 1 ? '' : 's'}`,
     neverActive: 'No activity recorded',
+    withheld: 'Withheld from your account',
+
+    shown: (count: number) => `${count} shown, newest opened first.`,
+    moreAvailable: 'More are available.',
+    noMore: 'That is every case matching these filters.',
+    showMore: 'Show more',
+    loadingMore: 'Loading more…',
+    moreFailed: 'The next cases could not be loaded. The ones above are still correct; try again.',
 
     emptyHeading: 'No cases yet',
     emptyMessage: 'Cases appear here once the office opens a file on a household.',
@@ -58,7 +69,7 @@ export const CASES_COPY = {
 
     contextHeading: 'Who this is about',
     contextNote:
-      'Everything on this screen is read in one call, so the person, the address, the family and the money cannot disagree with each other.',
+      'Everything on this screen is read in one go, so the person, the address, the family and the money cannot disagree with each other.',
     subjectLink: 'Open the resident record',
 
     householdHeading: 'Where they live',
@@ -67,22 +78,32 @@ export const CASES_COPY = {
       'Between addresses, or split across two. A recordable state, not missing data.',
     householdLink: 'Open the household',
     membersHeading: 'Who else lives there',
+    /** Never "no household": the household exists, and is not this reader's (`DL-179`). */
+    householdWithheld: 'Not shown to your account',
+    householdWithheldNote:
+      'An account that works only its assigned cases is shown the case and the person it is about, not the household and family around them. Intake or the head can read them.',
+    contextFailed:
+      'The household or the family could not be read, so neither is shown here — which is not the same as there being none.',
 
     familyHeading: 'Who they belong to',
     noFamily: 'No family recorded',
     noFamilyNote:
       'A household is an address; a family is a claim about people. Neither implies the other.',
     familyLink: 'Open the family',
+    familyMembers: (count: number) => `${count} current member${count === 1 ? '' : 's'}`,
 
     requestsHeading: 'Assistance on this case',
-    requestsNote: 'The interventions attached to this file. A case usually outlives several.',
-    noRequests: 'No assistance request has been attached to this case.',
+    requestsNote: 'The interventions this case names. A case usually outlives several.',
+    noRequests: 'No assistance request has been named in this case.',
+    requestsUnread: (count: number) =>
+      `${count} more request${count === 1 ? ' is' : 's are'} named in this case and outside what your account reads, so ${count === 1 ? 'it is' : 'they are'} not shown here.`,
     requestReference: 'Reference',
     requestProgramme: 'Programme',
     requestStatus: 'Status',
     requestRequested: 'Requested',
     requestApproved: 'Approved',
     notSet: '—',
+    linkRequest: 'Name a request',
 
     factsHeading: 'Case',
     reference: 'Case number',
@@ -90,7 +111,10 @@ export const CASES_COPY = {
     status: 'Status',
     opened: 'Opened',
     closed: 'Closed',
+    continues: 'Continues',
+    continuesLink: 'The closed case it continues',
     assigned: 'Assigned to',
+    nobodyAssigned: 'Nobody assigned',
     barangay: 'Barangay',
     summary: 'Presenting problem',
 
@@ -100,8 +124,12 @@ export const CASES_COPY = {
     taskDue: 'Due',
     taskDone: 'Completed',
     taskOutcome: 'Outcome',
+    taskOwedBy: 'Owed by',
+    taskOwedByNobody: 'Nobody yet',
     addTask: 'Add a task',
     completeTask: 'Mark as done',
+    handOverTask: 'Hand over',
+    rescheduleTask: 'Move the date',
 
     notesHeading: 'Running record',
     notesNote: 'The case notes, newest first. Restricted entries are listed but not readable.',
@@ -110,15 +138,26 @@ export const CASES_COPY = {
       `${count} note${count === 1 ? ' is' : 's are'} restricted and cannot be read by your role.`,
     addNote: 'Add a note',
 
+    /** Said where the words would be — never a blank that reads as "nobody wrote anything". */
+    withheld: 'Withheld from your account',
+    protectedNotice:
+      'This case is about a person under a protected sector. What it says — the presenting problem, the reasons, the tasks and the notes — is withheld from your account, and nothing can be added to it from here. Its status, who holds it and when things happened are shown.',
+
     assignHeading: 'Assign this case',
     assignNote:
-      'Assigning is a recorded act with a reason, like everything else here. Leave the worker empty to return the case to the unassigned pool.',
-    assignWorker: 'Worker',
-    assignNobody: 'Nobody — return it to the pool',
+      'Assigning is a recorded act with a reason, like everything else here. The case goes to one social worker’s caseload; choose nobody to take it off theirs.',
+    assignWorker: 'Social worker',
+    assignNobody: 'Nobody — take it off any caseload',
     assign: 'Record the assignment',
+    assigneesLoading: 'Reading the social workers…',
+    assigneesFailed:
+      'The list of social workers could not be read, so nobody is offered. Close this and try again.',
 
     closedNotice:
       'This case is closed. The file is kept in full, and a situation that recurs is opened as a new case rather than reviving this one.',
+    continueClosed: 'Open a new case continuing this one',
+    closeBlocked: (count: number) =>
+      `Closing is not offered while ${count === 1 ? 'a task is' : `${count} tasks are`} open. Record what happened to each first — mark it done with its outcome — because a task left open on a closed case would be owed by nobody.`,
   },
 
   noteForm: {
@@ -145,11 +184,40 @@ export const CASES_COPY = {
     kind: 'Kind',
     dueOn: 'Due by',
     assignee: 'Owed by',
+    assigneeHint:
+      'Yourself, whoever holds the case, or nobody yet — a task is owed by somebody who can see the case.',
+    nobody: 'Nobody yet',
+    you: (name: string) => `${name} (you)`,
+    holder: (name: string) => `${name} (holds the case)`,
     reason: 'Why is this needed?',
     reasonPlaceholder: 'e.g. Household reported moving; the plan assumes the old address',
     confirm: 'Add the task',
     cancel: 'Cancel',
     saved: 'The task has been added.',
+  },
+
+  handOverForm: {
+    heading: 'Hand over a task',
+    description:
+      'Handing a task to somebody else is recorded with a reason. It can go to you, to whoever holds the case, or to nobody yet.',
+    assignee: 'Owed by',
+    reason: 'Why is it changing hands?',
+    reasonPlaceholder: 'e.g. The home visit falls on a day the holder is in the field elsewhere',
+    confirm: 'Record the hand-over',
+    cancel: 'Cancel',
+    saved: 'The task has changed hands.',
+  },
+
+  rescheduleForm: {
+    heading: 'Move a task’s date',
+    description:
+      'A recorded change of date with a reason — never a quiet postponement. The queues read the new date.',
+    dueOn: 'Due by',
+    reason: 'Why is the date moving?',
+    reasonPlaceholder: 'e.g. The household asked to meet after payday',
+    confirm: 'Record the new date',
+    cancel: 'Cancel',
+    saved: 'The task’s date has been moved.',
   },
 
   completeForm: {
@@ -160,6 +228,70 @@ export const CASES_COPY = {
     confirm: 'Record the outcome',
     cancel: 'Cancel',
     saved: 'The task has been completed.',
+  },
+
+  linkForm: {
+    heading: 'Name a request in this case',
+    description:
+      'A case names the interventions it covers one at a time, with a reason. A request named here stays named — there is no un-naming, and a mistake is corrected with a note.',
+    request: 'Which request?',
+    choose: 'Choose a filed request',
+    loading: 'Reading this person’s filed requests…',
+    failed:
+      'This person’s requests could not be read, so none is offered. Close this and try again.',
+    none: 'This person has no filed request that is not already named in this case.',
+    more: 'Only the 50 most recent are offered. An older request can be named from its own record.',
+    rules:
+      'A request belongs to one case at most, and is about this person or somebody in their household. The office record refuses any other.',
+    reason: 'Why does this request belong to the case?',
+    reasonPlaceholder: 'e.g. The medical grant is part of the support plan agreed on 12 August',
+    confirm: 'Name the request',
+    cancel: 'Cancel',
+    saved: 'The request is now named in this case, and the act is on the timeline.',
+  },
+
+  openForm: {
+    title: 'Open a case',
+    subtitle:
+      'A case is the office’s continuing file on a person. It opens at intake, assigned to nobody, and is given to a social worker from its workspace.',
+    back: 'Back to cases',
+    caseloadRefused:
+      'Cases are opened by intake and the head. An account that works its own caseload is given cases rather than opening them.',
+    subjectHeading: 'Who is this case about?',
+    subjectLabel: 'The person the file is about',
+    subjectHint:
+      'One person, even when the whole household is served — responsibility has to land on a name.',
+    subjectLoading: 'Reading the person this case continues…',
+    subjectFailed: 'The person could not be read. Choose them again below.',
+    continuesHeading: 'Continues a closed case',
+    continuesNote: (reference: string) =>
+      `This case continues ${reference}, which is closed. The old file is kept as it ended; the new one names it.`,
+    continuesUnknown: 'This case continues a closed case.',
+    aboutHeading: 'What the case is about',
+    category: 'What kind of case is this?',
+    summary: 'The presenting problem',
+    summaryHint: 'One or two sentences a colleague can act on, between 8 and 500 characters.',
+    summaryPlaceholder:
+      'e.g. Family displaced by the fire on 3 August; two school-age children; no income this month.',
+    summaryTooShort: 'Say a little more — at least 8 characters.',
+    summaryTooLong: 'Keep it to 500 characters; the running record holds the rest.',
+    requestsHeading: 'Requests this case covers (optional)',
+    requestsNote:
+      'This person’s filed requests. Name the ones this case is about; more can be named later from the workspace, one at a time.',
+    requestsLoading: 'Reading this person’s filed requests…',
+    requestsFailed:
+      'This person’s requests could not be read, so none is offered. The case can be opened without them.',
+    requestsNone: 'This person has no filed request yet.',
+    requestsMore:
+      'Only the 50 most recent are offered; an older one can be named from the workspace.',
+    reasonHeading: 'Why the office is opening it',
+    reason: 'Why is the office opening this case?',
+    reasonPlaceholder: 'e.g. Walk-in at the office with a prescription she could not fill',
+    reasonHint: 'Required, and recorded permanently against your name.',
+    confirm: 'Open the case',
+    opening: 'Opening…',
+    opened: 'The case is open, at intake and assigned to nobody.',
+    failed: 'The case could not be opened. Nothing was recorded.',
   },
 
   moved: 'The case has been moved, and the change is on the timeline.',

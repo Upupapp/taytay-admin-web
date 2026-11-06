@@ -8,7 +8,6 @@ import { NAVIGATION } from '@core/navigation/navigation';
 import { provideDataAccess } from '@data/data-access.providers.mock';
 import {
   UnservedBeneficiaryRepository,
-  UnservedCaseRepository,
   UnservedDashboardRepository,
   UnservedEventRepository,
   UnservedFieldVisitRepository,
@@ -156,7 +155,6 @@ const OFFERED = MENU.filter((item) => !WITHHELD.includes(item)).map((item) => it
 
 describe('the http adapter set', () => {
   const adapters = [
-    UnservedCaseRepository,
     UnservedBeneficiaryRepository,
     UnservedFieldVisitRepository,
     UnservedReleaseRepository,
@@ -208,7 +206,7 @@ describe('the http adapter set', () => {
     // The resident registry (DL-174), the household register and families (phase 1c), ID verification
     // (DL-167), the office inbox and users and roles (DL-168), the app directory and its home screen
     // and settings (DL-170) and digital IDs, Balita and the audit trail (DL-171) are what the Node API
-    // serves; the rest of the casework is not.
+    // serves, as are assistance requests (DL-177) and cases (DL-179); the rest of the casework is not.
     for (const route of [
       '/residents',
       '/households',
@@ -222,10 +220,12 @@ describe('the http adapter set', () => {
       '/digital-ids',
       '/balita',
       '/app-audit',
+      '/cases',
     ]) {
       expect(links, `${route} is served`).toContain(route);
     }
-    expect(links).not.toContain('/cases');
+    // The work queue (phase 6) stays unserved and out of the menu: it is not half-served.
+    expect(links).not.toContain('/work');
   });
 
   it('offers the resident registry when only its secondary panels are unserved (DL-175)', async () => {

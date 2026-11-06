@@ -66,7 +66,8 @@ if (portStart === -1 || portEnd === -1) {
 } else {
   const port = portsText.slice(portStart, portEnd);
   // Reads answer questions; mutations change the record and must justify it.
-  const READ_ONLY = new Set(['list', 'queueCounts', 'getById', 'casesForResident']);
+  // `listAssignees` (casework phase 3, DL-179) reads who a case may be given to; it changes nothing.
+  const READ_ONLY = new Set(['list', 'queueCounts', 'getById', 'casesForResident', 'listAssignees']);
   const methods = [...port.matchAll(/^\s{2}([a-zA-Z]+)\(([\s\S]*?)\):/gm)];
 
   if (methods.length === 0) {
@@ -126,7 +127,19 @@ if (FORBIDDEN_STORE.test(storeText)) {
 }
 
 // Every method that assigns to a record collection must also write the event.
-const MUTATORS = ['changeStatus', 'assign', 'addNote', 'addTask', 'completeTask'];
+// `open` and `linkRequest` joined in casework phase 3 (DL-179): opening a case and naming a request
+// it covers are material changes like any other, each written with its event.
+const MUTATORS = [
+  'open',
+  'linkRequest',
+  'changeStatus',
+  'assign',
+  'addNote',
+  'addTask',
+  'completeTask',
+  'assignTask',
+  'rescheduleTask',
+];
 for (const mutator of MUTATORS) {
   const start = storeText.indexOf(`  ${mutator}(`);
   if (start === -1) {

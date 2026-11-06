@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { throwError, type Observable } from 'rxjs';
 
 import {
-  type CaseRepository,
   type BeneficiaryRepository,
   type FieldVisitRepository,
   type ReleaseRepository,
@@ -68,55 +67,6 @@ export class UnservedError extends Error {
 
 export function unserved(module: string): Observable<never> {
   return throwError(() => new UnservedError(module));
-}
-
-@Injectable()
-export class UnservedCaseRepository implements CaseRepository {
-  static readonly port: DataPort = 'case';
-
-  list(): Observable<never> {
-    return unserved('cases');
-  }
-
-  queueCounts(): Observable<never> {
-    return unserved('cases');
-  }
-
-  getById(): Observable<never> {
-    return unserved('cases');
-  }
-
-  casesForResident(): Observable<never> {
-    return unserved('cases');
-  }
-
-  changeStatus(): Observable<never> {
-    return unserved('cases');
-  }
-
-  assign(): Observable<never> {
-    return unserved('cases');
-  }
-
-  addNote(): Observable<never> {
-    return unserved('cases');
-  }
-
-  addTask(): Observable<never> {
-    return unserved('cases');
-  }
-
-  completeTask(): Observable<never> {
-    return unserved('cases');
-  }
-
-  assignTask(): Observable<never> {
-    return unserved('cases');
-  }
-
-  rescheduleTask(): Observable<never> {
-    return unserved('cases');
-  }
 }
 
 @Injectable()
@@ -527,7 +477,6 @@ export class UnservedDashboardRepository implements DashboardRepository {
  * mock one: a spec can import this list, and could not import the binding.
  */
 export const UNSERVED_HTTP_PORTS: readonly DataPort[] = [
-  UnservedCaseRepository.port,
   UnservedBeneficiaryRepository.port,
   UnservedFieldVisitRepository.port,
   UnservedReleaseRepository.port,

@@ -49,14 +49,24 @@ export const CASE_TASK_STATUS_CATALOG: StatusCatalog<CaseTaskStatus> = {
 export interface CaseTask {
   readonly id: CaseTaskId;
   readonly caseId: CaseId;
-  readonly title: string;
+  /**
+   * What has to be done. `null` only when the case's words are withheld from this reader
+   * (`taskWords`, `DL-179`) — the task is still listed, with its date and who owes it.
+   */
+  readonly title: string | null;
   readonly kind: CaseTaskKind;
   readonly status: CaseTaskStatus;
   readonly dueOn: IsoDate;
   readonly assignedTo: StaffUserId | null;
+  /** Who owes it, by name, as the office record has it. */
+  readonly assignedToName: string | null;
   readonly completedAt: IsoDateTime | null;
   readonly completedBy: StaffUserId | null;
-  /** What happened, in the words of whoever closed it. Null while open. */
+  readonly completedByName: string | null;
+  /**
+   * What happened, in the words of whoever closed it. Null while open, and null when withheld from
+   * this reader (`taskWords`).
+   */
   readonly outcome: string | null;
   readonly audit: AuditStamp;
 }

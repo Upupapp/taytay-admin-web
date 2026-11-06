@@ -1,16 +1,12 @@
 import {
   CASE_CATEGORIES,
   CASE_QUEUE_IDS,
-  DEFAULT_PAGE_SIZE,
   TAYTAY_BARANGAYS,
   type BarangayId,
   type CaseCategory,
   type CaseFilter,
   type CaseQueueId,
-  type CaseSortField,
   type CaseStatus,
-  type PageRequest,
-  type SortDirection,
   type StaffUserId,
 } from '@domain/index';
 
@@ -20,18 +16,14 @@ import {
  * The queue lives here with everything else, which is the whole point: a
  * caseworker can send a colleague "the overdue cases in Dolores" as a link, and
  * a browser refresh does not silently return them to a different queue.
+ *
+ * There is no sort and no page number in it: the office record answers newest opened first, a
+ * cursor page at a time, and a page number would name a page nobody can ask for (`DL-161`,
+ * `DL-179`).
  */
 export interface ParamReader {
   get(name: string): string | null;
 }
-
-const SORT_FIELDS: readonly CaseSortField[] = [
-  'reference',
-  'opened',
-  'status',
-  'nextAction',
-  'updatedAt',
-];
 
 const STATUSES: readonly CaseStatus[] = [
   'intake',
@@ -81,28 +73,9 @@ export function readCaseFilter(params: ParamReader): CaseFilter {
   return filter;
 }
 
-export function readCasePage(params: ParamReader): PageRequest<CaseSortField> {
-  const page = Number.parseInt(params.get('page') ?? '', 10);
-  const sortParam = params.get('sort');
-  // Defaults to what is owed soonest, because that is what a queue is for.
-  const field: CaseSortField =
-    sortParam && (SORT_FIELDS as readonly string[]).includes(sortParam)
-      ? (sortParam as CaseSortField)
-      : 'nextAction';
-  const direction: SortDirection = params.get('direction') === 'desc' ? 'desc' : 'asc';
-
-  return {
-    page: Number.isInteger(page) && page > 0 ? page : 1,
-    pageSize: DEFAULT_PAGE_SIZE,
-    sort: { field, direction },
-  };
-}
-
-export function readCaseQuery(params: ParamReader): {
-  readonly filter: CaseFilter;
-  readonly page: PageRequest<CaseSortField>;
-} {
-  return { filter: readCaseFilter(params), page: readCasePage(params) };
+/** The filter, and nothing else: the server orders the list and pages it by cursor. */
+export function readCaseQuery(params: ParamReader): { readonly filter: CaseFilter } {
+  return { filter: readCaseFilter(params) };
 }
 
 export function caseFilterParams(filter: CaseFilter): Record<string, string> {

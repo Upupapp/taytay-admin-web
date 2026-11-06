@@ -73,6 +73,8 @@ import { CASE_COPY } from './case.copy';
                   <span class="timeline__reason-label">{{ copy.reasonGiven }}:</span>
                   {{ entry.reason }}
                 </p>
+              } @else if (entry.reasonWithheld) {
+                <p class="timeline__reason timeline__reason--withheld">{{ copy.reasonWithheld }}</p>
               } @else if (needsReason(entry)) {
                 <p class="timeline__reason timeline__reason--absent">{{ copy.noReason }}</p>
               }

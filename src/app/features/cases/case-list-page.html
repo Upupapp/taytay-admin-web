@@ -1,15 +1,23 @@
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  @if (opensCases()) {
+    <a page-actions class="btn btn--primary" routerLink="/cases/new">{{ copy.open }}</a>
+  }
+</app-page-header>
 
 <div class="card cases">
   <!-- A case is not a request. Said before the table, because these are the two
        words most easily used for each other (DL-52). -->
   <p class="cases__banner">{{ copy.banner }}</p>
+  @if (isCaseload()) {
+    <!-- A caseload is the cases given to it (DL-179); said, so an empty list is not a mystery. -->
+    <p class="cases__note">{{ copy.caseloadNote }}</p>
+  }
 
   <nav class="queues" [attr.aria-label]="copy.queuesHeading">
     <h2 class="queues__heading">{{ copy.queuesHeading }}</h2>
     <p class="queues__note">{{ copy.queuesNote }}</p>
     <ul class="queues__list">
-      @for (queue of queues; track queue) {
+      @for (queue of queues(); track queue) {
         <li>
           <button
             type="button"
@@ -91,16 +99,37 @@
     [rows]="rows()"
     [rowKey]="rowKey"
     [loading]="isLoading()"
-    [page]="page()"
-    [sort]="sort()"
     [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
     [emptyHeading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
     [emptyMessage]="hasFilters() ? copy.noResultsMessage : copy.emptyMessage"
     [emptyActionLabel]="hasFilters() ? copy.clear : null"
-    (sortChanged)="onSortChanged($event)"
-    (pageChanged)="onPageChanged($event)"
     (emptyActionSelected)="clearFilters()"
   />
+
+  @if (failure(); as message) {
+    <p class="cases__problem" role="alert">{{ message }}</p>
+  }
+
+  @if (rows().length > 0) {
+    <div class="cases__more">
+      <p class="cases__hint" role="status">
+        {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
+      </p>
+      @if (hasMore()) {
+        <button
+          type="button"
+          class="btn btn--secondary"
+          [disabled]="loadingMore()"
+          (click)="showMore()"
+        >
+          {{ loadingMore() ? copy.loadingMore : copy.showMore }}
+        </button>
+      }
+      @if (moreFailed()) {
+        <p class="cases__problem" role="alert">{{ copy.moreFailed }}</p>
+      }
+    </div>
+  }
 </div>
 
 <ng-template #referenceCell let-summary>
@@ -118,7 +147,7 @@
   <span class="cases__next" [class.cases__next--late]="isOverdue(summary)">
     {{ nextActionLabel(summary) }}
   </span>
-  @if (summary.nextAction) {
-    <span class="cases__next-title">{{ summary.nextAction.title }}</span>
+  @if (nextActionTitle(summary); as title) {
+    <span class="cases__next-title">{{ title }}</span>
   }
 </ng-template>

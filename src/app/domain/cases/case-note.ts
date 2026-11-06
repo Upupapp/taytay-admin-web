@@ -58,9 +58,17 @@ export interface CaseNoteView {
 /**
  * Applies the note disclosure policy. Pure, so the adapter, the API contract
  * and a test all agree on what a role may read.
+ *
+ * `caseWordsWithheld` is the second rule (`DL-179`): on a case about a protected person, read
+ * without `request.view-sensitive`, every note's body is withheld whatever its tier — the entry is
+ * still listed, as a protected note is.
  */
-export function discloseCaseNote(note: CaseNote, holds: PermissionCheck): CaseNoteView {
-  const cleared = holds(CASE_NOTE_PERMISSIONS[note.sensitivity]);
+export function discloseCaseNote(
+  note: CaseNote,
+  holds: PermissionCheck,
+  caseWordsWithheld = false,
+): CaseNoteView {
+  const cleared = holds(CASE_NOTE_PERMISSIONS[note.sensitivity]) && !caseWordsWithheld;
   return {
     id: note.id,
     caseId: note.caseId,

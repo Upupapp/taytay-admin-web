@@ -1218,6 +1218,181 @@
     },
     {
       "method": "GET",
+      "path": "office/cases",
+      "consumer": "case.mapper.ts#toCaseSummary",
+      "required": [
+        "barangay_id",
+        "category",
+        "created_at",
+        "id",
+        "linked_request_ids",
+        "open_request_count",
+        "open_task_count",
+        "opened_on",
+        "reference_number",
+        "status",
+        "subject",
+        "subject_resident_id",
+        "updated_at",
+        "withheld"
+      ],
+      "optional": [
+        "assigned_to",
+        "assigned_to_name",
+        "closed_on",
+        "continues_case_id",
+        "created_by",
+        "household_id",
+        "is_protected",
+        "last_activity_at",
+        "next_action",
+        "summary",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/cases",
+      "consumer": "case.mapper.ts#toCaseWorkspaceParts",
+      "required": [
+        "events",
+        "notes",
+        "requests",
+        "tasks"
+      ],
+      "optional": []
+    },
+    {
+      "method": "GET",
+      "path": "office/cases/{id}",
+      "consumer": "case.mapper.ts#toCaseWorkspaceParts",
+      "required": [
+        "events",
+        "notes",
+        "requests",
+        "tasks"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/cases/{id}/assignment",
+      "consumer": "case.mapper.ts#toCaseWorkspaceParts",
+      "required": [
+        "events",
+        "notes",
+        "requests",
+        "tasks"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/cases/{id}/notes",
+      "consumer": "case.mapper.ts#toCaseWorkspaceParts",
+      "required": [
+        "events",
+        "notes",
+        "requests",
+        "tasks"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/cases/{id}/requests",
+      "consumer": "case.mapper.ts#toCaseWorkspaceParts",
+      "required": [
+        "events",
+        "notes",
+        "requests",
+        "tasks"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/cases/{id}/status",
+      "consumer": "case.mapper.ts#toCaseWorkspaceParts",
+      "required": [
+        "events",
+        "notes",
+        "requests",
+        "tasks"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/cases/{id}/tasks",
+      "consumer": "case.mapper.ts#toCaseWorkspaceParts",
+      "required": [
+        "events",
+        "notes",
+        "requests",
+        "tasks"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/cases/{id}/tasks/{taskId}/assignment",
+      "consumer": "case.mapper.ts#toCaseWorkspaceParts",
+      "required": [
+        "events",
+        "notes",
+        "requests",
+        "tasks"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/cases/{id}/tasks/{taskId}/complete",
+      "consumer": "case.mapper.ts#toCaseWorkspaceParts",
+      "required": [
+        "events",
+        "notes",
+        "requests",
+        "tasks"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/cases/{id}/tasks/{taskId}/reschedule",
+      "consumer": "case.mapper.ts#toCaseWorkspaceParts",
+      "required": [
+        "events",
+        "notes",
+        "requests",
+        "tasks"
+      ],
+      "optional": []
+    },
+    {
+      "method": "GET",
+      "path": "office/cases/assignees",
+      "consumer": "case.mapper.ts#toCaseAssignee",
+      "required": [
+        "id"
+      ],
+      "optional": [
+        "name"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/cases/queue-counts",
+      "consumer": "case.mapper.ts#toCaseQueueCount",
+      "required": [
+        "count",
+        "queue"
+      ],
+      "optional": []
+    },
+    {
+      "method": "GET",
       "path": "office/families",
       "consumer": "family.mapper.ts#toFamilySummary",
       "required": [],

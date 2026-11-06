@@ -11,7 +11,6 @@ import {
   type CaseNoteId,
   type CaseTask,
   type CaseTaskId,
-  type FamilyId,
   type HouseholdId,
   type ResidentId,
   type SocialCase,
@@ -23,7 +22,6 @@ import { daysBeforeAnchor, stamp } from './seed-utils';
 const socialCase = (id: string): CaseId => asId<CaseId>(id);
 const person = (id: string): ResidentId => asId<ResidentId>(id);
 const household = (id: string): HouseholdId => asId<HouseholdId>(id);
-const family = (id: string): FamilyId => asId<FamilyId>(id);
 const staff = (slug: string): StaffUserId => asId<StaffUserId>(`staff-${slug}`);
 const brgy = (slug: string): BarangayId => asId<BarangayId>(`brgy-${slug}`);
 const request = (id: string): AssistanceRequestId => asId<AssistanceRequestId>(id);
@@ -59,13 +57,19 @@ const dueIn = (days: number): ReturnType<typeof asIsoDate> => {
  *  - **case-0004 has had nothing recorded for two months** — the `stalled`
  *    queue exists because that is how a family is quietly dropped.
  */
-export const MOCK_CASES: readonly SocialCase[] = [
+/**
+ * A case as the store keeps it: what the office recorded, before it is disclosed to a reader.
+ * Whether it is protected and what is withheld are worked out for each reader on the way out
+ * (`DL-179`), so they are not stored.
+ */
+export type StoredCase = Omit<SocialCase, 'isProtected' | 'withheld'>;
+
+export const MOCK_CASES: readonly StoredCase[] = [
   {
     id: socialCase('case-0001'),
     referenceNumber: 'CASE-2026-0117',
     subjectResidentId: person('res-0001'),
     householdId: household('hh-0001'),
-    familyId: family('fam-0001'),
     barangayId: brgy('san-juan'),
     category: 'older-persons',
     status: 'intervention',
@@ -83,7 +87,6 @@ export const MOCK_CASES: readonly SocialCase[] = [
     referenceNumber: 'CASE-2026-0121',
     subjectResidentId: person('res-0002'),
     householdId: household('hh-0002'),
-    familyId: family('fam-0003'),
     barangayId: brgy('dolores'),
     category: 'disability-support',
     status: 'assessment',
@@ -103,7 +106,6 @@ export const MOCK_CASES: readonly SocialCase[] = [
     referenceNumber: 'CASE-2026-0064',
     subjectResidentId: person('res-0005'),
     householdId: household('hh-0005'),
-    familyId: family('fam-0005'),
     barangayId: brgy('san-isidro'),
     category: 'gender-based-violence',
     status: 'intervention',
@@ -121,7 +123,6 @@ export const MOCK_CASES: readonly SocialCase[] = [
     referenceNumber: 'CASE-2026-0088',
     subjectResidentId: person('res-0007'),
     householdId: household('hh-0006'),
-    familyId: family('fam-0006'),
     barangayId: brgy('dolores'),
     category: 'older-persons',
     status: 'on-hold',
@@ -138,7 +139,6 @@ export const MOCK_CASES: readonly SocialCase[] = [
     referenceNumber: 'CASE-2026-0033',
     subjectResidentId: person('res-0004'),
     householdId: household('hh-0004'),
-    familyId: null,
     barangayId: brgy('muzon'),
     category: 'crisis-intervention',
     status: 'closed',
@@ -156,7 +156,6 @@ export const MOCK_CASES: readonly SocialCase[] = [
     referenceNumber: 'CASE-2026-0140',
     subjectResidentId: person('res-0008'),
     householdId: null,
-    familyId: family('fam-0004'),
     barangayId: brgy('santa-ana'),
     category: 'livelihood',
     status: 'intake',
@@ -174,7 +173,6 @@ export const MOCK_CASES: readonly SocialCase[] = [
     referenceNumber: 'CASE-2026-0102',
     subjectResidentId: person('res-0003'),
     householdId: household('hh-0003'),
-    familyId: null,
     barangayId: brgy('santa-ana'),
     category: 'family-welfare',
     status: 'monitoring',
@@ -198,8 +196,10 @@ export const MOCK_CASE_TASKS: readonly CaseTask[] = [
     status: 'open',
     dueOn: dueIn(4),
     assignedTo: staff('sw-1'),
+    assignedToName: 'Grace Ocampo',
     completedAt: null,
     completedBy: null,
+    completedByName: null,
     outcome: null,
     audit: stamp(12, 12),
   },
@@ -211,8 +211,10 @@ export const MOCK_CASE_TASKS: readonly CaseTask[] = [
     status: 'done',
     dueOn: asIsoDate('2026-06-20'),
     assignedTo: staff('sw-1'),
+    assignedToName: 'Grace Ocampo',
     completedAt: daysBeforeAnchor(44, 15),
     completedBy: staff('sw-1'),
+    completedByName: 'Grace Ocampo',
     outcome: 'Visited 18 June. Grandson confirmed living in the same house as a separate family.',
     audit: stamp(52, 44),
   },
@@ -225,8 +227,10 @@ export const MOCK_CASE_TASKS: readonly CaseTask[] = [
     status: 'open',
     dueOn: dueIn(-9),
     assignedTo: staff('sw-1'),
+    assignedToName: 'Grace Ocampo',
     completedAt: null,
     completedBy: null,
+    completedByName: null,
     outcome: null,
     audit: stamp(30, 30),
   },
@@ -238,8 +242,10 @@ export const MOCK_CASE_TASKS: readonly CaseTask[] = [
     status: 'open',
     dueOn: dueIn(2),
     assignedTo: staff('sw-2'),
+    assignedToName: 'Jomar Villanueva',
     completedAt: null,
     completedBy: null,
+    completedByName: null,
     outcome: null,
     audit: stamp(18, 18),
   },
@@ -251,8 +257,10 @@ export const MOCK_CASE_TASKS: readonly CaseTask[] = [
     status: 'open',
     dueOn: dueIn(-38),
     assignedTo: staff('sw-2'),
+    assignedToName: 'Jomar Villanueva',
     completedAt: null,
     completedBy: null,
+    completedByName: null,
     outcome: null,
     audit: stamp(75, 64),
   },
@@ -264,8 +272,10 @@ export const MOCK_CASE_TASKS: readonly CaseTask[] = [
     status: 'open',
     dueOn: dueIn(21),
     assignedTo: staff('sw-2'),
+    assignedToName: 'Jomar Villanueva',
     completedAt: null,
     completedBy: null,
+    completedByName: null,
     outcome: null,
     audit: stamp(9, 9),
   },
@@ -277,8 +287,10 @@ export const MOCK_CASE_TASKS: readonly CaseTask[] = [
     status: 'done',
     dueOn: asIsoDate('2026-06-25'),
     assignedTo: staff('sw-1'),
+    assignedToName: 'Grace Ocampo',
     completedAt: daysBeforeAnchor(36, 11),
     completedBy: staff('sw-1'),
+    completedByName: 'Grace Ocampo',
     outcome: 'Acknowledged in person on 26 June. Case closed at the next review.',
     audit: stamp(48, 36),
   },

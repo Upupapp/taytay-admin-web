@@ -292,7 +292,9 @@ describe('scenario: approved assistance becomes a release', () => {
 describe('scenario: a case is closed', () => {
   it('has a closed case on file, and closure is terminal', async () => {
     await signedInAs('system-administrator');
-    const cases = await firstValueFrom(TestBed.inject(CASE_REPOSITORY).list({}, PAGE));
+    const cases = await firstValueFrom(
+      TestBed.inject(CASE_REPOSITORY).list({}, { limit: 50, cursor: null }),
+    );
 
     const closed = cases.items.filter((summary) => summary.record.status === 'closed');
     expect(closed.length, 'no closed case to demonstrate the terminal state').toBeGreaterThan(0);

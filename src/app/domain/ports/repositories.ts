@@ -179,7 +179,12 @@ import type { FamilyDetail, FamilySummary } from '../families/family-graph';
 import type { CaseNoteSensitivity } from '../cases/case-note';
 import type { CaseTaskDraft } from '../cases/case-task';
 import type { CaseSummary, CaseWorkspace } from '../cases/case-workspace';
-import type { CaseFilter, CaseQueueCount, CaseSortField, CaseStatus } from '../cases/social-case';
+import type {
+  CaseFilter,
+  CaseOpenDraft,
+  CaseQueueCount,
+  CaseStatus,
+} from '../cases/social-case';
 import type { Relationship, RelationshipKind } from '../families/relationship';
 import type { RelationshipEvent } from '../families/relationship-event';
 import type { FactorState, VulnerabilityFactorCode } from '../households/household-vulnerability';
@@ -444,15 +449,39 @@ export const FAMILY_REPOSITORY = new InjectionToken<FamilyRepository>('FamilyRep
  * protected note it never received (`DL-38`).
  */
 export interface CaseRepository {
-  list(filter: CaseFilter, page: PageRequest<CaseSortField>): Observable<Page<CaseSummary>>;
+  /**
+   * One cursor page in the server's order — newest opened first — never a total and never "page 2
+   * of 9" (`DL-161`). A caseload (`assigned-cases`) reads only the cases assigned to it (`DL-179`).
+   */
+  list(filter: CaseFilter, page: CursorRequest): Observable<CursorPage<CaseSummary>>;
   /** Counts for every queue, computed under the same scope as the list itself. */
   queueCounts(filter: CaseFilter): Observable<readonly CaseQueueCount[]>;
   getById(id: CaseId): Observable<CaseWorkspace | null>;
-  /** Every case opened about one resident, newest first. */
+  /** Every case opened about one resident, newest first. Whole, or an error — never part of it. */
   casesForResident(residentId: ResidentId): Observable<readonly CaseSummary[]>;
+  /**
+   * The open social-worker accounts a case can be given to, an id and a name (`DL-179`). Refused to
+   * a caseload, as assigning is.
+   */
+  listAssignees(): Observable<readonly SocialWorker[]>;
+
+  /**
+   * Opens a case at intake, assigned to nobody, and answers with its workspace (`DL-179`). Refused
+   * to a caseload. `continuesCaseId` must name a closed case; every linked request must be filed,
+   * readable by the writer, about the subject or their household, and in no other case.
+   */
+  open(draft: CaseOpenDraft, reason: string): Observable<CaseWorkspace>;
+  /**
+   * Names one more request the case covers (`DL-52`, `DL-179`), under the rules of opening. There
+   * is no unlink: a request wrongly named stays named, and the remedy is a note.
+   */
+  linkRequest(id: CaseId, requestId: AssistanceRequestId, reason: string): Observable<CaseWorkspace>;
 
   changeStatus(id: CaseId, to: CaseStatus, reason: string): Observable<CaseWorkspace>;
-  /** `null` returns the case to the unassigned pool, which is also a recorded act. */
+  /**
+   * Gives the case to a named social worker, or to nobody with `null` — a recorded act either way.
+   * Refused to a caseload: a social worker does not reassign their own case (`DL-179`).
+   */
   assign(id: CaseId, staffUserId: StaffUserId | null, reason: string): Observable<CaseWorkspace>;
 
   addNote(
@@ -466,7 +495,8 @@ export interface CaseRepository {
   /** The reason is the outcome: what actually happened when the task was done. */
   completeTask(id: CaseId, taskId: CaseTaskId, reason: string): Observable<CaseWorkspace>;
   /**
-   * Hands a task to somebody, or back to the unassigned pool with `null`.
+   * Hands a task to somebody, or to nobody with `null`. Only the writer or whoever holds the case
+   * may owe it (`DL-179`).
    *
    * Added in TAB 18 so a work queue can reassign without inventing a second
    * task store (`DL-55`). Like every other mutation here it takes a reason and

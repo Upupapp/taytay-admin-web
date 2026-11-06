@@ -1,4 +1,4 @@
-import type { AssistanceRequestStatus } from '../assistance/assistance-request';
+import type { AssistanceRequest, AssistanceRequestStatus } from '../assistance/assistance-request';
 import type {
   AssistanceRequestId,
   CaseEventId,
@@ -8,7 +8,9 @@ import type {
   IsoDateTime,
   StaffUserId,
 } from '../shared/ids';
-import type { CaseStatus } from './social-case';
+import type { CaseNoteView } from './case-note';
+import type { CaseTask } from './case-task';
+import type { CaseStatus, CaseWithheldField } from './social-case';
 
 /**
  * Everything a case can be recorded as having had done to it.
@@ -28,6 +30,7 @@ export type CaseEventKind =
   | 'task-completed'
   | 'task-reassigned'
   | 'task-rescheduled'
+  | 'request-linked'
   | 'request-status-changed';
 
 /**
@@ -67,8 +70,11 @@ export interface CaseEvent {
   readonly kind: CaseEventKind;
   readonly fromStatus: CaseStatus | null;
   readonly toStatus: CaseStatus | null;
-  /** Why. Required by the repository, not merely by a form. */
-  readonly reason: string;
+  /**
+   * Why. Required by the repository, not merely by a form. `null` only when the case's words are
+   * withheld from this reader (`reasons`, `DL-179`): the event is still listed.
+   */
+  readonly reason: string | null;
   readonly actorId: StaffUserId | null;
   readonly actorName: string;
   readonly occurredAt: IsoDateTime;
@@ -94,6 +100,8 @@ export interface CaseTimelineEntry {
   readonly occurredAt: IsoDateTime;
   readonly actorName: string;
   readonly reason: string | null;
+  /** The reason exists and is not this reader's to read — said, never shown as "none given". */
+  readonly reasonWithheld: boolean;
   readonly fromCaseStatus: CaseStatus | null;
   readonly toCaseStatus: CaseStatus | null;
   readonly fromRequestStatus: AssistanceRequestStatus | null;
@@ -119,4 +127,153 @@ export function eventsForCase(events: readonly CaseEvent[], caseId: CaseId): rea
 /** The most recent moment anything at all happened on a case. */
 export function lastActivityAt(entries: readonly CaseTimelineEntry[]): IsoDateTime | null {
   return [...entries].sort(byNewestEventFirst)[0]?.occurredAt ?? null;
+}
+
+/** Said where the office record has no name for whoever acted. */
+export const UNNAMED_STAFF = 'A member of staff with no name on record';
+
+/** What a case's timeline is assembled from, each already disclosed for the reader. */
+export interface CaseTimelineSources {
+  /** The case's own events, **newest first**, as the office record answers them. */
+  readonly events: readonly CaseEvent[];
+  readonly notes: readonly CaseNoteView[];
+  readonly tasks: readonly CaseTask[];
+  /** The linked requests this reader may read — never the ones they may not (`DL-179`). */
+  readonly requests: readonly Pick<
+    AssistanceRequest,
+    'id' | 'referenceNumber' | 'statusHistory' | 'withheld'
+  >[];
+  /** What the case withholds from this reader. */
+  readonly withheld: readonly CaseWithheldField[];
+}
+
+const BLANK_ENTRY: Omit<CaseTimelineEntry, 'id' | 'source' | 'kind' | 'occurredAt' | 'actorName'> =
+  {
+    reason: null,
+    reasonWithheld: false,
+    fromCaseStatus: null,
+    toCaseStatus: null,
+    fromRequestStatus: null,
+    toRequestStatus: null,
+    reference: null,
+    detail: null,
+    isWithheld: false,
+  };
+
+/**
+ * The case's own events, its notes, its completed tasks and the status history of every linked
+ * request this reader may read — merged, newest first (`DL-56`).
+ *
+ * One function for both adapters, so the timeline a caseworker reads is the same assembly whether
+ * the record came from the office server or the mock: two assemblies of one history eventually
+ * disagree, in front of the family.
+ *
+ * An event that records a note or a task carries that record on its own line — the note's words,
+ * or the task's title — so a note is not told twice. A note or completed task with no event of its
+ * own (history recorded before events were) still gets its line. A withheld word is said to be
+ * withheld, never left blank (`DL-38`, `DL-179`).
+ */
+export function caseTimeline(sources: CaseTimelineSources): readonly CaseTimelineEntry[] {
+  const notes = new Map(sources.notes.map((note) => [note.id, note]));
+  const tasks = new Map(sources.tasks.map((task) => [task.id, task]));
+  const requests = new Map(sources.requests.map((request) => [request.id, request]));
+  const reasonsWithheld = sources.withheld.includes('reasons');
+  const taskWordsWithheld = sources.withheld.includes('taskWords');
+  const toldNotes = new Set<string>();
+  const toldTasks = new Set<string>();
+
+  const entries: CaseTimelineEntry[] = sources.events.map((event) => {
+    const line: CaseTimelineEntry = {
+      ...BLANK_ENTRY,
+      id: `case:${event.id}`,
+      source: 'case',
+      kind: event.kind,
+      occurredAt: event.occurredAt,
+      actorName: event.actorName,
+      reason: event.reason,
+      reasonWithheld: event.reason === null && reasonsWithheld,
+      fromCaseStatus: event.fromStatus,
+      toCaseStatus: event.toStatus,
+    };
+    const note = event.subject.noteId === null ? undefined : notes.get(event.subject.noteId);
+    if (event.kind === 'note-added' && note !== undefined) {
+      toldNotes.add(note.id);
+      return { ...line, source: 'note', detail: note.body, isWithheld: note.isWithheld };
+    }
+    const task = event.subject.taskId === null ? undefined : tasks.get(event.subject.taskId);
+    if (task !== undefined) {
+      if (event.kind === 'task-completed') {
+        toldTasks.add(task.id);
+      }
+      return {
+        ...line,
+        source: 'task',
+        reference: task.title,
+        isWithheld: task.title === null && taskWordsWithheld,
+      };
+    }
+    if (event.kind === 'request-linked') {
+      const request =
+        event.subject.requestId === null ? undefined : requests.get(event.subject.requestId);
+      return { ...line, source: 'assistance-request', reference: request?.referenceNumber ?? null };
+    }
+    return line;
+  });
+
+  for (const note of sources.notes) {
+    if (toldNotes.has(note.id)) {
+      continue;
+    }
+    entries.push({
+      ...BLANK_ENTRY,
+      id: `note:${note.id}`,
+      source: 'note',
+      kind: 'note-added',
+      occurredAt: note.createdAt,
+      actorName: note.authorName,
+      detail: note.body,
+      isWithheld: note.isWithheld,
+    });
+  }
+
+  for (const task of sources.tasks) {
+    if (task.completedAt === null || toldTasks.has(task.id)) {
+      continue;
+    }
+    entries.push({
+      ...BLANK_ENTRY,
+      id: `task:${task.id}`,
+      source: 'task',
+      kind: 'task-completed',
+      occurredAt: task.completedAt,
+      actorName: task.completedByName ?? UNNAMED_STAFF,
+      reason: task.outcome,
+      reasonWithheld: task.outcome === null && taskWordsWithheld,
+      reference: task.title,
+      isWithheld: task.title === null && taskWordsWithheld,
+    });
+  }
+
+  for (const request of sources.requests) {
+    const reasonsHeld = request.withheld.includes('statusReasons');
+    for (const [index, change] of request.statusHistory.entries()) {
+      entries.push({
+        ...BLANK_ENTRY,
+        id: `req:${request.id}:${String(index)}`,
+        source: 'assistance-request',
+        kind: 'request-status-changed',
+        occurredAt: change.occurredAt,
+        actorName: change.actorName,
+        reason: change.reason,
+        reasonWithheld: change.reason === null && reasonsHeld,
+        fromRequestStatus: change.from,
+        toRequestStatus: change.to,
+        reference: request.referenceNumber,
+      });
+    }
+  }
+
+  // A stable sort: two lines recorded in the same millisecond keep the order they were given in,
+  // which for the events is the office record's own, newest first.
+  return entries.sort(byNewestEventFirst);
 }

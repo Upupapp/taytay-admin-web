@@ -4,8 +4,6 @@ import { concat, filter, of, Observable, throwError } from 'rxjs';
 import {
   ACCESS_CONTEXT,
   ASSIGNMENT_NEEDS_REASON,
-  hasSensitiveSector,
-  maskDocumentNumber,
   PROTECTED_FILE_REFUSAL,
   PROTECTED_WRITE_REFUSAL,
   refusalFor,
@@ -29,7 +27,6 @@ import {
   cautions,
   isOutstandingObligation,
   REASON_MIN_LENGTH,
-  REQUEST_WITHHELD_FIELDS,
   DOCUMENT_UPLOAD_POLICY,
   STATUS_MOVE_NEEDS_REASON,
   userHasPermission,
@@ -92,6 +89,7 @@ import { MOCK_DISBURSEMENTS } from './seed/releases.seed';
 import { MOCK_PROGRAMS } from './seed/programs.seed';
 import { MOCK_STAFF } from './seed/staff.seed';
 import { denyUnless } from './mock-access';
+import { MockAssistanceRequestStore, discloseRequest, inReach } from './mock-assistance-request.store';
 import { MockCaseStore } from './mock-case.store';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
@@ -111,7 +109,14 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
   private readonly access = inject(ACCESS_CONTEXT);
   private readonly residents = inject(MockResidentStore);
   private readonly cases = inject(MockCaseStore);
-  private requests: AssistanceRequest[] = [...MOCK_ASSISTANCE_REQUESTS];
+  private readonly store = inject(MockAssistanceRequestStore);
+  /** The session's requests, held in a store the case adapter reads too (`DL-179`). */
+  private get requests(): AssistanceRequest[] {
+    return this.store.requests;
+  }
+  private set requests(value: AssistanceRequest[]) {
+    this.store.requests = value;
+  }
   private documentRequests: readonly DocumentRequest[] = [...MOCK_DOCUMENT_REQUESTS];
   private documentSequence = highestDocumentVersionSerial(MOCK_ASSISTANCE_REQUESTS);
   private documentIdSequence = highestDocumentSerial(MOCK_ASSISTANCE_REQUESTS);
@@ -154,6 +159,9 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
         return false;
       }
       if (filter.programId && request.programId !== filter.programId) {
+        return false;
+      }
+      if (filter.residentId && request.residentId !== filter.residentId) {
         return false;
       }
       if (filter.barangayId && request.barangayId !== filter.barangayId) {
@@ -1411,53 +1419,11 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
    * way out.
    */
   private disclose(request: AssistanceRequest): AssistanceRequest {
-    const user = this.access.currentUser();
-    const resident = this.residents.find(request.residentId);
-    const isProtected = resident !== undefined && hasSensitiveSector(resident);
-    const masked = isProtected && !userHasPermission(user, 'request.view-sensitive');
-    const withheld = masked ? [...REQUEST_WITHHELD_FIELDS] : [];
-    if (!masked && !userHasPermission(user, 'case.view')) {
-      withheld.push('assessment');
-    }
-    const caseStudyWithheld = withheld.includes('assessment');
-    const fullNumbers = userHasPermission(user, 'document.view-full-number');
-
-    return {
-      ...request,
-      isProtected,
-      withheld,
-      reasonForRequest: masked ? '' : request.reasonForRequest,
-      referredBy: masked ? null : request.referredBy,
-      statusHistory: masked
-        ? request.statusHistory.map((change) => ({ ...change, reason: null }))
-        : request.statusHistory,
-      assignments: masked
-        ? request.assignments.map((assignment) => ({ ...assignment, reason: null }))
-        : request.assignments,
-      assessment:
-        request.assessment === null || !caseStudyWithheld
-          ? request.assessment
-          : { ...request.assessment, findings: null, recommendationReason: null },
-      requirements: request.requirements.map((requirement) => ({
-        ...requirement,
-        remarks: masked ? null : requirement.remarks,
-        applicabilityReason: masked ? null : requirement.applicabilityReason,
-        document:
-          requirement.document === null
-            ? null
-            : {
-                ...requirement.document,
-                versions: requirement.document.versions.map((version) => ({
-                  ...version,
-                  documentNumber: fullNumbers
-                    ? version.documentNumber
-                    : maskDocumentNumber(version.documentNumber),
-                  documentNumberMasked: !fullNumbers && version.documentNumber !== null,
-                  supersededReason: masked ? null : version.supersededReason,
-                })),
-              },
-      })),
-    };
+    return discloseRequest(
+      request,
+      this.access.currentUser(),
+      this.residents.find(request.residentId),
+    );
   }
 
   private fieldsFrom(draft: IntakeDraft, barangayId: AssistanceRequest['barangayId']) {
@@ -1672,15 +1638,6 @@ const REVIEW_NEEDS_WORDS: Readonly<Record<ReviewVerdict, string | null>> = {
  * Whether this reader reaches the request at all. A caseload (`assigned-cases`) reads the filed
  * requests assigned to it and nothing else; everything else answers as not found (`DL-178`).
  */
-function inReach(user: AuthenticatedUser | null, request: AssistanceRequest): boolean {
-  if (user === null || !isWithinBarangayScope(user, request.barangayId)) {
-    return false;
-  }
-  return (
-    user.scope !== 'assigned-cases' ||
-    (request.referenceNumber !== '' && request.assignedTo === user.id)
-  );
-}
 
 /**
  * Starting, saving and filing a request, and the duplicate check, read beyond a caseload — the

@@ -19,11 +19,21 @@ import {
   type CaseTaskId,
   type IsoDate,
   type ResidentId,
-  type SocialCase,
+  type AssistanceRequestId,
+  type BarangayId,
+  type CaseOpenDraft,
   type StaffUserId,
 } from '@domain/index';
 
-import { MOCK_CASE_EVENTS, MOCK_CASE_NOTES, MOCK_CASE_TASKS, MOCK_CASES } from './seed/cases.seed';
+import {
+  MOCK_CASE_EVENTS,
+  MOCK_CASE_NOTES,
+  MOCK_CASE_TASKS,
+  MOCK_CASES,
+  type StoredCase,
+} from './seed/cases.seed';
+
+export type { StoredCase } from './seed/cases.seed';
 
 export interface CaseActor {
   readonly id: StaffUserId | null;
@@ -45,21 +55,21 @@ export interface CaseActor {
  */
 @Injectable({ providedIn: 'root' })
 export class MockCaseStore {
-  private cases: readonly SocialCase[] = [...MOCK_CASES];
+  private cases: readonly StoredCase[] = [...MOCK_CASES];
   private notes: readonly CaseNote[] = [...MOCK_CASE_NOTES];
   private tasks: readonly CaseTask[] = [...MOCK_CASE_TASKS];
   private events: readonly CaseEvent[] = [...MOCK_CASE_EVENTS];
   private sequence = MOCK_CASE_EVENTS.length;
 
-  allCases(): readonly SocialCase[] {
+  allCases(): readonly StoredCase[] {
     return this.cases;
   }
 
-  findCase(id: CaseId): SocialCase | undefined {
+  findCase(id: CaseId): StoredCase | undefined {
     return this.cases.find((record) => record.id === id);
   }
 
-  casesForResident(residentId: ResidentId): readonly SocialCase[] {
+  casesForResident(residentId: ResidentId): readonly StoredCase[] {
     return this.cases.filter((record) => record.subjectResidentId === residentId);
   }
 
@@ -87,6 +97,74 @@ export class MockCaseStore {
     return this.events.filter((event) => event.caseId === id);
   }
 
+  /* ── Opening ────────────────────────────────────────────────────────────── */
+
+  /**
+   * Opens a case at intake, assigned to nobody, with the event that says why and one link event for
+   * each request it names — one act, as the server does it in one transaction (`DL-54`, `DL-179`).
+   */
+  open(
+    draft: CaseOpenDraft,
+    barangayId: BarangayId,
+    householdId: StoredCase['householdId'],
+    reason: string,
+    actor: CaseActor,
+  ): StoredCase {
+    this.sequence += 1;
+    const now = asIsoDateTime(new Date());
+    const today = todayAsIsoDate();
+    const opened: StoredCase = {
+      id: asId<CaseId>(`case-${String(1000 + this.sequence)}`),
+      referenceNumber: `CASE-${today.slice(0, 4)}-${String(this.cases.length + 1).padStart(6, '0')}`,
+      subjectResidentId: draft.subjectResidentId,
+      householdId,
+      barangayId,
+      category: draft.category,
+      status: 'intake',
+      summary: draft.summary.trim(),
+      assignedTo: null,
+      linkedRequestIds: [...draft.linkedRequestIds],
+      openedOn: today,
+      closedOn: null,
+      continuesCaseId: draft.continuesCaseId,
+      audit: { createdAt: now, createdBy: actor.id, updatedAt: now, updatedBy: actor.id },
+    };
+    this.cases = [...this.cases, opened];
+    this.append('case-opened', opened.id, reason, actor, EMPTY_CASE_SUBJECT, null, 'intake');
+    for (const requestId of draft.linkedRequestIds) {
+      this.append('request-linked', opened.id, reason, actor, { ...EMPTY_CASE_SUBJECT, requestId });
+    }
+    return opened;
+  }
+
+  /**
+   * Names one more request the case covers. Appended; never removed (`DL-179`). Naming one the
+   * case already names answers as it stands, with no second event.
+   */
+  linkRequest(
+    record: StoredCase,
+    requestId: AssistanceRequestId,
+    reason: string,
+    actor: CaseActor,
+  ): StoredCase {
+    if (record.linkedRequestIds.includes(requestId)) {
+      return record;
+    }
+    const updated: StoredCase = {
+      ...record,
+      linkedRequestIds: [...record.linkedRequestIds, requestId],
+      audit: { ...record.audit, updatedAt: asIsoDateTime(new Date()), updatedBy: actor.id },
+    };
+    this.cases = this.cases.map((candidate) => (candidate.id === record.id ? updated : candidate));
+    this.append('request-linked', record.id, reason, actor, { ...EMPTY_CASE_SUBJECT, requestId });
+    return updated;
+  }
+
+  /** The case that names a request, if any: a request is one intervention in one case (`DL-52`). */
+  caseOfRequest(requestId: AssistanceRequestId): StoredCase | undefined {
+    return this.cases.find((record) => record.linkedRequestIds.includes(requestId));
+  }
+
   /* ── Lifecycle ──────────────────────────────────────────────────────────── */
 
   /**
@@ -97,12 +175,12 @@ export class MockCaseStore {
    * connection is the ordinary case, and it must not double the history
    * (`DL-51`, carried forward).
    */
-  changeStatus(record: SocialCase, to: CaseStatus, reason: string, actor: CaseActor): SocialCase {
+  changeStatus(record: StoredCase, to: CaseStatus, reason: string, actor: CaseActor): StoredCase {
     if (record.status === to) {
       return record;
     }
     const now = asIsoDateTime(new Date());
-    const updated: SocialCase = {
+    const updated: StoredCase = {
       ...record,
       status: to,
       closedOn: to === 'closed' ? todayAsIsoDate() : record.closedOn,
@@ -114,16 +192,16 @@ export class MockCaseStore {
   }
 
   assign(
-    record: SocialCase,
+    record: StoredCase,
     staffUserId: StaffUserId | null,
     reason: string,
     actor: CaseActor,
-  ): SocialCase {
+  ): StoredCase {
     if (record.assignedTo === staffUserId) {
       return record;
     }
     const now = asIsoDateTime(new Date());
-    const updated: SocialCase = {
+    const updated: StoredCase = {
       ...record,
       assignedTo: staffUserId,
       audit: { ...record.audit, updatedAt: now, updatedBy: actor.id },
@@ -160,7 +238,13 @@ export class MockCaseStore {
     return created;
   }
 
-  addTask(id: CaseId, draft: CaseTaskDraft, reason: string, actor: CaseActor): CaseTask {
+  addTask(
+    id: CaseId,
+    draft: CaseTaskDraft,
+    assigneeName: string | null,
+    reason: string,
+    actor: CaseActor,
+  ): CaseTask {
     this.sequence += 1;
     const now = asIsoDateTime(new Date());
     const created: CaseTask = {
@@ -171,8 +255,10 @@ export class MockCaseStore {
       status: 'open',
       dueOn: draft.dueOn,
       assignedTo: draft.assignedTo,
+      assignedToName: assigneeName,
       completedAt: null,
       completedBy: null,
+      completedByName: null,
       outcome: null,
       audit: { createdAt: now, createdBy: actor.id, updatedAt: now, updatedBy: actor.id },
     };
@@ -196,6 +282,7 @@ export class MockCaseStore {
       status: 'done',
       completedAt: now,
       completedBy: actor.id,
+      completedByName: actor.name,
       outcome: reason.trim(),
       audit: { ...task.audit, updatedAt: now, updatedBy: actor.id },
     };
@@ -208,7 +295,7 @@ export class MockCaseStore {
   }
 
   /**
-   * Hands a task to somebody, or back to the unassigned pool.
+   * Hands a task to somebody, or to nobody.
    *
    * Appends like every other mutation here (`DL-54`). A task that changes hands
    * silently is one nobody can be asked about later, and "who was supposed to
@@ -217,6 +304,7 @@ export class MockCaseStore {
   assignTask(
     task: CaseTask,
     staffUserId: StaffUserId | null,
+    assigneeName: string | null,
     reason: string,
     actor: CaseActor,
   ): CaseTask {
@@ -224,6 +312,7 @@ export class MockCaseStore {
     const updated: CaseTask = {
       ...task,
       assignedTo: staffUserId,
+      assignedToName: assigneeName,
       audit: { ...task.audit, updatedAt: now, updatedBy: actor.id },
     };
     this.tasks = this.tasks.map((candidate) => (candidate.id === task.id ? updated : candidate));

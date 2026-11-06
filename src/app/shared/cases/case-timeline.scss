@@ -82,7 +82,8 @@
   font-weight: 600;
 }
 
-.timeline__reason--absent {
+.timeline__reason--absent,
+.timeline__reason--withheld {
   color: var(--c-text-muted);
   font-style: italic;
 }

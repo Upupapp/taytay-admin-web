@@ -3,6 +3,7 @@ import {
   catchError,
   defer,
   finalize,
+  forkJoin,
   map,
   of,
   shareReplay,
@@ -177,6 +178,26 @@ import {
   type RelationshipId,
   type RelationshipKind,
   type ResidentTransfer,
+  CASE_SEARCH_MAX_LENGTH,
+  CASE_SEARCH_MIN_LENGTH,
+  caseOpenProblems,
+  caseTimeline,
+  headOf,
+  isValidCaseReason,
+  isValidNoteBody,
+  presentFactors,
+  type CaseFilter,
+  type CaseId,
+  type CaseNoteSensitivity,
+  type CaseOpenDraft,
+  type CaseQueueCount,
+  type CaseRepository,
+  type CaseStatus,
+  type CaseSummary,
+  type CaseTaskDraft,
+  type CaseTaskId,
+  type CaseWorkspace,
+  type IsoDate,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -286,6 +307,22 @@ import {
   toWireRequirementReview,
   toWireStatusMove,
 } from './mappers/assistance-request.mapper';
+import {
+  toCaseAssignee,
+  toCaseQueueCount,
+  toCaseSummary,
+  toCaseWorkspaceParts,
+  toWireCaseAssignment,
+  toWireCaseNote,
+  toWireCaseOpen,
+  toWireCaseRequestLink,
+  toWireCaseStatus,
+  toWireCaseTask,
+  toWireCaseTaskAssignment,
+  toWireCaseTaskCompletion,
+  toWireCaseTaskReschedule,
+  type CaseWorkspaceParts,
+} from './mappers/case.mapper';
 import { toSavedView, toWireSavedViewDraft } from './mappers/saved-view.mapper';
 import { toVerificationRequest } from './mappers/verification.mapper';
 import { list } from './mappers/wire';
@@ -2255,6 +2292,8 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
             status: filter.status,
             program_id: filter.programId,
             barangay_id: barangayId,
+            // The requests about one person — what a case may name (`DL-179`).
+            resident_id: filter.residentId,
             // A caseload always reads its own assignments, whatever is sent here (`DL-178`).
             assigned_to: filter.assignedTo,
             open_only: filter.openOnly === true ? 'true' : undefined,
@@ -2716,4 +2755,388 @@ function readGrant(wire: unknown): DocumentAccessGrant {
     );
   }
   return grant;
+}
+
+/* ── cases (casework phase 3, DL-179) ─────────────────────────────────────── */
+
+/** What the workspace reads around a case: the subject's household and families today. */
+interface CaseContext {
+  readonly household: HouseholdDetail | null;
+  readonly families: readonly FamilySummary[];
+  readonly unread: boolean;
+}
+
+const NO_CONTEXT: CaseContext = { household: null, families: [], unread: false };
+
+/**
+ * The office's continuing file on a person, served by the Node API since casework phase 3
+ * (`DL-179`).
+ *
+ * **Redaction is the server's.** A protected subject's words arrive `null` for a reader without
+ * `request.view-sensitive`, a protected note's body for a reader without
+ * `case-note.view-protected`, and the mapper says what the server said.
+ *
+ * **The household and family are read beside the case**, from the routes that serve them — the
+ * household register and the subject's families — and only for a reader the case does not withhold
+ * them from. A caseload (`assigned-cases`) is refused those routes, and the case says so with
+ * `household_context`, so nothing is asked on its behalf (`DL-179`). A context that cannot be read
+ * is said to be unread rather than shown as "no household".
+ *
+ * **The timeline is the domain's one assembly** (`caseTimeline`), from the events, notes, tasks and
+ * the linked requests' histories, exactly as the mock builds it.
+ */
+@Injectable()
+export class HttpCaseRepository implements CaseRepository {
+  private readonly api = inject(ApiClient);
+  private readonly barangayJoin = new BarangayJoin();
+
+  list(filter: CaseFilter, page: CursorRequest): Observable<CursorPage<CaseSummary>> {
+    const refusal = caseSearchProblem(filter);
+    if (refusal !== null) {
+      return throwError(() => refusal);
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) => {
+        const barangayId =
+          filter.barangayId === undefined ? undefined : barangays.toApi(filter.barangayId);
+        if (barangayId === null) {
+          return throwError(() => unknownBarangay());
+        }
+        return this.api
+          .cursorPage(API_ENDPOINTS.officeCases, page, {
+            q: caseSearchOf(filter),
+            queue: filter.queue,
+            status: filter.status,
+            category: filter.category,
+            barangay_id: barangayId,
+            // A caseload always reads its own, whatever is sent here (`DL-179`).
+            assigned_to: filter.assignedTo,
+            resident_id: filter.residentId,
+          })
+          .pipe(
+            map((answer) => ({
+              ...answer,
+              items: answer.items.map((wire) => readCaseSummary(wire, barangays)),
+            })),
+          );
+      }),
+    );
+  }
+
+  /** Every queue, counted under the list's own filters — the queue itself left out. */
+  queueCounts(filter: CaseFilter): Observable<readonly CaseQueueCount[]> {
+    const refusal = caseSearchProblem(filter);
+    if (refusal !== null) {
+      return throwError(() => refusal);
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) => {
+        const barangayId =
+          filter.barangayId === undefined ? undefined : barangays.toApi(filter.barangayId);
+        if (barangayId === null) {
+          return throwError(() => unknownBarangay());
+        }
+        return this.api
+          .list(`${API_ENDPOINTS.officeCases}/queue-counts`, {
+            q: caseSearchOf(filter),
+            status: filter.status,
+            category: filter.category,
+            barangay_id: barangayId,
+            assigned_to: filter.assignedTo,
+            resident_id: filter.residentId,
+          })
+          .pipe(map((rows) => rows.map(readCaseQueueCount)));
+      }),
+    );
+  }
+
+  /** `null` for "not found **or** not yours" — the server answers both with a 404 (`DL-31`). */
+  getById(id: CaseId): Observable<CaseWorkspace | null> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .optionalItem(`${API_ENDPOINTS.officeCases}/${id}`)
+          .pipe(
+            switchMap((wire) =>
+              wire === null ? of(null) : this.compose(readCaseWorkspace(wire, barangays), barangays),
+            ),
+          ),
+      ),
+    );
+  }
+
+  /** Every case about one person, newest opened first — whole, or an error (`DL-161`). */
+  casesForResident(residentId: ResidentId): Observable<readonly CaseSummary[]> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .everyPage(API_ENDPOINTS.officeCases, { resident_id: residentId })
+          .pipe(map((rows) => rows.map((wire) => readCaseSummary(wire, barangays)))),
+      ),
+    );
+  }
+
+  /** Whole, as the server answers it. Refused to a caseload by the server, as assigning is. */
+  listAssignees(): Observable<readonly SocialWorker[]> {
+    return this.api
+      .list(`${API_ENDPOINTS.officeCases}/assignees`)
+      .pipe(map((rows) => rows.map(readCaseAssignee)));
+  }
+
+  open(draft: CaseOpenDraft, reason: string): Observable<CaseWorkspace> {
+    if (caseOpenProblems(draft).length > 0) {
+      return throwError(
+        () =>
+          new Error('Say what the presenting problem is, in 8 to 500 characters. Nothing was sent.'),
+      );
+    }
+    return this.written(reason, () =>
+      this.api.post(API_ENDPOINTS.officeCases, toWireCaseOpen(draft, reason)),
+    );
+  }
+
+  linkRequest(id: CaseId, requestId: AssistanceRequestId, reason: string): Observable<CaseWorkspace> {
+    return this.written(reason, () =>
+      this.api.post(
+        `${API_ENDPOINTS.officeCases}/${id}/requests`,
+        toWireCaseRequestLink(requestId, reason),
+      ),
+    );
+  }
+
+  changeStatus(id: CaseId, to: CaseStatus, reason: string): Observable<CaseWorkspace> {
+    return this.written(reason, () =>
+      this.api.post(`${API_ENDPOINTS.officeCases}/${id}/status`, toWireCaseStatus(to, reason)),
+    );
+  }
+
+  assign(id: CaseId, staffUserId: StaffUserId | null, reason: string): Observable<CaseWorkspace> {
+    return this.written(reason, () =>
+      this.api.post(
+        `${API_ENDPOINTS.officeCases}/${id}/assignment`,
+        toWireCaseAssignment(staffUserId, reason),
+      ),
+    );
+  }
+
+  addNote(
+    id: CaseId,
+    body: string,
+    sensitivity: CaseNoteSensitivity,
+    reason: string,
+  ): Observable<CaseWorkspace> {
+    if (!isValidNoteBody(body)) {
+      return throwError(
+        () => new Error('A note needs enough words to be worth keeping. Nothing was sent.'),
+      );
+    }
+    return this.written(reason, () =>
+      this.api.post(
+        `${API_ENDPOINTS.officeCases}/${id}/notes`,
+        toWireCaseNote(body, sensitivity, reason),
+      ),
+    );
+  }
+
+  addTask(id: CaseId, draft: CaseTaskDraft, reason: string): Observable<CaseWorkspace> {
+    if (draft.title.trim().length === 0) {
+      return throwError(() => new Error('Say what has to be done. Nothing was sent.'));
+    }
+    return this.written(reason, () =>
+      this.api.post(`${API_ENDPOINTS.officeCases}/${id}/tasks`, toWireCaseTask(draft, reason)),
+    );
+  }
+
+  /** The reason is the outcome: what actually happened when the task was done. */
+  completeTask(id: CaseId, taskId: CaseTaskId, reason: string): Observable<CaseWorkspace> {
+    return this.written(reason, () =>
+      this.api.post(
+        `${API_ENDPOINTS.officeCases}/${id}/tasks/${taskId}/complete`,
+        toWireCaseTaskCompletion(reason),
+      ),
+    );
+  }
+
+  assignTask(
+    id: CaseId,
+    taskId: CaseTaskId,
+    staffUserId: StaffUserId | null,
+    reason: string,
+  ): Observable<CaseWorkspace> {
+    return this.written(reason, () =>
+      this.api.post(
+        `${API_ENDPOINTS.officeCases}/${id}/tasks/${taskId}/assignment`,
+        toWireCaseTaskAssignment(staffUserId, reason),
+      ),
+    );
+  }
+
+  rescheduleTask(
+    id: CaseId,
+    taskId: CaseTaskId,
+    dueOn: IsoDate,
+    reason: string,
+  ): Observable<CaseWorkspace> {
+    return this.written(reason, () =>
+      this.api.post(
+        `${API_ENDPOINTS.officeCases}/${id}/tasks/${taskId}/reschedule`,
+        toWireCaseTaskReschedule(dueOn, reason),
+      ),
+    );
+  }
+
+  /**
+   * A write: refused in words before anything is sent when the reason is too short, then the
+   * barangay join read first — so a failed join sends nothing — and the answer composed into the
+   * whole workspace, read after the change.
+   */
+  private written(reason: string, send: () => Observable<unknown>): Observable<CaseWorkspace> {
+    if (!isValidCaseReason(reason)) {
+      return throwError(
+        () =>
+          new Error(
+            'Say why, in enough words that a colleague reading this can follow it. Nothing was sent.',
+          ),
+      );
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        send().pipe(
+          switchMap((wire) => this.compose(readWrittenCaseWorkspace(wire, barangays), barangays)),
+        ),
+      ),
+    );
+  }
+
+  /**
+   * The household and the families around the case, read from the routes that serve them — never
+   * for a reader the case withholds them from (`DL-179`), and said to be unread when they fail.
+   */
+  private compose(parts: CaseWorkspaceParts, barangays: BarangayIndex): Observable<CaseWorkspace> {
+    const record = parts.summary.record;
+    if (record.withheld.includes('householdContext')) {
+      return of(assembleWorkspace(parts, NO_CONTEXT));
+    }
+    const householdId = record.householdId;
+    const household: Observable<HouseholdDetail | null> =
+      householdId === null
+        ? of(null)
+        : this.api
+            .optionalItem(`${API_ENDPOINTS.officeHouseholds}/${householdId}`)
+            .pipe(map((wire) => (wire === null ? null : readHouseholdDetail(wire, barangays))));
+    const families: Observable<readonly FamilySummary[]> = this.api
+      .list(`${API_ENDPOINTS.officeResidents}/${record.subjectResidentId}/families`)
+      .pipe(map((rows) => rows.map((wire) => readFamilySummary(wire, barangays))));
+
+    return forkJoin({ household, families }).pipe(
+      map((context) => assembleWorkspace(parts, { ...context, unread: false })),
+      catchError(() => of(assembleWorkspace(parts, { ...NO_CONTEXT, unread: true }))),
+    );
+  }
+}
+
+/** The domain's workspace from the server's file and the context read beside it. */
+function assembleWorkspace(parts: CaseWorkspaceParts, context: CaseContext): CaseWorkspace {
+  const record = parts.summary.record;
+  const detail = context.household;
+  return {
+    record,
+    subject: parts.summary.subject,
+    household:
+      detail === null
+        ? null
+        : {
+            household: detail.household,
+            withheld: detail.withheld,
+            isProtected: detail.isProtected,
+            headName: headOf(detail)?.view.listedName ?? 'No head recorded',
+            memberCount: detail.members.length,
+            band: detail.snapshot.band,
+            presentFactorCount: presentFactors(detail.snapshot).length,
+          },
+    vulnerability: detail?.snapshot ?? null,
+    families: context.families,
+    householdMembers: detail?.members.map((member) => member.view) ?? [],
+    householdContextUnread: context.unread,
+    requests: parts.requests,
+    notes: parts.notes,
+    tasks: parts.tasks,
+    timeline: caseTimeline({
+      events: parts.events,
+      notes: parts.notes,
+      tasks: parts.tasks,
+      requests: parts.requests,
+      withheld: record.withheld,
+    }),
+    nextAction: parts.summary.nextAction,
+    assignedToName: parts.summary.assignedToName,
+  };
+}
+
+/** The search the server takes: part of a case reference, 2 to 40 characters, or none. */
+function caseSearchOf(filter: CaseFilter): string | undefined {
+  const search = filter.search?.trim() ?? '';
+  return search === '' ? undefined : search;
+}
+
+function caseSearchProblem(filter: CaseFilter): Error | null {
+  const search = caseSearchOf(filter);
+  return search !== undefined &&
+    (search.length < CASE_SEARCH_MIN_LENGTH || search.length > CASE_SEARCH_MAX_LENGTH)
+    ? new Error('Type between 2 and 40 characters of a case number to search the cases.')
+    : null;
+}
+
+function readCaseSummary(wire: unknown, barangays: BarangayIndex): CaseSummary {
+  const summary = toCaseSummary(wire, barangays);
+  if (summary === null) {
+    throw new Error(
+      'A case from the server could not be read, so none is shown rather than some: a case left ' +
+        'out of the list is one a supervisor concludes was never opened.',
+    );
+  }
+  return summary;
+}
+
+function readCaseWorkspace(wire: unknown, barangays: BarangayIndex): CaseWorkspaceParts {
+  const parts = toCaseWorkspaceParts(wire, barangays);
+  if (parts === null) {
+    throw new Error(
+      'The case could not be read, so none of it is shown: a note, a task or a line of its history ' +
+        'left out would read as not having happened.',
+    );
+  }
+  return parts;
+}
+
+function readWrittenCaseWorkspace(wire: unknown, barangays: BarangayIndex): CaseWorkspaceParts {
+  const parts = toCaseWorkspaceParts(wire, barangays);
+  if (parts === null) {
+    throw new Error(
+      'The server recorded the change, but its answer could not be read. Open the case again to ' +
+        'see it before recording anything twice.',
+    );
+  }
+  return parts;
+}
+
+function readCaseQueueCount(wire: unknown): CaseQueueCount {
+  const count = toCaseQueueCount(wire);
+  if (count === null) {
+    throw new Error(
+      'The queue counts could not be read, so none is shown: a wrong count is worse than none.',
+    );
+  }
+  return count;
+}
+
+function readCaseAssignee(wire: unknown): SocialWorker {
+  const worker = toCaseAssignee(wire);
+  if (worker === null) {
+    throw new Error(
+      'The list of social workers could not be read, so none is offered: a list missing a name ' +
+        'reads as that person not working here.',
+    );
+  }
+  return worker;
 }

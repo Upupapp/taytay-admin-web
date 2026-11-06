@@ -140,11 +140,8 @@ export class MockWorkRepository implements WorkRepository {
         if (record === undefined || !isWithinBarangayScope(user, record.barangayId)) {
           return [];
         }
-        if (
-          user?.scope === 'assigned-cases' &&
-          record.assignedTo !== null &&
-          record.assignedTo !== user.id
-        ) {
+        // A caseload reads only the cases assigned to it, not the unassigned pool (`DL-179`).
+        if (user?.scope === 'assigned-cases' && record.assignedTo !== user.id) {
           return [];
         }
         return [
@@ -154,7 +151,8 @@ export class MockWorkRepository implements WorkRepository {
             sourceId: task.id,
             kind: task.kind === 'home-visit' ? ('conduct-visit' as const) : ('close-case' as const),
             priority: 'important' as const,
-            title: task.title,
+            // The store holds every title; a withheld one is the case adapter's to withhold.
+            title: task.title ?? 'A task with no title on record',
             subject: this.residentLabel(record.subjectResidentId),
             preview: `Case ${record.referenceNumber}`,
             dueOn: task.dueOn,

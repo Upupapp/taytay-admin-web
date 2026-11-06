@@ -14,7 +14,19 @@
     />
 
     @if (workspace.record.status === 'closed') {
-      <p class="card workspace__closed">{{ copy.closedNotice }}</p>
+      <!-- Closed is terminal (DL-53): no write is offered, and a recurrence is a new case. -->
+      <div class="card workspace__closed">
+        <p>{{ copy.closedNotice }}</p>
+        @if (assigns()) {
+          <a class="btn" routerLink="/cases/new" [queryParams]="continueParams(workspace)">{{
+            copy.continueClosed
+          }}</a>
+        }
+      </div>
+    }
+
+    @if (wordsWithheld(workspace)) {
+      <p class="card workspace__protected" role="note">{{ copy.protectedNotice }}</p>
     }
 
     <!-- What happens next, first on the page. A caseworker opening a file is
@@ -22,7 +34,7 @@
     <section class="card workspace__next" aria-labelledby="next-heading">
       <h2 class="workspace__heading" id="next-heading">{{ copy.nextActionHeading }}</h2>
       @if (workspace.nextAction; as action) {
-        <p class="workspace__next-title">{{ action.title }}</p>
+        <p class="workspace__next-title">{{ taskTitle(action) }}</p>
         <p class="workspace__next-meta">
           <span class="workspace__due" [class.workspace__due--late]="isLate(action)">
             {{ dueLabel(action) }}
@@ -32,6 +44,7 @@
             <time [attr.datetime]="action.dueOn">{{ action.dueOn | date: 'd MMM y' }}</time>
           </span>
           <span>{{ taskKindLabel(action.kind) }}</span>
+          <span>{{ copy.nextActionOwner }}: {{ taskOwner(action) }}</span>
         </p>
       } @else {
         <p class="workspace__none">{{ copy.nextActionNone }}</p>
@@ -39,83 +52,99 @@
 
       <p class="workspace__assigned">
         {{ copy.assigned }}:
-        <strong>{{ workspace.assignedToName ?? 'Nobody assigned' }}</strong>
+        <strong>{{ workspace.assignedToName ?? copy.nobodyAssigned }}</strong>
       </p>
 
-      <div class="workspace__actions">
-        <button
-          type="button"
-          class="btn"
-          *appHasPermission="'case.manage'"
-          (click)="openAssign(workspace)"
-        >
-          {{ copy.assignHeading }}
-        </button>
-        <button type="button" class="btn" *appHasPermission="'case.manage'" (click)="openTask()">
-          {{ copy.addTask }}
-        </button>
-        <button type="button" class="btn" *appHasPermission="'case.note'" (click)="openNote()">
-          {{ copy.addNote }}
-        </button>
-      </div>
+      @if (writable(workspace)) {
+        <div class="workspace__actions">
+          @if (assigns()) {
+            <button type="button" class="btn" (click)="openAssign(workspace)">
+              {{ copy.assignHeading }}
+            </button>
+          }
+          @if (canManage()) {
+            <button type="button" class="btn" (click)="openTask(workspace)">
+              {{ copy.addTask }}
+            </button>
+          }
+          @if (canNote()) {
+            <button type="button" class="btn" (click)="openNote()">{{ copy.addNote }}</button>
+          }
+        </div>
+      }
     </section>
 
     <div class="workspace__columns">
       <div class="workspace__main">
-        <!-- Who this is about: person, address, family — read from one call. -->
+        <!-- Who this is about: person, address, family — read together. -->
         <section class="card workspace__block" aria-labelledby="context-heading">
           <h2 class="workspace__heading" id="context-heading">{{ copy.contextHeading }}</h2>
           <p class="workspace__note">{{ copy.contextNote }}</p>
 
-          <app-resident-summary-card
-            [view]="workspace.subject"
-            [routerLink]="'/residents/' + workspace.subject.resident.id"
-          />
+          @if (readsRegistry()) {
+            <app-resident-summary-card
+              [view]="workspace.subject"
+              [routerLink]="'/residents/' + workspace.subject.resident.id"
+            />
+          } @else {
+            <app-resident-summary-card [view]="workspace.subject" />
+          }
 
-          <h3 class="workspace__subheading">{{ copy.householdHeading }}</h3>
-          @if (workspace.household; as household) {
-            <p class="workspace__fact">
-              <a [routerLink]="'/households/' + household.household.id">
-                {{ household.household.referenceNumber }}
-              </a>
-              <span
-                >{{ household.memberCount }} recorded member{{
-                  household.memberCount === 1 ? '' : 's'
-                }}</span
-              >
-            </p>
-            @if (workspace.householdMembers.length > 0) {
-              <h4 class="workspace__subheading">{{ copy.membersHeading }}</h4>
-              <ul class="workspace__members">
-                @for (member of workspace.householdMembers; track member.resident.id) {
-                  <li>
-                    <app-resident-summary-card
-                      compact
-                      [view]="member"
-                      [routerLink]="'/residents/' + member.resident.id"
-                    />
+          @if (householdWithheld(workspace)) {
+            <!-- Withheld, not absent (DL-179): never "no household" to a caseload. -->
+            <h3 class="workspace__subheading">{{ copy.householdHeading }}</h3>
+            <p class="workspace__withheld">{{ copy.householdWithheld }}</p>
+            <p class="workspace__note">{{ copy.householdWithheldNote }}</p>
+          } @else if (workspace.householdContextUnread) {
+            <!-- A failed read is said, never shown as "no household" or "no family". -->
+            <h3 class="workspace__subheading">{{ copy.householdHeading }}</h3>
+            <p class="workspace__withheld" role="status">{{ copy.contextFailed }}</p>
+          } @else {
+            <h3 class="workspace__subheading">{{ copy.householdHeading }}</h3>
+            @if (workspace.household; as household) {
+              <p class="workspace__fact">
+                <a [routerLink]="'/households/' + household.household.id">
+                  {{ household.household.referenceNumber }}
+                </a>
+                <span
+                  >{{ household.memberCount }} recorded member{{
+                    household.memberCount === 1 ? '' : 's'
+                  }}</span
+                >
+              </p>
+              @if (workspace.householdMembers.length > 0) {
+                <h4 class="workspace__subheading">{{ copy.membersHeading }}</h4>
+                <ul class="workspace__members">
+                  @for (member of workspace.householdMembers; track member.resident.id) {
+                    <li>
+                      <app-resident-summary-card
+                        compact
+                        [view]="member"
+                        [routerLink]="'/residents/' + member.resident.id"
+                      />
+                    </li>
+                  }
+                </ul>
+              }
+            } @else {
+              <p class="workspace__none">{{ copy.noHousehold }}</p>
+              <p class="workspace__note">{{ copy.noHouseholdNote }}</p>
+            }
+
+            <h3 class="workspace__subheading">{{ copy.familyHeading }}</h3>
+            @if (workspace.families.length > 0) {
+              <ul class="workspace__families">
+                @for (family of workspace.families; track family.family.id) {
+                  <li class="workspace__fact">
+                    <a [routerLink]="'/families/' + family.family.id">{{ family.family.name }}</a>
+                    <span>{{ copy.familyMembers(family.memberCount) }}</span>
                   </li>
                 }
               </ul>
+            } @else {
+              <p class="workspace__none">{{ copy.noFamily }}</p>
+              <p class="workspace__note">{{ copy.noFamilyNote }}</p>
             }
-          } @else {
-            <p class="workspace__none">{{ copy.noHousehold }}</p>
-            <p class="workspace__note">{{ copy.noHouseholdNote }}</p>
-          }
-
-          <h3 class="workspace__subheading">{{ copy.familyHeading }}</h3>
-          @if (workspace.family; as family) {
-            <p class="workspace__fact">
-              <a [routerLink]="'/families/' + family.family.id">{{ family.family.name }}</a>
-              <span
-                >{{ family.memberCount }} current member{{
-                  family.memberCount === 1 ? '' : 's'
-                }}</span
-              >
-            </p>
-          } @else {
-            <p class="workspace__none">{{ copy.noFamily }}</p>
-            <p class="workspace__note">{{ copy.noFamilyNote }}</p>
           }
         </section>
 
@@ -130,9 +159,10 @@
           <h2 class="workspace__heading" id="requests-heading">{{ copy.requestsHeading }}</h2>
           <p class="workspace__note">{{ copy.requestsNote }}</p>
 
-          @if (workspace.requests.length === 0) {
+          @if (workspace.requests.length === 0 && unreadRequests(workspace) === 0) {
             <p class="workspace__none">{{ copy.noRequests }}</p>
-          } @else {
+          }
+          @if (workspace.requests.length > 0) {
             <table class="workspace__table">
               <caption class="workspace__caption">
                 {{
@@ -150,7 +180,11 @@
               <tbody>
                 @for (request of workspace.requests; track request.id) {
                   <tr>
-                    <th scope="row">{{ request.referenceNumber }}</th>
+                    <th scope="row">
+                      <a [routerLink]="'/assistance-requests/' + request.id">{{
+                        request.referenceNumber
+                      }}</a>
+                    </th>
                     <td>
                       <app-status-badge [catalog]="requestCatalog" [status]="request.status" />
                     </td>
@@ -164,6 +198,19 @@
                 }
               </tbody>
             </table>
+          }
+          @if (unreadRequests(workspace) > 0) {
+            <!-- Named and not shown (DL-179): a short list is never read as the whole of it. -->
+            <p class="workspace__withheld">{{ copy.requestsUnread(unreadRequests(workspace)) }}</p>
+          }
+          @if (writable(workspace) && canManage()) {
+            @if (servesRequests) {
+              <button type="button" class="btn btn--subtle" (click)="openLink(workspace)">
+                {{ copy.linkRequest }}
+              </button>
+            } @else {
+              <app-not-connected port="assistance-request" />
+            }
           }
         </section>
 
@@ -196,22 +243,35 @@
                 </time>
               </dd>
             }
+            @if (workspace.record.continuesCaseId; as prior) {
+              <dt>{{ copy.continues }}</dt>
+              <dd>
+                <a [routerLink]="'/cases/' + prior">{{ copy.continuesLink }}</a>
+              </dd>
+            }
             <dt>{{ copy.summary }}</dt>
-            <dd>{{ workspace.record.summary }}</dd>
+            <dd [class.workspace__withheld]="workspace.record.summary === null">
+              {{ summaryText(workspace) }}
+            </dd>
           </dl>
         </section>
 
-        @if (canManage()) {
+        @if (canManage() && writable(workspace)) {
           <div class="workspace__block">
             <app-status-transition
               idPrefix="case-status"
               [catalog]="statusCatalog"
               [transitions]="transitions"
               [current]="workspace.record.status"
-              [permitted]="permittedMoves(workspace.record.status)"
+              [permitted]="permittedMoves(workspace)"
               [busy]="submitting()"
               (confirmed)="onTransition($event)"
             />
+            @if (closeBlocked(workspace) > 0) {
+              <p class="workspace__note workspace__close-blocked">
+                {{ copy.closeBlocked(closeBlocked(workspace)) }}
+              </p>
+            }
           </div>
         }
 
@@ -225,21 +285,33 @@
             <ul class="workspace__tasks">
               @for (task of workspace.tasks; track task.id) {
                 <li class="workspace__task">
-                  <p class="workspace__task-title">{{ task.title }}</p>
+                  <p
+                    class="workspace__task-title"
+                    [class.workspace__withheld]="task.title === null"
+                  >
+                    {{ taskTitle(task) }}
+                  </p>
                   <p class="workspace__task-meta">
                     <app-status-badge [catalog]="taskStatusCatalog" [status]="task.status" />
                     <span>{{ taskKindLabel(task.kind) }}</span>
                     <span [class.workspace__due--late]="isLate(task)">{{ dueLabel(task) }}</span>
+                    <span>{{ copy.taskOwedBy }}: {{ taskOwner(task) }}</span>
                   </p>
-                  @if (task.outcome) {
-                    <p class="workspace__task-outcome">
-                      {{ copy.taskOutcome }}: {{ task.outcome }}
-                    </p>
+                  @if (outcomeText(task, workspace); as words) {
+                    <p class="workspace__task-outcome">{{ copy.taskOutcome }}: {{ words }}</p>
                   }
-                  @if (task.status === 'open' && canManage()) {
-                    <button type="button" class="btn btn--subtle" (click)="openComplete(task)">
-                      {{ copy.completeTask }}
-                    </button>
+                  @if (task.status === 'open' && canManage() && writable(workspace)) {
+                    <div class="workspace__task-actions">
+                      <button type="button" class="btn btn--subtle" (click)="openComplete(task)">
+                        {{ copy.completeTask }}
+                      </button>
+                      <button type="button" class="btn btn--subtle" (click)="openHandOver(task)">
+                        {{ copy.handOverTask }}
+                      </button>
+                      <button type="button" class="btn btn--subtle" (click)="openReschedule(task)">
+                        {{ copy.rescheduleTask }}
+                      </button>
+                    </div>
                   }
                 </li>
               }
@@ -293,15 +365,27 @@
       (dismissed)="cancel()"
     >
       <div modal-body class="form">
-        <label class="form__field">
-          <span class="form__label">{{ copy.assignWorker }}</span>
-          <select class="form__input" (change)="onAssignee($event)">
-            <option value="" [selected]="assignee() === null">{{ copy.assignNobody }}</option>
-            @if (me(); as mine) {
-              <option [value]="mine" [selected]="assignee() === mine">{{ myName() }}</option>
-            }
-          </select>
-        </label>
+        @switch (assigneeState().kind) {
+          @case ('error') {
+            <p class="workspace__problem" role="alert">{{ copy.assigneesFailed }}</p>
+          }
+          @case ('ready') {
+            <label class="form__field">
+              <span class="form__label">{{ copy.assignWorker }}</span>
+              <select class="form__input" (change)="onAssignee($event)">
+                <option value="" [selected]="assignee() === null">{{ copy.assignNobody }}</option>
+                @for (worker of assignees(); track worker.id) {
+                  <option [value]="worker.id" [selected]="assignee() === worker.id">
+                    {{ worker.name }}
+                  </option>
+                }
+              </select>
+            </label>
+          }
+          @default {
+            <p class="workspace__note" role="status">{{ copy.assigneesLoading }}</p>
+          }
+        }
 
         <label class="form__field">
           <span class="form__label">{{ shared.transition.reason }}</span>
@@ -327,6 +411,71 @@
         (click)="confirmAssign()"
       >
         {{ copy.assign }}
+      </button>
+    </app-modal>
+
+    <!-- ── Naming a request ──────────────────────────────────────────────── -->
+    <app-modal
+      [(open)]="linking"
+      [heading]="linkCopy.heading"
+      [description]="linkCopy.description"
+      (dismissed)="cancel()"
+    >
+      <div modal-body class="form">
+        <p class="workspace__note">{{ linkCopy.rules }}</p>
+        @switch (linkState().kind) {
+          @case ('error') {
+            <p class="workspace__problem" role="alert">{{ linkCopy.failed }}</p>
+          }
+          @case ('ready') {
+            @if (linkOptions(workspace).length === 0) {
+              <p class="workspace__none">{{ linkCopy.none }}</p>
+            } @else {
+              <label class="form__field">
+                <span class="form__label">{{ linkCopy.request }}</span>
+                <select class="form__input" (change)="onLinkChoice($event)">
+                  <option value="" [selected]="linkChoice() === null">{{ linkCopy.choose }}</option>
+                  @for (request of linkOptions(workspace); track request.id) {
+                    <option [value]="request.id" [selected]="linkChoice() === request.id">
+                      {{ request.referenceNumber }} · {{ requestCatalog[request.status].label }}
+                    </option>
+                  }
+                </select>
+              </label>
+            }
+            @if (moreRequests()) {
+              <p class="workspace__note">{{ linkCopy.more }}</p>
+            }
+          }
+          @default {
+            <p class="workspace__note" role="status">{{ linkCopy.loading }}</p>
+          }
+        }
+
+        <label class="form__field">
+          <span class="form__label">{{ linkCopy.reason }}</span>
+          <textarea
+            class="form__input"
+            rows="3"
+            [placeholder]="linkCopy.reasonPlaceholder"
+            [value]="linkReason()"
+            (input)="onLinkReason($event)"
+          ></textarea>
+          <span class="form__hint">{{ shared.transition.reasonHint }}</span>
+        </label>
+      </div>
+
+      <button modal-actions type="button" class="btn" (click)="cancel()">
+        {{ linkCopy.cancel }}
+      </button>
+      <button
+        modal-actions
+        type="button"
+        class="btn btn--primary"
+        [disabled]="!canLink()"
+        (click)="confirmLink()"
+      >
+        {{ linkCopy.confirm }}
       </button>
     </app-modal>
 
@@ -406,7 +555,7 @@
             type="text"
             class="form__input"
             [placeholder]="taskCopy.titlePlaceholder"
-            [value]="taskTitle()"
+            [value]="taskTitleText()"
             (input)="onTaskTitle($event)"
           />
         </label>
@@ -433,6 +582,19 @@
         </label>
 
         <label class="form__field">
+          <span class="form__label">{{ taskCopy.assignee }}</span>
+          <select class="form__input" (change)="onTaskOwer($event)">
+            <option value="" [selected]="taskOwer() === null">{{ taskCopy.nobody }}</option>
+            @for (choice of owerChoices(workspace); track choice.id) {
+              <option [value]="choice.id" [selected]="taskOwer() === choice.id">
+                {{ choice.label }}
+              </option>
+            }
+          </select>
+          <span class="form__hint">{{ taskCopy.assigneeHint }}</span>
+        </label>
+
+        <label class="form__field">
           <span class="form__label">{{ taskCopy.reason }}</span>
           <input
             type="text"
@@ -452,9 +614,104 @@
         type="button"
         class="btn btn--primary"
         [disabled]="!canSaveTask()"
-        (click)="confirmTask(workspace)"
+        (click)="confirmTask()"
       >
         {{ taskCopy.confirm }}
+      </button>
+    </app-modal>
+
+    <!-- ── Handing a task over ───────────────────────────────────────────── -->
+    <app-modal
+      [open]="handingOver() !== null"
+      (openChange)="handingOver.set(null)"
+      [heading]="handOverCopy.heading"
+      [description]="handOverCopy.description"
+      (dismissed)="cancel()"
+    >
+      <div modal-body class="form">
+        <label class="form__field">
+          <span class="form__label">{{ handOverCopy.assignee }}</span>
+          <select class="form__input" (change)="onHandOverOwer($event)">
+            <option value="" [selected]="handOverOwer() === null">{{ taskCopy.nobody }}</option>
+            @for (choice of owerChoices(workspace); track choice.id) {
+              <option [value]="choice.id" [selected]="handOverOwer() === choice.id">
+                {{ choice.label }}
+              </option>
+            }
+          </select>
+          <span class="form__hint">{{ taskCopy.assigneeHint }}</span>
+        </label>
+
+        <label class="form__field">
+          <span class="form__label">{{ handOverCopy.reason }}</span>
+          <textarea
+            class="form__input"
+            rows="3"
+            [placeholder]="handOverCopy.reasonPlaceholder"
+            [value]="handOverReason()"
+            (input)="onHandOverReason($event)"
+          ></textarea>
+          <span class="form__hint">{{ shared.transition.reasonHint }}</span>
+        </label>
+      </div>
+
+      <button modal-actions type="button" class="btn" (click)="cancel()">
+        {{ handOverCopy.cancel }}
+      </button>
+      <button
+        modal-actions
+        type="button"
+        class="btn btn--primary"
+        [disabled]="!canHandOver()"
+        (click)="confirmHandOver()"
+      >
+        {{ handOverCopy.confirm }}
+      </button>
+    </app-modal>
+
+    <!-- ── Moving a task's date ──────────────────────────────────────────── -->
+    <app-modal
+      [open]="rescheduling() !== null"
+      (openChange)="rescheduling.set(null)"
+      [heading]="rescheduleCopy.heading"
+      [description]="rescheduleCopy.description"
+      (dismissed)="cancel()"
+    >
+      <div modal-body class="form">
+        <label class="form__field">
+          <span class="form__label">{{ rescheduleCopy.dueOn }}</span>
+          <input
+            type="date"
+            class="form__input"
+            [value]="rescheduleDueOn()"
+            (change)="onRescheduleDueOn($event)"
+          />
+        </label>
+
+        <label class="form__field">
+          <span class="form__label">{{ rescheduleCopy.reason }}</span>
+          <textarea
+            class="form__input"
+            rows="3"
+            [placeholder]="rescheduleCopy.reasonPlaceholder"
+            [value]="rescheduleReason()"
+            (input)="onRescheduleReason($event)"
+          ></textarea>
+          <span class="form__hint">{{ shared.transition.reasonHint }}</span>
+        </label>
+      </div>
+
+      <button modal-actions type="button" class="btn" (click)="cancel()">
+        {{ rescheduleCopy.cancel }}
+      </button>
+      <button
+        modal-actions
+        type="button"
+        class="btn btn--primary"
+        [disabled]="!canReschedule()"
+        (click)="confirmReschedule()"
+      >
+        {{ rescheduleCopy.confirm }}
       </button>
     </app-modal>
 

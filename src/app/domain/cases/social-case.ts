@@ -1,16 +1,17 @@
-import type { Permission } from '../access/permission';
+import type { DataScope, Permission } from '../access/permission';
 import type { AuditStamp } from '../shared/audit';
 import type {
   AssistanceRequestId,
   BarangayId,
   CaseId,
-  FamilyId,
   HouseholdId,
   IsoDate,
+  IsoDateTime,
   ResidentId,
   StaffUserId,
 } from '../shared/ids';
 import type { StatusCatalog, StatusTransitions } from '../shared/status';
+import { daysUntil, todayAsIsoDate } from './case-task';
 
 /**
  * A social welfare **case**: the office's continuing file on one person and the
@@ -146,6 +147,27 @@ export const CASE_CATEGORIES: readonly CaseCategory[] = [
   'livelihood',
 ];
 
+/**
+ * The words of a case withheld from this reader, by name, so a screen says "withheld" where they
+ * would be and never shows a blank that reads as "nobody wrote anything" (`DL-38`, `DL-179`).
+ *
+ * - `summary`, `reasons`, `taskWords`, `notes`: the case is about a person under `vawc-survivor`
+ *   or `cicl` today and the reader lacks `request.view-sensitive` — the rule and the key of a
+ *   protected request. That reader cannot add to the case either.
+ * - `householdContext`: the reader works a caseload (`assigned-cases`). A case admits its worker to
+ *   the case and the person it is about, and does not widen what they read of the registry, so the
+ *   subject's household and family are not named.
+ */
+export type CaseWithheldField = 'summary' | 'reasons' | 'taskWords' | 'notes' | 'householdContext';
+
+/** What a protected case withholds from a reader without `request.view-sensitive`. */
+export const PROTECTED_CASE_WITHHELD: readonly CaseWithheldField[] = [
+  'summary',
+  'reasons',
+  'taskWords',
+  'notes',
+];
+
 export interface SocialCase {
   readonly id: CaseId;
   /** Human-facing file number the office writes on paper. */
@@ -155,15 +177,22 @@ export interface SocialCase {
    * whole household is served, because responsibility has to land on a name.
    */
   readonly subjectResidentId: ResidentId;
-  /** Where they live now. Null while between addresses — the household may move. */
+  /**
+   * The subject's household today. Null while between addresses — the household may move — and
+   * null when the household is withheld from this reader (`householdContext`, `DL-179`).
+   *
+   * There is no family on a case: who the subject belongs to is read from the families they are in
+   * today, because a household is not a family and a family is not fixed (`DL-47`).
+   */
   readonly householdId: HouseholdId | null;
-  /** Who they belong to. Separate from the household, and separately nullable (`DL-47`). */
-  readonly familyId: FamilyId | null;
   readonly barangayId: BarangayId;
   readonly category: CaseCategory;
   readonly status: CaseStatus;
-  /** The presenting problem, in one sentence a colleague can act on. */
-  readonly summary: string;
+  /**
+   * The presenting problem, in one sentence a colleague can act on. `null` only when withheld from
+   * this reader — `withheld` names it.
+   */
+  readonly summary: string | null;
   readonly assignedTo: StaffUserId | null;
   /**
    * The interventions this case covers, named explicitly.
@@ -177,19 +206,47 @@ export interface SocialCase {
   readonly closedOn: IsoDate | null;
   /** Set when this case continues one that was closed. Never a reopening. */
   readonly continuesCaseId: CaseId | null;
+  /** About a person under `vawc-survivor` or `cicl` today. Said even when nothing is withheld. */
+  readonly isProtected: boolean;
+  /** What this reader is not shown (`DL-179`). Empty for a reader cleared for all of it. */
+  readonly withheld: readonly CaseWithheldField[];
   readonly audit: AuditStamp;
 }
 
+export function isCaseFieldWithheld(
+  record: Pick<SocialCase, 'withheld'>,
+  field: CaseWithheldField,
+): boolean {
+  return record.withheld.includes(field);
+}
+
+/**
+ * Whether this reader may add anything to the case: nobody writes into a file whose words they
+ * cannot read, and nothing is written on a closed one (`DL-53`, `DL-179`). The permission each act
+ * needs is asked separately.
+ */
+export function isCaseWritable(record: Pick<SocialCase, 'status' | 'withheld'>): boolean {
+  return isCaseOpen(record.status) && !isCaseFieldWithheld(record, 'summary');
+}
+
+/**
+ * The list's filter. There is no sort and no page number: the server answers newest opened first, a
+ * cursor page at a time (`DL-161`, `DL-179`). `search` is part of a case reference and nothing
+ * else — the summary is free text, and matching on it would disclose it (`DL-109`).
+ */
 export interface CaseFilter {
   readonly search?: string;
   readonly status?: CaseStatus;
   readonly category?: CaseCategory;
   readonly barangayId?: BarangayId;
   readonly assignedTo?: StaffUserId;
+  readonly residentId?: ResidentId;
   readonly queue?: CaseQueueId;
 }
 
-export type CaseSortField = 'reference' | 'opened' | 'status' | 'nextAction' | 'updatedAt';
+/** The shortest and longest search the server takes: part of a case reference. */
+export const CASE_SEARCH_MIN_LENGTH = 2;
+export const CASE_SEARCH_MAX_LENGTH = 40;
 
 export function isCaseFilterActive(filter: CaseFilter): boolean {
   return (
@@ -273,6 +330,94 @@ export function isInQueue(
 export interface CaseQueueCount {
   readonly queue: CaseQueueId;
   readonly count: number;
+}
+
+/**
+ * The queue facts, derived on every read from the next action's due date and the moment anything
+ * was last recorded — never stored, because a stored "days overdue" is wrong every morning until a
+ * job runs (`DL-83`). Both adapters build them here, so the list, the counts and the workspace agree.
+ */
+export function caseQueueFacts(
+  record: Pick<SocialCase, 'status' | 'assignedTo'>,
+  nextActionDueOn: IsoDate | null,
+  lastActivityAt: IsoDateTime | null,
+  today: IsoDate = todayAsIsoDate(),
+): CaseQueueFacts {
+  return {
+    status: record.status,
+    assignedTo: record.assignedTo,
+    daysUntilNextAction: nextActionDueOn === null ? null : daysUntil(nextActionDueOn, today),
+    daysSinceLastActivity:
+      lastActivityAt === null ? null : daysUntil(today, todayAsIsoDate(new Date(lastActivityAt))),
+  };
+}
+
+/* ── Opening a case ────────────────────────────────────────────────────────── */
+
+/** What opening a case takes (`DL-179`). Opened at intake, assigned to nobody. */
+export interface CaseOpenDraft {
+  readonly subjectResidentId: ResidentId;
+  readonly category: CaseCategory;
+  /** The presenting problem, between 8 and 500 characters. */
+  readonly summary: string;
+  /** A **closed** case this one continues, or `null`. Never a reopening (`DL-53`). */
+  readonly continuesCaseId: CaseId | null;
+  /** Filed requests about the subject or their household, each in no other case. May be empty. */
+  readonly linkedRequestIds: readonly AssistanceRequestId[];
+}
+
+export const CASE_SUMMARY_MIN_LENGTH = 8;
+export const CASE_SUMMARY_MAX_LENGTH = 500;
+
+export type CaseOpenProblem = 'summary-too-short' | 'summary-too-long';
+
+/** What stops a draft being sent. The server applies the same rules, and the rest. */
+export function caseOpenProblems(
+  draft: Pick<CaseOpenDraft, 'summary'>,
+): readonly CaseOpenProblem[] {
+  const summary = draft.summary.trim();
+  if (summary.length < CASE_SUMMARY_MIN_LENGTH) {
+    return ['summary-too-short'];
+  }
+  return summary.length > CASE_SUMMARY_MAX_LENGTH ? ['summary-too-long'] : [];
+}
+
+/* ── Who holds a case, and who owes its tasks ─────────────────────────────── */
+
+/**
+ * Whether this reader gives cases to people: `case.manage` from an account that is not itself a
+ * caseload — intake, the head, an administrator. A social worker does not reassign their own case,
+ * and the server refuses them the list of assignees (`DL-179`).
+ */
+export function assignsCases(scope: DataScope | null, holdsManage: boolean): boolean {
+  return holdsManage && scope !== null && scope !== 'assigned-cases';
+}
+
+/**
+ * Who a task may be owed by: the writer, whoever holds the case, or nobody yet (`DL-179`). Handing
+ * a task to a social worker who does not hold the case would give them work on a file they cannot
+ * open. Returned without duplicates, the writer first.
+ */
+export function taskAssigneeChoices(
+  writerId: StaffUserId | null,
+  caseAssignee: StaffUserId | null,
+): readonly StaffUserId[] {
+  const choices: StaffUserId[] = [];
+  if (writerId !== null) {
+    choices.push(writerId);
+  }
+  if (caseAssignee !== null && caseAssignee !== writerId) {
+    choices.push(caseAssignee);
+  }
+  return choices;
+}
+
+export function isAllowedTaskAssignee(
+  assignee: StaffUserId | null,
+  writerId: StaffUserId | null,
+  caseAssignee: StaffUserId | null,
+): boolean {
+  return assignee === null || taskAssigneeChoices(writerId, caseAssignee).includes(assignee);
 }
 
 /* ── Reasons ───────────────────────────────────────────────────────────────── */

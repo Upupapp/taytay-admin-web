@@ -498,6 +498,8 @@ export interface AssistanceRequestFilter {
   readonly programId?: ProgramId;
   readonly barangayId?: BarangayId;
   readonly assignedTo?: StaffUserId;
+  /** The requests about one person — how a case names the requests it covers (`DL-179`). */
+  readonly residentId?: ResidentId;
   readonly openOnly?: boolean;
 }
 

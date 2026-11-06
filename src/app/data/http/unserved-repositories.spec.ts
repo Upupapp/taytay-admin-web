@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   UnservedBeneficiaryRepository,
-  UnservedCaseRepository,
   UnservedDashboardRepository,
   UnservedError,
   UnservedEventRepository,
@@ -23,7 +22,6 @@ import {
  * statically instead, by `check:routes`.
  */
 const UNSERVED = [
-  new UnservedCaseRepository(),
   new UnservedBeneficiaryRepository(),
   new UnservedFieldVisitRepository(),
   new UnservedReleaseRepository(),
@@ -63,13 +61,14 @@ function everyCall(adapter: object): readonly { name: string; result: unknown }[
  * `new`, outside any injector, is the proof.
  */
 describe('the ports the API does not serve', () => {
-  it('covers twelve ports and every method each declares', () => {
+  it('covers eleven ports and every method each declares', () => {
     // The resident registry left this list in casework phase 1b (`DL-174`); the household register,
     // saved views and families in phase 1c; programmes in phase 1d (`DL-176`), taking seven methods;
     // assistance requests in phase 2a (`DL-177`), taking nineteen — their phase 2b methods refuse
-    // from the served adapter now, and are held to that in http-assistance-requests.spec.ts.
-    expect(UNSERVED).toHaveLength(12);
-    expect(UNSERVED.flatMap((adapter) => everyCall(adapter))).toHaveLength(96);
+    // from the served adapter now, and are held to that in http-assistance-requests.spec.ts; and
+    // cases in phase 3 (`DL-179`), taking eleven.
+    expect(UNSERVED).toHaveLength(11);
+    expect(UNSERVED.flatMap((adapter) => everyCall(adapter))).toHaveLength(85);
   });
 
   it.each(UNSERVED.map((adapter) => [adapter.constructor.name, adapter] as const))(
