@@ -278,6 +278,23 @@ export class IntakePage {
           })),
         });
       });
+
+    // A resumed draft names its applicant only by id. The person is said from the profile already
+    // read for that id, so the picker and the review show who the draft is for rather than an
+    // empty picker and "—" (`DL-185`). Only while nobody is chosen, and only for the draft's own
+    // applicant: a person chosen since, or a choice cleared, is never overwritten.
+    toObservable(this.profile)
+      .pipe(takeUntilDestroyed())
+      .subscribe((state) => {
+        const profile = valueOf(state);
+        if (
+          profile !== null &&
+          this.chosen() === null &&
+          profile.view.resident.id === this.draft().residentId
+        ) {
+          this.chosen.set(profile.view);
+        }
+      });
   }
 
   /* ── step navigation is a query-param change, not a route change ────────── */

@@ -206,7 +206,10 @@ export function toReleaseBatch(wire: unknown): ReleaseBatch | null {
       released: counts.released,
       acknowledged: counts.acknowledged,
       outstanding: counts.outstanding,
+      // The API counts unclaimed into `deferred` ("deferred or unclaimed"), so the two cannot be told
+      // apart here; `null` makes the screen say both rather than blame either (`DL-94`, `DL-185`).
       deferred: counts.deferred,
+      unclaimed: null,
       needsCorrection: counts.needsCorrection,
       totalReleased: centavos(counts.releasedTotal),
     },

@@ -121,8 +121,10 @@ describe('releases over the API (DL-180)', () => {
     const [session] = await batches;
     expect(session?.progress.total).toBe(3);
     expect(session?.progress.totalReleased).toEqual(centavos(250_000));
+    // The server counts unclaimed into `deferred`, so the sentence says both (`DL-94`, `DL-185`).
+    expect(session?.progress.unclaimed).toBeNull();
     expect(describeBatch(session?.progress ?? batchProgress([]))).toBe(
-      '1 of 3 released, 1 deferred, 1 still to release.',
+      '1 of 3 released, 1 deferred or unclaimed, 1 still to release.',
     );
     expect(Object.keys(session ?? {})).not.toContain('status');
   });

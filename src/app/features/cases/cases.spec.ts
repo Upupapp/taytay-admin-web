@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, of, type Observable } from 'rxjs';
+import { throwError, firstValueFrom, of, type Observable } from 'rxjs';
 
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
@@ -666,5 +666,33 @@ describe('opening a case', () => {
     await fixture.whenStable();
     const problems = [...element.querySelectorAll('.open-case__problem[role="alert"]')];
     expect(problems.some((problem) => problem.textContent?.includes('at least 8'))).toBe(true);
+  });
+});
+
+describe('"Try again" reads again (DL-185)', () => {
+  it('re-runs the load after a failed read, and shows the record', async () => {
+    await configure('social-worker');
+    const repository = TestBed.inject(CASE_REPOSITORY);
+    const read = vi
+      .spyOn(repository, 'getById')
+      .mockReturnValueOnce(throwError(() => new Error('The connection dropped.')));
+    await TestBed.inject(Router).navigateByUrl(`/cases/${MERCADO}`);
+    const fixture = TestBed.createComponent(CaseWorkspacePage);
+    fixture.componentRef.setInput('id', MERCADO);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const again = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('button'),
+    ).find((button) => button.textContent?.trim() === 'Try again');
+    expect(again).toBeDefined();
+    again?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(read).toHaveBeenCalledTimes(2);
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain(
+      'The connection dropped.',
+    );
   });
 });

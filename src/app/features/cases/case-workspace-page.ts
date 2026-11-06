@@ -153,6 +153,11 @@ export class CaseWorkspacePage {
 
   private readonly reloads = signal(0);
 
+  /** "Try again" on a failed read: the same question asked again (`DL-185`). */
+  protected retry(): void {
+    this.reloads.update((value) => value + 1);
+  }
+
   protected readonly state = toSignal(
     toObservable(computed(() => ({ id: this.id(), nonce: this.reloads() }))).pipe(
       switchMap((query) => toViewState(this.repository.getById(asId<CaseId>(query.id)))),

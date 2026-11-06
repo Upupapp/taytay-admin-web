@@ -149,6 +149,41 @@ describe('navigation reachability', () => {
     expect(hrefs).not.toContain('/administration/settings');
   });
 
+  it('keeps the registry lists from a caseload, which the server refuses them (DL-183, DL-185)', async () => {
+    await configure('social-worker');
+    const fixture = TestBed.createComponent(AppNav);
+    await fixture.whenStable();
+    const hrefs = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLAnchorElement>('a.nav__link'),
+    ).map((a) => a.getAttribute('href'));
+
+    expect(hrefs).not.toContain('/residents');
+    expect(hrefs).not.toContain('/households');
+    expect(hrefs).not.toContain('/families');
+    expect(hrefs).toContain('/cases');
+    expect(hrefs).toContain('/visits');
+  });
+
+  it('offers the registry lists to an office-wide reader', async () => {
+    await configure('intake-officer');
+    const fixture = TestBed.createComponent(AppNav);
+    await fixture.whenStable();
+    const hrefs = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLAnchorElement>('a.nav__link'),
+    ).map((a) => a.getAttribute('href'));
+
+    expect(hrefs).toContain('/residents');
+    expect(hrefs).toContain('/households');
+    expect(hrefs).toContain('/families');
+  });
+
+  it('asks the Field visits entry for the key its route asks for (DL-185)', () => {
+    const visits = NAVIGATION.flatMap((section) => section.items).find(
+      (item) => item.route === '/visits',
+    );
+    expect(visits?.permissions).toEqual(['visit.view']);
+  });
+
   it('marks the active route for assistive technology', async () => {
     await configure('system-administrator');
     await TestBed.inject(Router).navigateByUrl('/residents');

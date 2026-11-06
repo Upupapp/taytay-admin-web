@@ -1,4 +1,4 @@
-<app-async-content [state]="state()" [content]="body" [skeletonLines]="8">
+<app-async-content [state]="state()" [content]="body" [skeletonLines]="8" (retryRequested)="retry()">
   <ng-template #body let-referral>
     @if (referral === null) {
       <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
@@ -154,7 +154,7 @@
             </label>
 
             <button type="button" class="btn" [disabled]="!canRecordBasis()" (click)="recordBasis()">
-              {{ copy.basisLabel }}
+              {{ copy.recordBasisAction }}
             </button>
 
             <h3 class="referral__subheading">{{ copy.shareHeading }}</h3>
@@ -191,7 +191,7 @@
               [disabled]="!canShareField()"
               (click)="addSharedField()"
             >
-              {{ copy.shareFieldLabel }}
+              {{ copy.shareFieldAction }}
             </button>
 
             <!--
@@ -288,7 +288,11 @@
 
             <label class="field">
               <span class="field__label">{{ copy.outcomeStatus }}</span>
+              <!-- No status is assumed: the office says where the outcome leaves it (DL-185). -->
               <select class="field__input" (change)="onOutcomeStatus($event)">
+                <option value="" [selected]="outcomeStatus() === null">
+                  {{ copy.outcomeStatusChoose }}
+                </option>
                 @for (status of outcomeStatuses(referral); track status) {
                   <option [value]="status" [selected]="outcomeStatus() === status">
                     {{ statusCatalog[status].label }}

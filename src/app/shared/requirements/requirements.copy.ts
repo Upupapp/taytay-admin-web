@@ -10,7 +10,8 @@ export const REQUIREMENTS_COPY = {
     nothingPresented: 'Nothing has been presented for this yet.',
     noFileHeld: 'No copy held — the details were recorded from the paper document.',
     documentNumber: 'Document number',
-    maskedNote: 'Shown in part. Ask a social worker if you need it in full.',
+    // Nobody holds more: the number is kept as its last four characters (`DL-183`, `DL-185`).
+    maskedNote: 'Only the last four characters are kept.',
     issuedOn: 'Issued',
     expiresOn: 'Expires',
     received: 'Received',

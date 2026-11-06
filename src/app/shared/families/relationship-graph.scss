@@ -193,3 +193,7 @@
   flex-wrap: wrap;
   gap: var(--space-compact);
 }
+
+.graph__end {
+  margin-inline-start: var(--space-compact);
+}

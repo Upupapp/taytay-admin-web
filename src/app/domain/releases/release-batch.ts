@@ -7,7 +7,7 @@ import type {
   StaffUserId,
 } from '../shared/ids';
 import type { Money } from '../shared/money';
-import type { Release, ReleaseStatus } from './release';
+import type { Release } from './release';
 import { isReleased, sumReleased } from './release';
 
 /**
@@ -59,13 +59,21 @@ export interface BatchProgress {
   readonly released: number;
   readonly acknowledged: number;
   readonly outstanding: number;
+  /**
+   * The office could not pay (`DL-94`). Counted apart from `unclaimed` — unless `unclaimed` is
+   * `null`, when the source did not tell the two apart and this holds both.
+   */
   readonly deferred: number;
+  /**
+   * Nobody came, and the screen does not guess why (`DL-94`). `null` when the count came from a
+   * source that folds it into `deferred` — the API's session progress today (`DL-180`) — so the
+   * sentence says "deferred or unclaimed" rather than pinning either count on the other (`DL-185`).
+   */
+  readonly unclaimed: number | null;
   readonly needsCorrection: number;
   /** Handed over, not planned. Never the sum of what was scheduled. */
   readonly totalReleased: Money;
 }
-
-const DEFERRED: readonly ReleaseStatus[] = ['deferred', 'unclaimed'];
 
 export function batchProgress(releases: readonly Release[]): BatchProgress {
   return {
@@ -75,7 +83,9 @@ export function batchProgress(releases: readonly Release[]): BatchProgress {
     outstanding: releases.filter(
       (entry) => entry.status === 'for-release' || entry.status === 'scheduled',
     ).length,
-    deferred: releases.filter((entry) => DEFERRED.includes(entry.status)).length,
+    // Deferred is the office's failing and unclaimed is nobody's: never one count (`DL-94`, `DL-185`).
+    deferred: releases.filter((entry) => entry.status === 'deferred').length,
+    unclaimed: releases.filter((entry) => entry.status === 'unclaimed').length,
     needsCorrection: releases.filter((entry) => entry.status === 'needs-correction').length,
     totalReleased: sumReleased(releases),
   };
@@ -92,8 +102,17 @@ export function describeBatch(progress: BatchProgress): string {
     return 'Nothing scheduled in this batch yet.';
   }
   const parts = [`${progress.released} of ${progress.total} released`];
-  if (progress.deferred > 0) {
-    parts.push(`${progress.deferred} deferred`);
+  if (progress.unclaimed === null) {
+    if (progress.deferred > 0) {
+      parts.push(`${progress.deferred} deferred or unclaimed`);
+    }
+  } else {
+    if (progress.deferred > 0) {
+      parts.push(`${progress.deferred} deferred`);
+    }
+    if (progress.unclaimed > 0) {
+      parts.push(`${progress.unclaimed} unclaimed`);
+    }
   }
   if (progress.needsCorrection > 0) {
     parts.push(`${progress.needsCorrection} needing correction`);

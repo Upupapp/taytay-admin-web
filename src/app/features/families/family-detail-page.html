@@ -1,4 +1,9 @@
-<app-async-content [state]="state()" [content]="body" [skeletonLines]="8">
+<app-async-content
+  [state]="state()"
+  [content]="body"
+  [skeletonLines]="8"
+  (retryRequested)="retry()"
+>
   <ng-template #body let-detail>
     @if (detail === null) {
       <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
@@ -129,6 +134,7 @@
             [graph]="detail.graph"
             [canManage]="canManage()"
             (addRequested)="openRecord()"
+            (endRequested)="openEnd($event)"
           />
         </section>
 
@@ -276,6 +282,42 @@
           (click)="confirmRecord()"
         >
           {{ relationshipCopy.confirm }}
+        </button>
+      </app-modal>
+
+      <app-modal
+        [open]="ending() !== null"
+        [heading]="relationshipCopy.endHeading"
+        [description]="relationshipCopy.endDescription"
+        (dismissed)="cancel()"
+      >
+        <div modal-body class="dialogue">
+          @if (ending(); as request) {
+            <p>{{ request.description }}</p>
+          }
+          <label class="dialogue__field">
+            <span class="dialogue__label">{{ relationshipCopy.endReason }}</span>
+            <input
+              class="dialogue__input"
+              type="text"
+              [placeholder]="relationshipCopy.endReasonPlaceholder"
+              [value]="endReason()"
+              (input)="onEndReason($event)"
+            />
+          </label>
+        </div>
+
+        <button modal-actions type="button" class="btn" (click)="cancel()">
+          {{ relationshipCopy.cancel }}
+        </button>
+        <button
+          modal-actions
+          type="button"
+          class="btn btn--primary"
+          [disabled]="!canEnd()"
+          (click)="confirmEnd()"
+        >
+          {{ relationshipCopy.endConfirm }}
         </button>
       </app-modal>
 

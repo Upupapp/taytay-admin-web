@@ -106,14 +106,17 @@ export class VisitListPage {
   protected readonly loadingMore = signal(false);
   protected readonly moreFailed = signal(false);
 
+  /** Bumped by "Try again", to ask the same question again. */
+  private readonly reloads = signal(0);
+
   protected readonly state = toSignal(
-    toObservable(this.query).pipe(
+    toObservable(computed(() => ({ query: this.query(), nonce: this.reloads() }))).pipe(
       tap(() => {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
       }),
-      switchMap((query) =>
+      switchMap(({ query }) =>
         toViewState<CursorPage<FieldVisit>>(
           query.mine
             ? this.repository
@@ -125,6 +128,11 @@ export class VisitListPage {
     ),
     { initialValue: LOADING as ViewState<CursorPage<FieldVisit>> },
   );
+
+  /** "Try again" on a failed read: the same question asked again (`DL-185`). */
+  protected retry(): void {
+    this.reloads.update((value) => value + 1);
+  }
 
   protected readonly visits = computed<readonly FieldVisit[]>(() => [
     ...(valueOf(this.state())?.items ?? []),

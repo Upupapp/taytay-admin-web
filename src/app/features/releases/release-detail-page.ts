@@ -13,6 +13,7 @@ import {
   RELEASE_REPOSITORY,
   RELEASE_STATUS_CATALOG,
   RELEASE_STATUS_TRANSITIONS,
+  PAYOUT_METHOD_LABELS,
   RELEASE_KIND_LABELS,
   SELF_RELEASE_WARNING,
   asId,
@@ -77,6 +78,11 @@ export class ReleaseDetailPage {
   ) as AcknowledgementKind[];
 
   private readonly reloads = signal(0);
+
+  /** "Try again" on a failed read: the same question asked again (`DL-185`). */
+  protected retry(): void {
+    this.reloads.update((value) => value + 1);
+  }
   protected readonly saving = signal(false);
 
   protected readonly state = toSignal(
@@ -155,6 +161,11 @@ export class ReleaseDetailPage {
       () => undefined,
       action,
     );
+  }
+
+  /** "How" in the office's words from the domain's labels, never the code (`DL-185`). */
+  protected methodLabel(release: Release): string {
+    return PAYOUT_METHOD_LABELS[release.method];
   }
 
   protected kindLabel(release: Release): string {

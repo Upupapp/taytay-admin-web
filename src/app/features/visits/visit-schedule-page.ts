@@ -65,14 +65,22 @@ export class VisitSchedulePage {
   protected readonly prompts = VISIT_CHECKLIST_PROMPTS;
   protected readonly today = todayAsIsoDate();
 
+  /** Bumped by "Try again", to ask the same question again. */
+  private readonly reloads = signal(0);
+
   protected readonly state = toSignal(
-    toObservable(this.case).pipe(
-      switchMap((id) =>
+    toObservable(computed(() => ({ id: this.case(), nonce: this.reloads() }))).pipe(
+      switchMap(({ id }) =>
         toViewState(id === '' ? of(null) : this.cases.getById(asId<CaseId>(id))),
       ),
     ),
     { initialValue: LOADING as ViewState<CaseWorkspace | null> },
   );
+
+  /** "Try again" on a failed read: the same question asked again (`DL-185`). */
+  protected retry(): void {
+    this.reloads.update((value) => value + 1);
+  }
 
   protected readonly workspace = computed(() => valueOf(this.state()) ?? null);
 

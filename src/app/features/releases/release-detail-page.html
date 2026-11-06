@@ -1,4 +1,4 @@
-<app-async-content [state]="state()" [content]="releaseContent" [skeletonLines]="8">
+<app-async-content [state]="state()" [content]="releaseContent" [skeletonLines]="8" (retryRequested)="retry()">
   <ng-template #releaseContent let-release>
     @if (release === null) {
       <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
@@ -29,7 +29,7 @@
             </div>
             <div class="facts__item">
               <dt>{{ copy.method }}</dt>
-              <dd>{{ release.method }}</dd>
+              <dd>{{ methodLabel(release) }}</dd>
             </div>
             @if (release.fundingSourceLabel) {
               <div class="facts__item">

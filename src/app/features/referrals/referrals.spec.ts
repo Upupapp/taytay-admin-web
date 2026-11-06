@@ -1,16 +1,22 @@
 import { Component } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, of, type Observable } from 'rxjs';
+import { throwError, firstValueFrom, of, type Observable } from 'rxjs';
 
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
+import { HttpErrorResponse } from '@angular/common/http';
+import { readApiError } from '@core/http/api-failure';
+import { MockAssistanceRequestRepository } from '@data/mock/mock-assistance-request.repository';
+import { MockCaseRepository } from '@data/mock/mock-case.repository';
 import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
 import { MockReferralRepository } from '@data/mock/mock-referral.repository';
 import { MockResidentRepository } from '@data/mock/mock-resident.repository';
 import {
   ACCESS_CONTEXT,
+  ASSISTANCE_REQUEST_REPOSITORY,
+  CASE_REPOSITORY,
   NOTIFICATION_REPOSITORY,
   REFERRAL_REPOSITORY,
   STAFF_REPOSITORY,
@@ -30,7 +36,9 @@ import type { AppEnvironment } from '@env/environment.model';
 
 import { ProviderDirectoryPage } from './provider-directory-page';
 import { ReferralDetailPage } from './referral-detail-page';
-import { ReferralListPage } from './referral-list-page';
+import { failureDetail, saidByTheHttpLayer } from './referral-failure';
+import { ReferralListPage, type ReferralLink } from './referral-list-page';
+import { REFERRALS_COPY } from './referrals.copy';
 import { readReferralQuery } from './referral-query';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
@@ -106,6 +114,9 @@ async function configure(role: StaffRole): Promise<void> {
        * referral without naming a person would be the more interesting defect.
        */
       { provide: RESIDENT_REPOSITORY, useClass: MockResidentRepository },
+      // …and what it is about: a case or a filed request (`DL-185`).
+      { provide: CASE_REPOSITORY, useClass: MockCaseRepository },
+      { provide: ASSISTANCE_REQUEST_REPOSITORY, useClass: MockAssistanceRequestRepository },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
     ],
   });
@@ -244,7 +255,51 @@ describe('working a referral', () => {
     expect(page.canRecordOutcome()).toBe(false);
     page.outcomeText.set('PESO matched him to a plant in Angono; interview next week.');
     fixture.detectChanges();
+    // Words alone are not enough: where the outcome leaves the referral is chosen too (DL-185).
+    expect(page.canRecordOutcome()).toBe(false);
+  });
+
+  it('assumes no status for an outcome: nothing is chosen until somebody chooses (DL-185)', async () => {
+    const fixture = await openDetail(OVERDUE);
+    const page = fixture.componentInstance as unknown as {
+      canRecordOutcome: () => boolean;
+      outcomeText: { set: (value: string) => void };
+      outcomeStatus: () => string | null;
+    };
+    page.outcomeText.set('PESO matched him to a plant in Angono; interview next week.');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const element = html(fixture);
+    const select = [...element.querySelectorAll<HTMLSelectElement>('select')].find((candidate) =>
+      candidate.textContent?.includes(REFERRALS_COPY.detail.outcomeStatusChoose),
+    );
+    expect(select?.value).toBe('');
+    expect(page.outcomeStatus()).toBeNull();
+    expect(page.canRecordOutcome()).toBe(false);
+
+    const option = [...(select?.options ?? [])].find((candidate) => candidate.value !== '');
+    if (select === undefined || option === undefined) {
+      throw new Error('The outcome list offered no status.');
+    }
+    select.value = option.value;
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(page.outcomeStatus()).toBe(option.value);
     expect(page.canRecordOutcome()).toBe(true);
+  });
+
+  it('labels the basis and share buttons with what they do (DL-185)', async () => {
+    const element = html(await openDetail(DRAFT));
+    const buttons = [...element.querySelectorAll('button')].map((button) =>
+      (button.textContent ?? '').trim(),
+    );
+
+    expect(buttons).toContain(REFERRALS_COPY.detail.recordBasisAction);
+    expect(buttons).toContain(REFERRALS_COPY.detail.shareFieldAction);
+    expect(buttons).not.toContain(REFERRALS_COPY.detail.basisLabel);
+    expect(buttons).not.toContain('Field');
   });
 
   it('will not move a follow-up date without a reason', async () => {
@@ -307,5 +362,131 @@ describe('the provider directory', () => {
     const element = html(await openDirectory());
     expect(element.textContent).toContain('Rizal Provincial Social Welfare');
     expect(element.textContent).toContain('No longer used');
+  });
+});
+
+/* ── What a referral is about (DL-185) ────────────────────────────────────── */
+
+describe('composing a referral from a caseload', () => {
+  it('starts from the worker’s own cases and requests, not the registry', async () => {
+    const fixture = await openList('social-worker');
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const element = html(fixture);
+    const page = fixture.componentInstance as unknown as { linkOptions: () => readonly ReferralLink[] };
+
+    // The registry's search is closed to a caseload (DL-183), so no person picker is offered.
+    expect(element.querySelector('app-person-picker')).toBeNull();
+    expect(element.querySelector('#compose-link')).not.toBeNull();
+    expect(page.linkOptions().length).toBeGreaterThan(0);
+    expect(page.linkOptions().some((option) => option.kind === 'case')).toBe(true);
+  });
+
+  it('will not create a draft until one is chosen, then names it on the draft', async () => {
+    const fixture = await openList('social-worker');
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const page = fixture.componentInstance as unknown as {
+      canCreate: () => boolean;
+      link: { set: (value: ReferralLink | null) => void };
+      linkOptions: () => readonly ReferralLink[];
+      destinationName: { set: (value: string) => void };
+      serviceRequested: { set: (value: string) => void };
+      reason: { set: (value: string) => void };
+      create: () => Promise<void>;
+    };
+    page.destinationName.set('PESO Taytay');
+    page.serviceRequested.set('Job placement');
+    page.reason.set('Lost work after the plant closed.');
+    fixture.detectChanges();
+    expect(page.canCreate()).toBe(false);
+
+    const chosen = page.linkOptions().find((option) => option.kind === 'case');
+    if (chosen === undefined) {
+      throw new Error('The worker holds no case in the seed.');
+    }
+    page.link.set(chosen);
+    fixture.detectChanges();
+    expect(page.canCreate()).toBe(true);
+
+    const repository = TestBed.inject(REFERRAL_REPOSITORY);
+    const created: unknown[] = [];
+    const original = repository.createDraft.bind(repository);
+    repository.createDraft = (draft) => {
+      created.push(draft);
+      return original(draft);
+    };
+    await page.create();
+
+    expect(created).toEqual([
+      expect.objectContaining({ caseId: chosen.id, requestId: null, residentId: chosen.residentId }),
+    ]);
+  });
+
+  it('offers an office-wide writer the person picker, and the link only once a person is named', async () => {
+    const fixture = await openList('mswdo-head');
+    fixture.detectChanges();
+    const element = html(fixture);
+
+    expect(element.querySelector('app-person-picker')).not.toBeNull();
+    expect(element.querySelector('#compose-link')).toBeNull();
+  });
+});
+
+describe('a refused referral act, in the server’s words (DL-185)', () => {
+  const refusal = (status: number, body: unknown) =>
+    readApiError(new HttpErrorResponse({ status, error: body }));
+
+  it('shows the field messages of a validation refusal', () => {
+    const failure = refusal(422, {
+      error: {
+        code: 'VALIDATION_FAILED',
+        message: 'The request is invalid.',
+        details: { because: ['Say why the receiving office needs it.'] },
+      },
+    });
+
+    expect(saidByTheHttpLayer(failure)).toBe(false);
+    expect(failureDetail(failure)).toContain('Say why the receiving office needs it.');
+  });
+
+  it('leaves any other refusal to the HTTP layer, which has already said it', () => {
+    const failure = refusal(409, { error: { code: 'CONFLICT', message: 'Already shared.' } });
+
+    expect(saidByTheHttpLayer(failure)).toBe(true);
+  });
+
+  it('says a console failure in its own words', () => {
+    expect(failureDetail(new Error('Nothing was sent.'))).toBe('Nothing was sent.');
+    expect(failureDetail('opaque')).toBeUndefined();
+  });
+});
+
+
+describe('"Try again" reads again (DL-185)', () => {
+  it('re-runs the load after a failed read, and shows the record', async () => {
+    await configure('social-worker');
+    const repository = TestBed.inject(REFERRAL_REPOSITORY);
+    const read = vi
+      .spyOn(repository, 'getById')
+      .mockReturnValueOnce(throwError(() => new Error('The connection dropped.')));
+    await TestBed.inject(Router).navigateByUrl(`/referrals/${OVERDUE}`);
+    const fixture = TestBed.createComponent(ReferralDetailPage);
+    fixture.componentRef.setInput('id', OVERDUE);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const again = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('button'),
+    ).find((button) => button.textContent?.trim() === 'Try again');
+    expect(again).toBeDefined();
+    again?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(read).toHaveBeenCalledTimes(2);
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain(
+      'The connection dropped.',
+    );
   });
 });

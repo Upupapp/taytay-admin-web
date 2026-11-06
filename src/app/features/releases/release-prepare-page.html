@@ -2,7 +2,12 @@
   <a page-actions class="btn" routerLink="/releases">{{ copy.back }}</a>
 </app-page-header>
 
-<app-async-content [state]="requestState()" [content]="prepareContent" [skeletonLines]="6">
+<app-async-content
+  [state]="requestState()"
+  [content]="prepareContent"
+  [skeletonLines]="6"
+  (retryRequested)="retry()"
+>
   <ng-template #prepareContent let-assistance>
     @if (assistance === null) {
       <div class="card">
@@ -13,7 +18,9 @@
       <section class="card" aria-labelledby="prepare-request-heading">
         <h2 id="prepare-request-heading">{{ copy.requestHeading }}</h2>
         <p>
-          <a [routerLink]="['/requests', assistance.id]">{{ assistance.referenceNumber }}</a>
+          <a [routerLink]="['/assistance-requests', assistance.id]">{{
+            assistance.referenceNumber
+          }}</a>
           <app-status-badge [catalog]="requestCatalog" [status]="assistance.status" />
         </p>
         @if (assistance.requestedAmount) {

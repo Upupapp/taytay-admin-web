@@ -40,6 +40,7 @@ import {
 import type { AppEnvironment } from '@env/environment.model';
 
 import { AdvisoryPanel } from '@shared/intake/advisory-panel';
+import { REQUIREMENTS_COPY } from '@shared/requirements/requirements.copy';
 
 import { AssessmentPage } from './assessment-page';
 import { IntakePage } from './intake-page';
@@ -186,7 +187,24 @@ describe('the request list filter lives in the URL', () => {
   it('keeps the filter and nothing else — the server orders and pages the list (DL-36)', () => {
     expect(readRequestQuery(params({ page: '2', sort: 'status', direction: 'asc' }))).toEqual({
       filter: {},
+      notNarrowed: [],
     });
+  });
+
+  it('reads the barangay a dashboard row opens, and refuses one Taytay does not have (DL-185)', () => {
+    expect(readRequestQuery(params({ barangay: 'brgy-dolores', open: 'true' })).filter).toEqual({
+      barangayId: 'brgy-dolores',
+      openOnly: true,
+    });
+    expect(readRequestQuery(params({ barangay: 'atlantis' })).filter).toEqual({});
+  });
+
+  it('names what a dashboard figure narrowed by that the list cannot (DL-185)', () => {
+    const query = readRequestQuery(
+      params({ category: 'medical', missingRequirements: 'true', open: 'true' }),
+    );
+    expect(query.filter).toEqual({ openOnly: true });
+    expect(query.notNarrowed).toEqual(['category', 'missing-requirements']);
   });
 
   it('never filters the table to drafts, which are read above it', () => {
@@ -332,6 +350,31 @@ describe('the intake flow', () => {
     const element = html(await resumeIntake(saved.id, '?step=review'));
     expect(element.textContent).toContain('Brgy. Dolores — Kagawad Santos');
     expect(element.querySelector('.review')?.textContent).toContain('Barangay referral');
+  });
+
+  it('refills the applicant when a draft is resumed (DL-185)', async () => {
+    await configure('intake-officer');
+    const saved = await firstValueFrom(
+      TestBed.inject(ASSISTANCE_REQUEST_REPOSITORY).saveDraft(
+        {
+          ...EMPTY_INTAKE_DRAFT,
+          residentId: asId<ResidentId>('res-0006'),
+          reasonForRequest: 'Burial costs for a deceased parent',
+        },
+        null,
+      ),
+    );
+    const fixture = await resumeIntake(saved.id, '?step=review');
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const page = fixture.componentInstance as unknown as {
+      chosen: () => { resident: { id: string }; listedName: string } | null;
+    };
+
+    expect(page.chosen()?.resident.id).toBe('res-0006');
+    const applicant = page.chosen()?.listedName ?? '';
+    expect(applicant.length).toBeGreaterThan(0);
+    expect(html(fixture).querySelector('.review')?.textContent).toContain(applicant);
   });
 
   it('says a protected draft is withheld instead of offering a form the server would refuse', async () => {
@@ -801,6 +844,11 @@ describe('the case study, opened, answered and completed', () => {
 });
 
 describe('reviewing documents', () => {
+  it('promises no fuller number than the last four the office keeps (DL-183, DL-185)', () => {
+    expect(REQUIREMENTS_COPY.document.maskedNote).not.toMatch(/in full|ask a social worker/i);
+    expect(REQUIREMENTS_COPY.document.maskedNote).toContain('last four');
+  });
+
   it('asks for remarks before rejecting, and sends nothing without them', async () => {
     const fixture = await openAssessment('req-0002', 'intake-officer');
     const documents = html(fixture).querySelector('#documents-heading')?.parentElement;

@@ -18,6 +18,7 @@ import {
   type ReleaseId,
   type StaffUserId,
 } from '@domain/index';
+import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { SessionStore } from '@core/auth/session.store';
 import { NotificationStore } from '@core/notifications/notification.store';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
@@ -41,7 +42,7 @@ import { RELEASES_COPY } from './releases.copy';
 @Component({
   selector: 'app-payout-session-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, PageHeader, PesoPipe, RouterLink],
+  imports: [AsyncContent, HasPermissionDirective, PageHeader, PesoPipe, RouterLink],
   templateUrl: './payout-session-page.html',
   styleUrl: './payout-session-page.scss',
 })
@@ -52,6 +53,11 @@ export class PayoutSessionPage {
 
   /** Bumped after a session opens, so the list re-reads rather than guessing what changed. */
   private readonly reloads = signal(0);
+
+  /** "Try again" on a failed read: the same question asked again (`DL-185`). */
+  protected retry(): void {
+    this.reloads.update((value) => value + 1);
+  }
 
   protected readonly copy = RELEASES_COPY.batches;
 

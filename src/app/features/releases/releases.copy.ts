@@ -22,6 +22,10 @@ export const RELEASES_COPY = {
     allKinds: 'Money and goods',
     openOnly: 'Only what is still to settle',
     clear: 'Clear filters',
+    notNarrowed: (what: readonly ('barangay' | 'category')[]) =>
+      `Opened from a dashboard figure narrowed by ${what
+        .map((entry) => (entry === 'barangay' ? 'barangay' : 'programme type'))
+        .join(' and ')}. This list cannot be narrowed that way yet, so it may hold more releases than the figure counted.`,
 
     needsOffice: 'The office must act on these',
     needsOfficeHint:

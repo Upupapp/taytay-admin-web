@@ -10,13 +10,26 @@ import {
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { firstValueFrom, map, switchMap, tap } from 'rxjs';
+import {
+  combineLatest,
+  firstValueFrom,
+  map,
+  switchMap,
+  tap,
+  type Observable,
+  type Subscription,
+} from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { PermissionService } from '@core/access/permission.service';
+import { SessionStore } from '@core/auth/session.store';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
+  ASSISTANCE_REQUEST_REPOSITORY,
+  ASSISTANCE_STATUS_CATALOG,
+  CASE_REPOSITORY,
+  isCaseOpen,
   REFERRAL_DESTINATION_LABELS,
   REFERRAL_REPOSITORY,
   REFERRAL_STATUS_CATALOG,
@@ -33,18 +46,24 @@ import {
   asId,
   REFERRAL_DESTINATIONS,
   REFERRAL_URGENCIES,
+  type AssistanceRequest,
+  type AssistanceRequestId,
+  type CaseId,
+  type CaseSummary,
+  type ResidentId,
   type ResidentView,
   type ServiceProvider,
   type ServiceProviderId,
 } from '@domain/index';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { LOADING, ready, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import { PersonPicker } from '@shared/residents/person-picker';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 
+import { failureDetail, saidByTheHttpLayer } from './referral-failure';
 import { REFERRALS_COPY } from './referrals.copy';
 import { readReferralQuery } from './referral-query';
 
@@ -54,6 +73,65 @@ import { readReferralQuery } from './referral-query';
  * sends no total.
  */
 const PAGE_SIZE = 20;
+
+/**
+ * How many cases and requests the compose form offers to link, read as one page like the case
+ * page's own request picker. When more exist the form says so rather than letting the list read
+ * as complete (`DL-161`).
+ */
+const LINK_CHOICES = 50;
+
+/**
+ * What a referral is about: a case or a filed request (`DL-185`). The server reads a caseload's
+ * referrals through these links and refuses a caseload's draft without one (403), so for a social
+ * worker the form starts here — from their assigned work — rather than from the registry, whose
+ * search is closed to them (`DL-183`).
+ */
+export type ReferralLink =
+  | {
+      readonly kind: 'case';
+      readonly id: CaseId;
+      readonly residentId: ResidentId;
+      readonly label: string;
+    }
+  | {
+      readonly kind: 'request';
+      readonly id: AssistanceRequestId;
+      readonly residentId: ResidentId;
+      readonly label: string;
+    };
+
+/** One value per option, so a `<select>` can carry either kind. */
+export function linkKey(link: ReferralLink): string {
+  return `${link.kind}:${link.id}`;
+}
+
+export function caseLink(summary: CaseSummary): ReferralLink {
+  return {
+    kind: 'case',
+    id: summary.record.id,
+    residentId: summary.record.subjectResidentId,
+    label: `${summary.record.referenceNumber} — ${summary.subject.listedName}`,
+  };
+}
+
+export function requestLink(request: AssistanceRequest): ReferralLink {
+  return {
+    kind: 'request',
+    id: request.id,
+    residentId: request.residentId,
+    label: `${request.referenceNumber} — ${ASSISTANCE_STATUS_CATALOG[request.status].label}`,
+  };
+}
+
+/** The cases and filed requests a referral may name, and whether more exist than were read. */
+interface LinkChoices {
+  readonly cases: readonly ReferralLink[];
+  readonly requests: readonly ReferralLink[];
+  readonly more: boolean;
+}
+
+const NO_CHOICES: LinkChoices = { cases: [], requests: [], more: false };
 
 
 /**
@@ -77,10 +155,22 @@ export class ReferralListPage {
 
   private readonly permissions = inject(PermissionService);
   private readonly notifications = inject(NotificationStore);
+  private readonly session = inject(SessionStore);
+  private readonly caseRepository = inject(CASE_REPOSITORY);
+  private readonly requestRepository = inject(ASSISTANCE_REQUEST_REPOSITORY);
 
   protected readonly canCompose = computed(() => this.permissions.has('referral.manage'));
 
+  /**
+   * A caseload (`assigned-cases`) refers from its own work: it chooses one of its cases or requests
+   * and the client is that record's person. The registry's search is closed to it (`DL-183`), and
+   * the server refuses its draft without a link (`DL-185`).
+   */
+  protected readonly isCaseload = computed(() => this.permissions.scope() === 'assigned-cases');
+
   protected readonly client = signal<ResidentView | null>(null);
+  protected readonly link = signal<ReferralLink | null>(null);
+  protected readonly linkState = signal<ViewState<LinkChoices>>(ready(NO_CHOICES));
   protected readonly destination = signal<ReferralDestination>('dswd-field-office');
   protected readonly destinationName = signal('');
   protected readonly destinationContact = signal('');
@@ -114,9 +204,15 @@ export class ReferralListPage {
 
   protected readonly chosenProviderId = signal<ServiceProviderId | null>(null);
 
+  /** Who the draft is about: the chosen person, or — for a caseload — the linked record's. */
+  private readonly residentId = computed<ResidentId | null>(
+    () => this.link()?.residentId ?? this.client()?.resident.id ?? null,
+  );
+
   protected readonly canCreate = computed(
     () =>
-      this.client() !== null &&
+      this.residentId() !== null &&
+      (!this.isCaseload() || this.link() !== null) &&
       this.destinationName().trim().length > 0 &&
       this.serviceRequested().trim().length > 0 &&
       this.reason().trim().length > 0 &&
@@ -125,6 +221,59 @@ export class ReferralListPage {
 
   protected onClient(resident: ResidentView): void {
     this.client.set(resident);
+    this.link.set(null);
+    this.readLinks(
+      this.caseRepository
+        .casesForResident(resident.resident.id)
+        .pipe(map((cases) => ({ items: cases, hasMore: false, nextCursor: null }))),
+      this.requestRepository.list(
+        { residentId: resident.resident.id },
+        { limit: LINK_CHOICES, cursor: null },
+      ),
+    );
+  }
+
+  /** The options of the link `<select>`, both kinds, in the order they are shown. */
+  protected readonly linkOptions = computed(() => {
+    const state = this.linkState();
+    return state.kind === 'ready' ? [...state.value.cases, ...state.value.requests] : [];
+  });
+
+  protected readonly linkKey = linkKey;
+
+  /** More cases or requests exist than were read: said, so the list never reads as complete. */
+  protected readonly linkMore = computed(() => valueOf(this.linkState())?.more === true);
+
+  protected onLink(event: Event): void {
+    const key = (event.target as HTMLSelectElement).value;
+    this.link.set(this.linkOptions().find((option) => linkKey(option) === key) ?? null);
+  }
+
+  private linkRead: Subscription | null = null;
+
+  /**
+   * Reads the cases and requests offered for linking. Open cases only — the server refuses a link
+   * to a closed one — and filed requests only, which is all the request list ever returns.
+   */
+  private readLinks(
+    cases: Observable<CursorPage<CaseSummary>>,
+    requests: Observable<CursorPage<AssistanceRequest>>,
+  ): void {
+    // A person chosen since makes an earlier read stale: only the latest is kept.
+    this.linkRead?.unsubscribe();
+    this.linkRead = toViewState(
+      combineLatest([cases, requests]).pipe(
+        map(([casePage, requestPage]) => ({
+          cases: casePage.items
+            .filter((summary) => isCaseOpen(summary.record.status))
+            .map((summary) => caseLink(summary)),
+          requests: requestPage.items.map((request) => requestLink(request)),
+          more: casePage.hasMore || requestPage.hasMore,
+        })),
+      ),
+    )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((state) => this.linkState.set(state));
   }
 
   protected onComposeDestination(event: Event): void {
@@ -187,9 +336,10 @@ export class ReferralListPage {
    * would be the window `DL-81` exists to close.
    */
   protected async create(): Promise<void> {
-    const client = this.client();
+    const residentId = this.residentId();
+    const link = this.link();
 
-    if (client === null || !this.canCreate()) {
+    if (residentId === null || !this.canCreate()) {
       return;
     }
 
@@ -198,9 +348,9 @@ export class ReferralListPage {
     try {
       const referral = await firstValueFrom(
         this.repository.createDraft({
-          residentId: client.resident.id,
-          requestId: null,
-          caseId: null,
+          residentId,
+          requestId: link?.kind === 'request' ? link.id : null,
+          caseId: link?.kind === 'case' ? link.id : null,
           providerId: this.chosenProviderId(),
           destination: this.destination(),
           destinationName: this.destinationName().trim(),
@@ -215,9 +365,10 @@ export class ReferralListPage {
       this.notifications.success(this.copy.draftCreated);
       void this.router.navigate(['/referrals', referral.id]);
     } catch (failure: unknown) {
-      this.notifications.error(
-        failure instanceof Error ? failure.message : this.copy.draftNotCreated,
-      );
+      // In the server's words where it gave some; a refusal it has already said is not said twice.
+      if (!saidByTheHttpLayer(failure)) {
+        this.notifications.error(this.copy.draftNotCreated, failureDetail(failure));
+      }
     } finally {
       this.composing.set(false);
     }
@@ -367,6 +518,15 @@ export class ReferralListPage {
         clearTimeout(this.searchTimer);
       }
     });
+
+    // A caseload's own work, read once when the page opens (`DL-178`, `DL-179`, `DL-185`).
+    const me = this.session.user();
+    if (this.isCaseload() && this.canCompose() && me !== null) {
+      this.readLinks(
+        this.caseRepository.list({ assignedTo: me.id }, { limit: LINK_CHOICES, cursor: null }),
+        this.requestRepository.list({ assignedTo: me.id }, { limit: LINK_CHOICES, cursor: null }),
+      );
+    }
   }
 
   protected onSearch(event: Event): void {

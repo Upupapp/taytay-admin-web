@@ -257,6 +257,25 @@ describe('a batch is a plan, not a unit', () => {
     expect(sentence).not.toBe('Complete.');
   });
 
+  it('counts unclaimed apart from deferred, and says each (DL-94, DL-185)', () => {
+    const progress = batchProgress([
+      release({ status: 'claimed', releasedBy: OFFICER }),
+      release({ id: asId<ReleaseId>('b'), status: 'deferred', deferralReason: 'voucher-error' }),
+      release({ id: asId<ReleaseId>('c'), status: 'unclaimed' }),
+      release({ id: asId<ReleaseId>('d'), status: 'unclaimed' }),
+    ]);
+
+    expect(progress.deferred).toBe(1);
+    expect(progress.unclaimed).toBe(2);
+    expect(describeBatch(progress)).toBe('1 of 4 released, 1 deferred, 2 unclaimed.');
+  });
+
+  it('says "deferred or unclaimed" when the source did not tell them apart', () => {
+    const progress = { ...batchProgress([]), total: 3, released: 1, deferred: 2, unclaimed: null };
+
+    expect(describeBatch(progress)).toBe('1 of 3 released, 2 deferred or unclaimed.');
+  });
+
   it('totals only what was handed over, never what was scheduled', () => {
     const progress = batchProgress([
       release({ status: 'claimed', amount: pesos(3000) }),

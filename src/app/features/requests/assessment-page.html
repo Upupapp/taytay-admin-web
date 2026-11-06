@@ -1,4 +1,6 @@
-<app-async-content [state]="state()" [content]="body" [skeletonLines]="8" />
+<app-async-content [state]="state()" [content]="body" [skeletonLines]="8"
+  (retryRequested)="retry()"
+/>
 
 <ng-template #body let-request>
   @if (!request) {

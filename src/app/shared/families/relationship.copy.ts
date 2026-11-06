@@ -27,6 +27,7 @@ export const RELATIONSHIP_COPY = {
   noEdges: 'Nothing links these people yet. Record a relationship to start the graph.',
   formerMember: 'Former member',
   formerRelationship: 'Ended',
+  endAction: 'End this relationship',
   currentRelationship: 'Current',
   since: 'since',
   until: 'until',

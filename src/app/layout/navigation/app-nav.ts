@@ -3,7 +3,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { PermissionService } from '@core/access/permission.service';
 import { ServedPorts, UNSERVED_ROUTE } from '@core/access/served-ports';
-import { NAVIGATION, type NavSection } from '@core/navigation/navigation';
+import { NAVIGATION, type NavItem, type NavSection } from '@core/navigation/navigation';
 
 import { LAYOUT_COPY } from '../layout.copy';
 
@@ -95,8 +95,17 @@ export class AppNav {
     NAVIGATION.map((section) => ({
       title: section.title,
       items: section.items.filter(
-        (item) => this.permissions.hasAny(item.permissions) && this.served.servesAll(item.reads),
+        (item) =>
+          this.permissions.hasAny(item.permissions) &&
+          this.served.servesAll(item.reads) &&
+          !this.closedToScope(item),
       ),
     })).filter((section) => section.items.length > 0),
   );
+
+  /** The route's `scopeGuard` would refuse this reader, whatever the role holds (`DL-185`). */
+  private closedToScope(item: NavItem): boolean {
+    const scope = this.permissions.scope();
+    return scope !== null && (item.closedTo ?? []).includes(scope);
+  }
 }

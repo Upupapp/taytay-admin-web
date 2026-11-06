@@ -46,6 +46,8 @@ import {
 } from '@domain/index';
 
 import { denyUnless } from './mock-access';
+import { MockAssistanceRequestStore } from './mock-assistance-request.store';
+import { MockCaseStore } from './mock-case.store';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
 import { matchesSearch, sortItems } from './mock-query';
@@ -77,6 +79,8 @@ export class MockReferralRepository implements ReferralRepository {
   private readonly latency = inject(MockLatency);
   private readonly access = inject(ACCESS_CONTEXT);
   private readonly residents = inject(MockResidentStore);
+  private readonly cases = inject(MockCaseStore);
+  private readonly requests = inject(MockAssistanceRequestStore);
 
   private referrals: readonly Referral[] = [...MOCK_REFERRALS];
   private readonly providers: readonly ServiceProvider[] = [...MOCK_SERVICE_PROVIDERS];
@@ -166,6 +170,24 @@ export class MockReferralRepository implements ReferralRepository {
     );
   }
 
+  /** Whether the draft names a case or a filed request this worker holds, about its client. */
+  private namesOwnWork(draft: ReferralDraft, workerId: StaffUserId): boolean {
+    const record = draft.caseId === null ? undefined : this.cases.findCase(draft.caseId);
+    const request =
+      draft.requestId === null
+        ? undefined
+        : this.requests.requests.find((entry) => entry.id === draft.requestId);
+    return (
+      (record !== undefined &&
+        record.assignedTo === workerId &&
+        record.subjectResidentId === draft.residentId) ||
+      (request !== undefined &&
+        request.status !== 'draft' &&
+        request.assignedTo === workerId &&
+        request.residentId === draft.residentId)
+    );
+  }
+
   createDraft(draft: ReferralDraft): Observable<Referral> {
     const user = this.access.currentUser();
     const denied = denyUnless<Referral>(user, 'referral.manage');
@@ -175,6 +197,11 @@ export class MockReferralRepository implements ReferralRepository {
 
     const client = this.residents.find(draft.residentId);
     if (client === undefined || !isWithinBarangayScope(user, client.address.barangayId)) {
+      return throwError(() => new PermissionDeniedError('referral.manage'));
+    }
+    // As the server does: a caseload drafts only from a case or a filed request assigned to it, about
+    // this client — without either it is refused (`DL-181`, `DL-185`).
+    if (user?.scope === 'assigned-cases' && !this.namesOwnWork(draft, user.id)) {
       return throwError(() => new PermissionDeniedError('referral.manage'));
     }
 

@@ -4,6 +4,7 @@ import {
   anonymousOnlyGuard,
   authenticatedGuard,
   permissionGuard,
+  scopeGuard,
 } from '@core/access/access.guards';
 import { servedGuard } from '@core/access/served-ports';
 /**
@@ -98,7 +99,12 @@ export const routes: Routes = [
             pathMatch: 'full',
             title: 'Residents — Taytay Social Welfare',
             // Saved views degrade in place on this screen; only the registry gates it (DL-175).
-            canActivate: [servedGuard('resident'), permissionGuard('resident.view')],
+            canActivate: [
+              servedGuard('resident'),
+              permissionGuard('resident.view'),
+              // A caseload reads its clients, never the registry's list (`DL-183`, `DL-185`).
+              scopeGuard('assigned-cases'),
+            ],
             loadComponent: () =>
               import('@features/residents/resident-list-page').then((m) => m.ResidentListPage),
           },
@@ -174,7 +180,11 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Households — Taytay Social Welfare',
-            canActivate: [servedGuard('household'), permissionGuard('household.view')],
+            canActivate: [
+              servedGuard('household'),
+              permissionGuard('household.view'),
+              scopeGuard('assigned-cases'),
+            ],
             loadComponent: () =>
               import('@features/households/household-list-page').then((m) => m.HouseholdListPage),
           },
@@ -204,7 +214,11 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Families — Taytay Social Welfare',
-            canActivate: [servedGuard('family'), permissionGuard('family.view')],
+            canActivate: [
+              servedGuard('family'),
+              permissionGuard('family.view'),
+              scopeGuard('assigned-cases'),
+            ],
             loadComponent: () =>
               import('@features/families/family-list-page').then((m) => m.FamilyListPage),
           },
@@ -404,7 +418,10 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Referrals — Taytay Social Welfare',
-            canActivate: [servedGuard('referral', 'resident'), permissionGuard('referral.view')],
+            canActivate: [
+              servedGuard('referral', 'resident', 'case', 'assistance-request'),
+              permissionGuard('referral.view'),
+            ],
             loadComponent: () =>
               import('@features/referrals/referral-list-page').then((m) => m.ReferralListPage),
           },

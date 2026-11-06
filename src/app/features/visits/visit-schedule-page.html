@@ -1,4 +1,4 @@
-<app-async-content [state]="state()" [content]="body" [skeletonLines]="6">
+<app-async-content [state]="state()" [content]="body" [skeletonLines]="6" (retryRequested)="retry()">
   <ng-template #body let-workspace>
     @if (workspace === null) {
       <app-page-header [title]="copy.noCaseHeading" [subtitle]="copy.noCaseMessage" />

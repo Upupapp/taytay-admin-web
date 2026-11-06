@@ -6,7 +6,54 @@
     <h2 class="referrals__heading" id="compose-heading">{{ copy.composeHeading }}</h2>
     <p class="referrals__hint">{{ copy.composeHint }}</p>
 
-    <app-person-picker [label]="copy.clientLabel" (chosen)="onClient($event)" />
+    <!--
+      What the referral is about (DL-185). A caseload starts from its own cases and requests — the
+      registry's search is closed to it (DL-183) and the server refuses its draft without a link —
+      and the client is that record's person. Anybody else names the person, then may link one of
+      their open cases or filed requests.
+    -->
+    @if (!isCaseload()) {
+      <app-person-picker [label]="copy.clientLabel" (chosen)="onClient($event)" />
+    }
+
+    @if (isCaseload() || client() !== null) {
+      @switch (linkState().kind) {
+        @case ('loading') {
+          <p class="referrals__hint" role="status">{{ copy.linksLoading }}</p>
+        }
+        @case ('error') {
+          <p class="referrals__problem" role="alert">{{ copy.linksFailed }}</p>
+        }
+        @default {
+          @if (isCaseload() && linkOptions().length === 0) {
+            <p class="referrals__hint" role="note">{{ copy.linksNoneOfYours }}</p>
+          } @else {
+            <label class="field" for="compose-link">
+              <span class="field__label">
+                {{ isCaseload() ? copy.linkLabelCaseload : copy.linkLabel }}
+              </span>
+              <select id="compose-link" class="field__control" (change)="onLink($event)">
+                <option value="" [selected]="link() === null">
+                  {{ isCaseload() ? copy.linkChoose : copy.linkNone }}
+                </option>
+                @for (option of linkOptions(); track linkKey(option)) {
+                  <option [value]="linkKey(option)" [selected]="link() === option">
+                    {{ option.kind === 'case' ? copy.linkCase : copy.linkRequest }}
+                    {{ option.label }}
+                  </option>
+                }
+              </select>
+              <span class="field__hint">
+                {{ isCaseload() ? copy.linkHintCaseload : copy.linkHint }}
+              </span>
+            </label>
+            @if (linkMore()) {
+              <p class="referrals__hint" role="note">{{ copy.linksMore }}</p>
+            }
+          }
+        }
+      }
+    }
 
     <label class="field" for="compose-provider">
       <span class="field__label">{{ copy.providerLabel }}</span>

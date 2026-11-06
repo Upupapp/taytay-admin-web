@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, of, type Observable } from 'rxjs';
+import { throwError, firstValueFrom, of, type Observable } from 'rxjs';
 
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
@@ -307,5 +307,34 @@ describe('scheduling a visit from a case', () => {
   it('says a failed send left nothing queued, in the domain’s own words (DL-87)', () => {
     expect(VISITS_COPY.detail.failed).toContain(CAPTURE_STATE_DESCRIPTIONS['send-failed']);
     expect(VISITS_COPY.detail.observationSaved).toContain(CAPTURE_STATE_LABELS.sent);
+  });
+});
+
+
+describe('"Try again" reads again (DL-185)', () => {
+  it('re-runs the load after a failed read, and shows the record', async () => {
+    await configure('social-worker');
+    const repository = TestBed.inject(FIELD_VISIT_REPOSITORY);
+    const read = vi
+      .spyOn(repository, 'getById')
+      .mockReturnValueOnce(throwError(() => new Error('The connection dropped.')));
+    await TestBed.inject(Router).navigateByUrl(`/visits/${COMPLETED}`);
+    const fixture = TestBed.createComponent(VisitDetailPage);
+    fixture.componentRef.setInput('id', COMPLETED);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const again = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('button'),
+    ).find((button) => button.textContent?.trim() === 'Try again');
+    expect(again).toBeDefined();
+    again?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(read).toHaveBeenCalledTimes(2);
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain(
+      'The connection dropped.',
+    );
   });
 });

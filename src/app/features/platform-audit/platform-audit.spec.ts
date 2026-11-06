@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   asId,
   asIsoDateTime,
+  PLATFORM_AUDIT_ACTIONS,
   PLATFORM_AUDIT_REPOSITORY,
   type CursorPage,
   type CursorRequest,
@@ -105,5 +106,37 @@ describe('PlatformAuditPage (DL-171)', () => {
     expect(trail.listed[1]).toEqual({ limit: 50, cursor: 'next' });
     expect(element.querySelectorAll('tbody tr')).toHaveLength(3);
     expect(element.textContent).toContain(COPY.noMore);
+  });
+});
+
+describe('the words for every case act the API audits (DL-183, DL-185)', () => {
+  /**
+   * The backend's `office-cases` `AUDIT_ACTIONS` as of `fb43122`. Cancelling a task and ending a
+   * request's link arrived with DL-183 and were shown as undescribed codes until DL-185.
+   */
+  const CASE_ACTIONS = [
+    'office_case.opened',
+    'office_case.status_changed',
+    'office_case.assigned',
+    'office_case.unassigned',
+    'office_case.note_added',
+    'office_case.task_added',
+    'office_case.task_completed',
+    'office_case.task_cancelled',
+    'office_case.task_reassigned',
+    'office_case.task_rescheduled',
+    'office_case.request_linked',
+    'office_case.request_unlinked',
+  ];
+
+  it('describes each one', () => {
+    for (const action of CASE_ACTIONS) {
+      expect(PLATFORM_AUDIT_ACTIONS[action], action).toBeTruthy();
+    }
+  });
+
+  it('says a cancelled task and an ended link are kept, not deleted', () => {
+    expect(PLATFORM_AUDIT_ACTIONS['office_case.task_cancelled']).toContain('kept');
+    expect(PLATFORM_AUDIT_ACTIONS['office_case.request_unlinked']).toContain('history');
   });
 });

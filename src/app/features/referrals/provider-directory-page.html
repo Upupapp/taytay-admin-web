@@ -25,7 +25,12 @@
     </label>
   </div>
 
-  <app-async-content [state]="state()" [content]="body" [skeletonLines]="6">
+  <app-async-content
+    [state]="state()"
+    [content]="body"
+    [skeletonLines]="6"
+    (retryRequested)="retry()"
+  >
     <ng-template #body>
       @if (providers().length === 0) {
         <div class="directory__empty">

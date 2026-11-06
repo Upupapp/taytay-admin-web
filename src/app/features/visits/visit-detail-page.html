@@ -1,4 +1,4 @@
-<app-async-content [state]="state()" [content]="visitContent" [skeletonLines]="8">
+<app-async-content [state]="state()" [content]="visitContent" [skeletonLines]="8" (retryRequested)="retry()">
   <ng-template #visitContent let-visit>
     @if (visit === null) {
       <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />

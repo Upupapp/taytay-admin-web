@@ -7,7 +7,7 @@ import {
   type UrlTree,
 } from '@angular/router';
 
-import type { Permission, PermissionMatch } from '@domain/index';
+import type { DataScope, Permission, PermissionMatch } from '@domain/index';
 
 import { SessionStore } from '../auth/session.store';
 import { PermissionService } from './permission.service';
@@ -87,6 +87,21 @@ export function permissionGuardWith(
     // Echoing the refused path back into the URL would preserve, and possibly
     // log, a record identifier the user was not allowed to see.
     return granted ? true : router.createUrlTree([FORBIDDEN_ROUTE]);
+  };
+}
+
+/**
+ * Closes a screen to a data scope whose role holds the screen's permission but whose server refuses
+ * it — a caseload (`assigned-cases`) reads its own clients' records and never the registry's lists
+ * (`DL-183`). It mirrors a navigation entry's `closedTo`, so the menu never offers a link this
+ * bounces (`DL-185`). Like every guard here it is usability, not the protection (rule 4).
+ */
+export function scopeGuard(...closedTo: readonly DataScope[]): CanActivateFn {
+  return (): boolean | UrlTree => {
+    const scope = inject(PermissionService).scope();
+    return scope !== null && closedTo.includes(scope)
+      ? inject(Router).createUrlTree([FORBIDDEN_ROUTE])
+      : true;
   };
 }
 

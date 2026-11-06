@@ -34,6 +34,8 @@ import {
   attentionDrillDown,
   barangayDrillDown,
   categoryDrillDown,
+  RECORD_REQUEST,
+  SCHEDULE_PAYOUTS,
   releasesDrillDown,
   requestsDrillDown,
   statusDrillDown,
@@ -92,6 +94,8 @@ export class DashboardPage {
 
   protected readonly copy = DASHBOARD_COPY;
   protected readonly barangays = TAYTAY_BARANGAYS;
+  protected readonly recordRequest = RECORD_REQUEST;
+  protected readonly schedulePayouts = SCHEDULE_PAYOUTS;
   protected readonly periods = DASHBOARD_PERIODS;
   protected readonly categories = Object.keys(PROGRAM_CATEGORY_LABELS) as ProgramCategory[];
 
@@ -200,8 +204,10 @@ export class DashboardPage {
   });
 
   /**
-   * The app's accounts by verification standing. Each row opens the accounts list — the list these
-   * figures count — unfiltered, because the app's figures are not narrowed by the dashboard filter.
+   * The app's accounts by verification standing. "Waiting for an ID review" opens the review queue,
+   * which lists exactly those, to a reader who may open it (`DL-185`); every other row opens the
+   * accounts list — the list these figures count — unfiltered, because the API's account list takes
+   * no verification filter and the app's figures are not narrowed by the dashboard filter.
    */
   protected readonly verificationRows = computed<readonly ChartRow[]>(() => {
     const accounts = valueOf(this.state())?.residentApp?.accounts;
@@ -212,14 +218,17 @@ export class DashboardPage {
       key: status,
       label: this.copy.verificationStatus[status],
       value: accounts.byVerification[status],
-      routerLink: '/users',
+      routerLink:
+        status === 'pending' && this.permissions.has('verification.review')
+          ? '/verification'
+          : '/users',
     }));
   });
 
   /* ── drill-down targets for the headline figures ────────────────────────── */
 
   protected openRequestsLink(summary: DashboardSummary): DrillDown {
-    return requestsDrillDown(summary.appliedFilter, { openOnly: 'true' });
+    return requestsDrillDown(summary.appliedFilter, { open: 'true' });
   }
 
   protected awaitingApprovalLink(summary: DashboardSummary): DrillDown {

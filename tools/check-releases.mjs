@@ -169,6 +169,17 @@ for (const counted of ['progress.deferred', 'progress.needsCorrection', 'progres
     problems.push(`describeBatch no longer reports ${counted}.`);
   }
 }
+// Unclaimed is counted apart from deferred (DL-94, DL-185): one count would pin the office's missing
+// countersignature on a family that never came, or the reverse.
+if (!/readonly unclaimed: number \| null;/.test(progressBlock) || !describeBody.includes('progress.unclaimed')) {
+  problems.push(
+    'BatchProgress no longer counts unclaimed apart from deferred, or describeBatch no longer says ' +
+      'it. "2 deferred" for two families who never came blames the office for nobody (DL-94, DL-185).',
+  );
+}
+if (/\[\s*'deferred',\s*'unclaimed'\s*\]/.test(batch)) {
+  problems.push('release-batch.ts counts deferred and unclaimed as one list again (DL-94, DL-185).');
+}
 
 // And the counts have to reach a screen.
 if (!viewFiles.some((file) => /describeBatch|batchProgress/.test(read(file)))) {

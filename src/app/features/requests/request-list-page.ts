@@ -19,9 +19,11 @@ import {
   ASSISTANCE_STATUS_CATALOG,
   asId,
   isWithheldFromReader,
+  TAYTAY_BARANGAYS,
   type AssistanceRequest,
   type AssistanceRequestFilter,
   type AssistanceRequestStatus,
+  type BarangayId,
   type CursorPage,
   type SocialWorker,
   type StaffUserId,
@@ -120,6 +122,17 @@ export class RequestListPage {
     return state.kind === 'error' ? state.message : null;
   });
 
+  /**
+   * Narrowing by barangay is offered only to an office-wide reader. An own-barangay reader's list is
+   * already its barangay and any other is refused (403); a caseload reads its assignments whatever is
+   * asked. Neither is offered a filter it cannot use (`CLAUDE.md` §5, data scope). A barangay in the
+   * URL — a dashboard row — is still read, and the server decides.
+   */
+  protected readonly filtersByBarangay = computed(
+    () => this.permissions.scope() === 'all-barangays',
+  );
+  protected readonly barangays = TAYTAY_BARANGAYS;
+
   protected readonly copy = REQUESTS_COPY.list;
   protected readonly statusCatalog = ASSISTANCE_STATUS_CATALOG;
   protected readonly statuses = STATUSES;
@@ -201,12 +214,16 @@ export class RequestListPage {
     return last !== null && last.hasMore && last.nextCursor !== null;
   });
   protected readonly filter = computed(() => this.query().filter);
+  /** What a dashboard figure asked for that this list cannot narrow by, said rather than dropped. */
+  protected readonly notNarrowed = computed(() => this.query().notNarrowed);
   protected readonly hasFilters = computed(
     () =>
       (this.filter().search ?? '').length > 0 ||
       this.filter().status !== undefined ||
+      this.filter().barangayId !== undefined ||
       this.filter().assignedTo !== undefined ||
-      this.filter().openOnly === true,
+      this.filter().openOnly === true ||
+      this.notNarrowed().length > 0,
   );
 
   protected readonly rowKey = (request: AssistanceRequest): string => request.id;
@@ -271,6 +288,10 @@ export class RequestListPage {
     this.patch({ status: (event.target as HTMLSelectElement).value || null });
   }
 
+  protected onBarangay(event: Event): void {
+    this.patch({ barangay: (event.target as HTMLSelectElement).value || null });
+  }
+
   protected onAssignee(event: Event): void {
     this.patch({ assigned: (event.target as HTMLSelectElement).value || null });
   }
@@ -331,11 +352,22 @@ interface ParamReader {
   get(name: string): string | null;
 }
 
+/**
+ * A narrowing a dashboard figure carries that the request list cannot apply: the API's list reads no
+ * programme type and no "still owing a document" (`DL-185`). Said on the screen, so a list that
+ * holds more than the figure counted never reads as the figure's own records.
+ */
+export type RequestNarrowingNotApplied = 'category' | 'missing-requirements';
+
 /** The filter, and nothing else: the server orders the list and pages it by cursor. */
-export function readRequestQuery(params: ParamReader): { readonly filter: AssistanceRequestFilter } {
+export function readRequestQuery(params: ParamReader): {
+  readonly filter: AssistanceRequestFilter;
+  readonly notNarrowed: readonly RequestNarrowingNotApplied[];
+} {
   const filter: {
     search?: string;
     status?: AssistanceRequestStatus;
+    barangayId?: BarangayId;
     assignedTo?: StaffUserId;
     openOnly?: boolean;
   } = {};
@@ -354,8 +386,19 @@ export function readRequestQuery(params: ParamReader): { readonly filter: Assist
     // not know, and a caseload's list is its own whatever is sent (`DL-178`).
     filter.assignedTo = asId<StaffUserId>(assigned);
   }
+  const barangay = params.get('barangay');
+  if (barangay && TAYTAY_BARANGAYS.some((entry) => entry.id === barangay)) {
+    filter.barangayId = asId<BarangayId>(barangay);
+  }
   if (params.get('open') === 'true') {
     filter.openOnly = true;
   }
-  return { filter };
+  const notNarrowed: RequestNarrowingNotApplied[] = [];
+  if (params.get('category')) {
+    notNarrowed.push('category');
+  }
+  if (params.get('missingRequirements') === 'true') {
+    notNarrowed.push('missing-requirements');
+  }
+  return { filter, notNarrowed };
 }

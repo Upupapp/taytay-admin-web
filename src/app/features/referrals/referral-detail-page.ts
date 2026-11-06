@@ -37,6 +37,7 @@ import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
+import { failureDetail, saidByTheHttpLayer } from './referral-failure';
 import { REFERRALS_COPY } from './referrals.copy';
 
 /**
@@ -65,6 +66,11 @@ export class ReferralDetailPage {
   protected readonly statusCatalog = REFERRAL_STATUS_CATALOG;
 
   private readonly reloads = signal(0);
+
+  /** "Try again" on a failed read: the same question asked again (`DL-185`). */
+  protected retry(): void {
+    this.reloads.update((value) => value + 1);
+  }
   protected readonly saving = signal(false);
 
   protected readonly state = toSignal(
@@ -100,7 +106,11 @@ export class ReferralDetailPage {
   }
 
   protected readonly outcomeText = signal('');
-  protected readonly outcomeStatus = signal<ReferralStatus>('served');
+  /**
+   * Where the outcome leaves the referral — chosen, never assumed. It used to start at `served`, so
+   * an outcome recorded without touching the list closed the referral as served (`DL-185`).
+   */
+  protected readonly outcomeStatus = signal<ReferralStatus | null>(null);
   protected readonly noteText = signal('');
   protected readonly rescheduleDate = signal('');
   protected readonly rescheduleReason = signal('');
@@ -140,7 +150,8 @@ export class ReferralDetailPage {
   }
 
   protected onOutcomeStatus(event: Event): void {
-    this.outcomeStatus.set((event.target as HTMLSelectElement).value as ReferralStatus);
+    const value = (event.target as HTMLSelectElement).value;
+    this.outcomeStatus.set(value === '' ? null : (value as ReferralStatus));
   }
 
   protected onNote(event: Event): void {
@@ -156,7 +167,7 @@ export class ReferralDetailPage {
   }
 
   protected readonly canRecordOutcome = computed(
-    () => this.outcomeText().trim().length > 0 && !this.saving(),
+    () => this.outcomeText().trim().length > 0 && this.outcomeStatus() !== null && !this.saving(),
   );
   protected readonly canAddNote = computed(
     () => this.noteText().trim().length > 0 && !this.saving(),
@@ -258,17 +269,18 @@ export class ReferralDetailPage {
   }
 
   protected async recordOutcome(): Promise<void> {
-    if (!this.canRecordOutcome()) {
+    const status = this.outcomeStatus();
+    if (status === null || !this.canRecordOutcome()) {
       return;
     }
     await this.run(
-      this.repository.recordOutcome(
-        asId<ReferralId>(this.id()),
-        this.outcomeText(),
-        this.outcomeStatus(),
-      ),
+      this.repository.recordOutcome(asId<ReferralId>(this.id()), this.outcomeText(), status),
       this.copy.outcomeSaved,
-      () => this.outcomeText.set(''),
+      () => {
+        this.outcomeText.set('');
+        // The referral has moved, so the next outcome is chosen afresh from where it now stands.
+        this.outcomeStatus.set(null);
+      },
     );
   }
 
@@ -317,10 +329,12 @@ export class ReferralDetailPage {
       onSuccess();
       this.notifications.success(message);
       this.reloads.update((value) => value + 1);
-    } catch {
-      // Reported rather than swallowed: a worker who believes they recorded an
-      // outcome that was refused will not come back to it.
-      this.notifications.error(this.copy.failed);
+    } catch (failure: unknown) {
+      // Reported rather than swallowed: a worker who believes they recorded an outcome that was
+      // refused will not come back to it. In the server's words where it gave some (`DL-185`).
+      if (!saidByTheHttpLayer(failure)) {
+        this.notifications.error(this.copy.failed, failureDetail(failure));
+      }
     } finally {
       this.saving.set(false);
     }

@@ -71,7 +71,10 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'office_case.task_completed': 'Completed a task on a case, with its outcome',
   'office_case.task_reassigned': 'Handed a task on a case to somebody else, with a reason',
   'office_case.task_rescheduled': 'Moved a task’s due date on a case, with a reason',
+  'office_case.task_cancelled': 'Cancelled a task on a case, with a reason; the task is kept',
   'office_case.request_linked': 'Named an assistance request as part of a case, with a reason',
+  'office_case.request_unlinked':
+    'Ended an assistance request’s link to a case, with a reason; the link stays in its history',
   'office_referral.drafted': 'Drafted a referral to another office; nothing was disclosed',
   'office_referral.basis_recorded': 'Recorded the lawful basis for a referral, with its reason',
   'office_referral.field_shared': 'Chose one more field for a referral to carry, with the need for it',

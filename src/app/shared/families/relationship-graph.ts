@@ -13,7 +13,13 @@ import {
 
 import { RELATIONSHIP_COPY } from './relationship.copy';
 
+/**
+ * Ending one relationship, asked of the page that owns the act (`DL-185`). The API scopes a
+ * relationship under a resident it involves, so the request names the person whose row it was
+ * asked from.
+ */
 export interface EndRelationshipRequest {
+  readonly residentId: ResidentId;
   readonly relationshipId: Relationship['id'];
   readonly description: string;
 }
@@ -109,6 +115,16 @@ export interface EndRelationshipRequest {
                               {{ edge.otherName }}
                             </a>
                             <span class="graph__edge-state">{{ stateOf(edge) }}</span>
+                            @if (canManage() && edge.isCurrent) {
+                              <button
+                                type="button"
+                                class="btn btn--subtle graph__end"
+                                [attr.aria-label]="endLabel(node, edge)"
+                                (click)="requestEnd(node, edge)"
+                              >
+                                {{ copy.endAction }}
+                              </button>
+                            }
                           </li>
                         }
                       </ul>
@@ -170,6 +186,8 @@ export class RelationshipGraph {
   readonly addLabel = input('Record a relationship');
 
   readonly addRequested = output<void>();
+  /** Ending is the page's act, with its reason; the graph only says which one (`DL-48`, `DL-185`). */
+  readonly endRequested = output<EndRelationshipRequest>();
 
   protected readonly copy = RELATIONSHIP_COPY;
   protected readonly view = signal<'people' | 'edges'>('people');
@@ -225,6 +243,22 @@ export class RelationshipGraph {
     return edge.until === null
       ? this.copy.formerRelationship
       : `${this.copy.formerRelationship} ${edge.until}`;
+  }
+
+  protected endLabel(node: GraphNode, edge: GraphEdge): string {
+    return `${this.copy.endAction}: ${this.describe(node, edge)}`;
+  }
+
+  protected requestEnd(node: GraphNode, edge: GraphEdge): void {
+    this.endRequested.emit({
+      residentId: node.view.resident.id,
+      relationshipId: edge.relationshipId,
+      description: this.describe(node, edge),
+    });
+  }
+
+  private describe(node: GraphNode, edge: GraphEdge): string {
+    return `${node.view.listedName}, ${this.kindLabel(edge.kind)} ${edge.otherName}`;
   }
 
   protected edgeState(edge: Relationship): string {

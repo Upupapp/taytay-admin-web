@@ -1,4 +1,4 @@
-import type { DataPort, Permission } from '@domain/index';
+import type { DataPort, DataScope, Permission } from '@domain/index';
 
 /**
  * Sidebar definition.
@@ -21,6 +21,12 @@ export interface NavItem {
   /** Two-letter glyph rendered in the sidebar. Keeps the shell icon-library free. */
   readonly glyph: string;
   readonly permissions: readonly Permission[];
+  /**
+   * Data scopes the screen is closed to although the role holds its permission, mirrored by the
+   * route's `scopeGuard`. A caseload (`assigned-cases`) reads its own clients' records and never the
+   * registry's lists, which the server answers 403 (`DL-183`, `DL-185`).
+   */
+  readonly closedTo?: readonly DataScope[];
   readonly description: string;
 }
 
@@ -71,6 +77,7 @@ export const NAVIGATION: readonly NavSection[] = [
         reads: ['resident'],
         glyph: 'RS',
         permissions: ['resident.view'],
+        closedTo: ['assigned-cases'],
         // Was "Beneficiary and household registry" before TAB 13. The two are
         // now distinct screens answering different questions, and one label
         // covering both is how a caseworker ends up on the wrong one.
@@ -90,6 +97,7 @@ export const NAVIGATION: readonly NavSection[] = [
         reads: ['household'],
         glyph: 'HH',
         permissions: ['household.view'],
+        closedTo: ['assigned-cases'],
         description: 'Families as a unit, with the indicators behind each one.',
       },
       {
@@ -98,6 +106,7 @@ export const NAVIGATION: readonly NavSection[] = [
         reads: ['family'],
         glyph: 'FM',
         permissions: ['family.view'],
+        closedTo: ['assigned-cases'],
         description: 'Family units and the relationships between people.',
       },
       {
@@ -105,13 +114,14 @@ export const NAVIGATION: readonly NavSection[] = [
         route: '/visits',
         reads: ['field-visit'],
         glyph: 'FV',
-        permissions: ['case.view'],
+        permissions: ['visit.view'],
         description: 'Home visits, what was found, and what is owed next.',
       },
       {
         label: 'Referrals',
         route: '/referrals',
-        reads: ['referral', 'resident'],
+        // The compose form names the person, and the case or request it is about (`DL-185`).
+        reads: ['referral', 'resident', 'case', 'assistance-request'],
         glyph: 'RF',
         permissions: ['referral.view'],
         description: 'Cases routed to partner offices and agencies.',

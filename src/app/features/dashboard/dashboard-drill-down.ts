@@ -64,6 +64,15 @@ export function categoryDrillDown(filter: DashboardFilter, category: ProgramCate
   };
 }
 
+/** Where a payout is planned: releases approved and waiting for a session (`DL-185`). */
+export const SCHEDULE_PAYOUTS: DrillDown = {
+  route: '/releases',
+  queryParams: { status: 'for-release' },
+};
+
+/** Recording a request is the intake form itself, not a list with a flag nobody reads. */
+export const RECORD_REQUEST: DrillDown = { route: '/assistance-requests/new', queryParams: {} };
+
 export function releasesDrillDown(
   filter: DashboardFilter,
   extra: Readonly<Record<string, string>> = {},
@@ -79,7 +88,8 @@ export function attentionDrillDown(kind: AttentionKind, filter: DashboardFilter)
     case 'returned-to-applicant':
       return statusDrillDown(filter, 'returned');
     case 'missing-requirements':
-      return requestsDrillDown(filter, { openOnly: 'true', missingRequirements: 'true' });
+      // `open` is the request list's own key for its "open requests only" box (`DL-185`).
+      return requestsDrillDown(filter, { open: 'true', missingRequirements: 'true' });
     case 'payout-due':
       return releasesDrillDown(filter, { status: 'scheduled' });
     case 'unclaimed-payout':

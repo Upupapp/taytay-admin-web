@@ -13,6 +13,20 @@ export const REFERRALS_COPY = {
     composeHint:
       'This creates a DRAFT. Nothing leaves the office until the lawful basis is recorded and the referral is sent from its own page.',
     clientLabel: 'Who is being referred?',
+    linkLabel: 'Is it about one of their cases or requests?',
+    linkLabelCaseload: 'Which of your cases or requests is it about?',
+    linkNone: 'Not linked to a case or request',
+    linkChoose: 'Choose one of your cases or requests',
+    linkCase: 'Case',
+    linkRequest: 'Request',
+    linkHint: 'Open cases and filed requests about this person. A link lets whoever holds the case read the referral.',
+    linkHintCaseload:
+      'Only your assigned cases and requests are listed. The referral is about the person the one you choose is about.',
+    linksLoading: 'Reading the cases and requests it could be about…',
+    linksFailed: 'The cases and requests could not be read, so none can be linked. Reload the page to try again.',
+    linksNoneOfYours:
+      'You hold no open case and no request to refer from. A referral from your caseload names one of them; ask whoever assigns the work.',
+    linksMore: 'Only the most recent are listed; more exist. Open the case or request to find an older one.',
     providerLabel: 'Choose from the directory',
     providerHint: 'Choosing one fills the name and contact from the directory record.',
     providerNone: 'Not in the directory',
@@ -78,11 +92,13 @@ export const REFERRALS_COPY = {
     basisLabel: 'On what lawful basis?',
     basisNoteLabel: 'What makes that true here?',
     basisNoteHint: 'Recorded against your name with the basis. A reader six months from now sees this sentence, not the checkbox.',
+    recordBasisAction: 'Record this lawful basis',
     basisSaved: 'The lawful basis was recorded.',
     shareHeading: 'What may be shared beyond the minimum',
     shareMinimum:
       'The name, the reference and the reason always travel. Everything else is chosen one field at a time, with the need that justifies it.',
-    shareFieldLabel: 'Field',
+    shareFieldLabel: 'Which field?',
+    shareFieldAction: 'Add this field to the summary',
     shareBecauseLabel: 'Why does the receiving organisation need it?',
     shareCare: 'This one needs particular thought before it leaves the office.',
     fieldShared: 'That field was added to the summary.',
@@ -124,6 +140,7 @@ export const REFERRALS_COPY = {
     outcomeLabel: 'What the receiving office did',
     outcomePlaceholder: 'What was provided, refused or arranged, and any next step for the client.',
     outcomeStatus: 'Set the referral to',
+    outcomeStatusChoose: 'Choose where this leaves the referral',
     saveOutcome: 'Record outcome',
     outcomeSaved: 'Outcome recorded.',
 

@@ -7725,3 +7725,56 @@ recipient already counts as a resident served.
   against it (409, by design). There is no real data yet; on staging such a request is voided or
   cancelled and filed again.
 - Nothing is pushed or deployed: migration `0034` runs on the next staging deploy.
+
+## DL-185 — the UAT round: console bugs found while writing the test scripts, fixed where the API already serves the fix
+
+Writing the UAT scripts (`cbc15f9`) walked every screen by role and found screens that said one
+thing and did another. Each was checked in the code first; all were real. `DL-184` is reserved for
+Document Request.
+
+### Fixed in the console
+
+- **Referrals.** "Record outcome" no longer starts at `served`: where the outcome leaves the
+  referral is chosen from an empty list and the button waits for it. The compose form names what a
+  referral is about — one of the person's open cases or filed requests — and a social worker, whose
+  registry search is closed (`DL-183`) and whose unlinked draft the server refuses (403), composes
+  from their own assigned cases and requests instead of the person picker; the mock refuses the
+  same draft. The basis and share buttons say what they do. A refused act shows the server's field
+  messages where the envelope carries them, and is not said twice where the HTTP layer already said
+  it. The list's route and menu entry now read `case` and `assistance-request` too.
+- **Dashboard.** Figures send `open` (the request list's key), not `openOnly`. The request list
+  reads `barangay` and offers a barangay filter to an office-wide reader only. The release list
+  reads `q`, `status`, `kind` and `open` from the URL and writes them back (`DL-36`). A narrowing
+  the target list cannot apply (programme type, "still owing a document", a barangay on releases)
+  is said on the list, never dropped silently. "Record a request" opens the intake form; "Schedule
+  payouts" opens `for-release`; "Waiting for an ID review" opens `/verification` for a reviewer.
+- **Releases.** The prepare page links the request's real route. A session counts unclaimed apart
+  from deferred (`DL-94`); the API folds the two together today, so a session read from it says
+  "deferred or unclaimed" (`unclaimed: null`) rather than pinning either count on the other, and
+  `check:releases` now fails if the two are counted as one again. Opening a payout session is
+  offered only with `release.schedule`. "How" shows the method's label.
+- **App audit trail.** `office_case.task_cancelled` and `office_case.request_unlinked` have words.
+  Every other action the committed backend emits already had them.
+- **Menu.** Field visits asks for `visit.view`, as its route does. Residents, Households and
+  Families carry `closedTo: ['assigned-cases']`, and their list routes a matching `scopeGuard`, so
+  a caseload is neither offered nor admitted to registry lists the server refuses; their records
+  stay reachable from a case or request (`DL-183`). "Try again" re-reads on the request, case,
+  release, referral, visit and family pages that showed it and did nothing.
+- **Other.** A resumed intake draft says its applicant, from the profile already read for it. The
+  document-number note says only the last four characters are kept. Ending a relationship — served
+  by the API, with a port and an adapter no screen called — is offered on the family record, with a
+  required reason, and says first that the relationship is kept.
+
+### Not done, and what the API would need
+
+- **Sector history**: there is no read route for a resident's sector events ("the reasons have no
+  read route yet"), so no screen offers it.
+- **Release list**: `barangay_id`, a programme `category`, a period, and a "handed over" group
+  (released, claimed, completed), so the payout figures open exactly what they counted.
+- **Request list**: a programme `category` and a "still owing a document" filter, for the
+  category and missing-requirements figures.
+- **App accounts**: a `verification_status` filter on the account list, so each verification row
+  opens its own accounts.
+- **Session progress**: `unclaimed` counted apart, `deferred` holding deferred only.
+- The `issuance_request.*` audit actions belong to the Document Request work (`DL-184`), not yet
+  committed in the backend, and are left to it.

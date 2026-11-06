@@ -63,9 +63,12 @@ export class ReleasePreparePage {
   protected readonly kinds: readonly ReleaseKind[] = ['money', 'in-kind'];
   protected readonly moneyMethods = MONEY_METHODS;
 
+  /** Bumped by "Try again", to ask the same question again. */
+  private readonly reloads = signal(0);
+
   protected readonly requestState = toSignal(
-    toObservable(this.request).pipe(
-      switchMap((id) =>
+    toObservable(computed(() => ({ id: this.request(), nonce: this.reloads() }))).pipe(
+      switchMap(({ id }) =>
         toViewState(
           id === '' ? of(null) : this.requests.getById(asId<AssistanceRequestId>(id)),
         ),
@@ -73,6 +76,11 @@ export class ReleasePreparePage {
     ),
     { initialValue: LOADING as ViewState<AssistanceRequest | null> },
   );
+
+  /** "Try again" on a failed read: the same question asked again (`DL-185`). */
+  protected retry(): void {
+    this.reloads.update((value) => value + 1);
+  }
 
   protected readonly assistance = computed(() => valueOf(this.requestState()) ?? null);
 

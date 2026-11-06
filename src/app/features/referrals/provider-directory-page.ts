@@ -55,8 +55,17 @@ export class ProviderDirectoryPage {
   private readonly settledSearch = debouncedTerm(this.search);
   protected readonly status = signal<ServiceProviderStatus | null>(null);
 
+  /** Bumped by "Try again", to ask the same question again. */
+  private readonly reloads = signal(0);
+
   protected readonly state = toSignal(
-    toObservable(computed(() => ({ search: this.settledSearch(), status: this.status() }))).pipe(
+    toObservable(
+      computed(() => ({
+        search: this.settledSearch(),
+        status: this.status(),
+        nonce: this.reloads(),
+      })),
+    ).pipe(
       switchMap((query) =>
         toViewState(
           this.repository.listProviders({
@@ -68,6 +77,11 @@ export class ProviderDirectoryPage {
     ),
     { initialValue: LOADING as ViewState<readonly ServiceProvider[]> },
   );
+
+  /** "Try again" on a failed read: the same question asked again (`DL-185`). */
+  protected retry(): void {
+    this.reloads.update((value) => value + 1);
+  }
 
   protected readonly providers = computed(() => valueOf(this.state()) ?? []);
 

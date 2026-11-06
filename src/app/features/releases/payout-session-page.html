@@ -7,8 +7,15 @@
 
   This is the one act on the page; the list below is what it produces. A form under a list is one
   somebody scrolls past on a page that already looks complete.
+
+  Only for whoever may schedule a payout (`release.schedule`). A reader of payouts — the auditor —
+  is shown the sessions, not a form the server would refuse (`DL-185`).
 -->
-<section class="card sessions__open" aria-labelledby="open-heading">
+<section
+  *appHasPermission="'release.schedule'"
+  class="card sessions__open"
+  aria-labelledby="open-heading"
+>
   <h2 class="sessions__heading" id="open-heading">{{ copy.openHeading }}</h2>
   <p class="sessions__hint">{{ copy.openHint }}</p>
 
@@ -68,7 +75,7 @@
 </section>
 
 <div class="sessions">
-  <app-async-content [state]="state()" [content]="sessionContent" [skeletonLines]="5">
+  <app-async-content [state]="state()" [content]="sessionContent" [skeletonLines]="5" (retryRequested)="retry()">
     <ng-template #sessionContent>
       @if (batches().length === 0) {
         <div class="card sessions__empty">

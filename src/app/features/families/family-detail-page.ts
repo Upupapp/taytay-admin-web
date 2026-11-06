@@ -25,7 +25,10 @@ import {
   type ResidentView,
 } from '@domain/index';
 import { LOADING, toViewState, type ViewState } from '@shared/state/view-state';
-import { RelationshipGraph } from '@shared/families/relationship-graph';
+import {
+  RelationshipGraph,
+  type EndRelationshipRequest,
+} from '@shared/families/relationship-graph';
 import { RELATIONSHIP_COPY } from '@shared/families/relationship.copy';
 import { PersonPicker } from '@shared/residents/person-picker';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -116,6 +119,18 @@ export class FamilyDetailPage {
       this.relationshipObject() !== null &&
       this.relationshipReason().trim().length > 0 &&
       !this.submitting(),
+  );
+
+  /**
+   * The relationship being ended, and why. Ending keeps it — marked ended today, with the reason —
+   * and never deletes it (`DL-48`). The API has served this since the family module; until
+   * `DL-185` no screen offered it.
+   */
+  protected readonly ending = signal<EndRelationshipRequest | null>(null);
+  protected readonly endReason = signal('');
+
+  protected readonly canEnd = computed(
+    () => this.ending() !== null && this.endReason().trim().length > 0 && !this.submitting(),
   );
 
   /* ── formatting ─────────────────────────────────────────────────────────── */
@@ -329,9 +344,48 @@ export class FamilyDetailPage {
       });
   }
 
+  protected openEnd(request: EndRelationshipRequest): void {
+    this.endReason.set('');
+    this.ending.set(request);
+  }
+
+  protected onEndReason(event: Event): void {
+    this.endReason.set((event.target as HTMLInputElement).value);
+  }
+
+  protected confirmEnd(): void {
+    const request = this.ending();
+    if (request === null || !this.canEnd()) {
+      return;
+    }
+    this.submitting.set(true);
+    this.repository
+      .endRelationship(request.residentId, request.relationshipId, this.endReason().trim())
+      .subscribe({
+        next: () => {
+          this.submitting.set(false);
+          this.ending.set(null);
+          this.notifications.success(this.relationshipCopy.ended);
+          this.reloads.update((value) => value + 1);
+        },
+        error: (failure: unknown) => {
+          this.submitting.set(false);
+          this.notifications.error(
+            failure instanceof Error ? failure.message : this.relationshipCopy.endFailed,
+          );
+        },
+      });
+  }
+
+  /** "Try again" on a failed read: the same question asked again (`DL-185`). */
+  protected retry(): void {
+    this.reloads.update((value) => value + 1);
+  }
+
   protected cancel(): void {
     this.transferring.set(false);
     this.recording.set(false);
     this.headChange.set(null);
+    this.ending.set(null);
   }
 }

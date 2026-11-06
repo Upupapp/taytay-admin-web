@@ -11,6 +11,7 @@ import {
   authenticatedGuard,
   permissionGuard,
   RETURN_URL_PARAM,
+  scopeGuard,
 } from './access.guards';
 import { DisableWithoutPermissionDirective } from './disable-without-permission.directive';
 import {
@@ -90,6 +91,15 @@ async function routerFor(role: StaffRole | null): Promise<Router> {
           component: ProtectedPage,
           canActivate: [authenticatedGuard, permissionGuard('settings.manage')],
         },
+        {
+          path: 'residents',
+          component: ProtectedPage,
+          canActivate: [
+            authenticatedGuard,
+            permissionGuard('resident.view'),
+            scopeGuard('assigned-cases'),
+          ],
+        },
         { path: 'forbidden', component: PublicPage },
         { path: '**', component: PublicPage },
       ]),
@@ -161,6 +171,20 @@ describe('permissionGuard', () => {
     const router = await routerFor(null);
     await router.navigateByUrl('/administration/settings');
     expect(router.url).toContain('/sign-in');
+  });
+});
+
+describe('scopeGuard (DL-185)', () => {
+  it('refuses a caseload the registry list, although its role holds resident.view', async () => {
+    const router = await routerFor('social-worker');
+    await router.navigateByUrl('/residents');
+    expect(router.url).toBe('/forbidden');
+  });
+
+  it('admits an office-wide reader', async () => {
+    const router = await routerFor('intake-officer');
+    await router.navigateByUrl('/residents');
+    expect(router.url).toBe('/residents');
   });
 });
 

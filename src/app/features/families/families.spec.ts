@@ -495,3 +495,46 @@ describe('recording a family', () => {
     expect(detail?.family.householdId).toBe('hh-0002');
   });
 });
+
+describe('ending a relationship (DL-185)', () => {
+  it('asks why first, then ends the one chosen — kept, never deleted', async () => {
+    const fixture = await openDetail(BAUTISTA, 'intake-officer');
+    const end = vi.spyOn(TestBed.inject(FAMILY_REPOSITORY), 'endRelationship');
+
+    const offered = html(fixture).querySelector<HTMLButtonElement>('.graph__end');
+    expect(offered).not.toBeNull();
+    offered?.click();
+    await fixture.whenStable();
+    expect(end).not.toHaveBeenCalled();
+    expect(html(fixture).textContent).toContain('never deleted');
+
+    const confirm = () =>
+      Array.from(html(fixture).querySelectorAll('button')).find(
+        (button) => button.textContent?.trim() === 'Mark as ended',
+      );
+    expect(confirm()?.disabled).toBe(true);
+
+    const reason = html(fixture).querySelector<HTMLInputElement>(
+      'input[placeholder^="e.g. Annulment"]',
+    );
+    expect(reason).not.toBeNull();
+    if (reason !== null) {
+      reason.value = 'Annulment decree presented at the counter.';
+      reason.dispatchEvent(new Event('input'));
+    }
+    await fixture.whenStable();
+    confirm()?.click();
+    await fixture.whenStable();
+
+    expect(end).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      'Annulment decree presented at the counter.',
+    );
+  });
+
+  it('offers no end to a reader who may not manage families', async () => {
+    const element = html(await openDetail(BAUTISTA, 'auditor'));
+    expect(element.querySelector('.graph__end')).toBeNull();
+  });
+});

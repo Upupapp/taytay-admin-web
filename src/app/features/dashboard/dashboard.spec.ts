@@ -30,7 +30,15 @@ import {
 import type { AppEnvironment } from '@env/environment.model';
 
 import { DASHBOARD_COPY } from './dashboard.copy';
-import { attentionDrillDown, statusDrillDown } from './dashboard-drill-down';
+import {
+  attentionDrillDown,
+  RECORD_REQUEST,
+  SCHEDULE_PAYOUTS,
+  statusDrillDown,
+} from './dashboard-drill-down';
+// The figures and the lists they open are checked against each other: a spec is where the two meet.
+import { readRequestQuery } from '@features/requests/request-list-page';
+import { readReleaseQuery } from '@features/releases/release-list-page';
 import { DashboardPage, readFilter } from './dashboard-page';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
@@ -234,6 +242,28 @@ describe('every metric traces back to filtered records', () => {
     expect(attentionDrillDown('referral-unanswered', {}).route).toBe('/referrals');
   });
 
+  it('opens each figure with the keys its list reads (DL-185)', async () => {
+    const reader = (params: Readonly<Record<string, string>>) => ({
+      get: (name: string) => params[name] ?? null,
+    });
+    const element = html(await setUp('mswdo-head', null, '/dashboard?barangay=brgy-dolores'));
+    const open = element.querySelector<HTMLAnchorElement>('a.metric[href^="/assistance-requests"]');
+    const href = new URL(open?.getAttribute('href') ?? '', 'http://console.test');
+    const query = readRequestQuery({ get: (name) => href.searchParams.get(name) });
+    // `open`, the list's own key — the figure used to send `openOnly`, which nothing read.
+    expect(query.filter).toEqual({ openOnly: true, barangayId: 'brgy-dolores' });
+
+    const missing = attentionDrillDown('missing-requirements', {});
+    expect(readRequestQuery(reader(missing.queryParams)).filter).toEqual({ openOnly: true });
+    expect(readRequestQuery(reader(missing.queryParams)).notNarrowed).toEqual([
+      'missing-requirements',
+    ]);
+
+    const due = attentionDrillDown('payout-due', { barangayId: SAN_JUAN });
+    expect(readReleaseQuery(reader(due.queryParams)).filter).toEqual({ status: 'scheduled' });
+    expect(readReleaseQuery(reader(due.queryParams)).notNarrowed).toEqual(['barangay']);
+  });
+
   it('states the rule each signal counted by, as the counter gave it (DL-98)', async () => {
     const element = html(await setUp('mswdo-head'));
     const bases = Array.from(element.querySelectorAll('.attention__basis')).map(
@@ -317,6 +347,15 @@ describe('quick actions respect permission', () => {
     expect(element.querySelector('.quick__actions')?.textContent).not.toContain(
       DASHBOARD_COPY.schedulePayouts,
     );
+  });
+
+  it('sends "Record a request" to the intake form and "Schedule payouts" to what awaits a session (DL-185)', () => {
+    expect(RECORD_REQUEST).toEqual({ route: '/assistance-requests/new', queryParams: {} });
+    // `pending` was renamed `for-release` in TAB 17; the old word filtered nothing.
+    expect(SCHEDULE_PAYOUTS.route).toBe('/releases');
+    expect(readReleaseQuery({ get: (name) => SCHEDULE_PAYOUTS.queryParams[name] ?? null }).filter).toEqual({
+      status: 'for-release',
+    });
   });
 
   it('offers payout scheduling to the disbursing officer', async () => {
@@ -479,5 +518,18 @@ describe('payouts and the residents’ app are absent for a reader who cannot op
     );
     expect(links).toEqual(['/users', '/verification', '/digital-ids']);
     expect(section?.querySelector('table')).not.toBeNull();
+  });
+
+  it('opens the ID review queue from "Waiting for an ID review" (DL-185)', async () => {
+    const element = html(await setUp('system-administrator'));
+    const rows = Array.from(element.querySelectorAll<HTMLAnchorElement>('.app-figures table a'));
+    const waiting = rows.find((link) =>
+      link.textContent?.includes(DASHBOARD_COPY.verificationStatus.pending),
+    );
+    expect(waiting?.getAttribute('href')).toBe('/verification');
+    const verified = rows.find((link) =>
+      link.textContent?.includes(DASHBOARD_COPY.verificationStatus.verified),
+    );
+    expect(verified?.getAttribute('href')).toBe('/users');
   });
 });

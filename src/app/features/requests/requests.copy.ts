@@ -30,6 +30,14 @@ export const REQUESTS_COPY = {
     status: 'Status',
     allStatuses: 'Any status',
     openOnly: 'Open requests only',
+    barangay: 'Barangay',
+    anyBarangay: 'Any barangay',
+    notNarrowed: (what: readonly ('category' | 'missing-requirements')[]) =>
+      `Opened from a dashboard figure narrowed ${what
+        .map((entry) =>
+          entry === 'category' ? 'by programme type' : 'to requests still owing a document',
+        )
+        .join(' and ')}. This list cannot be narrowed that way yet, so it may hold more requests than the figure counted.`,
     clear: 'Clear filters',
     columnReference: 'Control number',
     columnApplicant: 'Applicant',

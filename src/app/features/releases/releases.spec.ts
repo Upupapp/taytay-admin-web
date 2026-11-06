@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, of, type Observable } from 'rxjs';
+import { throwError, firstValueFrom, of, type Observable } from 'rxjs';
 
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
@@ -11,6 +11,7 @@ import { MockNotificationRepository } from '@data/mock/mock-notification.reposit
 import {
   ACCESS_CONTEXT,
   ASSISTANCE_REQUEST_REPOSITORY,
+  PAYOUT_METHOD_LABELS,
   RELEASE_REPOSITORY,
   NOTIFICATION_REPOSITORY,
   asIsoDateTime,
@@ -21,6 +22,7 @@ import {
   toAuthenticatedUser,
   type AuthenticatedUser,
   type Page,
+  type ReleaseId,
   type StaffRepository,
   type StaffRole,
   type StaffUser,
@@ -31,7 +33,7 @@ import type { AppEnvironment } from '@env/environment.model';
 
 import { PayoutSessionPage } from './payout-session-page';
 import { ReleaseDetailPage } from './release-detail-page';
-import { ReleaseListPage } from './release-list-page';
+import { ReleaseListPage, readReleaseQuery } from './release-list-page';
 import { ReleasePreparePage } from './release-prepare-page';
 import { RELEASES_COPY } from './releases.copy';
 import { MockAssistanceRequestStore } from '@data/mock/mock-assistance-request.store';
@@ -349,6 +351,68 @@ describe('a payout session', () => {
   });
 });
 
+/* ── DL-185: the URL, the words, and who may open a session ─────────────── */
+
+describe('the release list reads its filters from the URL (DL-185)', () => {
+  const params = (values: Readonly<Record<string, string>>) => ({
+    get: (name: string) => values[name] ?? null,
+  });
+
+  it('reads status, kind, open and the search, and refuses a status it does not know', () => {
+    expect(
+      readReleaseQuery(params({ status: 'for-release', kind: 'money', open: 'true', q: 'RL-2026' }))
+        .filter,
+    ).toEqual({ status: 'for-release', kind: 'money', openOnly: true, search: 'RL-2026' });
+    expect(readReleaseQuery(params({ status: 'pending' })).filter).toEqual({});
+  });
+
+  it('names a dashboard narrowing it cannot apply rather than dropping it', () => {
+    expect(readReleaseQuery(params({ barangay: 'brgy-dolores', category: 'medical' })).notNarrowed)
+      .toEqual(['barangay', 'category']);
+  });
+
+  it('opens on the filter the URL names, and says what it could not narrow by', async () => {
+    await configure(staffUser('release-officer'));
+    await TestBed.inject(Router).navigateByUrl('/releases?status=deferred&barangay=brgy-dolores');
+    const fixture = TestBed.createComponent(ReleaseListPage);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const element = html(fixture);
+
+    const status = element.querySelector<HTMLSelectElement>('.filters select');
+    expect(status?.value).toBe('deferred');
+    expect(element.textContent).toContain('cannot be narrowed that way yet');
+    expect(element.textContent).not.toContain('DV-2026-00391');
+  });
+});
+
+describe('a release says how it is paid in words (DL-185)', () => {
+  it('shows the method’s label, never its code', async () => {
+    const fixture = await openDetail(DEFERRED);
+    const release = await firstValueFrom(
+      TestBed.inject(RELEASE_REPOSITORY).getById(asId<ReleaseId>(DEFERRED)),
+    );
+    const how = [...html(fixture).querySelectorAll('.facts__item')].find(
+      (item) => item.querySelector('dt')?.textContent?.trim() === RELEASES_COPY.detail.method,
+    );
+
+    expect(release).not.toBeNull();
+    if (release !== null) {
+      expect(how?.querySelector('dd')?.textContent?.trim()).toBe(PAYOUT_METHOD_LABELS[release.method]);
+    }
+  });
+});
+
+describe('opening a payout session is offered only to whoever may schedule (DL-185)', () => {
+  it('offers the form to the disbursing officer', async () => {
+    expect(html(await openSessions('release-officer')).querySelector('#open-heading')).not.toBeNull();
+  });
+
+  it('withholds it from the auditor, who reads payouts and schedules none', async () => {
+    expect(html(await openSessions('auditor')).querySelector('#open-heading')).toBeNull();
+  });
+});
+
 /* ── Criterion: the manifest carries the minimum ──────────────────────────── */
 
 describe('the payout list carried to the table', () => {
@@ -463,6 +527,12 @@ describe('preparing a release for an approved request', () => {
     return fixture;
   }
 
+  it('links the request to its own record (DL-185)', async () => {
+    const fixture = await openPrepare(APPROVED);
+    const link = html(fixture).querySelector<HTMLAnchorElement>('#prepare-request-heading ~ p a');
+    expect(link?.getAttribute('href')).toBe(`/assistance-requests/${APPROVED}`);
+  });
+
   it('records money as whole centavos, with the approver read from the request', async () => {
     const fixture = await openPrepare(APPROVED);
     const page = fixture.componentInstance as unknown as {
@@ -499,5 +569,34 @@ describe('preparing a release for an approved request', () => {
     const element = html(await openPrepare('req-0003'));
     expect(element.textContent).toContain(RELEASES_COPY.prepare.existingHeading);
     expect(element.querySelector('.btn--primary')).toBeNull();
+  });
+});
+
+
+describe('"Try again" reads again (DL-185)', () => {
+  it('re-runs the load after a failed read, and shows the record', async () => {
+    await configure(staffUser('release-officer'));
+    const repository = TestBed.inject(RELEASE_REPOSITORY);
+    const read = vi
+      .spyOn(repository, 'getById')
+      .mockReturnValueOnce(throwError(() => new Error('The connection dropped.')));
+    await TestBed.inject(Router).navigateByUrl(`/releases/${DEFERRED}`);
+    const fixture = TestBed.createComponent(ReleaseDetailPage);
+    fixture.componentRef.setInput('id', DEFERRED);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const again = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('button'),
+    ).find((button) => button.textContent?.trim() === 'Try again');
+    expect(again).toBeDefined();
+    again?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(read).toHaveBeenCalledTimes(2);
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain(
+      'The connection dropped.',
+    );
   });
 });

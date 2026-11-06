@@ -10,6 +10,7 @@
         type="search"
         class="filters__input"
         [placeholder]="copy.searchPlaceholder"
+        [value]="searchText()"
         (input)="onSearch($event)"
       />
     </label>
@@ -17,9 +18,11 @@
     <label class="filters__field">
       <span class="filters__label">{{ copy.status }}</span>
       <select class="filters__input" (change)="onStatus($event)">
-        <option value="">{{ copy.allStatuses }}</option>
+        <option value="" [selected]="!filter().status">{{ copy.allStatuses }}</option>
         @for (value of statuses; track value) {
-          <option [value]="value">{{ statusLabel(value) }}</option>
+          <option [value]="value" [selected]="filter().status === value">
+            {{ statusLabel(value) }}
+          </option>
         }
       </select>
     </label>
@@ -27,15 +30,17 @@
     <label class="filters__field">
       <span class="filters__label">{{ copy.kind }}</span>
       <select class="filters__input" (change)="onKind($event)">
-        <option value="">{{ copy.allKinds }}</option>
+        <option value="" [selected]="!filter().kind">{{ copy.allKinds }}</option>
         @for (value of kinds; track value) {
-          <option [value]="value">{{ kindLabel(value) }}</option>
+          <option [value]="value" [selected]="filter().kind === value">
+            {{ kindLabel(value) }}
+          </option>
         }
       </select>
     </label>
 
     <label class="filters__check">
-      <input type="checkbox" [checked]="openOnly()" (change)="onOpenOnly($event)" />
+      <input type="checkbox" [checked]="filter().openOnly === true" (change)="onOpenOnly($event)" />
       <span>{{ copy.openOnly }}</span>
     </label>
 
@@ -44,7 +49,16 @@
     }
   </div>
 
-  <app-async-content [state]="state()" [content]="queueContent" [skeletonLines]="6">
+  @if (notNarrowed().length > 0) {
+    <p class="releases__hint" role="note">{{ copy.notNarrowed(notNarrowed()) }}</p>
+  }
+
+  <app-async-content
+    [state]="state()"
+    [content]="queueContent"
+    [skeletonLines]="6"
+    (retryRequested)="retry()"
+  >
     <ng-template #queueContent>
       @if (!hasAny()) {
         <div class="releases__empty">

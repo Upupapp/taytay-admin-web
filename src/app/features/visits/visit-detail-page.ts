@@ -59,6 +59,11 @@ export class VisitDetailPage {
   protected readonly kinds = OBSERVATION_KINDS;
 
   private readonly reloads = signal(0);
+
+  /** "Try again" on a failed read: the same question asked again (`DL-185`). */
+  protected retry(): void {
+    this.reloads.update((value) => value + 1);
+  }
   protected readonly saving = signal(false);
 
   protected readonly state = toSignal(

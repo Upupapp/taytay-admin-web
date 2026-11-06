@@ -179,6 +179,9 @@ export const FAMILIES_COPY = {
       'The relationship is kept and marked as ended. It is never deleted: a case study written while it was current still has to make sense.',
     endConfirm: 'Mark as ended',
     ended: 'Relationship marked as ended.',
+    endReason: 'Why has it ended?',
+    endReasonPlaceholder: 'e.g. Annulment decree presented on 3 November',
+    endFailed: 'That relationship was NOT marked as ended. Nothing was changed.',
     problemsHeading: 'This relationship cannot be recorded',
   },
 

@@ -242,16 +242,15 @@
       <a
         *appHasPermission="'request.create'"
         class="btn btn--primary"
-        routerLink="/assistance-requests"
-        [queryParams]="{ action: 'new' }"
+        [routerLink]="recordRequest.route"
       >
         {{ copy.recordRequest }}
       </a>
       <a
         *appHasPermission="'release.schedule'"
         class="btn"
-        routerLink="/releases"
-        [queryParams]="{ status: 'pending' }"
+        [routerLink]="schedulePayouts.route"
+        [queryParams]="schedulePayouts.queryParams"
       >
         {{ copy.schedulePayouts }}
       </a>
