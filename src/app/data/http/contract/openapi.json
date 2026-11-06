@@ -1766,6 +1766,7 @@
           "200": { "description": "The email is verified.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EmailVerifiedEnvelope" } } } },
           "401": { "description": "Authentication is required.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
           "403": { "description": "Registered role required.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "The code went to the profile email, and the account signs in with a different address. Nothing is marked verified and the code stays unused.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
           "422": { "description": "code_invalid, code_expired, or code_locked. details.attempts_remaining is an integer. code_locked also has details.retry_after.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
           "429": { "description": "Too many requests. details.retry_after is the wait in seconds.", "headers": { "Retry-After": { "description": "Seconds until another request is allowed.", "schema": { "type": "integer", "minimum": 0 } } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
           "503": { "description": "The email could not be verified.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
