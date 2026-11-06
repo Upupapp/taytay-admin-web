@@ -247,6 +247,24 @@ export const API_ENDPOINTS = {
   officeReleases: 'office/releases',
   /** Payout sessions (`DL-180`): whole, counted from their members; `POST` to open; `{id}/manifest`. */
   officeReleaseBatches: 'office/release-batches',
+  /**
+   * Referrals (casework phase 5, `DL-181`): cursor-paged, newest drafted first, by `q` (part of the
+   * reference or the receiving office's name), `status`, `destination`, `urgency`, `resident_id`,
+   * `case_id`, `request_id`, `overdue_only`, `open_only`; `queue`, every open referral whole; one by
+   * `{id}`; `{id}/summary`, the sheet the server composed (null before a basis); `POST` to draft;
+   * `{id}/basis`, `{id}/shared-fields` (one field per call), `{id}/send` (no body), `{id}/status`,
+   * `{id}/outcome`, `{id}/follow-up` and `{id}/notes`. Redacted for the reader by the server.
+   */
+  officeReferrals: 'office/referrals',
+  /** The provider directory (`DL-181`): whole, by name; one by `{id}`. Read-only. */
+  officeServiceProviders: 'office/service-providers',
+  /**
+   * Field visits (`DL-181`): cursor-paged, what is owed first, by `q` (the reference), `status`,
+   * `purpose`, `assigned_to`, `resident_id`, `case_id`, `from`, `to`, `overdue_only`, `mine`; one by
+   * `{id}`; `POST` to schedule; `{id}/observations`, `{id}/checklist` and `{id}/close`. No field for
+   * where anybody was (`DL-86`).
+   */
+  officeVisits: 'office/visits',
   /** The open social-worker accounts a request can be assigned to (`DL-178`, `request.assess`). */
   officeSocialWorkers: 'office/social-workers',
   /** The published assessment forms, current versions, answered whole (`DL-178`). */

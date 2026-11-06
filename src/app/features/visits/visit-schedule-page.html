@@ -1,0 +1,100 @@
+<app-async-content [state]="state()" [content]="body" [skeletonLines]="6">
+  <ng-template #body let-workspace>
+    @if (workspace === null) {
+      <app-page-header [title]="copy.noCaseHeading" [subtitle]="copy.noCaseMessage" />
+      <p><a class="btn" routerLink="/cases">{{ copy.backToCases }}</a></p>
+    } @else {
+      <app-page-header [title]="copy.title" [subtitle]="workspace.record.referenceNumber">
+        <a page-actions class="btn" [routerLink]="['/cases', workspace.record.id]">{{
+          copy.backToCase
+        }}</a>
+      </app-page-header>
+
+      <section class="card schedule" aria-labelledby="schedule-heading">
+        <h2 class="schedule__heading" id="schedule-heading">{{ workspace.subject.fullName }}</h2>
+        <!-- Said before the form, not after it: a visit holds an address, never a whereabouts. -->
+        <p class="schedule__hint">{{ copy.noLocation }}</p>
+
+        @if (workspace.record.status === 'closed') {
+          <p class="schedule__problem" role="alert">{{ copy.caseClosed }}</p>
+        }
+
+        <label class="field">
+          <span class="field__label">{{ copy.purpose }}</span>
+          <select class="field__control" (change)="onPurpose($event)">
+            @for (value of purposes; track value) {
+              <option [value]="value" [selected]="purpose() === value">
+                {{ purposeLabel(value) }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field__label">{{ copy.date }}</span>
+          <input
+            class="field__control"
+            type="date"
+            [min]="today"
+            [value]="scheduledFor()"
+            (input)="onDate($event)"
+          />
+        </label>
+
+        <label class="field">
+          <span class="field__label">{{ copy.window }}</span>
+          <input
+            class="field__control"
+            type="text"
+            maxlength="80"
+            [placeholder]="copy.windowPlaceholder"
+            [value]="scheduledWindow()"
+            (input)="onWindow($event)"
+          />
+        </label>
+
+        <label class="field">
+          <span class="field__label">{{ copy.address }}</span>
+          <input
+            class="field__control"
+            type="text"
+            maxlength="300"
+            [value]="address()"
+            (input)="onAddress($event)"
+          />
+          <span class="field__hint">{{ copy.addressHint }}</span>
+        </label>
+
+        @if (workers().length === 0) {
+          <p class="schedule__problem" role="alert">{{ copy.noWorker }}</p>
+        } @else {
+          <label class="field">
+            <span class="field__label">{{ copy.worker }}</span>
+            <select class="field__control" (change)="onWorker($event)">
+              @for (option of workers(); track option.id) {
+                <option [value]="option.id" [selected]="worker() === option.id">
+                  {{ option.name }}
+                </option>
+              }
+            </select>
+            <span class="field__hint">{{ copy.workerHint }}</span>
+          </label>
+        }
+
+        <h3 class="schedule__subheading">{{ copy.checklistHeading }}</h3>
+        <p class="schedule__hint">{{ copy.checklistHint }}</p>
+        <ul class="schedule__prompts">
+          @for (prompt of prompts; track prompt.code) {
+            <li>{{ prompt.label }}</li>
+          }
+        </ul>
+
+        <p class="schedule__actions">
+          <button type="button" class="btn btn--primary" [disabled]="!canSchedule()" (click)="schedule()">
+            {{ saving() ? copy.scheduling : copy.scheduleAction }}
+          </button>
+        </p>
+      </section>
+    }
+  </ng-template>
+</app-async-content>

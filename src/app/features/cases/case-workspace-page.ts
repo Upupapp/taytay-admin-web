@@ -162,6 +162,8 @@ export class CaseWorkspacePage {
   protected readonly submitting = signal(false);
 
   protected readonly canManage = computed(() => this.permissions.has('case.manage'));
+  /** Scheduling a home visit is the visit module's own key, not a case key (`DL-181`). */
+  protected readonly canScheduleVisit = computed(() => this.permissions.has('visit.manage'));
   protected readonly canNote = computed(() => this.permissions.has('case.note'));
   protected readonly canWriteProtected = computed(() =>
     this.permissions.has('case-note.view-protected'),

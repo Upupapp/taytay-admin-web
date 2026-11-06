@@ -6,6 +6,8 @@ import { firstValueFrom, of, type Observable } from 'rxjs';
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
+import { MockAssistanceRequestRepository } from '@data/mock/mock-assistance-request.repository';
+import { MockCaseRepository } from '@data/mock/mock-case.repository';
 import { MockFieldVisitRepository } from '@data/mock/mock-field-visit.repository';
 import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
 import {
@@ -23,11 +25,18 @@ import {
   type StaffUser,
   type StaffUserId,
   type SignInOutcome,
+  ASSISTANCE_REQUEST_REPOSITORY,
+  CAPTURE_STATE_DESCRIPTIONS,
+  CAPTURE_STATE_LABELS,
+  CASE_REPOSITORY,
+  type CaseId,
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
 
 import { VisitDetailPage } from './visit-detail-page';
 import { VisitListPage } from './visit-list-page';
+import { VisitSchedulePage } from './visit-schedule-page';
+import { VISITS_COPY } from './visits.copy';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
   name: 'local-mock',
@@ -88,6 +97,7 @@ async function configure(role: StaffRole): Promise<void> {
     providers: [
       provideRouter([
         { path: 'visits', component: VisitListPage },
+        { path: 'visits/schedule', component: VisitSchedulePage },
         { path: 'visits/:id', component: VisitDetailPage },
         { path: '**', component: StubPage },
       ]),
@@ -95,6 +105,8 @@ async function configure(role: StaffRole): Promise<void> {
       { provide: ACCESS_CONTEXT, useExisting: SessionState },
       { provide: STAFF_REPOSITORY, useValue: staffRepository(staffUser(role)) },
       { provide: FIELD_VISIT_REPOSITORY, useClass: MockFieldVisitRepository },
+      { provide: CASE_REPOSITORY, useClass: MockCaseRepository },
+      { provide: ASSISTANCE_REQUEST_REPOSITORY, useClass: MockAssistanceRequestRepository },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
     ],
   });
@@ -243,5 +255,57 @@ describe('closing a visit', () => {
     expect(element.querySelector('.kinds')).toBeNull();
     // …but the visit itself is still readable.
     expect(element.querySelector('#about-heading')).not.toBeNull();
+  });
+});
+
+/* ── Scheduling: from a case, to an address, with nobody's whereabouts (DL-181) ─────── */
+
+describe('scheduling a visit from a case', () => {
+  async function openSchedule(
+    caseId: string,
+    role: StaffRole = 'social-worker',
+  ): Promise<ComponentFixture<VisitSchedulePage>> {
+    await configure(role);
+    await TestBed.inject(Router).navigateByUrl(`/visits/schedule?case=${caseId}`);
+    const fixture = TestBed.createComponent(VisitSchedulePage);
+    fixture.componentRef.setInput('case', caseId);
+    await fixture.whenStable();
+    return fixture;
+  }
+
+  it('offers only somebody who can open the visit, and asks for no location', async () => {
+    const element = html(await openSchedule('case-0002'));
+    const selects = [...element.querySelectorAll('select')];
+    // The worker sent is the case's own: a caseload is not offered a colleague.
+    expect(selects.at(-1)?.querySelectorAll('option')).toHaveLength(1);
+    expect(element.textContent).toContain('Nothing records where anybody is or was');
+    const names = [...element.querySelectorAll('input')].map((input) => input.type);
+    expect(names).toEqual(['date', 'text', 'text']);
+  });
+
+  it('schedules it with the six prompts and the address from the record', async () => {
+    const fixture = await openSchedule('case-0002', 'mswdo-head');
+    const repository = TestBed.inject(FIELD_VISIT_REPOSITORY);
+    const filter = { caseId: asId<CaseId>('case-0002') };
+    const before = await firstValueFrom(repository.list(filter, { limit: 50, cursor: null }));
+
+    const button = [...html(fixture).querySelectorAll('button')].find((candidate) =>
+      candidate.textContent?.includes('Schedule the visit'),
+    );
+    expect(button?.disabled).toBe(false);
+    button?.click();
+    await fixture.whenStable();
+
+    const after = await firstValueFrom(repository.list(filter, { limit: 50, cursor: null }));
+    expect(after.items).toHaveLength(before.items.length + 1);
+    const added = after.items.find((visit) => !before.items.some((old) => old.id === visit.id));
+    expect(added?.status).toBe('scheduled');
+    expect(added?.checklist).toHaveLength(6);
+    expect(added?.addressVisited.length).toBeGreaterThan(0);
+  });
+
+  it('says a failed send left nothing queued, in the domain’s own words (DL-87)', () => {
+    expect(VISITS_COPY.detail.failed).toContain(CAPTURE_STATE_DESCRIPTIONS['send-failed']);
+    expect(VISITS_COPY.detail.observationSaved).toContain(CAPTURE_STATE_LABELS.sent);
   });
 });

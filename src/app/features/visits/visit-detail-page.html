@@ -4,9 +4,13 @@
       <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
       <p class="visit__back"><a class="btn" routerLink="/visits">{{ copy.back }}</a></p>
     } @else {
-      <app-page-header [title]="visit.referenceNumber" [subtitle]="visit.addressVisited">
+      <app-page-header [title]="visit.referenceNumber" [subtitle]="addressShown(visit)">
         <a page-actions class="btn" routerLink="/visits">{{ copy.back }}</a>
       </app-page-header>
+
+      @if (wordsWithheld(visit)) {
+        <p class="visit__withheld" role="note">{{ copy.wordsWithheldNotice }}</p>
+      }
 
       <div class="visit">
         <section class="card visit__panel" aria-labelledby="about-heading">
@@ -29,7 +33,7 @@
             }
             <div class="facts__item">
               <dt>{{ copy.address }}</dt>
-              <dd>{{ visit.addressVisited }}</dd>
+              <dd>{{ addressShown(visit) }}</dd>
             </div>
             @if (visit.completedAt) {
               <div class="facts__item">
@@ -70,7 +74,7 @@
                     <input
                       type="checkbox"
                       [checked]="checked(item.code)"
-                      [disabled]="!canManage() || !isOpen()"
+                      [disabled]="!canWrite() || !isOpen()"
                       (change)="onTick(item.code, $event)"
                     />
                     <span>{{ item.label }}</span>
@@ -82,7 +86,7 @@
               }
             </ul>
 
-            @if (canManage() && isOpen()) {
+            @if (canWrite() && isOpen()) {
               <button type="button" class="btn" (click)="saveChecklist()">
                 {{ copy.saveChecklist }}
               </button>
@@ -107,7 +111,9 @@
               @for (entry of visit.observations; track entry.id) {
                 <li class="observations__item" [attr.data-kind]="entry.kind">
                   <p class="observations__kind">{{ observationLabel(entry) }}</p>
-                  <p class="observations__body">{{ entry.body }}</p>
+                  <p class="observations__body">
+                    {{ wordsWithheld(visit) ? copy.withheld : entry.body }}
+                  </p>
                   <p class="observations__meta">
                     @if (entry.attributedTo) {
                       <span class="observations__who">
@@ -123,7 +129,7 @@
             </ol>
           }
 
-          @if (canManage() && isOpen()) {
+          @if (canWrite() && isOpen()) {
             <h3 class="visit__subheading">{{ copy.addObservationHeading }}</h3>
 
             <!-- The kind is the first choice, not a detail at the end: a worker
@@ -183,7 +189,7 @@
           }
         </section>
 
-        @if (canManage() && isOpen()) {
+        @if (canWrite() && isOpen()) {
           <section class="card visit__panel" aria-labelledby="close-heading">
             <h2 class="visit__heading" id="close-heading">{{ copy.outcomeHeading }}</h2>
             <p class="visit__hint">{{ copy.outcomeHint }}</p>

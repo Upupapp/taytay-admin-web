@@ -19,14 +19,13 @@ import {
   isReferralOpen,
   isReferralOverdue,
   isWithinBarangayScope,
-  paginate,
   referralDraftProblems,
   todayAsIsoDate,
   userHasPermission,
   type AuthenticatedUser,
+  type CursorPage,
+  type CursorRequest,
   type IsoDate,
-  type Page,
-  type PageRequest,
   type Permission,
   type Referral,
   type ReferralDraft,
@@ -34,7 +33,6 @@ import {
   type ReferralId,
   type ReferralNoteId,
   type ReferralRepository,
-  type ReferralSortField,
   type ReferralStatus,
   type ReferralSummarySheet,
   type Resident,
@@ -88,24 +86,31 @@ export class MockReferralRepository implements ReferralRepository {
     0,
   );
 
-  list(
-    filter: ReferralFilter,
-    page: PageRequest<ReferralSortField>,
-  ): Observable<Page<Referral>> {
+  /** Newest drafted first, a cursor page at a time — the server's order (`DL-181`). */
+  list(filter: ReferralFilter, page: CursorRequest): Observable<CursorPage<Referral>> {
     const user = this.access.currentUser();
-    const denied = denyUnless<Page<Referral>>(user, 'referral.view');
+    const denied = denyUnless<CursorPage<Referral>>(user, 'referral.view');
     if (denied) {
       return denied;
     }
 
     const today = todayAsIsoDate();
-    const visible = this.referrals.filter(
-      (referral) => this.isReadable(referral, user) && matchesFilter(referral, filter, today),
-    );
-
-    const sort = page.sort ?? { field: 'referredAt' as const, direction: 'desc' as const };
-    const sorted = sortItems(visible, (referral) => sortKey(referral, sort.field), sort.direction);
-    return this.latency.respond(paginate(sorted, page));
+    const sorted = this.referrals
+      .filter((referral) => this.isReadable(referral, user) && matchesFilter(referral, filter, today))
+      .sort(
+        (a, b) => b.audit.createdAt.localeCompare(a.audit.createdAt) || b.id.localeCompare(a.id),
+      );
+    // The id of the last row read stands in for the server's opaque cursor.
+    const after = page.cursor ? sorted.findIndex((referral) => referral.id === page.cursor) : -1;
+    const rest = sorted.slice(after + 1);
+    const items = rest.slice(0, Math.max(1, page.limit));
+    const hasMore = rest.length > items.length;
+    const last = items[items.length - 1];
+    return this.latency.respond({
+      items: items.map((referral) => this.present(referral, user)),
+      hasMore,
+      nextCursor: hasMore && last !== undefined ? last.id : null,
+    });
   }
 
   getById(id: ReferralId): Observable<Referral | null> {
@@ -120,7 +125,7 @@ export class MockReferralRepository implements ReferralRepository {
     ) {
       return this.latency.respond(null);
     }
-    return this.latency.respond(referral);
+    return this.latency.respond(this.present(referral, user));
   }
 
   forResident(id: ResidentId): Observable<readonly Referral[]> {
@@ -132,7 +137,8 @@ export class MockReferralRepository implements ReferralRepository {
     const visible = this.referrals
       .filter((referral) => referral.residentId === id && this.isReadable(referral, user))
       .slice()
-      .sort((a, b) => (a.referredAt < b.referredAt ? 1 : -1));
+      .sort((a, b) => (a.referredAt < b.referredAt ? 1 : -1))
+      .map((referral) => this.present(referral, user));
     return this.latency.respond(visible);
   }
 
@@ -153,7 +159,11 @@ export class MockReferralRepository implements ReferralRepository {
 
     // Overdue first, then most urgent, then oldest — the order the work is
     // actually done in, computed rather than left to a sort dropdown.
-    return this.latency.respond([...open].sort((a, b) => byReferralUrgency(a, b, today)));
+    return this.latency.respond(
+      [...open]
+        .sort((a, b) => byReferralUrgency(a, b, today))
+        .map((referral) => this.present(referral, user)),
+    );
   }
 
   createDraft(draft: ReferralDraft): Observable<Referral> {
@@ -196,10 +206,12 @@ export class MockReferralRepository implements ReferralRepository {
       disclosure: null,
       referredBy: user?.id ?? asId<StaffUserId>('staff-unknown'),
       referredAt: now,
-      followUpOn: draft.followUpOn ?? defaultFollowUpDate(today, draft.urgency),
+      // Counted from the day it is sent, as the server counts it, unless the worker set one.
+      followUpOn: draft.followUpOn,
       respondedAt: null,
       outcome: null,
       handoffNotes: [],
+      withheld: [],
       audit: { createdAt: now, createdBy: user?.id ?? null, updatedAt: now, updatedBy: user?.id ?? null },
     };
 
@@ -231,6 +243,9 @@ export class MockReferralRepository implements ReferralRepository {
 
     if (note.trim().length === 0) {
       return throwError(() => new Error('A lawful basis needs the sentence that explains it.'));
+    }
+    if (found.referral.status !== 'draft') {
+      return throwError(() => new Error(SETTLED));
     }
 
     const existing = found.referral.disclosure;
@@ -273,6 +288,13 @@ export class MockReferralRepository implements ReferralRepository {
     if (because.trim().length === 0) {
       return throwError(() => new Error('Every field beyond the minimum needs a stated need.'));
     }
+    if (found.referral.status !== 'draft') {
+      return throwError(() => new Error(SETTLED));
+    }
+    // One decision per field, made once — as the server holds it.
+    if (plan.extraFields.some((entry) => entry.field === field)) {
+      return throwError(() => new Error('That field is already chosen, with its stated need.'));
+    }
 
     /*
      * A field the sender could not themselves read must not be shared onward.
@@ -292,10 +314,7 @@ export class MockReferralRepository implements ReferralRepository {
       this.save(found.referral, {
         disclosure: {
           ...plan,
-          extraFields: [
-            ...plan.extraFields.filter((entry) => entry.field !== field),
-            { field, because: because.trim() },
-          ],
+          extraFields: [...plan.extraFields, { field, because: because.trim() }],
         },
       }),
     );
@@ -340,6 +359,9 @@ export class MockReferralRepository implements ReferralRepository {
       this.save(found.referral, {
         status: 'sent',
         referredAt: asIsoDateTime(new Date()),
+        followUpOn:
+          found.referral.followUpOn ??
+          defaultFollowUpDate(todayAsIsoDate(), found.referral.urgency),
       }),
     );
   }
@@ -357,7 +379,8 @@ export class MockReferralRepository implements ReferralRepository {
     }
     // No plan, no sheet. A summary composed from a referral nobody authorised
     // would be a disclosure the office cannot account for.
-    if (referral.disclosure === null) {
+    // Nor for a reader the words are withheld from: the sheet carries them (`DL-181`).
+    if (referral.disclosure === null || this.present(referral, user).withheld.length > 0) {
       return this.latency.respond(null);
     }
 
@@ -402,7 +425,7 @@ export class MockReferralRepository implements ReferralRepository {
     return this.latency.respond(
       this.save(found.referral, {
         status: to,
-        respondedAt: found.referral.respondedAt ?? asIsoDateTime(new Date()),
+        respondedAt: answeredAt(found.referral, to),
         handoffNotes: [...found.referral.handoffNotes, this.note(reason, user)],
       }),
     );
@@ -430,7 +453,7 @@ export class MockReferralRepository implements ReferralRepository {
       this.save(found.referral, {
         status,
         outcome: outcome.trim(),
-        respondedAt: found.referral.respondedAt ?? asIsoDateTime(new Date()),
+        respondedAt: answeredAt(found.referral, status),
       }),
     );
   }
@@ -443,6 +466,9 @@ export class MockReferralRepository implements ReferralRepository {
     }
     if (reason.trim().length === 0) {
       return throwError(() => new Error('Say why the follow-up is moving.'));
+    }
+    if (followUpOn < todayAsIsoDate()) {
+      return throwError(() => new Error('A follow-up date is today or later.'));
     }
 
     const found = this.locate<Referral>(id, 'referral.manage');
@@ -473,6 +499,9 @@ export class MockReferralRepository implements ReferralRepository {
     const found = this.locate<Referral>(id, 'referral.manage');
     if ('error' in found) {
       return found.error;
+    }
+    if (found.referral.status === 'closed') {
+      return throwError(() => new Error('A closed referral is kept as it ended.'));
     }
 
     return this.latency.respond(
@@ -563,6 +592,39 @@ export class MockReferralRepository implements ReferralRepository {
     };
   }
 
+  /**
+   * The referral as this reader may see it: a protected client's words are withheld from a reader
+   * without `request.view-sensitive`, in the data layer, as the server withholds them (`DL-181`).
+   */
+  private present(referral: Referral, user: AuthenticatedUser | null): Referral {
+    const client = this.residents.find(referral.residentId);
+    if (client === undefined || !this.disclose(client, user).isProtected) {
+      return referral;
+    }
+    if (userHasPermission(user, 'request.view-sensitive')) {
+      return referral;
+    }
+    return {
+      ...referral,
+      serviceRequested: '',
+      reason: '',
+      outcome: null,
+      handoffNotes: referral.handoffNotes.map((note) => ({ ...note, body: '' })),
+      disclosure:
+        referral.disclosure === null
+          ? null
+          : {
+              ...referral.disclosure,
+              authority: { ...referral.disclosure.authority, note: '' },
+              extraFields: referral.disclosure.extraFields.map((choice) => ({
+                ...choice,
+                because: '',
+              })),
+            },
+      withheld: ['words'],
+    };
+  }
+
   private disclose(resident: Resident, user: AuthenticatedUser | null) {
     return discloseResident(resident, (permission: Permission) =>
       userHasPermission(user, permission),
@@ -571,6 +633,25 @@ export class MockReferralRepository implements ReferralRepository {
 }
 
 /* ── helpers ──────────────────────────────────────────────────────────────── */
+
+const SETTLED =
+  'This referral has been sent. What it disclosed, and on what basis, was settled when it left the building.';
+
+/** The moves that mean the receiving office answered; closing is this office's own act (`DL-83`). */
+const ANSWERS: readonly ReferralStatus[] = [
+  'acknowledged',
+  'in-progress',
+  'waiting-requirements',
+  'served',
+  'declined',
+];
+
+function answeredAt(referral: Referral, to: ReferralStatus): Referral['respondedAt'] {
+  if (referral.respondedAt !== null || !ANSWERS.includes(to)) {
+    return referral.respondedAt;
+  }
+  return asIsoDateTime(new Date());
+}
 
 function matchesFilter(referral: Referral, filter: ReferralFilter, today: IsoDate): boolean {
   if (filter.status && referral.status !== filter.status) {
@@ -594,25 +675,7 @@ function matchesFilter(referral: Referral, filter: ReferralFilter, today: IsoDat
   if (filter.overdueOnly && !isReferralOverdue(referral, today)) {
     return false;
   }
-  return matchesSearch(
-    [referral.referenceNumber, referral.destinationName, referral.reason, referral.serviceRequested],
-    filter.search,
-  );
-}
-
-function sortKey(referral: Referral, field: ReferralSortField): string {
-  switch (field) {
-    case 'referredAt':
-      return referral.referredAt;
-    case 'urgency':
-      // Ordered by rank rather than alphabetically, so "urgent" does not sort
-      // after "routine" for no reason a reader could guess.
-      return { urgent: '0', priority: '1', routine: '2' }[referral.urgency];
-    case 'status':
-      return referral.status;
-    case 'followUpOn':
-      // A referral with no chase date sorts last rather than first: it is not
-      // more urgent than one that is due, it is simply unscheduled.
-      return referral.followUpOn ?? '9999-12-31';
-  }
+  // The reference and the receiving office only, as the server searches: never what was written
+  // about the client (`DL-109`).
+  return matchesSearch([referral.referenceNumber, referral.destinationName], filter.search);
 }

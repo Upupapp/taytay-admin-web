@@ -59,6 +59,7 @@ function visit(overrides: Partial<FieldVisit> = {}): FieldVisit {
     declinedReason: null,
     outcome: null,
     completedAt: null,
+    withheld: [],
     audit: {
       createdAt: asIsoDateTime('2026-07-01T00:00:00.000Z'),
       createdBy: null,

@@ -194,7 +194,6 @@ import type {
   Referral,
   ReferralDraft,
   ReferralFilter,
-  ReferralSortField,
   ReferralStatus,
 } from '../referrals/referral';
 import type {
@@ -206,7 +205,6 @@ import type {
   FieldVisit,
   FieldVisitDraft,
   FieldVisitFilter,
-  FieldVisitSortField,
   VisitOutcomeDraft,
   VisitChecklistSelection,
 } from '../visits/field-visit';
@@ -955,10 +953,11 @@ export const BENEFICIARY_REPOSITORY = new InjectionToken<BeneficiaryRepository>(
  * worker who wants to correct one records another saying so.
  */
 export interface FieldVisitRepository {
-  list(
-    filter: FieldVisitFilter,
-    page: PageRequest<FieldVisitSortField>,
-  ): Observable<Page<FieldVisit>>;
+  /**
+   * One cursor page: what is still owed first, soonest first, then what is over, latest first. A
+   * list somebody browses: the screen says more exist, never "page 1 of N" (`DL-161`, `DL-181`).
+   */
+  list(filter: FieldVisitFilter, page: CursorRequest): Observable<CursorPage<FieldVisit>>;
   getById(id: FieldVisitId): Observable<FieldVisit | null>;
   /** The signed-in worker's own visits, for the day-planning view. */
   mine(filter: FieldVisitFilter): Observable<readonly FieldVisit[]>;
@@ -1122,10 +1121,11 @@ export const RELEASE_REPOSITORY = new InjectionToken<ReleaseRepository>(
  * that is the failure this port is shaped to prevent.
  */
 export interface ReferralRepository {
-  list(
-    filter: ReferralFilter,
-    page: PageRequest<ReferralSortField>,
-  ): Observable<Page<Referral>>;
+  /**
+   * One cursor page, newest drafted first. A list somebody browses: the screen says more exist,
+   * never "page 1 of N" (`DL-161`, `DL-181`).
+   */
+  list(filter: ReferralFilter, page: CursorRequest): Observable<CursorPage<Referral>>;
   getById(id: ReferralId): Observable<Referral | null>;
   /** Every referral for one person, newest first. */
   forResident(id: ResidentId): Observable<readonly Referral[]>;
@@ -1135,12 +1135,6 @@ export interface ReferralRepository {
   /** Creates a `draft`. Nothing is disclosed until it is sent. */
   createDraft(draft: ReferralDraft): Observable<Referral>;
 
-  /**
-   * Sends it. **The only method that discloses anything**, and the reason the
-   * disclosure plan is a parameter rather than a field set earlier: the basis
-   * and the chosen fields are recorded in the same act as the sending, so there
-   * is no window in which a referral is sendable without them.
-   */
   /**
    * Records the lawful basis for disclosing, with the sentence that explains it.
    *

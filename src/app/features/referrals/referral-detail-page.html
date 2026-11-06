@@ -13,6 +13,10 @@
         <a page-actions class="btn" routerLink="/referrals">{{ copy.back }}</a>
       </app-page-header>
 
+      @if (wordsWithheld(referral)) {
+        <p class="referral__withheld" role="note">{{ copy.wordsWithheldNotice }}</p>
+      }
+
       <div class="referral">
         <section class="card referral__panel" aria-labelledby="about-heading">
           <h2 class="referral__heading" id="about-heading">{{ copy.aboutHeading }}</h2>
@@ -28,11 +32,11 @@
           <dl class="facts">
             <div class="facts__item">
               <dt>{{ copy.service }}</dt>
-              <dd>{{ referral.serviceRequested }}</dd>
+              <dd>{{ wordsWithheld(referral) ? copy.withheld : referral.serviceRequested }}</dd>
             </div>
             <div class="facts__item">
               <dt>{{ copy.reason }}</dt>
-              <dd>{{ referral.reason }}</dd>
+              <dd>{{ wordsWithheld(referral) ? copy.withheld : referral.reason }}</dd>
             </div>
             <div class="facts__item">
               <dt>{{ copy.destination }}</dt>
@@ -80,7 +84,9 @@
               </div>
               <div class="facts__item">
                 <dt>{{ copy.basisNote }}</dt>
-                <dd>{{ referral.disclosure.authority.note }}</dd>
+                <dd>
+                  {{ wordsWithheld(referral) ? copy.withheld : referral.disclosure.authority.note }}
+                </dd>
               </div>
             </dl>
 
@@ -92,7 +98,7 @@
                 @for (choice of referral.disclosure.extraFields; track choice.field) {
                   <li class="shared__item">
                     <span class="shared__field">{{ fieldLabel(choice) }}</span>
-                    <span class="shared__because">{{ copy.because }}: {{ choice.because }}</span>
+                    <span class="shared__because">{{ copy.because }}: {{ wordsWithheld(referral) ? copy.withheld : choice.because }}</span>
                   </li>
                 }
               </ul>
@@ -119,7 +125,7 @@
           Composing and sending. Only while it is still a draft: once it has left the office there
           is nothing here that could change what was sent.
         -->
-        @if (canManage() && referral.status === 'draft') {
+        @if (canWrite(referral) && referral.status === 'draft') {
           <section class="card referral__panel" aria-labelledby="send-heading">
             <h2 class="referral__heading" id="send-heading">{{ copy.sendHeading }}</h2>
 
@@ -268,7 +274,7 @@
             <p class="referral__empty">{{ copy.outcomeNone }}</p>
           }
 
-          @if (canManage() && outcomeStatuses(referral).length > 0) {
+          @if (canWrite(referral) && outcomeStatuses(referral).length > 0) {
             <label class="field">
               <span class="field__label">{{ copy.outcomeLabel }}</span>
               <textarea
@@ -311,7 +317,9 @@
             <ol class="notes">
               @for (note of referral.handoffNotes; track note.id) {
                 <li class="notes__item">
-                  <p class="notes__body">{{ note.body }}</p>
+                  <p class="notes__body">
+                    {{ wordsWithheld(referral) ? copy.withheld : note.body }}
+                  </p>
                   <p class="notes__meta">
                     {{ note.authorName }} ·
                     <time [attr.datetime]="note.recordedAt">
@@ -323,7 +331,7 @@
             </ol>
           }
 
-          @if (canManage()) {
+          @if (canWrite(referral)) {
             <label class="field">
               <span class="field__label">{{ copy.addNote }}</span>
               <textarea
@@ -345,7 +353,7 @@
           }
         </section>
 
-        @if (canManage() && referral.status !== 'draft') {
+        @if (canWrite(referral) && referral.status !== 'draft') {
           <section class="card referral__panel" aria-labelledby="reschedule-heading">
             <h2 class="referral__heading" id="reschedule-heading">{{ copy.rescheduleHeading }}</h2>
 

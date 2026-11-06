@@ -60,6 +60,13 @@ import OFFICE_RELEASE from './office-release.json';
 import OFFICE_RELEASE_BATCHES from './office-release-batches.json';
 import OFFICE_RELEASE_MANIFEST from './office-release-manifest.json';
 import OFFICE_RELEASE_INTENT_REFUSAL from './office-release-intent-refusal.json';
+import OFFICE_REFERRALS_PAGE from './office-referrals-page.json';
+import OFFICE_REFERRAL from './office-referral.json';
+import OFFICE_REFERRAL_SUMMARY from './office-referral-summary.json';
+import OFFICE_REFERRAL_NO_BASIS_REFUSAL from './office-referral-no-basis-refusal.json';
+import OFFICE_SERVICE_PROVIDERS from './office-service-providers.json';
+import OFFICE_VISITS_PAGE from './office-visits-page.json';
+import OFFICE_VISIT from './office-visit.json';
 import OFFICE_DOCUMENT_GRANT from './office-document-grant.json';
 import OFFICE_REQUIREMENT_TEMPLATE from './office-requirement-template.json';
 import OFFICE_REQUIREMENT_TEMPLATE_REFUSAL from './office-requirement-template-refusal.json';
@@ -296,6 +303,13 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['office-release-batches', OFFICE_RELEASE_BATCHES, 'OfficeReleaseBatchListEnvelope'],
     ['office-release-manifest', OFFICE_RELEASE_MANIFEST, 'OfficeReleaseManifestEnvelope'],
     ['office-release-intent-refusal', OFFICE_RELEASE_INTENT_REFUSAL, 'ErrorEnvelope'],
+    ['office-referrals-page', OFFICE_REFERRALS_PAGE, 'OfficeReferralListEnvelope'],
+    ['office-referral', OFFICE_REFERRAL, 'OfficeReferralEnvelope'],
+    ['office-referral-summary', OFFICE_REFERRAL_SUMMARY, 'OfficeReferralSummaryEnvelope'],
+    ['office-referral-no-basis-refusal', OFFICE_REFERRAL_NO_BASIS_REFUSAL, 'ErrorEnvelope'],
+    ['office-service-providers', OFFICE_SERVICE_PROVIDERS, 'OfficeServiceProviderListEnvelope'],
+    ['office-visits-page', OFFICE_VISITS_PAGE, 'OfficeVisitListEnvelope'],
+    ['office-visit', OFFICE_VISIT, 'OfficeVisitEnvelope'],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
     ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],

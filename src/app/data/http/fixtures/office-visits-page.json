@@ -1,0 +1,111 @@
+{
+  "data": [
+    {
+      "id": "a9b8c7d6-e5f4-4a3b-8c2d-1e0f9a8b7c02",
+      "reference_number": "HV-2026-000011",
+      "case_id": "7a6b5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c02",
+      "resident_id": "5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b09",
+      "household_id": null,
+      "status": "scheduled",
+      "purpose": "verification",
+      "assigned_to": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
+      "assigned_to_name": "Liza Ramos",
+      "scheduled_for": "2026-11-10",
+      "scheduled_window": "Morning",
+      "address_visited": null,
+      "checklist": [
+        {
+          "code": "members",
+          "label": "Who is actually living there",
+          "checked": false
+        }
+      ],
+      "observations": [
+        {
+          "id": "c0d1e2f3-a4b5-4c6d-8e7f-9a0b1c2d3e03",
+          "kind": "client-said",
+          "body": null,
+          "attributed_to": null,
+          "is_withheld": true,
+          "recorded_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
+          "recorded_at": "2026-11-05T02:00:00.000Z"
+        }
+      ],
+      "service_needs": null,
+      "declined_reason": null,
+      "outcome": null,
+      "completed_at": null,
+      "is_protected": true,
+      "withheld": [
+        "words",
+        "address"
+      ],
+      "created_at": "2026-11-01T01:00:00.000Z",
+      "created_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+      "updated_at": "2026-11-04T03:00:00.000Z",
+      "updated_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05"
+    },
+    {
+      "id": "a9b8c7d6-e5f4-4a3b-8c2d-1e0f9a8b7c01",
+      "reference_number": "HV-2026-000012",
+      "case_id": "7a6b5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c02",
+      "resident_id": "5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b01",
+      "household_id": "3c2b1a0f-9e8d-4c7b-8a6f-5e4d3c2b1a01",
+      "status": "completed",
+      "purpose": "verification",
+      "assigned_to": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
+      "assigned_to_name": "Liza Ramos",
+      "scheduled_for": "2026-11-04",
+      "scheduled_window": "Morning",
+      "address_visited": "7 Sampaguita St, Purok 2",
+      "checklist": [
+        {
+          "code": "dwelling",
+          "label": "Dwelling condition and tenure",
+          "checked": true
+        },
+        {
+          "code": "water-sanitation",
+          "label": "Water and sanitation",
+          "checked": false
+        }
+      ],
+      "observations": [
+        {
+          "id": "c0d1e2f3-a4b5-4c6d-8e7f-9a0b1c2d3e01",
+          "kind": "observed",
+          "body": "The roof is missing sheets over the sleeping area.",
+          "attributed_to": null,
+          "is_withheld": false,
+          "recorded_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
+          "recorded_at": "2026-11-04T02:10:00.000Z"
+        },
+        {
+          "id": "c0d1e2f3-a4b5-4c6d-8e7f-9a0b1c2d3e02",
+          "kind": "third-party-said",
+          "body": "He has not sent money since March.",
+          "attributed_to": "Kagawad Reyes",
+          "is_withheld": false,
+          "recorded_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
+          "recorded_at": "2026-11-04T02:11:00.000Z"
+        }
+      ],
+      "service_needs": "Roofing materials.",
+      "declined_reason": null,
+      "outcome": "Visited; needs met in part.",
+      "completed_at": "2026-11-04T03:00:00.000Z",
+      "is_protected": false,
+      "withheld": [],
+      "created_at": "2026-11-01T01:00:00.000Z",
+      "created_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+      "updated_at": "2026-11-04T03:00:00.000Z",
+      "updated_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05"
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "has_more": false,
+      "next_cursor": null
+    }
+  }
+}

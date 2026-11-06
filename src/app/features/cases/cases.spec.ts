@@ -440,6 +440,17 @@ describe('the list pages by cursor, and offers what the reader may do', () => {
 });
 
 describe('the workspace offers only what the office record accepts', () => {
+  it('links a holder of visit.manage to scheduling a home visit on the case, and nobody else', async () => {
+    const link = (element: HTMLElement) =>
+      [...element.querySelectorAll('a')].find((anchor) =>
+        anchor.textContent?.includes('Schedule a home visit'),
+      );
+    const worker = html(await openWorkspace(MERCADO, 'social-worker', 'staff-sw-1'));
+    expect(link(worker)?.getAttribute('href')).toBe(`/visits/schedule?case=${MERCADO}`);
+    // Intake reads visits but does not make them.
+    expect(link(html(await openWorkspace(MERCADO, 'intake-officer', 'staff-intake')))).toBeUndefined();
+  });
+
   it('gives the case to a named social worker, or to nobody, from the office’s list', async () => {
     const fixture = await openWorkspace(MERCADO, 'mswdo-head', 'staff-head');
     const element = html(fixture);

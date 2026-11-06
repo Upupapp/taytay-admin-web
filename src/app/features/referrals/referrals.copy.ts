@@ -28,6 +28,12 @@ export const REFERRALS_COPY = {
     draftNotCreated: 'That draft was NOT created. Nothing was saved.',
     title: 'Referrals',
     subtitle: 'People routed to offices that can do what this one cannot.',
+    shown: (count: number) => `${count} shown, newest drafted first.`,
+    moreAvailable: 'More are available.',
+    noMore: 'That is every referral matching these filters.',
+    showMore: 'Show more',
+    loadingMore: 'Loading more…',
+    moreFailed: 'The next referrals could not be loaded. The ones above are still correct; try again.',
     directory: 'Service providers',
 
     search: 'Search',
@@ -63,6 +69,9 @@ export const REFERRALS_COPY = {
   },
 
   detail: {
+    withheld: 'Withheld from your account',
+    wordsWithheldNotice:
+      'This referral is about a person under a protected sector. What it asks for, why, what was recorded about it and what it shares are withheld from your account, and nothing can be added to it from here. Where it went, its status and its dates are shown.',
     sendHeading: 'Send this referral',
     sendWarning:
       'Once this is sent it has left the office. Nothing here can recall it, and the receiving organisation keeps whatever it was given.',

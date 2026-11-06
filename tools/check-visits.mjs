@@ -49,10 +49,17 @@ const domainFiles = walk('src/app/domain/visits', new Set(['.ts'])).filter(
 const viewFiles = walk('src/app/features/visits', new Set(['.ts', '.html'])).filter(
   (file) => !file.includes('.spec.'),
 );
+// The transport seam is read too since the visits are served (`DL-181`): a coordinate the API grew
+// would arrive through the mapper, and one the console sent would leave through it.
+const HTTP_VISIT_MAPPER = 'src/app/data/http/mappers/field-visit.mapper.ts';
 const dataFiles = [
   'src/app/data/mock/mock-field-visit.repository.ts',
   'src/app/data/mock/seed/field-visits.seed.ts',
+  HTTP_VISIT_MAPPER,
 ].filter((file) => existsSync(join(root, file)));
+if (!existsSync(join(root, HTTP_VISIT_MAPPER))) {
+  problems.push(`${HTTP_VISIT_MAPPER} has gone. The visits are served through it; the check reads it.`);
+}
 
 if (domainFiles.length === 0) {
   problems.push('No visit domain files found. The model has moved or been removed.');
@@ -75,7 +82,13 @@ const isComment = (line) => {
 // deliberately not among them: it is where the office went, which the household
 // registry already holds, not where a worker was at a moment in time.
 const LOCATION_FIELD =
-  /\breadonly\s+(latitude|longitude|coordinates?|geo\w*|gpsAccuracy|checkedInAt|checkInAt|arrivedAt|departedAt|route|trackPoint\w*)\s*[?:]/i;
+  /\breadonly\s+(latitude|longitude|lat|lng|coordinates?|geo\w*|gps\w*|checkedInAt|checkInAt|checked_in_at|check_in_at|arrivedAt|arrived_at|departedAt|departed_at|route|track_?[pP]oint\w*|location\w*|device\w*)\s*[?:]/i;
+
+// The same names as the wire spells them, read off a payload or written into one. The visits are
+// served (`DL-181`): a mapper that read `field(wire, 'latitude')` would carry a whereabouts into the
+// console without declaring a field anywhere, and a literal key would send one.
+const LOCATION_WIRE =
+  /field\(\s*\w+\s*,\s*'(latitude|longitude|lat|lng|coordinates?|geo\w*|gps\w*|check(ed)?_in_at|arrived_at|departed_at|route|location\w*|device\w*)'|^\s*(latitude|longitude|lat|lng|coordinates|gps_accuracy|checked_in_at|check_in_at|arrived_at|departed_at|location)\s*:/i;
 
 // Browser APIs that acquire a position, and the names a geofence goes by.
 const LOCATION_CALL =
@@ -85,7 +98,7 @@ for (const file of [...domainFiles, ...viewFiles, ...dataFiles]) {
   const text = read(file);
   for (const [index, line] of text.split(/\r?\n/).entries()) {
     if (isComment(line)) continue;
-    if (LOCATION_FIELD.test(line) || LOCATION_CALL.test(line)) {
+    if (LOCATION_FIELD.test(line) || LOCATION_CALL.test(line) || LOCATION_WIRE.test(line)) {
       problems.push(
         `${file}:${index + 1} captures a location. Field visits record what was found, not where a ` +
           'worker was. Continuous tracking, covert tracking and geofencing are forbidden (DL-86).',

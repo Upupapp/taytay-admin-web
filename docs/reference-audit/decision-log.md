@@ -7351,3 +7351,127 @@ Phase 4 of the casework (`docs/integration/node-api-migration.md`). Backend `tay
 
 The backend's own test compares its release statuses, labels, transitions, methods, kinds, deferral
 reasons, receipt kinds and the manifest notice with this console's domain files.
+
+## DL-181 — referrals and field visits are served: the sheet composed by the server, the basis checked under its lock, and no column for where anybody was
+
+Phase 5 of the casework (`docs/integration/node-api-migration.md`). Backend `taytay-backend`
+`6436b70`; the spec vendored here is its. Console: the commit that adds this entry.
+
+### What the server now decides
+
+- **A referral discloses nothing until it is sent, and what it sends is composed** (`DL-81`,
+  `DL-82`). Drafting records who, where, what and why. The lawful basis — client consent, a
+  statutory mandate, or vital interest — is its own recorded act with the sentence that explains it;
+  each field beyond the minimum is shared one call at a time with its stated need, **each once**,
+  only under a recorded basis, and only by a writer who could read it (household income needs
+  `resident.view-sensitive`). Both acts are open **only while the referral is a draft**: once sent,
+  what it disclosed and on what basis is kept as it was.
+- **`send` is refused without a basis, under the row lock** (`DL-140`). It takes no body. The route
+  reads the referral locked and refuses (409); the database's own event trigger refuses the `sent`
+  event again, under the same lock, so a direct insert is refused too. No ordinary move reaches
+  `sent`. Sending gives the referral its follow-up date from its urgency (14, 7 or 2 days, counted
+  from the day it is sent, as `defaultFollowUpDate` always said) when none was set.
+- **The sheet is the server's** (`GET …/summary`): the client's name, "MSWDO Taytay, Rizal", then
+  each chosen field valued only from what the reader could themselves read; a field chosen but not
+  held is left off, never printed empty. `null` until a basis is recorded. Composing a sheet is an
+  audit row (`office_referral.summary_composed`).
+- **Overdue is derived** (`DL-83`): `sent_at`, `responded_at` and the outcome are read from the
+  history on every read. `responded_at` is the first move to acknowledged, in progress, waiting
+  requirements, served or declined — so a note, or the office closing it, is not an answer.
+- **A visit record says whose claim each line is** (`DL-85`): an observation carries its kind, a
+  third party's account names who gave it, and no other kind carries an attribution — refused by
+  the route and by a `CHECK`. Observations are appended, never edited or removed.
+- **No tracking** (`DL-86`): no table, column, field or parameter for a coordinate, a check-in, a
+  route, an arrival time or a device. The backend test reads the visit tables' columns from
+  `information_schema` against a list of tracking words, and shows the list catches them.
+  `completed_at` and `recorded_at` are when the office record received the outcome or the line.
+- **Honest capture** (`DL-87`): a write answers with the visit as the record now holds it, or an
+  error; nothing is queued or retried. Every outcome is final and a visit closes once; the checklist
+  moves only while it is scheduled; nothing is observed on a visit cancelled before it was made.
+- **Every act appends an event in the same transaction**, mirrored to the platform audit trail
+  (`office_referral.*`, `office_visit.*`); nothing is updated in place or deleted; a closed
+  referral takes no further writes.
+
+### Decisions made here
+
+1. **The narrower caseload** (as `DL-178`, `DL-179`). A social worker reads only referrals naming a
+   case or a filed request assigned to them, and visits on a case assigned to them; drafts a
+   referral only from one of those (403 with neither) and schedules a visit only on a case of their
+   own. A visit is given to a social worker **only on a case assigned to that worker**, so nobody is
+   sent on a visit they could not open. A visit with no case is read by the office scopes only.
+2. **A protected client's words are withheld in the data layer** from a reader without
+   `request.view-sensitive` — the referral's request, reason, outcome, notes, basis note and each
+   field's need; the visit's observations, outcome, needs, refusal reason **and its address** — and
+   such a reader cannot add to the record or be given the sheet. The record is still listed, and
+   says so. `Referral` and `FieldVisit` gain `withheld`; the screens say "withheld" in place, and
+   offer no act on such a record.
+3. **What a sheet carries for the composite fields.** "Who else is in the household" is a **count**
+   of the other people recorded in the client's household, never their names — they did not consent
+   — and is left off for a caseload, which does not read the household (`DL-179`). "Previous
+   assistance" lists only filed requests the composer may read, by programme, status and date.
+4. **The provider directory is served read-only and starts empty.** Nothing in the API writes it
+   yet; offices are named in words on the draft meanwhile. Seeding real offices' contacts nobody
+   confirmed would be inventing them.
+5. **Scheduling a visit is a screen** (`/visits/schedule?case=`), reached from the case by whoever
+   holds `visit.manage`. Nothing in the console scheduled a visit before (the mock was seeded). It
+   offers the case's own worker or the signed-in account (unless that account is a caseload),
+   copies the address from the person's record (editable: a family between addresses is visited
+   where it is), and sets out with the six prompts that were the seed's checklist, now
+   `VISIT_CHECKLIST_PROMPTS` in the domain.
+6. **Corrections after a visit closes** are allowed by the API as further observations (a correction
+   is another line, `DL-85`); the screen still offers the form only while the visit is scheduled.
+7. **Numbers**: referrals `RF-YYYY-NNNNNN`, visits `HV-YYYY-NNNNNN`, from the municipality's year.
+
+### What the console now does
+
+- `HttpReferralRepository` and `HttpFieldVisitRepository` serve every method of both ports through
+  `referral.mapper.ts` and `field-visit.mapper.ts`, every write through a `toWire…` mapper; `send`
+  posts `{}`. `referral` and `field-visit` leave `UNSERVED_PORTS` (eight remain): **Referrals,
+  Service providers and Field visits are in the menu** against the API, and the resident record's
+  visits panel reads them.
+- Both lists read **a cursor page at a time** and say how many are shown and whether more exist;
+  the referral list loses its sort controls and page numbers, the visit list keeps its buckets over
+  what has been read; "My visits" is read whole or not at all. Search is the reference (and, for a
+  referral, the receiving office's name) — never what was written about a person (`DL-109`).
+- The visit screens use `visit.manage`, the key the server checks, not `case.manage`; a write that
+  fails says it was **not saved and nothing was queued**, in the domain's own `send-failed` words,
+  and a write that lands says "Saved to the office record".
+- The mock follows the server: cursor paging, the basis and fields only while a draft and each
+  field once, the default follow-up from the day it is sent, `respondedAt` only on an answer,
+  search by reference, `visit.*` keys, and a protected client's words withheld from an uncleared
+  reader.
+- The platform audit trail words the thirteen new codes.
+
+### For the owner
+
+- Decision 1 — whether a social worker should see visits **assigned to them on a colleague's case**,
+  and visits with **no case** (a verification visit for a request); today neither.
+- Decision 3 — whether "who else is in the household" should carry names or relationships rather
+  than a count.
+- Decision 4 — **who keeps the provider directory**, and from which screen. Until then it is empty.
+- Decision 5 — whether the six checklist prompts are the office's, or should be replaced.
+- Whether a draft referral that is never sent should **expire**, and whether the sheet needs a
+  document attachment act (`attachments` is always empty).
+
+### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:visits` | now also reads `data/http/mappers/field-visit.mapper.ts`, and the wire's snake_case names (`field(wire, 'latitude')`, a `checked_in_at` field, an `arrived_at` key). Three planted regressions all fail it | passed |
+| `check:referrals` | unchanged; the mock still refuses a send with no basis | passed |
+| `check:contract-drift` | vendored `6436b70` | 208 operations (was 188) |
+| `check:routes` | unserved ceiling lowered 10 → 8 | 39 endpoints, 165 composed requests; 8 of 33 ports unrouted |
+| `check:unserved` | `referral` and `field-visit` served; the schedule route guards `field-visit` and `case` | passed |
+| `check:response-shape` | the referral, provider and visit reads (the summary a nullable item) | 83/83 (was 72/72) |
+| `check:wire-adoption` | every referral and visit body through a `toWire…`; `send` posts `{}` to an operation with no body | 96/96 (was 84/84) |
+| `check:port-adoption` | `schedule` reached by the new page | 8 of 227 unreached |
+| `check:query-params` | the referral list, queue and visit filters, as inline literals | 82 reads (was 71) |
+| `check:consumer-contract` | regenerated | 136 interactions, 752 required fields (was 128, 682) |
+| `check:permission-parity` | the referral and visit routes' keys | 0 of 61 disagree |
+
+All 48 repository checks pass. Focused specs (14 files, the referral, visit, case, resident, acceptance, unserved, layout and HTTP ones): 396/396.
+
+The backend's own test compares its referral statuses, labels, transitions, destinations,
+urgencies, follow-up days, bases and their labels, shared fields and their labels, the handling
+notice, provider statuses and channels, and the visit statuses, labels, transitions, purposes,
+observation kinds and minimum length with this console's domain files.

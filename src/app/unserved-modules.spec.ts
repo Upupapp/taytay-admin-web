@@ -10,10 +10,8 @@ import {
   UnservedBeneficiaryRepository,
   UnservedDashboardRepository,
   UnservedEventRepository,
-  UnservedFieldVisitRepository,
   UnservedGovernanceRepository,
   UnservedNewsfeedRepository,
-  UnservedReferralRepository,
   UnservedReportRepository,
   UnservedSearchRepository,
   UnservedWorkRepository,
@@ -155,9 +153,7 @@ const OFFERED = MENU.filter((item) => !WITHHELD.includes(item)).map((item) => it
 describe('the http adapter set', () => {
   const adapters = [
     UnservedBeneficiaryRepository,
-    UnservedFieldVisitRepository,
-      UnservedReferralRepository,
-    UnservedWorkRepository,
+          UnservedWorkRepository,
     UnservedReportRepository,
     UnservedSearchRepository,
     UnservedGovernanceRepository,

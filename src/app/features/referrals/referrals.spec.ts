@@ -271,6 +271,16 @@ describe('working a referral', () => {
     expect(element.querySelector('.notes__body')?.textContent).toContain('Desk confirmed receipt');
   });
 
+  it('says a protected client’s words are withheld from an uncleared reader, and offers no act', async () => {
+    const element = html(await openDetail(PROTECTION, 'intake-officer'));
+    expect(element.querySelector('.referral__withheld')?.textContent).toContain(
+      'withheld from your account',
+    );
+    expect(element.querySelector('.notes__body')?.textContent).toContain('Withheld from your account');
+    expect(element.textContent).not.toContain('Desk confirmed receipt');
+    expect(element.querySelector('#reschedule-heading')).toBeNull();
+  });
+
   it('hides the recording controls from a role that may only read', async () => {
     const element = html(await openDetail(PROTECTION, 'auditor'));
 

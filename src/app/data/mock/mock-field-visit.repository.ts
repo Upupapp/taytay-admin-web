@@ -11,23 +11,22 @@ import {
   byVisitDate,
   canTransition,
   isVisitOverdue,
+  discloseResident,
   isWithinBarangayScope,
   observationProblems,
-  paginate,
   todayAsIsoDate,
   userHasPermission,
   visitDraftProblems,
   visitOutcomeProblems,
   type AuthenticatedUser,
+  type CursorPage,
+  type CursorRequest,
   type FieldVisit,
   type FieldVisitDraft,
   type FieldVisitFilter,
   type FieldVisitId,
   type FieldVisitRepository,
-  type FieldVisitSortField,
   type IsoDate,
-  type Page,
-  type PageRequest,
   type Permission,
   type ResidentId,
   type StaffUserId,
@@ -41,7 +40,7 @@ import {
 import { denyUnless } from './mock-access';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
-import { matchesSearch, sortItems } from './mock-query';
+import { matchesSearch } from './mock-query';
 import { MOCK_FIELD_VISITS } from './seed/field-visits.seed';
 
 /**
@@ -49,8 +48,8 @@ import { MOCK_FIELD_VISITS } from './seed/field-visits.seed';
  *
  * Three rules re-checked here rather than only in the UI (`DL-30`):
  *
- *  - **Permission.** `case.view` to read a visit — a visit record is casework —
- *    and `case.manage` to schedule, record or close one.
+ *  - **Permission.** `visit.view` to read a visit and `visit.manage` to schedule, record or close
+ *    one — the keys the server checks (TAB 03, `DL-181`).
  *  - **Scope.** A visit is reachable only if its client is, so a
  *    barangay-confined account cannot read one about a neighbour elsewhere.
  *  - **Append-only observations.** `recordObservations` adds; there is no path
@@ -72,24 +71,32 @@ export class MockFieldVisitRepository implements FieldVisitRepository {
     0,
   );
 
-  list(
-    filter: FieldVisitFilter,
-    page: PageRequest<FieldVisitSortField>,
-  ): Observable<Page<FieldVisit>> {
+  /**
+   * A cursor page in the server's order: what is still owed first, soonest first, then what is
+   * over, latest first (`DL-181`).
+   */
+  list(filter: FieldVisitFilter, page: CursorRequest): Observable<CursorPage<FieldVisit>> {
     const user = this.access.currentUser();
-    const denied = denyUnless<Page<FieldVisit>>(user, 'case.view');
+    const denied = denyUnless<CursorPage<FieldVisit>>(user, 'visit.view');
     if (denied) {
       return denied;
     }
 
     const today = todayAsIsoDate();
-    const visible = this.visits.filter(
-      (visit) => this.isReadable(visit, user) && matchesFilter(visit, filter, today),
-    );
-
-    const sort = page.sort ?? { field: 'scheduledFor' as const, direction: 'asc' as const };
-    const sorted = sortItems(visible, (visit) => sortKey(visit, sort.field), sort.direction);
-    return this.latency.respond(paginate(sorted, page));
+    const sorted = this.visits
+      .filter((visit) => this.isReadable(visit, user) && matchesFilter(visit, filter, today))
+      .sort(byWhatIsOwed);
+    // The id of the last row read stands in for the server's opaque cursor.
+    const after = page.cursor ? sorted.findIndex((visit) => visit.id === page.cursor) : -1;
+    const rest = sorted.slice(after + 1);
+    const items = rest.slice(0, Math.max(1, page.limit));
+    const hasMore = rest.length > items.length;
+    const last = items[items.length - 1];
+    return this.latency.respond({
+      items: items.map((visit) => this.present(visit, user)),
+      hasMore,
+      nextCursor: hasMore && last !== undefined ? last.id : null,
+    });
   }
 
   getById(id: FieldVisitId): Observable<FieldVisit | null> {
@@ -99,17 +106,17 @@ export class MockFieldVisitRepository implements FieldVisitRepository {
     // Not found and not yours read identically (`DL-31`).
     if (
       visit === undefined ||
-      !userHasPermission(user, 'case.view') ||
+      !userHasPermission(user, 'visit.view') ||
       !this.isReadable(visit, user)
     ) {
       return this.latency.respond(null);
     }
-    return this.latency.respond(visit);
+    return this.latency.respond(this.present(visit, user));
   }
 
   mine(filter: FieldVisitFilter): Observable<readonly FieldVisit[]> {
     const user = this.access.currentUser();
-    const denied = denyUnless<readonly FieldVisit[]>(user, 'case.view');
+    const denied = denyUnless<readonly FieldVisit[]>(user, 'visit.view');
     if (denied) {
       return denied;
     }
@@ -121,31 +128,33 @@ export class MockFieldVisitRepository implements FieldVisitRepository {
         this.isReadable(visit, user) &&
         matchesFilter(visit, filter, today),
     );
-    return this.latency.respond([...own].sort(byVisitDate));
+    return this.latency.respond([...own].sort(byVisitDate).map((visit) => this.present(visit, user)));
   }
 
   forResident(id: ResidentId): Observable<readonly FieldVisit[]> {
     const user = this.access.currentUser();
-    const denied = denyUnless<readonly FieldVisit[]>(user, 'case.view');
+    const denied = denyUnless<readonly FieldVisit[]>(user, 'visit.view');
     if (denied) {
       return denied;
     }
     const visible = this.visits.filter(
       (visit) => visit.residentId === id && this.isReadable(visit, user),
     );
-    return this.latency.respond([...visible].sort(byVisitDate));
+    return this.latency.respond(
+      [...visible].sort(byVisitDate).map((visit) => this.present(visit, user)),
+    );
   }
 
   schedule(draft: FieldVisitDraft): Observable<FieldVisit> {
     const user = this.access.currentUser();
-    const denied = denyUnless<FieldVisit>(user, 'case.manage');
+    const denied = denyUnless<FieldVisit>(user, 'visit.manage');
     if (denied) {
       return denied;
     }
 
     const client = this.residents.find(draft.residentId);
     if (client === undefined || !isWithinBarangayScope(user, client.address.barangayId)) {
-      return throwError(() => new PermissionDeniedError('case.manage'));
+      return throwError(() => new PermissionDeniedError('visit.manage'));
     }
 
     const today = todayAsIsoDate();
@@ -176,6 +185,7 @@ export class MockFieldVisitRepository implements FieldVisitRepository {
       declinedReason: null,
       outcome: null,
       completedAt: null,
+      withheld: [],
       audit: {
         createdAt: now,
         createdBy: user?.id ?? null,
@@ -193,7 +203,7 @@ export class MockFieldVisitRepository implements FieldVisitRepository {
     observations: readonly VisitObservationDraft[],
   ): Observable<FieldVisit> {
     const user = this.access.currentUser();
-    const denied = denyUnless<FieldVisit>(user, 'case.manage');
+    const denied = denyUnless<FieldVisit>(user, 'visit.manage');
     if (denied) {
       return denied;
     }
@@ -206,6 +216,10 @@ export class MockFieldVisitRepository implements FieldVisitRepository {
     const problems = observations.flatMap((draft) => observationProblems(draft));
     if (problems.length > 0) {
       return throwError(() => new VisitInvalidError(problems));
+    }
+    // A visit cancelled before it was made was never attended: nothing was observed on it.
+    if (found.visit.status === 'cancelled') {
+      return throwError(() => new Error('This visit was cancelled before it was made.'));
     }
 
     const now = asIsoDateTime(new Date());
@@ -232,7 +246,7 @@ export class MockFieldVisitRepository implements FieldVisitRepository {
     items: readonly VisitChecklistSelection[],
   ): Observable<FieldVisit> {
     const user = this.access.currentUser();
-    const denied = denyUnless<FieldVisit>(user, 'case.manage');
+    const denied = denyUnless<FieldVisit>(user, 'visit.manage');
     if (denied) {
       return denied;
     }
@@ -240,6 +254,10 @@ export class MockFieldVisitRepository implements FieldVisitRepository {
     const found = this.locate<FieldVisit>(id);
     if ('error' in found) {
       return found.error;
+    }
+    // The checklist is what was checked on the visit: kept as it stood when the visit closed.
+    if (found.visit.status !== 'scheduled') {
+      return throwError(() => new Error('That visit has already been closed.'));
     }
 
     /*
@@ -264,7 +282,7 @@ export class MockFieldVisitRepository implements FieldVisitRepository {
 
   close(id: FieldVisitId, outcome: VisitOutcomeDraft): Observable<FieldVisit> {
     const user = this.access.currentUser();
-    const denied = denyUnless<FieldVisit>(user, 'case.manage');
+    const denied = denyUnless<FieldVisit>(user, 'visit.manage');
     if (denied) {
       return denied;
     }
@@ -309,9 +327,33 @@ export class MockFieldVisitRepository implements FieldVisitRepository {
     const user = this.access.currentUser();
     const visit = this.visits.find((entry) => entry.id === id);
     if (visit === undefined || !this.isReadable(visit, user)) {
-      return { error: throwError(() => new PermissionDeniedError('case.manage' as Permission)) };
+      return { error: throwError(() => new PermissionDeniedError('visit.manage' as Permission)) };
     }
     return { visit };
+  }
+
+  /**
+   * The visit as this reader may see it: a protected household's words and address are withheld
+   * from a reader without `request.view-sensitive`, in the data layer, as the server withholds them.
+   */
+  private present(visit: FieldVisit, user: AuthenticatedUser | null): FieldVisit {
+    const client = this.residents.find(visit.residentId);
+    const isProtected =
+      client !== undefined &&
+      discloseResident(client, (permission: Permission) => userHasPermission(user, permission))
+        .isProtected;
+    if (!isProtected || userHasPermission(user, 'request.view-sensitive')) {
+      return visit;
+    }
+    return {
+      ...visit,
+      addressVisited: '',
+      observations: visit.observations.map((entry) => ({ ...entry, body: '', attributedTo: null })),
+      serviceNeeds: null,
+      declinedReason: null,
+      outcome: null,
+      withheld: ['words', 'address'],
+    };
   }
 
   private save(visit: FieldVisit, changes: Partial<FieldVisit>): FieldVisit {
@@ -357,19 +399,20 @@ function matchesFilter(visit: FieldVisit, filter: FieldVisitFilter, today: IsoDa
   if (filter.overdueOnly && !isVisitOverdue(visit, today)) {
     return false;
   }
-  return matchesSearch(
-    [visit.referenceNumber, visit.addressVisited, visit.outcome, visit.serviceNeeds],
-    filter.search,
-  );
+  // The reference number only, as the server searches: not the address, nothing a household said
+  // (`DL-109`).
+  return matchesSearch([visit.referenceNumber], filter.search);
 }
 
-function sortKey(visit: FieldVisit, field: FieldVisitSortField): string {
-  switch (field) {
-    case 'scheduledFor':
-      return visit.scheduledFor;
-    case 'status':
-      return visit.status;
-    case 'purpose':
-      return visit.purpose;
+/** What is still owed first, soonest first; then what is over, latest first — the server's order. */
+function byWhatIsOwed(a: FieldVisit, b: FieldVisit): number {
+  const aOpen = a.status === 'scheduled';
+  const bOpen = b.status === 'scheduled';
+  if (aOpen !== bOpen) {
+    return aOpen ? -1 : 1;
   }
+  const byDate = aOpen
+    ? a.scheduledFor.localeCompare(b.scheduledFor)
+    : b.scheduledFor.localeCompare(a.scheduledFor);
+  return byDate || a.id.localeCompare(b.id);
 }

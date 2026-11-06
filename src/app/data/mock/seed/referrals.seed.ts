@@ -61,6 +61,7 @@ export const MOCK_REFERRALS: readonly Referral[] = [
     followUpOn: asIsoDate('2026-07-29'),
     respondedAt: daysBeforeAnchor(4, 9),
     outcome: null,
+    withheld: [],
     handoffNotes: [
       {
         id: asId<ReferralNoteId>('rfn-0001'),
@@ -106,6 +107,7 @@ export const MOCK_REFERRALS: readonly Referral[] = [
     followUpOn: asIsoDate('2026-08-06'),
     respondedAt: daysBeforeAnchor(2, 11),
     outcome: 'Membership reactivated. Point-of-service enrolment completed for the confinement.',
+    withheld: [],
     handoffNotes: [],
     audit: stamp(9, 2),
   },
@@ -145,6 +147,7 @@ export const MOCK_REFERRALS: readonly Referral[] = [
     followUpOn: asIsoDate('2026-07-19'),
     respondedAt: null,
     outcome: null,
+    withheld: [],
     handoffNotes: [],
     audit: stamp(20, 20),
   },
@@ -182,6 +185,7 @@ export const MOCK_REFERRALS: readonly Referral[] = [
     followUpOn: asIsoDate('2026-08-05'),
     respondedAt: daysBeforeAnchor(2, 9),
     outcome: null,
+    withheld: [],
     handoffNotes: [
       {
         id: asId<ReferralNoteId>('rfn-0002'),
@@ -215,6 +219,7 @@ export const MOCK_REFERRALS: readonly Referral[] = [
     followUpOn: null,
     respondedAt: null,
     outcome: null,
+    withheld: [],
     handoffNotes: [],
     audit: stamp(1, 1),
   },

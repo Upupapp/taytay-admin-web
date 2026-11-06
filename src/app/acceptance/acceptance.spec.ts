@@ -231,7 +231,7 @@ describe('scenario: one household, more than one family', () => {
 describe('scenario: a referral is overdue for follow-up', () => {
   it('has at least one referral past the date the office set', async () => {
     await signedInAs('system-administrator');
-    const referrals = await firstValueFrom(TestBed.inject(REFERRAL_REPOSITORY).list({}, PAGE));
+    const referrals = await firstValueFrom(TestBed.inject(REFERRAL_REPOSITORY).list({}, { limit: 500, cursor: null }));
     const today = todayAsIsoDate();
 
     const overdue = referrals.items.filter((referral) => isReferralOverdue(referral, today));

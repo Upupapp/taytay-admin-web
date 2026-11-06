@@ -1,6 +1,7 @@
 import {
   asId,
   asIsoDate,
+  VISIT_CHECKLIST_PROMPTS,
   type CaseId,
   type FieldVisit,
   type FieldVisitId,
@@ -14,15 +15,8 @@ import { daysBeforeAnchor, stamp } from './seed-utils';
 
 const staff = (slug: string): StaffUserId => asId<StaffUserId>(`staff-${slug}`);
 
-/** The prompts a worker sets out with. Answers feed observations, never a score. */
-const STANDARD_CHECKLIST = [
-  { code: 'dwelling', label: 'Dwelling condition and tenure', checked: false, note: null },
-  { code: 'members', label: 'Who is actually living there', checked: false, note: null },
-  { code: 'water-sanitation', label: 'Water and sanitation', checked: false, note: null },
-  { code: 'livelihood', label: 'Current income and work', checked: false, note: null },
-  { code: 'children', label: 'Children in school', checked: false, note: null },
-  { code: 'health', label: 'Health and care needs', checked: false, note: null },
-] as const;
+/** The prompts a worker sets out with — the domain's list, read here as the seed's. */
+const STANDARD_CHECKLIST = VISIT_CHECKLIST_PROMPTS.map((prompt) => ({ ...prompt, checked: false, note: null }));
 
 /**
  * Field visits.
@@ -92,6 +86,7 @@ export const MOCK_FIELD_VISITS: readonly FieldVisit[] = [
     declinedReason: null,
     outcome:
       'Visit made and the household seen. Assessment recorded; solo parent support recommended.',
+    withheld: [],
     completedAt: daysBeforeAnchor(8, 12),
     audit: stamp(14, 8),
   },
@@ -123,6 +118,7 @@ export const MOCK_FIELD_VISITS: readonly FieldVisit[] = [
     // rather than implying non-cooperation.
     declinedReason: null,
     outcome: 'Nobody at the address. Left a note asking him to call the office; will try again.',
+    withheld: [],
     completedAt: daysBeforeAnchor(12, 14),
     audit: stamp(18, 12),
   },
@@ -144,6 +140,7 @@ export const MOCK_FIELD_VISITS: readonly FieldVisit[] = [
     declinedReason:
       'Said he is back in regular work and does not want a monitoring visit while his employer might see it.',
     outcome: 'Household declined. Explained that the livelihood record stays open and he may call us.',
+    withheld: [],
     completedAt: daysBeforeAnchor(4, 10),
     audit: stamp(9, 4),
   },
@@ -166,6 +163,7 @@ export const MOCK_FIELD_VISITS: readonly FieldVisit[] = [
     serviceNeeds: null,
     declinedReason: null,
     outcome: null,
+    withheld: [],
     completedAt: null,
     audit: stamp(20, 20),
   },
@@ -186,6 +184,7 @@ export const MOCK_FIELD_VISITS: readonly FieldVisit[] = [
     serviceNeeds: null,
     declinedReason: null,
     outcome: null,
+    withheld: [],
     completedAt: null,
     audit: stamp(6, 6),
   },
@@ -206,6 +205,7 @@ export const MOCK_FIELD_VISITS: readonly FieldVisit[] = [
     serviceNeeds: null,
     declinedReason: null,
     outcome: null,
+    withheld: [],
     completedAt: null,
     audit: stamp(3, 3),
   },

@@ -428,6 +428,7 @@ export const routes: Routes = [
       },
       {
         path: 'visits',
+        // `schedule` must precede `:id`, or it is read as a visit id.
         children: [
           {
             path: '',
@@ -436,6 +437,14 @@ export const routes: Routes = [
             canActivate: [servedGuard('field-visit'), permissionGuard('visit.view')],
             loadComponent: () =>
               import('@features/visits/visit-list-page').then((m) => m.VisitListPage),
+          },
+          {
+            // Reached from a case, with `?case=` (`DL-181`).
+            path: 'schedule',
+            title: 'Schedule a home visit — Taytay Social Welfare',
+            canActivate: [servedGuard('field-visit', 'case'), permissionGuard('visit.manage')],
+            loadComponent: () =>
+              import('@features/visits/visit-schedule-page').then((m) => m.VisitSchedulePage),
           },
           {
             path: ':id',

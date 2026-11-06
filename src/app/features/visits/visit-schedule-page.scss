@@ -1,0 +1,31 @@
+.schedule {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 640px;
+  padding: var(--space-5);
+}
+
+.schedule__heading,
+.schedule__subheading {
+  margin: 0;
+}
+
+.schedule__hint {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+.schedule__problem {
+  margin: 0;
+  font-size: 13.5px;
+}
+
+.schedule__prompts {
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.schedule__actions {
+  margin: 0;
+}

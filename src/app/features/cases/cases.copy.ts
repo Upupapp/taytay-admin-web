@@ -55,6 +55,7 @@ export const CASES_COPY = {
   },
 
   workspace: {
+    scheduleVisit: 'Schedule a home visit',
     subtitle: 'Case workspace',
     notFoundHeading: 'That case is not available',
     notFoundMessage:

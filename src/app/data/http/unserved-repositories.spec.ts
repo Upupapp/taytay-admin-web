@@ -6,10 +6,8 @@ import {
   UnservedDashboardRepository,
   UnservedError,
   UnservedEventRepository,
-  UnservedFieldVisitRepository,
   UnservedGovernanceRepository,
   UnservedNewsfeedRepository,
-  UnservedReferralRepository,
   UnservedReportRepository,
   UnservedSearchRepository,
   UnservedWorkRepository,
@@ -22,8 +20,6 @@ import {
  */
 const UNSERVED = [
   new UnservedBeneficiaryRepository(),
-  new UnservedFieldVisitRepository(),
-  new UnservedReferralRepository(),
   new UnservedWorkRepository(),
   new UnservedReportRepository(),
   new UnservedSearchRepository(),
@@ -64,9 +60,10 @@ describe('the ports the API does not serve', () => {
     // saved views and families in phase 1c; programmes in phase 1d (`DL-176`), taking seven methods;
     // assistance requests in phase 2a (`DL-177`), taking nineteen — their phase 2b methods refuse
     // from the served adapter now, and are held to that in http-assistance-requests.spec.ts; and
-    // cases in phase 3 (`DL-179`), taking eleven; and releases in phase 4 (`DL-180`), taking thirteen.
-    expect(UNSERVED).toHaveLength(10);
-    expect(UNSERVED.flatMap((adapter) => everyCall(adapter))).toHaveLength(72);
+    // cases in phase 3 (`DL-179`), taking eleven; releases in phase 4 (`DL-180`), taking thirteen; and
+    // referrals and field visits in phase 5 (`DL-181`), taking fifteen and eight.
+    expect(UNSERVED).toHaveLength(8);
+    expect(UNSERVED.flatMap((adapter) => everyCall(adapter))).toHaveLength(49);
   });
 
   it.each(UNSERVED.map((adapter) => [adapter.constructor.name, adapter] as const))(

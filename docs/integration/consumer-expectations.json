@@ -1672,6 +1672,124 @@
     },
     {
       "method": "GET",
+      "path": "office/referrals",
+      "consumer": "referral.mapper.ts#toReferral",
+      "required": [
+        "created_at",
+        "destination",
+        "destination_name",
+        "id",
+        "reference_number",
+        "referred_at",
+        "referred_by",
+        "resident_id",
+        "status",
+        "updated_at",
+        "urgency",
+        "withheld"
+      ],
+      "optional": [
+        "case_id",
+        "created_by",
+        "destination_contact",
+        "disclosure",
+        "follow_up_on",
+        "handoff_notes",
+        "outcome",
+        "provider_id",
+        "reason",
+        "request_id",
+        "responded_at",
+        "service_requested",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/referrals/{id}",
+      "consumer": "referral.mapper.ts#toReferral",
+      "required": [
+        "created_at",
+        "destination",
+        "destination_name",
+        "id",
+        "reference_number",
+        "referred_at",
+        "referred_by",
+        "resident_id",
+        "status",
+        "updated_at",
+        "urgency",
+        "withheld"
+      ],
+      "optional": [
+        "case_id",
+        "created_by",
+        "destination_contact",
+        "disclosure",
+        "follow_up_on",
+        "handoff_notes",
+        "outcome",
+        "provider_id",
+        "reason",
+        "request_id",
+        "responded_at",
+        "service_requested",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/referrals/{id}/summary",
+      "consumer": "referral.mapper.ts#toReferralSummary",
+      "required": [
+        "attachment_labels",
+        "authority_statement",
+        "destination_name",
+        "handling_notice",
+        "lines",
+        "reason",
+        "reference_number",
+        "service_requested"
+      ],
+      "optional": []
+    },
+    {
+      "method": "GET",
+      "path": "office/referrals/queue",
+      "consumer": "referral.mapper.ts#toReferral",
+      "required": [
+        "created_at",
+        "destination",
+        "destination_name",
+        "id",
+        "reference_number",
+        "referred_at",
+        "referred_by",
+        "resident_id",
+        "status",
+        "updated_at",
+        "urgency",
+        "withheld"
+      ],
+      "optional": [
+        "case_id",
+        "created_by",
+        "destination_contact",
+        "disclosure",
+        "follow_up_on",
+        "handoff_notes",
+        "outcome",
+        "provider_id",
+        "reason",
+        "request_id",
+        "responded_at",
+        "service_requested",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "office/release-batches",
       "consumer": "release.mapper.ts#toReleaseBatch",
       "required": [
@@ -2107,6 +2225,52 @@
     },
     {
       "method": "GET",
+      "path": "office/service-providers",
+      "consumer": "referral.mapper.ts#toServiceProvider",
+      "required": [],
+      "optional": [
+        "address",
+        "barangay_id",
+        "channels",
+        "contact",
+        "created_at",
+        "created_by",
+        "destination",
+        "id",
+        "name",
+        "notes",
+        "services_offered",
+        "status",
+        "updated_at",
+        "updated_by",
+        "usual_response_days"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/service-providers/{id}",
+      "consumer": "referral.mapper.ts#toServiceProvider",
+      "required": [],
+      "optional": [
+        "address",
+        "barangay_id",
+        "channels",
+        "contact",
+        "created_at",
+        "created_by",
+        "destination",
+        "id",
+        "name",
+        "notes",
+        "services_offered",
+        "status",
+        "updated_at",
+        "updated_by",
+        "usual_response_days"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "office/social-workers",
       "consumer": "assistance-request.mapper.ts#toSocialWorker",
       "required": [
@@ -2114,6 +2278,68 @@
       ],
       "optional": [
         "name"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/visits",
+      "consumer": "field-visit.mapper.ts#toFieldVisit",
+      "required": [
+        "address_visited",
+        "assigned_to",
+        "checklist",
+        "created_at",
+        "id",
+        "observations",
+        "purpose",
+        "reference_number",
+        "resident_id",
+        "scheduled_for",
+        "status",
+        "updated_at",
+        "withheld"
+      ],
+      "optional": [
+        "case_id",
+        "completed_at",
+        "created_by",
+        "declined_reason",
+        "household_id",
+        "outcome",
+        "scheduled_window",
+        "service_needs",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/visits/{id}",
+      "consumer": "field-visit.mapper.ts#toFieldVisit",
+      "required": [
+        "address_visited",
+        "assigned_to",
+        "checklist",
+        "created_at",
+        "id",
+        "observations",
+        "purpose",
+        "reference_number",
+        "resident_id",
+        "scheduled_for",
+        "status",
+        "updated_at",
+        "withheld"
+      ],
+      "optional": [
+        "case_id",
+        "completed_at",
+        "created_by",
+        "declined_reason",
+        "household_id",
+        "outcome",
+        "scheduled_window",
+        "service_needs",
+        "updated_by"
       ]
     },
     {

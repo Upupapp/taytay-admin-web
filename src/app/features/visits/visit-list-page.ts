@@ -1,8 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { map, switchMap } from 'rxjs';
+import { map, switchMap, tap } from 'rxjs';
 
 import {
   FIELD_VISIT_REPOSITORY,
@@ -14,7 +21,9 @@ import {
   isVisitOverdue,
   isUpcoming,
   todayAsIsoDate,
+  type CursorPage,
   type FieldVisit,
+  type FieldVisitFilter,
   type VisitPurpose,
   type VisitStatus,
 } from '@domain/index';
@@ -27,11 +36,12 @@ import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import { VISITS_COPY } from './visits.copy';
 
 /**
- * The list is grouped by day rather than paged, so it fetches a working
- * horizon in one call. A municipal office does not schedule more visits than
- * this in a planning window, and the cap is stated rather than implicit.
+ * Read a cursor page at a time in the API's order — what is still owed first, soonest first, then
+ * what is over, latest first (`DL-181`). The buckets sort what has been read, and the screen says
+ * when more exist rather than letting a bucket read as complete (`DL-161`). "My visits" is read
+ * whole, or not at all.
  */
-const LIST_LIMIT = 200;
+const PAGE_SIZE = 50;
 
 /**
  * The visit list, grouped by day.
@@ -52,6 +62,7 @@ const LIST_LIMIT = 200;
 })
 export class VisitListPage {
   private readonly repository = inject(FIELD_VISIT_REPOSITORY);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly copy = VISITS_COPY.list;
   protected readonly statusCatalog = VISIT_STATUS_CATALOG;
@@ -73,7 +84,7 @@ export class VisitListPage {
   protected readonly purpose = signal<VisitPurpose | null>(null);
   protected readonly overdueOnly = signal(false);
 
-  private readonly query = computed(() => ({
+  private readonly query = computed<{ readonly mine: boolean; readonly filter: FieldVisitFilter }>(() => ({
     mine: this.onlyMine(),
     filter: {
       ...(this.settledSearch() ? { search: this.settledSearch() } : {}),
@@ -90,22 +101,71 @@ export class VisitListPage {
    * the shape difference in the template, where every bucket would have to know
    * about it.
    */
+  /** Further pages of the reading the first page began; emptied whenever the filter changes. */
+  private readonly further = signal<readonly CursorPage<FieldVisit>[]>([]);
+  protected readonly loadingMore = signal(false);
+  protected readonly moreFailed = signal(false);
+
   protected readonly state = toSignal(
     toObservable(this.query).pipe(
+      tap(() => {
+        this.further.set([]);
+        this.moreFailed.set(false);
+        this.loadingMore.set(false);
+      }),
       switchMap((query) =>
-        toViewState(
+        toViewState<CursorPage<FieldVisit>>(
           query.mine
-            ? this.repository.mine(query.filter)
-            : this.repository
-                .list(query.filter, { page: 1, pageSize: LIST_LIMIT })
-                .pipe(map((page) => page.items)),
+            ? this.repository
+                .mine(query.filter)
+                .pipe(map((items) => ({ items, hasMore: false, nextCursor: null })))
+            : this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null }),
         ),
       ),
     ),
-    { initialValue: LOADING as ViewState<readonly FieldVisit[]> },
+    { initialValue: LOADING as ViewState<CursorPage<FieldVisit>> },
   );
 
-  protected readonly visits = computed<readonly FieldVisit[]>(() => valueOf(this.state()) ?? []);
+  protected readonly visits = computed<readonly FieldVisit[]>(() => [
+    ...(valueOf(this.state())?.items ?? []),
+    ...this.further().flatMap((page) => page.items),
+  ]);
+
+  private readonly lastPage = computed(
+    () => this.further().at(-1) ?? valueOf(this.state()) ?? null,
+  );
+
+  protected readonly hasMore = computed(() => {
+    const last = this.lastPage();
+    return last !== null && last.hasMore && last.nextCursor !== null;
+  });
+
+  /** Follows the cursor one page further, for the filter the first page was read with. */
+  protected showMore(): void {
+    const cursor = this.lastPage()?.nextCursor ?? null;
+    const query = this.query();
+    if (cursor === null || this.loadingMore() || query.mine) {
+      return;
+    }
+    this.loadingMore.set(true);
+    this.moreFailed.set(false);
+    this.repository
+      .list(query.filter, { limit: PAGE_SIZE, cursor })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (page) => {
+          // The filter changed meanwhile: this page continues a list nobody is looking at.
+          if (query === this.query()) {
+            this.further.update((pages) => [...pages, page]);
+          }
+          this.loadingMore.set(false);
+        },
+        error: () => {
+          this.loadingMore.set(false);
+          this.moreFailed.set(true);
+        },
+      });
+  }
 
   private readonly today = computed(() => todayAsIsoDate());
 

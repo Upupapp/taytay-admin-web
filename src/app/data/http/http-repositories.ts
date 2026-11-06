@@ -212,6 +212,31 @@ import {
   type ReleaseStatus,
   type WriteIntent,
   releaseDraftProblems,
+  VisitInvalidError,
+  observationProblems,
+  referralDraftProblems,
+  visitDraftProblems,
+  visitOutcomeProblems,
+  type DisclosureBasis,
+  type FieldVisit,
+  type FieldVisitDraft,
+  type FieldVisitFilter,
+  type FieldVisitId,
+  type FieldVisitRepository,
+  type Referral,
+  type ReferralDraft,
+  type ReferralFilter,
+  type ReferralId,
+  type ReferralRepository,
+  type ReferralStatus,
+  type ReferralSummarySheet,
+  type ServiceProvider,
+  type ServiceProviderFilter,
+  type ServiceProviderId,
+  type SharedField,
+  type VisitChecklistSelection,
+  type VisitObservationDraft,
+  type VisitOutcomeDraft,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -233,6 +258,25 @@ import {
   toWireReleasePrepare,
   toWireReleaseStatus,
 } from './mappers/release.mapper';
+import {
+  toReferral,
+  toReferralSummary,
+  toServiceProvider,
+  toWireReferralBasis,
+  toWireReferralDraft,
+  toWireReferralFollowUp,
+  toWireReferralMove,
+  toWireReferralNote,
+  toWireReferralOutcome,
+  toWireReferralSharedField,
+} from './mappers/referral.mapper';
+import {
+  toFieldVisit,
+  toWireVisitChecklist,
+  toWireVisitClose,
+  toWireVisitObservations,
+  toWireVisitSchedule,
+} from './mappers/field-visit.mapper';
 import { toNotification } from './mappers/notification.mapper';
 import {
   toAccountBarangay,
@@ -3411,4 +3455,388 @@ function readManifest(wire: unknown): ReleaseManifest {
     );
   }
   return manifest;
+}
+
+/**
+ * Referrals out of the office and the directory they go to (casework phase 5, `DL-181`).
+ *
+ * The guarantees are the server's: the basis is its own act, each field beyond the minimum is shared
+ * one call at a time with its need, `send` takes only the id and is refused under the row lock
+ * without a basis (`DL-140`), and the sheet is composed by the server from what was authorised —
+ * this adapter carries the words there and back, and composes nothing.
+ */
+@Injectable()
+export class HttpReferralRepository implements ReferralRepository {
+  private readonly api = inject(ApiClient);
+  private readonly barangayJoin = new BarangayJoin();
+
+  list(filter: ReferralFilter, page: CursorRequest): Observable<CursorPage<Referral>> {
+    const refusal = referralSearchProblem(filter);
+    if (refusal !== null) {
+      return throwError(() => refusal);
+    }
+    return this.api
+      .cursorPage(API_ENDPOINTS.officeReferrals, page, {
+        q: searchOf(filter.search),
+        status: filter.status,
+        destination: filter.destination,
+        urgency: filter.urgency,
+        resident_id: filter.residentId,
+        case_id: filter.caseId,
+        overdue_only: filter.overdueOnly === true ? 'true' : undefined,
+        open_only: filter.openOnly === true ? 'true' : undefined,
+      })
+      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readReferral) })));
+  }
+
+  /** `null` for "not found **or** not yours": the server answers both with a 404 (`DL-31`). */
+  getById(id: ReferralId): Observable<Referral | null> {
+    return this.api
+      .optionalItem(`${API_ENDPOINTS.officeReferrals}/${id}`)
+      .pipe(map((wire) => (wire === null ? null : readReferral(wire))));
+  }
+
+  /** Every referral for one person, whole, or an error (`DL-161`). */
+  forResident(id: ResidentId): Observable<readonly Referral[]> {
+    return this.api
+      .everyPage(API_ENDPOINTS.officeReferrals, { resident_id: id })
+      .pipe(map((rows) => rows.map(readReferral)));
+  }
+
+  /** Every open referral, whole, in the order the server says the work is done (`DL-83`). */
+  queue(filter: ReferralFilter): Observable<readonly Referral[]> {
+    const refusal = referralSearchProblem(filter);
+    if (refusal !== null) {
+      return throwError(() => refusal);
+    }
+    return this.api
+      .list(`${API_ENDPOINTS.officeReferrals}/queue`, {
+        q: searchOf(filter.search),
+        status: filter.status,
+        destination: filter.destination,
+        urgency: filter.urgency,
+        resident_id: filter.residentId,
+        case_id: filter.caseId,
+        overdue_only: filter.overdueOnly === true ? 'true' : undefined,
+        open_only: filter.openOnly === true ? 'true' : undefined,
+      })
+      .pipe(map((rows) => rows.map(readReferral)));
+  }
+
+  createDraft(draft: ReferralDraft): Observable<Referral> {
+    if (referralDraftProblems(draft, todayAsIsoDate()).length > 0) {
+      return throwError(
+        () =>
+          new Error(
+            'Say what is asked for, why, and where it goes, with a follow-up date today or later. Nothing was sent.',
+          ),
+      );
+    }
+    return this.api
+      .post(API_ENDPOINTS.officeReferrals, toWireReferralDraft(draft))
+      .pipe(map(readWrittenReferral));
+  }
+
+  recordDisclosureBasis(id: ReferralId, basis: DisclosureBasis, note: string): Observable<Referral> {
+    if (note.trim().length === 0) {
+      return throwError(() => new Error('A lawful basis needs the sentence that explains it. Nothing was sent.'));
+    }
+    return this.api
+      .post(`${API_ENDPOINTS.officeReferrals}/${id}/basis`, toWireReferralBasis(basis, note))
+      .pipe(map(readWrittenReferral));
+  }
+
+  shareField(id: ReferralId, shared: SharedField, because: string): Observable<Referral> {
+    if (because.trim().length === 0) {
+      return throwError(() => new Error('Every field beyond the minimum needs a stated need. Nothing was sent.'));
+    }
+    return this.api
+      .post(
+        `${API_ENDPOINTS.officeReferrals}/${id}/shared-fields`,
+        toWireReferralSharedField(shared, because),
+      )
+      .pipe(map(readWrittenReferral));
+  }
+
+  /** No body: the basis and the fields are on the record, and the server checks them (`DL-140`). */
+  send(id: ReferralId): Observable<Referral> {
+    return this.api
+      .post(`${API_ENDPOINTS.officeReferrals}/${id}/send`, {})
+      .pipe(map(readWrittenReferral));
+  }
+
+  /** Composed by the server; `null` while no basis is recorded or when its words are withheld. */
+  summaryFor(id: ReferralId): Observable<ReferralSummarySheet | null> {
+    return this.api
+      .optionalItem(`${API_ENDPOINTS.officeReferrals}/${id}/summary`)
+      .pipe(map((wire) => (wire === null ? null : readReferralSummary(wire))));
+  }
+
+  changeStatus(id: ReferralId, to: ReferralStatus, reason: string): Observable<Referral> {
+    if (reason.trim().length === 0) {
+      return throwError(() => new Error('Say why the referral is moving. Nothing was sent.'));
+    }
+    return this.api
+      .post(`${API_ENDPOINTS.officeReferrals}/${id}/status`, toWireReferralMove(to, reason))
+      .pipe(map(readWrittenReferral));
+  }
+
+  recordOutcome(id: ReferralId, outcome: string, status: ReferralStatus): Observable<Referral> {
+    if (outcome.trim().length === 0) {
+      return throwError(() => new Error('Say what the receiving office did. Nothing was sent.'));
+    }
+    return this.api
+      .post(`${API_ENDPOINTS.officeReferrals}/${id}/outcome`, toWireReferralOutcome(outcome, status))
+      .pipe(map(readWrittenReferral));
+  }
+
+  reschedule(id: ReferralId, followUpOn: IsoDate, reason: string): Observable<Referral> {
+    if (reason.trim().length === 0) {
+      return throwError(() => new Error('Say why the follow-up is moving. Nothing was sent.'));
+    }
+    return this.api
+      .post(
+        `${API_ENDPOINTS.officeReferrals}/${id}/follow-up`,
+        toWireReferralFollowUp(followUpOn, reason),
+      )
+      .pipe(map(readWrittenReferral));
+  }
+
+  addNote(id: ReferralId, body: string): Observable<Referral> {
+    if (body.trim().length === 0) {
+      return throwError(() => new Error('A note needs something in it. Nothing was sent.'));
+    }
+    return this.api
+      .post(`${API_ENDPOINTS.officeReferrals}/${id}/notes`, toWireReferralNote(body))
+      .pipe(map(readWrittenReferral));
+  }
+
+  /** The whole directory under the filter, by name — the server answers it unpaged. */
+  listProviders(filter: ServiceProviderFilter): Observable<readonly ServiceProvider[]> {
+    const search = filter.search?.trim() ?? '';
+    if (search !== '' && (search.length < 2 || search.length > 40)) {
+      return throwError(
+        () => new Error('Type between 2 and 40 characters of a provider’s name or a service to search.'),
+      );
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .list(API_ENDPOINTS.officeServiceProviders, {
+            q: search === '' ? undefined : search,
+            destination: filter.destination,
+            status: filter.status,
+          })
+          .pipe(map((rows) => rows.map((wire) => readProvider(wire, barangays)))),
+      ),
+    );
+  }
+
+  getProvider(id: ServiceProviderId): Observable<ServiceProvider | null> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .optionalItem(`${API_ENDPOINTS.officeServiceProviders}/${id}`)
+          .pipe(map((wire) => (wire === null ? null : readProvider(wire, barangays)))),
+      ),
+    );
+  }
+}
+
+/**
+ * The search as the server takes it, or none. It reads a reference number (and, for a referral, the
+ * receiving office's name) and nothing written about a person (`DL-109`).
+ */
+function searchOf(search: string | undefined): string | undefined {
+  const trimmed = search?.trim() ?? '';
+  return trimmed === '' ? undefined : trimmed;
+}
+
+function referralSearchProblem(filter: ReferralFilter): Error | null {
+  const search = filter.search?.trim() ?? '';
+  return search !== '' && (search.length < 2 || search.length > 40)
+    ? new Error('Type between 2 and 40 characters of a referral number or an office’s name to search.')
+    : null;
+}
+
+function readReferral(wire: unknown): Referral {
+  const referral = toReferral(wire);
+  if (referral === null) {
+    throw new Error(
+      'A referral from the server could not be read, so none is shown rather than some: a referral ' +
+        'left out of the list is one nobody chases.',
+    );
+  }
+  return referral;
+}
+
+function readWrittenReferral(wire: unknown): Referral {
+  const referral = toReferral(wire);
+  if (referral === null) {
+    throw new Error(
+      'The server recorded the act, but its answer could not be read. Open the referral again to ' +
+        'see it before recording anything twice.',
+    );
+  }
+  return referral;
+}
+
+function readReferralSummary(wire: unknown): ReferralSummarySheet {
+  const sheet = toReferralSummary(wire);
+  if (sheet === null) {
+    throw new Error(
+      'The referral summary could not be read whole, so none is shown: a sheet with a line missing ' +
+        'is not the sheet that was authorised.',
+    );
+  }
+  return sheet;
+}
+
+function readProvider(wire: unknown, barangays: BarangayIndex): ServiceProvider {
+  const provider = toServiceProvider(wire, barangays);
+  if (provider === null) {
+    throw new Error(
+      'A provider in the directory could not be read, so none is shown: a directory missing an ' +
+        'office reads as one the office does not refer to.',
+    );
+  }
+  return provider;
+}
+
+/**
+ * Home and field visits (casework phase 5, `DL-181`).
+ *
+ * Nothing here reads, sends or keeps where anybody was (`DL-86`). Every write answers with the visit
+ * as the office record now holds it, or fails — and a failure is reported as nothing saved: there is
+ * no queue, no background retry and no "probably sent" (`DL-87`).
+ */
+@Injectable()
+export class HttpFieldVisitRepository implements FieldVisitRepository {
+  private readonly api = inject(ApiClient);
+
+  list(filter: FieldVisitFilter, page: CursorRequest): Observable<CursorPage<FieldVisit>> {
+    const refusal = visitSearchProblem(filter);
+    if (refusal !== null) {
+      return throwError(() => refusal);
+    }
+    return this.api
+      .cursorPage(API_ENDPOINTS.officeVisits, page, {
+        q: searchOf(filter.search),
+        status: filter.status,
+        purpose: filter.purpose,
+        assigned_to: filter.assignedTo,
+        resident_id: filter.residentId,
+        case_id: filter.caseId,
+        from: filter.from,
+        to: filter.to,
+        overdue_only: filter.overdueOnly === true ? 'true' : undefined,
+      })
+      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readVisit) })));
+  }
+
+  getById(id: FieldVisitId): Observable<FieldVisit | null> {
+    return this.api
+      .optionalItem(`${API_ENDPOINTS.officeVisits}/${id}`)
+      .pipe(map((wire) => (wire === null ? null : readVisit(wire))));
+  }
+
+  /** The signed-in worker's own visits, whole, or an error rather than part of them (`DL-161`). */
+  mine(filter: FieldVisitFilter): Observable<readonly FieldVisit[]> {
+    const refusal = visitSearchProblem(filter);
+    if (refusal !== null) {
+      return throwError(() => refusal);
+    }
+    return this.api
+      .everyPage(API_ENDPOINTS.officeVisits, {
+        q: searchOf(filter.search),
+        status: filter.status,
+        purpose: filter.purpose,
+        assigned_to: filter.assignedTo,
+        resident_id: filter.residentId,
+        case_id: filter.caseId,
+        from: filter.from,
+        to: filter.to,
+        overdue_only: filter.overdueOnly === true ? 'true' : undefined,
+        mine: 'true',
+      })
+      .pipe(map((rows) => rows.map(readVisit)));
+  }
+
+  forResident(id: ResidentId): Observable<readonly FieldVisit[]> {
+    return this.api
+      .everyPage(API_ENDPOINTS.officeVisits, { resident_id: id })
+      .pipe(map((rows) => rows.map(readVisit)));
+  }
+
+  schedule(draft: FieldVisitDraft): Observable<FieldVisit> {
+    const problems = visitDraftProblems(draft, todayAsIsoDate());
+    if (problems.length > 0) {
+      return throwError(() => new VisitInvalidError(problems));
+    }
+    return this.api
+      .post(API_ENDPOINTS.officeVisits, toWireVisitSchedule(draft))
+      .pipe(map(readWrittenVisit));
+  }
+
+  /** Appended, each line with its kind; a third party's account names who gave it (`DL-85`). */
+  recordObservations(
+    id: FieldVisitId,
+    observations: readonly VisitObservationDraft[],
+  ): Observable<FieldVisit> {
+    const problems = observations.flatMap((entry) => observationProblems(entry));
+    if (observations.length === 0 || problems.length > 0) {
+      return throwError(() => new VisitInvalidError(problems));
+    }
+    return this.api
+      .post(`${API_ENDPOINTS.officeVisits}/${id}/observations`, toWireVisitObservations(observations))
+      .pipe(map(readWrittenVisit));
+  }
+
+  setChecklist(id: FieldVisitId, items: readonly VisitChecklistSelection[]): Observable<FieldVisit> {
+    if (items.length === 0) {
+      return throwError(() => new Error('There is no checklist line to record. Nothing was sent.'));
+    }
+    return this.api
+      .post(`${API_ENDPOINTS.officeVisits}/${id}/checklist`, toWireVisitChecklist(items))
+      .pipe(map(readWrittenVisit));
+  }
+
+  close(id: FieldVisitId, outcome: VisitOutcomeDraft): Observable<FieldVisit> {
+    const problems = visitOutcomeProblems(outcome);
+    if (problems.length > 0) {
+      return throwError(() => new VisitInvalidError(problems));
+    }
+    return this.api
+      .post(`${API_ENDPOINTS.officeVisits}/${id}/close`, toWireVisitClose(outcome))
+      .pipe(map(readWrittenVisit));
+  }
+}
+
+function visitSearchProblem(filter: FieldVisitFilter): Error | null {
+  const search = filter.search?.trim() ?? '';
+  return search !== '' && (search.length < 2 || search.length > 40)
+    ? new Error('Type between 2 and 40 characters of a visit number to search.')
+    : null;
+}
+
+function readVisit(wire: unknown): FieldVisit {
+  const visit = toFieldVisit(wire);
+  if (visit === null) {
+    throw new Error(
+      'A visit from the server could not be read, so none is shown rather than some: a visit left ' +
+        'out of the plan is one nobody makes.',
+    );
+  }
+  return visit;
+}
+
+function readWrittenVisit(wire: unknown): FieldVisit {
+  const visit = toFieldVisit(wire);
+  if (visit === null) {
+    throw new Error(
+      'The office record has it, but its answer could not be read. Open the visit again to see ' +
+        'what it holds before sending anything twice.',
+    );
+  }
+  return visit;
 }

@@ -1,15 +1,11 @@
 import {
-  DEFAULT_PAGE_SIZE,
   REFERRAL_DESTINATION_LABELS,
   REFERRAL_STATUS_CATALOG,
   REFERRAL_URGENCY_LABELS,
-  type PageRequest,
   type ReferralDestination,
   type ReferralFilter,
-  type ReferralSortField,
   type ReferralStatus,
   type ReferralUrgency,
-  type SortDirection,
 } from '@domain/index';
 
 /**
@@ -20,23 +16,17 @@ import {
  * immediately and one removed stops being accepted — without this file being
  * remembered.
  */
+/**
+ * What the URL says about the list: its filters. Not a page number and not a sort — the API pages by
+ * cursor, newest drafted first, and sends no total (`DL-161`, `DL-181`).
+ */
 export interface ReferralQuery {
   readonly filter: ReferralFilter;
-  readonly page: PageRequest<ReferralSortField>;
 }
 
 export interface ParamReader {
   get(name: string): string | null;
 }
-
-const SORT_FIELDS: readonly ReferralSortField[] = [
-  'referredAt',
-  'urgency',
-  'status',
-  'followUpOn',
-];
-
-export const DEFAULT_REFERRAL_SORT = { field: 'referredAt', direction: 'desc' } as const;
 
 export function readReferralFilter(params: ParamReader): ReferralFilter {
   const filter: {
@@ -78,24 +68,6 @@ export function readReferralFilter(params: ParamReader): ReferralFilter {
   return filter;
 }
 
-export function readReferralPage(params: ParamReader): PageRequest<ReferralSortField> {
-  const page = Number.parseInt(params.get('page') ?? '', 10);
-  const sortParam = params.get('sort');
-  const directionParam = params.get('direction');
-
-  const field: ReferralSortField =
-    sortParam && (SORT_FIELDS as readonly string[]).includes(sortParam)
-      ? (sortParam as ReferralSortField)
-      : DEFAULT_REFERRAL_SORT.field;
-  const direction: SortDirection = directionParam === 'asc' ? 'asc' : 'desc';
-
-  return {
-    page: Number.isInteger(page) && page > 0 ? page : 1,
-    pageSize: DEFAULT_PAGE_SIZE,
-    sort: { field, direction },
-  };
-}
-
 export function readReferralQuery(params: ParamReader): ReferralQuery {
-  return { filter: readReferralFilter(params), page: readReferralPage(params) };
+  return { filter: readReferralFilter(params) };
 }

@@ -207,7 +207,22 @@ export interface Referral {
   readonly outcome: string | null;
   /** Notes passed between offices about this referral. Append-only. */
   readonly handoffNotes: readonly ReferralNote[];
+  /**
+   * What the data layer withheld from this reader (`DL-38`, `DL-181`). `words`: the client is under
+   * a protected sector and the reader lacks `request.view-sensitive`, so what is asked for, why, the
+   * outcome, the notes between offices, the basis note and every field's stated need arrive empty.
+   * A screen says "withheld" where they would be; it never shows a blank that reads as "nobody wrote
+   * anything", and the referral is still listed.
+   */
+  readonly withheld: readonly ReferralWithheldField[];
   readonly audit: AuditStamp;
+}
+
+export type ReferralWithheldField = 'words';
+
+/** Whether this reader was given the referral's words at all. */
+export function referralWordsWithheld(referral: Pick<Referral, 'withheld'>): boolean {
+  return referral.withheld.includes('words');
 }
 
 /** A referral this office said it would chase by now, and has not heard about. */

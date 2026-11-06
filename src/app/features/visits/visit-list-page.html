@@ -116,6 +116,23 @@
       }
     </ng-template>
   </app-async-content>
+
+  @if (hasAny()) {
+    <div class="visits__more">
+      <!-- The buckets above sort what has been read; they never claim to be the whole plan. -->
+      <p class="visits__hint" role="status">
+        {{ copy.shown(visits().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
+      </p>
+      @if (hasMore()) {
+        <button type="button" class="btn" [disabled]="loadingMore()" (click)="showMore()">
+          {{ loadingMore() ? copy.loadingMore : copy.showMore }}
+        </button>
+      }
+      @if (moreFailed()) {
+        <p class="visits__problem" role="alert">{{ copy.moreFailed }}</p>
+      }
+    </div>
+  }
 </div>
 
 <ng-template #rows let-visits>
@@ -134,7 +151,13 @@
           @if (visit.scheduledWindow) {
             <span>{{ visit.scheduledWindow }}</span>
           }
-          <span class="visit-rows__address">{{ visit.addressVisited }}</span>
+          @if (visit.withheld.includes('address')) {
+            <span class="visit-rows__address visit-rows__address--withheld">{{
+              copy.addressWithheld
+            }}</span>
+          } @else {
+            <span class="visit-rows__address">{{ visit.addressVisited }}</span>
+          }
         </p>
       </li>
     }

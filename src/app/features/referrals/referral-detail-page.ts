@@ -30,6 +30,7 @@ import {
   SHARED_FIELDS_NEEDING_CARE,
   type DisclosureBasis,
   type SharedField,
+  referralWordsWithheld,
 } from '@domain/index';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -84,6 +85,19 @@ export class ReferralDetailPage {
   );
 
   protected readonly canManage = computed(() => this.permissions.has('referral.manage'));
+
+  /** Whether the data layer withheld this referral's words from this reader (`DL-181`). */
+  protected wordsWithheld(referral: Referral): boolean {
+    return referralWordsWithheld(referral);
+  }
+
+  /**
+   * Nothing is offered on a referral whose words are withheld: the server refuses an addition to a
+   * record its writer cannot read, and a form that is refused after it is filled in teaches nothing.
+   */
+  protected canWrite(referral: Referral): boolean {
+    return this.canManage() && !referralWordsWithheld(referral);
+  }
 
   protected readonly outcomeText = signal('');
   protected readonly outcomeStatus = signal<ReferralStatus>('served');

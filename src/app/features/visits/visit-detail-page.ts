@@ -23,6 +23,7 @@ import {
   type ObservationKind,
   type VisitObservation,
   type VisitStatus,
+  visitWordsWithheld,
 } from '@domain/index';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -68,7 +69,26 @@ export class VisitDetailPage {
   );
 
   protected readonly visit = computed(() => valueOf(this.state()) ?? null);
-  protected readonly canManage = computed(() => this.permissions.has('case.manage'));
+  /** `visit.manage`, the key the server checks — not a case key borrowed for it (TAB 03). */
+  protected readonly canManage = computed(() => this.permissions.has('visit.manage'));
+
+  /**
+   * Nothing is offered on a visit whose record is withheld from this reader: the server refuses an
+   * addition to a record its writer cannot read (`DL-181`).
+   */
+  protected readonly canWrite = computed(() => {
+    const visit = this.visit();
+    return this.canManage() && visit !== null && !visitWordsWithheld(visit);
+  });
+
+  protected wordsWithheld(visit: FieldVisit): boolean {
+    return visitWordsWithheld(visit);
+  }
+
+  /** The address the visit was made to, or a sentence saying it is withheld — never a blank. */
+  protected addressShown(visit: FieldVisit): string {
+    return visit.withheld.includes('address') ? this.copy.addressWithheld : visit.addressVisited;
+  }
   protected readonly isOpen = computed(() => {
     const visit = this.visit();
     return visit !== null && isVisitOpen(visit.status);

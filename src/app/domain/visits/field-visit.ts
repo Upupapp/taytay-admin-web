@@ -173,9 +173,41 @@ export interface FieldVisit {
   /** Why the household declined, if they said. Only for `refused`. */
   readonly declinedReason: string | null;
   readonly outcome: string | null;
+  /** When the office record received the outcome — the server's clock, not anybody's arrival. */
   readonly completedAt: IsoDateTime | null;
+  /**
+   * What the data layer withheld from this reader (`DL-38`, `DL-181`). `words` and `address`: the
+   * household is under a protected sector and the reader lacks `request.view-sensitive`, so what
+   * was observed and said, the outcome and the address arrive empty — that address is where she
+   * lives. `household`: the reader works a caseload, which reads a person through the case and not
+   * the registry around them (`DL-179`). A screen says "withheld" where they would be.
+   */
+  readonly withheld: readonly VisitWithheldField[];
   readonly audit: AuditStamp;
 }
+
+export type VisitWithheldField = 'words' | 'address' | 'household';
+
+/** Whether this reader was given what was recorded on the visit at all. */
+export function visitWordsWithheld(visit: Pick<FieldVisit, 'withheld'>): boolean {
+  return visit.withheld.includes('words');
+}
+
+/**
+ * The prompts a worker sets out with when a visit is scheduled from the console.
+ *
+ * Prompts, never a score: the answers feed observations a person writes, and nothing derives an
+ * eligibility or a rating from them (`DL-42`). They are the console's working list, not an office
+ * issuance — `DL-181` asks the office to confirm or replace them.
+ */
+export const VISIT_CHECKLIST_PROMPTS: readonly Pick<VisitChecklistItem, 'code' | 'label'>[] = [
+  { code: 'dwelling', label: 'Dwelling condition and tenure' },
+  { code: 'members', label: 'Who is actually living there' },
+  { code: 'water-sanitation', label: 'Water and sanitation' },
+  { code: 'livelihood', label: 'Current income and work' },
+  { code: 'children', label: 'Children in school' },
+  { code: 'health', label: 'Health and care needs' },
+];
 
 /* ── Scheduling and filtering ─────────────────────────────────────────────── */
 

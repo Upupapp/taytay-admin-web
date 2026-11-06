@@ -3,8 +3,6 @@ import { throwError, type Observable } from 'rxjs';
 
 import {
   type BeneficiaryRepository,
-  type FieldVisitRepository,
-  type ReferralRepository,
   type WorkRepository,
   type ReportRepository,
   type SearchRepository,
@@ -102,108 +100,6 @@ export class UnservedBeneficiaryRepository implements BeneficiaryRepository {
 
   resolutionsFor(): Observable<never> {
     return unserved('the beneficiary registry');
-  }
-}
-
-@Injectable()
-export class UnservedFieldVisitRepository implements FieldVisitRepository {
-  static readonly port: DataPort = 'field-visit';
-
-  list(): Observable<never> {
-    return unserved('field visits');
-  }
-
-  getById(): Observable<never> {
-    return unserved('field visits');
-  }
-
-  mine(): Observable<never> {
-    return unserved('field visits');
-  }
-
-  forResident(): Observable<never> {
-    return unserved('field visits');
-  }
-
-  schedule(): Observable<never> {
-    return unserved('field visits');
-  }
-
-  recordObservations(): Observable<never> {
-    return unserved('field visits');
-  }
-
-  setChecklist(): Observable<never> {
-    return unserved('field visits');
-  }
-
-  close(): Observable<never> {
-    return unserved('field visits');
-  }
-}
-
-@Injectable()
-export class UnservedReferralRepository implements ReferralRepository {
-  static readonly port: DataPort = 'referral';
-
-  list(): Observable<never> {
-    return unserved('referrals');
-  }
-
-  getById(): Observable<never> {
-    return unserved('referrals');
-  }
-
-  forResident(): Observable<never> {
-    return unserved('referrals');
-  }
-
-  queue(): Observable<never> {
-    return unserved('referrals');
-  }
-
-  createDraft(): Observable<never> {
-    return unserved('referrals');
-  }
-
-  recordDisclosureBasis(): Observable<never> {
-    return unserved('referrals');
-  }
-
-  shareField(): Observable<never> {
-    return unserved('referrals');
-  }
-
-  send(): Observable<never> {
-    return unserved('referrals');
-  }
-
-  summaryFor(): Observable<never> {
-    return unserved('referrals');
-  }
-
-  changeStatus(): Observable<never> {
-    return unserved('referrals');
-  }
-
-  recordOutcome(): Observable<never> {
-    return unserved('referrals');
-  }
-
-  reschedule(): Observable<never> {
-    return unserved('referrals');
-  }
-
-  addNote(): Observable<never> {
-    return unserved('referrals');
-  }
-
-  listProviders(): Observable<never> {
-    return unserved('referrals');
-  }
-
-  getProvider(): Observable<never> {
-    return unserved('referrals');
   }
 }
 
@@ -420,8 +316,6 @@ export class UnservedDashboardRepository implements DashboardRepository {
  */
 export const UNSERVED_HTTP_PORTS: readonly DataPort[] = [
   UnservedBeneficiaryRepository.port,
-  UnservedFieldVisitRepository.port,
-  UnservedReferralRepository.port,
   UnservedWorkRepository.port,
   UnservedReportRepository.port,
   UnservedSearchRepository.port,

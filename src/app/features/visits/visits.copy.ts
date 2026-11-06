@@ -6,6 +6,8 @@
  * did nothing; "non-compliant" would say they failed. The first is what
  * happened; the second is a label the office would then act on.
  */
+import { CAPTURE_STATE_DESCRIPTIONS, CAPTURE_STATE_LABELS } from '@domain/index';
+
 export const VISITS_COPY = {
   list: {
     title: 'Field visits',
@@ -15,7 +17,8 @@ export const VISITS_COPY = {
     all: 'All visits',
 
     search: 'Search',
-    searchPlaceholder: 'Reference, address or outcome',
+    // The reference only: the address and what a household said are never searched (DL-109).
+    searchPlaceholder: 'Visit reference number',
     status: 'Status',
     allStatuses: 'Any status',
     purpose: 'Purpose',
@@ -36,14 +39,57 @@ export const VISITS_COPY = {
     columnStatus: 'Status',
     columnAddress: 'Address',
 
+    addressWithheld: 'Address withheld from your account',
+    shown: (count: number) => `${count} shown, what is owed first.`,
+    moreAvailable: 'More are available.',
+    noMore: 'That is every visit matching these filters.',
+    showMore: 'Show more',
+    loadingMore: 'Loading more…',
+    moreFailed: 'The next visits could not be loaded. The ones above are still correct; try again.',
+
     emptyHeading: 'No visits scheduled',
     emptyMessage: 'Visits scheduled from a case or a household appear here.',
     noResultsHeading: 'No visits match those filters',
     noResultsMessage: 'Try a wider status, or clear the filters.',
   },
 
+  schedule: {
+    title: 'Schedule a home visit',
+    noCaseHeading: 'That case is not available',
+    noCaseMessage: 'A visit is scheduled from the case it belongs to. Open the case and schedule it from there.',
+    backToCases: 'Back to cases',
+    backToCase: 'Back to the case',
+    noLocation:
+      'A visit records the address it is made to and what is found there. Nothing records where anybody is or was.',
+    caseClosed: 'This case is closed. A closed case is kept as it ended, so no visit is scheduled on it.',
+    purpose: 'What is the visit for?',
+    date: 'On what day?',
+    window: 'Roughly when',
+    windowPlaceholder: 'Morning, after 2pm…',
+    address: 'The address the visit is made to',
+    addressHint:
+      'Copied from the person’s record. Change it if the family is somewhere else; the visit keeps what is written here.',
+    worker: 'Who goes?',
+    workerHint:
+      'The case’s own worker, or you. A worker who works only their assigned cases cannot be sent on a visit to somebody else’s case.',
+    caseWorker: 'The case’s worker',
+    you: (name: string) => `${name} (you)`,
+    noWorker:
+      'Nobody can be sent on this visit yet: the case has no worker. Assign the case to a social worker first.',
+    checklistHeading: 'What to check',
+    checklistHint: 'Prompts the worker sets out with. They feed what the worker writes; nothing is scored from them.',
+    scheduleAction: 'Schedule the visit',
+    scheduling: 'Scheduling…',
+    scheduled: 'The visit is scheduled and saved to the office record.',
+    notScheduled: 'The visit was NOT scheduled. Nothing was saved, and nothing is waiting to be sent.',
+  },
+
   detail: {
     back: 'Back to visits',
+    withheld: 'Withheld from your account',
+    addressWithheld: 'Address withheld from your account',
+    wordsWithheldNotice:
+      'This visit is about a household under a protected sector. What was observed and said, the outcome and the address are withheld from your account, and nothing can be added to it from here. Its date, purpose, status and checklist are shown.',
     notFoundHeading: 'That visit is not available',
     notFoundMessage:
       'It may not exist, or it may be about somebody outside the barangays your account covers.',
@@ -59,7 +105,8 @@ export const VISITS_COPY = {
     checklistHint: 'Prompts for the visit. Ticking them records nothing about eligibility.',
     checklistNone: 'No checklist on this visit.',
     saveChecklist: 'Save ticks',
-    checklistSaved: 'Checklist saved.',
+    // The one state that means the office record has it (DL-87), worded as the domain words it.
+    checklistSaved: `Checklist ${CAPTURE_STATE_LABELS.sent.toLowerCase()}.`,
 
     observationsHeading: 'What was found',
     observationsHint:
@@ -76,7 +123,7 @@ export const VISITS_COPY = {
     attribution: 'Who said it',
     attributionHint: 'Name the person or role. An unattributed account cannot be checked.',
     addObservation: 'Add entry',
-    observationSaved: 'Entry recorded.',
+    observationSaved: `${CAPTURE_STATE_LABELS.sent}.`,
 
     outcomeHeading: 'Close the visit',
     outcomeHint: 'Closing is final. A second attempt is a second visit.',
@@ -91,6 +138,7 @@ export const VISITS_COPY = {
     closed: 'Visit closed.',
     alreadyClosed: 'This visit is closed. Its record cannot be changed.',
 
-    failed: 'That could not be saved.',
+    // Says that nothing was held back to send later: no queue, no background retry (DL-87).
+    failed: `Not saved. ${CAPTURE_STATE_DESCRIPTIONS['send-failed']}`,
   },
 } as const;

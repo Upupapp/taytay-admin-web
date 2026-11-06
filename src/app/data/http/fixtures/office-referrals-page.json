@@ -1,0 +1,124 @@
+{
+  "data": [
+    {
+      "id": "e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a01",
+      "reference_number": "RF-2026-000007",
+      "resident_id": "5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b01",
+      "request_id": "8f1e2d3c-4b5a-4968-8776-1a2b3c4d5e02",
+      "case_id": null,
+      "provider_id": "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d01",
+      "destination": "hospital-msw",
+      "destination_name": "Rizal Provincial Hospital — Medical Social Service",
+      "destination_contact": "Ms. Dela Paz, MSS desk",
+      "status": "sent",
+      "urgency": "priority",
+      "service_requested": "Assessment for a hospital bill discount.",
+      "reason": "Admitted after a fall; the family cannot settle the bill.",
+      "disclosure": {
+        "basis": "client-consent",
+        "note": "She agreed at the counter after being told which office would receive it.",
+        "recorded_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+        "recorded_on": "2026-11-02",
+        "shared_fields": [
+          {
+            "field": "birth-date",
+            "because": "To match the hospital record.",
+            "shared_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+            "shared_at": "2026-11-02T01:10:00.000Z"
+          },
+          {
+            "field": "income",
+            "because": "For the discount bracket.",
+            "shared_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+            "shared_at": "2026-11-02T01:11:00.000Z"
+          }
+        ],
+        "attachments": []
+      },
+      "referred_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+      "referred_at": "2026-11-02T01:15:00.000Z",
+      "sent_at": "2026-11-02T01:15:00.000Z",
+      "follow_up_on": "2026-11-09",
+      "responded_at": null,
+      "outcome": null,
+      "handoff_notes": [
+        {
+          "id": "f1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b01",
+          "kind": "note-added",
+          "body": "Called the MSS; they have the file.",
+          "is_withheld": false,
+          "author_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+          "author_name": "Teresita Cruz",
+          "recorded_at": "2026-11-03T02:00:00.000Z"
+        }
+      ],
+      "is_protected": false,
+      "withheld": [],
+      "created_at": "2026-11-02T01:00:00.000Z",
+      "created_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+      "updated_at": "2026-11-02T01:00:00.000Z",
+      "updated_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02"
+    },
+    {
+      "id": "e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a02",
+      "reference_number": "RF-2026-000006",
+      "resident_id": "5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b09",
+      "request_id": null,
+      "case_id": "7a6b5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c01",
+      "provider_id": null,
+      "destination": "women-and-children-protection-desk",
+      "destination_name": "Taytay WCPD",
+      "destination_contact": null,
+      "status": "acknowledged",
+      "urgency": "urgent",
+      "service_requested": null,
+      "reason": null,
+      "disclosure": {
+        "basis": "vital-interest",
+        "note": null,
+        "recorded_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
+        "recorded_on": "2026-10-30",
+        "shared_fields": [
+          {
+            "field": "address",
+            "because": null,
+            "shared_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
+            "shared_at": "2026-10-30T03:00:00.000Z"
+          }
+        ],
+        "attachments": []
+      },
+      "referred_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
+      "referred_at": "2026-10-30T03:05:00.000Z",
+      "sent_at": "2026-10-30T03:05:00.000Z",
+      "follow_up_on": "2026-11-01",
+      "responded_at": "2026-10-31T00:30:00.000Z",
+      "outcome": null,
+      "handoff_notes": [
+        {
+          "id": "f1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b02",
+          "kind": "status-changed",
+          "body": null,
+          "is_withheld": true,
+          "author_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
+          "author_name": "Liza Ramos",
+          "recorded_at": "2026-10-31T00:30:00.000Z"
+        }
+      ],
+      "is_protected": true,
+      "withheld": [
+        "words"
+      ],
+      "created_at": "2026-10-30T02:50:00.000Z",
+      "created_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
+      "updated_at": "2026-10-31T00:30:00.000Z",
+      "updated_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05"
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "has_more": true,
+      "next_cursor": "cmVmZXJyYWw6ZTFmMmEzYjQtYzVkNi00ZTdmLThhOWItMGMxZDJlM2Y0YTAy"
+    }
+  }
+}

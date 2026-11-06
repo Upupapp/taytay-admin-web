@@ -1,0 +1,36 @@
+{
+  "data": {
+    "referral_id": "e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a01",
+    "reference_number": "RF-2026-000007",
+    "destination_name": "Rizal Provincial Hospital — Medical Social Service",
+    "service_requested": "Assessment for a hospital bill discount.",
+    "reason": "Admitted after a fall; the family cannot settle the bill.",
+    "lines": [
+      {
+        "label": "Client",
+        "value": "Rosario Mercado",
+        "is_extra": false
+      },
+      {
+        "label": "Referred by",
+        "value": "MSWDO Taytay, Rizal",
+        "is_extra": false
+      },
+      {
+        "label": "Date of birth",
+        "value": "1980-04-05",
+        "is_extra": true
+      },
+      {
+        "label": "Household income",
+        "value": "PHP 3,200.00 per month",
+        "is_extra": true
+      }
+    ],
+    "attachment_labels": [],
+    "authority_statement": "The client agreed to the referral",
+    "handling_notice": "Shared by the Municipal Social Welfare and Development Office of Taytay, Rizal for the purpose stated above only. It contains personal information protected under RA 10173. Do not forward it or use it for another purpose.",
+    "composed_at": "2026-11-03T03:00:00.000Z"
+  },
+  "meta": {}
+}

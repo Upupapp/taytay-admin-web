@@ -11,7 +11,17 @@
     <app-page-header
       [title]="workspace.record.referenceNumber"
       [subtitle]="copy.subtitle + ' · ' + categoryLabel(workspace)"
-    />
+    >
+      @if (writable(workspace) && canScheduleVisit() && !wordsWithheld(workspace)) {
+        <a
+          page-actions
+          class="btn"
+          routerLink="/visits/schedule"
+          [queryParams]="{ case: workspace.record.id }"
+          >{{ copy.scheduleVisit }}</a
+        >
+      }
+    </app-page-header>
 
     @if (workspace.record.status === 'closed') {
       <!-- Closed is terminal (DL-53): no write is offered, and a recurrence is a new case. -->

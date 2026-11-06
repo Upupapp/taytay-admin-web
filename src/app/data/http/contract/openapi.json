@@ -8017,6 +8017,1863 @@
           }
         }
       }
+    },
+    "/api/v1/office/referrals": {
+      "get": {
+        "operationId": "listOfficeReferrals",
+        "summary": "List referrals",
+        "description": "Needs referral.view. Newest drafted first, a page at a time; no total is sent. A social worker (assigned-cases) reads only referrals naming a case or a filed request assigned to them; a barangay link only its own barangay. A referral about a protected person lists with its words withheld from a reader without request.view-sensitive.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 40
+            },
+            "description": "Part of the reference number or the receiving office’s name. Nothing about the client is searched."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeReferralStatus"
+            }
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeReferralDestination"
+            }
+          },
+          {
+            "name": "urgency",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeReferralUrgency"
+            }
+          },
+          {
+            "name": "resident_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "case_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "overdue_only",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Only open referrals whose follow-up date has passed with no answer from the receiving office. Derived on every read, never stored."
+            }
+          },
+          {
+            "name": "open_only",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Leave out closed and declined referrals."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of referrals.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReferralListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The query could not be validated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "draftOfficeReferral",
+        "summary": "Draft a referral",
+        "description": "Needs referral.manage. Drafting discloses nothing: the lawful basis and the shared fields are recorded as their own acts, and the referral is sent by POST …/send. A social worker drafts only from a case or filed request assigned to them.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeReferralDraft"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The draft, with its reference number.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReferralEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing referral.manage, a caseload drafting with neither a case nor a request, or a protected person whose words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated, or names a person, case, request or provider this writer may not use.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/referrals/queue": {
+      "get": {
+        "operationId": "listOfficeReferralQueue",
+        "summary": "The referral queue",
+        "description": "Needs referral.view. Every open referral in scope under the filters, whole: overdue first, then the most urgent, then the longest out. Overdue is derived from the follow-up date and the record of an answer, never stored.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 40
+            },
+            "description": "Part of the reference number or the receiving office’s name. Nothing about the client is searched."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeReferralStatus"
+            }
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeReferralDestination"
+            }
+          },
+          {
+            "name": "urgency",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeReferralUrgency"
+            }
+          },
+          {
+            "name": "resident_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "case_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "overdue_only",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Only open referrals whose follow-up date has passed with no answer from the receiving office. Derived on every read, never stored."
+            }
+          },
+          {
+            "name": "open_only",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Leave out closed and declined referrals."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every open referral, in the order the work is done.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReferralQueueEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The query could not be validated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/referrals/{id}": {
+      "get": {
+        "operationId": "getOfficeReferral",
+        "summary": "One referral",
+        "description": "Needs referral.view. Not found and not this reader’s answer the same.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The referral as this reader may see it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReferralEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such referral, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/referrals/{id}/summary": {
+      "get": {
+        "operationId": "getOfficeReferralSummary",
+        "summary": "The referral summary sheet",
+        "description": "Needs referral.view. The sheet that leaves the building, composed here from what was authorised: the client’s name, the reference and the reason, and each field chosen with its stated need — only values this reader could themselves read. data is null while no lawful basis is recorded, and for a reader from whom the referral’s words are withheld. Composing it is recorded in the audit trail.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The sheet, or null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReferralSummaryEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such referral, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/referrals/{id}/basis": {
+      "post": {
+        "operationId": "recordOfficeReferralBasis",
+        "summary": "Record the lawful basis",
+        "description": "Needs referral.manage. Its own recorded act (DL-81): client consent, a statutory mandate, or vital interest, with the sentence that explains it. Only while the referral is a draft; the latest recorded is the one it is sent under.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeReferralBasis"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The referral as this reader may see it now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReferralEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing referral.manage, or the referral is about a protected person and its words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such referral, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The act is not open to the referral as it stands: closed, already sent, not on the lifecycle, or — for a send — no lawful basis on record. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/referrals/{id}/shared-fields": {
+      "post": {
+        "operationId": "shareOfficeReferralField",
+        "summary": "Share one field beyond the minimum",
+        "description": "Needs referral.manage. One field per call, with the need that justifies it (DL-82); each field once. Only while the referral is a draft, only under a recorded basis, and only a field the writer could themselves read.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeReferralSharedField"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The referral as this reader may see it now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReferralEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing referral.manage, or the referral is about a protected person and its words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such referral, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The act is not open to the referral as it stands: closed, already sent, not on the lifecycle, or — for a send — no lawful basis on record. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/referrals/{id}/send": {
+      "post": {
+        "operationId": "sendOfficeReferral",
+        "summary": "Send a referral",
+        "description": "Needs referral.manage. Takes no body: the basis and the fields are already on the record. Refused under the referral’s row lock when no lawful basis is recorded — by this route and again by the database (DL-140). Gives the referral its default follow-up date, counted from today by urgency, when none was set.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The referral as this reader may see it now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReferralEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing referral.manage, or the referral is about a protected person and its words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such referral, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The act is not open to the referral as it stands: closed, already sent, not on the lifecycle, or — for a send — no lawful basis on record. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/referrals/{id}/status": {
+      "post": {
+        "operationId": "moveOfficeReferral",
+        "summary": "Move a referral",
+        "description": "Needs referral.manage. A move along the lifecycle, with a reason, kept among the notes between offices. Never to sent: sending is its own act.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeReferralMove"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The referral as this reader may see it now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReferralEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing referral.manage, or the referral is about a protected person and its words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such referral, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The act is not open to the referral as it stands: closed, already sent, not on the lifecycle, or — for a send — no lawful basis on record. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/referrals/{id}/outcome": {
+      "post": {
+        "operationId": "recordOfficeReferralOutcome",
+        "summary": "Record what the receiving office did",
+        "description": "Needs referral.manage. The outcome in words and the status it leaves the referral in, a move along the lifecycle (never to sent).",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeReferralOutcome"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The referral as this reader may see it now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReferralEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing referral.manage, or the referral is about a protected person and its words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such referral, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The act is not open to the referral as it stands: closed, already sent, not on the lifecycle, or — for a send — no lawful basis on record. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/referrals/{id}/follow-up": {
+      "post": {
+        "operationId": "moveOfficeReferralFollowUp",
+        "summary": "Move the follow-up date",
+        "description": "Needs referral.manage. Today or later, with a reason kept among the notes: moving a chase date quietly is how an overdue referral stops being overdue without anybody acting on it.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeReferralFollowUp"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The referral as this reader may see it now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReferralEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing referral.manage, or the referral is about a protected person and its words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such referral, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The act is not open to the referral as it stands: closed, already sent, not on the lifecycle, or — for a send — no lawful basis on record. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/referrals/{id}/notes": {
+      "post": {
+        "operationId": "addOfficeReferralNote",
+        "summary": "Add a note between offices",
+        "description": "Needs referral.manage. Appended; never edited or removed.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeReferralNote"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The referral as this reader may see it now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReferralEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing referral.manage, or the referral is about a protected person and its words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such referral, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The act is not open to the referral as it stands: closed, already sent, not on the lifecycle, or — for a send — no lawful basis on record. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/service-providers": {
+      "get": {
+        "operationId": "listOfficeServiceProviders",
+        "summary": "The provider directory",
+        "description": "Needs referral.view. Offices, not people: no scope narrows it. Whole, by name. Nothing in this API writes it yet.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 40
+            },
+            "description": "Part of the name or a service offered."
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeReferralDestination"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "suspended",
+                "retired"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every matching provider.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeServiceProviderListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The query could not be validated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/service-providers/{id}": {
+      "get": {
+        "operationId": "getOfficeServiceProvider",
+        "summary": "One provider",
+        "description": "Needs referral.view.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The directory record.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeServiceProviderEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such provider.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/visits": {
+      "get": {
+        "operationId": "listOfficeVisits",
+        "summary": "List visits",
+        "description": "Needs visit.view. What is still owed first, soonest first (the overdue at the top), then what is over, latest first; a page at a time, no total. A social worker (assigned-cases) reads only visits on a case assigned to them.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 40
+            },
+            "description": "Part of the visit’s reference number. Nothing a household said, and not the address."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeVisitStatus"
+            }
+          },
+          {
+            "name": "purpose",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeVisitPurpose"
+            }
+          },
+          {
+            "name": "assigned_to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resident_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "case_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "overdue_only",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Only visits still scheduled after their date. The office owes them, not the family."
+            }
+          },
+          {
+            "name": "mine",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Only visits the signed-in account is sent on."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of visits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeVisitListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing visit.view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The query could not be validated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "scheduleOfficeVisit",
+        "summary": "Schedule a visit",
+        "description": "Needs visit.manage. What the visit is for, who goes, on what day, and the address it is made to — no field for where anybody is, ever (DL-86). A social worker schedules only on a case assigned to them; a visit given to a social worker is on a case assigned to that worker.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeVisitSchedule"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The visit, with its reference number.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeVisitEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing visit.manage, a caseload scheduling with no case, or a protected person whose words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated, or names a person, case, household or worker this visit cannot be made with.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/visits/{id}": {
+      "get": {
+        "operationId": "getOfficeVisit",
+        "summary": "One visit",
+        "description": "Needs visit.view. Not found and not this reader’s answer the same.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The visit as this reader may see it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeVisitEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing visit.view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such visit, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/visits/{id}/observations": {
+      "post": {
+        "operationId": "recordOfficeVisitObservations",
+        "summary": "Record what was found",
+        "description": "Needs visit.manage. Appends each line with its kind — observed, client-said, third-party-said, worker-assessed — and a third party’s account names who gave it (DL-85). Never edits or removes one; a correction is another line. Refused on a visit cancelled before it was made.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeVisitObservations"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The visit as the office record now holds it. Nothing is queued or retried behind the caller’s back.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeVisitEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing visit.manage, a caseload scheduling off its own cases, or a protected person’s visit whose words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such visit, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The visit is closed (every outcome is final) or was cancelled before it was made. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/visits/{id}/checklist": {
+      "post": {
+        "operationId": "setOfficeVisitChecklist",
+        "summary": "Set checklist lines",
+        "description": "Needs visit.manage. Each line as it should stand; a line already as asked is left alone. Only while the visit is scheduled.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeVisitChecklist"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The visit as the office record now holds it. Nothing is queued or retried behind the caller’s back.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeVisitEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing visit.manage, a caseload scheduling off its own cases, or a protected person’s visit whose words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such visit, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The visit is closed (every outcome is final) or was cancelled before it was made. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/visits/{id}/close": {
+      "post": {
+        "operationId": "closeOfficeVisit",
+        "summary": "Close a visit",
+        "description": "Needs visit.manage. Once: every outcome is final, and a second attempt is a second visit. A reason for declining belongs to a refusal alone.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeVisitClose"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The visit as the office record now holds it. Nothing is queued or retried behind the caller’s back.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeVisitEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing visit.manage, a caseload scheduling off its own cases, or a protected person’s visit whose words are withheld from this writer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such visit, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The visit is closed (every outcome is final) or was cancelled before it was made. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -15293,6 +17150,1354 @@
           },
           "meta": {
             "type": "object"
+          }
+        }
+      },
+      "OfficeReferralStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "sent",
+          "acknowledged",
+          "in-progress",
+          "waiting-requirements",
+          "served",
+          "declined",
+          "closed"
+        ]
+      },
+      "OfficeReferralDestination": {
+        "type": "string",
+        "enum": [
+          "dswd-field-office",
+          "hospital-msw",
+          "philhealth",
+          "peso",
+          "barangay-vaw-desk",
+          "women-and-children-protection-desk",
+          "other-lgu-office",
+          "ngo-partner"
+        ]
+      },
+      "OfficeReferralUrgency": {
+        "type": "string",
+        "enum": [
+          "routine",
+          "priority",
+          "urgent"
+        ]
+      },
+      "OfficeReferralDisclosureBasis": {
+        "type": "string",
+        "enum": [
+          "client-consent",
+          "statutory-mandate",
+          "vital-interest"
+        ]
+      },
+      "OfficeReferralSharedFieldName": {
+        "type": "string",
+        "enum": [
+          "birth-date",
+          "address",
+          "contact-number",
+          "household-composition",
+          "income",
+          "vulnerability-sectors",
+          "assistance-history"
+        ]
+      },
+      "OfficeReferralNoteEntry": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "body",
+          "is_withheld",
+          "author_id",
+          "author_name",
+          "recorded_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "note-added",
+              "status-changed",
+              "follow-up-moved"
+            ],
+            "description": "A note, the reason for a move, or the reason the follow-up date moved."
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null only when withheld."
+          },
+          "is_withheld": {
+            "type": "boolean"
+          },
+          "author_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "author_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OfficeReferralDisclosure": {
+        "type": "object",
+        "required": [
+          "basis",
+          "note",
+          "recorded_by",
+          "recorded_on",
+          "shared_fields",
+          "attachments"
+        ],
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/OfficeReferralDisclosureBasis"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What the client was told, which law applies, or what the risk was. Null only when withheld."
+          },
+          "recorded_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recorded_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "shared_fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "field",
+                "because",
+                "shared_by",
+                "shared_at"
+              ],
+              "properties": {
+                "field": {
+                  "$ref": "#/components/schemas/OfficeReferralSharedFieldName"
+                },
+                "because": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Why the receiving office needs it. Null only when withheld."
+                },
+                "shared_by": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "shared_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "maxItems": 0,
+            "description": "No act attaches a document to a referral yet."
+          }
+        }
+      },
+      "OfficeReferral": {
+        "type": "object",
+        "required": [
+          "id",
+          "reference_number",
+          "resident_id",
+          "request_id",
+          "case_id",
+          "provider_id",
+          "destination",
+          "destination_name",
+          "destination_contact",
+          "status",
+          "urgency",
+          "service_requested",
+          "reason",
+          "disclosure",
+          "referred_by",
+          "referred_at",
+          "sent_at",
+          "follow_up_on",
+          "responded_at",
+          "outcome",
+          "handoff_notes",
+          "is_protected",
+          "withheld",
+          "created_at",
+          "created_by",
+          "updated_at",
+          "updated_by"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference_number": {
+            "type": "string",
+            "description": "RF-YYYY-NNNNNN."
+          },
+          "resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "request_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "case_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "provider_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "destination": {
+            "$ref": "#/components/schemas/OfficeReferralDestination"
+          },
+          "destination_name": {
+            "type": "string"
+          },
+          "destination_contact": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/OfficeReferralStatus"
+          },
+          "urgency": {
+            "$ref": "#/components/schemas/OfficeReferralUrgency"
+          },
+          "service_requested": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null only when withheld."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null only when withheld."
+          },
+          "disclosure": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OfficeReferralDisclosure"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null until a lawful basis is recorded: a draft discloses nothing."
+          },
+          "referred_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "referred_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it was sent; when it was drafted, for a draft."
+          },
+          "sent_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "follow_up_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "responded_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the receiving office first answered, read from the history. Overdue is derived from this and follow_up_on."
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "handoff_notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeReferralNoteEntry"
+            }
+          },
+          "is_protected": {
+            "type": "boolean"
+          },
+          "withheld": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "words"
+              ]
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_by": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "OfficeReferralEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeReferral"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeReferralListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeReferral"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "pagination": {
+                "$ref": "#/components/schemas/Pagination"
+              }
+            }
+          }
+        }
+      },
+      "OfficeReferralQueueEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeReferral"
+            },
+            "description": "Every open referral, whole."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeReferralSummaryLine": {
+        "type": "object",
+        "required": [
+          "label",
+          "value",
+          "is_extra"
+        ],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "is_extra": {
+            "type": "boolean",
+            "description": "Beyond the minimum: chosen, with a stated need."
+          }
+        }
+      },
+      "OfficeReferralSummaryEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "required": [
+              "referral_id",
+              "reference_number",
+              "destination_name",
+              "service_requested",
+              "reason",
+              "lines",
+              "attachment_labels",
+              "authority_statement",
+              "handling_notice",
+              "composed_at"
+            ],
+            "properties": {
+              "referral_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "reference_number": {
+                "type": "string"
+              },
+              "destination_name": {
+                "type": "string"
+              },
+              "service_requested": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "lines": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/OfficeReferralSummaryLine"
+                }
+              },
+              "attachment_labels": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "authority_statement": {
+                "type": "string",
+                "description": "The lawful basis, as printed on the sheet."
+              },
+              "handling_notice": {
+                "type": "string",
+                "description": "The RA 10173 purpose limitation, printed on the sheet."
+              },
+              "composed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "description": "Null while no lawful basis is recorded, or when the referral’s words are withheld from this reader."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeReferralDraft": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "resident_id",
+          "request_id",
+          "case_id",
+          "provider_id",
+          "destination",
+          "destination_name",
+          "destination_contact",
+          "urgency",
+          "service_requested",
+          "reason",
+          "follow_up_on"
+        ],
+        "properties": {
+          "resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "request_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "case_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "provider_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "A directory entry accepting referrals, of the destination named."
+          },
+          "destination": {
+            "$ref": "#/components/schemas/OfficeReferralDestination"
+          },
+          "destination_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "destination_contact": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200
+          },
+          "urgency": {
+            "$ref": "#/components/schemas/OfficeReferralUrgency"
+          },
+          "service_requested": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "follow_up_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Today or later. When null, sending sets one from the urgency."
+          }
+        }
+      },
+      "OfficeReferralBasis": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "basis",
+          "note"
+        ],
+        "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/OfficeReferralDisclosureBasis"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "OfficeReferralSharedField": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "field",
+          "because"
+        ],
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/OfficeReferralSharedFieldName"
+          },
+          "because": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "OfficeReferralMove": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "to",
+          "reason"
+        ],
+        "properties": {
+          "to": {
+            "$ref": "#/components/schemas/OfficeReferralStatus"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "OfficeReferralOutcome": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "outcome",
+          "status"
+        ],
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "status": {
+            "$ref": "#/components/schemas/OfficeReferralStatus"
+          }
+        }
+      },
+      "OfficeReferralFollowUp": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "follow_up_on",
+          "reason"
+        ],
+        "properties": {
+          "follow_up_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "OfficeReferralNote": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "body"
+        ],
+        "properties": {
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "OfficeServiceProvider": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "destination",
+          "status",
+          "services_offered",
+          "address",
+          "barangay_id",
+          "contact",
+          "channels",
+          "usual_response_days",
+          "notes",
+          "created_at",
+          "created_by",
+          "updated_at",
+          "updated_by"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "destination": {
+            "$ref": "#/components/schemas/OfficeReferralDestination"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "suspended",
+              "retired"
+            ]
+          },
+          "services_offered": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "barangay_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "contact": {
+            "type": "object",
+            "required": [
+              "person_name",
+              "position",
+              "phone",
+              "email"
+            ],
+            "properties": {
+              "person_name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "position": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "email": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "letter",
+                "email",
+                "phone",
+                "in-person",
+                "system"
+              ]
+            }
+          },
+          "usual_response_days": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_by": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "OfficeServiceProviderEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeServiceProvider"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeServiceProviderListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeServiceProvider"
+            },
+            "description": "Every matching provider, by name."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeVisitStatus": {
+        "type": "string",
+        "enum": [
+          "scheduled",
+          "completed",
+          "not-found",
+          "refused",
+          "cancelled"
+        ]
+      },
+      "OfficeVisitPurpose": {
+        "type": "string",
+        "enum": [
+          "initial-assessment",
+          "verification",
+          "follow-up",
+          "monitoring",
+          "crisis-response",
+          "document-collection"
+        ]
+      },
+      "OfficeVisitObservationKind": {
+        "type": "string",
+        "enum": [
+          "observed",
+          "client-said",
+          "third-party-said",
+          "worker-assessed"
+        ]
+      },
+      "OfficeVisit": {
+        "type": "object",
+        "required": [
+          "id",
+          "reference_number",
+          "case_id",
+          "resident_id",
+          "household_id",
+          "status",
+          "purpose",
+          "assigned_to",
+          "assigned_to_name",
+          "scheduled_for",
+          "scheduled_window",
+          "address_visited",
+          "checklist",
+          "observations",
+          "service_needs",
+          "declined_reason",
+          "outcome",
+          "completed_at",
+          "is_protected",
+          "withheld",
+          "created_at",
+          "created_by",
+          "updated_at",
+          "updated_by"
+        ],
+        "description": "No coordinate, check-in, route, arrival time or device, ever (DL-86): the address the visit was made to, and what was found.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference_number": {
+            "type": "string",
+            "description": "HV-YYYY-NNNNNN."
+          },
+          "case_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "household_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Null when there is none, and for a caseload reader (withheld names it)."
+          },
+          "status": {
+            "$ref": "#/components/schemas/OfficeVisitStatus"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/OfficeVisitPurpose"
+          },
+          "assigned_to": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "assigned_to_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scheduled_for": {
+            "type": "string",
+            "format": "date"
+          },
+          "scheduled_window": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Roughly when, in the office’s words."
+          },
+          "address_visited": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Copied at scheduling. Null only when withheld."
+          },
+          "checklist": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "code",
+                "label",
+                "checked"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "checked": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "observations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "kind",
+                "body",
+                "attributed_to",
+                "is_withheld",
+                "recorded_by",
+                "recorded_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "kind": {
+                  "$ref": "#/components/schemas/OfficeVisitObservationKind"
+                },
+                "body": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Null only when withheld."
+                },
+                "attributed_to": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Whose account, for third-party-said; null for every other kind, and when withheld."
+                },
+                "is_withheld": {
+                  "type": "boolean"
+                },
+                "recorded_by": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "recorded_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the office record received it."
+                }
+              }
+            }
+          },
+          "service_needs": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "declined_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A refusal’s only."
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the office record received the outcome: the server’s clock, not anybody’s arrival."
+          },
+          "is_protected": {
+            "type": "boolean"
+          },
+          "withheld": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "words",
+                "address",
+                "household"
+              ]
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_by": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "OfficeVisitEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeVisit"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeVisitListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeVisit"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "pagination": {
+                "$ref": "#/components/schemas/Pagination"
+              }
+            }
+          }
+        }
+      },
+      "OfficeVisitSchedule": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "resident_id",
+          "case_id",
+          "household_id",
+          "purpose",
+          "assigned_to",
+          "scheduled_for",
+          "scheduled_window",
+          "address_visited",
+          "checklist"
+        ],
+        "properties": {
+          "resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "case_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "household_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The person’s current household, when given."
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/OfficeVisitPurpose"
+          },
+          "assigned_to": {
+            "type": "string",
+            "format": "uuid",
+            "description": "An open account holding visit.manage; a social worker only on a case assigned to them."
+          },
+          "scheduled_for": {
+            "type": "string",
+            "format": "date",
+            "description": "Today or later, on the municipality’s calendar."
+          },
+          "scheduled_window": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 80
+          },
+          "address_visited": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "checklist": {
+            "type": "array",
+            "maxItems": 30,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "code",
+                "label"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              }
+            }
+          }
+        }
+      },
+      "OfficeVisitObservations": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "observations"
+        ],
+        "properties": {
+          "observations": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "body",
+                "attributed_to"
+              ],
+              "properties": {
+                "kind": {
+                  "$ref": "#/components/schemas/OfficeVisitObservationKind"
+                },
+                "body": {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 4000
+                },
+                "attributed_to": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 200,
+                  "description": "Required for third-party-said, refused for every other kind."
+                }
+              }
+            }
+          }
+        }
+      },
+      "OfficeVisitChecklist": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 30,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "code",
+                "checked"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "checked": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "OfficeVisitClose": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "outcome",
+          "service_needs",
+          "declined_reason"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "not-found",
+              "refused",
+              "cancelled"
+            ]
+          },
+          "outcome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "service_needs": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "declined_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000,
+            "description": "For a refusal only."
           }
         }
       }

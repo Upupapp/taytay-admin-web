@@ -1,0 +1,33 @@
+{
+  "data": [
+    {
+      "id": "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d01",
+      "name": "Rizal Provincial Hospital — Medical Social Service",
+      "destination": "hospital-msw",
+      "status": "active",
+      "services_offered": [
+        "Bill discount assessment",
+        "Medicine assistance"
+      ],
+      "address": "Morong, Rizal",
+      "barangay_id": null,
+      "contact": {
+        "person_name": "Ms. Dela Paz",
+        "position": "MSS head",
+        "phone": "(02) 8000 0000",
+        "email": null
+      },
+      "channels": [
+        "letter",
+        "phone"
+      ],
+      "usual_response_days": 7,
+      "notes": null,
+      "created_at": "2026-10-01T00:00:00.000Z",
+      "created_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+      "updated_at": "2026-10-01T00:00:00.000Z",
+      "updated_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02"
+    }
+  ],
+  "meta": {}
+}

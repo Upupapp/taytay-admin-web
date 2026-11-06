@@ -11,6 +11,7 @@ import {
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom, map, switchMap, tap } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { PermissionService } from '@core/access/permission.service';
@@ -20,16 +21,15 @@ import {
   REFERRAL_REPOSITORY,
   REFERRAL_STATUS_CATALOG,
   REFERRAL_URGENCY_LABELS,
-  emptyPage,
   isReferralFilterActive,
   isReferralOverdue,
   todayAsIsoDate,
-  type Page,
+  type CursorPage,
   type Referral,
+  type ReferralFilter,
   type ReferralDestination,
   type ReferralStatus,
   type ReferralUrgency,
-  type SortSpec,
   asId,
   REFERRAL_DESTINATIONS,
   REFERRAL_URGENCIES,
@@ -47,6 +47,13 @@ import type { TableColumn } from '@shared/ui/data-table/table-column';
 
 import { REFERRALS_COPY } from './referrals.copy';
 import { readReferralQuery } from './referral-query';
+
+/**
+ * Read a cursor page at a time, newest drafted first, as the API pages it (`DL-161`, `DL-181`). The
+ * screen says how many are shown and whether more exist — never "page 1 of N", because the API
+ * sends no total.
+ */
+const PAGE_SIZE = 20;
 
 
 /**
@@ -219,6 +226,7 @@ export class ReferralListPage {
   private readonly repository = inject(REFERRAL_REPOSITORY);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly copy = REFERRALS_COPY.list;
   protected readonly statusCatalog = REFERRAL_STATUS_CATALOG;
@@ -242,49 +250,91 @@ export class ReferralListPage {
 
   protected readonly searchText = signal(this.query().filter.search ?? '');
 
+  /** Further pages of the reading the first page began; emptied whenever the filter changes. */
+  private readonly further = signal<readonly CursorPage<Referral>[]>([]);
+  protected readonly loadingMore = signal(false);
+  protected readonly moreFailed = signal(false);
+
   protected readonly state = toSignal(
     toObservable(this.query).pipe(
-      tap((query) => this.searchText.set(query.filter.search ?? '')),
-      switchMap((query) => toViewState(this.repository.list(query.filter, query.page))),
+      tap((query) => {
+        this.searchText.set(query.filter.search ?? '');
+        this.further.set([]);
+        this.moreFailed.set(false);
+        this.loadingMore.set(false);
+      }),
+      switchMap((query) =>
+        toViewState(this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null })),
+      ),
     ),
-    { initialValue: LOADING as ViewState<Page<Referral>> },
+    { initialValue: LOADING as ViewState<CursorPage<Referral>> },
   );
 
   protected readonly isLoading = computed(() => this.state().kind === 'loading');
-  protected readonly page = computed(() => valueOf(this.state()) ?? emptyPage<Referral>());
-  protected readonly rows = computed(() => this.page().items);
+  protected readonly rows = computed<readonly Referral[]>(() => [
+    ...(valueOf(this.state())?.items ?? []),
+    ...this.further().flatMap((page) => page.items),
+  ]);
   protected readonly filter = computed(() => this.query().filter);
-  protected readonly sort = computed<SortSpec | null>(() => this.query().page.sort ?? null);
   protected readonly hasFilters = computed(() => isReferralFilterActive(this.filter()));
+  protected readonly failure = computed(() => {
+    const state = this.state();
+    return state.kind === 'error' ? state.message : null;
+  });
+
+  private readonly lastPage = computed(
+    () => this.further().at(-1) ?? valueOf(this.state()) ?? null,
+  );
+
+  protected readonly hasMore = computed(() => {
+    const last = this.lastPage();
+    return last !== null && last.hasMore && last.nextCursor !== null;
+  });
+
+  /** Follows the cursor one page further, for the filter the first page was read with. */
+  protected showMore(): void {
+    const cursor = this.lastPage()?.nextCursor ?? null;
+    if (cursor === null || this.loadingMore()) {
+      return;
+    }
+    const filter: ReferralFilter = this.filter();
+    this.loadingMore.set(true);
+    this.moreFailed.set(false);
+    this.repository
+      .list(filter, { limit: PAGE_SIZE, cursor })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (page) => {
+          // The filter changed meanwhile: this page continues a list nobody is looking at.
+          if (filter === this.filter()) {
+            this.further.update((pages) => [...pages, page]);
+          }
+          this.loadingMore.set(false);
+        },
+        error: () => {
+          this.loadingMore.set(false);
+          this.moreFailed.set(true);
+        },
+      });
+  }
 
   protected readonly rowKey = (referral: Referral): string => referral.id;
 
   protected readonly columns = computed<readonly TableColumn<Referral>[]>(() => [
-    {
-      key: 'reference',
-      header: this.copy.columnReference,
-      sortField: 'referredAt',
-      cell: this.referenceCell(),
-    },
+    { key: 'reference', header: this.copy.columnReference, cell: this.referenceCell() },
     {
       key: 'destination',
       header: this.copy.columnDestination,
       value: (referral) => referral.destinationName,
     },
-    { key: 'status', header: this.copy.columnStatus, sortField: 'status', cell: this.statusCell() },
+    { key: 'status', header: this.copy.columnStatus, cell: this.statusCell() },
     {
       key: 'urgency',
       header: this.copy.columnUrgency,
-      sortField: 'urgency',
       width: '110px',
       value: (referral) => REFERRAL_URGENCY_LABELS[referral.urgency],
     },
-    {
-      key: 'followUp',
-      header: this.copy.columnFollowUp,
-      sortField: 'followUpOn',
-      cell: this.followUpCell(),
-    },
+    { key: 'followUp', header: this.copy.columnFollowUp, cell: this.followUpCell() },
   ]);
 
   protected detailLink(referral: Referral): string {
@@ -353,22 +403,10 @@ export class ReferralListPage {
     void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
   }
 
-  protected onSortChanged(sort: SortSpec): void {
-    this.patch({ sort: sort.field, direction: sort.direction, page: null });
-  }
-
-  protected onPageChanged(page: number): void {
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { page: page > 1 ? String(page) : null },
-      queryParamsHandling: 'merge',
-    });
-  }
-
   private patch(changes: Readonly<Record<string, string | null>>): void {
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { ...changes, page: null },
+      queryParams: { ...changes },
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
