@@ -207,9 +207,16 @@ export const API_ENDPOINTS = {
   /**
    * The programme catalogue (casework phase 1d, `DL-176`): cursor-paged by name, `q`, `category`,
    * `status`; one by `{id}`; `{id}/requirement-templates`, answered whole; `POST` and `PATCH {id}`
-   * with the whole draft. Refusals name the console's own rules. Utilization is not served.
+   * with the whole draft and a reason (`DL-177`). Refusals name the console's own rules.
+   * Utilization is not served.
    */
   officePrograms: 'office/programs',
+  /**
+   * Requirement templates (`DL-177`): `GET`, whole, retired included; `POST` with a code and a
+   * reason; `PATCH {code}` with the documents whole and a reason; `POST {code}/retire` with a
+   * reason, one way. `program.view` reads, `program.manage` writes.
+   */
+  officeRequirementTemplates: 'office/requirement-templates',
   /**
    * The office directory, written (`DL-170`, `office.manage`): `POST` and `PATCH {id}` as forms,
    * because they carry the banner; `DELETE {id}`. Read through `offices`, which is public.

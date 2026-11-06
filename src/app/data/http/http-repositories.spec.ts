@@ -101,6 +101,9 @@ import OFFICE_PROGRAM from './fixtures/office-program.json';
 import OFFICE_PROGRAM_REFUSAL from './fixtures/office-program-refusal.json';
 import OFFICE_PROGRAM_TEMPLATES from './fixtures/office-program-templates.json';
 import OFFICE_PROGRAMS_PAGE from './fixtures/office-programs-page.json';
+import OFFICE_REQUIREMENT_TEMPLATE from './fixtures/office-requirement-template.json';
+import OFFICE_REQUIREMENT_TEMPLATE_REFUSAL from './fixtures/office-requirement-template-refusal.json';
+import OFFICE_REQUIREMENT_TEMPLATES from './fixtures/office-requirement-templates.json';
 import SAVED_VIEW from './fixtures/saved-view.json';
 import SAVED_VIEWS from './fixtures/saved-views.json';
 import {
@@ -1972,7 +1975,9 @@ describe('the Node adapters', () => {
         'updated_by',
       ];
 
-      const changed = firstValueFrom(programs.save(draft, program.id));
+      const changed = firstValueFrom(
+        programs.save(draft, program.id, '  The ceiling was raised by ordinance.  '),
+      );
       const patch = http.expectOne({
         method: 'PATCH',
         url: `${BASE}/office/programs/${program.id}`,
@@ -1982,14 +1987,16 @@ describe('the Node adapters', () => {
           Object.entries(OFFICE_PROGRAM.data).filter(([key]) => !unsent.includes(key)),
         ),
         legal_basis: null,
+        // Kept beside the version it explains (DL-177).
+        reason: 'The ceiling was raised by ordinance.',
       });
       patch.flush(OFFICE_PROGRAM);
       expect((await changed).id).toBe(program.id);
 
-      const created = firstValueFrom(programs.save(draft, null));
-      http
-        .expectOne({ method: 'POST', url: `${BASE}/office/programs` })
-        .flush(OFFICE_PROGRAM, { status: 201, statusText: 'Created' });
+      const created = firstValueFrom(programs.save(draft, null, 'Recorded from the 2026 budget.'));
+      const post = http.expectOne({ method: 'POST', url: `${BASE}/office/programs` });
+      expect(post.request.body.reason).toBe('Recorded from the 2026 budget.');
+      post.flush(OFFICE_PROGRAM, { status: 201, statusText: 'Created' });
       expect((await created).code).toBe('PRG-0001');
     });
 
@@ -1998,11 +2005,138 @@ describe('the Node adapters', () => {
       if (program === null) {
         throw new Error('The programme fixture could not be read.');
       }
-      const saved = firstValueFrom(programs.save(toProgramDraft(program), program.id));
+      const saved = firstValueFrom(
+        programs.save(toProgramDraft(program), program.id, 'Recorded as ours.'),
+      );
       http
         .expectOne({ method: 'PATCH', url: `${BASE}/office/programs/${program.id}` })
         .flush(OFFICE_PROGRAM_REFUSAL, { status: 422, statusText: 'Unprocessable Entity' });
       await expect(saved).rejects.toBeTruthy();
+    });
+
+    it('reads every requirement template whole, a retired one with when and what it still reaches', async () => {
+      const listed = firstValueFrom(programs.listTemplates());
+      const request = http.expectOne(`${BASE}/office/requirement-templates`);
+      expect(request.request.params.keys()).toEqual([]);
+      request.flush(OFFICE_REQUIREMENT_TEMPLATES);
+
+      const [active, retired] = await listed;
+      expect(active?.status).toBe('active');
+      expect(active?.programCount).toBe(3);
+      expect(active?.audit.createdBy).toBeNull();
+      expect(retired?.status).toBe('retired');
+      expect(retired?.retiredAt).toBe('2026-11-05T08:30:00.000Z');
+      expect(retired?.programCount).toBe(1);
+    });
+
+    it('refuses a template whose count or status it cannot read, rather than default either', async () => {
+      const [first] = OFFICE_REQUIREMENT_TEMPLATES.data;
+      // A zero would say a change reaches nobody; an assumed "active" would offer a retired one.
+      for (const broken of [
+        { ...first, program_count: null },
+        { ...first, status: 'archived' },
+      ]) {
+        const listed = firstValueFrom(programs.listTemplates());
+        http
+          .expectOne(`${BASE}/office/requirement-templates`)
+          .flush({ ...OFFICE_REQUIREMENT_TEMPLATES, data: [broken] });
+        await expect(listed).rejects.toThrow(/could not be read/);
+      }
+    });
+
+    it('records a template with its code and reason, and changes one with its documents whole', async () => {
+      const draft = {
+        code: ' aics-standard-sample ',
+        name: 'AICS standard documents (sample)',
+        description: '',
+        requirements: [
+          {
+            code: 'authorization-letter',
+            label: 'Authorization letter',
+            obligation: 'conditional' as const,
+            appliesWhen: 'When somebody else files on the applicant’s behalf.',
+            notes: '  ',
+          },
+        ],
+      };
+
+      const created = firstValueFrom(programs.saveTemplate(draft, null, 'A shared set for AICS.'));
+      const post = http.expectOne({ method: 'POST', url: `${BASE}/office/requirement-templates` });
+      expect(post.request.body).toEqual({
+        code: 'aics-standard-sample',
+        name: 'AICS standard documents (sample)',
+        description: '',
+        requirements: [
+          {
+            code: 'authorization-letter',
+            label: 'Authorization letter',
+            obligation: 'conditional',
+            applies_when: 'When somebody else files on the applicant’s behalf.',
+            notes: null,
+          },
+        ],
+        reason: 'A shared set for AICS.',
+      });
+      post.flush(OFFICE_REQUIREMENT_TEMPLATE, { status: 201, statusText: 'Created' });
+      expect((await created).programCount).toBe(3);
+
+      const changed = firstValueFrom(
+        programs.saveTemplate(draft, 'aics-standard-sample', 'The letter is asked for in words.'),
+      );
+      const patch = http.expectOne({
+        method: 'PATCH',
+        url: `${BASE}/office/requirement-templates/aics-standard-sample`,
+      });
+      // No code on a change: it never changes. The documents whole: the server replaces them whole.
+      expect(Object.keys(patch.request.body)).toEqual([
+        'name',
+        'description',
+        'requirements',
+        'reason',
+      ]);
+      patch.flush(OFFICE_REQUIREMENT_TEMPLATE);
+      expect((await changed).code).toBe('aics-standard-sample');
+    });
+
+    it('retires a template with a reason, and passes a refusal on in the server’s words', async () => {
+      const retired = firstValueFrom(
+        programs.retireTemplate('aics-standard-sample', 'Superseded by the 2026 set.'),
+      );
+      const retire = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/office/requirement-templates/aics-standard-sample/retire`,
+      });
+      expect(retire.request.body).toEqual({ reason: 'Superseded by the 2026 set.' });
+      retire.flush({
+        ...OFFICE_REQUIREMENT_TEMPLATE,
+        data: {
+          ...OFFICE_REQUIREMENT_TEMPLATE.data,
+          status: 'retired',
+          retired_at: '2026-11-06T04:00:00.000Z',
+        },
+      });
+      expect((await retired).status).toBe('retired');
+
+      const refused = firstValueFrom(
+        programs.saveTemplate(
+          { code: 'x-set', name: 'A set', description: '', requirements: [] },
+          null,
+          'Trying.',
+        ),
+      ).catch((failure: unknown) => failure);
+      http
+        .expectOne({ method: 'POST', url: `${BASE}/office/requirement-templates` })
+        .flush(OFFICE_REQUIREMENT_TEMPLATE_REFUSAL, {
+          status: 422,
+          statusText: 'Unprocessable Entity',
+        });
+      const failure = await refused;
+      expect(failure).toBeInstanceOf(HttpErrorResponse);
+      if (failure instanceof HttpErrorResponse) {
+        expect(readApiError(failure).details?.['condition-without-circumstances']).toEqual([
+          'A conditional document must state, in words, when it is needed.',
+        ]);
+      }
     });
 
     it('says utilization is not connected, and asks the API nothing for it', async () => {

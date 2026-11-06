@@ -107,6 +107,7 @@ import {
   type ProgramUtilizationReading,
   type ProgramUtilizationSummary,
   type RequirementTemplate,
+  type RequirementTemplateDraft,
   isValidSavedViewName,
   SAVED_VIEW_NAME_MAX_LENGTH,
   type FactorState,
@@ -223,6 +224,8 @@ import {
   toAssistanceProgram,
   toRequirementTemplate,
   toWireProgramDraft,
+  toWireRequirementTemplate,
+  toWireRequirementTemplatePatch,
 } from './mappers/program.mapper';
 import { toSavedView, toWireSavedViewDraft } from './mappers/saved-view.mapper';
 import { toVerificationRequest } from './mappers/verification.mapper';
@@ -2062,13 +2065,54 @@ export class HttpProgramRepository implements ProgramRepository {
       .pipe(map((rows) => rows.map(readRequirementTemplate)));
   }
 
-  /** The whole draft every time: the server checks its rules against exactly what the form showed. */
-  save(draft: ProgramDraft, id: ProgramId | null): Observable<AssistanceProgram> {
+  /**
+   * The whole draft every time, with the reason: the server checks its rules against exactly what
+   * the form showed, and keeps the reason beside the version (`DL-177`).
+   */
+  save(draft: ProgramDraft, id: ProgramId | null, reason: string): Observable<AssistanceProgram> {
     const saved =
       id === null
-        ? this.api.post(API_ENDPOINTS.officePrograms, toWireProgramDraft(draft))
-        : this.api.patch(`${API_ENDPOINTS.officePrograms}/${id}`, toWireProgramDraft(draft));
+        ? this.api.post(API_ENDPOINTS.officePrograms, toWireProgramDraft(draft, reason))
+        : this.api.patch(
+            `${API_ENDPOINTS.officePrograms}/${id}`,
+            toWireProgramDraft(draft, reason),
+          );
     return saved.pipe(map(readProgram));
+  }
+
+  /** Whole: the office keeps at most two hundred, so the answer is never a first page. */
+  listTemplates(): Observable<readonly RequirementTemplate[]> {
+    return this.api
+      .list(API_ENDPOINTS.officeRequirementTemplates)
+      .pipe(map((rows) => rows.map(readRequirementTemplate)));
+  }
+
+  /** A change sends the documents whole, because the server replaces them whole. */
+  saveTemplate(
+    draft: RequirementTemplateDraft,
+    code: string | null,
+    reason: string,
+  ): Observable<RequirementTemplate> {
+    const saved =
+      code === null
+        ? this.api.post(
+            API_ENDPOINTS.officeRequirementTemplates,
+            toWireRequirementTemplate(draft, reason),
+          )
+        : this.api.patch(
+            `${API_ENDPOINTS.officeRequirementTemplates}/${encodeURIComponent(code)}`,
+            toWireRequirementTemplatePatch(draft, reason),
+          );
+    return saved.pipe(map(readRequirementTemplate));
+  }
+
+  retireTemplate(code: string, reason: string): Observable<RequirementTemplate> {
+    return this.api
+      .post(
+        `${API_ENDPOINTS.officeRequirementTemplates}/${encodeURIComponent(code)}/retire`,
+        toWireReason(reason),
+      )
+      .pipe(map(readRequirementTemplate));
   }
 
   utilizationFor(): Observable<ProgramUtilizationReading> {

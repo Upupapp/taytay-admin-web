@@ -77,6 +77,17 @@
   font-size: 12.5px;
 }
 
+.program__problems p,
+.program__problems ul {
+  margin: 0;
+}
+
+.program__consequences {
+  margin: 0;
+  padding-inline-start: var(--space-base);
+  font-size: 13px;
+}
+
 .program__facts {
   margin: 0;
   display: grid;

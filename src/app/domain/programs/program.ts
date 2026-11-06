@@ -4,9 +4,22 @@ import type { IsoDate, ProgramId } from '../shared/ids';
 import type { Money } from '../shared/money';
 import type { StatusCatalog } from '../shared/status';
 import type { VulnerabilitySector } from '../residents/resident';
-import type { EligibilityGuideline } from './eligibility-guidance';
-import type { ProgramResponsibility } from './program-responsibility';
-import type { ReviewWindowPolicy } from './review-window';
+import {
+  guidanceProblems,
+  type EligibilityGuideline,
+  type GuidanceProblemCode,
+} from './eligibility-guidance';
+import {
+  responsibilityProblems,
+  type ProgramResponsibility,
+  type ResponsibilityProblemCode,
+} from './program-responsibility';
+import { requirementListProblems, type RequirementListProblemCode } from './requirement-template';
+import {
+  reviewWindowProblems,
+  type ReviewWindowPolicy,
+  type WindowProblemCode,
+} from './review-window';
 
 /**
  * Programme families administered by the Municipal Social Welfare and
@@ -152,6 +165,42 @@ export function toProgramDraft(program: AssistanceProgram): ProgramDraft {
     requirements: program.requirements,
     reviewWindow: program.reviewWindow,
   };
+}
+
+/** Every rule a programme record is held to, by the name the server refuses it under. */
+export type ProgramProblemCode =
+  ResponsibilityProblemCode | GuidanceProblemCode | WindowProblemCode | RequirementListProblemCode;
+
+export interface ProgramProblem {
+  readonly code: ProgramProblemCode;
+}
+
+/**
+ * What the record as it would stand breaks — whose programme it is (`DL-65`), its guidance
+ * (`DL-66`), its review window (`DL-68`) and its own documents (`DL-76`) — read as the server reads
+ * it, so a form can refuse before sending what the adapter and the server refuse anyway.
+ *
+ * About a programme, never about a person: nothing here takes an applicant.
+ */
+export function programProblems(draft: ProgramDraft): readonly ProgramProblem[] {
+  return [
+    ...responsibilityProblems(draft.responsibility),
+    ...guidanceProblems(draft.guidance),
+    ...(draft.reviewWindow === null ? [] : reviewWindowProblems(draft.reviewWindow)),
+    ...requirementListProblems(draft.requirements),
+  ];
+}
+
+/**
+ * The longest reason the server keeps beside a version of a programme or a template. Every
+ * change to the catalogue carries one, kept in a history nothing rewrites (`DL-177`).
+ */
+export const CATALOGUE_REASON_MAX_LENGTH = 500;
+
+/** A reason the server would keep: words, and not more than it keeps. */
+export function isCatalogueReason(reason: string): boolean {
+  const trimmed = reason.trim();
+  return trimmed.length > 0 && trimmed.length <= CATALOGUE_REASON_MAX_LENGTH;
 }
 
 export interface ProgramFilter {

@@ -17,6 +17,7 @@ import { NotificationStore } from '@core/notifications/notification.store';
 import {
   REQUIREMENT_OBLIGATION_LABELS,
   ADMINISTERING_AGENCIES,
+  CATALOGUE_REASON_MAX_LENGTH,
   DEFAULT_REVIEW_WINDOW,
   LGU_ROLES,
   PROGRAM_CATEGORY_LABELS,
@@ -24,11 +25,12 @@ import {
   PROGRAM_STATUS_CATALOG,
   asId,
   awaitsConfirmation,
+  isCatalogueReason,
   isFromTemplate,
   isNationalAgency,
   pesos,
+  programProblems,
   resolveRequirements,
-  responsibilityProblems,
   reviewWindowFor,
   toProgramDraft,
   type AdministeringAgency,
@@ -50,6 +52,7 @@ import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 
+import { refusalSentences } from './program-form';
 import { PROGRAMS_COPY } from './programs.copy';
 
 /** Everything the screen needs, read together so the parts cannot disagree. */
@@ -72,7 +75,8 @@ export interface ProgramView {
  *
  * The edit form refuses, before the adapter does, the combination that would
  * misrepresent the office: a national programme recorded as one the
- * municipality runs (`DL-65`).
+ * municipality runs (`DL-65`). It asks why, and says before the button that the
+ * version and its reason are kept for good (`DL-124`, `DL-177`).
  */
 @Component({
   selector: 'app-program-detail-page',
@@ -98,6 +102,8 @@ export class ProgramDetailPage {
   readonly id = input.required<string>();
 
   protected readonly copy = PROGRAMS_COPY.detail;
+  protected readonly reasonCopy = PROGRAMS_COPY.reason;
+  protected readonly reasonMax = CATALOGUE_REASON_MAX_LENGTH;
   protected readonly shared = PROGRAM_COPY;
   protected readonly statusCatalog = PROGRAM_STATUS_CATALOG;
   protected readonly agencies = ADMINISTERING_AGENCIES;
@@ -200,6 +206,10 @@ export class ProgramDetailPage {
 
   protected readonly editing = signal(false);
   protected readonly draft = signal<ProgramDraft | null>(null);
+  protected readonly reason = signal('');
+  protected readonly attempted = signal(false);
+  /** The server's refusal, sentence by sentence, in its words. */
+  protected readonly refusal = signal<readonly string[]>([]);
 
   constructor() {
     // The form is filled from the record when editing opens, and left alone
@@ -214,6 +224,9 @@ export class ProgramDetailPage {
 
   protected startEditing(): void {
     this.draft.set(null);
+    this.reason.set('');
+    this.attempted.set(false);
+    this.refusal.set([]);
     this.editing.set(true);
   }
 
@@ -224,11 +237,13 @@ export class ProgramDetailPage {
 
   /**
    * What the domain would refuse, shown while the user types rather than after
-   * they save. The adapter applies the same rule regardless.
+   * they save. The adapter and the server apply the same rules regardless, to
+   * the record as it would stand — so a rule broken in a part this form does not
+   * edit is said here too, rather than met as a refusal after saving.
    */
   protected readonly responsibilityIssues = computed(() => {
     const draft = this.draft();
-    return draft === null ? [] : responsibilityProblems(draft.responsibility);
+    return draft === null ? [] : programProblems(draft);
   });
 
   protected readonly wouldMisrepresent = computed(() =>
@@ -237,9 +252,29 @@ export class ProgramDetailPage {
     ),
   );
 
-  protected readonly canSave = computed(
-    () => this.draft() !== null && this.responsibilityIssues().length === 0 && !this.submitting(),
-  );
+  /** A reason not yet given, said beside the button rather than as a disabled one. */
+  protected readonly missing = computed(() => {
+    const reason = this.reason().trim();
+    if (reason === '') {
+      return [this.reasonCopy.missing];
+    }
+    return isCatalogueReason(reason) ? [] : [this.reasonCopy.tooLong];
+  });
+
+  /** Closing dates the programme's end; moving away from closed clears it — said before saving. */
+  protected statusConsequence(view: ProgramView, draft: ProgramDraft): string | null {
+    if (draft.status === 'closed' && view.program.status !== 'closed') {
+      return this.copy.closing;
+    }
+    if (draft.status !== 'closed' && view.program.status === 'closed') {
+      return this.copy.reopening;
+    }
+    return null;
+  }
+
+  protected onReason(event: Event): void {
+    this.reason.set((event.target as HTMLTextAreaElement).value);
+  }
 
   protected problemText(code: string): string {
     return PROGRAMS_COPY.problem[code] ?? code;
@@ -337,12 +372,19 @@ export class ProgramDetailPage {
   }
 
   protected save(): void {
+    this.attempted.set(true);
+    this.refusal.set([]);
     const draft = this.draft();
-    if (draft === null || !this.canSave()) {
+    if (
+      draft === null ||
+      this.responsibilityIssues().length > 0 ||
+      this.missing().length > 0 ||
+      this.submitting()
+    ) {
       return;
     }
     this.submitting.set(true);
-    this.repository.save(draft, asId<ProgramId>(this.id())).subscribe({
+    this.repository.save(draft, asId<ProgramId>(this.id()), this.reason().trim()).subscribe({
       next: () => {
         this.submitting.set(false);
         this.editing.set(false);
@@ -352,7 +394,7 @@ export class ProgramDetailPage {
       },
       error: (failure: unknown) => {
         this.submitting.set(false);
-        this.notifications.error(failure instanceof Error ? failure.message : this.copy.failed);
+        this.refusal.set(refusalSentences(failure, this.copy.failed));
       },
     });
   }

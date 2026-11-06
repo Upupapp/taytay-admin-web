@@ -12,6 +12,7 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { combineLatest, map, switchMap, tap } from 'rxjs';
 
+import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import {
   PROGRAM_CATEGORY_LABELS,
   PROGRAM_REPOSITORY,
@@ -72,7 +73,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-program-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, PageHeader, PesoPipe, RouterLink, StatusBadge],
+  imports: [DataTable, HasPermissionDirective, PageHeader, PesoPipe, RouterLink, StatusBadge],
   templateUrl: './program-list-page.html',
   styleUrl: './program-list-page.scss',
 })

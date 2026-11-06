@@ -1,0 +1,518 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions class="btn" routerLink="/programs">{{ copy.back }}</a>
+</app-page-header>
+
+@let current = form();
+@let draft = reading().draft;
+
+<form class="program-form" novalidate (submit)="submit($event)">
+  <fieldset class="card program-form__section">
+    <legend class="program-form__legend">{{ copy.basicsHeading }}</legend>
+    <div class="program-form__grid">
+      <label class="field program-form__wide">
+        <span class="field__label">{{ copy.name }}</span>
+        <input
+          type="text"
+          class="field__input"
+          maxlength="160"
+          [value]="current.name"
+          (input)="onText('name', $event)"
+        />
+      </label>
+      <label class="field">
+        <span class="field__label">{{ copy.category }}</span>
+        <select class="field__input" (change)="onCategory($event)">
+          @for (category of categories; track category) {
+            <option [value]="category" [selected]="current.category === category">
+              {{ categoryLabels[category] }}
+            </option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label">{{ copy.status }}</span>
+        <select
+          class="field__input"
+          aria-describedby="program-status-hint"
+          (change)="onStatus($event)"
+        >
+          @for (status of statuses; track status) {
+            <option [value]="status" [selected]="current.status === status">
+              {{ statusCatalog[status].label }}
+            </option>
+          }
+        </select>
+        <span class="field__hint" id="program-status-hint">{{ copy.statusHint }}</span>
+      </label>
+      <label class="field program-form__wide">
+        <span class="field__label">{{ copy.description }}</span>
+        <textarea
+          class="field__input"
+          rows="3"
+          maxlength="2000"
+          [value]="current.description"
+          (input)="onText('description', $event)"
+        ></textarea>
+      </label>
+      <label class="field">
+        <span class="field__label">{{ copy.legalBasis }}</span>
+        <input
+          type="text"
+          class="field__input"
+          maxlength="300"
+          aria-describedby="program-legal-hint"
+          [value]="current.legalBasis"
+          (input)="onText('legalBasis', $event)"
+        />
+        <span class="field__hint" id="program-legal-hint">{{ copy.legalBasisHint }}</span>
+      </label>
+      <label class="field">
+        <span class="field__label">{{ copy.funding }}</span>
+        <input
+          type="text"
+          class="field__input"
+          maxlength="200"
+          aria-describedby="program-funding-hint"
+          [value]="current.fundingSource"
+          (input)="onText('fundingSource', $event)"
+        />
+        <span class="field__hint" id="program-funding-hint">{{ copy.fundingHint }}</span>
+      </label>
+      <label class="field">
+        <span class="field__label">{{ copy.maximum }}</span>
+        <input
+          type="text"
+          inputmode="decimal"
+          class="field__input"
+          aria-describedby="program-maximum-hint"
+          [value]="current.maximumGrant"
+          (input)="onText('maximumGrant', $event)"
+        />
+        <span class="field__hint" id="program-maximum-hint">{{ copy.maximumHint }}</span>
+      </label>
+    </div>
+  </fieldset>
+
+  <!-- Whose programme it is decides what an applicant is told (DL-65). -->
+  <fieldset class="card program-form__section">
+    <legend class="program-form__legend">{{ copy.responsibilityHeading }}</legend>
+    <p class="program-form__note">{{ copy.responsibilityHint }}</p>
+    <div class="program-form__grid">
+      <label class="field">
+        <span class="field__label">{{ detailCopy.administeredBy }}</span>
+        <select class="field__input" (change)="onAdministeredBy($event)">
+          @for (agency of agencies; track agency) {
+            <option [value]="agency" [selected]="current.responsibility.administeredBy === agency">
+              {{ shared.agencyLabel[agency] }}
+            </option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label">{{ detailCopy.fundsHeldBy }}</span>
+        <select class="field__input" (change)="onFundsHeldBy($event)">
+          @for (agency of agencies; track agency) {
+            <option [value]="agency" [selected]="current.responsibility.fundsHeldBy === agency">
+              {{ shared.agencyLabel[agency] }}
+            </option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label">{{ detailCopy.lguRole }}</span>
+        <select class="field__input" (change)="onLguRole($event)">
+          @for (role of roles; track role) {
+            @if (roleShown(role)) {
+              <option [value]="role" [selected]="current.responsibility.lguRole === role">
+                {{ shared.roleLabel[role] }}
+              </option>
+            }
+          }
+        </select>
+        @if (wouldMisrepresent()) {
+          <span class="program-form__problem" role="alert">{{ detailCopy.ownerWarning }}</span>
+        }
+      </label>
+      <label class="field program-form__wide">
+        <span class="field__label">{{ detailCopy.statement }}</span>
+        <textarea
+          class="field__input"
+          rows="2"
+          maxlength="500"
+          aria-describedby="program-statement-hint"
+          [value]="current.responsibility.statement"
+          (input)="onStatement($event)"
+        ></textarea>
+        <span class="field__hint" id="program-statement-hint">{{ copy.statementHint }}</span>
+      </label>
+    </div>
+
+    <h3 class="program-form__subheading">{{ copy.sourcesHeading }}</h3>
+    <p class="field__hint">{{ copy.sourcesHint }}</p>
+    @for (source of current.responsibility.sources; track $index; let index = $index) {
+      <fieldset class="program-form__entry">
+        <legend class="program-form__entry-legend">{{ copy.sourceGroup(index + 1) }}</legend>
+        <div class="program-form__grid">
+          <label class="field">
+            <span class="field__label">{{ copy.sourceTitle }}</span>
+            <input
+              type="text"
+              class="field__input"
+              [value]="source.title"
+              (input)="onSourceText(index, 'title', $event)"
+            />
+          </label>
+          <label class="field">
+            <span class="field__label">{{ copy.sourceUrl }}</span>
+            <input
+              type="url"
+              class="field__input"
+              [value]="source.url"
+              (input)="onSourceText(index, 'url', $event)"
+            />
+          </label>
+          <label class="field">
+            <span class="field__label">{{ copy.sourceVerified }}</span>
+            <input
+              type="date"
+              class="field__input"
+              [value]="source.verifiedOn ?? ''"
+              (change)="onSourceVerified(index, $event)"
+            />
+          </label>
+        </div>
+        <button type="button" class="btn btn--subtle btn--small" (click)="removeSource(index)">
+          {{ copy.removeSource }}
+        </button>
+      </fieldset>
+    }
+    <button type="button" class="btn program-form__add" (click)="addSource()">
+      {{ copy.addSource }}
+    </button>
+
+    <h3 class="program-form__subheading">{{ copy.preview }}</h3>
+    <app-responsibility-notice [responsibility]="draft.responsibility" />
+  </fieldset>
+
+  <!-- Guidance is read by a person; none of it refuses anybody (DL-66). -->
+  <fieldset class="card program-form__section">
+    <legend class="program-form__legend">{{ copy.guidanceHeading }}</legend>
+    <p class="program-form__note">{{ copy.guidanceHint }}</p>
+    @for (guideline of current.guidance; track $index; let index = $index) {
+      <fieldset class="program-form__entry">
+        <legend class="program-form__entry-legend">{{ copy.guidelineGroup(index + 1) }}</legend>
+        <div class="program-form__grid">
+          <label class="field">
+            <span class="field__label">{{ copy.guidelineCode }}</span>
+            <select class="field__input" (change)="onGuidelineCode(index, $event)">
+              @for (code of guidanceCodes; track code) {
+                <option [value]="code" [selected]="guideline.code === code">
+                  {{ shared.guidanceCodeLabel[code] }}
+                </option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span class="field__label">{{ copy.guidelineWeight }}</span>
+            <select class="field__input" (change)="onGuidelineWeight(index, $event)">
+              @for (weight of weights; track weight) {
+                <option [value]="weight" [selected]="guideline.weight === weight">
+                  {{ shared.weightLabel[weight] }}
+                </option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span class="field__label">{{ copy.guidelineProvenance }}</span>
+            <select class="field__input" (change)="onGuidelineProvenance(index, $event)">
+              @for (provenance of provenances; track provenance) {
+                <option [value]="provenance" [selected]="guideline.provenance === provenance">
+                  {{ shared.provenanceLabel[provenance] }}
+                </option>
+              }
+            </select>
+          </label>
+          <label class="field program-form__wide">
+            <span class="field__label">{{ copy.guidelineStatement }}</span>
+            <textarea
+              class="field__input"
+              rows="2"
+              [value]="guideline.statement"
+              (input)="onGuidelineText(index, 'statement', $event)"
+            ></textarea>
+          </label>
+          <label class="field">
+            <span class="field__label">{{ copy.guidelineBasis }}</span>
+            <input
+              type="text"
+              class="field__input"
+              [value]="guideline.basis"
+              (input)="onGuidelineText(index, 'basis', $event)"
+            />
+          </label>
+          <label class="field">
+            <span class="field__label">{{ copy.guidelineSource }}</span>
+            <input
+              type="url"
+              class="field__input"
+              [value]="guideline.sourceUrl ?? ''"
+              (input)="onGuidelineSource(index, $event)"
+            />
+          </label>
+          <label class="field">
+            <span class="field__label">{{ copy.guidelineVerified }}</span>
+            <input
+              type="date"
+              class="field__input"
+              [value]="guideline.verifiedOn ?? ''"
+              (change)="onGuidelineVerified(index, $event)"
+            />
+          </label>
+        </div>
+        <button type="button" class="btn btn--subtle btn--small" (click)="removeGuideline(index)">
+          {{ copy.removeGuideline }}
+        </button>
+      </fieldset>
+    }
+    <button type="button" class="btn program-form__add" (click)="addGuideline()">
+      {{ copy.addGuideline }}
+    </button>
+
+    <fieldset class="program-form__entry">
+      <legend class="program-form__entry-legend">{{ copy.eligibilityHeading }}</legend>
+      <p class="field__hint">{{ copy.eligibilityHint }}</p>
+      <div class="program-form__grid">
+        <label class="field">
+          <span class="field__label">{{ copy.minAge }}</span>
+          <input
+            type="text"
+            inputmode="numeric"
+            class="field__input"
+            [value]="current.minAge"
+            (input)="onText('minAge', $event)"
+          />
+        </label>
+        <label class="field">
+          <span class="field__label">{{ copy.maxAge }}</span>
+          <input
+            type="text"
+            inputmode="numeric"
+            class="field__input"
+            [value]="current.maxAge"
+            (input)="onText('maxAge', $event)"
+          />
+        </label>
+        <label class="field">
+          <span class="field__label">{{ copy.income }}</span>
+          <input
+            type="text"
+            inputmode="decimal"
+            class="field__input"
+            [value]="current.incomeCeiling"
+            (input)="onText('incomeCeiling', $event)"
+          />
+        </label>
+        <label class="field">
+          <span class="field__label">{{ copy.residency }}</span>
+          <input
+            type="text"
+            inputmode="numeric"
+            class="field__input"
+            [value]="current.residencyMonths"
+            (input)="onText('residencyMonths', $event)"
+          />
+        </label>
+      </div>
+      <fieldset class="program-form__checks">
+        <legend class="field__label">{{ copy.sectors }}</legend>
+        @for (sector of sectors; track sector) {
+          <label class="program-form__check">
+            <input
+              type="checkbox"
+              [checked]="current.requiredSectors.includes(sector)"
+              (change)="onSector(sector, $event)"
+            />
+            {{ sectorLabels[sector] }}
+          </label>
+        }
+      </fieldset>
+      <label class="field">
+        <span class="field__label">{{ copy.eligibilityNotes }}</span>
+        <textarea
+          class="field__input"
+          rows="2"
+          maxlength="1000"
+          [value]="current.eligibilityNotes"
+          (input)="onText('eligibilityNotes', $event)"
+        ></textarea>
+      </label>
+    </fieldset>
+  </fieldset>
+
+  <fieldset class="card program-form__section">
+    <legend class="program-form__legend">{{ copy.documentsHeading }}</legend>
+    <label class="field">
+      <span class="field__label">{{ copy.template }}</span>
+      <select
+        class="field__input"
+        aria-describedby="program-template-hint"
+        (change)="onTemplate($event)"
+      >
+        <option value="" [selected]="current.requirementTemplateCode === null">
+          {{ copy.noTemplate }}
+        </option>
+        @for (template of adoptable(); track template.code) {
+          <option
+            [value]="template.code"
+            [selected]="current.requirementTemplateCode === template.code"
+          >
+            {{ template.name }}
+          </option>
+        }
+      </select>
+      <span class="field__hint" id="program-template-hint">{{ copy.templateHint }}</span>
+    </label>
+    @if (templatesFailed()) {
+      <p class="program-form__note" role="status">{{ copy.templatesUnread }}</p>
+    }
+    @if (chosenTemplate(); as template) {
+      <p class="program-form__note">{{ copy.templateDocuments(template.requirements.length) }}</p>
+    }
+    <app-requirement-list-editor
+      idPrefix="program-documents"
+      [requirements]="current.requirements"
+      (edited)="onRequirementEdit($event)"
+    />
+  </fieldset>
+
+  <fieldset class="card program-form__section">
+    <legend class="program-form__legend">{{ copy.windowHeading }}</legend>
+    <label class="program-form__check">
+      <input
+        type="checkbox"
+        aria-describedby="program-window-hint"
+        [checked]="current.ownWindow"
+        (change)="onOwnWindow($event)"
+      />
+      {{ copy.ownWindow }}
+    </label>
+    <p class="field__hint" id="program-window-hint">{{ copy.ownWindowHint }}</p>
+    @if (current.ownWindow) {
+      <div class="program-form__grid">
+        <label class="field">
+          <span class="field__label">{{ copy.lookback }}</span>
+          <input
+            type="text"
+            inputmode="numeric"
+            class="field__input"
+            [value]="current.lookbackMonths"
+            (input)="onText('lookbackMonths', $event)"
+          />
+        </label>
+        <label class="field">
+          <span class="field__label">{{ copy.sameProgramme }}</span>
+          <input
+            type="text"
+            inputmode="numeric"
+            class="field__input"
+            [value]="current.sameProgrammeDays"
+            (input)="onText('sameProgrammeDays', $event)"
+          />
+        </label>
+        <label class="field">
+          <span class="field__label">{{ copy.windowProvenance }}</span>
+          <select class="field__input" (change)="onWindowProvenance($event)">
+            @for (provenance of windowProvenances; track provenance) {
+              <option [value]="provenance" [selected]="current.windowProvenance === provenance">
+                {{ shared.windowProvenanceLabel[provenance] }}
+              </option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">{{ copy.windowBasis }}</span>
+          <input
+            type="text"
+            class="field__input"
+            [value]="current.windowBasis"
+            (input)="onText('windowBasis', $event)"
+          />
+        </label>
+        <label class="field">
+          <span class="field__label">{{ copy.windowConfirmed }}</span>
+          <input
+            type="date"
+            class="field__input"
+            [value]="current.windowConfirmedOn"
+            (change)="onText('windowConfirmedOn', $event)"
+          />
+        </label>
+      </div>
+    }
+  </fieldset>
+
+  <!-- What saving does, said before the button rather than after it (DL-124). -->
+  <section class="card program-form__section" aria-labelledby="program-consequences-heading">
+    <h2 class="program-form__legend" id="program-consequences-heading">
+      {{ detailCopy.consequencesHeading }}
+    </h2>
+    <ul class="program-form__consequences">
+      <li>{{ detailCopy.keptForever }}</li>
+      <li>{{ copy.notDeleted }}</li>
+      @if (chosenTemplate(); as template) {
+        <li>{{ copy.templateChosen(template.name) }}</li>
+      }
+      @if (current.status === 'closed') {
+        <li>{{ detailCopy.closing }}</li>
+      }
+    </ul>
+
+    <label class="field">
+      <span class="field__label">{{ reasonCopy.label }}</span>
+      <textarea
+        class="field__input"
+        rows="2"
+        aria-describedby="program-reason-hint"
+        [attr.maxlength]="reasonMax"
+        [value]="reason()"
+        (input)="onReason($event)"
+      ></textarea>
+      <span class="field__hint" id="program-reason-hint">{{ reasonCopy.hint }}</span>
+    </label>
+
+    @if (ruleProblems().length > 0) {
+      <div class="program-form__problems">
+        <p class="program-form__problems-heading">{{ detailCopy.missingHeading }}</p>
+        <ul>
+          @for (problem of ruleProblems(); track problem.code) {
+            <li>{{ problemText(problem.code) }}</li>
+          }
+        </ul>
+      </div>
+    }
+    @if (attempted() && missing().length > 0) {
+      <ul class="program-form__problems" role="alert">
+        @for (line of missing(); track line) {
+          <li>{{ line }}</li>
+        }
+      </ul>
+    }
+    @if (refusal().length > 0) {
+      <div class="program-form__problems" role="alert">
+        <p class="program-form__problems-heading">{{ detailCopy.refusedHeading }}</p>
+        <ul>
+          @for (sentence of refusal(); track $index) {
+            <li>{{ sentence }}</li>
+          }
+        </ul>
+      </div>
+    }
+
+    <div class="program-form__actions">
+      <a class="btn" routerLink="/programs">{{ detailCopy.cancel }}</a>
+      <button type="submit" class="btn btn--primary" [disabled]="saving()">
+        {{ saving() ? copy.saving : copy.save }}
+      </button>
+    </div>
+  </section>
+</form>

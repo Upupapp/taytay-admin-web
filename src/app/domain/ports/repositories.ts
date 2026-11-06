@@ -85,7 +85,10 @@ import type {
   ProgramUtilizationReading,
   ProgramUtilizationSummary,
 } from '../programs/program-utilization';
-import type { RequirementTemplate } from '../programs/requirement-template';
+import type {
+  RequirementTemplate,
+  RequirementTemplateDraft,
+} from '../programs/requirement-template';
 import type { DashboardFilter, DashboardSummary } from '../dashboard/dashboard-summary';
 import type {
   AcknowledgementKind,
@@ -535,8 +538,36 @@ export interface ProgramRepository {
   /**
    * Creates a programme, or updates the one at `id`. Idempotent on the
    * identifier the caller holds, like every other write in this application.
+   *
+   * The `reason` is required and kept beside the version it explains, in a history nothing
+   * rewrites (`DL-177`): a request decided under last year's wording stays explicable, and so
+   * does why the wording changed.
    */
-  save(draft: ProgramDraft, id: ProgramId | null): Observable<AssistanceProgram>;
+  save(draft: ProgramDraft, id: ProgramId | null, reason: string): Observable<AssistanceProgram>;
+
+  /**
+   * Every requirement template the office keeps, retired ones included, read whole — the office
+   * keeps at most `TEMPLATE_CAP`, so this is never a first page (`DL-161`). Retired ones are listed
+   * because programmes may still name them.
+   */
+  listTemplates(): Observable<readonly RequirementTemplate[]>;
+
+  /**
+   * Records a template under `draft.code` when `code` is `null`; otherwise changes the one at
+   * `code`, whose code never changes, and whose documents are replaced whole. A change reaches
+   * every programme naming the template from that moment. A retired template is not changed.
+   */
+  saveTemplate(
+    draft: RequirementTemplateDraft,
+    code: string | null,
+    reason: string,
+  ): Observable<RequirementTemplate>;
+
+  /**
+   * One way: no new programme adopts it, and those already naming it keep asking for its
+   * documents. Retiring a retired template answers it as it stands.
+   */
+  retireTemplate(code: string, reason: string): Observable<RequirementTemplate>;
 
   /**
    * How much a programme has been used. A description of the past (`DL-69`) — or, where releases

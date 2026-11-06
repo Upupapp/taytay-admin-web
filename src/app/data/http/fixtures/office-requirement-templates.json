@@ -1,0 +1,56 @@
+{
+  "data": [
+    {
+      "id": "3c1a9e2b-7d4f-4b6a-8e0c-5f1d2a3b4c90",
+      "code": "aics-standard-sample",
+      "name": "AICS standard documents (sample)",
+      "description": "A sample document set for demonstrations. Not the office’s list.",
+      "requirements": [
+        {
+          "code": "valid-id",
+          "label": "Valid government ID",
+          "obligation": "required",
+          "applies_when": null,
+          "notes": null
+        },
+        {
+          "code": "authorization-letter",
+          "label": "Authorization letter",
+          "obligation": "conditional",
+          "applies_when": "When somebody other than the applicant files the request on their behalf.",
+          "notes": null
+        }
+      ],
+      "status": "active",
+      "retired_at": null,
+      "program_count": 3,
+      "created_at": "2026-11-06T02:10:00.000Z",
+      "created_by": null,
+      "updated_at": "2026-11-06T02:10:00.000Z",
+      "updated_by": null
+    },
+    {
+      "id": "7e4b2d1c-9a3f-4c8e-b6d5-1a2b3c4d5e60",
+      "code": "municipal-old-sample",
+      "name": "Municipal documents, 2025 (sample)",
+      "description": "Superseded by the 2026 set. Programmes that still name it keep asking for it.",
+      "requirements": [
+        {
+          "code": "brgy-residency",
+          "label": "Barangay certificate of residency",
+          "obligation": "required",
+          "applies_when": null,
+          "notes": "Issued within the last six months."
+        }
+      ],
+      "status": "retired",
+      "retired_at": "2026-11-05T08:30:00.000Z",
+      "program_count": 1,
+      "created_at": "2026-10-01T01:00:00.000Z",
+      "created_by": "9d2f5c3a-1b7e-4e0a-8c6d-3f4e5a6b7c80",
+      "updated_at": "2026-11-05T08:30:00.000Z",
+      "updated_by": "9d2f5c3a-1b7e-4e0a-8c6d-3f4e5a6b7c80"
+    }
+  ],
+  "meta": {}
+}

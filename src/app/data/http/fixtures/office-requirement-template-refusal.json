@@ -1,0 +1,12 @@
+{
+  "error": {
+    "code": "VALIDATION_FAILED",
+    "message": "That requirement template cannot be saved as it stands.",
+    "details": {
+      "condition-without-circumstances": [
+        "A conditional document must state, in words, when it is needed."
+      ]
+    },
+    "request_id": "req-templates-1"
+  }
+}

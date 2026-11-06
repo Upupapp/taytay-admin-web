@@ -3073,7 +3073,7 @@
       "post": {
         "operationId": "createOfficeProgram",
         "summary": "Record a programme",
-        "description": "Needs program.manage. The server issues the reference and dates it from today in Asia/Manila. Refused with the console's rule names when the record would misdescribe the office or its guidance and documents are incomplete (OfficeProgramRefusalEnvelope). Appends the record whole to its revisions and audits office_program.created, in one transaction.",
+        "description": "Needs program.manage. The server issues the reference and dates it from today in Asia/Manila. Refused with the console's rule names when the record would misdescribe the office or its guidance and documents are incomplete (OfficeProgramRefusalEnvelope). Appends the record whole, with the reason given, to its revisions and audits office_program.created, in one transaction.",
         "security": [
           {
             "firebaseIdToken": []
@@ -3200,7 +3200,7 @@
       "patch": {
         "operationId": "updateOfficeProgram",
         "summary": "Change a programme",
-        "description": "Needs program.manage. The rules are checked against the whole record as it would stand, under a row lock. Moving to closed dates effective_to today; moving away from closed clears it. Nothing changed writes nothing — no revision, no audit. Otherwise appends the record whole to its revisions and audits office_program.updated. There is no delete: a programme that is over is closed.",
+        "description": "Needs program.manage. The rules are checked against the whole record as it would stand, under a row lock. Moving to closed dates effective_to today; moving away from closed clears it. Nothing changed writes nothing — no revision, no audit. Otherwise appends the record whole, with the reason given, to its revisions and audits office_program.updated. There is no delete: a programme that is over is closed.",
         "security": [
           {
             "firebaseIdToken": []
@@ -3335,6 +3335,316 @@
           },
           "404": {
             "description": "No such programme.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/requirement-templates": {
+      "get": {
+        "operationId": "listOfficeRequirementTemplates",
+        "summary": "Every requirement template",
+        "description": "Needs program.view. Answered whole, retired templates included, by name. No scope narrows it: it holds no personal data.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every template.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequirementTemplateCatalogEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without program.view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createOfficeRequirementTemplate",
+        "summary": "Record a requirement template",
+        "description": "Needs program.manage. Appends the template whole, with its reason, to its history and audits office_requirement_template.created in the same transaction.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeRequirementTemplateWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The template as recorded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequirementTemplateEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without program.manage.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The code is taken (codes are never reused), or the office already keeps 200 templates.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A rule of the template (OfficeRequirementTemplateRefusalEnvelope), a malformed field, or no reason.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/OfficeRequirementTemplateRefusalEnvelope"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/requirement-templates/{code}": {
+      "patch": {
+        "operationId": "updateOfficeRequirementTemplate",
+        "summary": "Change a requirement template",
+        "description": "Needs program.manage. Checked as it would stand, under a row lock. Every programme naming the template asks for its new documents from this moment: program_count says how many. Nothing changed writes nothing. Otherwise appends the template whole, with its reason, and audits office_requirement_template.updated.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{1,59}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeRequirementTemplatePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The template as it now stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequirementTemplateEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without program.manage.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such template.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The template is retired and is not changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A rule of the template, a malformed field, no reason, or a reason alone.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/OfficeRequirementTemplateRefusalEnvelope"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorEnvelope"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/requirement-templates/{code}/retire": {
+      "post": {
+        "operationId": "retireOfficeRequirementTemplate",
+        "summary": "Retire a requirement template",
+        "description": "Needs program.manage. One way. No new programme adopts it afterwards; a programme that already names it keeps asking for its documents until that programme is changed. Already retired answers as it stands and writes nothing. Otherwise appends the template, with its reason, and audits office_requirement_template.retired.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{1,59}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The template, retired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequirementTemplateEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without program.manage.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such template.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No reason.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6235,7 +6545,8 @@
         "guidance",
         "requirement_template_code",
         "requirements",
-        "review_window"
+        "review_window",
+        "reason"
       ],
       "properties": {
         "name": {
@@ -6315,14 +6626,20 @@
             }
           ],
           "description": "Null: the office default."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "Why, in words. Kept beside the version it explains, in the append-only history."
         }
       },
-      "description": "The console's ProgramDraft. No code: the office's reference is issued by the server."
+      "description": "The console's ProgramDraft and the reason for recording it. No code: the office's reference is issued by the server."
     },
     "OfficeProgramPatch": {
       "type": "object",
       "additionalProperties": false,
-      "minProperties": 1,
+      "minProperties": 2,
       "properties": {
         "name": {
           "type": "string",
@@ -6401,9 +6718,18 @@
             }
           ],
           "description": "Null: the office default."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "Why, in words. Kept beside the version it explains, in the append-only history."
         }
       },
-      "description": "Absent leaves a part as it is; a nested record is replaced whole. The rules are checked against the whole record as it would stand."
+      "description": "The parts to replace, at least one, and the reason. A reason alone is refused.",
+      "required": [
+        "reason"
+      ]
     },
     "OfficeProgram": {
       "type": "object",
@@ -6589,16 +6915,27 @@
     "OfficeRequirementTemplate": {
       "type": "object",
       "additionalProperties": false,
-      "description": "A named document set several programmes start from (DL-67). No route writes one yet: they come from the development seed.",
+      "description": "A named document set several programmes start from (DL-67). Written with program.manage, each act with a reason kept in its append-only history; retired one way, never deleted.",
       "required": [
+        "id",
         "code",
         "name",
         "description",
         "requirements",
+        "status",
+        "retired_at",
+        "program_count",
         "created_at",
-        "updated_at"
+        "created_by",
+        "updated_at",
+        "updated_by"
       ],
       "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "What the audit trail names it by."
+        },
         "code": {
           "type": "string"
         },
@@ -6614,13 +6951,48 @@
             "$ref": "#/components/schemas/OfficeProgramRequirement"
           }
         },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "retired"
+          ],
+          "description": "A retired template is adopted by no new programme. A programme that already names it keeps its documents."
+        },
+        "retired_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "program_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Programmes that are not closed and name this template, counted when read. Not stored."
+        },
         "created_at": {
           "type": "string",
           "format": "date-time"
         },
+        "created_by": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid",
+          "description": "Null only on rows written before templates had an author."
+        },
         "updated_at": {
           "type": "string",
           "format": "date-time"
+        },
+        "updated_by": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
         }
       }
     },
@@ -6672,7 +7044,155 @@
           }
         }
       ]
-    }
+    },
+      "OfficeRequirementTemplateWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "name",
+          "description",
+          "requirements",
+          "reason"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{1,59}$",
+            "description": "Never reused, retired or not."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeProgramRequirement"
+            },
+            "maxItems": 40
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "Why, in words. Kept beside the version it explains, in the append-only history."
+          }
+        }
+      },
+      "OfficeRequirementTemplatePatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "minProperties": 2,
+        "description": "The parts to replace, at least one, and the reason. The document list is replaced whole.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeProgramRequirement"
+            },
+            "maxItems": 40
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "Why, in words. Kept beside the version it explains, in the append-only history."
+          }
+        }
+      },
+      "OfficeRequirementTemplateEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeRequirementTemplate"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeRequirementTemplateCatalogEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeRequirementTemplate"
+            },
+            "description": "Whole, retired templates included, by name. The office keeps at most 200, so this is never a first page."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeRequirementTemplateProblemCode": {
+        "type": "string",
+        "enum": [
+          "empty-template",
+          "duplicate-code",
+          "label-too-short",
+          "condition-without-circumstances",
+          "circumstances-without-condition"
+        ],
+        "description": "The console's TemplateProblemCode, plus the two halves of a conditional document."
+      },
+      "OfficeRequirementTemplateRefusalEnvelope": {
+        "description": "A 422 refusal of a requirement template. Nothing was written. Each key of error.details is an OfficeRequirementTemplateProblemCode, its value one sentence.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ErrorEnvelope"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "object",
+                "properties": {
+                  "details": {
+                    "type": "object",
+                    "propertyNames": {
+                      "$ref": "#/components/schemas/OfficeRequirementTemplateProblemCode"
+                    },
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
     }
   }
 }

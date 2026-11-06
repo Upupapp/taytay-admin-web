@@ -15,7 +15,9 @@ import {
   isNationalAgency,
   isResponsibilityValid,
   isUnused,
+  isAdoptable,
   pesos,
+  requirementListProblems,
   resolveRequirements,
   responsibilityProblems,
   reviewWindowFor,
@@ -154,6 +156,9 @@ describe('requirement templates', () => {
       { code: 'valid-id', label: 'Valid government ID', obligation: 'required', appliesWhen: null, notes: null },
       { code: 'brgy-indigency', label: 'Indigency certificate', obligation: 'required', appliesWhen: null, notes: null },
     ],
+    status: 'active',
+    retiredAt: null,
+    programCount: 2,
     audit: {
       createdAt: NOW,
       createdBy: null,
@@ -200,6 +205,31 @@ describe('requirement templates', () => {
     expect(templateProblems({ ...template, requirements: [] }).map((p) => p.code)).toContain(
       'empty-template',
     );
+  });
+
+  // DL-76, as the server reads it (DL-177): a conditional document says when, and only it does.
+  it('refuses a conditional document without its circumstances, and circumstances on any other', () => {
+    const [id] = template.requirements;
+    if (id === undefined) {
+      throw new Error('The template sample has no document.');
+    }
+    const silent = { ...id, obligation: 'conditional' as const, appliesWhen: '   ' };
+    const stray = { ...id, code: 'stray', appliesWhen: 'When it rains.' };
+    expect(requirementListProblems([silent, stray]).map((p) => p.code)).toEqual([
+      'condition-without-circumstances',
+      'circumstances-without-condition',
+    ]);
+    expect(templateProblems({ requirements: [silent] }).map((p) => p.code)).toEqual([
+      'condition-without-circumstances',
+    ]);
+    expect(
+      requirementListProblems([{ ...silent, appliesWhen: 'When somebody files for another.' }]),
+    ).toEqual([]);
+  });
+
+  it('is adopted only while it is in use: retiring is one way', () => {
+    expect(isAdoptable(template)).toBe(true);
+    expect(isAdoptable({ ...template, status: 'retired', retiredAt: NOW })).toBe(false);
   });
 });
 

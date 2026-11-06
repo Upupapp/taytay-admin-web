@@ -1,0 +1,214 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions class="btn" routerLink="/programs">{{ copy.back }}</a>
+  @if (mode().kind === 'closed') {
+    <button page-actions type="button" class="btn btn--primary" (click)="startCreating()">
+      {{ copy.create }}
+    </button>
+  }
+</app-page-header>
+
+<div class="program-form">
+  @if (loadFailed()) {
+    <p class="card program-form__section program-form__problems" role="alert">
+      {{ copy.loadFailed }}
+    </p>
+  } @else {
+    <app-data-table
+      [caption]="copy.caption"
+      [columns]="columns()"
+      [rows]="templates()"
+      [rowKey]="rowKey"
+      [loading]="state().kind === 'loading'"
+      [emptyHeading]="copy.emptyHeading"
+      [emptyMessage]="copy.emptyMessage"
+    />
+  }
+
+  @let editing = mode();
+  @if (editing.kind !== 'closed') {
+    <form
+      class="card program-form__section"
+      novalidate
+      aria-labelledby="template-editor-heading"
+      (submit)="submit($event)"
+    >
+      <h2 class="program-form__legend" id="template-editor-heading">
+        @switch (editing.kind) {
+          @case ('create') {
+            {{ copy.createHeading }}
+          }
+          @case ('change') {
+            {{ copy.changeHeading(editing.template.name) }}
+          }
+          @case ('retire') {
+            {{ copy.retireHeading(editing.template.name) }}
+          }
+        }
+      </h2>
+
+      @if (editing.kind === 'create' || editing.kind === 'change') {
+        @let current = draft();
+        <div class="program-form__grid">
+          <label class="field">
+            <span class="field__label">{{ copy.code }}</span>
+            <!-- A code never changes once recorded: programmes name the template by it. -->
+            <input
+              type="text"
+              class="field__input"
+              autocomplete="off"
+              spellcheck="false"
+              maxlength="60"
+              aria-describedby="template-code-hint"
+              [readOnly]="editing.kind !== 'create'"
+              [value]="current.code"
+              (input)="onCode($event)"
+            />
+            <span class="field__hint" id="template-code-hint">{{ copy.codeHint }}</span>
+          </label>
+          <label class="field">
+            <span class="field__label">{{ copy.name }}</span>
+            <input
+              type="text"
+              class="field__input"
+              maxlength="120"
+              [value]="current.name"
+              (input)="onName($event)"
+            />
+          </label>
+          <label class="field program-form__wide">
+            <span class="field__label">{{ copy.description }}</span>
+            <textarea
+              class="field__input"
+              rows="2"
+              maxlength="1000"
+              [value]="current.description"
+              (input)="onDescription($event)"
+            ></textarea>
+          </label>
+        </div>
+
+        <h3 class="program-form__subheading">{{ copy.documentsHeading }}</h3>
+        <app-requirement-list-editor
+          idPrefix="template-documents"
+          [requirements]="current.requirements"
+          (edited)="onRequirementEdit($event)"
+        />
+      }
+
+      <!-- What this does, said before the button rather than after it (DL-124). -->
+      <h3 class="program-form__subheading">{{ detailCopy.consequencesHeading }}</h3>
+      <ul class="program-form__consequences">
+        @switch (editing.kind) {
+          @case ('create') {
+            <li>{{ copy.keptForever }}</li>
+            @if (draft().code.trim(); as code) {
+              <li>{{ copy.codeForever(code) }}</li>
+            }
+          }
+          @case ('change') {
+            <li>{{ copy.reaches(editing.template.programCount) }}</li>
+            <li>{{ copy.keptForever }}</li>
+          }
+          @case ('retire') {
+            <li>{{ copy.retireOneWay }}</li>
+            <li>{{ copy.retireNoAdoption }}</li>
+            <li>{{ copy.retireKeeps(editing.template.programCount) }}</li>
+            <li>{{ copy.keptForever }}</li>
+          }
+        }
+      </ul>
+
+      <label class="field">
+        <span class="field__label">{{ reasonCopy.label }}</span>
+        <textarea
+          class="field__input"
+          rows="2"
+          aria-describedby="template-reason-hint"
+          [attr.maxlength]="reasonMax"
+          [value]="reason()"
+          (input)="onReason($event)"
+        ></textarea>
+        <span class="field__hint" id="template-reason-hint">{{ reasonCopy.hint }}</span>
+      </label>
+
+      @if (documentProblems().length > 0) {
+        <div class="program-form__problems">
+          <p class="program-form__problems-heading">{{ detailCopy.missingHeading }}</p>
+          <ul>
+            @for (problem of documentProblems(); track problem.code) {
+              <li>{{ problemText(problem.code) }}</li>
+            }
+          </ul>
+        </div>
+      }
+      @if (attempted() && missing().length > 0) {
+        <ul class="program-form__problems" role="alert">
+          @for (line of missing(); track line) {
+            <li>{{ line }}</li>
+          }
+        </ul>
+      }
+      @if (refusal().length > 0) {
+        <div class="program-form__problems" role="alert">
+          <p class="program-form__problems-heading">{{ detailCopy.refusedHeading }}</p>
+          <ul>
+            @for (sentence of refusal(); track $index) {
+              <li>{{ sentence }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      <div class="program-form__actions">
+        <button type="button" class="btn" (click)="close()">{{ copy.cancel }}</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">
+          @if (saving()) {
+            {{ copy.working }}
+          } @else {
+            @switch (editing.kind) {
+              @case ('create') {
+                {{ copy.saveCreate }}
+              }
+              @case ('change') {
+                {{ copy.saveChange }}
+              }
+              @case ('retire') {
+                {{ copy.confirmRetire }}
+              }
+            }
+          }
+        </button>
+      </div>
+    </form>
+  }
+</div>
+
+<ng-template #nameCell let-template>
+  <span class="templates__name">{{ template.name }}</span>
+  <span class="templates__code">{{ template.code }}</span>
+</ng-template>
+
+<ng-template #statusCell let-template>
+  <app-status-badge [catalog]="statusCatalog" [status]="template.status" />
+  @if (template.retiredAt) {
+    <span class="templates__retired">
+      {{ copy.retiredOn }}
+      <time [attr.datetime]="template.retiredAt">{{ template.retiredAt | date: 'd MMM y' }}</time>
+    </span>
+  }
+</ng-template>
+
+<ng-template #actionsCell let-template>
+  @if (isActive(template)) {
+    <span class="templates__actions">
+      <button type="button" class="btn btn--small" (click)="startChanging(template)">
+        {{ copy.change }}
+      </button>
+      <button type="button" class="btn btn--small" (click)="startRetiring(template)">
+        {{ copy.retire }}
+      </button>
+    </span>
+  } @else {
+    <span class="templates__code">{{ copy.retiredNotChanged }}</span>
+  }
+</ng-template>

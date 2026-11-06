@@ -31,6 +31,10 @@ export const MOCK_REQUIREMENT_TEMPLATES: readonly RequirementTemplate[] = [
         notes: 'Prepared by the assigned social worker; required above the counter ceiling.',
       },
     ],
+    status: 'active',
+    retiredAt: null,
+    // Counted by the adapter when read, as the server counts it; never a stored tally.
+    programCount: 0,
     audit: stamp(240, 40),
   },
   {
@@ -47,6 +51,10 @@ export const MOCK_REQUIREMENT_TEMPLATES: readonly RequirementTemplate[] = [
         notes: 'Waived where the registry already records six months at the address.',
       },
     ],
+    status: 'active',
+    retiredAt: null,
+    // Counted by the adapter when read, as the server counts it; never a stored tally.
+    programCount: 0,
     audit: stamp(240, 40),
   },
 ];

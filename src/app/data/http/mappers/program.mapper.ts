@@ -8,6 +8,7 @@ import {
   PROGRAM_CATEGORY_LABELS,
   PROGRAM_STATUS_CATALOG,
   REQUIREMENT_OBLIGATIONS,
+  REQUIREMENT_TEMPLATE_STATUS_CATALOG,
   VULNERABILITY_SECTORS,
   WINDOW_PROVENANCES,
   type AssistanceProgram,
@@ -22,6 +23,8 @@ import {
   type ProgramResponsibility,
   type ProgramStatus,
   type RequirementTemplate,
+  type RequirementTemplateDraft,
+  type RequirementTemplateStatus,
   type ResponsibilitySource,
   type ReviewWindowPolicy,
   type StaffUserId,
@@ -32,6 +35,9 @@ import { date, dateTime, field, id, int, oneOf, str } from './wire';
 
 const CATEGORIES = Object.keys(PROGRAM_CATEGORY_LABELS) as readonly ProgramCategory[];
 const STATUSES = Object.keys(PROGRAM_STATUS_CATALOG) as readonly ProgramStatus[];
+const TEMPLATE_STATUSES = Object.keys(
+  REQUIREMENT_TEMPLATE_STATUS_CATALOG,
+) as readonly RequirementTemplateStatus[];
 
 /**
  * Programmes on the wire (`OfficeProgram`, casework phase 1d, `DL-176`).
@@ -128,21 +134,41 @@ export function toAssistanceProgram(wire: unknown): AssistanceProgram | null {
 }
 
 /**
- * A document set (`OfficeRequirementTemplate`). The API keeps no author for one — no route writes
- * a template — so `createdBy` and `updatedBy` are `null`, which the stamp already allows.
+ * A document set (`OfficeRequirementTemplate`, `DL-177`).
+ *
+ * | wire                       | domain         | if absent or unknown                          |
+ * | -------------------------- | -------------- | --------------------------------------------- |
+ * | `code`, `name`             | the same       | the template is not readable                  |
+ * | `requirements`             | the same       | the template is not readable                  |
+ * | `status`                   | `status`       | the template is not readable                  |
+ * | `retired_at`               | `retiredAt`    | `null`                                        |
+ * | `program_count`            | `programCount` | the template is not readable — never a zero   |
+ * | `created_by`, `updated_by` | `audit`        | `null`: rows written before templates had one |
+ *
+ * A count that cannot be read refuses the template rather than default to zero: the editor states
+ * it before a change as how many programmes the change reaches, and a zero would say none.
+ * Likewise a status: defaulted to active, a retired template would be offered for adoption.
  *
  * @consumes GET office/programs/{id}/requirement-templates
+ * @consumes GET office/requirement-templates
+ * @consumes POST office/requirement-templates
+ * @consumes PATCH office/requirement-templates/{code}
+ * @consumes POST office/requirement-templates/{code}/retire
  */
 export function toRequirementTemplate(wire: unknown): RequirementTemplate | null {
   const code = str(field(wire, 'code'));
   const name = str(field(wire, 'name'));
   const requirements = every(field(wire, 'requirements'), toRequirement);
+  const status = oneOf<RequirementTemplateStatus>(field(wire, 'status'), TEMPLATE_STATUSES);
+  const programCount = int(field(wire, 'program_count'));
   const createdAt = dateTime(field(wire, 'created_at'));
   const updatedAt = dateTime(field(wire, 'updated_at'));
   if (
     code === null ||
     name === null ||
     requirements === null ||
+    status === null ||
+    programCount === null ||
     createdAt === null ||
     updatedAt === null
   ) {
@@ -153,7 +179,15 @@ export function toRequirementTemplate(wire: unknown): RequirementTemplate | null
     name,
     description: str(field(wire, 'description')) ?? '',
     requirements,
-    audit: { createdAt, createdBy: null, updatedAt, updatedBy: null },
+    status,
+    retiredAt: dateTime(field(wire, 'retired_at')),
+    programCount,
+    audit: {
+      createdAt,
+      createdBy: id<StaffUserId>(field(wire, 'created_by')),
+      updatedAt,
+      updatedBy: id<StaffUserId>(field(wire, 'updated_by')),
+    },
   };
 }
 
@@ -305,7 +339,8 @@ function toReviewWindow(wire: unknown): ReviewWindowPolicy | undefined {
  * nothing else: the body is strict. The whole draft every time — the console's `save` holds the
  * whole record — so the server checks its rules against exactly what the form showed.
  *
- * No `code`: the office's reference is issued by the server.
+ * No `code`: the office's reference is issued by the server. A `reason`, always: the server keeps
+ * it beside the version it explains, and refuses a write without one (`DL-177`).
  */
 export interface ProgramDraftWire {
   readonly name: string;
@@ -358,6 +393,7 @@ export interface ProgramDraftWire {
     readonly basis: string | null;
     readonly confirmed_on: IsoDate | null;
   } | null;
+  readonly reason: string;
 }
 
 /** Empty optional text is sent as `null`: the API refuses an empty string where it allows none. */
@@ -366,7 +402,7 @@ function orNull(value: string | null): string | null {
   return trimmed === '' ? null : trimmed;
 }
 
-export function toWireProgramDraft(draft: ProgramDraft): ProgramDraftWire {
+export function toWireProgramDraft(draft: ProgramDraft, reason: string): ProgramDraftWire {
   const window = draft.reviewWindow;
   return {
     name: draft.name.trim(),
@@ -408,13 +444,7 @@ export function toWireProgramDraft(draft: ProgramDraft): ProgramDraftWire {
       verified_on: guideline.verifiedOn,
     })),
     requirement_template_code: draft.requirementTemplateCode,
-    requirements: draft.requirements.map((requirement) => ({
-      code: requirement.code,
-      label: requirement.label,
-      obligation: requirement.obligation,
-      applies_when: orNull(requirement.appliesWhen),
-      notes: orNull(requirement.notes),
-    })),
+    requirements: draft.requirements.map(toWireRequirement),
     review_window:
       window === null
         ? null
@@ -425,5 +455,74 @@ export function toWireProgramDraft(draft: ProgramDraft): ProgramDraftWire {
             basis: window.basis,
             confirmed_on: window.confirmedOn,
           },
+    reason: reason.trim(),
+  };
+}
+
+/** A document as `OfficeProgramRequirement` reads it, for a programme's own and a template's. */
+interface RequirementWire {
+  readonly code: string;
+  readonly label: string;
+  readonly obligation: ProgramRequirement['obligation'];
+  readonly applies_when: string | null;
+  readonly notes: string | null;
+}
+
+function toWireRequirement(requirement: ProgramRequirement): RequirementWire {
+  return {
+    code: requirement.code.trim(),
+    label: requirement.label.trim(),
+    obligation: requirement.obligation,
+    applies_when: orNull(requirement.appliesWhen),
+    notes: orNull(requirement.notes),
+  };
+}
+
+/**
+ * What `POST office/requirement-templates` reads (`OfficeRequirementTemplateWrite`): the code a
+ * new template is known by from now on, its documents, and why it was recorded.
+ */
+export interface RequirementTemplateWriteWire {
+  readonly code: string;
+  readonly name: string;
+  readonly description: string;
+  readonly requirements: readonly RequirementWire[];
+  readonly reason: string;
+}
+
+export function toWireRequirementTemplate(
+  draft: RequirementTemplateDraft,
+  reason: string,
+): RequirementTemplateWriteWire {
+  return {
+    code: draft.code.trim(),
+    name: draft.name.trim(),
+    description: draft.description.trim(),
+    requirements: draft.requirements.map(toWireRequirement),
+    reason: reason.trim(),
+  };
+}
+
+/**
+ * What `PATCH office/requirement-templates/{code}` reads (`OfficeRequirementTemplatePatch`). No
+ * `code` — it never changes — and the documents whole, because the server replaces them whole:
+ * the list the form showed is the list every programme naming the template asks for afterwards.
+ */
+export interface RequirementTemplatePatchWire {
+  readonly name: string;
+  readonly description: string;
+  readonly requirements: readonly RequirementWire[];
+  readonly reason: string;
+}
+
+export function toWireRequirementTemplatePatch(
+  draft: RequirementTemplateDraft,
+  reason: string,
+): RequirementTemplatePatchWire {
+  return {
+    name: draft.name.trim(),
+    description: draft.description.trim(),
+    requirements: draft.requirements.map(toWireRequirement),
+    reason: reason.trim(),
   };
 }

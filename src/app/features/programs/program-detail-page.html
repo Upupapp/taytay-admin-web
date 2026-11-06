@@ -109,6 +109,10 @@
           <p class="program__note">
             {{ copy.templateLabel }}: {{ template(view)?.name ?? copy.noTemplate }}
           </p>
+          @if (template(view)?.status === 'retired') {
+            <!-- Kept, not dropped: a programme naming a retired template still asks for it. -->
+            <p class="program__note">{{ copy.templateRetired }}</p>
+          }
 
           <ul class="documents">
             @for (document of documents(view); track document.code) {
@@ -331,9 +335,49 @@
           </ul>
         }
 
+        <!-- What saving does, said before the button rather than after it (DL-124). -->
+        <h3 class="program__subheading">{{ copy.consequencesHeading }}</h3>
+        <ul class="program__consequences">
+          <li>{{ copy.keptForever }}</li>
+          @if (statusConsequence(view, current); as consequence) {
+            <li>{{ consequence }}</li>
+          }
+        </ul>
+
+        <label class="field">
+          <span class="field__label">{{ reasonCopy.label }}</span>
+          <textarea
+            class="field__input"
+            rows="2"
+            aria-describedby="edit-reason-hint"
+            [attr.maxlength]="reasonMax"
+            [value]="reason()"
+            (input)="onReason($event)"
+          ></textarea>
+          <span class="field__hint" id="edit-reason-hint">{{ reasonCopy.hint }}</span>
+        </label>
+
+        @if (attempted() && missing().length > 0) {
+          <ul class="program__problems" role="alert">
+            @for (line of missing(); track line) {
+              <li>{{ line }}</li>
+            }
+          </ul>
+        }
+        @if (refusal().length > 0) {
+          <div class="program__problems" role="alert">
+            <p>{{ copy.refusedHeading }}</p>
+            <ul>
+              @for (sentence of refusal(); track $index) {
+                <li>{{ sentence }}</li>
+              }
+            </ul>
+          </div>
+        }
+
         <div class="program__actions">
           <button type="button" class="btn" (click)="cancelEditing()">{{ copy.cancel }}</button>
-          <button type="button" class="btn btn--primary" [disabled]="!canSave()" (click)="save()">
+          <button type="button" class="btn btn--primary" [disabled]="submitting()" (click)="save()">
             {{ copy.save }}
           </button>
         </div>

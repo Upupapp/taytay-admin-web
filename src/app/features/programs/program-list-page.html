@@ -1,4 +1,16 @@
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions *appHasPermission="'program.manage'" class="btn" routerLink="/programs/templates">
+    {{ copy.templates }}
+  </a>
+  <a
+    page-actions
+    *appHasPermission="'program.manage'"
+    class="btn btn--primary"
+    routerLink="/programs/new"
+  >
+    {{ copy.newProgramme }}
+  </a>
+</app-page-header>
 
 <div class="card catalog">
   <!-- Said before the table, because "everything the office hands out is the

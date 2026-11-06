@@ -302,6 +302,23 @@ export const routes: Routes = [
             loadComponent: () =>
               import('@features/programs/program-list-page').then((m) => m.ProgramListPage),
           },
+          // `new` and `templates` must precede `:id`, or each is read as a programme id.
+          {
+            path: 'new',
+            title: 'New programme — Taytay Social Welfare',
+            canActivate: [servedGuard('program'), permissionGuard('program.manage')],
+            loadComponent: () =>
+              import('@features/programs/program-form-page').then((m) => m.ProgramFormPage),
+          },
+          {
+            path: 'templates',
+            title: 'Requirement templates — Taytay Social Welfare',
+            canActivate: [servedGuard('program'), permissionGuard('program.manage')],
+            loadComponent: () =>
+              import('@features/programs/requirement-templates-page').then(
+                (m) => m.RequirementTemplatesPage,
+              ),
+          },
           {
             path: ':id',
             title: 'Programme — Taytay Social Welfare',

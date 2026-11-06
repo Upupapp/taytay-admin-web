@@ -1,0 +1,18 @@
+/* Layout only: the list's cells. The editor's layout is program-form-page.scss. */
+
+.templates__name {
+  display: block;
+  font-weight: 600;
+}
+
+.templates__code,
+.templates__retired {
+  display: block;
+  color: var(--c-text-muted);
+  font-size: 12px;
+}
+
+.templates__actions {
+  display: inline-flex;
+  gap: var(--space-compact);
+}

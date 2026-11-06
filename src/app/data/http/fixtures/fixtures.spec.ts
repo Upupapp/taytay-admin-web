@@ -39,6 +39,9 @@ import OFFICE_PROGRAM from './office-program.json';
 import OFFICE_PROGRAM_REFUSAL from './office-program-refusal.json';
 import OFFICE_PROGRAM_TEMPLATES from './office-program-templates.json';
 import OFFICE_PROGRAMS_PAGE from './office-programs-page.json';
+import OFFICE_REQUIREMENT_TEMPLATE from './office-requirement-template.json';
+import OFFICE_REQUIREMENT_TEMPLATE_REFUSAL from './office-requirement-template-refusal.json';
+import OFFICE_REQUIREMENT_TEMPLATES from './office-requirement-templates.json';
 import SAVED_VIEW from './saved-view.json';
 import SAVED_VIEWS from './saved-views.json';
 import DELETED from './deleted.json';
@@ -234,6 +237,17 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['office-program', OFFICE_PROGRAM, 'OfficeProgramEnvelope'],
     ['office-program-templates', OFFICE_PROGRAM_TEMPLATES, 'OfficeRequirementTemplateListEnvelope'],
     ['office-program-refusal', OFFICE_PROGRAM_REFUSAL, 'ErrorEnvelope'],
+    [
+      'office-requirement-templates',
+      OFFICE_REQUIREMENT_TEMPLATES,
+      'OfficeRequirementTemplateCatalogEnvelope',
+    ],
+    [
+      'office-requirement-template',
+      OFFICE_REQUIREMENT_TEMPLATE,
+      'OfficeRequirementTemplateEnvelope',
+    ],
+    ['office-requirement-template-refusal', OFFICE_REQUIREMENT_TEMPLATE_REFUSAL, 'ErrorEnvelope'],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
     ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],

@@ -1011,11 +1011,96 @@
         "code",
         "created_at",
         "name",
+        "program_count",
         "requirements",
+        "status",
         "updated_at"
       ],
       "optional": [
-        "description"
+        "created_by",
+        "description",
+        "retired_at",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/requirement-templates",
+      "consumer": "program.mapper.ts#toRequirementTemplate",
+      "required": [
+        "code",
+        "created_at",
+        "name",
+        "program_count",
+        "requirements",
+        "status",
+        "updated_at"
+      ],
+      "optional": [
+        "created_by",
+        "description",
+        "retired_at",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/requirement-templates",
+      "consumer": "program.mapper.ts#toRequirementTemplate",
+      "required": [
+        "code",
+        "created_at",
+        "name",
+        "program_count",
+        "requirements",
+        "status",
+        "updated_at"
+      ],
+      "optional": [
+        "created_by",
+        "description",
+        "retired_at",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "office/requirement-templates/{code}",
+      "consumer": "program.mapper.ts#toRequirementTemplate",
+      "required": [
+        "code",
+        "created_at",
+        "name",
+        "program_count",
+        "requirements",
+        "status",
+        "updated_at"
+      ],
+      "optional": [
+        "created_by",
+        "description",
+        "retired_at",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/requirement-templates/{code}/retire",
+      "consumer": "program.mapper.ts#toRequirementTemplate",
+      "required": [
+        "code",
+        "created_at",
+        "name",
+        "program_count",
+        "requirements",
+        "status",
+        "updated_at"
+      ],
+      "optional": [
+        "created_by",
+        "description",
+        "retired_at",
+        "updated_by"
       ]
     },
     {
