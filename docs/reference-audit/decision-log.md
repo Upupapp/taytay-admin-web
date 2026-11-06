@@ -1371,7 +1371,7 @@ the 4th, home visit on the 6th" is one column, in one order.
 
 ### DL-57 · `assigned-cases` means mine and nobody's, not mine alone
 
-**Status:** Settled (implemented in TAB 10; narrows the gap left by `DL-30`).
+**Status:** **Superseded by `DL-179`** (casework phase 3): a caseload is the cases assigned to it, without the pool. Was: Settled (implemented in TAB 10; narrows the gap left by `DL-30`).
 
 The `assigned-cases` data scope now narrows something. A social worker sees the
 cases assigned to them **and the cases assigned to nobody**; a colleague's
@@ -1414,7 +1414,7 @@ require reading a survivor's safety plan.
 
 ### DL-59 · Assignment offers two choices, not a staff directory
 
-**Status:** Settled (implemented in TAB 10).
+**Status:** **Superseded by `DL-179`** (casework phase 3): a case is given to a named social worker from the scoped `assignees` read this entry asked for, or to nobody. Was: Settled (implemented in TAB 10).
 
 The workspace lets a user take a case or return it to the unassigned pool. It
 does not offer a list of colleagues.
@@ -7087,3 +7087,141 @@ Backend `taytay-backend` `240803d`; the spec vendored here is its. Console `f3ac
 | `check:permission-parity` | the new routes' keys | 0 of 58 disagree |
 | `check:intake` | the not-recorded rule reads `toWireAssessment`'s keys under the server's names and requires `recordAssessment` to send it — validated by two planted breaks | passed; nothing decision-shaped |
 | `check:documents` | nothing removes a version | passed |
+
+## DL-179 — cases are served: the office's continuing file, appended, and a caseload that is its own
+
+Phase 3 of the casework (`docs/integration/node-api-migration.md`). Backend `taytay-backend`
+`aef52f8`; the spec vendored here is its. Console `fc30e89`.
+
+### What the server now decides
+
+- **A case is not a request** (`DL-52`). `office_cases` holds the subject, the category, the
+  presenting problem, the status and who holds it; the requests it covers are **named, one link at a
+  time** (`office_case_requests`), never inferred from the person. A filed request belongs to one
+  case at most, and is about the subject or somebody in the subject's household today. One person
+  may be the subject of two open cases.
+- **Every write takes a reason and appends its event in the same transaction** (`DL-54`).
+  `office_case_events` is the console's `CaseEvent`: identifiers, enum values and the reason. A
+  case's status and assignee, and a task's status, assignee and due date, move **only** because an
+  event was appended — the event's trigger writes them, and a guard refuses any other write. A case,
+  note, task or link inserted without its event is refused **at commit** by a deferred constraint
+  trigger. Nothing is updated in place or deleted: not an event, a note, a task, a link or a case.
+  Each event is also a platform audit row, `office_case.<act>`.
+- **`closed` is terminal** (`DL-53`). Nothing leaves it; every write on a closed case is refused. A
+  recurrence is a new case whose `continues_case_id` names a **closed** case. `case.close` is held
+  apart from `case.manage`, read from `office_case_statuses` as the console's
+  `CASE_TRANSITION_PERMISSIONS`, and compared with the console's file by a test.
+- **The next action is an open task** (`DL-55`): the open task due soonest, never the status. Add,
+  complete (the reason is the outcome), hand over and reschedule are each an event.
+- **Protected notes are withheld in the data layer** (`DL-58`): the entry is listed with its author
+  and time, `body` null and `is_withheld` true, for a reader without `case-note.view-protected`;
+  writing one needs that key.
+- **The queues** (`mine`, `unassigned`, `overdue`, `due-soon`, `stalled`, `all`) are SQL predicates
+  on the municipality's calendar, the same for the list and its counts, derived on every read
+  (`DL-83`): the next due date and the last activity — the case's events and the moves of the
+  requests it names — are never stored.
+
+### Decisions made here
+
+1. **A caseload is the cases assigned to it, and nothing else** — not the unassigned pool. The
+   owner's instruction for this phase; it **supersedes `DL-57`**, whose "mine and nobody's" let a
+   social worker read every unassigned file in the municipality. A case reaches a social worker by
+   being given to them. The mock follows.
+2. **Who gives a case, and to whom.** `case.manage` from an account that is not itself a caseload
+   — intake, the head, an administrator — to an **open account in the `social-worker` role**, from
+   `GET office/cases/assignees` (an id and a name), or back to nobody. This is the scoped
+   "assignable colleagues" read **`DL-59`** recorded as the fix for its gap, and supersedes its
+   "take it or return it" pair, which a caseload that cannot see the pool could no longer use. A
+   social worker does not reassign their own case. Intake assigns cases (unlike requests, `DL-178`
+   decision 1) because `DL-59` names intake as a role that assigns cases day to day, and the key is
+   `case.manage`.
+3. **A case does not widen the registry** — the narrower reading. It admits its worker to the
+   person it is about (disclosed by the registry's own rules) and to its own notes, tasks and
+   history. The subject's household and family are **not named** to a caseload (`withheld:
+   household_context`, `household_id` null); the resident, household and family routes stay
+   refused. A linked request is shown only if the request's own scope admits the reader — for a
+   social worker, the requests assigned to them; the rest are named by id and counted, never
+   opened through the case.
+4. **A protected subject's case withholds its words** from a reader without
+   `request.view-sensitive` — the summary, every event reason, task titles and outcomes, and every
+   note body — and that reader cannot add to it: the rule and the key of a protected request
+   (`DL-177`, `DL-178` decision 4), so an intake officer reads that a VAWC survivor's case exists, its
+   status and who holds it, and nothing of what it says.
+5. **Closing is refused while a task is open.** There is no "cancel" in the port, and closing over
+   an open task would leave an undertaking owed by nobody; the worker records what happened to each
+   (completing it with an outcome) first.
+6. **A task is owed by somebody who can see the case**: its writer, whoever holds the case, or
+   nobody yet. Handing a task to a social worker who does not hold the case would give them work on
+   a file they cannot open.
+7. **A link is never removed.** A wrongly named request stays named; the remedy is a note. An unlink,
+   if the office wants one, is a recorded act to add later, not an edit.
+8. **Search reads the case reference only** (`DL-109`): the summary is the presenting problem in
+   free text, and matching on it would disclose it.
+9. **File numbers** are `CASE-YYYY-NNNNNN`, issued when the case is opened, from the municipality's
+   year.
+
+### What the console now does
+
+- `HttpCaseRepository` serves every method of the port, and `case` leaves `UNSERVED_PORTS`
+  (eleven remain): **Cases is in the menu** against the API. Every read goes through
+  `case.mapper.ts` (the subject and the linked requests through the resident and request mappers),
+  every body through its own `toWire…`. The household and family beside a case are read from the
+  served household and family routes for a reader whose scope reaches them, and not asked for when
+  `household_context` is withheld; a failed read of either says so in its panel rather than failing
+  the case (`householdContextUnread`).
+- The port reads the list **a cursor page at a time** (no sort, no page numbers: the server orders
+  newest opened first and sends no total), and gains `open`, `linkRequest` and `listAssignees`, each
+  reached by a screen. Every mutation keeps its reason (`check:case-audit` rule 1).
+- The domain carries what the server withholds: nullable words, a `withheld` list and
+  `isProtected` on the case. A case no longer carries a family of its own; the workspace lists the
+  subject's families. **The timeline is one pure function, `caseTimeline`**, used by both adapters —
+  the case's events (now with `request-linked`), its notes, its completed tasks and the linked
+  requests' moves.
+- **Screens.** The list pages by cursor and offers "Open a case" to `case.manage` outside a
+  caseload; `/cases/new` opens one (subject through `PersonPicker`), and a closed case offers "Open a
+  new case continuing this one" instead of any write. The record gives a case to a named social
+  worker or to nobody (hidden from a caseload), sets tasks owed by the writer, the case's holder or
+  nobody, hands them over and moves their dates with a reason, names a request (the subject's own
+  filed requests), says "withheld" where words are withheld and offers that reader no write, says
+  the household is not shown to a caseload rather than "No household recorded", and counts the
+  linked requests it cannot open. **Closing is not offered while a task is open**; the record says
+  why.
+- **The mock follows the server**: the caseload without the pool, who assigns and to whom, the
+  closed case, closing over open tasks, task owners, the link rules with one case per request, and
+  protected withholding through the same domain function. Requests now sit in a shared
+  `MockAssistanceRequestStore`, so the case and request mocks read the same requests.
+- The platform audit trail words the ten `office_case.*` codes.
+- The work queue stays unserved (phase 6) and out of the menu; its task acts reach the same port.
+
+### For the owner
+
+- Decision 1 — whether a social worker should also see the **unassigned pool** (`DL-57` as it was).
+- Decision 3 — whether a social worker on a case should see the subject's **household and family**,
+  and the linked requests assigned to colleagues.
+- Decision 2 — whether **intake officers** should assign cases (they do), when they do not assign
+  requests.
+- Decision 5 — whether closing should instead **cancel** open tasks (a recorded act the port does
+  not yet have).
+- Decision 7 — whether a wrongly linked request needs an **unlink**.
+- The console offers a social worker "Name a request" only for the subject's own filed requests;
+  the server also accepts a household member's. Whether the screen should offer those too.
+- Reassigning a case does not move its open tasks: tasks owed by the previous worker stay theirs,
+  and they can no longer open the case. The work queue (phase 6) is where that shows.
+
+### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:contract-drift` | vendored `aef52f8` | 176 operations (was 163) |
+| `check:routes` | unserved ceiling lowered 12 → 11 | 34 endpoints, 133 composed requests (was 33, 120); 11 of 33 ports unrouted |
+| `check:unserved` | `case` served | 11 unserved, all declared; 65 routed screens (was 64); 3 screens degrade 4 panels in place |
+| `check:response-shape` | the case reads | 64/64 (was 57/57) |
+| `check:wire-adoption` | every case body through a `toWire…` | 78/78 (was 69/69) |
+| `check:port-adoption` | three new methods, each reached; `assignTask` reached too; baseline rewritten | 9 of 226 unreached (was 10 of 223) |
+| `check:query-params` | the case list's filters and queue | 63 reads (was 56) |
+| `check:consumer-contract` | regenerated | 122 interactions, 668 required fields (was 109, 611) |
+| `check:permission-parity` | the case routes' keys | 0 of 59 disagree |
+| `check:case-audit` | `listAssignees` read as a read; the store's `open`, `linkRequest`, `assignTask` and `rescheduleTask` held to appending an event | 9 port mutators, 9 store mutators, each with a reason and an event |
+
+The backend's own test compares its case lifecycle, transition keys, categories, queues,
+thresholds, task kinds and event kinds with this console's domain files (11/11).
