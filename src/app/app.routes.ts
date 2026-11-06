@@ -97,7 +97,8 @@ export const routes: Routes = [
             path: '',
             pathMatch: 'full',
             title: 'Residents — Taytay Social Welfare',
-            canActivate: [servedGuard('resident', 'saved-view'), permissionGuard('resident.view')],
+            // Saved views degrade in place on this screen; only the registry gates it (DL-175).
+            canActivate: [servedGuard('resident'), permissionGuard('resident.view')],
             loadComponent: () =>
               import('@features/residents/resident-list-page').then((m) => m.ResidentListPage),
           },
@@ -118,10 +119,8 @@ export const routes: Routes = [
           {
             path: ':id',
             title: 'Resident — Taytay Social Welfare',
-            canActivate: [
-              servedGuard('family', 'field-visit', 'resident'),
-              permissionGuard('resident.view'),
-            ],
+            // Families and home visits degrade in place on the record (DL-175).
+            canActivate: [servedGuard('resident'), permissionGuard('resident.view')],
             loadComponent: () =>
               import('@features/residents/resident-detail-page').then((m) => m.ResidentDetailPage),
           },
@@ -180,6 +179,14 @@ export const routes: Routes = [
               import('@features/households/household-list-page').then((m) => m.HouseholdListPage),
           },
           {
+            path: 'new',
+            title: 'Register a household — Taytay Social Welfare',
+            // The head is picked from the registry, so the form reads both.
+            canActivate: [servedGuard('household', 'resident'), permissionGuard('household.manage')],
+            loadComponent: () =>
+              import('@features/households/household-form-page').then((m) => m.HouseholdFormPage),
+          },
+          {
             path: ':id',
             title: 'Household — Taytay Social Welfare',
             canActivate: [servedGuard('household', 'resident'), permissionGuard('household.view')],
@@ -200,6 +207,18 @@ export const routes: Routes = [
             canActivate: [servedGuard('family'), permissionGuard('family.view')],
             loadComponent: () =>
               import('@features/families/family-list-page').then((m) => m.FamilyListPage),
+          },
+          {
+            path: 'new',
+            title: 'Record a family — Taytay Social Welfare',
+            // Members are picked from the registry and the household from the register, so the
+            // form reads all three.
+            canActivate: [
+              servedGuard('family', 'household', 'resident'),
+              permissionGuard('family.manage'),
+            ],
+            loadComponent: () =>
+              import('@features/families/family-form-page').then((m) => m.FamilyFormPage),
           },
           {
             path: ':id',

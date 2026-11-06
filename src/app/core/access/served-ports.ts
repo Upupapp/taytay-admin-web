@@ -20,8 +20,18 @@ export class ServedPorts {
   /** In the order `DATA_PORTS` lists them, so the page reads the same way on every visit. */
   readonly unserved: readonly DataPort[] = DATA_PORTS.filter((port) => this.missing.has(port));
 
+  /**
+   * Whether one port is served — the question a secondary panel asks before it reads (`DL-175`).
+   *
+   * Written as a literal call, `served.serves('field-visit')`, so `check:unserved` can see which
+   * panels a screen degrades in place and hold each one to the notice that replaces it.
+   */
+  serves(port: DataPort): boolean {
+    return !this.missing.has(port);
+  }
+
   servesAll(ports: readonly DataPort[]): boolean {
-    return ports.every((port) => !this.missing.has(port));
+    return ports.every((port) => this.serves(port));
   }
 }
 
@@ -36,8 +46,14 @@ export type ServedGuard = CanActivateFn & { readonly ports: readonly DataPort[] 
  * Listed **before** the permission guard. The router lets the first redirect in declaration order
  * win, and "this module has no server" is the truer answer than "you may not open it": nobody could.
  *
- * Every port the screen reads, not only its main one. A screen that can load its list and not the
- * people picker beside it fails half-way, which reads as a record with a missing piece.
+ * Only the screen's **primary** ports — the ones without which there is no screen (`DL-175`,
+ * narrowing `DL-167`). A secondary panel whose port is unserved does not withhold the module: it
+ * asks `ServedPorts.serves`, makes no call, and shows `<app-not-connected>` where it would have
+ * been. Withholding the resident registry because saved views are not served hid a working screen
+ * to protect a row of chips.
+ *
+ * A port the screen cannot do without still belongs here. A list that loads and a picker it needs
+ * to act on that does not would fail half-way, which reads as a record with a missing piece.
  */
 export function servedGuard(...ports: readonly DataPort[]): ServedGuard {
   const guard: CanActivateFn = (): boolean | UrlTree =>

@@ -1,4 +1,13 @@
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a
+    page-actions
+    *appHasPermission="'household.manage'"
+    class="btn btn--primary"
+    routerLink="/households/new"
+  >
+    {{ copy.create }}
+  </a>
+</app-page-header>
 
 <div class="card households">
   <!-- Said before the table, not in a tooltip on it. A band read without this
@@ -13,6 +22,7 @@
         class="filters__input"
         [placeholder]="copy.searchPlaceholder"
         [value]="searchText()"
+        aria-describedby="household-search-hint"
         (input)="onSearch($event)"
       />
     </label>
@@ -55,28 +65,57 @@
     }
   </div>
 
+  <p class="households__hint" id="household-search-hint">{{ copy.searchHint }} {{ copy.order }}</p>
+
+  @if (failure(); as message) {
+    <div class="households__problem" role="alert">
+      <p>{{ message }}</p>
+      <button type="button" class="btn" (click)="retry()">{{ copy.tryAgain }}</button>
+    </div>
+  }
+
   <app-data-table
     [caption]="copy.caption"
     [columns]="columns()"
     [rows]="rows()"
     [rowKey]="rowKey"
     [loading]="isLoading()"
-    [page]="page()"
-    [sort]="sort()"
     [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
     [emptyHeading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
     [emptyMessage]="hasFilters() ? copy.noResultsMessage : copy.emptyMessage"
     [emptyActionLabel]="hasFilters() ? copy.clear : null"
-    (sortChanged)="onSortChanged($event)"
-    (pageChanged)="onPageChanged($event)"
     (emptyActionSelected)="clearFilters()"
   />
+
+  @if (rows().length > 0) {
+    <div class="households__more">
+      <p class="households__hint" role="status">
+        {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
+      </p>
+      @if (hasMore()) {
+        <button
+          type="button"
+          class="btn btn--secondary"
+          [disabled]="loadingMore()"
+          (click)="showMore()"
+        >
+          {{ loadingMore() ? copy.loadingMore : copy.showMore }}
+        </button>
+      }
+      @if (moreFailed()) {
+        <p class="households__problem" role="alert">{{ copy.moreFailed }}</p>
+      }
+    </div>
+  }
 </div>
 
 <ng-template #referenceCell let-summary>
   <a class="households__reference" [routerLink]="detailLink(summary)">
     {{ summary.household.referenceNumber }}
   </a>
+  @if (summary.isProtected) {
+    <span class="households__protected">{{ copy.protected }}</span>
+  }
 </ng-template>
 
 <!-- The band is named in words. The fill only repeats what the text says. -->

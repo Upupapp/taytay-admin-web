@@ -1,4 +1,8 @@
-import type { RelationshipProblemCode, TransferProblemCode } from '@domain/index';
+import type {
+  FamilyDraftProblemCode,
+  RelationshipProblemCode,
+  TransferProblemCode,
+} from '@domain/index';
 
 /** Every user-facing string for the family registry (`DL-23`). */
 export const FAMILIES_COPY = {
@@ -13,7 +17,10 @@ export const FAMILIES_COPY = {
     notTheSameBanner:
       'A household is an address; a family is a unit of care. One address often holds several families, and a family can be between addresses with no household at all.',
     search: 'Search',
-    searchPlaceholder: 'Family name, reference or head',
+    searchPlaceholder: 'Family number, name or head’s surname',
+    searchHint:
+      'Type at least two characters. Every word must match the family number, its name or the surname of its head.',
+    order: 'In order of family number.',
     barangay: 'Barangay',
     allBarangays: 'All barangays',
     unhousedOnly: 'Not linked to a household',
@@ -27,9 +34,68 @@ export const FAMILIES_COPY = {
     noHousehold: 'None recorded',
     dissolved: 'Dissolved',
     emptyHeading: 'No families yet',
-    emptyMessage: 'Families appear here once relationships have been recorded.',
+    emptyMessage: 'Families appear here once one is recorded with its members.',
     noResultsHeading: 'No families match those filters',
     noResultsMessage: 'Try a different spelling, or clear the filters.',
+    create: 'Record a family',
+    shown: (count: number) => `${count} shown.`,
+    moreAvailable: 'More are available.',
+    noMore: 'That is every family matching these filters.',
+    showMore: 'Show more',
+    tryAgain: 'Try again',
+    loadingMore: 'Loading more…',
+    moreFailed:
+      'The next families could not be loaded. The ones above are still correct; try again.',
+  },
+
+  create: {
+    title: 'Record a family',
+    subtitle: 'Who belongs to whom — the people, each with their role, and where they live if anywhere.',
+    back: 'Back to families',
+    familyHeading: 'The family',
+    name: 'Name',
+    nameHint: 'How the office refers to them — usually the surname, then “family”.',
+    formedOn: 'Together since',
+    formedOnHint: 'Optional. Leave it empty if nobody knows.',
+    membersHeading: 'Members',
+    addMember: 'Add a member',
+    addMemberHint:
+      'Search the registry. A person not yet registered is registered first, as a resident.',
+    alreadyListed: 'That person is already listed in this family.',
+    role: 'Role',
+    roleOf: (name: string) => `Role of ${name}`,
+    remove: 'Remove',
+    removeNamed: (name: string) => `Remove ${name} from this family`,
+    noMembersYet: 'Nobody added yet. A family is recorded with at least one member.',
+    tooManyMembers: 'A family is recorded with at most 30 members; add the rest from its record.',
+    householdHeading: 'Where they live',
+    noHousehold: 'No household — between addresses, or split across two',
+    /**
+     * Said beside the choice rather than after it, because the reader arrives assuming a family
+     * must have an address (`DL-47`).
+     */
+    noHouseholdNote:
+      'A family between addresses, or split across two, is an ordinary thing to record. It is not missing information.',
+    findHousehold: 'Find the household',
+    findHouseholdHint:
+      'Type at least two characters of the household number, the head’s surname or the street.',
+    householdSearching: 'Searching the household register…',
+    householdNoneFound: 'No household matches. Check the spelling, or record the family with none.',
+    householdMore: 'More households match; type more to narrow them.',
+    householdChosen: 'Lives in:',
+    chooseHousehold: 'Live here',
+    changeHousehold: 'Choose another household',
+    householdFailed: 'The household register could not be searched. Try again, or record no household.',
+    reason: 'Why is this family being recorded?',
+    reasonHint: 'Required. Kept with the family and with each member’s joining, against your name.',
+    reasonPlaceholder: 'e.g. Intake interview 12 August: mother and two children',
+    submit: 'Record family',
+    submitting: 'Recording…',
+    missingName: 'Give the family a name.',
+    missingMembers: 'Add at least one member.',
+    missingReason: 'Say why the family is being recorded.',
+    saved: 'Family recorded.',
+    failed: 'The family could not be recorded.',
   },
 
   detail: {
@@ -38,14 +104,14 @@ export const FAMILIES_COPY = {
     isHead: 'Head of this family',
     headChanged: 'The head of this family was changed.',
     headNotChanged: 'The head was NOT changed. Nothing was saved.',
-    /**
-     * The endpoint records no reason, and this one is never sent.
-     *
-     * Kept so the port's contract is honoured rather than the call site quietly dropping an
-     * argument — DL-48 wants a reason on every family change, and that the API has nowhere to put
-     * it is recorded in release-engineering.md rather than hidden here.
-     */
-    headChangedReason: 'Recorded from the family record.',
+    headHeading: 'Change who heads this family',
+    headDescription:
+      'Say why this person now heads the family. The reason is kept with the change in the ' +
+      'family’s history, and nothing removes it.',
+    headReason: 'Reason',
+    headReasonPlaceholder: 'e.g. Her husband now works in Qatar and she runs the household.',
+    headConfirm: 'Make head',
+    headCancel: 'Cancel',
     subtitle: 'Family record',
     notFoundHeading: 'That family is not available',
     notFoundMessage:
@@ -127,6 +193,17 @@ export const FAMILIES_COPY = {
     'would-orphan-head':
       'This person heads the family. Give the family another head before moving them out.',
   } satisfies Record<TransferProblemCode, string>,
+
+  draftProblem: {
+    'no-name': 'Give the family a name of up to 120 characters.',
+    'no-members': 'Add at least one member.',
+    'too-many-members': 'A family is recorded with at most 30 members.',
+    'duplicate-member': 'The same person is listed twice.',
+    'resident-not-found': 'A person listed is not on the registry, or is outside the area you cover.',
+    'household-not-found':
+      'That household is not on the register, or is outside the area you cover.',
+    'no-reason': 'Say why the family is being recorded.',
+  } satisfies Record<FamilyDraftProblemCode, string>,
 
   relationshipProblem: {
     'same-person': 'A person cannot be related to themselves.',

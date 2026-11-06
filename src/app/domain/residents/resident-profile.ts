@@ -81,8 +81,31 @@ export interface ResidentProfile {
    * is `FamilyRepository.familiesOf`, and the answer can be more than one.
    */
   readonly householdMembers: HouseholdComposition;
-  readonly history: ResidentAssistanceHistory;
+  readonly history: AssistanceHistoryReading;
 }
+
+/**
+ * The office's assistance history for one person, or why it could not be read.
+ *
+ * A union for the reason `HouseholdComposition` is one. Empty lists say "this resident was never
+ * helped", which is a claim about a family and, at intake, the answer to "has this household had
+ * help before?". Where the API serving the registry does not serve requests, payouts or referrals,
+ * the console cannot make that claim, and an empty history would make it anyway (`DL-112`).
+ */
+export type AssistanceHistoryReading =
+  | { readonly kind: 'read'; readonly history: ResidentAssistanceHistory }
+  /** `because` is shown to the reader, so it names what is missing rather than a defect. */
+  | { readonly kind: 'unavailable'; readonly because: string };
+
+/**
+ * Why the history could not be read — in the domain beside `HOUSEHOLD_COMPOSITION_UNREADABLE`, for
+ * the same reason: the data layer decides the answer is unavailable, and the sentence has to travel
+ * with that decision or a second screen words the absence differently.
+ */
+export const ASSISTANCE_HISTORY_NOT_CONNECTED =
+  'This resident’s assistance history — requests, payouts and referrals — is not connected yet: ' +
+  'the office’s API does not serve it, so none of it was read. This is not a statement that the ' +
+  'resident was never helped.';
 
 /**
  * What the office could establish about who else lives at this address.

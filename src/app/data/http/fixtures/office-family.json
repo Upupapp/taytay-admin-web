@@ -1,0 +1,310 @@
+{
+  "data": {
+    "family": {
+      "id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01",
+      "reference_number": "FAM-2026-000021",
+      "name": "Dela Cruz family",
+      "household_id": "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e01",
+      "formed_on": "2026-11-06",
+      "dissolved_on": null,
+      "members": [
+        {
+          "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+          "role": "head",
+          "joined_on": "2026-11-06",
+          "left_on": null
+        },
+        {
+          "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c05",
+          "role": "child",
+          "joined_on": "2026-11-06",
+          "left_on": null
+        },
+        {
+          "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c07",
+          "role": "partner",
+          "joined_on": "2026-11-06",
+          "left_on": "2026-11-06"
+        }
+      ],
+      "created_at": "2026-11-06T03:10:00.000Z",
+      "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+      "updated_at": "2026-11-06T05:30:00.000Z",
+      "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+    },
+    "members": [
+      {
+        "resident": {
+          "id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+          "first_name": "Maria",
+          "middle_name": "Santos",
+          "last_name": "Dela Cruz",
+          "suffix": null,
+          "sex": "female",
+          "birth_date": "1984-04-02",
+          "civil_status": "separated",
+          "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+          "purok_or_sitio": null,
+          "street_address": null,
+          "mobile": "09170000103",
+          "email": null,
+          "sectors": [],
+          "philsys_last_four": null,
+          "monthly_income_centavos": null,
+          "is_active": true,
+          "is_protected": false,
+          "given_name_masked": false,
+          "withheld": [
+            "philsys_last_four",
+            "monthly_income",
+            "exact_address"
+          ],
+          "created_at": "2026-11-06T02:00:00.000Z",
+          "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+          "updated_at": "2026-11-06T02:00:00.000Z",
+          "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+        },
+        "role": "head",
+        "is_current_member": true
+      },
+      {
+        "resident": {
+          "id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c05",
+          "first_name": "J",
+          "middle_name": null,
+          "last_name": "Dela Cruz",
+          "suffix": null,
+          "sex": "male",
+          "birth_date": "2011-08-19",
+          "civil_status": "single",
+          "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+          "purok_or_sitio": null,
+          "street_address": null,
+          "mobile": null,
+          "email": null,
+          "sectors": [],
+          "philsys_last_four": null,
+          "monthly_income_centavos": null,
+          "is_active": true,
+          "is_protected": true,
+          "given_name_masked": true,
+          "withheld": [
+            "protected_sectors",
+            "exact_address"
+          ],
+          "created_at": "2026-11-06T02:30:00.000Z",
+          "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+          "updated_at": "2026-11-06T02:30:00.000Z",
+          "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+        },
+        "role": "child",
+        "is_current_member": true
+      },
+      {
+        "resident": {
+          "id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c07",
+          "first_name": "Pedro",
+          "middle_name": null,
+          "last_name": "Dela Cruz",
+          "suffix": null,
+          "sex": "male",
+          "birth_date": "1980-01-15",
+          "civil_status": "separated",
+          "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+          "purok_or_sitio": null,
+          "street_address": null,
+          "mobile": null,
+          "email": null,
+          "sectors": [],
+          "philsys_last_four": null,
+          "monthly_income_centavos": null,
+          "is_active": true,
+          "is_protected": false,
+          "given_name_masked": false,
+          "withheld": [
+            "exact_address"
+          ],
+          "created_at": "2026-11-06T02:10:00.000Z",
+          "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+          "updated_at": "2026-11-06T02:10:00.000Z",
+          "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+        },
+        "role": null,
+        "is_current_member": false
+      }
+    ],
+    "relationships": [
+      {
+        "id": "8b9c0d1e-2f3a-4b4c-8d5e-6f7a8b9c0d01",
+        "from_resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+        "to_resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c05",
+        "kind": "parent-of",
+        "since": "2011-08-19",
+        "until": null,
+        "created_at": "2026-11-06T04:10:00.000Z",
+        "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "updated_at": "2026-11-06T04:10:00.000Z",
+        "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+      },
+      {
+        "id": "8b9c0d1e-2f3a-4b4c-8d5e-6f7a8b9c0d02",
+        "from_resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c07",
+        "to_resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+        "kind": "spouse-of",
+        "since": "2008-02-14",
+        "until": "2026-11-06",
+        "created_at": "2026-11-06T04:20:00.000Z",
+        "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "updated_at": "2026-11-06T05:20:00.000Z",
+        "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+      }
+    ],
+    "others_in_household": [
+      {
+        "family": {
+          "id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a03",
+          "reference_number": "FAM-2026-000023",
+          "name": "Reyes family",
+          "household_id": "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e01",
+          "formed_on": null,
+          "dissolved_on": null,
+          "members": [
+            {
+              "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c09",
+              "role": "head",
+              "joined_on": "2026-11-06",
+              "left_on": null
+            }
+          ],
+          "created_at": "2026-11-06T03:30:00.000Z",
+          "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+          "updated_at": "2026-11-06T03:30:00.000Z",
+          "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+        },
+        "head": {
+          "id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c09",
+          "first_name": "Lorna",
+          "middle_name": null,
+          "last_name": "Reyes",
+          "suffix": null,
+          "sex": "female",
+          "birth_date": "1972-03-03",
+          "civil_status": "widowed",
+          "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+          "purok_or_sitio": "Purok 3",
+          "street_address": "12 Rizal Ave.",
+          "mobile": null,
+          "email": null,
+          "sectors": [],
+          "philsys_last_four": null,
+          "monthly_income_centavos": null,
+          "is_active": true,
+          "is_protected": false,
+          "given_name_masked": false,
+          "withheld": [],
+          "created_at": "2026-11-06T02:40:00.000Z",
+          "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+          "updated_at": "2026-11-06T02:40:00.000Z",
+          "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+        },
+        "member_count": 1,
+        "household_reference": "HH-2026-000014",
+        "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+        "relationship_count": 0
+      }
+    ],
+    "history": [
+      {
+        "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e06",
+        "kind": "member-role-changed",
+        "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+        "other_resident_id": null,
+        "family_id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01",
+        "to_family_id": null,
+        "household_id": null,
+        "relationship_kind": null,
+        "role": "head",
+        "reason": "She heads the family since he left.",
+        "actor_id": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "actor_name": "Ana Reyes",
+        "occurred_at": "2026-11-06T05:40:00.000Z"
+      },
+      {
+        "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e05",
+        "kind": "resident-transferred",
+        "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c07",
+        "other_resident_id": null,
+        "family_id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01",
+        "to_family_id": null,
+        "household_id": null,
+        "relationship_kind": null,
+        "role": "partner",
+        "reason": "Home visit 6 November: he has moved out.",
+        "actor_id": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "actor_name": null,
+        "occurred_at": "2026-11-06T05:30:00.000Z"
+      },
+      {
+        "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e04",
+        "kind": "member-joined",
+        "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c07",
+        "other_resident_id": null,
+        "family_id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01",
+        "to_family_id": null,
+        "household_id": null,
+        "relationship_kind": null,
+        "role": "partner",
+        "reason": "Recorded at intake on 6 November.",
+        "actor_id": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "actor_name": "Ana Reyes",
+        "occurred_at": "2026-11-06T03:10:00.000Z"
+      },
+      {
+        "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e03",
+        "kind": "member-joined",
+        "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c05",
+        "other_resident_id": null,
+        "family_id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01",
+        "to_family_id": null,
+        "household_id": null,
+        "relationship_kind": null,
+        "role": "child",
+        "reason": "Recorded at intake on 6 November.",
+        "actor_id": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "actor_name": "Ana Reyes",
+        "occurred_at": "2026-11-06T03:10:00.000Z"
+      },
+      {
+        "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e02",
+        "kind": "member-joined",
+        "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+        "other_resident_id": null,
+        "family_id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01",
+        "to_family_id": null,
+        "household_id": null,
+        "relationship_kind": null,
+        "role": "head",
+        "reason": "Recorded at intake on 6 November.",
+        "actor_id": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "actor_name": "Ana Reyes",
+        "occurred_at": "2026-11-06T03:10:00.000Z"
+      },
+      {
+        "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e01",
+        "kind": "family-formed",
+        "resident_id": null,
+        "other_resident_id": null,
+        "family_id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01",
+        "to_family_id": null,
+        "household_id": "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e01",
+        "relationship_kind": null,
+        "role": null,
+        "reason": "Recorded at intake on 6 November.",
+        "actor_id": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "actor_name": "Ana Reyes",
+        "occurred_at": "2026-11-06T03:10:00.000Z"
+      }
+    ]
+  },
+  "meta": {}
+}

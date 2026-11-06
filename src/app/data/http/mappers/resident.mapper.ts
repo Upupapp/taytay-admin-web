@@ -52,9 +52,9 @@ import { bool, date, dateTime, field, id, int, oneOf, str } from './wire';
  * are joined on the barangay's name, and a name that matches none refuses the record rather than
  * placing a person in a barangay this console would have to guess.
  *
- * **Not read**: nothing the API sends is dropped. `householdId` has no wire counterpart — households
- * are a later phase — so it is `null`, which the household screens never read in this configuration:
- * they are withheld (`DL-167`).
+ * **Not read**: nothing the API sends is dropped. `householdId` has no wire counterpart — the
+ * household register says who lives where, not the resident record — so it is `null` here, and set
+ * only where a household was read alongside the person (a profile, a household's members).
  *
  * @consumes GET office/residents
  * @consumes GET office/residents/{id}

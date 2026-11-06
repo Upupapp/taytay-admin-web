@@ -125,6 +125,37 @@ export function discloseResident(resident: Resident, holds: PermissionCheck): Re
   };
 }
 
+/**
+ * A member of a household or family as this viewer may see them, when somebody **else** in it is
+ * under a protected sector — the API's rule, applied by the mock.
+ *
+ * People who share a record usually share a roof, so their exact address is the protected person's
+ * too: listed beside the masked member, it would say where she lives. So it is withheld from every
+ * member for a viewer not cleared for the protected tier, and named as withheld so the blank does
+ * not read as "not recorded" (`DL-38`). A resident's own record, read alone, links nobody to anybody
+ * and is disclosed by `discloseResident` as before.
+ */
+export function discloseMember(
+  resident: Resident,
+  holds: PermissionCheck,
+  sharesProtectedAddress: boolean,
+): ResidentView {
+  const view = discloseResident(resident, holds);
+  if (!sharesProtectedAddress || holds(RESIDENT_FIELD_PERMISSIONS.exactAddress)) {
+    return view;
+  }
+  return {
+    ...view,
+    resident: {
+      ...view.resident,
+      address: { barangayId: view.resident.address.barangayId, purokOrSitio: null, streetAddress: null },
+    },
+    withheld: view.withheld.includes('exactAddress')
+      ? view.withheld
+      : [...view.withheld, 'exactAddress'],
+  };
+}
+
 export function isWithheld(view: ResidentView, field: ResidentField): boolean {
   return view.withheld.includes(field);
 }

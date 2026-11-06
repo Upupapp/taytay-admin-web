@@ -4,38 +4,41 @@ import { throwError, type Observable } from 'rxjs';
 import {
   ACCESS_CONTEXT,
   assignGenerations,
-  barangayName,
   byNewestFirst,
   currentMembers,
-  discloseResident,
+  discloseMember,
   eventsAbout,
   eventsForFamily,
+  FamilyDraftInvalidError,
   familyRoleOf,
   findSameLink,
   fromPerspectiveOf,
-  isFamilyFilterActive,
+  hasSensitiveSector,
+  headOfFamily,
   isTransferAlreadyApplied,
   isWithinBarangayScope,
-  paginate,
   PermissionDeniedError,
   RelationshipInvalidError,
   TransferRefusedError,
   userHasPermission,
+  validateFamilyDraft,
   validateRelationship,
   validateTransfer,
   type AuthenticatedUser,
+  type BarangayId,
+  type CursorPage,
+  type CursorRequest,
   type Family,
   type FamilyDetail,
+  type FamilyDraft,
+  type FamilyDraftProblem,
   type FamilyFilter,
   type FamilyId,
   type FamilyRepository,
   type FamilyRole,
-  type FamilySortField,
   type FamilySummary,
   type GraphEdge,
   type GraphNode,
-  type Page,
-  type PageRequest,
   type Permission,
   type Relationship,
   type RelationshipEvent,
@@ -51,7 +54,6 @@ import { denyUnless } from './mock-access';
 import { MockFamilyStore } from './mock-family.store';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
-import { matchesSearch, sortItems } from './mock-query';
 
 /**
  * The family adapter.
@@ -64,6 +66,11 @@ import { matchesSearch, sortItems } from './mock-query';
  * Reads disclose members through the same policy as everywhere else (`DL-38`),
  * and every mutation appends an immutable event rather than replacing what was
  * there (`DL-48`).
+ *
+ * The list answers as the API does: a page by reference number with a cursor and
+ * no total, searched by reference, name and the head's surname. In a family with
+ * a protected member, every member's own street is withheld from a reader not
+ * cleared for the protected tier, as the API withholds it.
  */
 @Injectable()
 export class MockFamilyRepository implements FamilyRepository {
@@ -72,22 +79,35 @@ export class MockFamilyRepository implements FamilyRepository {
   private readonly families = inject(MockFamilyStore);
   private readonly residents = inject(MockResidentStore);
 
-  list(filter: FamilyFilter, page: PageRequest<FamilySortField>): Observable<Page<FamilySummary>> {
+  list(filter: FamilyFilter, page: CursorRequest): Observable<CursorPage<FamilySummary>> {
     const user = this.access.currentUser();
-    const denied = denyUnless<Page<FamilySummary>>(user, 'family.view');
+    const denied = denyUnless<CursorPage<FamilySummary>>(user, 'family.view');
     if (denied) {
       return denied;
     }
+    // Asking for another barangay is refused, as the API refuses it, rather than answered with an
+    // empty page that reads as "no families there".
+    if (filter.barangayId !== undefined && !isWithinBarangayScope(user, filter.barangayId)) {
+      return throwError(() => new PermissionDeniedError('family.view'));
+    }
 
-    const summaries = this.families
+    const matching = this.families
       .allFamilies()
       .filter((family) => this.inScope(family, user))
-      .map((family) => this.summarise(family, user))
-      .filter((summary) => this.matches(summary, filter));
+      .filter((family) => this.matches(family, filter))
+      // The API's order: reference number, then id — a total order, as a cursor needs.
+      .sort(byReference);
 
-    const sort = page.sort ?? { field: 'reference' as const, direction: 'asc' as const };
-    const sorted = sortItems(summaries, (summary) => sortKey(summary, sort.field), sort.direction);
-    return this.latency.respond(paginate(sorted, page));
+    // The cursor is the id of the last row read, as the API's is; nothing outside this adapter reads it.
+    const after = page.cursor ? matching.findIndex((family) => family.id === page.cursor) : -1;
+    const rest = matching.slice(after + 1);
+    const items = rest.slice(0, page.limit).map((family) => this.summarise(family, user));
+    const hasMore = rest.length > page.limit;
+    return this.latency.respond({
+      items,
+      hasMore,
+      nextCursor: hasMore ? (items.at(-1)?.family.id ?? null) : null,
+    });
   }
 
   getById(id: FamilyId): Observable<FamilyDetail | null> {
@@ -101,6 +121,35 @@ export class MockFamilyRepository implements FamilyRepository {
     return this.latency.respond(this.detail(family, user));
   }
 
+  create(draft: FamilyDraft, reason: string): Observable<FamilyDetail> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<FamilyDetail>(user, 'family.manage');
+    if (denied) {
+      return denied;
+    }
+
+    const problems: FamilyDraftProblem[] = [...validateFamilyDraft(draft, reason)];
+    // A household or a person outside the writer's scope is "not on file", as the API answers it.
+    if (draft.householdId !== null) {
+      const household = this.residents.findHousehold(draft.householdId);
+      if (household === undefined || !isWithinBarangayScope(user, household.address.barangayId)) {
+        problems.push({ code: 'household-not-found', residentId: null });
+      }
+    }
+    for (const residentId of new Set(draft.members.map((member) => member.residentId))) {
+      const resident = this.residents.find(residentId);
+      if (resident === undefined || !isWithinBarangayScope(user, resident.address.barangayId)) {
+        problems.push({ code: 'resident-not-found', residentId });
+      }
+    }
+    if (problems.length > 0) {
+      return throwError(() => new FamilyDraftInvalidError(problems));
+    }
+
+    const created = this.families.createFamily(draft, reason.trim(), actorOf(user));
+    return this.latency.respond(this.detail(created, user));
+  }
+
   familiesOf(residentId: ResidentId): Observable<readonly FamilySummary[]> {
     const user = this.access.currentUser();
     const denied = denyUnless<readonly FamilySummary[]>(user, 'family.view');
@@ -108,9 +157,9 @@ export class MockFamilyRepository implements FamilyRepository {
       return denied;
     }
     return this.latency.respond(
-      this.families
-        .familiesOfResident(residentId)
+      [...this.families.familiesOfResident(residentId)]
         .filter((family) => this.inScope(family, user))
+        .sort(byReference)
         .map((family) => this.summarise(family, user)),
     );
   }
@@ -312,15 +361,36 @@ export class MockFamilyRepository implements FamilyRepository {
       : isWithinBarangayScope(user, household.address.barangayId);
   }
 
+  /**
+   * Whether somebody currently in the family, or anybody in the household it lives in, is under a
+   * protected sector — the API's test for withholding every member's own street from a reader not
+   * cleared for it. A second family at a protected person's address lives on her street too.
+   */
+  private sharesProtectedAddress(family: Family): boolean {
+    const household =
+      family.householdId === null ? undefined : this.residents.findHousehold(family.householdId);
+    const people = [
+      ...this.families.memberIds(family),
+      ...(household?.members.map((member) => member.residentId) ?? []),
+    ];
+    return people.some((residentId) => {
+      const resident = this.residents.find(residentId);
+      return resident !== undefined && hasSensitiveSector(resident);
+    });
+  }
+
   private summarise(family: Family, user: AuthenticatedUser | null): FamilySummary {
     const members = this.families.memberIds(family);
-    const head = members[0] === undefined ? undefined : this.residents.find(members[0]);
+    const headId = headOfFamily(family);
+    const head = headId === null ? undefined : this.residents.find(headId);
     const household =
       family.householdId === null ? undefined : this.residents.findHousehold(family.householdId);
 
     return {
       family,
-      headName: head ? this.disclose(head, user).listedName : 'No head recorded',
+      headName: head
+        ? this.disclose(head, user, this.sharesProtectedAddress(family)).listedName
+        : 'No head recorded',
       memberCount: currentMembers(family).length,
       householdReference: household?.referenceNumber ?? null,
       barangayId: household?.address.barangayId ?? null,
@@ -336,7 +406,8 @@ export class MockFamilyRepository implements FamilyRepository {
     // still part of how this family came to look the way it does (`DL-48`).
     const everyone = [...new Set([...memberIds, ...family.members.map((m) => m.residentId)])];
     const relationships = this.families.relationshipsFor(everyone);
-    const generations = assignGenerations(everyone, memberIds[0] ?? null, relationships);
+    const generations = assignGenerations(everyone, headOfFamily(family), relationships);
+    const sharesProtected = this.sharesProtectedAddress(family);
 
     const nodes: readonly GraphNode[] = everyone
       .map((residentId) => {
@@ -344,7 +415,7 @@ export class MockFamilyRepository implements FamilyRepository {
         if (resident === undefined) {
           return null;
         }
-        const view = this.disclose(resident, user);
+        const view = this.disclose(resident, user, sharesProtected);
         return {
           view,
           role: familyRoleOf(family, residentId),
@@ -386,7 +457,8 @@ export class MockFamilyRepository implements FamilyRepository {
           relationshipId: relationship.id,
           kind: perspective.kind,
           otherResidentId: perspective.otherResidentId,
-          otherName: other ? this.disclose(other, user).listedName : 'Unknown resident',
+          // A name only: no address is read off it, so only the name's own rule applies.
+          otherName: other ? this.disclose(other, user, false).listedName : 'Unknown resident',
           isCurrent: perspective.isCurrent,
           since: relationship.since,
           until: relationship.until,
@@ -395,38 +467,62 @@ export class MockFamilyRepository implements FamilyRepository {
       .filter((edge): edge is GraphEdge => edge !== null);
   }
 
-  private disclose(resident: Resident, user: AuthenticatedUser | null): ResidentView {
-    return discloseResident(resident, (permission: Permission) =>
-      userHasPermission(user, permission),
+  private disclose(
+    resident: Resident,
+    user: AuthenticatedUser | null,
+    sharesProtectedAddress: boolean,
+  ): ResidentView {
+    return discloseMember(
+      resident,
+      (permission: Permission) => userHasPermission(user, permission),
+      sharesProtectedAddress,
     );
   }
 
-  private matches(summary: FamilySummary, filter: FamilyFilter): boolean {
-    if (!isFamilyFilterActive(filter)) {
-      return summary.family.dissolvedOn === null;
-    }
-    if (!filter.includeDissolved && summary.family.dissolvedOn !== null) {
+  /**
+   * The API's filter: dissolved families only on request, and every word of the search — five at
+   * most — matching the reference number, the name or the surname of the member recorded as head.
+   */
+  private matches(family: Family, filter: FamilyFilter): boolean {
+    if (!filter.includeDissolved && family.dissolvedOn !== null) {
       return false;
     }
-    if (filter.barangayId && summary.barangayId !== filter.barangayId) {
+    if (filter.barangayId !== undefined && this.barangayOf(family) !== filter.barangayId) {
       return false;
     }
-    if (filter.householdId && summary.family.householdId !== filter.householdId) {
+    if (filter.householdId !== undefined && family.householdId !== filter.householdId) {
       return false;
     }
-    if (filter.unhousedOnly && summary.family.householdId !== null) {
+    if (filter.unhousedOnly && family.householdId !== null) {
       return false;
     }
-    return matchesSearch(
-      [
-        summary.family.referenceNumber,
-        summary.family.name,
-        summary.headName,
-        summary.householdReference,
-        summary.barangayId === null ? null : barangayName(summary.barangayId),
-      ],
-      filter.search,
-    );
+    const words = (filter.search ?? '')
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((word) => word !== '');
+    if (words.length === 0) {
+      return true;
+    }
+    const heads = currentMembers(family)
+      .filter((member) => member.role === 'head')
+      .map((member) => this.residents.find(member.residentId)?.name.last.toLowerCase() ?? '');
+    const reference = family.referenceNumber.toLowerCase();
+    const name = family.name.toLowerCase();
+    return words
+      .slice(0, 5)
+      .every(
+        (word) =>
+          reference.includes(word) ||
+          name.includes(word) ||
+          heads.some((surname) => surname.includes(word)),
+      );
+  }
+
+  /** The barangay of the household a family lives in; `null` between addresses. */
+  private barangayOf(family: Family): BarangayId | null {
+    return family.householdId === null
+      ? null
+      : (this.residents.findHousehold(family.householdId)?.address.barangayId ?? null);
   }
 }
 
@@ -434,15 +530,9 @@ function actorOf(user: AuthenticatedUser | null) {
   return { id: user?.id ?? null, name: user?.displayName ?? 'Unknown' };
 }
 
-function sortKey(summary: FamilySummary, field: FamilySortField): string | number {
-  switch (field) {
-    case 'reference':
-      return summary.family.referenceNumber;
-    case 'name':
-      return summary.family.name;
-    case 'size':
-      return summary.memberCount;
-    case 'updatedAt':
-      return summary.family.audit.updatedAt;
+function byReference(a: Family, b: Family): number {
+  if (a.referenceNumber !== b.referenceNumber) {
+    return a.referenceNumber < b.referenceNumber ? -1 : 1;
   }
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 }

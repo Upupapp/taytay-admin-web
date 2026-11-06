@@ -128,16 +128,45 @@ export class FamilyDetailPage {
 
   protected readonly settingHead = signal(false);
 
+  /** The member somebody asked to make head, while the reason is being written. */
+  protected readonly headChange = signal<{
+    readonly familyId: FamilyDetail['family']['id'];
+    readonly residentId: GraphNode['view']['resident']['id'];
+    readonly name: string;
+  } | null>(null);
+  protected readonly headReason = signal('');
+  protected readonly canChangeHead = computed(
+    () => this.headChange() !== null && this.headReason().trim().length > 0 && !this.settingHead(),
+  );
+
   /**
-   * Only the head can be set from here, and the adapter refuses anything else.
+   * Only the head is set from here. The other roles are given as a person joins — when the family is
+   * recorded, or when somebody moves into it — and who heads a family is a claim about that family
+   * (`DL-47`), so it is the one change this record offers on its own.
    *
-   * `POST admin/families/{family}/head` is the one family-role endpoint the API serves; the other
-   * roles have no counterpart. Offering a control for them would let a clerk record a change the
-   * office never makes, and offering one that silently made somebody the head instead would be
-   * worse — who heads a family is a claim about that family (`DL-47`).
+   * It asks for a reason like every other change to a family. The API keeps the reason in the
+   * family's history for good (`DL-48`), so a sentence nobody wrote would read there as somebody's
+   * account of why.
    */
-  protected async makeHead(detail: FamilyDetail, node: GraphNode): Promise<void> {
+  protected makeHead(detail: FamilyDetail, node: GraphNode): void {
     if (!this.canManage() || this.settingHead()) {
+      return;
+    }
+    this.headReason.set('');
+    this.headChange.set({
+      familyId: detail.family.id,
+      residentId: node.view.resident.id,
+      name: node.view.listedName,
+    });
+  }
+
+  protected onHeadReason(event: Event): void {
+    this.headReason.set((event.target as HTMLInputElement).value);
+  }
+
+  protected async confirmHead(): Promise<void> {
+    const change = this.headChange();
+    if (change === null || !this.canChangeHead()) {
       return;
     }
 
@@ -146,12 +175,13 @@ export class FamilyDetailPage {
     try {
       await firstValueFrom(
         this.repository.changeMemberRole(
-          detail.family.id,
-          node.view.resident.id,
+          change.familyId,
+          change.residentId,
           'head',
-          this.copy.headChangedReason,
+          this.headReason().trim(),
         ),
       );
+      this.headChange.set(null);
       this.notifications.success(this.copy.headChanged);
       this.reloads.update((n) => n + 1);
     } catch (failure: unknown) {
@@ -302,5 +332,6 @@ export class FamilyDetailPage {
   protected cancel(): void {
     this.transferring.set(false);
     this.recording.set(false);
+    this.headChange.set(null);
   }
 }

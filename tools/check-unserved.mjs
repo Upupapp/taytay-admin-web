@@ -11,22 +11,43 @@
  * (`UNSERVED_PORTS`), the menu withholds every entry that reads one of those ports, and each such
  * route sends the user to one page that names them all.
  *
- * That only holds while three lists agree — the bindings, the declaration, and what each screen
- * says it reads — and none of them is something a compiler can compare. So:
+ * ## Only the primary port gates the menu (`DL-175`)
+ *
+ * `DL-167` withheld a screen when *any* port it read was unserved, so the resident registry — served
+ * by the Node API — stayed out of the menu because the saved-view chips above it were not, and the
+ * record because its home-visit panel was not. A secondary panel no longer withholds its module. It
+ * asks `ServedPorts.serves('<port>')`, makes no call to that repository, and shows
+ * `<app-not-connected port="<port>" />` where it would have been: the screen opens, and the gap is
+ * named in place rather than read as "none" (`DL-112`). The route and the menu entry carry only
+ * the primary ports — the ones without which there is no screen.
+ *
+ * That only holds while these lists agree — the bindings, the declaration, what each screen reads,
+ * what it guards and what it degrades — and none of them is something a compiler can compare. So:
  *
  *   1. The ports bound to an `Unserved…` adapter in `data-access.providers.ts` are exactly the ports
  *      `UNSERVED_HTTP_PORTS` declares, each class stands for the port it is bound to, the http set
  *      binds `UNSERVED_PORTS` to that list, and the mock set binds it to `[]`.
  *   2. `DATA_PORTS` names every repository token in the domain, and nothing else.
- *   3. Every routed screen guards, on its own route, exactly the ports it reads: directly, through a
- *      file of its own feature it imports, or through a shared component it names.
+ *   3. Every routed screen accounts for every port it reads — directly, through a file of its own
+ *      feature it imports, or through a shared component it names — exactly once:
+ *        reads = guarded ∪ degraded, with guarded ∩ degraded empty.
+ *      `guarded` is its route's `servedGuard(…)`. A port is `degraded` only when a file of the
+ *      screen's closure calls `serves('<port>')` literally AND that component's own template (its
+ *      `templateUrl`, or its inline template) shows `<app-not-connected port="<port>">` (or
+ *      `[port]="'<port>'"`). It fails on a call with no notice (a panel that vanishes silently), a
+ *      notice with no call (one not tied to whether the port is served), a degraded port the
+ *      screen does not read, a port both guarded and degraded (its notice could never be seen), and
+ *      a screen that reads ports and guards none — a module whose every panel is optional is one
+ *      whose menu entry can lead to nothing.
  *   4. Every navigation entry reads exactly the ports its route guards — rule 8's mirror, extended
- *      from permissions to ports.
+ *      from permissions to ports. Since rule 3 that is the primary set.
  *   5. No port read by `core/` is unserved: core runs on every screen, so no route could withhold it.
  *
  * Rule 3 reads source text, so it is a floor: a port reached through a service it does not follow
  * is not seen. It over-reports rather than under-reports where a shared file exports two classes,
- * which withholds a module that might have worked — the safe direction.
+ * which withholds a module that might have worked — the safe direction. Comments are stripped
+ * before `serves(…)` and the notice are looked for, so a sentence about them is not mistaken for
+ * either.
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -170,7 +191,10 @@ for (const file of walk(join(APP, 'shared'))) {
   for (const [, name] of text.matchAll(/export class (\w+)/g)) sharedReads.set(name, ports);
 }
 
-/** What one screen reads: its file, the files of its own feature it imports, and shared classes it names. */
+/**
+ * What one screen reads — its file, the files of its own feature it imports, and shared classes it
+ * names — and the files of that closure, which are where a panel can degrade in place.
+ */
 function screenReads(entry) {
   const ports = new Set();
   const seen = new Set();
@@ -192,7 +216,44 @@ function screenReads(entry) {
     }
   }
 
-  return ports;
+  return { ports, files: [...seen] };
+}
+
+/* ── which ports a screen degrades in place ──────────────────────────────── */
+
+/** Source text with its comments removed, so a sentence about `serves('x')` is not a call to it. */
+const withoutComments = (text) =>
+  text
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+
+/** A component's template: its `templateUrl` when it names one, otherwise its own (inline) text. */
+function templateOf(file, text) {
+  const url = /templateUrl:\s*'([^']+)'/.exec(text)?.[1];
+  if (url === undefined) return { file, text };
+  const path = resolve(dirname(file), url);
+  return { file: path, text: existsSync(path) ? readFileSync(path, 'utf8') : '' };
+}
+
+/**
+ * The panels one file degrades in place: each literal `serves('<port>')` it calls, and the
+ * `<app-not-connected>` notices its own template shows. Only a port in both counts.
+ */
+function degradationsIn(file) {
+  const text = readFileSync(file, 'utf8');
+  const asked = new Set(
+    [...withoutComments(text).matchAll(/\bserves\(\s*'([a-z-]+)'\s*\)/g)].map((m) => m[1]),
+  );
+  const template = templateOf(file, text);
+  const noticed = new Set(
+    [
+      ...withoutComments(template.text).matchAll(
+        /<app-not-connected\b[^>]*?(?:\bport="([a-z-]+)"|\[port\]="'([a-z-]+)'")/g,
+      ),
+    ].map((m) => m[1] ?? m[2]),
+  );
+  return { asked, noticed, template: template.file };
 }
 
 /* ── 3. every routed screen guards what it reads ─────────────────────────── */
@@ -244,6 +305,8 @@ const routeObjects = allObjects.filter((o) =>
 );
 const guardedRoutes = new Map();
 let screens = 0;
+let degradingScreens = 0;
+let degradedPanels = 0;
 
 for (const object of routeObjects) {
   const own = ownText(routesText, object, routeObjects);
@@ -272,8 +335,32 @@ for (const object of routeObjects) {
   const guarded = new Set(
     guardCalls.flatMap(([, args]) => [...args.matchAll(/'([a-z-]+)'/g)].map((m) => m[1])),
   );
-  const reads = screenReads(file);
+  const { ports: reads, files } = screenReads(file);
   screens++;
+
+  const degraded = new Set();
+  for (const member of files) {
+    const { asked, noticed, template } = degradationsIn(member);
+    for (const port of asked) {
+      if (noticed.has(port)) {
+        degraded.add(port);
+      } else {
+        failures.push(
+          `${shown(member)} asks serves('${port}') and ${shown(template)} shows no ` +
+            `<app-not-connected port="${port}" />.\n` +
+            `    A panel that leaves without saying so reads as a record with nothing in it (DL-112).`,
+        );
+      }
+    }
+    for (const port of noticed) {
+      if (!asked.has(port)) {
+        failures.push(
+          `${shown(template)} shows <app-not-connected port="${port}" /> and ${shown(member)} never ` +
+            `asks serves('${port}'), so the notice is not tied to whether the port is served.`,
+        );
+      }
+    }
+  }
 
   if (guardCalls.length > 1) {
     failures.push(
@@ -284,17 +371,46 @@ for (const object of routeObjects) {
     if (!vocabulary.has(port))
       failures.push(`/${fullPath} guards '${port}', which DATA_PORTS does not name.`);
   }
-  if (!sameSet(reads, guarded)) {
+  for (const port of degraded) {
+    if (guarded.has(port)) {
+      failures.push(
+        `/${fullPath} both guards '${port}' and degrades it in place. A port is the screen's ` +
+          `primary or one of its panels, not both: guarded, its notice can never be seen.`,
+      );
+    }
+    if (!reads.has(port)) {
+      failures.push(
+        `/${fullPath} degrades '${port}' in place and reads no ${tokenOf(port)}: a notice for a ` +
+          `panel the screen does not have.`,
+      );
+    }
+  }
+  if (reads.size > 0 && guarded.size === 0) {
     failures.push(
-      `/${fullPath} (${shown(file)}) reads ${listed(reads)} and its route guards ${listed(guarded)}.\n` +
-        `    Write canActivate: [servedGuard(${[...reads]
-          .sort()
-          .map((p) => `'${p}'`)
-          .join(', ')}), …] on that route,\n` +
-        `    or an unserved port keeps a screen that can only fail.`,
+      `/${fullPath} (${shown(file)}) reads ${listed(reads)} and guards none of it. A module whose ` +
+        `every panel is optional is one whose menu entry can lead to nothing: guard its primary port.`,
     );
   }
 
+  const accounted = new Set([...guarded, ...degraded]);
+  if (!sameSet(reads, accounted)) {
+    const loose = [...reads].filter((port) => !accounted.has(port)).sort();
+    failures.push(
+      `/${fullPath} (${shown(file)}) reads ${listed(reads)}; its route guards ${listed(guarded)} ` +
+        `and it degrades ${listed(degraded)} in place.\n` +
+        (loose.length > 0
+          ? `    ${loose.map((p) => `'${p}'`).join(', ')}: neither. List it in servedGuard(…) on ` +
+            `that route if the screen cannot work without it,\n` +
+            `    or ask serves('…') and show <app-not-connected> where its panel would be — ` +
+            `or an unserved port keeps a screen that can only fail.`
+          : `    It guards or degrades a port it does not read.`),
+    );
+  }
+
+  if (degraded.size > 0) {
+    degradingScreens++;
+    degradedPanels += degraded.size;
+  }
   guardedRoutes.set(`/${fullPath}`, guarded);
 }
 
@@ -359,7 +475,11 @@ for (const port of coreReads) {
 
 notes.push(`${vocabulary.size} ports named; ${bound.size} unserved in the http set, all declared`);
 notes.push(
-  `${screens} routed screens, each guarding what it reads; ${navEntries.length} menu entries mirroring them`,
+  `${screens} routed screens, each guarding its primary ports; ${navEntries.length} menu entries mirroring them`,
+);
+notes.push(
+  `${degradingScreens} ${degradingScreens === 1 ? 'screen degrades' : 'screens degrade'} ${degradedPanels} ` +
+    `secondary panel${degradedPanels === 1 ? '' : 's'} in place`,
 );
 
 for (const note of notes) console.log(`  ${note}`);

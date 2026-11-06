@@ -122,8 +122,10 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:inbox`, `check:accounts`, `check:directory`, `check:home`,
 `check:app-settings`, `check:digital-ids`, `check:balita` and
 `check:platform-audit`.
-`check:unserved` keeps a module whose port the active adapter set cannot serve out
-of the navigation and names it on one page (`DL-167`); `check:verification` holds
+`check:unserved` keeps a module whose primary port the active adapter set cannot
+serve out of the navigation and names it on one page (`DL-167`), and holds every
+secondary panel whose port is unserved to saying so in place — no request, and
+`<app-not-connected>` where the panel would be (`DL-175`); `check:verification` holds
 the ID-review screen to its privacy rules — images only after a warning, fetched
 with the bearer in a header, discarded on leave (`DL-167`); `check:inbox` holds the
 office inbox to its own — no preview of what a resident wrote in the list, nothing

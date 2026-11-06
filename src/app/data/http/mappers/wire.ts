@@ -33,6 +33,14 @@ export function bool(value: unknown): boolean {
 }
 
 /**
+ * A yes-or-no the record cannot be read without: `null` when absent or not a boolean, never a
+ * default — `bool` reads absence as `false`, which is right only where `false` is the safe reading.
+ */
+export function flag(value: unknown): boolean | null {
+  return typeof value === 'boolean' ? value : null;
+}
+
+/**
  * An integer, or `null`.
  *
  * Rejects a non-integer rather than rounding one: the only numbers this API

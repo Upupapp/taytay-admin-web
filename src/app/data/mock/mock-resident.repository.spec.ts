@@ -17,8 +17,10 @@ import {
   type AuthenticatedUser,
   type BarangayId,
   type Permission,
+  type ResidentAssistanceHistory,
   type ResidentDraft,
   type ResidentId,
+  type ResidentProfile,
   type StaffRole,
   type StaffUserId,
 } from '@domain/index';
@@ -224,6 +226,15 @@ describe('the registry is large enough to need paging', () => {
  */
 const EMPTY_COMPOSITION: HouseholdComposition = { kind: 'read', members: [] };
 
+/** The mock holds every record, so it always reads the history; `null` here is a defect. */
+function historyOf(profile: ResidentProfile | null): ResidentAssistanceHistory | null {
+  if (profile === null) {
+    return null;
+  }
+  const reading = profile.history;
+  return reading.kind === 'read' ? reading.history : null;
+}
+
 describe('one call answers "who is this, and what have we done for them?"', () => {
   it('returns household, family and history together', async () => {
     signedInAs(authenticated('mswdo-head'));
@@ -234,7 +245,8 @@ describe('one call answers "who is this, and what have we done for them?"', () =
       'spouse',
       'child',
     ]);
-    expect(profile?.history.cases.length).toBeGreaterThan(0);
+    expect(profile?.history.kind).toBe('read');
+    expect(historyOf(profile)?.cases.length).toBeGreaterThan(0);
   });
 
   it('leaves the subject out of their own family list', async () => {
@@ -260,7 +272,7 @@ describe('one call answers "who is this, and what have we done for them?"', () =
     const profile = await firstValueFrom(repo().getProfile(asId<ResidentId>('res-0007')));
     // `completed` counts too: it is a claimed payout the office has closed out.
     // Goods carry no amount and contribute nothing to a peso total (`DL-93`).
-    const handedOver = (profile?.history.payouts ?? []).filter(
+    const handedOver = (historyOf(profile)?.payouts ?? []).filter(
       (payout) =>
         (payout.status === 'released' ||
           payout.status === 'claimed' ||
@@ -268,7 +280,7 @@ describe('one call answers "who is this, and what have we done for them?"', () =
         payout.amount !== null,
     );
     expect(handedOver.length).toBeGreaterThan(0);
-    expect(profile?.history.totalReleased.centavos).toBe(
+    expect(historyOf(profile)?.totalReleased.centavos).toBe(
       handedOver.reduce((total, payout) => total + (payout.amount?.centavos ?? 0), 0),
     );
   });

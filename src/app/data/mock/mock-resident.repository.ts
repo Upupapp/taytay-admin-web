@@ -4,8 +4,11 @@ import { throwError, type Observable } from 'rxjs';
 import {
   ACCESS_CONTEXT,
   canReadRecord,
+  discloseHousehold,
+  discloseMember,
   discloseResident,
   hasSensitiveSector,
+  householdClearance,
   isInAgeGroup,
   isWithinBarangayScope,
   PermissionDeniedError,
@@ -125,16 +128,27 @@ export class MockResidentRepository implements ResidentRepository {
       resident.householdId !== null
         ? (this.store.findHousehold(resident.householdId) ?? null)
         : null;
+    // As the API answers it: the household disclosed for this reader, and everyone else under the
+    // roof without their own street beside a protected member (`DL-38`).
+    const isProtected =
+      household !== null &&
+      household.members.some((member) => {
+        const person = this.store.find(member.residentId);
+        return person !== undefined && hasSensitiveSector(person);
+      });
+    const clearance = householdClearance((permission) => userHasPermission(user, permission));
 
     return this.latency.respond({
       view: this.disclose(resident, user),
-      household,
+      household:
+        household === null ? null : discloseHousehold(household, isProtected, clearance).household,
       // The mock holds a role for every membership, so it can always answer.
       householdMembers: {
         kind: 'read',
-        members: this.householdMembersOf(resident, household, user),
+        members: this.householdMembersOf(resident, household, user, isProtected),
       },
-      history: historySummaryFor(resident.id),
+      // The mock holds every request, payout and referral, so it can always answer.
+      history: { kind: 'read', history: historySummaryFor(resident.id) },
     });
   }
 
@@ -271,6 +285,7 @@ export class MockResidentRepository implements ResidentRepository {
     subject: Resident,
     household: Household | null,
     user: AuthenticatedUser | null,
+    sharesProtectedAddress: boolean,
   ): readonly HouseholdMemberView[] {
     if (household === null) {
       return [];
@@ -282,7 +297,11 @@ export class MockResidentRepository implements ResidentRepository {
         return resident === undefined
           ? null
           : {
-              view: this.disclose(resident, user),
+              view: discloseMember(
+                resident,
+                (permission: Permission) => userHasPermission(user, permission),
+                sharesProtectedAddress,
+              ),
               role: member.role,
               isHead: household.headResidentId === resident.id,
             };

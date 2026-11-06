@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter, Router } from '@angular/router';
 import { firstValueFrom, of, type Observable } from 'rxjs';
 
@@ -7,6 +8,7 @@ import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import { MockFamilyRepository } from '@data/mock/mock-family.repository';
+import { MockHouseholdRepository } from '@data/mock/mock-household.repository';
 import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
 import { MockResidentRepository } from '@data/mock/mock-resident.repository';
 import {
@@ -14,13 +16,16 @@ import {
   asId,
   emptyPage,
   FAMILY_REPOSITORY,
+  HOUSEHOLD_REPOSITORY,
   NOTIFICATION_REPOSITORY,
   RESIDENT_REPOSITORY,
   STAFF_REPOSITORY,
   toAuthenticatedUser,
   type AuthenticatedUser,
   type BarangayId,
+  type FamilyId,
   type Page,
+  type ResidentId,
   type StaffRepository,
   type StaffRole,
   type StaffUser,
@@ -28,10 +33,13 @@ import {
   type SignInOutcome,
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
+import { PersonPicker } from '@shared/residents/person-picker';
+import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 
 import { FamilyDetailPage } from './family-detail-page';
+import { FamilyFormPage } from './family-form-page';
 import { FamilyListPage } from './family-list-page';
-import { familyFilterParams, readFamilyFilter, readFamilyPage } from './family-query';
+import { familyFilterParams, readFamilyFilter, readFamilyQuery } from './family-query';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
   name: 'local-mock',
@@ -90,6 +98,7 @@ async function configure(role: StaffRole, barangayId: BarangayId | null = null):
     providers: [
       provideRouter([
         { path: 'families', component: FamilyListPage },
+        { path: 'families/new', component: FamilyFormPage },
         { path: 'families/:id', component: FamilyDetailPage },
         { path: '**', component: StubPage },
       ]),
@@ -98,6 +107,8 @@ async function configure(role: StaffRole, barangayId: BarangayId | null = null):
       { provide: STAFF_REPOSITORY, useValue: staffRepository(staffUser(role, barangayId)) },
       { provide: FAMILY_REPOSITORY, useClass: MockFamilyRepository },
       { provide: RESIDENT_REPOSITORY, useClass: MockResidentRepository },
+      // The form chooses a household from the register.
+      { provide: HOUSEHOLD_REPOSITORY, useClass: MockHouseholdRepository },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
     ],
   });
@@ -147,10 +158,10 @@ describe('the family filter lives in the URL', () => {
     expect(readFamilyFilter(params({ barangay: 'brgy-atlantis' }))).toEqual({});
   });
 
-  it('falls back to a sane page and sort', () => {
-    const page = readFamilyPage(params({ page: '-2', sort: 'vibes' }));
-    expect(page.page).toBe(1);
-    expect(page.sort).toEqual({ field: 'reference', direction: 'asc' });
+  it('reads no page or sort from the URL: the order is the server’s', () => {
+    expect(readFamilyQuery(params({ page: '3', sort: 'name', direction: 'desc' }))).toEqual({
+      filter: {},
+    });
   });
 
   it('round-trips a filter through its parameters', () => {
@@ -180,6 +191,31 @@ describe('the family list says a household is not a family', () => {
   it('says "None recorded" for a family with no household rather than leaving a blank', async () => {
     const element = html(await openList());
     expect(element.textContent).toContain('None recorded');
+  });
+
+  it('says how many are shown and whether more follow, never a page count', async () => {
+    const element = html(await openList());
+    const status = element.querySelector('.families__more [role="status"]')?.textContent ?? '';
+    expect(status).toMatch(/\d+ shown\./);
+    expect(status).toContain('That is every family');
+    expect(element.textContent).not.toMatch(/page \d+ of/i);
+  });
+
+  it('says what the search reads, and that it needs two characters', async () => {
+    const element = html(await openList());
+    const input = element.querySelector('input[type="search"]');
+    const hint = element.querySelector(`#${input?.getAttribute('aria-describedby') ?? 'none'}`);
+    expect(hint?.textContent).toContain('at least two characters');
+    expect(hint?.textContent).toContain('In order of family number');
+  });
+
+  it('offers recording a family only to a role that may manage families', async () => {
+    const intake = html(await openList('intake-officer'));
+    expect(intake.querySelector('a[href="/families/new"]')?.textContent).toContain(
+      'Record a family',
+    );
+    const auditor = html(await openList('auditor'));
+    expect(auditor.querySelector('a[href="/families/new"]')).toBeNull();
   });
 
   it('makes every family reference a link into the record', async () => {
@@ -227,6 +263,45 @@ describe('the family record', () => {
     expect(outOfScope.textContent).toContain('not available');
     expect(missing.textContent).toContain('not available');
     expect(outOfScope.textContent).not.toContain('Bautista family');
+  });
+});
+
+describe('changing who heads a family', () => {
+  // The API keeps the reason in the family's history for good (`DL-48`): a sentence the console
+  // supplied itself would read there as somebody's account of why.
+  it('asks for a reason before it changes anything, and sends the words typed', async () => {
+    const fixture = await openDetail(BAUTISTA, 'intake-officer');
+    const repository = TestBed.inject(FAMILY_REPOSITORY);
+    const change = vi.spyOn(repository, 'changeMemberRole');
+
+    const makeHead = Array.from(html(fixture).querySelectorAll('button')).find((button) =>
+      button.textContent?.trim().startsWith('Make head'),
+    );
+    expect(makeHead).toBeDefined();
+    makeHead?.click();
+    await fixture.whenStable();
+    expect(change).not.toHaveBeenCalled();
+
+    const confirm = () =>
+      Array.from(html(fixture).querySelectorAll('button')).filter((button) =>
+        button.textContent?.trim().startsWith('Make head'),
+      ).at(-1);
+    expect(confirm()?.disabled).toBe(true);
+
+    const reason = html(fixture).querySelector<HTMLInputElement>(
+      'input[placeholder^="e.g. Her husband"]',
+    );
+    expect(reason).not.toBeNull();
+    if (reason !== null) {
+      reason.value = 'Her husband works in Qatar now.';
+      reason.dispatchEvent(new Event('input'));
+    }
+    await fixture.whenStable();
+    confirm()?.click();
+    await fixture.whenStable();
+
+    expect(change).toHaveBeenCalledTimes(1);
+    expect(change.mock.calls[0]?.[3]).toBe('Her husband works in Qatar now.');
   });
 });
 
@@ -288,5 +363,135 @@ describe('the transfer workflow', () => {
       button.textContent?.includes('Record the move'),
     );
     expect(confirm?.disabled).toBe(false);
+  });
+});
+
+/* ── Recording a family ───────────────────────────────────────────────────── */
+
+describe('recording a family', () => {
+  /** res-0008 lives at no household; res-0002 heads the Bautista household. */
+  const UNATTACHED = asId<ResidentId>('res-0008');
+  const BAUTISTA_HEAD = asId<ResidentId>('res-0002');
+
+  async function openForm(
+    role: StaffRole = 'intake-officer',
+  ): Promise<ComponentFixture<FamilyFormPage>> {
+    await configure(role);
+    await TestBed.inject(Router).navigateByUrl('/families/new');
+    const fixture = TestBed.createComponent(FamilyFormPage);
+    await fixture.whenStable();
+    return fixture;
+  }
+
+  async function add(fixture: ComponentFixture<FamilyFormPage>, id: ResidentId): Promise<void> {
+    const view = await firstValueFrom(TestBed.inject(RESIDENT_REPOSITORY).getById(id));
+    const picker = fixture.debugElement.query(By.directive(PersonPicker))
+      .componentInstance as PersonPicker;
+    if (view !== null) {
+      picker.chosen.emit(view);
+    }
+    await fixture.whenStable();
+  }
+
+  function type(fixture: ComponentFixture<FamilyFormPage>, selector: string, value: string): void {
+    const field = html(fixture).querySelector<HTMLInputElement | HTMLTextAreaElement>(selector);
+    if (field !== null) {
+      field.value = value;
+      field.dispatchEvent(new Event('input'));
+    }
+  }
+
+  async function submit(fixture: ComponentFixture<FamilyFormPage>): Promise<void> {
+    html(fixture).querySelector<HTMLButtonElement>('button[type="submit"]')?.click();
+    await fixture.whenStable();
+  }
+
+  it('says a family between addresses is ordinary, and starts with no household', async () => {
+    const element = html(await openForm());
+    expect(element.textContent).toContain('No household — between addresses');
+    expect(element.textContent).toContain('is an ordinary thing to record');
+    expect(element.textContent).toContain('It is not missing information');
+  });
+
+  it('asks for the reason, and says it is kept against the writer’s name', async () => {
+    const element = html(await openForm());
+    const reason = element.querySelector('textarea');
+    expect(reason?.hasAttribute('required')).toBe(true);
+    const hint = element.querySelector(`#${reason?.getAttribute('aria-describedby') ?? 'none'}`);
+    expect(hint?.textContent).toContain('against your name');
+  });
+
+  it('says what is missing rather than sending an incomplete family', async () => {
+    const fixture = await openForm();
+    await submit(fixture);
+    const missing = html(fixture).querySelector('.family-form__missing')?.textContent ?? '';
+    expect(missing).toContain('Give the family a name');
+    expect(missing).toContain('Add at least one member');
+    expect(missing).toContain('Say why');
+    expect(TestBed.inject(Router).url).toBe('/families/new');
+  });
+
+  it('gives each member a labelled role, the first as head, and lists nobody twice', async () => {
+    const fixture = await openForm();
+    await add(fixture, UNATTACHED);
+    await add(fixture, BAUTISTA_HEAD);
+    await add(fixture, UNATTACHED);
+
+    const element = html(fixture);
+    const rows = element.querySelectorAll('.family-form__member');
+    expect(rows).toHaveLength(2);
+    const roles = element.querySelectorAll<HTMLSelectElement>('.family-form__member select');
+    expect(roles[0]?.value).toBe('head');
+    expect(roles[1]?.value).toBe('other-member');
+    // Each select is named for the person it is about, not "Role" twice.
+    expect(rows[0]?.querySelector('.family-form__role')?.textContent).toContain('Role of');
+    expect(element.querySelector('.family-form__notice')?.textContent).toContain('already listed');
+  });
+
+  it('records the family with its members and no household, and opens it', async () => {
+    const fixture = await openForm();
+    type(fixture, 'input[type="text"]', 'Gonzales family');
+    await add(fixture, UNATTACHED);
+    type(fixture, 'textarea', 'Intake interview: she lives alone, between addresses.');
+    await fixture.whenStable();
+    await submit(fixture);
+
+    const router = TestBed.inject(Router);
+    expect(router.url).toMatch(/^\/families\/fam-\d+$/);
+    const id = router.url.split('/').at(-1) ?? '';
+    const detail = await firstValueFrom(
+      TestBed.inject(FAMILY_REPOSITORY).getById(asId<FamilyId>(id)),
+    );
+    expect(detail?.family.name).toBe('Gonzales family');
+    expect(detail?.family.householdId).toBeNull();
+    expect(detail?.family.members.map((member) => member.residentId)).toEqual([UNATTACHED]);
+    expect(detail?.history.every((event) => event.reason.startsWith('Intake interview'))).toBe(
+      true,
+    );
+  });
+
+  it('places the family in a household chosen from the register', async () => {
+    const fixture = await openForm();
+    type(fixture, 'input[type="text"]', 'Bautista (extended) family');
+    await add(fixture, UNATTACHED);
+    type(fixture, 'textarea', 'Home visit: she now lives with the Bautistas.');
+    type(fixture, 'input[type="search"]', 'bautista');
+    await new Promise((resolve) => setTimeout(resolve, SEARCH_DEBOUNCE_MS + 50));
+    await fixture.whenStable();
+
+    const choose = Array.from(
+      html(fixture).querySelectorAll<HTMLButtonElement>('.family-form__household button'),
+    );
+    expect(choose.length).toBeGreaterThan(0);
+    choose[0]?.click();
+    await fixture.whenStable();
+    expect(html(fixture).querySelector('.family-form__chosen')?.textContent).toContain('Lives in:');
+
+    await submit(fixture);
+    const id = TestBed.inject(Router).url.split('/').at(-1) ?? '';
+    const detail = await firstValueFrom(
+      TestBed.inject(FAMILY_REPOSITORY).getById(asId<FamilyId>(id)),
+    );
+    expect(detail?.family.householdId).toBe('hh-0002');
   });
 });

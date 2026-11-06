@@ -26,6 +26,17 @@ import USER_ROLE_CHANGED from './user-role-changed.json';
 import USERS_PAGE from './users-page.json';
 import OFFICE_RESIDENT from './office-resident.json';
 import OFFICE_RESIDENTS_PAGE from './office-residents-page.json';
+import OFFICE_HOUSEHOLD from './office-household.json';
+import OFFICE_HOUSEHOLD_CONFLICT from './office-household-conflict.json';
+import OFFICE_HOUSEHOLDS_PAGE from './office-households-page.json';
+import OFFICE_FAMILIES_PAGE from './office-families-page.json';
+import OFFICE_FAMILY from './office-family.json';
+import OFFICE_FAMILY_CONFLICT from './office-family-conflict.json';
+import OFFICE_RELATIONSHIP from './office-relationship.json';
+import OFFICE_RELATIONSHIP_HISTORY from './office-relationship-history.json';
+import OFFICE_RESIDENT_FAMILIES from './office-resident-families.json';
+import SAVED_VIEW from './saved-view.json';
+import SAVED_VIEWS from './saved-views.json';
 import DELETED from './deleted.json';
 import HOTLINE from './hotline.json';
 import HOTLINES from './hotlines.json';
@@ -204,6 +215,17 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['users-page', USERS_PAGE, 'UserListEnvelope'],
     ['office-residents-page', OFFICE_RESIDENTS_PAGE, 'OfficeResidentListEnvelope'],
     ['office-resident', OFFICE_RESIDENT, 'OfficeResidentEnvelope'],
+    ['office-households-page', OFFICE_HOUSEHOLDS_PAGE, 'OfficeHouseholdListEnvelope'],
+    ['office-household', OFFICE_HOUSEHOLD, 'OfficeHouseholdEnvelope'],
+    ['office-household-conflict', OFFICE_HOUSEHOLD_CONFLICT, 'ErrorEnvelope'],
+    ['office-families-page', OFFICE_FAMILIES_PAGE, 'OfficeFamilyListEnvelope'],
+    ['office-family', OFFICE_FAMILY, 'OfficeFamilyEnvelope'],
+    ['office-resident-families', OFFICE_RESIDENT_FAMILIES, 'OfficeFamilySummaryArrayEnvelope'],
+    ['office-relationship', OFFICE_RELATIONSHIP, 'OfficeRelationshipEnvelope'],
+    ['office-relationship-history', OFFICE_RELATIONSHIP_HISTORY, 'OfficeFamilyEventListEnvelope'],
+    ['office-family-conflict', OFFICE_FAMILY_CONFLICT, 'ErrorEnvelope'],
+    ['saved-views', SAVED_VIEWS, 'SavedViewListEnvelope'],
+    ['saved-view', SAVED_VIEW, 'SavedViewEnvelope'],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
     ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],

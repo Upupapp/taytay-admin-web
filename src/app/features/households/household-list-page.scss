@@ -102,3 +102,35 @@
   color: var(--c-text-subtle);
   font-size: 12px;
 }
+
+.households__hint {
+  margin: 0;
+  padding: 0 var(--space-base);
+  font-size: 13px;
+  color: var(--c-text-subtle);
+}
+
+.households__more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-base);
+  padding: var(--space-base);
+}
+
+.households__problem {
+  margin: 0;
+  padding: 0 var(--space-base);
+  font-size: 13px;
+}
+
+.households__protected {
+  display: inline-block;
+  margin-inline-start: var(--space-compact);
+  padding: 1px var(--space-compact);
+  border-radius: var(--radius-sm);
+  background: var(--tone-warning-bg);
+  color: var(--tone-warning-fg);
+  font-size: 12px;
+  font-weight: 600;
+}

@@ -34,17 +34,36 @@
               <dt>{{ copy.barangay }}</dt>
               <dd>{{ barangay(detail) }}</dd>
             </div>
+            <!-- A withheld field says so: a blank would read as "not recorded" (DL-38). -->
             <div class="facts__row">
               <dt>{{ copy.purok }}</dt>
-              <dd>{{ detail.household.address.purokOrSitio ?? copy.none }}</dd>
+              <dd>
+                {{
+                  detail.withheld.includes('exactAddress')
+                    ? copy.addressWithheld
+                    : (detail.household.address.purokOrSitio ?? copy.none)
+                }}
+              </dd>
             </div>
             <div class="facts__row facts__row--wide">
               <dt>{{ copy.street }}</dt>
-              <dd>{{ detail.household.address.streetAddress ?? copy.none }}</dd>
+              <dd>
+                {{
+                  detail.withheld.includes('exactAddress')
+                    ? copy.addressWithheld
+                    : (detail.household.address.streetAddress ?? copy.none)
+                }}
+              </dd>
             </div>
             <div class="facts__row">
               <dt>{{ copy.income }}</dt>
-              <dd>{{ detail.household.monthlyIncome | peso }}</dd>
+              <dd>
+                @if (detail.withheld.includes('monthlyIncome')) {
+                  {{ copy.incomeWithheld }}
+                } @else {
+                  {{ detail.household.monthlyIncome | peso }}
+                }
+              </dd>
             </div>
             <div class="facts__row">
               <dt>{{ copy.size }}</dt>
@@ -59,6 +78,9 @@
               <dd>{{ detail.household.audit.updatedAt | date: 'medium' }}</dd>
             </div>
           </dl>
+          @if (detail.isProtected) {
+            <p class="panel__note household__protected">{{ copy.protectedNote }}</p>
+          }
           <p class="panel__note">{{ copy.classifiedNote }}</p>
         </section>
 

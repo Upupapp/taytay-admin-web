@@ -48,6 +48,9 @@ import {
   HttpBalitaRepository,
   HttpPlatformAuditRepository,
   HttpResidentRepository,
+  HttpFamilyRepository,
+  HttpHouseholdRepository,
+  HttpSavedViewRepository,
   HttpHotlineRepository,
   HttpTulongServiceRepository,
   HttpNotificationRepository,
@@ -64,16 +67,13 @@ import {
   UnservedCaseRepository,
   UnservedDashboardRepository,
   UnservedEventRepository,
-  UnservedFamilyRepository,
   UnservedFieldVisitRepository,
   UnservedGovernanceRepository,
-  UnservedHouseholdRepository,
   UnservedNewsfeedRepository,
   UnservedProgramRepository,
   UnservedReferralRepository,
   UnservedReleaseRepository,
   UnservedReportRepository,
-  UnservedSavedViewRepository,
   UnservedSearchRepository,
   UnservedWorkRepository,
   UNSERVED_HTTP_PORTS,
@@ -102,14 +102,14 @@ import {
  * names no mock class at all, and `angular.json` swaps in `data-access.providers.mock.ts` for the
  * one configuration that wants them.
  *
- * ## Fifteen ports served, seventeen unserved
+ * ## Eighteen ports served, fourteen unserved
  *
  * The Node API serves the signed-in account, its inbox, residents' ID verification review
  * (`DL-167`), the office inbox, the office directory and app accounts with their roles (`DL-168`),
  * the directory as an administrator keeps it, Tulong pages, hotlines, the home screen and the
  * app's settings (`DL-170`), residents’ digital IDs, Balita and the API's audit trail (`DL-171`),
- * and the office's resident registry (`DL-174`), and nothing else this console has a port for
- * (`DL-164`). Every other port is bound to an `Unserved…` adapter that makes no request and
+ * the office's resident registry (`DL-174`), and its household register, families and saved views
+ * (casework phase 1c), and nothing else this console has a port for (`DL-164`). Every other port is bound to an `Unserved…` adapter that makes no request and
  * fails with a sentence saying so (`DL-165`). A port moves from that list to an `Http…` adapter
  * only when the API serves the thing the port names — not something with the same word on it.
  */
@@ -142,9 +142,9 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: GOVERNANCE_REPOSITORY, useClass: UnservedGovernanceRepository },
     { provide: NEWSFEED_REPOSITORY, useClass: UnservedNewsfeedRepository },
     { provide: EVENT_REPOSITORY, useClass: UnservedEventRepository },
-    { provide: SAVED_VIEW_REPOSITORY, useClass: UnservedSavedViewRepository },
-    { provide: HOUSEHOLD_REPOSITORY, useClass: UnservedHouseholdRepository },
-    { provide: FAMILY_REPOSITORY, useClass: UnservedFamilyRepository },
+    { provide: SAVED_VIEW_REPOSITORY, useClass: HttpSavedViewRepository },
+    { provide: HOUSEHOLD_REPOSITORY, useClass: HttpHouseholdRepository },
+    { provide: FAMILY_REPOSITORY, useClass: HttpFamilyRepository },
     { provide: CASE_REPOSITORY, useClass: UnservedCaseRepository },
     { provide: BENEFICIARY_REPOSITORY, useClass: UnservedBeneficiaryRepository },
     { provide: FIELD_VISIT_REPOSITORY, useClass: UnservedFieldVisitRepository },

@@ -1,4 +1,4 @@
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
@@ -6,19 +6,31 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import { AuthTokenHolder } from '@core/auth/auth-token.holder';
+import { readApiError } from '@core/http/api-failure';
 import { apiHeadersInterceptor } from '@core/http/api.interceptors';
 import {
+  ASSISTANCE_HISTORY_NOT_CONNECTED,
   asId,
   asIsoDate,
   centavos,
+  describeMembershipChange,
   HOTLINE_LIST_CAP,
+  isFamilyDraftInvalid,
+  isHouseholdCompositionError,
+  isRelationshipInvalid,
+  isTransferRefused,
+  VULNERABILITY_FACTOR_CODES,
   PERMISSIONS,
   SignInError,
   type AppAccountId,
   type BarangayId,
+  type FamilyDraft,
+  type FamilyId,
   type HouseholdId,
+  type RelationshipId,
   type ResidentDraft,
   type ResidentId,
+  type SavedViewId,
   type BalitaArticleId,
   type DigitalIdId,
   type HomeBannerId,
@@ -73,25 +85,41 @@ import NEWS_CATEGORIES from './fixtures/news-categories.json';
 import AUDIT_PAGE from './fixtures/audit-page.json';
 import OFFICE_RESIDENT from './fixtures/office-resident.json';
 import OFFICE_RESIDENTS_PAGE from './fixtures/office-residents-page.json';
+import OFFICE_HOUSEHOLD from './fixtures/office-household.json';
+import OFFICE_HOUSEHOLD_CONFLICT from './fixtures/office-household-conflict.json';
+import OFFICE_HOUSEHOLDS_PAGE from './fixtures/office-households-page.json';
+import OFFICE_FAMILIES_PAGE from './fixtures/office-families-page.json';
+import OFFICE_FAMILY from './fixtures/office-family.json';
+import OFFICE_FAMILY_CONFLICT from './fixtures/office-family-conflict.json';
+import OFFICE_RELATIONSHIP from './fixtures/office-relationship.json';
+import OFFICE_RELATIONSHIP_HISTORY from './fixtures/office-relationship-history.json';
+import OFFICE_RESIDENT_FAMILIES from './fixtures/office-resident-families.json';
+import SAVED_VIEW from './fixtures/saved-view.json';
+import SAVED_VIEWS from './fixtures/saved-views.json';
 import {
   HttpAppAccountRepository,
   HttpAppConfigRepository,
   HttpBalitaRepository,
   HttpDigitalIdRepository,
   HttpDirectoryOfficeRepository,
+  HttpFamilyRepository,
   HttpHomeScreenRepository,
   HttpHotlineRepository,
+  HttpHouseholdRepository,
   HttpNotificationRepository,
   HttpOfficeInboxRepository,
   HttpOfficeRepository,
   HttpPlatformAuditRepository,
   HttpResidentRepository,
+  HttpSavedViewRepository,
   HttpSessionRefresher,
   HttpStaffRepository,
   HttpTulongServiceRepository,
   HttpVerificationRepository,
 } from './http-repositories';
+import { toFamilyRefusal } from './mappers/family.mapper';
 import { toHomeBanner } from './mappers/home.mapper';
+import { toHouseholdRefusal } from './mappers/household.mapper';
 import { toThreadMessage } from './mappers/office-thread.mapper';
 import { toVerificationRequest } from './mappers/verification.mapper';
 import { UnservedError } from './unserved-repositories';
@@ -140,6 +168,9 @@ describe('the Node adapters', () => {
         HttpBalitaRepository,
         HttpPlatformAuditRepository,
         HttpResidentRepository,
+        HttpHouseholdRepository,
+        HttpFamilyRepository,
+        HttpSavedViewRepository,
       ],
     });
 
@@ -941,11 +972,12 @@ describe('the Node adapters', () => {
       await expect(
         firstValueFrom(residents.list({ search: 'm' }, { limit: 20, cursor: null })),
       ).rejects.toThrow(/two letters/);
+      // The API holds households now; the registry list simply is not filtered by one.
       await expect(
         firstValueFrom(
           residents.list({ householdId: asId<HouseholdId>('h-1') }, { limit: 20, cursor: null }),
         ),
-      ).rejects.toThrow(/households/);
+      ).rejects.toThrow(/cannot be filtered by household.*household record/);
     });
 
     it('refuses the page rather than leave out a record it cannot read', async () => {
@@ -1061,9 +1093,822 @@ describe('the Node adapters', () => {
       end.flush(OFFICE_RESIDENT);
       await ended;
     });
+  });
 
-    it('refuses a profile in words and asks nothing: the API holds no household or history yet', async () => {
-      await expect(firstValueFrom(residents.getProfile())).rejects.toThrow(/does not serve/);
+  describe('the office household register (casework phase 1c)', () => {
+    let households: HttpHouseholdRepository;
+    const DOLORES_API = '6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01';
+    const SAN_JUAN_API = '6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04';
+    const BARANGAYS = {
+      data: [
+        { id: DOLORES_API, code: 'dolores', name: 'Dolores' },
+        { id: SAN_JUAN_API, code: 'san-juan', name: 'San Juan' },
+      ],
+      meta: {},
+    };
+    const householdId = asId<HouseholdId>(OFFICE_HOUSEHOLD.data.household.id);
+    const HEAD = asId<ResidentId>(OFFICE_HOUSEHOLD.data.members[0]?.resident.id ?? '');
+    const CHILD = asId<ResidentId>(OFFICE_HOUSEHOLD.data.members[1]?.resident.id ?? '');
+
+    const barangays = (): void => {
+      http.expectOne({ method: 'GET', url: `${BASE}/barangays` }).flush(BARANGAYS);
+    };
+
+    beforeEach(() => {
+      households = TestBed.inject(HttpHouseholdRepository);
+      tokens.hold('fixture-token', null);
+    });
+
+    it('reads a cursor page as the server redacted it, saying what was withheld', async () => {
+      const page = firstValueFrom(households.list({}, { limit: 20, cursor: null }));
+      barangays();
+      const request = http.expectOne((r) => r.url === `${BASE}/office/households`);
+      expect(request.request.params.keys()).toEqual(['limit']);
+      request.flush(OFFICE_HOUSEHOLDS_PAGE);
+
+      const answer = await page;
+      expect(answer.hasMore).toBe(true);
+      expect(answer.nextCursor).toBe(OFFICE_HOUSEHOLDS_PAGE.meta.pagination.next_cursor);
+      const [protectedRow, plain] = answer.items;
+      expect(protectedRow?.isProtected).toBe(true);
+      expect(protectedRow?.withheld).toEqual(['exactAddress', 'monthlyIncome']);
+      expect(protectedRow?.household.address.streetAddress).toBeNull();
+      expect(protectedRow?.household.address.barangayId).toBe('brgy-dolores');
+      expect(protectedRow?.headName).toBe('Dela Cruz, Maria Santos');
+      expect(protectedRow?.memberCount).toBe(2);
+      expect(protectedRow?.band).toBe('elevated');
+      expect(plain?.household.address.barangayId).toBe('brgy-san-juan');
+      expect(plain?.withheld).toEqual([]);
+      // A list row carries no member list: it is not the household's members, so it is not one.
+      expect(plain?.household).not.toHaveProperty('members');
+    });
+
+    it('sends the filter as the API names it, and the barangay as the API keys it', async () => {
+      const page = firstValueFrom(
+        households.list(
+          {
+            search: '  rizal ',
+            barangayId: asId<BarangayId>('brgy-san-juan'),
+            indigentOnly: true,
+            minimumBand: 'elevated',
+          },
+          { limit: 20, cursor: 'abc' },
+        ),
+      );
+      barangays();
+      const request = http.expectOne((r) => r.url === `${BASE}/office/households`);
+      const params = request.request.params;
+      expect(params.keys().sort()).toEqual(
+        ['barangay_id', 'cursor', 'indigent', 'limit', 'minimum_band', 'q'].sort(),
+      );
+      expect(params.get('q')).toBe('rizal');
+      expect(params.get('barangay_id')).toBe(SAN_JUAN_API);
+      expect(params.get('indigent')).toBe('true');
+      expect(params.get('minimum_band')).toBe('elevated');
+      request.flush({ data: [], meta: { pagination: { has_more: false, next_cursor: null } } });
+      expect((await page).items).toEqual([]);
+    });
+
+    it('asks nothing for a one-character search, which the API would refuse', async () => {
+      await expect(
+        firstValueFrom(households.list({ search: 'h' }, { limit: 20, cursor: null })),
+      ).rejects.toThrow(/two characters/);
+    });
+
+    it('reads a record whole: members redacted, indicators withheld, the trail in words', async () => {
+      const found = firstValueFrom(households.getById(householdId));
+      barangays();
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/office/households/${householdId}` })
+        .flush(OFFICE_HOUSEHOLD);
+      const detail = await found;
+
+      expect(detail?.withheld).toEqual(['exactAddress', 'monthlyIncome']);
+      expect(detail?.household.monthlyIncome).toBeNull();
+      expect(detail?.household.members).toEqual([
+        { residentId: HEAD, role: 'head' },
+        { residentId: CHILD, role: 'child' },
+      ]);
+      const child = detail?.members[1];
+      expect(child?.isHead).toBe(false);
+      expect(child?.view.listedName).toBe('Dela Cruz, J.');
+      expect(child?.view.resident.householdId).toBe(householdId);
+
+      const factors = detail?.snapshot.factors ?? [];
+      expect(factors.map((factor) => factor.code)).toEqual([...VULNERABILITY_FACTOR_CODES]);
+      for (const code of ['no-income-recorded', 'income-below-threshold', 'protected-member']) {
+        expect(factors.find((factor) => factor.code === code)?.state).toBe('withheld');
+      }
+      const corrected = factors.find((factor) => factor.code === 'solo-parent-head');
+      expect(corrected?.origin).toBe('corrected');
+      expect(corrected?.computedState).toBe('absent');
+      expect(corrected?.correction?.actorName).toBe('Ana Reyes');
+      expect(detail?.snapshot.band).toBe('elevated');
+
+      const trail = detail?.audit ?? [];
+      expect(trail.map((entry) => entry.action)).toEqual([
+        'factor-corrected',
+        'membership-changed',
+        'membership-changed',
+        'created',
+      ]);
+      // Worded where the mock words it, with the reason kept apart.
+      expect(trail[1]?.summary).toBe(
+        describeMembershipChange({ kind: 'add-member', residentId: CHILD, role: 'child' }),
+      );
+      expect(trail[1]?.reason).toBe('Home visit 5 November: her son lives with her.');
+      expect(trail[1]?.actorName).not.toBe('');
+      expect(trail[3]?.summary).toBe('registered the household');
+      expect(trail[3]?.reason).toBeNull();
+      expect(trail[0]?.entityId).toBe(householdId);
+    });
+
+    it('refuses a record whose indicators cannot be read exactly', async () => {
+      const snapshot = OFFICE_HOUSEHOLD.data.snapshot;
+      const broken = [
+        // A threshold other than the one this console cites beside the figures.
+        { ...snapshot, poverty_threshold: { ...snapshot.poverty_threshold, annual_per_capita_centavos: 1 } },
+        // An indicator missing reads as one that does not apply.
+        { ...snapshot, factors: snapshot.factors.slice(1) },
+      ];
+      for (const [index, wrong] of broken.entries()) {
+        const found = firstValueFrom(households.getById(householdId));
+        if (index === 0) {
+          barangays();
+        }
+        http
+          .expectOne({ method: 'GET', url: `${BASE}/office/households/${householdId}` })
+          .flush({ ...OFFICE_HOUSEHOLD, data: { ...OFFICE_HOUSEHOLD.data, snapshot: wrong } });
+        await expect(found).rejects.toThrow(/could not be read/);
+      }
+    });
+
+    it('reads a 404 as nobody it may see', async () => {
+      const missing = firstValueFrom(households.getById(asId<HouseholdId>('nowhere')));
+      barangays();
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/office/households/nowhere` })
+        .flush({ error: { code: 'NOT_FOUND' } }, { status: 404, statusText: 'Not Found' });
+      expect(await missing).toBeNull();
+    });
+
+    it('registers with the flat body the API reads, in centavos', async () => {
+      const created = firstValueFrom(
+        households.create({
+          barangayId: asId<BarangayId>('brgy-dolores'),
+          purokOrSitio: '  ',
+          streetAddress: ' 12 Rizal Ave. ',
+          headResidentId: HEAD,
+          monthlyIncome: centavos(850_050),
+          isIndigent: true,
+        }),
+      );
+      barangays();
+      const request = http.expectOne({ method: 'POST', url: `${BASE}/office/households` });
+      expect(request.request.body).toEqual({
+        barangay_id: DOLORES_API,
+        purok_or_sitio: null,
+        street_address: '12 Rizal Ave.',
+        head_resident_id: HEAD,
+        monthly_income_centavos: 850_050,
+        is_indigent: true,
+      });
+      request.flush(OFFICE_HOUSEHOLD, { status: 201, statusText: 'Created' });
+      expect((await created).household.id).toBe(householdId);
+    });
+
+    it('sends membership as intents, corrections and withdrawals each with a reason', async () => {
+      const changed = firstValueFrom(
+        households.changeMembership(
+          householdId,
+          [
+            { kind: 'add-member', residentId: CHILD, role: 'child' },
+            { kind: 'set-head', residentId: HEAD },
+          ],
+          '  Home visit. ',
+        ),
+      );
+      barangays();
+      const membership = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/office/households/${householdId}/membership`,
+      });
+      expect(membership.request.body).toEqual({
+        changes: [
+          { kind: 'add-member', resident_id: CHILD, role: 'child' },
+          { kind: 'set-head', resident_id: HEAD },
+        ],
+        reason: 'Home visit.',
+      });
+      membership.flush(OFFICE_HOUSEHOLD);
+      await changed;
+
+      const corrected = firstValueFrom(
+        households.correctFactor(householdId, 'pwd-member', 'present', 'PWD ID seen at the visit.'),
+      );
+      const correction = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/office/households/${householdId}/corrections`,
+      });
+      expect(correction.request.body).toEqual({
+        code: 'pwd-member',
+        state: 'present',
+        reason: 'PWD ID seen at the visit.',
+      });
+      correction.flush(OFFICE_HOUSEHOLD);
+      await corrected;
+
+      const withdrawn = firstValueFrom(
+        households.clearCorrection(householdId, 'pwd-member', 'Card was not his.'),
+      );
+      const withdrawal = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/office/households/${householdId}/corrections/pwd-member/withdraw`,
+      });
+      expect(withdrawal.request.body).toEqual({ reason: 'Card was not his.' });
+      withdrawal.flush(OFFICE_HOUSEHOLD);
+      await withdrawn;
+    });
+
+    it('never sends "withheld" as a correction: it is a reading, not a state', async () => {
+      await expect(
+        firstValueFrom(households.correctFactor(householdId, 'pwd-member', 'withheld', 'A reason here.')),
+      ).rejects.toThrow(/present, absent or unknown/);
+    });
+
+    it('reads a refused composition as the domain’s problems, and anything else in the server’s words', () => {
+      const failure = (body: unknown) =>
+        readApiError(
+          new HttpErrorResponse({ error: body, status: 409, statusText: 'Conflict' }),
+        );
+
+      const refused = toHouseholdRefusal(failure(OFFICE_HOUSEHOLD_CONFLICT));
+      expect(isHouseholdCompositionError(refused)).toBe(true);
+      if (isHouseholdCompositionError(refused)) {
+        expect(refused.problems).toEqual([
+          {
+            code: 'member-in-another-household',
+            residentId: OFFICE_HOUSEHOLD_CONFLICT.error.details['member-in-another-household'][0],
+          },
+        ]);
+      }
+
+      const unfamiliar = toHouseholdRefusal(
+        failure({
+          error: {
+            ...OFFICE_HOUSEHOLD_CONFLICT.error,
+            message: 'Something this console has no words for.',
+            details: { 'household-on-fire': [] },
+          },
+        }),
+      );
+      expect(isHouseholdCompositionError(unfamiliar)).toBe(false);
+      expect(unfamiliar?.message).toBe('Something this console has no words for.');
+
+      const noDetails = toHouseholdRefusal(
+        failure({
+          error: {
+            code: 'CONFLICT',
+            message: 'No correction of that factor stands to withdraw.',
+            details: {},
+            request_id: 'req-2',
+          },
+        }),
+      );
+      expect(noDetails?.message).toBe('No correction of that factor stands to withdraw.');
+
+      // Not a conflict: passed on untouched, for the screen's own handling.
+      expect(toHouseholdRefusal(readApiError(new HttpErrorResponse({ status: 403 })))).toBeNull();
+    });
+  });
+
+  describe('families and the relationships between people (casework phase 1c)', () => {
+    let families: HttpFamilyRepository;
+    const DOLORES_API = '6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01';
+    const SAN_JUAN_API = '6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04';
+    const BARANGAYS = {
+      data: [
+        { id: DOLORES_API, code: 'dolores', name: 'Dolores' },
+        { id: SAN_JUAN_API, code: 'san-juan', name: 'San Juan' },
+      ],
+      meta: {},
+    };
+    const familyId = asId<FamilyId>(OFFICE_FAMILY.data.family.id);
+    const MARIA = asId<ResidentId>(OFFICE_FAMILY.data.members[0]?.resident.id ?? '');
+    const J = asId<ResidentId>(OFFICE_FAMILY.data.members[1]?.resident.id ?? '');
+    const PEDRO = asId<ResidentId>(OFFICE_FAMILY.data.members[2]?.resident.id ?? '');
+    const UNNAMED = 'A staff account with no name on record';
+
+    const barangays = (): void => {
+      http.expectOne({ method: 'GET', url: `${BASE}/barangays` }).flush(BARANGAYS);
+    };
+
+    beforeEach(() => {
+      families = TestBed.inject(HttpFamilyRepository);
+      tokens.hold('fixture-token', null);
+    });
+
+    it('reads a cursor page as the server redacted it, a family between addresses included', async () => {
+      const page = firstValueFrom(families.list({}, { limit: 20, cursor: null }));
+      barangays();
+      const request = http.expectOne((r) => r.url === `${BASE}/office/families`);
+      expect(request.request.params.keys()).toEqual(['limit']);
+      request.flush(OFFICE_FAMILIES_PAGE);
+
+      const answer = await page;
+      expect(answer.hasMore).toBe(true);
+      expect(answer.nextCursor).toBe(OFFICE_FAMILIES_PAGE.meta.pagination.next_cursor);
+      const [housed, unhoused] = answer.items;
+      expect(housed?.family.name).toBe('Dela Cruz family');
+      expect(housed?.headName).toBe('Dela Cruz, Maria Santos');
+      expect(housed?.householdReference).toBe('HH-2026-000014');
+      expect(housed?.barangayId).toBe('brgy-dolores');
+      expect(housed?.memberCount).toBe(2);
+      expect(housed?.relationshipCount).toBe(1);
+      // Every period kept, the closed one too (DL-48).
+      expect(housed?.family.members.map((member) => member.leftOn)).toEqual([
+        null,
+        null,
+        '2026-11-06',
+      ]);
+      // Between addresses is an answer, not a gap (DL-47).
+      expect(unhoused?.family.householdId).toBeNull();
+      expect(unhoused?.householdReference).toBeNull();
+      expect(unhoused?.barangayId).toBeNull();
+      expect(unhoused?.headName).toBe('Santos, Rosa');
+    });
+
+    it('sends the filter as the API names it, and asks nothing for one character', async () => {
+      const page = firstValueFrom(
+        families.list(
+          {
+            search: '  cruz ',
+            barangayId: asId<BarangayId>('brgy-san-juan'),
+            householdId: asId<HouseholdId>('3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e01'),
+            unhousedOnly: true,
+            includeDissolved: true,
+          },
+          { limit: 20, cursor: 'abc' },
+        ),
+      );
+      barangays();
+      const request = http.expectOne((r) => r.url === `${BASE}/office/families`);
+      const params = request.request.params;
+      expect(params.keys().sort()).toEqual(
+        ['barangay_id', 'cursor', 'household_id', 'include_dissolved', 'limit', 'q', 'unhoused'].sort(),
+      );
+      expect(params.get('q')).toBe('cruz');
+      expect(params.get('barangay_id')).toBe(SAN_JUAN_API);
+      expect(params.get('unhoused')).toBe('true');
+      expect(params.get('include_dissolved')).toBe('true');
+      request.flush({ data: [], meta: { pagination: { has_more: false, next_cursor: null } } });
+      expect((await page).items).toEqual([]);
+
+      await expect(
+        firstValueFrom(families.list({ search: 'c' }, { limit: 20, cursor: null })),
+      ).rejects.toThrow(/two characters/);
+    });
+
+    it('draws the graph the mock draws: generations from the head, edges from each side', async () => {
+      const found = firstValueFrom(families.getById(familyId));
+      barangays();
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/office/families/${familyId}` })
+        .flush(OFFICE_FAMILY);
+      const detail = await found;
+
+      const node = (id: ResidentId) =>
+        detail?.graph.nodes.find((candidate) => candidate.view.resident.id === id);
+      expect(node(MARIA)?.role).toBe('head');
+      expect(node(MARIA)?.generation).toBe(0);
+      expect(node(J)?.generation).toBe(1);
+      expect(node(J)?.edges.map((edge) => [edge.kind, edge.otherName])).toEqual([
+        ['child-of', 'Dela Cruz, Maria Santos'],
+      ]);
+      // A former member stays on the record, marked as former, with the link that ended.
+      expect(node(PEDRO)?.isCurrentMember).toBe(false);
+      expect(node(PEDRO)?.role).toBeNull();
+      expect(node(PEDRO)?.edges.map((edge) => [edge.kind, edge.isCurrent])).toEqual([
+        ['spouse-of', false],
+      ]);
+      expect(detail?.graph.edges).toHaveLength(2);
+      // Topmost generation first, as the mock orders them.
+      expect(detail?.graph.nodes.map((candidate) => candidate.generation)).toEqual([0, 0, 1]);
+
+      expect(detail?.othersInHousehold.map((other) => other.family.name)).toEqual(['Reyes family']);
+      expect(detail?.audit).toEqual([]);
+    });
+
+    it('says what the server withheld beside a protected member, never a blank', async () => {
+      const found = firstValueFrom(families.getById(familyId));
+      barangays();
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/office/families/${familyId}` })
+        .flush(OFFICE_FAMILY);
+      const detail = await found;
+      const nodes = detail?.graph.nodes ?? [];
+
+      const child = nodes.find((candidate) => candidate.view.resident.id === J);
+      expect(child?.view.isProtected).toBe(true);
+      expect(child?.view.listedName).toBe('Dela Cruz, J.');
+      // Her mother and the man who left are not protected; their streets are hers, so withheld.
+      for (const id of [MARIA, PEDRO]) {
+        const member = nodes.find((candidate) => candidate.view.resident.id === id);
+        expect(member?.view.isProtected).toBe(false);
+        expect(member?.view.resident.address.streetAddress).toBeNull();
+        expect(member?.view.withheld).toContain('exactAddress');
+      }
+    });
+
+    it('reads the history newest first, in the person’s words, naming an unnamed author', async () => {
+      const found = firstValueFrom(families.getById(familyId));
+      barangays();
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/office/families/${familyId}` })
+        .flush(OFFICE_FAMILY);
+      const history = (await found)?.history ?? [];
+
+      expect(history.map((event) => event.kind)).toEqual([
+        'member-role-changed',
+        'resident-transferred',
+        'member-joined',
+        'member-joined',
+        'member-joined',
+        'family-formed',
+      ]);
+      const left = history[1];
+      expect(left?.subject.residentId).toBe(PEDRO);
+      expect(left?.subject.familyId).toBe(familyId);
+      expect(left?.subject.toFamilyId).toBeNull();
+      expect(left?.reason).toBe('Home visit 6 November: he has moved out.');
+      expect(left?.actorName).toBe(UNNAMED);
+      expect(history[0]?.actorName).toBe('Ana Reyes');
+    });
+
+    it('refuses a record it cannot read whole, and reads a 404 as nobody it may see', async () => {
+      const broken = firstValueFrom(families.getById(familyId));
+      barangays();
+      http.expectOne({ method: 'GET', url: `${BASE}/office/families/${familyId}` }).flush({
+        ...OFFICE_FAMILY,
+        data: {
+          ...OFFICE_FAMILY.data,
+          history: [{ ...OFFICE_FAMILY.data.history[0], kind: 'family-renamed' }],
+        },
+      });
+      await expect(broken).rejects.toThrow(/could not be read/);
+
+      const missing = firstValueFrom(families.getById(asId<FamilyId>('nowhere')));
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/office/families/nowhere` })
+        .flush({ error: { code: 'NOT_FOUND' } }, { status: 404, statusText: 'Not Found' });
+      expect(await missing).toBeNull();
+    });
+
+    it('records a family with the strict body the API reads, and asks nothing for an invalid one', async () => {
+      const draft: FamilyDraft = {
+        name: '  Dela Cruz family ',
+        householdId: asId<HouseholdId>('3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e01'),
+        formedOn: asIsoDate('2026-11-06'),
+        members: [
+          { residentId: MARIA, role: 'head' },
+          { residentId: J, role: 'child' },
+        ],
+      };
+      const created = firstValueFrom(families.create(draft, '  Recorded at intake. '));
+      barangays();
+      const request = http.expectOne({ method: 'POST', url: `${BASE}/office/families` });
+      expect(request.request.body).toEqual({
+        name: 'Dela Cruz family',
+        household_id: '3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e01',
+        formed_on: '2026-11-06',
+        members: [
+          { resident_id: MARIA, role: 'head' },
+          { resident_id: J, role: 'child' },
+        ],
+        reason: 'Recorded at intake.',
+      });
+      request.flush(OFFICE_FAMILY, { status: 201, statusText: 'Created' });
+      expect((await created).family.id).toBe(familyId);
+
+      const refused: unknown = await firstValueFrom(
+        families.create({ ...draft, members: [] }, ' '),
+      ).catch((error: unknown) => error);
+      expect(isFamilyDraftInvalid(refused)).toBe(true);
+    });
+
+    it('reads a person’s families and their history whole, at the resident', async () => {
+      const listed = firstValueFrom(families.familiesOf(MARIA));
+      barangays();
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/office/residents/${MARIA}/families` })
+        .flush(OFFICE_RESIDENT_FAMILIES);
+      expect((await listed).map((summary) => summary.family.id)).toEqual([familyId]);
+
+      const history = firstValueFrom(families.historyForResident(MARIA));
+      http
+        .expectOne({
+          method: 'GET',
+          url: `${BASE}/office/residents/${MARIA}/relationship-history`,
+        })
+        .flush(OFFICE_RELATIONSHIP_HISTORY);
+      const events = await history;
+      expect(events.map((event) => event.kind)).toEqual([
+        'member-role-changed',
+        'relationship-ended',
+        'relationship-recorded',
+        'member-joined',
+      ]);
+      expect(events[1]?.subject.relationshipKind).toBe('spouse-of');
+      expect(events[1]?.subject.otherResidentId).toBe(MARIA);
+      expect(events[2]?.actorName).toBe(UNNAMED);
+    });
+
+    it('records a relationship at its subject, a standing one included, and ends it with a reason', async () => {
+      const recorded = firstValueFrom(
+        families.recordRelationship(MARIA, J, 'parent-of', ' Birth certificate. '),
+      );
+      const request = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/office/residents/${MARIA}/relationships`,
+      });
+      expect(request.request.body).toEqual({
+        to_resident_id: J,
+        kind: 'parent-of',
+        reason: 'Birth certificate.',
+      });
+      request.flush(OFFICE_RELATIONSHIP, { status: 201, statusText: 'Created' });
+      expect((await recorded).kind).toBe('parent-of');
+
+      // Already on file is already done: 200 with the standing one is the same success (DL-51).
+      const again = firstValueFrom(
+        families.recordRelationship(MARIA, J, 'parent-of', 'Birth certificate.'),
+      );
+      http
+        .expectOne({ method: 'POST', url: `${BASE}/office/residents/${MARIA}/relationships` })
+        .flush(OFFICE_RELATIONSHIP, { status: 200, statusText: 'OK' });
+      expect((await again).id).toBe(OFFICE_RELATIONSHIP.data.id);
+
+      const relationshipId = asId<RelationshipId>(OFFICE_RELATIONSHIP.data.id);
+      const ended = firstValueFrom(families.endRelationship(J, relationshipId, ' Adopted out. '));
+      const end = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/office/residents/${J}/relationships/${relationshipId}/end`,
+      });
+      expect(end.request.body).toEqual({ reason: 'Adopted out.' });
+      end.flush({ data: { ...OFFICE_RELATIONSHIP.data, until: '2026-11-06' }, meta: {} });
+      expect((await ended).until).toBe('2026-11-06');
+
+      const self: unknown = await firstValueFrom(
+        families.recordRelationship(MARIA, MARIA, 'sibling-of', 'A reason.'),
+      ).catch((error: unknown) => error);
+      expect(isRelationshipInvalid(self)).toBe(true);
+    });
+
+    it('moves a person in one request, and changes a role answering the family itself', async () => {
+      const moved = firstValueFrom(
+        families.transferResident({
+          residentId: PEDRO,
+          fromFamilyId: familyId,
+          toFamilyId: null,
+          role: 'partner',
+          moveHousehold: false,
+          reason: ' Home visit 6 November: he has moved out. ',
+        }),
+      );
+      barangays();
+      const transfer = http.expectOne({ method: 'POST', url: `${BASE}/office/families/transfers` });
+      expect(transfer.request.body).toEqual({
+        resident_id: PEDRO,
+        from_family_id: familyId,
+        to_family_id: null,
+        role: 'partner',
+        move_household: false,
+        reason: 'Home visit 6 November: he has moved out.',
+      });
+      transfer.flush(OFFICE_FAMILY);
+      expect((await moved).family.id).toBe(familyId);
+
+      const role = firstValueFrom(families.changeMemberRole(familyId, MARIA, 'head', 'She heads it.'));
+      const change = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/office/families/${familyId}/members/${MARIA}/role`,
+      });
+      expect(change.request.body).toEqual({ role: 'head', reason: 'She heads it.' });
+      change.flush(OFFICE_FAMILY);
+      expect((await role).id).toBe(familyId);
+
+      const unexplained: unknown = await firstValueFrom(
+        families.transferResident({
+          residentId: PEDRO,
+          fromFamilyId: familyId,
+          toFamilyId: null,
+          role: 'partner',
+          moveHousehold: false,
+          reason: 'left',
+        }),
+      ).catch((error: unknown) => error);
+      expect(isTransferRefused(unexplained)).toBe(true);
+    });
+
+    it('reads a refusal as the domain’s problems, and anything else in the server’s words', () => {
+      const failure = (body: unknown) =>
+        readApiError(new HttpErrorResponse({ error: body, status: 409, statusText: 'Conflict' }));
+
+      const orphan = toFamilyRefusal(failure(OFFICE_FAMILY_CONFLICT), 'transfer');
+      expect(isTransferRefused(orphan)).toBe(true);
+      if (isTransferRefused(orphan)) {
+        expect(orphan.problems).toEqual([{ code: 'would-orphan-head', residentId: MARIA }]);
+      }
+
+      const conflict = (details: Record<string, string[]>, message: string) =>
+        failure({ error: { ...OFFICE_FAMILY_CONFLICT.error, message, details } });
+
+      // Asked to take the household along, and the person heads it: a household rule, refused in
+      // the server's words rather than re-worded into a transfer problem it is not.
+      const heads = toFamilyRefusal(
+        conflict(
+          { 'head-cannot-be-removed': [MARIA] },
+          'This person heads their household. Name another head there before moving them out of it.',
+        ),
+        'transfer',
+      );
+      expect(isTransferRefused(heads)).toBe(false);
+      expect(heads?.message).toContain('heads their household');
+
+      const reversed = toFamilyRefusal(
+        conflict({ 'contradicts-existing': [J] }, 'That relationship reverses a parent link.'),
+        'relationship',
+      );
+      expect(isRelationshipInvalid(reversed)).toBe(true);
+
+      const twice = toFamilyRefusal(
+        conflict({ 'duplicate-member': [J], 'resident-not-found': [] }, 'Not as stated.'),
+        'family',
+      );
+      expect(isFamilyDraftInvalid(twice)).toBe(true);
+      if (isFamilyDraftInvalid(twice)) {
+        expect(twice.problems).toEqual([
+          { code: 'duplicate-member', residentId: J },
+          { code: 'resident-not-found', residentId: null },
+        ]);
+      }
+
+      const ended = toFamilyRefusal(
+        failure({
+          error: {
+            code: 'CONFLICT',
+            message: 'That relationship has already ended.',
+            details: {},
+            request_id: 'req-3',
+          },
+        }),
+        'relationship',
+      );
+      expect(ended?.message).toBe('That relationship has already ended.');
+
+      // Not a conflict: passed on untouched, for the screen's own handling.
+      expect(toFamilyRefusal(readApiError(new HttpErrorResponse({ status: 403 })), 'transfer')).toBeNull();
+    });
+  });
+
+  describe('a resident’s profile, over the two registers (casework phase 1c)', () => {
+    let residents: HttpResidentRepository;
+    const BARANGAYS = {
+      data: [{ id: '6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01', code: 'dolores', name: 'Dolores' }],
+      meta: {},
+    };
+    const HEAD = asId<ResidentId>(OFFICE_HOUSEHOLD.data.members[0]?.resident.id ?? '');
+    const CHILD = OFFICE_HOUSEHOLD.data.members[1]?.resident.id ?? '';
+    const householdId = OFFICE_HOUSEHOLD.data.household.id;
+    const HEAD_RECORD = {
+      data: OFFICE_HOUSEHOLD.data.members[0]?.resident,
+      meta: {},
+    };
+
+    beforeEach(() => {
+      residents = TestBed.inject(HttpResidentRepository);
+      tokens.hold('fixture-token', null);
+    });
+
+    it('finds the household the resident is in, and everyone else in it', async () => {
+      const profile = firstValueFrom(residents.getProfile(HEAD));
+      http.expectOne({ method: 'GET', url: `${BASE}/barangays` }).flush(BARANGAYS);
+      http.expectOne({ method: 'GET', url: `${BASE}/office/residents/${HEAD}` }).flush(HEAD_RECORD);
+      const lookup = http.expectOne((r) => r.url === `${BASE}/office/households`);
+      expect(lookup.request.params.get('resident_id')).toBe(HEAD);
+      expect(lookup.request.params.get('limit')).toBe('1');
+      lookup.flush({
+        ...OFFICE_HOUSEHOLDS_PAGE,
+        data: OFFICE_HOUSEHOLDS_PAGE.data.slice(0, 1),
+        meta: { pagination: { has_more: false, next_cursor: null } },
+      });
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/office/households/${householdId}` })
+        .flush(OFFICE_HOUSEHOLD);
+
+      const answer = await profile;
+      expect(answer?.household?.id).toBe(householdId);
+      expect(answer?.view.resident.householdId).toBe(householdId);
+      expect(answer?.householdMembers.kind).toBe('read');
+      if (answer?.householdMembers.kind === 'read') {
+        expect(answer.householdMembers.members.map((member) => member.view.resident.id)).toEqual([
+          CHILD,
+        ]);
+      }
+      // Never an empty history: the API does not serve it, and empty would say "never helped".
+      expect(answer?.history).toEqual({
+        kind: 'unavailable',
+        because: ASSISTANCE_HISTORY_NOT_CONNECTED,
+      });
+    });
+
+    it('says the resident is in no household when the register places them in none', async () => {
+      const profile = firstValueFrom(residents.getProfile(HEAD));
+      http.expectOne({ method: 'GET', url: `${BASE}/barangays` }).flush(BARANGAYS);
+      http.expectOne({ method: 'GET', url: `${BASE}/office/residents/${HEAD}` }).flush(HEAD_RECORD);
+      http
+        .expectOne((r) => r.url === `${BASE}/office/households`)
+        .flush({ data: [], meta: { pagination: { has_more: false, next_cursor: null } } });
+
+      const answer = await profile;
+      expect(answer?.household).toBeNull();
+      expect(answer?.householdMembers).toEqual({ kind: 'read', members: [] });
+    });
+
+    it('answers a resident it may not see as nobody, and asks nothing more', async () => {
+      const profile = firstValueFrom(residents.getProfile(asId<ResidentId>('nobody')));
+      http.expectOne({ method: 'GET', url: `${BASE}/barangays` }).flush(BARANGAYS);
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/office/residents/nobody` })
+        .flush({ error: { code: 'NOT_FOUND' } }, { status: 404, statusText: 'Not Found' });
+      expect(await profile).toBeNull();
+    });
+  });
+
+  describe('saved views (casework phase 1c, DL-111)', () => {
+    let views: HttpSavedViewRepository;
+
+    beforeEach(() => {
+      views = TestBed.inject(HttpSavedViewRepository);
+      tokens.hold('fixture-token', null);
+    });
+
+    it('reads one list’s views whole, saying whose each is', async () => {
+      const listed = firstValueFrom(views.listFor('residents'));
+      const request = http.expectOne((r) => r.url === `${BASE}/office/saved-views`);
+      expect(request.request.params.get('resource')).toBe('residents');
+      expect(request.request.params.keys()).toEqual(['resource']);
+      request.flush(SAVED_VIEWS);
+
+      const [shared, own] = await listed;
+      expect(shared?.isShared).toBe(true);
+      expect(shared?.params).toEqual({ barangay: 'brgy-dolores', ageGroup: 'senior' });
+      expect(own?.isShared).toBe(false);
+      expect(own?.ownerId).toBe(SAVED_VIEWS.data[1]?.owner_id);
+      expect(own?.audit.createdAt).toBe(SAVED_VIEWS.data[1]?.created_at);
+    });
+
+    it('refuses the list rather than guess whose a view is', async () => {
+      const listed = firstValueFrom(views.listFor('residents'));
+      http
+        .expectOne((r) => r.url === `${BASE}/office/saved-views`)
+        .flush({ ...SAVED_VIEWS, data: [{ ...SAVED_VIEWS.data[0], is_shared: 'yes' }] });
+      await expect(listed).rejects.toThrow(/could not be read/);
+    });
+
+    it('saves with the body the API reads, and asks nothing for a name it would refuse', async () => {
+      const saved = firstValueFrom(
+        views.create({
+          resource: 'households',
+          name: '  Indigent, elevated or above ',
+          params: { indigent: 'true', band: 'elevated' },
+          isShared: false,
+        }),
+      );
+      const request = http.expectOne({ method: 'POST', url: `${BASE}/office/saved-views` });
+      expect(request.request.body).toEqual({
+        resource: 'households',
+        name: 'Indigent, elevated or above',
+        params: { indigent: 'true', band: 'elevated' },
+        is_shared: false,
+      });
+      request.flush(SAVED_VIEW, { status: 201, statusText: 'Created' });
+      expect((await saved).resource).toBe('households');
+
+      await expect(
+        firstValueFrom(
+          views.create({ resource: 'households', name: '   ', params: {}, isShared: false }),
+        ),
+      ).rejects.toThrow(/name of 1 to 60/);
+    });
+
+    it('takes a view away at its address', async () => {
+      const id = asId<SavedViewId>(SAVED_VIEW.data.id);
+      const removed = firstValueFrom(views.remove(id));
+      http
+        .expectOne({ method: 'DELETE', url: `${BASE}/office/saved-views/${id}` })
+        .flush({ data: { id, deleted: true }, meta: {} });
+      await expect(removed).resolves.toBeUndefined();
     });
   });
 

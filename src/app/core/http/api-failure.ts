@@ -63,6 +63,24 @@ export function readApiError(error: HttpErrorResponse): ApiFailure {
   };
 }
 
+/**
+ * Whether a thrown value is the failure the interceptor rethrows — the server answered, and this is
+ * what it said. A form that shows a refusal in the server's words needs to tell it from an `Error`
+ * raised in the console, without parsing the wire again.
+ */
+export function isApiFailure(value: unknown): value is ApiFailure {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'status' in value &&
+    typeof value.status === 'number' &&
+    'message' in value &&
+    typeof value.message === 'string' &&
+    'code' in value &&
+    'details' in value
+  );
+}
+
 interface WireError {
   readonly code: string;
   readonly message: string;

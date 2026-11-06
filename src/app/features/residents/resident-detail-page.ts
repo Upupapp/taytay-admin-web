@@ -2,9 +2,11 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { catchError, of, switchMap } from 'rxjs';
+import { catchError, EMPTY, of, switchMap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
+import { NotConnected } from '@core/access/not-connected';
+import { ServedPorts } from '@core/access/served-ports';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   ageInYears,
@@ -64,6 +66,7 @@ import { RESIDENTS_COPY } from './residents.copy';
     DatePipe,
     HasPermissionDirective,
     Modal,
+    NotConnected,
     PageHeader,
     PesoPipe,
     ResidentSummaryCard,
@@ -79,6 +82,15 @@ export class ResidentDetailPage {
   private readonly families = inject(FAMILY_REPOSITORY);
   private readonly visits = inject(FIELD_VISIT_REPOSITORY);
   private readonly notifications = inject(NotificationStore);
+  private readonly served = inject(ServedPorts);
+
+  /**
+   * The record's primary port is the resident registry; families and home visits are panels on it
+   * (`DL-175`). Where the API does not serve one, the panel asks nothing of its repository and says
+   * so in its own place — the record stays open, and the gap is named rather than read as "none".
+   */
+  protected readonly servesFamilies = this.served.serves('family');
+  protected readonly servesVisits = this.served.serves('field-visit');
 
   /** Bound from the route by `withComponentInputBinding()`. */
   readonly id = input.required<string>();
@@ -102,7 +114,9 @@ export class ResidentDetailPage {
    */
   protected readonly familiesOf = toSignal(
     toObservable(computed(() => this.id())).pipe(
-      switchMap((id) => this.families.familiesOf(asId<ResidentId>(id))),
+      switchMap((id) =>
+        this.servesFamilies ? this.families.familiesOf(asId<ResidentId>(id)) : EMPTY,
+      ),
       /*
        * A panel this role may not read is ABSENT, never fatal.
        *
@@ -126,7 +140,9 @@ export class ResidentDetailPage {
    */
   protected readonly kinshipHistory = toSignal(
     toObservable(computed(() => this.id())).pipe(
-      switchMap((id) => this.families.historyForResident(asId<ResidentId>(id))),
+      switchMap((id) =>
+        this.servesFamilies ? this.families.historyForResident(asId<ResidentId>(id)) : EMPTY,
+      ),
       /*
        * A panel this role may not read is ABSENT, never fatal.
        *
@@ -150,7 +166,9 @@ export class ResidentDetailPage {
    */
   protected readonly visitsFor = toSignal(
     toObservable(computed(() => this.id())).pipe(
-      switchMap((id) => this.visits.forResident(asId<ResidentId>(id))),
+      switchMap((id) =>
+        this.servesVisits ? this.visits.forResident(asId<ResidentId>(id)) : EMPTY,
+      ),
       /*
        * A panel this role may not read is ABSENT, never fatal.
        *

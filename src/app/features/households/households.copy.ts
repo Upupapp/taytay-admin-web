@@ -7,7 +7,10 @@ export const HOUSEHOLDS_COPY = {
     subtitle: 'Families as the office assesses them, with the indicators behind each one.',
     caption: 'Households registered with the MSWDO',
     search: 'Search',
-    searchPlaceholder: 'Household number, head or address',
+    searchPlaceholder: 'Household number, head’s surname or street',
+    searchHint:
+      'Type at least two characters. Every word must match the household number, the head’s surname or the street.',
+    order: 'In order of household number.',
     barangay: 'Barangay',
     allBarangays: 'All barangays',
     band: 'Indicators',
@@ -25,6 +28,52 @@ export const HOUSEHOLDS_COPY = {
     noResultsMessage: 'Try a different spelling, or clear the filters to see every household.',
     advisoryBanner:
       'The indicator column is advisory. It orders a list; it does not decide who is helped.',
+    create: 'Register a household',
+    protected: 'Restricted',
+    shown: (count: number) => `${count} shown.`,
+    moreAvailable: 'More are available.',
+    noMore: 'That is every household matching these filters.',
+    showMore: 'Show more',
+    tryAgain: 'Try again',
+    loadingMore: 'Loading more…',
+    moreFailed:
+      'The next households could not be loaded. The ones above are still correct; try again.',
+  },
+
+  create: {
+    title: 'Register a household',
+    subtitle: 'An address, and the person who heads the household there.',
+    back: 'Back to households',
+    addressHeading: 'Address',
+    meansHeading: 'Income and classification',
+    barangay: 'Barangay',
+    chooseBarangay: 'Choose a barangay',
+    purok: 'Purok or sitio',
+    purokHint: 'Optional.',
+    street: 'Street address',
+    streetHint: 'House number and street, as the family gives it.',
+    head: 'Head of the household',
+    headHint:
+      'Search the registry. A person not yet registered is registered first, as a resident.',
+    headChosen: 'Head:',
+    changeHead: 'Choose someone else',
+    income: 'Monthly household income (pesos)',
+    incomeHint: 'Optional. In pesos, for example 8,500 or 8,500.50.',
+    incomeInvalid: 'Type an amount in pesos, with at most two decimal places.',
+    incomeNotYours:
+      'Recording a household’s income needs permission to see residents’ identity and means, which your role does not have.',
+    indigent: 'Classified indigent',
+    indigentHint:
+      'A classification a person records. It is never set from the vulnerability indicators.',
+    membership:
+      'The head becomes this household’s one member. Everyone else joins from the household record, one change at a time with a reason, once it is registered.',
+    submit: 'Register household',
+    submitting: 'Registering…',
+    missingStreet: 'Give the street address.',
+    missingBarangay: 'Choose the barangay.',
+    missingHead: 'Choose the head of the household.',
+    saved: 'Household registered.',
+    failed: 'The household could not be registered.',
   },
 
   detail: {
@@ -52,6 +101,10 @@ export const HOUSEHOLDS_COPY = {
 
     classifiedNote:
       'The indigency classification is recorded by a person. It is never set from the indicators below.',
+    addressWithheld: 'Withheld from your role',
+    incomeWithheld: 'Withheld from your role',
+    protectedNote:
+      'Someone in this household is under a protected sector. Handle this record with care; its exact address is shown only to staff cleared for protected cases.',
 
     noAudit: 'Nothing has been changed on this record yet.',
     auditReason: 'Reason',

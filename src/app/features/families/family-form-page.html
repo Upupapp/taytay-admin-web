@@ -1,0 +1,193 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+
+<form class="family-form" novalidate (submit)="submit($event)">
+  @if (refusal(); as message) {
+    <div class="card family-form__problems" role="alert">
+      <p>{{ message }}</p>
+    </div>
+  }
+
+  <fieldset class="card family-form__section">
+    <legend class="family-form__legend">{{ copy.familyHeading }}</legend>
+    <div class="family-form__grid">
+      <label class="field family-form__wide">
+        <span class="field__label">{{ copy.name }}</span>
+        <input
+          class="field__input"
+          type="text"
+          required
+          [attr.maxlength]="nameMax"
+          aria-describedby="family-name-hint"
+          [value]="name()"
+          (input)="onName($event)"
+        />
+        <span class="field__hint" id="family-name-hint">{{ copy.nameHint }}</span>
+      </label>
+      <label class="field">
+        <span class="field__label">{{ copy.formedOn }}</span>
+        <input
+          class="field__input"
+          type="date"
+          aria-describedby="family-formed-hint"
+          [value]="formedOn()"
+          (input)="onFormedOn($event)"
+        />
+        <span class="field__hint" id="family-formed-hint">{{ copy.formedOnHint }}</span>
+      </label>
+    </div>
+  </fieldset>
+
+  <fieldset class="card family-form__section">
+    <legend class="family-form__legend">{{ copy.membersHeading }}</legend>
+
+    @if (members().length === 0) {
+      <p class="family-form__note">{{ copy.noMembersYet }}</p>
+    } @else {
+      <ul class="family-form__members">
+        @for (member of members(); track member.view.resident.id; let index = $index) {
+          <li class="family-form__member">
+            <span class="family-form__member-name">
+              {{ member.view.listedName }}
+              @if (member.view.isProtected) {
+                <span class="family-form__protected">Protected record</span>
+              }
+            </span>
+            <label class="family-form__role">
+              <span class="visually-hidden">{{ copy.roleOf(member.view.listedName) }}</span>
+              <select class="field__input" (change)="onRole(index, $event)">
+                @for (role of roles; track role) {
+                  <option [value]="role" [selected]="member.role === role">
+                    {{ roleLabels[role] }}
+                  </option>
+                }
+              </select>
+            </label>
+            <button
+              type="button"
+              class="btn btn--subtle"
+              [attr.aria-label]="copy.removeNamed(member.view.listedName)"
+              (click)="removeMember(index)"
+            >
+              {{ copy.remove }}
+            </button>
+          </li>
+        }
+      </ul>
+    }
+
+    @if (members().length < membersMax) {
+      <!-- A fresh picker for each person, so the next search starts empty. -->
+      @for (round of [pickerRound()]; track round) {
+        <app-person-picker
+          [label]="copy.addMember"
+          [hint]="copy.addMemberHint"
+          (chosen)="addMember($event)"
+        />
+      }
+    } @else {
+      <p class="family-form__note">{{ copy.tooManyMembers }}</p>
+    }
+    <p class="visually-hidden family-form__notice" role="status">
+      {{ memberNotice() }}
+    </p>
+  </fieldset>
+
+  <fieldset class="card family-form__section">
+    <legend class="family-form__legend">{{ copy.householdHeading }}</legend>
+
+    @if (household(); as chosen) {
+      <div class="family-form__chosen">
+        <p>
+          <span class="family-form__chosen-label">{{ copy.householdChosen }}</span>
+          {{ householdLabel(chosen) }}
+        </p>
+        <button type="button" class="btn btn--subtle" (click)="clearHousehold()">
+          {{ copy.changeHousehold }}
+        </button>
+      </div>
+    } @else {
+      <p class="family-form__chosen-none">{{ copy.noHousehold }}</p>
+      <!-- Said beside the choice, before anybody invents an address to fill a gap (DL-47). -->
+      <p class="family-form__note">{{ copy.noHouseholdNote }}</p>
+
+      <label class="field">
+        <span class="field__label">{{ copy.findHousehold }}</span>
+        <input
+          class="field__input"
+          type="search"
+          autocomplete="off"
+          aria-describedby="family-household-hint"
+          [value]="householdTerm()"
+          (input)="onHouseholdTerm($event)"
+        />
+        <span class="field__hint" id="family-household-hint">{{ copy.findHouseholdHint }}</span>
+      </label>
+
+      <div role="status">
+        @switch (householdState()) {
+          @case ('loading') {
+            <p class="family-form__note">{{ copy.householdSearching }}</p>
+          }
+          @case ('error') {
+            <p class="family-form__note">{{ copy.householdFailed }}</p>
+          }
+          @case ('ready') {
+            @if (householdOptions().length === 0) {
+              <p class="family-form__note">{{ copy.householdNoneFound }}</p>
+            }
+          }
+        }
+      </div>
+
+      @if (householdOptions().length > 0) {
+        <ul class="family-form__households">
+          @for (option of householdOptions(); track option.household.id) {
+            <li class="family-form__household">
+              <span>{{ householdLabel(option) }}</span>
+              <button type="button" class="btn btn--secondary" (click)="chooseHousehold(option)">
+                {{ copy.chooseHousehold }}
+                <span class="visually-hidden">: {{ option.household.referenceNumber }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+        @if (householdHasMore()) {
+          <p class="family-form__note">{{ copy.householdMore }}</p>
+        }
+      }
+    }
+  </fieldset>
+
+  <fieldset class="card family-form__section">
+    <legend class="family-form__legend">{{ copy.reason }}</legend>
+    <label class="field">
+      <span class="field__label">{{ copy.reason }}</span>
+      <textarea
+        class="field__input"
+        rows="3"
+        required
+        maxlength="500"
+        aria-describedby="family-reason-hint"
+        [placeholder]="copy.reasonPlaceholder"
+        [value]="reason()"
+        (input)="onReason($event)"
+      ></textarea>
+      <span class="field__hint" id="family-reason-hint">{{ copy.reasonHint }}</span>
+    </label>
+  </fieldset>
+
+  @if (attempted() && missing().length > 0) {
+    <ul class="family-form__missing" role="alert">
+      @for (line of missing(); track line) {
+        <li>{{ line }}</li>
+      }
+    </ul>
+  }
+
+  <div class="family-form__actions">
+    <a class="btn" routerLink="/families">{{ copy.back }}</a>
+    <button type="submit" class="btn btn--primary" [disabled]="saving()">
+      {{ saving() ? copy.submitting : copy.submit }}
+    </button>
+  </div>
+</form>

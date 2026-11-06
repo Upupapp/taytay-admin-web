@@ -42,7 +42,15 @@ describe('ServedPorts', () => {
     expect(TestBed.inject(ServedPorts).unserved).toEqual(['resident', 'case', 'search']);
   });
 
-  it('serves a module only when it serves every port the module reads', () => {
+  it('answers for one port, so a secondary panel can ask before it reads (DL-175)', () => {
+    configure(['field-visit']);
+    const served = TestBed.inject(ServedPorts);
+
+    expect(served.serves('field-visit')).toBe(false);
+    expect(served.serves('resident')).toBe(true);
+  });
+
+  it('serves a set of ports only when it serves every one of them', () => {
     configure(['resident']);
     const served = TestBed.inject(ServedPorts);
 
@@ -82,10 +90,16 @@ describe('servedGuard', () => {
     expect(router.url).toBe(UNSERVED_ROUTE);
   });
 
-  it('withholds a screen when any port it reads is unserved, not only its main one', async () => {
+  it('withholds a screen when any port its guard lists is unserved', async () => {
     const router = configure(['resident']);
     await router.navigateByUrl('/referrals');
     expect(router.url).toBe(UNSERVED_ROUTE);
+  });
+
+  it('lets a screen open when only its secondary panels are unserved (DL-175)', async () => {
+    const router = configure(['saved-view', 'family', 'field-visit']);
+    await router.navigateByUrl('/residents');
+    expect(router.url).toBe('/residents');
   });
 
   it('answers "not connected" before "not permitted", because nobody could open it', async () => {

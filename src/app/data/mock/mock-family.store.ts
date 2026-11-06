@@ -9,6 +9,7 @@ import {
   includesResident,
   isSameLink,
   type Family,
+  type FamilyDraft,
   type FamilyId,
   type FamilyRole,
   type Relationship,
@@ -53,6 +54,7 @@ export class MockFamilyStore {
   private relationships: readonly Relationship[] = [...MOCK_RELATIONSHIPS];
   private events: readonly RelationshipEvent[] = [];
   private sequence = 0;
+  private familySequence = MOCK_FAMILIES.length;
 
   allFamilies(): readonly Family[] {
     return this.families;
@@ -92,6 +94,52 @@ export class MockFamilyStore {
 
   allEvents(): readonly RelationshipEvent[] {
     return this.events;
+  }
+
+  /* ── Recording a family ─────────────────────────────────────────────────── */
+
+  /**
+   * Records a family and each founding member joining it, as one act and with one reason — the
+   * API's two kinds of event, so the history reads the same against either adapter. The draft has
+   * been validated by the caller; nothing here refuses.
+   */
+  createFamily(draft: FamilyDraft, reason: string, actor: Actor): Family {
+    this.familySequence += 1;
+    const serial = String(this.familySequence);
+    const now = asIsoDateTime(new Date());
+    const today = asIsoDate(now.slice(0, 10));
+    const created: Family = {
+      id: asId<FamilyId>('fam-' + serial.padStart(4, '0')),
+      // The API's format: FAM-<year>-<sequence>.
+      referenceNumber: 'FAM-' + now.slice(0, 4) + '-' + serial.padStart(6, '0'),
+      name: draft.name.trim(),
+      householdId: draft.householdId,
+      members: draft.members.map((member) => ({
+        residentId: member.residentId,
+        role: member.role,
+        joinedOn: today,
+        leftOn: null,
+      })),
+      formedOn: draft.formedOn,
+      dissolvedOn: null,
+      audit: { createdAt: now, createdBy: actor.id, updatedAt: now, updatedBy: actor.id },
+    };
+
+    this.families = [...this.families, created];
+    this.append('family-formed', reason, actor, {
+      ...EMPTY_SUBJECT,
+      familyId: created.id,
+      householdId: created.householdId,
+    });
+    for (const member of draft.members) {
+      this.append('member-joined', reason, actor, {
+        ...EMPTY_SUBJECT,
+        familyId: created.id,
+        residentId: member.residentId,
+        role: member.role,
+      });
+    }
+    return created;
   }
 
   /* ── Relationships ──────────────────────────────────────────────────────── */

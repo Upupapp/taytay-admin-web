@@ -184,6 +184,27 @@ export const API_ENDPOINTS = {
    */
   officeResidents: 'office/residents',
   /**
+   * The office's household register (casework phase 1c): an address and who lives there, recorded
+   * by staff — not the residents' app households at `households`. Cursor-paged by reference number,
+   * `resident_id` naming the one household a person is in; one by `{id}`; `POST` to register;
+   * `POST {id}/membership`, `{id}/corrections` and `{id}/corrections/{code}/withdraw` with a reason.
+   * Redacted for the reader by the server, the vulnerability snapshot included.
+   */
+  officeHouseholds: 'office/households',
+  /**
+   * Families (casework phase 1c, `DL-47`): cursor-paged by reference number; one by `{id}`; `POST`
+   * to record one with its founding members and a reason; `POST transfers` to move a person between
+   * families; `POST {id}/members/{residentId}/role`. A person's families, relationships and history
+   * live under `office/residents/{id}/…`, because a relationship is between two people, not a
+   * family. Members are redacted for the reader by the server.
+   */
+  officeFamilies: 'office/families',
+  /**
+   * Saved views (casework phase 1c, `DL-111`): `GET ?resource=`, answered whole; `POST`; `DELETE
+   * {id}`. A shared one needs `saved-view.share` to create or take away.
+   */
+  officeSavedViews: 'office/saved-views',
+  /**
    * The office directory, written (`DL-170`, `office.manage`): `POST` and `PATCH {id}` as forms,
    * because they carry the banner; `DELETE {id}`. Read through `offices`, which is public.
    */

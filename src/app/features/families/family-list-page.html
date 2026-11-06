@@ -1,4 +1,13 @@
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a
+    page-actions
+    *appHasPermission="'family.manage'"
+    class="btn btn--primary"
+    routerLink="/families/new"
+  >
+    {{ copy.create }}
+  </a>
+</app-page-header>
 
 <div class="card families">
   <!-- The correction every reader needs before they read the table (DL-47). -->
@@ -12,6 +21,7 @@
         class="filters__input"
         [placeholder]="copy.searchPlaceholder"
         [value]="searchText()"
+        aria-describedby="family-search-hint"
         (input)="onSearch($event)"
       />
     </label>
@@ -51,22 +61,48 @@
     }
   </div>
 
+  <p class="families__hint" id="family-search-hint">{{ copy.searchHint }} {{ copy.order }}</p>
+
+  @if (failure(); as message) {
+    <div class="families__problem" role="alert">
+      <p>{{ message }}</p>
+      <button type="button" class="btn" (click)="retry()">{{ copy.tryAgain }}</button>
+    </div>
+  }
+
   <app-data-table
     [caption]="copy.caption"
     [columns]="columns()"
     [rows]="rows()"
     [rowKey]="rowKey"
     [loading]="isLoading()"
-    [page]="page()"
-    [sort]="sort()"
     [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
     [emptyHeading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
     [emptyMessage]="hasFilters() ? copy.noResultsMessage : copy.emptyMessage"
     [emptyActionLabel]="hasFilters() ? copy.clear : null"
-    (sortChanged)="onSortChanged($event)"
-    (pageChanged)="onPageChanged($event)"
     (emptyActionSelected)="clearFilters()"
   />
+
+  @if (rows().length > 0) {
+    <div class="families__more">
+      <p class="families__hint" role="status">
+        {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
+      </p>
+      @if (hasMore()) {
+        <button
+          type="button"
+          class="btn btn--secondary"
+          [disabled]="loadingMore()"
+          (click)="showMore()"
+        >
+          {{ loadingMore() ? copy.loadingMore : copy.showMore }}
+        </button>
+      }
+      @if (moreFailed()) {
+        <p class="families__problem" role="alert">{{ copy.moreFailed }}</p>
+      }
+    </div>
+  }
 </div>
 
 <ng-template #referenceCell let-summary>

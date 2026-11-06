@@ -1,0 +1,54 @@
+.household-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+  margin-block-start: var(--space-base);
+  max-inline-size: 900px;
+}
+
+.household-form__section {
+  padding: var(--space-card);
+  border: 1px solid var(--c-border);
+}
+
+.household-form__legend {
+  padding-inline: var(--space-compact);
+  color: var(--c-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.household-form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-base);
+}
+
+.household-form__wide {
+  grid-column: 1 / -1;
+}
+
+.household-form__note {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 13.5px;
+}
+
+.household-form__problems {
+  padding: var(--space-base) var(--space-card);
+  border-inline-start: 4px solid var(--tone-danger-fg);
+}
+
+.household-form__missing {
+  margin: 0;
+  padding-inline-start: var(--space-base);
+  color: var(--tone-danger-fg);
+  font-size: 13.5px;
+}
+
+.household-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-compact);
+}

@@ -209,9 +209,11 @@ describe('scenario: a possible duplicate is surfaced for review', () => {
 describe('scenario: one household, more than one family', () => {
   it('lets a household hold several families without either owning the other', async () => {
     await signedInAs('system-administrator');
-    const families = await firstValueFrom(TestBed.inject(FAMILY_REPOSITORY).list({}, PAGE));
+    const families = await firstValueFrom(
+      TestBed.inject(FAMILY_REPOSITORY).list({}, { limit: 50, cursor: null }),
+    );
     const households = await firstValueFrom(
-      TestBed.inject(HOUSEHOLD_REPOSITORY).list({}, PAGE),
+      TestBed.inject(HOUSEHOLD_REPOSITORY).list({}, { limit: 50, cursor: null }),
     );
 
     // `DL-47`: a household is an address, a family is a claim about who belongs

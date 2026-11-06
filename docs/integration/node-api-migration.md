@@ -9,9 +9,9 @@ sign-in only, hosted on Linode.
 
 | | |
 |---|---|
-| Console ports the Node API serves fully | 1 of 20 casework ports — the resident registry (`DL-174`), less `getProfile`, which needs households and history; 12 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines, the home screen, the app's settings; `DL-171` digital IDs, Balita, the audit trail) |
-| Served in part (mostly different concepts with the same name) | 6 — the resident port left this row for the one above (`DL-174`) |
-| No endpoint at all | 13 — cases, requests, beneficiaries, visits, releases, referrals, families, saved views, dashboard, work, reports, search, events |
+| Console ports the Node API serves fully | 4 of 20 casework ports — the resident registry (`DL-174`), saved views, households and families (`DL-175`); the resident profile is read with its household, and says the assistance history is not connected yet; 12 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines, the home screen, the app's settings; `DL-171` digital IDs, Balita, the audit trail) |
+| Served in part (mostly different concepts with the same name) | 5 — program, staff, notification, governance, newsfeed; the resident (`DL-174`) and household (`DL-175`) ports left this row for the one above |
+| No endpoint at all | 11 — cases, requests, beneficiaries, visits, releases, referrals, dashboard, work, reports, search, events |
 | Node staff endpoints with no console screen | 0 — step 6 is complete (`DL-171`) |
 
 ## Plan
@@ -35,6 +35,7 @@ sign-in only, hosted on Linode.
 | 7 | Re-point the contract checks at the Node spec, new baselines stated | console | done with step 3, in one commit, each old and new count stated (`DL-165`) |
 | 8 | Casework phase 1a: office roles on staff accounts, casework keys and scope on `/me`; an office role narrows the platform keys and the routes check the key | backend + console | done (`DL-173`, `DL-174`): `taytay-backend` `7996668`, `a4fa8d9`, `ee83617`. The auditor and the barangay link hold no Balita or inbox key; the head and the auditor read the audit trail |
 | 9 | Casework phase 1b: the office's resident registry | backend + console | done (`DL-174`): `taytay-backend` `6544381` — `/api/v1/office/residents`, redacted and scoped on the server, sectors and retirements as append-only histories with reasons; `HttpResidentRepository` in the console, `resident` out of `UNSERVED_PORTS`. **The Residents menu entry stays withheld** — its list also reads `saved-view`, its record `family` and `field-visit`. **Not run against a live API.** For the owner: the social worker's `assigned-cases` scope is refused until cases exist; saved views, or a list without its bar, to bring the list back |
+| 10 | Casework phase 1c: saved views, the office household register, families; only a module's primary port gates its menu entry | backend + console | done (`DL-175`): `taytay-backend` `013d74c`, `154a052`, `0c19dd2` — `/api/v1/office/saved-views`, `/office/households` (the vulnerability snapshot computed and disclosed on the server), `/office/families` with relationships and transfers as appended acts; `saved-view`, `household`, `family` out of `UNSERVED_PORTS` (fourteen remain). A secondary panel whose port is unserved now says so in place, and `check:unserved` holds it; **Residents, Households and Families are in the menu** against the API. **Not run against a live API** |
 
 ## For the owner to decide
 
@@ -183,5 +184,24 @@ routes those keys describe check the key.
 
 **Phase 1b done** (`DL-174`, `taytay-backend` `6544381`): the office's resident registry — people
 the MSWDO serves, not app accounts — redacted and scoped on the server, served to the console through
-`HttpResidentRepository`. Households, families and programmes of phase 1 are next; until households
-and the assistance history exist, a resident's profile is refused rather than shown empty.
+`HttpResidentRepository`.
+
+**Phase 1c done** (`DL-175`, `taytay-backend` `013d74c`, `154a052`, `0c19dd2`): saved views, the
+office household register — not the residents' app households, which are untouched — and families,
+each scoped and redacted as the registry is; a protected person's address is withheld from the
+people she lives with as well as from her own record. The resident profile is read with its
+household; its assistance history says it is not connected yet.
+
+| Phase | What | State |
+|---|---|---|
+| 1a | Office roles on staff accounts, casework keys and scope on `/me`, the routes check the key | ✓ `DL-173`, `DL-174` |
+| 1b | The office's resident registry | ✓ `DL-174` |
+| 1c | Saved views, households, families; a module's menu entry gated by its primary port only | ✓ `DL-175` |
+| 1d | Programmes, with guidelines and responsibility (`DL-65`, `DL-66`) | next |
+
+**For the owner, from phase 1c** (`DL-175`): whether a barangay link should see a family between
+addresses only while every member lives in its barangay (the choice made); whether a household's
+income is means, withheld from the release officer, the barangay link and the auditor as a
+resident's is (the choice made; the mock showed it to them); and whether the console needs to change
+a household's address, income or classification, or dissolve a family — the API has no route for
+either yet.

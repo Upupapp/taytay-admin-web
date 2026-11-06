@@ -33,6 +33,7 @@ export * from './intake/assessment';
 export * from './intake/intake-advisory';
 export * from './intake/intake-draft';
 export * from './households/household';
+export * from './households/household-audit';
 export * from './households/household-profile';
 export * from './households/household-vulnerability';
 export * from './households/poverty-threshold';

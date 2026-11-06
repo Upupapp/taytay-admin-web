@@ -1,30 +1,27 @@
 import {
-  DEFAULT_PAGE_SIZE,
   HOUSEHOLD_BANDS,
   TAYTAY_BARANGAYS,
   type BarangayId,
   type HouseholdBand,
   type HouseholdFilter,
-  type HouseholdSortField,
-  type PageRequest,
-  type SortDirection,
 } from '@domain/index';
 
 /**
  * The URL is the filter here too (`DL-36`), so a barangay-level snapshot is a
  * link somebody can paste into an email rather than a set of clicks they have
  * to describe.
+ *
+ * There is no page and no sort in it: the API orders households by reference
+ * number and pages by cursor, and a cursor is where a reading stopped, not an
+ * address somebody could share (`DL-161`).
  */
 export interface HouseholdQuery {
   readonly filter: HouseholdFilter;
-  readonly page: PageRequest<HouseholdSortField>;
 }
 
 export interface ParamReader {
   get(name: string): string | null;
 }
-
-const SORT_FIELDS: readonly HouseholdSortField[] = ['reference', 'barangay', 'size', 'updatedAt'];
 
 export function readHouseholdFilter(params: ParamReader): HouseholdFilter {
   const filter: {
@@ -58,24 +55,8 @@ export function readHouseholdFilter(params: ParamReader): HouseholdFilter {
   return filter;
 }
 
-export function readHouseholdPage(params: ParamReader): PageRequest<HouseholdSortField> {
-  const page = Number.parseInt(params.get('page') ?? '', 10);
-  const sortParam = params.get('sort');
-  const field: HouseholdSortField =
-    sortParam && (SORT_FIELDS as readonly string[]).includes(sortParam)
-      ? (sortParam as HouseholdSortField)
-      : 'reference';
-  const direction: SortDirection = params.get('direction') === 'desc' ? 'desc' : 'asc';
-
-  return {
-    page: Number.isInteger(page) && page > 0 ? page : 1,
-    pageSize: DEFAULT_PAGE_SIZE,
-    sort: { field, direction },
-  };
-}
-
 export function readHouseholdQuery(params: ParamReader): HouseholdQuery {
-  return { filter: readHouseholdFilter(params), page: readHouseholdPage(params) };
+  return { filter: readHouseholdFilter(params) };
 }
 
 export function householdFilterParams(filter: HouseholdFilter): Record<string, string> {

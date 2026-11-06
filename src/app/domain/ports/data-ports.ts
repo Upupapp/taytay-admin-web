@@ -87,6 +87,26 @@ export const DATA_PORT_HOLDINGS: Readonly<Record<DataPort, string>> = {
 };
 
 /**
+ * What a secondary panel says in place of itself when its port is not served (`DL-175`).
+ *
+ * Defined once, beside the words it is built from, so every screen that degrades a panel states the
+ * gap the same way the withheld-modules page and the unserved adapters do.
+ *
+ * The holdings are the sentence's object rather than its subject: they are a mix of singulars ("the
+ * resident registry") and plurals ("field visits"), and a sentence that conjugates a verb for them
+ * is wrong for half of them.
+ *
+ * Its last sentence is the point. A panel that reads as empty tells an officer the office has no
+ * visits to this family; this one says the console never asked (`DL-112`).
+ */
+export function notConnectedSentence(port: DataPort): string {
+  return (
+    `Not connected yet: the office’s API does not serve ${DATA_PORT_HOLDINGS[port]}, so nothing ` +
+    `is read or saved here. This is not a statement that there are none.`
+  );
+}
+
+/**
  * The ports the bound adapter set cannot serve — an empty list when it serves them all.
  *
  * **No default.** Both adapter sets bind it explicitly (`data-access.providers*.ts`): a set that

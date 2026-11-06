@@ -12,16 +12,13 @@ import {
   UnservedCaseRepository,
   UnservedDashboardRepository,
   UnservedEventRepository,
-  UnservedFamilyRepository,
   UnservedFieldVisitRepository,
   UnservedGovernanceRepository,
-  UnservedHouseholdRepository,
   UnservedNewsfeedRepository,
   UnservedProgramRepository,
   UnservedReferralRepository,
   UnservedReleaseRepository,
   UnservedReportRepository,
-  UnservedSavedViewRepository,
   UnservedSearchRepository,
   UnservedWorkRepository,
   UNSERVED_HTTP_PORTS,
@@ -145,17 +142,23 @@ async function menuLinks(): Promise<readonly (string | null)[]> {
 
 const MENU = NAVIGATION.flatMap((section) => section.items);
 
-/** The menu entries the http set withholds: every one reading a port it does not serve. */
+/**
+ * The menu entries the http set withholds: every one whose primary port it does not serve. A
+ * secondary panel's port is not in `reads` (`DL-175`), so it withholds nothing.
+ */
 const WITHHELD = MENU.filter((item) =>
   item.reads.some((port) => UNSERVED_HTTP_PORTS.includes(port)),
 );
 
+/**
+ * What the http set offers. Derived rather than spelled out, so a port the Node API comes to serve
+ * moves its module into the menu without this list being edited to match.
+ */
+const OFFERED = MENU.filter((item) => !WITHHELD.includes(item)).map((item) => item.route);
+
 describe('the http adapter set', () => {
   const adapters = [
-    UnservedHouseholdRepository,
-    UnservedFamilyRepository,
     UnservedCaseRepository,
-    UnservedSavedViewRepository,
     UnservedProgramRepository,
     UnservedAssistanceRequestRepository,
     UnservedBeneficiaryRepository,
@@ -205,9 +208,15 @@ describe('the http adapter set', () => {
     for (const item of WITHHELD) {
       expect(links, `${item.route} reads a port this API does not serve`).not.toContain(item.route);
     }
-    // ID verification (DL-167), the office inbox and users and roles (DL-168), the app directory and
-    // its home screen and settings (DL-170) and digital IDs, Balita and the audit trail (DL-171) are the modules the Node API serves; the casework is not.
-    expect(links).toEqual([
+    expect(links).toEqual([...OFFERED, '/unavailable']);
+    // The resident registry (DL-174), the household register and families (phase 1c), ID verification
+    // (DL-167), the office inbox and users and roles (DL-168), the app directory and its home screen
+    // and settings (DL-170) and digital IDs, Balita and the audit trail (DL-171) are what the Node API
+    // serves; the rest of the casework is not.
+    for (const route of [
+      '/residents',
+      '/households',
+      '/families',
       '/verification',
       '/inbox',
       '/users',
@@ -217,8 +226,21 @@ describe('the http adapter set', () => {
       '/digital-ids',
       '/balita',
       '/app-audit',
-      '/unavailable',
-    ]);
+    ]) {
+      expect(links, `${route} is served`).toContain(route);
+    }
+    expect(links).not.toContain('/cases');
+  });
+
+  it('offers the resident registry when only its secondary panels are unserved (DL-175)', async () => {
+    // Named here rather than read from the http list: those ports leave it as the API grows, and
+    // this is about what a secondary panel may not do whichever of them is still missing.
+    await signIn(['saved-view', 'family', 'field-visit', 'household']);
+    const links = await menuLinks();
+
+    expect(links).toContain('/residents');
+    expect(links).not.toContain('/families');
+    expect(links).not.toContain('/visits');
   });
 
   it('tells a staff account with no office why it has no inbox, and who can fix it (DL-168)', async () => {
@@ -266,6 +288,8 @@ describe('the http adapter set', () => {
     expect(text).toContain('Digital IDs —');
     expect(text).toContain('Balita —');
     expect(text).toContain('App audit trail —');
+    expect(text).not.toContain('Residents.');
+    expect(text).toContain('Residents —');
     for (const port of UNSERVED_HTTP_PORTS) {
       expect(text.toLowerCase(), port).toContain(DATA_PORT_HOLDINGS[port].toLowerCase());
     }

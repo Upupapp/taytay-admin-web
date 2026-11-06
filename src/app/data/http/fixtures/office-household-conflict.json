@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "CONFLICT",
+    "message": "That change would leave the household inconsistent.",
+    "details": { "member-in-another-household": ["7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c02"] },
+    "request_id": "req-fixture-0409"
+  }
+}

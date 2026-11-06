@@ -1,0 +1,117 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+
+<form class="household-form" novalidate (submit)="submit($event)">
+  @if (refusal(); as message) {
+    <div class="card household-form__problems" role="alert">
+      <p>{{ message }}</p>
+    </div>
+  }
+
+  <fieldset class="card household-form__section">
+    <legend class="household-form__legend">{{ copy.head }}</legend>
+    <app-person-picker [label]="copy.head" [hint]="copy.headHint" [(selected)]="head" />
+  </fieldset>
+
+  <fieldset class="card household-form__section">
+    <legend class="household-form__legend">{{ copy.addressHeading }}</legend>
+    <div class="household-form__grid">
+      <label class="field">
+        <span class="field__label">{{ copy.barangay }}</span>
+        <select class="field__input" required (change)="onBarangay($event)">
+          <option value="" [selected]="barangayId() === null">{{ copy.chooseBarangay }}</option>
+          @for (barangay of barangays; track barangay.id) {
+            <option [value]="barangay.id" [selected]="barangayId() === barangay.id">
+              {{ barangay.name }}
+            </option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label">{{ copy.purok }}</span>
+        <input
+          class="field__input"
+          type="text"
+          maxlength="80"
+          aria-describedby="household-purok-hint"
+          [value]="purok()"
+          (input)="onPurok($event)"
+        />
+        <span class="field__hint" id="household-purok-hint">{{ copy.purokHint }}</span>
+      </label>
+      <label class="field household-form__wide">
+        <span class="field__label">{{ copy.street }}</span>
+        <input
+          class="field__input"
+          type="text"
+          required
+          maxlength="200"
+          autocomplete="street-address"
+          aria-describedby="household-street-hint"
+          [value]="street()"
+          (input)="onStreet($event)"
+        />
+        <span class="field__hint" id="household-street-hint">{{ copy.streetHint }}</span>
+      </label>
+    </div>
+  </fieldset>
+
+  <fieldset class="card household-form__section">
+    <legend class="household-form__legend">{{ copy.meansHeading }}</legend>
+    <div class="household-form__grid">
+      @if (mayRecordIncome()) {
+        <label class="field">
+          <span class="field__label">{{ copy.income }}</span>
+          <input
+            class="field__input"
+            type="text"
+            inputmode="decimal"
+            aria-describedby="household-income-hint"
+            [attr.aria-invalid]="incomeInvalid()"
+            [value]="income()"
+            (input)="onIncome($event)"
+          />
+          <span class="field__hint" id="household-income-hint">
+            {{ incomeInvalid() ? copy.incomeInvalid : copy.incomeHint }}
+          </span>
+        </label>
+      } @else {
+        <p class="household-form__note">{{ copy.incomeNotYours }}</p>
+      }
+      <label class="check household-form__wide">
+        <input
+          type="checkbox"
+          aria-describedby="household-indigent-hint"
+          [checked]="isIndigent()"
+          (change)="onIndigent($event)"
+        />
+        <span>{{ copy.indigent }}</span>
+      </label>
+      <p class="household-form__note household-form__wide" id="household-indigent-hint">
+        {{ copy.indigentHint }}
+      </p>
+    </div>
+  </fieldset>
+
+  <!-- Said before the button, where somebody deciding reads it, not after. -->
+  <p class="household-form__note" id="household-membership-note">{{ copy.membership }}</p>
+
+  @if (attempted() && missing().length > 0) {
+    <ul class="household-form__missing" role="alert">
+      @for (line of missing(); track line) {
+        <li>{{ line }}</li>
+      }
+    </ul>
+  }
+
+  <div class="household-form__actions">
+    <a class="btn" routerLink="/households">{{ copy.back }}</a>
+    <button
+      type="submit"
+      class="btn btn--primary"
+      aria-describedby="household-membership-note"
+      [disabled]="saving()"
+    >
+      {{ saving() ? copy.submitting : copy.submit }}
+    </button>
+  </div>
+</form>

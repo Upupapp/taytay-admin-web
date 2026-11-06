@@ -2,6 +2,7 @@ import {
   asId,
   asIsoDate,
   asIsoDateTime,
+  discloseMember,
   discloseResident,
   formatProtectedName,
   isInAgeGroup,
@@ -141,6 +142,44 @@ describe('discloseResident and the protected tier', () => {
     discloseResident(original, holding('resident.view'));
     expect(original.contact.mobile).toBe('0917-555-0101');
     expect(original.sectors).toContain('vawc-survivor');
+  });
+});
+
+describe('discloseMember: a member beside a protected one', () => {
+  // Somebody unprotected who shares a record with a protected person: their street is, as a rule,
+  // hers. The API withholds it from a reader not cleared for the protected tier.
+  it('withholds the member’s own street and purok, and names it as withheld', () => {
+    const view = discloseMember(resident(), holding('resident.view'), true);
+    expect(view.isProtected).toBe(false);
+    expect(view.resident.address).toEqual({
+      barangayId: 'brgy-san-juan',
+      purokOrSitio: null,
+      streetAddress: null,
+    });
+    expect(view.withheld).toContain('exactAddress');
+    // Only the address: the name and the phone of an unprotected person are theirs to give.
+    expect(view.listedName).toBe('Mercado, Aurora Delos Santos');
+    expect(view.resident.contact.mobile).toBe('0917-555-0101');
+  });
+
+  it('withholds nothing more from a reader cleared for the protected tier', () => {
+    const view = discloseMember(resident(), holding('request.view-sensitive'), true);
+    expect(view.resident.address.streetAddress).toBe('18 Rizal Street');
+    expect(view.withheld).not.toContain('exactAddress');
+  });
+
+  it('is the resident’s own disclosure when nobody beside them is protected', () => {
+    const alone = discloseMember(resident(), holding('resident.view'), false);
+    expect(alone).toEqual(discloseResident(resident(), holding('resident.view')));
+  });
+
+  it('names the address once for a protected member, whose own rule already withheld it', () => {
+    const view = discloseMember(
+      resident({ sectors: ['vawc-survivor'] }),
+      holding('resident.view'),
+      true,
+    );
+    expect(view.withheld.filter((field) => field === 'exactAddress')).toHaveLength(1);
   });
 });
 

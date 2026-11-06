@@ -83,3 +83,24 @@
   color: var(--c-text-subtle);
   font-style: italic;
 }
+
+.families__hint {
+  margin: 0;
+  padding: 0 var(--space-base);
+  font-size: 13px;
+  color: var(--c-text-subtle);
+}
+
+.families__more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-base);
+  padding: var(--space-base);
+}
+
+.families__problem {
+  margin: 0;
+  padding: 0 var(--space-base);
+  font-size: 13px;
+}

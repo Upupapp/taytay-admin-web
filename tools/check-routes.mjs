@@ -278,11 +278,13 @@ for (const [pattern, what] of [
 
 /**
  * Recorded 5 November 2026, `DL-165`: eighteen of twenty ports have no Node route. Lowered to
- * seventeen on 6 November 2026 (`DL-174`), when the API began serving the resident registry. LOWER
- * THIS as a port is served (or retired by the owner); never raise it. Raising it means a screen that
- * worked against the API has stopped.
+ * seventeen on 6 November 2026 (`DL-174`), when the API began serving the resident registry, to
+ * fifteen the same day (casework phase 1c), when it began serving the household register and saved
+ * views, and to fourteen on 6 November 2026, when it began serving families and the relationships
+ * between people (casework phase 1c). LOWER THIS as a port is served (or retired by the owner); never raise it. Raising it means
+ * a screen that worked against the API has stopped.
  */
-const UNSERVED_CEILING = 17;
+const UNSERVED_CEILING = 14;
 
 if (unservedBindings.length > UNSERVED_CEILING) {
   failures.push(

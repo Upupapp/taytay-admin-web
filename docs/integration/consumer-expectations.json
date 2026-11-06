@@ -746,6 +746,145 @@
     },
     {
       "method": "GET",
+      "path": "office/families",
+      "consumer": "family.mapper.ts#toFamilySummary",
+      "required": [],
+      "optional": [
+        "barangay_id",
+        "family",
+        "head",
+        "household_reference",
+        "member_count",
+        "relationship_count"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/families",
+      "consumer": "family.mapper.ts#toFamilyDetail",
+      "required": [
+        "family",
+        "history",
+        "members",
+        "others_in_household",
+        "relationships"
+      ],
+      "optional": []
+    },
+    {
+      "method": "GET",
+      "path": "office/families/{id}",
+      "consumer": "family.mapper.ts#toFamilyDetail",
+      "required": [
+        "family",
+        "history",
+        "members",
+        "others_in_household",
+        "relationships"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/families/{id}/members/{residentId}/role",
+      "consumer": "family.mapper.ts#toFamilyDetail",
+      "required": [
+        "family",
+        "history",
+        "members",
+        "others_in_household",
+        "relationships"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/families/transfers",
+      "consumer": "family.mapper.ts#toFamilyDetail",
+      "required": [
+        "family",
+        "history",
+        "members",
+        "others_in_household",
+        "relationships"
+      ],
+      "optional": []
+    },
+    {
+      "method": "GET",
+      "path": "office/households",
+      "consumer": "household.mapper.ts#toHouseholdSummary",
+      "required": [
+        "band",
+        "head",
+        "household",
+        "member_count",
+        "present_factor_count"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/households",
+      "consumer": "household.mapper.ts#toHouseholdDetail",
+      "required": [
+        "events",
+        "household",
+        "members",
+        "snapshot"
+      ],
+      "optional": []
+    },
+    {
+      "method": "GET",
+      "path": "office/households/{id}",
+      "consumer": "household.mapper.ts#toHouseholdDetail",
+      "required": [
+        "events",
+        "household",
+        "members",
+        "snapshot"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/households/{id}/corrections",
+      "consumer": "household.mapper.ts#toHouseholdDetail",
+      "required": [
+        "events",
+        "household",
+        "members",
+        "snapshot"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/households/{id}/corrections/{code}/withdraw",
+      "consumer": "household.mapper.ts#toHouseholdDetail",
+      "required": [
+        "events",
+        "household",
+        "members",
+        "snapshot"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/households/{id}/membership",
+      "consumer": "household.mapper.ts#toHouseholdDetail",
+      "required": [
+        "events",
+        "household",
+        "members",
+        "snapshot"
+      ],
+      "optional": []
+    },
+    {
+      "method": "GET",
       "path": "office/residents",
       "consumer": "resident.mapper.ts#toResidentView",
       "required": [
@@ -805,6 +944,20 @@
       ]
     },
     {
+      "method": "GET",
+      "path": "office/residents/{id}/families",
+      "consumer": "family.mapper.ts#toFamilySummary",
+      "required": [],
+      "optional": [
+        "barangay_id",
+        "family",
+        "head",
+        "household_reference",
+        "member_count",
+        "relationship_count"
+      ]
+    },
+    {
       "method": "POST",
       "path": "office/residents/{id}/reactivate",
       "consumer": "resident.mapper.ts#toResidentView",
@@ -814,6 +967,66 @@
       "optional": [
         "given_name_masked",
         "is_protected"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/residents/{id}/relationship-history",
+      "consumer": "family.mapper.ts#toRelationshipEvent",
+      "required": [
+        "id",
+        "kind",
+        "occurred_at",
+        "reason"
+      ],
+      "optional": [
+        "actor_id",
+        "actor_name",
+        "family_id",
+        "household_id",
+        "other_resident_id",
+        "relationship_kind",
+        "resident_id",
+        "role",
+        "to_family_id"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/residents/{id}/relationships",
+      "consumer": "family.mapper.ts#toRelationship",
+      "required": [
+        "created_at",
+        "from_resident_id",
+        "id",
+        "kind",
+        "to_resident_id",
+        "updated_at"
+      ],
+      "optional": [
+        "created_by",
+        "since",
+        "until",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/residents/{id}/relationships/{relationshipId}/end",
+      "consumer": "family.mapper.ts#toRelationship",
+      "required": [
+        "created_at",
+        "from_resident_id",
+        "id",
+        "kind",
+        "to_resident_id",
+        "updated_at"
+      ],
+      "optional": [
+        "created_by",
+        "since",
+        "until",
+        "updated_by"
       ]
     },
     {
@@ -839,6 +1052,36 @@
         "given_name_masked",
         "is_protected"
       ]
+    },
+    {
+      "method": "GET",
+      "path": "office/saved-views",
+      "consumer": "saved-view.mapper.ts#toSavedView",
+      "required": [
+        "created_at",
+        "id",
+        "is_shared",
+        "name",
+        "owner_id",
+        "params",
+        "resource"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/saved-views",
+      "consumer": "saved-view.mapper.ts#toSavedView",
+      "required": [
+        "created_at",
+        "id",
+        "is_shared",
+        "name",
+        "owner_id",
+        "params",
+        "resource"
+      ],
+      "optional": []
     },
     {
       "method": "GET",

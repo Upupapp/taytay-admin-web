@@ -1,7 +1,15 @@
-import { Component } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import {
+  Component,
+  Injectable,
+  type EnvironmentProviders,
+  type Provider,
+  type Type,
+} from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, of, type Observable } from 'rxjs';
+import { firstValueFrom, map, of, type Observable } from 'rxjs';
 
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
@@ -11,18 +19,28 @@ import { MockResidentRepository } from '@data/mock/mock-resident.repository';
 import { MockFamilyRepository } from '@data/mock/mock-family.repository';
 import { MockFieldVisitRepository } from '@data/mock/mock-field-visit.repository';
 import { MockSavedViewRepository } from '@data/mock/mock-saved-view.repository';
+import OFFICE_RELATIONSHIP_HISTORY from '@data/http/fixtures/office-relationship-history.json';
+import OFFICE_RESIDENT_FAMILIES from '@data/http/fixtures/office-resident-families.json';
+import { HttpFamilyRepository } from '@data/http/http-repositories';
 import {
   ACCESS_CONTEXT,
   asId,
+  ASSISTANCE_HISTORY_NOT_CONNECTED,
   emptyPage,
+  notConnectedSentence,
   NOTIFICATION_REPOSITORY,
   RESIDENT_REPOSITORY,
   SAVED_VIEW_REPOSITORY,
   STAFF_REPOSITORY,
   toAuthenticatedUser,
+  UNSERVED_PORTS,
   type AuthenticatedUser,
   type BarangayId,
+  type DataPort,
   type Page,
+  type ResidentId,
+  type ResidentProfile,
+  type ResidentRepository,
   type StaffRepository,
   type StaffRole,
   type StaffUser,
@@ -37,6 +55,7 @@ import { ResidentDetailPage } from './resident-detail-page';
 import { ResidentFormPage } from './resident-form-page';
 import { ResidentListPage } from './resident-list-page';
 import { readResidentFilter, readResidentQuery, residentFilterParams } from './resident-query';
+import { RESIDENTS_COPY } from './residents.copy';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
   name: 'local-mock',
@@ -86,7 +105,38 @@ function staffRepository(user: StaffUser | null): StaffRepository {
 @Component({ template: 'stub' })
 class StubPage {}
 
-async function configure(role: StaffRole, barangayId: BarangayId | null = null): Promise<void> {
+/**
+ * The registry as an API that serves residents and not their assistance history would answer it:
+ * every profile arrives, and its history says it was not read (`DL-112`).
+ */
+@Injectable()
+class HistoryNotConnectedRepository extends MockResidentRepository {
+  override getProfile(id: ResidentId): Observable<ResidentProfile | null> {
+    return super.getProfile(id).pipe(
+      map((profile): ResidentProfile | null =>
+        profile === null
+          ? null
+          : {
+              ...profile,
+              history: { kind: 'unavailable', because: ASSISTANCE_HISTORY_NOT_CONNECTED },
+            },
+      ),
+    );
+  }
+}
+
+/**
+ * `unserved` stands in for what the bound adapter set declares. Spelled out per test rather than
+ * read from the http list, whose secondary ports leave it as the API grows (`DL-175`).
+ */
+async function configure(
+  role: StaffRole,
+  barangayId: BarangayId | null = null,
+  unserved: readonly DataPort[] = [],
+  residents: Type<ResidentRepository> = MockResidentRepository,
+  /** Appended last, so a binding here replaces the mock one above it. */
+  overrides: readonly (Provider | EnvironmentProviders)[] = [],
+): Promise<void> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -100,7 +150,8 @@ async function configure(role: StaffRole, barangayId: BarangayId | null = null):
       { provide: APP_ENVIRONMENT, useValue: TEST_ENVIRONMENT },
       { provide: ACCESS_CONTEXT, useExisting: SessionState },
       { provide: STAFF_REPOSITORY, useValue: staffRepository(staffUser(role, barangayId)) },
-      { provide: RESIDENT_REPOSITORY, useClass: MockResidentRepository },
+      { provide: RESIDENT_REPOSITORY, useClass: residents },
+      { provide: UNSERVED_PORTS, useValue: unserved },
       /*
        * The record now shows which families this person belongs to, and how that changed.
        *
@@ -116,6 +167,7 @@ async function configure(role: StaffRole, barangayId: BarangayId | null = null):
       { provide: FIELD_VISIT_REPOSITORY, useClass: MockFieldVisitRepository },
       { provide: SAVED_VIEW_REPOSITORY, useClass: MockSavedViewRepository },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
+      ...overrides,
     ],
   });
   await firstValueFrom(TestBed.inject(SessionStore).load());
@@ -124,8 +176,9 @@ async function configure(role: StaffRole, barangayId: BarangayId | null = null):
 async function openList(
   role: StaffRole = 'intake-officer',
   url = '/residents',
+  unserved: readonly DataPort[] = [],
 ): Promise<ComponentFixture<ResidentListPage>> {
-  await configure(role);
+  await configure(role, null, unserved);
   await TestBed.inject(Router).navigateByUrl(url);
   const fixture = TestBed.createComponent(ResidentListPage);
   await fixture.whenStable();
@@ -136,8 +189,10 @@ async function openDetail(
   id: string,
   role: StaffRole = 'mswdo-head',
   barangayId: BarangayId | null = null,
+  unserved: readonly DataPort[] = [],
+  residents: Type<ResidentRepository> = MockResidentRepository,
 ): Promise<ComponentFixture<ResidentDetailPage>> {
-  await configure(role, barangayId);
+  await configure(role, barangayId, unserved, residents);
   await TestBed.inject(Router).navigateByUrl(`/residents/${id}`);
   const fixture = TestBed.createComponent(ResidentDetailPage);
   fixture.componentRef.setInput('id', id);
@@ -276,6 +331,22 @@ describe('the resident list', () => {
     expect(active?.textContent).toContain('Senior citizens');
   });
 
+  it('says saved views are not connected, in their place, and still lists the registry', async () => {
+    const element = html(await openList('intake-officer', '/residents', ['saved-view']));
+
+    // The bar is never created, so nothing asks the saved-view repository for anything.
+    expect(element.querySelector('.views')).toBeNull();
+    const note = element.querySelector('app-not-connected [role="note"]');
+    expect(note?.textContent?.trim()).toBe(notConnectedSentence('saved-view'));
+    expect(element.querySelectorAll('tbody tr').length).toBeGreaterThan(0);
+  });
+
+  it('shows no such note when saved views are served', async () => {
+    const element = html(await openList());
+    expect(element.querySelector('app-not-connected')).toBeNull();
+    expect(element.querySelector('.views')).not.toBeNull();
+  });
+
   it('hides the create action from a role that cannot register anyone', async () => {
     const auditor = html(await openList('auditor'));
     expect(auditor.textContent).not.toContain('Register a resident');
@@ -355,6 +426,143 @@ describe('a resident can be traced without searching four more lists', () => {
 
     const head = html(await openDetail('res-0001', 'mswdo-head'));
     expect(head.textContent).toContain('Retire record');
+  });
+});
+
+/* ── Secondary panels the API does not serve (DL-175) ─────────────────────── */
+
+describe('a record whose secondary panels are not connected', () => {
+  const UNSERVED_PANELS: readonly DataPort[] = ['family', 'field-visit'];
+
+  it('opens, and names each missing panel in its own place', async () => {
+    const element = html(await openDetail('res-0002', 'mswdo-head', null, UNSERVED_PANELS));
+
+    expect(element.textContent).toContain('HH-DL-2024-0088');
+    const visits = element.querySelector('#visits-heading')?.closest('section');
+    const families = element.querySelector('#families-heading')?.closest('section');
+    expect(visits?.querySelector('[role="note"]')?.textContent?.trim()).toBe(
+      notConnectedSentence('field-visit'),
+    );
+    expect(families?.querySelector('[role="note"]')?.textContent?.trim()).toBe(
+      notConnectedSentence('family'),
+    );
+  });
+
+  it('never reads an unread panel as an empty one (DL-112)', async () => {
+    const element = html(await openDetail('res-0002', 'mswdo-head', null, UNSERVED_PANELS));
+
+    expect(element.textContent).not.toContain(RESIDENTS_COPY.detail.noVisits);
+    expect(element.textContent).not.toContain(RESIDENTS_COPY.detail.noFamilies);
+    expect(element.textContent).not.toContain(RESIDENTS_COPY.detail.noKinshipHistory);
+  });
+
+  it('makes no call to the field-visit or family repository it was told is not served', async () => {
+    await configure('mswdo-head', null, UNSERVED_PANELS);
+    const forResident = vi.spyOn(TestBed.inject(FIELD_VISIT_REPOSITORY), 'forResident');
+    const familiesOf = vi.spyOn(TestBed.inject(FAMILY_REPOSITORY), 'familiesOf');
+    const kinship = vi.spyOn(TestBed.inject(FAMILY_REPOSITORY), 'historyForResident');
+
+    const fixture = TestBed.createComponent(ResidentDetailPage);
+    fixture.componentRef.setInput('id', 'res-0002');
+    await fixture.whenStable();
+
+    expect(forResident).not.toHaveBeenCalled();
+    expect(familiesOf).not.toHaveBeenCalled();
+    expect(kinship).not.toHaveBeenCalled();
+  });
+
+  it('does call them when they are served, so the test above is not vacuous', async () => {
+    await configure('mswdo-head');
+    const forResident = vi.spyOn(TestBed.inject(FIELD_VISIT_REPOSITORY), 'forResident');
+    const familiesOf = vi.spyOn(TestBed.inject(FAMILY_REPOSITORY), 'familiesOf');
+
+    const fixture = TestBed.createComponent(ResidentDetailPage);
+    fixture.componentRef.setInput('id', 'res-0002');
+    await fixture.whenStable();
+
+    expect(forResident).toHaveBeenCalled();
+    expect(familiesOf).toHaveBeenCalled();
+    expect(html(fixture).querySelector('app-not-connected')).toBeNull();
+  });
+
+  it('says the assistance history was not read, rather than that there is none', async () => {
+    const element = html(
+      await openDetail('res-0001', 'mswdo-head', null, [], HistoryNotConnectedRepository),
+    );
+
+    const section = element.querySelector('#history-heading')?.closest('section');
+    expect(section?.querySelector('[role="note"]')?.textContent?.trim()).toBe(
+      ASSISTANCE_HISTORY_NOT_CONNECTED,
+    );
+    expect(element.querySelector('#cases-heading')).toBeNull();
+    expect(element.querySelectorAll('table.history')).toHaveLength(0);
+    expect(element.textContent).not.toContain(RESIDENTS_COPY.detail.noCases);
+    expect(element.textContent).not.toContain(RESIDENTS_COPY.detail.noPayouts);
+    expect(element.textContent).not.toContain(RESIDENTS_COPY.detail.noReferrals);
+  });
+});
+
+/* ── The family panel, over the API ───────────────────────────────────────── */
+
+describe('a record whose family panel reads the API (casework phase 1c)', () => {
+  /** The barangay the fixtures name, as `GET barangays` keys it. */
+  const BARANGAYS = {
+    data: [{ id: '6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01', code: 'dolores', name: 'Dolores' }],
+    meta: {},
+  };
+
+  async function openOverHttp(id: string): Promise<ComponentFixture<ResidentDetailPage>> {
+    await configure('mswdo-head', null, [], MockResidentRepository, [
+      provideHttpClient(),
+      provideHttpClientTesting(),
+      { provide: FAMILY_REPOSITORY, useClass: HttpFamilyRepository },
+    ]);
+    const http = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(ResidentDetailPage);
+    fixture.componentRef.setInput('id', id);
+    TestBed.tick();
+
+    http.expectOne({ method: 'GET', url: '/api/barangays' }).flush(BARANGAYS);
+    http
+      .expectOne({ method: 'GET', url: `/api/office/residents/${id}/families` })
+      .flush(OFFICE_RESIDENT_FAMILIES);
+    http
+      .expectOne({ method: 'GET', url: `/api/office/residents/${id}/relationship-history` })
+      .flush(OFFICE_RELATIONSHIP_HISTORY);
+    await fixture.whenStable();
+    http.verify();
+    return fixture;
+  }
+
+  it('lists the families the API names, each a link into its record', async () => {
+    const element = html(await openOverHttp('res-0002'));
+    const section = element.querySelector('#families-heading')?.closest('section');
+
+    expect(section?.querySelector('app-not-connected')).toBeNull();
+    const link = section?.querySelector<HTMLAnchorElement>('.panel__list a');
+    expect(link?.textContent).toContain('Dela Cruz family');
+    expect(link?.getAttribute('href')).toBe(
+      `/families/${OFFICE_RESIDENT_FAMILIES.data[0]?.family.id ?? ''}`,
+    );
+    expect(section?.querySelector('.panel__list')?.textContent).toContain(
+      'Dela Cruz, Maria Santos',
+    );
+    expect(section?.textContent).not.toContain(RESIDENTS_COPY.detail.noFamilies);
+  });
+
+  it('shows the history the API keeps, each line with its reason and its author', async () => {
+    const element = html(await openOverHttp('res-0002'));
+    const events = element.querySelectorAll('#families-heading ~ .panel__timeline .panel__event');
+
+    expect(events).toHaveLength(OFFICE_RELATIONSHIP_HISTORY.data.length);
+    expect(events[0]?.querySelector('.panel__event-reason')?.textContent).toContain(
+      'She heads the family since he left.',
+    );
+    // An act the server could name nobody for says so, rather than showing a blank author.
+    expect(events[2]?.querySelector('.panel__event-actor')?.textContent).toContain(
+      'no name on record',
+    );
+    expect(element.textContent).not.toContain(RESIDENTS_COPY.detail.noKinshipHistory);
   });
 });
 

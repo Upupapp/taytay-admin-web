@@ -10,11 +10,15 @@
 </app-page-header>
 
 <div class="card residents">
-  <app-saved-views-bar
-    resource="residents"
-    [currentParams]="filterParams()"
-    [currentUserId]="currentUserId()"
-  />
+  @if (servesSavedViews) {
+    <app-saved-views-bar
+      resource="residents"
+      [currentParams]="filterParams()"
+      [currentUserId]="currentUserId()"
+    />
+  } @else {
+    <app-not-connected port="saved-view" />
+  }
 
   <div class="filters">
     <label class="filters__field filters__field--wide">

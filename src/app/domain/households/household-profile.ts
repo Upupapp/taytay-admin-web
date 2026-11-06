@@ -1,6 +1,12 @@
 import type { AuditEntry } from '../shared/audit';
 import type { ResidentView } from '../residents/resident-disclosure';
-import type { Household, HouseholdBand, HouseholdRole } from './household';
+import type {
+  Household,
+  HouseholdBand,
+  HouseholdRecord,
+  HouseholdRole,
+  HouseholdWithheldField,
+} from './household';
 import type { VulnerabilitySnapshot } from './household-vulnerability';
 
 /**
@@ -16,13 +22,23 @@ export interface HouseholdMemberView {
   readonly isHead: boolean;
 }
 
-/** A row in the household list. Enough to decide which household to open. */
+/**
+ * A row in the household list. Enough to decide which household to open.
+ *
+ * The record is already disclosed for the reader (`discloseHousehold`): a withheld address or
+ * income is `null` **and named in `withheld`**, so a screen says "withheld" rather than a blank
+ * that reads as "not recorded" (`DL-38`).
+ */
 export interface HouseholdSummary {
-  readonly household: Household;
+  readonly household: HouseholdRecord;
+  readonly withheld: readonly HouseholdWithheldField[];
+  /** A current member is under a protected sector. Said even when the address is withheld. */
+  readonly isProtected: boolean;
   /** Already disclosed — a protected head is masked here as everywhere else. */
   readonly headName: string;
   readonly memberCount: number;
   readonly band: HouseholdBand;
+  /** Counted from the factors this reader is shown, so the number and the record agree. */
   readonly presentFactorCount: number;
 }
 
@@ -36,7 +52,10 @@ export interface HouseholdSummary {
  * not match the membership it claims to explain.
  */
 export interface HouseholdDetail {
+  /** Disclosed for the reader, as on `HouseholdSummary`. */
   readonly household: Household;
+  readonly withheld: readonly HouseholdWithheldField[];
+  readonly isProtected: boolean;
   readonly members: readonly HouseholdMemberView[];
   readonly snapshot: VulnerabilitySnapshot;
   /** Newest first. Membership changes and factor corrections, with reasons. */

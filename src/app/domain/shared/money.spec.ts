@@ -1,4 +1,4 @@
-import { addMoney, centavos, pesos, sumMoney, toDecimal, ZERO_PESOS } from './money';
+import { addMoney, centavos, parsePesos, pesos, sumMoney, toDecimal, ZERO_PESOS } from './money';
 
 describe('money', () => {
   it('stores pesos as whole centavos', () => {
@@ -25,5 +25,18 @@ describe('money', () => {
 
   it('sums an empty batch to zero', () => {
     expect(sumMoney([])).toEqual(ZERO_PESOS);
+  });
+
+  it('reads typed pesos into whole centavos without decimal arithmetic', () => {
+    expect(parsePesos('3200')).toEqual(centavos(320000));
+    expect(parsePesos(' ₱3,200.5 ')).toEqual(centavos(320050));
+    // 0.29 * 100 is 28.999… in floating point; read as two integers it is 29.
+    expect(parsePesos('0.29')).toEqual(centavos(29));
+  });
+
+  it('refuses what is not an amount rather than rounding it', () => {
+    for (const typed of ['', 'abc', '-5', '1.234', '1.2.3']) {
+      expect(parsePesos(typed)).toBeNull();
+    }
   });
 });

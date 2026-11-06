@@ -86,9 +86,110 @@ export function familyRoleOf(family: Family, residentId: ResidentId): FamilyRole
   return currentMembers(family).find((member) => member.residentId === residentId)?.role ?? null;
 }
 
+/**
+ * Who heads a family: the current member recorded as head, or the first current member when nobody
+ * is — the API's rule, so a summary names the same person whichever adapter answered.
+ */
+export function headOfFamily(family: Family): ResidentId | null {
+  const current = currentMembers(family);
+  return (current.find((member) => member.role === 'head') ?? current[0])?.residentId ?? null;
+}
+
+/* ── Recording a family ───────────────────────────────────────────────────── */
+
+/**
+ * What recording a family takes.
+ *
+ * The household is optional and `null` is an answer, not a gap: a family between addresses is an
+ * ordinary thing to record (`DL-47`). The reason is a separate argument, as on every family change,
+ * and it is kept with the family's forming and with each founding member's joining (`DL-48`).
+ */
+export interface FamilyDraft {
+  readonly name: string;
+  readonly householdId: HouseholdId | null;
+  readonly formedOn: IsoDate | null;
+  readonly members: readonly FamilyDraftMember[];
+}
+
+export interface FamilyDraftMember {
+  readonly residentId: ResidentId;
+  readonly role: FamilyRole;
+}
+
+/** The API's bounds on a family as recorded: a name of 1 to 120 characters, 1 to 30 members. */
+export const FAMILY_NAME_MAX_LENGTH = 120;
+export const FAMILY_MEMBERS_MAX = 30;
+
+export type FamilyDraftProblemCode =
+  | 'no-name'
+  | 'no-members'
+  | 'too-many-members'
+  | 'duplicate-member'
+  | 'resident-not-found'
+  | 'household-not-found'
+  | 'no-reason';
+
+export interface FamilyDraftProblem {
+  readonly code: FamilyDraftProblemCode;
+  readonly residentId: ResidentId | null;
+}
+
+export class FamilyDraftInvalidError extends Error {
+  readonly problems: readonly FamilyDraftProblem[];
+
+  constructor(problems: readonly FamilyDraftProblem[]) {
+    super('That family cannot be recorded as stated.');
+    this.name = 'FamilyDraftInvalidError';
+    this.problems = problems;
+  }
+}
+
+export function isFamilyDraftInvalid(error: unknown): error is FamilyDraftInvalidError {
+  return error instanceof FamilyDraftInvalidError;
+}
+
+/**
+ * The rules a family draft must meet that need nothing but the draft — the form, both adapters and
+ * the API apply the same ones. Whether each person and the household are on file is the adapter's,
+ * since only it holds the registry. Who is head is not checked: two heads, or none recorded yet, is
+ * an arrangement the office meets and must be able to write down (`DL-49`).
+ */
+export function validateFamilyDraft(
+  draft: FamilyDraft,
+  reason: string,
+): readonly FamilyDraftProblem[] {
+  const problems: FamilyDraftProblem[] = [];
+  const name = draft.name.trim();
+  if (name.length === 0 || name.length > FAMILY_NAME_MAX_LENGTH) {
+    problems.push({ code: 'no-name', residentId: null });
+  }
+  if (draft.members.length === 0) {
+    problems.push({ code: 'no-members', residentId: null });
+  }
+  if (draft.members.length > FAMILY_MEMBERS_MAX) {
+    problems.push({ code: 'too-many-members', residentId: null });
+  }
+  const seen = new Set<ResidentId>();
+  for (const member of draft.members) {
+    if (seen.has(member.residentId)) {
+      problems.push({ code: 'duplicate-member', residentId: member.residentId });
+    }
+    seen.add(member.residentId);
+  }
+  if (reason.trim().length === 0) {
+    problems.push({ code: 'no-reason', residentId: null });
+  }
+  return problems;
+}
+
 /* ── Filtering ────────────────────────────────────────────────────────────── */
 
+/**
+ * The list's filter. There is no sort to ask for: the API orders families by reference number and
+ * pages by cursor, so the order is the server's (`DL-161`).
+ */
 export interface FamilyFilter {
+  /** Two characters at least over the API: every word must match the reference, the name or the head's surname. */
   readonly search?: string;
   readonly barangayId?: BarangayId;
   readonly householdId?: HouseholdId;
@@ -96,8 +197,6 @@ export interface FamilyFilter {
   readonly unhousedOnly?: boolean;
   readonly includeDissolved?: boolean;
 }
-
-export type FamilySortField = 'reference' | 'name' | 'size' | 'updatedAt';
 
 export function isFamilyFilterActive(filter: FamilyFilter): boolean {
   return (

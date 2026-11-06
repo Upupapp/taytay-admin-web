@@ -1,3 +1,4 @@
+import type { Permission } from '../access/permission';
 import type { AuditStamp } from '../shared/audit';
 import type { BarangayId, HouseholdId, ResidentId } from '../shared/ids';
 import type { Money } from '../shared/money';
@@ -57,17 +58,111 @@ export interface Household {
   readonly audit: AuditStamp;
 }
 
+/**
+ * A household without its member list: what a list row carries.
+ *
+ * The API sends a list row a member *count* and the head, never the members, and a `members: []`
+ * filled in to satisfy a type would say nobody lives there (`DL-112`). So a row is typed as what it
+ * is, and the member list belongs to `HouseholdDetail` alone.
+ */
+export type HouseholdRecord = Omit<Household, 'members'>;
+
+/* ── Registration ─────────────────────────────────────────────────────────── */
+
+/**
+ * What registering a household takes.
+ *
+ * The head is its one member at registration; everybody else joins through the household record,
+ * where each addition is its own act with a reason (`changeMembership`). No reason is asked here:
+ * the registration is itself what the trail records.
+ */
+export interface HouseholdDraft {
+  readonly barangayId: BarangayId;
+  readonly purokOrSitio: string | null;
+  readonly streetAddress: string;
+  readonly headResidentId: ResidentId;
+  /** Means: recording it needs `resident.view-sensitive`, as on a resident. */
+  readonly monthlyIncome: Money | null;
+  /** Recorded by a person, never derived (`DL-42`). */
+  readonly isIndigent: boolean;
+}
+
+/* ── Disclosure ───────────────────────────────────────────────────────────── */
+
+/**
+ * What a household withholds from a reader, in the vocabulary `ResidentView.withheld` uses for the
+ * same two facts about a person, so "withheld" reads the same on both screens (`DL-38`).
+ */
+export type HouseholdWithheldField = 'exactAddress' | 'monthlyIncome';
+
+/**
+ * The two tiers a household can withhold behind.
+ *
+ * `protected` is `request.view-sensitive`: a household where somebody is under a protected sector
+ * keeps its street and purok from a reader without it, because that address is where the protected
+ * person lives and the household must not be the side door to it. `means` is
+ * `resident.view-sensitive`: the household's income, behind the same key as a resident's.
+ */
+export interface HouseholdClearance {
+  readonly protected: boolean;
+  readonly means: boolean;
+}
+
+export function householdClearance(has: (permission: Permission) => boolean): HouseholdClearance {
+  return { protected: has('request.view-sensitive'), means: has('resident.view-sensitive') };
+}
+
+export interface DisclosedHousehold<T extends HouseholdRecord> {
+  readonly household: T;
+  readonly withheld: readonly HouseholdWithheldField[];
+  /** Said even when the address is withheld: a household that needs care is handled with care. */
+  readonly isProtected: boolean;
+}
+
+/**
+ * The household as this reader may see it — the rule the API applies, applied by the mock.
+ *
+ * An income is named as withheld only when one is recorded, exactly as the server does; a blank
+ * that is not named stays "not recorded", and one that is named is never mistaken for it.
+ */
+export function discloseHousehold<T extends HouseholdRecord>(
+  household: T,
+  isProtected: boolean,
+  clearance: HouseholdClearance,
+): DisclosedHousehold<T> {
+  const addressWithheld = isProtected && !clearance.protected;
+  const incomeWithheld = household.monthlyIncome !== null && !clearance.means;
+  const withheld: HouseholdWithheldField[] = [
+    ...(addressWithheld ? (['exactAddress'] as const) : []),
+    ...(incomeWithheld ? (['monthlyIncome'] as const) : []),
+  ];
+  return {
+    household: {
+      ...household,
+      address: addressWithheld
+        ? { ...household.address, purokOrSitio: null, streetAddress: null }
+        : household.address,
+      monthlyIncome: clearance.means ? household.monthlyIncome : null,
+    },
+    withheld,
+    isProtected,
+  };
+}
+
 /* ── Filtering ────────────────────────────────────────────────────────────── */
 
+/**
+ * The list's filter. There is no sort to ask for: the API orders households by reference number
+ * and pages by cursor, so the order is the server's (`DL-161`).
+ */
 export interface HouseholdFilter {
+  /** Two characters at least over the API: every word must match the reference, the head's surname or the street. */
   readonly search?: string;
   readonly barangayId?: BarangayId;
   readonly indigentOnly?: boolean;
   /** Households carrying at least one vulnerability factor at this band or above. */
   readonly minimumBand?: HouseholdBand;
 }
-
-export type HouseholdSortField = 'reference' | 'barangay' | 'size' | 'updatedAt';
 
 /**
  * A coarse, advisory grouping used only to sort and filter a list — never to

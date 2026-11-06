@@ -189,7 +189,10 @@
         <section class="card panel panel--wide" aria-labelledby="visits-heading">
           <h2 class="panel__heading" id="visits-heading">{{ copy.visitsHeading }}</h2>
 
-          @if (visitsFor().length === 0) {
+          <!-- The heading stays when the port is not served, so the gap is named where it is (DL-175). -->
+          @if (!servesVisits) {
+            <app-not-connected port="field-visit" />
+          } @else if (visitsFor().length === 0) {
             <p class="panel__empty">{{ copy.noVisits }}</p>
           } @else {
             <ul class="panel__list">
@@ -217,204 +220,228 @@
         <section class="card panel panel--wide" aria-labelledby="families-heading">
           <h2 class="panel__heading" id="families-heading">{{ copy.familiesHeading }}</h2>
 
-          @if (familiesOf().length === 0) {
-            <p class="panel__empty">{{ copy.noFamilies }}</p>
+          @if (!servesFamilies) {
+            <!-- One notice for both: "families and relationships" names the history as well. -->
+            <app-not-connected port="family" />
           } @else {
-            <ul class="panel__list">
-              @for (summary of familiesOf(); track summary.family.id) {
-                <li class="panel__item">
-                  <a [routerLink]="['/families', summary.family.id]">{{ summary.family.name }}</a>
-                  <span class="panel__meta">
-                    {{ copy.headedBy }} {{ summary.headName }} · {{ summary.memberCount }}
-                  </span>
-                </li>
+            @if (familiesOf().length === 0) {
+              <p class="panel__empty">{{ copy.noFamilies }}</p>
+            } @else {
+              <ul class="panel__list">
+                @for (summary of familiesOf(); track summary.family.id) {
+                  <li class="panel__item">
+                    <a [routerLink]="['/families', summary.family.id]">{{ summary.family.name }}</a>
+                    <span class="panel__meta">
+                      {{ copy.headedBy }} {{ summary.headName }} · {{ summary.memberCount }}
+                    </span>
+                  </li>
+                }
+              </ul>
+            }
+
+            <h3 class="panel__subheading">{{ copy.kinshipHeading }}</h3>
+            <p class="panel__hint">{{ copy.kinshipHint }}</p>
+
+            @if (kinshipHistory().length === 0) {
+              <p class="panel__empty">{{ copy.noKinshipHistory }}</p>
+            } @else {
+              <ol class="panel__timeline">
+                @for (event of kinshipHistory(); track event.id) {
+                  <li class="panel__event">
+                    <span class="panel__event-kind">{{ eventLabel(event) }}</span>
+                    <span class="panel__event-when">{{
+                      event.occurredAt | date: 'mediumDate'
+                    }}</span>
+                    <!--
+                      The reason is shown, not just the fact. An event nobody can account for is one
+                      a later reader treats as an unexplained change to a family (DL-48).
+                    -->
+                    <p class="panel__event-reason">{{ event.reason }}</p>
+                    <span class="panel__event-actor">{{ event.actorName }}</span>
+                  </li>
+                }
+              </ol>
+            }
+          }
+        </section>
+
+        <!--
+          ── Assistance history ─────────────────────────────────────────
+
+          Read, or named as not read (DL-112). Requests, payouts and referrals arrive together, so
+          one note stands for all three rather than three empty panels that each say "none".
+        -->
+        @switch (profile.history.kind) {
+          @case ('unavailable') {
+            <section class="card panel panel--wide" aria-labelledby="history-heading">
+              <h2 class="panel__heading" id="history-heading">{{ copy.historyHeading }}</h2>
+              <p class="panel__unread" role="note">{{ profile.history.because }}</p>
+            </section>
+          }
+          @case ('read') {
+            @let history = profile.history.history;
+            <section class="card panel panel--wide" aria-labelledby="cases-heading">
+              <h2 class="panel__heading" id="cases-heading">{{ copy.casesHeading }}</h2>
+
+              <dl class="totals">
+                <div>
+                  <dt>{{ copy.caseCount }}</dt>
+                  <dd>{{ history.cases.length }}</dd>
+                </div>
+                <div>
+                  <dt>{{ copy.openCases }}</dt>
+                  <dd>{{ history.openCaseCount }}</dd>
+                </div>
+                <div>
+                  <dt>{{ copy.totalReleased }}</dt>
+                  <dd>{{ history.totalReleased | peso }}</dd>
+                </div>
+                <div>
+                  <dt>{{ copy.lastActivity }}</dt>
+                  <dd>
+                    {{
+                      history.lastActivityAt ? (history.lastActivityAt | date: 'mediumDate') : '—'
+                    }}
+                  </dd>
+                </div>
+              </dl>
+
+              @if (history.cases.length > 0) {
+                <table class="history">
+                  <caption class="visually-hidden">
+                    {{
+                      copy.casesHeading
+                    }}
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Reference</th>
+                      <th scope="col">Programme</th>
+                      <th scope="col">Status</th>
+                      <th scope="col" class="history__amount">Amount approved</th>
+                      <th scope="col">Updated</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (entry of history.cases; track entry.id) {
+                      <tr>
+                        <th scope="row">
+                          <a
+                            [routerLink]="['/assistance-requests']"
+                            [queryParams]="{ q: entry.referenceNumber }"
+                          >
+                            {{ entry.referenceNumber }}
+                          </a>
+                        </th>
+                        <td>{{ entry.programName }}</td>
+                        <td>
+                          <app-status-badge [catalog]="requestStatuses" [status]="entry.status" />
+                        </td>
+                        <td class="history__amount">{{ entry.approvedAmount | peso }}</td>
+                        <td>{{ entry.updatedAt | date: 'mediumDate' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              } @else {
+                <p class="panel__empty">{{ copy.noCases }}</p>
               }
-            </ul>
-          }
+            </section>
 
-          <h3 class="panel__subheading">{{ copy.kinshipHeading }}</h3>
-          <p class="panel__hint">{{ copy.kinshipHint }}</p>
-
-          @if (kinshipHistory().length === 0) {
-            <p class="panel__empty">{{ copy.noKinshipHistory }}</p>
-          } @else {
-            <ol class="panel__timeline">
-              @for (event of kinshipHistory(); track event.id) {
-                <li class="panel__event">
-                  <span class="panel__event-kind">{{ eventLabel(event) }}</span>
-                  <span class="panel__event-when">{{ event.occurredAt | date: 'mediumDate' }}</span>
-                  <!--
-                    The reason is shown, not just the fact. An event nobody can account for is one
-                    a later reader treats as an unexplained change to a family (DL-48).
-                  -->
-                  <p class="panel__event-reason">{{ event.reason }}</p>
-                  <span class="panel__event-actor">{{ event.actorName }}</span>
-                </li>
+            <!-- ── Payouts ──────────────────────────────────────────────────── -->
+            <section class="card panel panel--wide" aria-labelledby="payouts-heading">
+              <h2 class="panel__heading" id="payouts-heading">{{ copy.payoutsHeading }}</h2>
+              @if (history.payouts.length > 0) {
+                <table class="history">
+                  <caption class="visually-hidden">
+                    {{
+                      copy.payoutsHeading
+                    }}
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Reference</th>
+                      <th scope="col">Method</th>
+                      <th scope="col">Status</th>
+                      <th scope="col" class="history__amount">Amount</th>
+                      <th scope="col">Released</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (payout of history.payouts; track payout.id) {
+                      <tr>
+                        <th scope="row">
+                          <a
+                            [routerLink]="['/releases']"
+                            [queryParams]="{ q: payout.referenceNumber }"
+                          >
+                            {{ payout.referenceNumber }}
+                          </a>
+                        </th>
+                        <td>{{ methodLabel(payout.method) }}</td>
+                        <td>
+                          <app-status-badge [catalog]="payoutStatuses" [status]="payout.status" />
+                        </td>
+                        <td class="history__amount">{{ payout.amount | peso }}</td>
+                        <td>
+                          {{ payout.releasedAt ? (payout.releasedAt | date: 'mediumDate') : '—' }}
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              } @else {
+                <p class="panel__empty">{{ copy.noPayouts }}</p>
               }
-            </ol>
+            </section>
+
+            <!-- ── Referrals ────────────────────────────────────────────────── -->
+            <section class="card panel panel--wide" aria-labelledby="referrals-heading">
+              <h2 class="panel__heading" id="referrals-heading">{{ copy.referralsHeading }}</h2>
+              @if (history.referrals.length > 0) {
+                <table class="history">
+                  <caption class="visually-hidden">
+                    {{
+                      copy.referralsHeading
+                    }}
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Reference</th>
+                      <th scope="col">Sent to</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Referred</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (referral of history.referrals; track referral.id) {
+                      <tr>
+                        <th scope="row">
+                          <a
+                            [routerLink]="['/referrals']"
+                            [queryParams]="{ q: referral.referenceNumber }"
+                          >
+                            {{ referral.referenceNumber }}
+                          </a>
+                        </th>
+                        <td>{{ referral.destinationName }}</td>
+                        <td>
+                          <app-status-badge
+                            [catalog]="referralStatuses"
+                            [status]="referral.status"
+                          />
+                        </td>
+                        <td>{{ referral.referredAt | date: 'mediumDate' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              } @else {
+                <p class="panel__empty">{{ copy.noReferrals }}</p>
+              }
+            </section>
           }
-        </section>
-
-        <!-- ── Assistance history ───────────────────────────────────────── -->
-        <section class="card panel panel--wide" aria-labelledby="cases-heading">
-          <h2 class="panel__heading" id="cases-heading">{{ copy.casesHeading }}</h2>
-
-          <dl class="totals">
-            <div>
-              <dt>{{ copy.caseCount }}</dt>
-              <dd>{{ profile.history.cases.length }}</dd>
-            </div>
-            <div>
-              <dt>{{ copy.openCases }}</dt>
-              <dd>{{ profile.history.openCaseCount }}</dd>
-            </div>
-            <div>
-              <dt>{{ copy.totalReleased }}</dt>
-              <dd>{{ profile.history.totalReleased | peso }}</dd>
-            </div>
-            <div>
-              <dt>{{ copy.lastActivity }}</dt>
-              <dd>
-                {{
-                  profile.history.lastActivityAt
-                    ? (profile.history.lastActivityAt | date: 'mediumDate')
-                    : '—'
-                }}
-              </dd>
-            </div>
-          </dl>
-
-          @if (profile.history.cases.length > 0) {
-            <table class="history">
-              <caption class="visually-hidden">
-                {{
-                  copy.casesHeading
-                }}
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Reference</th>
-                  <th scope="col">Programme</th>
-                  <th scope="col">Status</th>
-                  <th scope="col" class="history__amount">Amount approved</th>
-                  <th scope="col">Updated</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (entry of profile.history.cases; track entry.id) {
-                  <tr>
-                    <th scope="row">
-                      <a
-                        [routerLink]="['/assistance-requests']"
-                        [queryParams]="{ q: entry.referenceNumber }"
-                      >
-                        {{ entry.referenceNumber }}
-                      </a>
-                    </th>
-                    <td>{{ entry.programName }}</td>
-                    <td>
-                      <app-status-badge [catalog]="requestStatuses" [status]="entry.status" />
-                    </td>
-                    <td class="history__amount">{{ entry.approvedAmount | peso }}</td>
-                    <td>{{ entry.updatedAt | date: 'mediumDate' }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          } @else {
-            <p class="panel__empty">{{ copy.noCases }}</p>
-          }
-        </section>
-
-        <!-- ── Payouts ──────────────────────────────────────────────────── -->
-        <section class="card panel panel--wide" aria-labelledby="payouts-heading">
-          <h2 class="panel__heading" id="payouts-heading">{{ copy.payoutsHeading }}</h2>
-          @if (profile.history.payouts.length > 0) {
-            <table class="history">
-              <caption class="visually-hidden">
-                {{
-                  copy.payoutsHeading
-                }}
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Reference</th>
-                  <th scope="col">Method</th>
-                  <th scope="col">Status</th>
-                  <th scope="col" class="history__amount">Amount</th>
-                  <th scope="col">Released</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (payout of profile.history.payouts; track payout.id) {
-                  <tr>
-                    <th scope="row">
-                      <a
-                        [routerLink]="['/releases']"
-                        [queryParams]="{ q: payout.referenceNumber }"
-                      >
-                        {{ payout.referenceNumber }}
-                      </a>
-                    </th>
-                    <td>{{ methodLabel(payout.method) }}</td>
-                    <td>
-                      <app-status-badge [catalog]="payoutStatuses" [status]="payout.status" />
-                    </td>
-                    <td class="history__amount">{{ payout.amount | peso }}</td>
-                    <td>
-                      {{ payout.releasedAt ? (payout.releasedAt | date: 'mediumDate') : '—' }}
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          } @else {
-            <p class="panel__empty">{{ copy.noPayouts }}</p>
-          }
-        </section>
-
-        <!-- ── Referrals ────────────────────────────────────────────────── -->
-        <section class="card panel panel--wide" aria-labelledby="referrals-heading">
-          <h2 class="panel__heading" id="referrals-heading">{{ copy.referralsHeading }}</h2>
-          @if (profile.history.referrals.length > 0) {
-            <table class="history">
-              <caption class="visually-hidden">
-                {{
-                  copy.referralsHeading
-                }}
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Reference</th>
-                  <th scope="col">Sent to</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Referred</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (referral of profile.history.referrals; track referral.id) {
-                  <tr>
-                    <th scope="row">
-                      <a
-                        [routerLink]="['/referrals']"
-                        [queryParams]="{ q: referral.referenceNumber }"
-                      >
-                        {{ referral.referenceNumber }}
-                      </a>
-                    </th>
-                    <td>{{ referral.destinationName }}</td>
-                    <td>
-                      <app-status-badge [catalog]="referralStatuses" [status]="referral.status" />
-                    </td>
-                    <td>{{ referral.referredAt | date: 'mediumDate' }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          } @else {
-            <p class="panel__empty">{{ copy.noReferrals }}</p>
-          }
-        </section>
+        }
 
         <!-- ── Record provenance ────────────────────────────────────────── -->
         <section class="card panel" aria-labelledby="record-heading">

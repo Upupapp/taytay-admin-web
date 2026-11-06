@@ -1,0 +1,104 @@
+{
+  "data": [
+    {
+      "household": {
+        "id": "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e01",
+        "reference_number": "HH-2026-000014",
+        "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+        "purok_or_sitio": null,
+        "street_address": null,
+        "head_resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+        "monthly_income_centavos": null,
+        "is_indigent": true,
+        "is_protected": true,
+        "withheld": ["exact_address", "monthly_income"],
+        "created_at": "2026-11-06T03:00:00.000Z",
+        "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "updated_at": "2026-11-06T05:00:00.000Z",
+        "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+      },
+      "head": {
+        "id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+        "first_name": "Maria",
+        "middle_name": "Santos",
+        "last_name": "Dela Cruz",
+        "suffix": null,
+        "sex": "female",
+        "birth_date": "1984-04-02",
+        "civil_status": "separated",
+        "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+        "purok_or_sitio": null,
+        "street_address": null,
+        "mobile": "09170000103",
+        "email": null,
+        "sectors": [],
+        "philsys_last_four": null,
+        "monthly_income_centavos": null,
+        "is_active": true,
+        "is_protected": false,
+        "given_name_masked": false,
+        "withheld": ["philsys_last_four", "monthly_income", "exact_address"],
+        "created_at": "2026-11-06T02:00:00.000Z",
+        "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "updated_at": "2026-11-06T02:00:00.000Z",
+        "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+      },
+      "member_count": 2,
+      "band": "elevated",
+      "present_factor_count": 1
+    },
+    {
+      "household": {
+        "id": "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e02",
+        "reference_number": "HH-2026-000015",
+        "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04",
+        "purok_or_sitio": "Sitio Malaya",
+        "street_address": "4 Mabini St.",
+        "head_resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c02",
+        "monthly_income_centavos": null,
+        "is_indigent": false,
+        "is_protected": false,
+        "withheld": [],
+        "created_at": "2026-11-06T03:10:00.000Z",
+        "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "updated_at": "2026-11-06T03:10:00.000Z",
+        "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+      },
+      "head": {
+        "id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c02",
+        "first_name": "Jose",
+        "middle_name": "Ramos",
+        "last_name": "Ygot",
+        "suffix": "Jr.",
+        "sex": "male",
+        "birth_date": "1950-01-15",
+        "civil_status": "widowed",
+        "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04",
+        "purok_or_sitio": "Sitio Malaya",
+        "street_address": "4 Mabini St.",
+        "mobile": null,
+        "email": null,
+        "sectors": ["senior-citizen"],
+        "philsys_last_four": null,
+        "monthly_income_centavos": null,
+        "is_active": true,
+        "is_protected": false,
+        "given_name_masked": false,
+        "withheld": [],
+        "created_at": "2026-11-05T01:00:00.000Z",
+        "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "updated_at": "2026-11-05T01:00:00.000Z",
+        "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+      },
+      "member_count": 1,
+      "band": "none",
+      "present_factor_count": 1
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "has_more": true,
+      "next_cursor": "aG91c2Vob2xkfDNjNGQ1ZTZmLTdhOGItNGM5ZC04ZTBmLTFhMmIzYzRkNWUwMg"
+    }
+  }
+}

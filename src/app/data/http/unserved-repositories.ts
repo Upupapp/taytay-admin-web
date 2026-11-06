@@ -2,10 +2,7 @@ import { Injectable } from '@angular/core';
 import { throwError, type Observable } from 'rxjs';
 
 import {
-  type HouseholdRepository,
-  type FamilyRepository,
   type CaseRepository,
-  type SavedViewRepository,
   type ProgramRepository,
   type AssistanceRequestRepository,
   type BeneficiaryRepository,
@@ -76,68 +73,6 @@ export function unserved(module: string): Observable<never> {
 }
 
 @Injectable()
-export class UnservedHouseholdRepository implements HouseholdRepository {
-  static readonly port: DataPort = 'household';
-
-  list(): Observable<never> {
-    return unserved('households');
-  }
-
-  getById(): Observable<never> {
-    return unserved('households');
-  }
-
-  changeMembership(): Observable<never> {
-    return unserved('households');
-  }
-
-  correctFactor(): Observable<never> {
-    return unserved('households');
-  }
-
-  clearCorrection(): Observable<never> {
-    return unserved('households');
-  }
-}
-
-@Injectable()
-export class UnservedFamilyRepository implements FamilyRepository {
-  static readonly port: DataPort = 'family';
-
-  list(): Observable<never> {
-    return unserved('families and relationships');
-  }
-
-  getById(): Observable<never> {
-    return unserved('families and relationships');
-  }
-
-  familiesOf(): Observable<never> {
-    return unserved('families and relationships');
-  }
-
-  recordRelationship(): Observable<never> {
-    return unserved('families and relationships');
-  }
-
-  endRelationship(): Observable<never> {
-    return unserved('families and relationships');
-  }
-
-  transferResident(): Observable<never> {
-    return unserved('families and relationships');
-  }
-
-  changeMemberRole(): Observable<never> {
-    return unserved('families and relationships');
-  }
-
-  historyForResident(): Observable<never> {
-    return unserved('families and relationships');
-  }
-}
-
-@Injectable()
 export class UnservedCaseRepository implements CaseRepository {
   static readonly port: DataPort = 'case';
 
@@ -183,23 +118,6 @@ export class UnservedCaseRepository implements CaseRepository {
 
   rescheduleTask(): Observable<never> {
     return unserved('cases');
-  }
-}
-
-@Injectable()
-export class UnservedSavedViewRepository implements SavedViewRepository {
-  static readonly port: DataPort = 'saved-view';
-
-  listFor(): Observable<never> {
-    return unserved('saved views');
-  }
-
-  create(): Observable<never> {
-    return unserved('saved views');
-  }
-
-  remove(): Observable<never> {
-    return unserved('saved views');
   }
 }
 
@@ -725,10 +643,7 @@ export class UnservedDashboardRepository implements DashboardRepository {
  * mock one: a spec can import this list, and could not import the binding.
  */
 export const UNSERVED_HTTP_PORTS: readonly DataPort[] = [
-  UnservedHouseholdRepository.port,
-  UnservedFamilyRepository.port,
   UnservedCaseRepository.port,
-  UnservedSavedViewRepository.port,
   UnservedProgramRepository.port,
   UnservedAssistanceRequestRepository.port,
   UnservedBeneficiaryRepository.port,

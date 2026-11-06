@@ -4,12 +4,17 @@ import {
   applyMembershipChanges,
   asId,
   asIsoDateTime,
+  describeMembershipChange,
+  describeMembershipChanges,
+  HEAD_REGISTERED_REASON,
+  HOUSEHOLD_REGISTERED_SUMMARY,
   HouseholdCompositionError,
   validateComposition,
   type AuditEntry,
   type AuditEntryId,
   type FactorCorrection,
   type Household,
+  type HouseholdDraft,
   type HouseholdId,
   type HouseholdMember,
   type HouseholdProblem,
@@ -38,8 +43,9 @@ export class MockResidentStore {
   private residents: readonly Resident[] = [...MOCK_RESIDENTS];
   private households: readonly Household[] = [...MOCK_HOUSEHOLDS];
   private readonly correctionsByHousehold = new Map<HouseholdId, readonly FactorCorrection[]>();
-  private readonly auditByHousehold = new Map<HouseholdId, readonly AuditEntry[]>();
+  private readonly auditByHousehold = new Map<HouseholdId, readonly HouseholdTrailLine[]>();
   private auditSequence = 0;
+  private householdSequence = highestSerial(MOCK_HOUSEHOLDS);
   // Derived from the highest id in the seed, not from its length: the generated
   // block is numbered from res-0100, so counting records would hand a new
   // resident an id that already belongs to someone.
@@ -73,7 +79,71 @@ export class MockResidentStore {
   }
 
   auditFor(id: HouseholdId): readonly AuditEntry[] {
+    return this.trailFor(id).map((line) => line.entry);
+  }
+
+  /**
+   * The trail with the indicator each line is about, so a reader not shown that indicator is not
+   * shown the line either: a correction's reason is the disclosure the indicator withheld.
+   */
+  trailFor(id: HouseholdId): readonly HouseholdTrailLine[] {
     return this.auditByHousehold.get(id) ?? [];
+  }
+
+  /* ── Household registration ─────────────────────────────────────────────── */
+
+  /**
+   * Registers a household with its head as its one member, in one act: the household, the head's
+   * pointer and the two trail lines the API also writes — the registration, and the head joining.
+   * A head who is not on file, or who already lives under another roof, is refused before anything
+   * is written.
+   */
+  registerHousehold(draft: HouseholdDraft, actor: Actor): Household {
+    const head = this.find(draft.headResidentId);
+    if (head === undefined) {
+      throw new HouseholdCompositionError([
+        { code: 'member-not-found', residentId: draft.headResidentId },
+      ]);
+    }
+    if (this.householdOfResident(head.id) !== undefined) {
+      throw new HouseholdCompositionError([
+        { code: 'member-in-another-household', residentId: head.id },
+      ]);
+    }
+
+    this.householdSequence += 1;
+    const serial = String(this.householdSequence);
+    const now = asIsoDateTime(new Date());
+    const created: Household = {
+      id: asId<HouseholdId>('hh-' + serial.padStart(4, '0')),
+      // The API's format: HH-<year>-<sequence>.
+      referenceNumber: 'HH-' + String(new Date().getFullYear()) + '-' + serial.padStart(6, '0'),
+      headResidentId: head.id,
+      address: {
+        barangayId: draft.barangayId,
+        purokOrSitio: emptyToNull(draft.purokOrSitio),
+        streetAddress: draft.streetAddress.trim(),
+      },
+      members: [{ residentId: head.id, role: 'head' }],
+      monthlyIncome: draft.monthlyIncome,
+      isIndigent: draft.isIndigent,
+      audit: { createdAt: now, createdBy: actor.id, updatedAt: now, updatedBy: actor.id },
+    };
+
+    this.households = [...this.households, created];
+    this.residents = this.residents.map((resident) =>
+      resident.id === head.id ? { ...resident, householdId: created.id } : resident,
+    );
+    this.appendAudit(created.id, 'created', HOUSEHOLD_REGISTERED_SUMMARY, null, actor, now);
+    this.appendAudit(
+      created.id,
+      'membership-changed',
+      describeMembershipChange({ kind: 'add-member', residentId: head.id, role: 'head' }),
+      HEAD_REGISTERED_REASON,
+      actor,
+      now,
+    );
+    return created;
   }
 
   /* ── Household composition ──────────────────────────────────────────────── */
@@ -135,7 +205,7 @@ export class MockResidentStore {
     this.appendAudit(
       household.id,
       'membership-changed',
-      describeChanges(changes),
+      describeMembershipChanges(changes),
       reason,
       actor,
       now,
@@ -156,6 +226,7 @@ export class MockResidentStore {
       correction.reason,
       { id: correction.actorId, name: correction.actorName },
       correction.correctedAt,
+      correction.code,
     );
   }
 
@@ -170,7 +241,15 @@ export class MockResidentStore {
       id,
       this.correctionsFor(id).filter((entry) => entry.code !== code),
     );
-    this.appendAudit(id, 'factor-corrected', summary, reason, actor, asIsoDateTime(new Date()));
+    this.appendAudit(
+      id,
+      'factor-corrected',
+      summary,
+      reason,
+      actor,
+      asIsoDateTime(new Date()),
+      code,
+    );
   }
 
   /**
@@ -205,6 +284,7 @@ export class MockResidentStore {
     reason: string | null,
     actor: Actor,
     at: AuditEntry['occurredAt'],
+    factorCode: VulnerabilityFactorCode | null = null,
   ): void {
     this.auditSequence += 1;
     const line: AuditEntry = {
@@ -219,7 +299,7 @@ export class MockResidentStore {
       occurredAt: at,
     };
     // Newest first: an audit panel is read from the top.
-    this.auditByHousehold.set(id, [line, ...this.auditFor(id)]);
+    this.auditByHousehold.set(id, [{ entry: line, factorCode }, ...this.trailFor(id)]);
   }
 
   add(draft: ResidentDraft, actorId: StaffUserId | null): Resident {
@@ -307,31 +387,14 @@ export interface Actor {
   readonly name: string;
 }
 
-/**
- * A one-line human summary of what a person did.
- *
- * Not screen copy: this is the permanent record, and it has to read the same in
- * an export, in a support ticket and on the page.
- */
-function describeChanges(changes: readonly MembershipChange[]): string {
-  return changes
-    .map((change) => {
-      switch (change.kind) {
-        case 'add-member':
-          return `added ${change.residentId} as ${change.role}`;
-        case 'remove-member':
-          return `removed ${change.residentId}`;
-        case 'change-role':
-          return `changed ${change.residentId} to ${change.role}`;
-        case 'set-head':
-          return `made ${change.residentId} the household head`;
-      }
-    })
-    .join('; ');
+/** One line of a household's trail, and the indicator it is about when it is about one. */
+export interface HouseholdTrailLine {
+  readonly entry: AuditEntry;
+  readonly factorCode: VulnerabilityFactorCode | null;
 }
 
-function highestSerial(residents: readonly Resident[]): number {
-  return residents.reduce((highest, resident) => {
+function highestSerial(records: readonly { readonly id: string }[]): number {
+  return records.reduce((highest, resident) => {
     const serial = Number.parseInt(resident.id.replace(/\D/g, ''), 10);
     return Number.isNaN(serial) ? highest : Math.max(highest, serial);
   }, 0);

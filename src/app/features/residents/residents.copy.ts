@@ -91,6 +91,8 @@ export const RESIDENTS_COPY = {
     casesHeading: 'Assistance requests',
     payoutsHeading: 'Payouts',
     referralsHeading: 'Referrals',
+    /** Stands for the three headings above when the history could not be read at all. */
+    historyHeading: 'Assistance requests, payouts and referrals',
     recordHeading: 'Record',
 
     born: 'Date of birth',

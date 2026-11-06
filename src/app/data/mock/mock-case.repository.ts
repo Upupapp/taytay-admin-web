@@ -15,7 +15,10 @@ import {
   daysUntil,
   discloseCaseNote,
   discloseResident,
+  discloseHousehold,
   discloseSnapshot,
+  hasSensitiveSector,
+  householdClearance,
   isInQueue,
   isValidCaseReason,
   isValidNoteBody,
@@ -48,6 +51,7 @@ import {
   type CaseWorkspace,
   type FamilySummary,
   type Household,
+  type HouseholdClearance,
   type HouseholdSummary,
   type IsoDate,
   type IsoDateTime,
@@ -458,13 +462,22 @@ export class MockCaseRepository implements CaseRepository {
       .filter((resident): resident is Resident => resident !== undefined);
     const snapshot = household === undefined ? null : this.snapshot(household, members, user);
 
+    const disclosedHousehold =
+      household === undefined
+        ? null
+        : discloseHousehold(household, members.some(hasSensitiveSector), this.clearanceOf(user));
     const householdSummary: HouseholdSummary | null =
-      household === undefined || snapshot === null
+      disclosedHousehold === null || snapshot === null
         ? null
         : {
-            household,
-            headName: this.nameOf(this.residents.find(household.headResidentId), user),
-            memberCount: household.members.length,
+            household: disclosedHousehold.household,
+            withheld: disclosedHousehold.withheld,
+            isProtected: disclosedHousehold.isProtected,
+            headName: this.nameOf(
+              this.residents.find(disclosedHousehold.household.headResidentId),
+              user,
+            ),
+            memberCount: disclosedHousehold.household.members.length,
             // Counted from what the viewer can see, so the number and the list agree.
             band: snapshot.band,
             presentFactorCount: presentFactors(snapshot).length,
@@ -498,8 +511,12 @@ export class MockCaseRepository implements CaseRepository {
         corrections: this.residents.correctionsFor(household.id),
         now: new Date(),
       }),
-      userHasPermission(user, 'request.view-sensitive'),
+      this.clearanceOf(user),
     );
+  }
+
+  private clearanceOf(user: AuthenticatedUser | null): HouseholdClearance {
+    return householdClearance((permission) => userHasPermission(user, permission));
   }
 
   private familySummary(

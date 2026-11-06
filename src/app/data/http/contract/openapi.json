@@ -661,6 +661,331 @@
         }
       }
     },
+    "/api/v1/office/residents/{id}/relationships": {
+      "post": {
+        "operationId": "recordOfficeRelationship",
+        "summary": "Record a relationship between two residents",
+        "description": "Needs family.manage. Resident to resident, so it survives either person moving; stored in one canonical direction (see RelationshipKind). Both people must be on file and in the writer's scope: the resident in the path answers 404 when not, the other person 409 resident-not-found. An own-barangay account works in its barangay; an assigned-cases account is 403, as on the resident registry. The same link already standing (either way round for spouse-of and sibling-of) answers 200 with the standing relationship and records nothing, so a retried request never records a second marriage. Otherwise 201: relationship-recorded is appended to office_family_events with the reason, and audit office_relationship.recorded. A parent-of that reverses a parent link already on file is 409 contradicts-existing.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeRelationshipCreate" } } }
+        },
+        "responses": {
+          "200": { "description": "Already standing; nothing recorded.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeRelationshipEnvelope" } } } },
+          "201": { "description": "Recorded.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeRelationshipEnvelope" } } } },
+          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "The resident is not found, or not in the writer's scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "Refused; nothing written. details keys are resident-not-found (the other person is not on file or not in scope) or contradicts-existing, each listing the residents it is about.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeRefusalEnvelope" } } } },
+          "422": { "description": "A field is not valid, or to_resident_id is the resident in the path.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/residents/{id}/relationships/{relationshipId}/end": {
+      "post": {
+        "operationId": "endOfficeRelationship",
+        "summary": "End a relationship",
+        "description": "Needs family.manage. Ended today in Asia/Manila, never deleted: until is set once and the relationship stays on file, because a former guardian is still who was responsible then. The relationship must have the resident in the path at one end. The reason is required and kept as relationship-ended in office_family_events; audit office_relationship.ended.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "relationshipId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReasonBody" } } }
+        },
+        "responses": {
+          "200": { "description": "Ended.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeRelationshipEnvelope" } } } },
+          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "The resident is not found or not in scope; the relationship is not found or does not involve this resident.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "Already ended.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "No reason.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/residents/{id}/families": {
+      "get": {
+        "operationId": "listOfficeResidentFamilies",
+        "summary": "The families a resident belongs to",
+        "description": "Needs family.view. The families this person currently belongs to — plural, because families overlap — that are in the reader's scope, by reference number. Whole, never paged: a person belongs to a handful at most. Heads are redacted for the reader (see OfficeResident). A resident out of scope answers 404, exactly as one that does not exist; an assigned-cases account is 403.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Every family in scope, as this reader may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeFamilySummaryArrayEnvelope" } } } },
+          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "Not found, or not in the reader's scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/residents/{id}/relationship-history": {
+      "get": {
+        "operationId": "getOfficeResidentRelationshipHistory",
+        "summary": "Everything recorded about a resident's families and relationships",
+        "description": "Needs family.view. Every act in office_family_events that names this person at either end, newest first: families formed and joined, transfers, role changes, relationships recorded and ended, each with who acted, when, and the reason given. Whole, never paged. Append-only: nothing in it is rewritten. A resident out of scope answers 404; an assigned-cases account is 403.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "The history, newest first.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeFamilyEventListEnvelope" } } } },
+          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "Not found, or not in the reader's scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/households": {
+      "get": {
+        "operationId": "listOfficeHouseholds",
+        "summary": "List the office's household register",
+        "description": "Needs household.view. An address and who lives there, recorded by staff — not the residents' app households (/api/v1/households); nothing is shared between the two. By reference number. An own-barangay account sees only its barangay; an assigned-cases account is 403, as on the resident registry. q matches every word (up to five) against the reference number, the head's surname and the street address, but not the street address of a protected household for a reader without request.view-sensitive. resident_id answers which household a person is in. minimum_band filters on the advisory band; to fill such a page up to 500 rows are read per request, so a short page can still say has_more. head is the resident registry's redacted record. band is the same for every role, computed from the unredacted records; present_factor_count counts the factors present as this reader is shown them. Nothing here decides eligibility. Every member of a household with a protected member, or of a family with one or living in a household that has one, also has street_address and purok_or_sitio withheld from that reader (withheld names exact_address): people who share a record usually share a roof, and a member's address listed beside the masked one would say where the protected person lives.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string", "minLength": 2, "maxLength": 100 } },
+          { "name": "barangay_id", "in": "query", "schema": { "type": "string", "format": "uuid" } },
+          { "name": "indigent", "in": "query", "description": "is_indigent as a person recorded it.", "schema": { "type": "string", "enum": ["true", "false"] } },
+          { "name": "minimum_band", "in": "query", "schema": { "$ref": "#/components/schemas/VulnerabilityBand" } },
+          { "name": "resident_id", "in": "query", "description": "Only the household this resident is in.", "schema": { "type": "string", "format": "uuid" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 20 } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string", "minLength": 1, "maxLength": 200 } }
+        ],
+        "responses": {
+          "200": { "description": "A page of households, as this reader may see them.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeHouseholdListEnvelope" } } } },
+          "403": { "description": "Without the key; an assigned-cases account; a barangay outside the account's own.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "A query value or the cursor is not valid.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      },
+      "post": {
+        "operationId": "registerOfficeHousehold",
+        "summary": "Register a household",
+        "description": "Needs household.manage; recording monthly_income_centavos also needs resident.view-sensitive (403 otherwise: never write what the writer may not read). Registered with its head as its one member; others join through membership. The head must be on file, in the writer's scope and in no other household (the database refuses a person in two). The reference number (HH-<year>-<sequence>) is issued here. is_indigent is recorded by a person and nothing computes it: the vulnerability snapshot is advisory evidence, never a decision. An income with a decimal point is 422, never rounded. An own-barangay account registers only in its barangay. Appends registered and member-added (the head) to office_household_events; audit office_household.registered.",
+        "security": [{ "firebaseIdToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeHouseholdCreate" } } }
+        },
+        "responses": {
+          "201": { "description": "Registered; the household as this writer may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeHouseholdEnvelope" } } } },
+          "403": { "description": "Without the key; an assigned-cases account; a barangay outside the account's own.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "Refused; nothing written. details keys are member-not-found (the head is not on file or not in scope) or member-in-another-household, each listing the residents it is about.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeRefusalEnvelope" } } } },
+          "422": { "description": "A field is not valid, or the barangay does not exist.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/households/{id}": {
+      "get": {
+        "operationId": "getOfficeHousehold",
+        "summary": "Read one household",
+        "description": "Needs household.view. The household, its current members (head first, then in the order they joined) as the resident registry's redacted records, its vulnerability snapshot, and its events newest first. Out of scope answers 404, exactly as one that does not exist. A household with a member under vawc-survivor or cicl (is_protected) withholds street_address and purok_or_sitio from a reader without request.view-sensitive (withheld: [\"exact_address\"]), because that address is where the protected person lives. For that reader the protected-member factor reads withheld, with an empty basis, origin computed and no correction, and its correction events are left out; likewise the two income factors for a reader without resident.view-sensitive; the band is not recomputed, so every role reads the same band. Every member of a household with a protected member, or of a family with one or living in a household that has one, also has street_address and purok_or_sitio withheld from that reader (withheld names exact_address): people who share a record usually share a roof, and a member's address listed beside the masked one would say where the protected person lives.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "The household as this reader may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeHouseholdEnvelope" } } } },
+          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "Not found, or not in the reader's scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/households/{id}/membership": {
+      "post": {
+        "operationId": "changeOfficeHouseholdMembership",
+        "summary": "Change who lives in a household",
+        "description": "Needs household.manage. Intents, not a replacement list: add-member, remove-member, change-role, set-head, applied in order, all or none, against the locked household and every person named — so a change from a stale screen is refused rather than discarding a member somebody else added. set-head makes the outgoing head a relative, which a person can correct. The head is removed only when the same change names another. A person joins only if on file, in the writer's scope (otherwise member-not-found) and in no other household. One reason for the whole change; one event per intent in office_household_events, each with that reason; audit office_household.membership_changed.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeHouseholdMembership" } } }
+        },
+        "responses": {
+          "200": { "description": "Applied; the household as this writer may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeHouseholdEnvelope" } } } },
+          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "Not found, or not in scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "The composition is refused; nothing written. details keys are OfficeHouseholdProblemCode values, each listing the residents it is about (empty for no-members, no-head and several-heads).", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeRefusalEnvelope" } } } },
+          "422": { "description": "A change or the reason is not valid, or there are no changes or more than 20.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/households/{id}/corrections": {
+      "post": {
+        "operationId": "correctOfficeHouseholdFactor",
+        "summary": "Override one vulnerability factor",
+        "description": "Needs household.correct-vulnerability; correcting protected-member also needs request.view-sensitive, and the two income factors resident.view-sensitive, refused before the household is read. A person records a factor as present, absent or unknown, with a reason of at least 8 characters someone else can read. The computed state and its basis stay beside the correction (origin corrected, computed_state). Stands until withdrawn; a later correction of the same factor replaces it. Appends factor-corrected to office_household_events; audit office_household.factor_corrected. Nothing reads a factor to set anything else, is_indigent included.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeHouseholdCorrection" } } }
+        },
+        "responses": {
+          "200": { "description": "Recorded; the household as this writer may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeHouseholdEnvelope" } } } },
+          "403": { "description": "Without the key; protected-member without request.view-sensitive; an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "Not found, or not in scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "Unknown factor or state, or a reason shorter than 8 characters.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/households/{id}/corrections/{code}/withdraw": {
+      "post": {
+        "operationId": "withdrawOfficeHouseholdCorrection",
+        "summary": "Withdraw a factor's correction",
+        "description": "Needs household.correct-vulnerability; protected-member also needs request.view-sensitive, and the two income factors resident.view-sensitive, refused before the household is read. The factor returns to its computed state; the correction stays in the history. The reason is at least 8 characters. Appends correction-withdrawn to office_household_events; audit office_household.correction_withdrawn.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "code", "in": "path", "required": true, "schema": { "$ref": "#/components/schemas/VulnerabilityFactorCode" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeHouseholdCorrectionWithdrawal" } } }
+        },
+        "responses": {
+          "200": { "description": "Withdrawn; the household as this writer may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeHouseholdEnvelope" } } } },
+          "403": { "description": "Without the key; protected-member without request.view-sensitive; an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "Not found, or not in scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "No correction of that factor stands.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "Unknown factor, or a reason shorter than 8 characters.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/families": {
+      "get": {
+        "operationId": "listOfficeFamilies",
+        "summary": "List families",
+        "description": "Needs family.view. A family is a claim about who belongs to whom, not an address: it names its members and points at the household it lives in, or at none while between addresses. By reference number; dissolved families only with include_dissolved=true. An own-barangay account sees a family whose household is in its barangay, or — with no household — one whose every current member is recorded as living there; an assigned-cases account is 403. q matches every word (up to five) against the reference number, the family's name and the current head's surname. barangay_id is the household's barangay, so it leaves out families with no household. Heads are redacted for the reader. Every member of a household with a protected member, or of a family with one or living in a household that has one, also has street_address and purok_or_sitio withheld from that reader (withheld names exact_address): people who share a record usually share a roof, and a member's address listed beside the masked one would say where the protected person lives.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string", "minLength": 2, "maxLength": 100 } },
+          { "name": "barangay_id", "in": "query", "schema": { "type": "string", "format": "uuid" } },
+          { "name": "household_id", "in": "query", "schema": { "type": "string", "format": "uuid" } },
+          { "name": "unhoused", "in": "query", "description": "true: only families with no household; false: only families with one.", "schema": { "type": "string", "enum": ["true", "false"] } },
+          { "name": "include_dissolved", "in": "query", "schema": { "type": "string", "enum": ["true", "false"], "default": "false" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 20 } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string", "minLength": 1, "maxLength": 200 } }
+        ],
+        "responses": {
+          "200": { "description": "A page of families, as this reader may see them.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeFamilyListEnvelope" } } } },
+          "403": { "description": "Without the key; an assigned-cases account; a barangay outside the account's own.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "A query value or the cursor is not valid.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      },
+      "post": {
+        "operationId": "formOfficeFamily",
+        "summary": "Record a family",
+        "description": "Needs family.manage. Formed with its founding members (1-30), each joining today in Asia/Manila. household_id null is a family between addresses, not a missing value; one household may hold several families. Every member must be on file and in the writer's scope, and there is one head at most. The reference number (FAM-<year>-<sequence>) is issued here. Appends family-formed and a member-joined per member to office_family_events, each with the reason; audit office_family.formed.",
+        "security": [{ "firebaseIdToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeFamilyCreate" } } }
+        },
+        "responses": {
+          "201": { "description": "Recorded; the family as this writer may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeFamilyEnvelope" } } } },
+          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "Refused; nothing written. details keys are duplicate-member or resident-not-found (not on file, or not in scope), each listing the residents it is about.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeRefusalEnvelope" } } } },
+          "422": { "description": "A field is not valid, or the household is not found or not in scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/families/transfers": {
+      "post": {
+        "operationId": "transferOfficeFamilyMember",
+        "summary": "Move a person between families",
+        "description": "Needs family.manage. Out of one family and into another as one act, so nobody is dropped from every family on file halfway. from_family_id null joins a family; to_family_id null leaves one; never both. The person and each family named must be on file and in the writer's scope (otherwise resident-not-found or family-not-found). Leaving closes the person's membership period (left_on); joining opens a new one with role. With move_household and a destination family that has a household, the person also moves out of their current household and into that one as a relative, recorded there as member-removed and member-added with the same reason. The reason is at least 8 characters. A transfer that has already landed answers 200 and records nothing. Appends resident-transferred to office_family_events; audit office_family.transferred, against the resident. Answers the destination family, or the family left when there is none.",
+        "security": [{ "firebaseIdToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeFamilyTransfer" } } }
+        },
+        "responses": {
+          "200": { "description": "Moved, or already so; the family as this writer may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeFamilyEnvelope" } } } },
+          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "Refused; nothing written. details keys are resident-not-found, family-not-found, not-in-source-family, family-dissolved, already-in-family, would-orphan-head (the head of a family with other members), or head-cannot-be-removed (the person heads the household they would leave), each listing the residents it is about.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeRefusalEnvelope" } } } },
+          "422": { "description": "A field is not valid, both families are null, or the reason is shorter than 8 characters.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/families/{id}": {
+      "get": {
+        "operationId": "getOfficeFamily",
+        "summary": "Read one family",
+        "description": "Needs family.view. The family with every membership period; its members, current and former (role null for a former member), as the resident registry's redacted records; the relationships among everyone who has been a member, ended ones included; the other families in the same household that the reader may see; and its history newest first. Out of scope answers 404, exactly as one that does not exist. Every member of a household with a protected member, or of a family with one or living in a household that has one, also has street_address and purok_or_sitio withheld from that reader (withheld names exact_address): people who share a record usually share a roof, and a member's address listed beside the masked one would say where the protected person lives.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "The family as this reader may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeFamilyEnvelope" } } } },
+          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "Not found, or not in the reader's scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/families/{id}/members/{residentId}/role": {
+      "post": {
+        "operationId": "changeOfficeFamilyRole",
+        "summary": "Change a member's role in a family",
+        "description": "Needs family.manage. A current member only. The reason is kept as member-role-changed in office_family_events; audit office_family.role_changed. The role already held answers 200 and records nothing.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "residentId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeFamilyRoleChange" } } }
+        },
+        "responses": {
+          "200": { "description": "Changed, or already so; the family as this writer may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeFamilyEnvelope" } } } },
+          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "The family is not found, or not in scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "Not a current member of this family: details key not-in-source-family.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeRefusalEnvelope" } } } },
+          "422": { "description": "Unknown role, or no reason.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/saved-views": {
+      "get": {
+        "operationId": "listSavedViews",
+        "summary": "Saved views of one list",
+        "description": "A name over a list's query parameters. Reading the views of a list needs the key that opens it: residents resident.view, beneficiaries beneficiary.view, assistance-requests request.view, releases release.view, cases case.view, households household.view; an account with none of them is 403 before the query is read. The office's shared views first, then the reader's own, each by name; somebody else's personal view is never listed. A view whose sector parameter is vawc-survivor or cicl is left out for a reader without request.view-sensitive, because its name can describe that population. Whole, never paged: the caps bound it. Not scoped by barangay: a view holds no records, and the list it opens applies the reader's scope.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [
+          { "name": "resource", "in": "query", "required": true, "schema": { "$ref": "#/components/schemas/SavedViewResource" } }
+        ],
+        "responses": {
+          "200": { "description": "Every view of the list this reader may see.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SavedViewListEnvelope" } } } },
+          "403": { "description": "None of the list keys, or not the key of this list.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "resource is missing or unknown.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      },
+      "post": {
+        "operationId": "createSavedView",
+        "summary": "Save a view",
+        "description": "Needs the key of the list named by resource (as for reading). is_shared true also needs saved-view.share: a shared view is office configuration every colleague sees, and it outlives whoever wrote it. A sector parameter of vawc-survivor or cicl needs request.view-sensitive. At most 50 personal views per account per list, and 50 shared views per list. Audit saved_view.created.",
+        "security": [{ "firebaseIdToken": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SavedViewCreate" } } }
+        },
+        "responses": {
+          "201": { "description": "Saved.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SavedViewEnvelope" } } } },
+          "403": { "description": "Without the list's key; shared without saved-view.share; a protected sector without request.view-sensitive.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "The cap is reached; take one away first.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "A field is not valid.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/saved-views/{id}": {
+      "delete": {
+        "operationId": "removeSavedView",
+        "summary": "Take a saved view away",
+        "description": "Taken away, never deleted: removed_at and removed_by are set once and the row is kept, so a shared view others relied on can still be named afterwards. Anyone may take away their own personal view; a shared one needs saved-view.share. Somebody else's personal view, a view of a list this account may not open, one of a protected sector without request.view-sensitive, and one already taken away all answer 404: a refusal would confirm it exists. Audit saved_view.removed.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Taken away: { id, deleted: true }.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeletedEnvelope" } } } },
+          "403": { "description": "None of the list keys, or a shared view without saved-view.share.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "Not found, already taken away, or not this account's to see.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
     "/api/v1/news": {
       "get": {
         "operationId": "listNews",
@@ -3340,6 +3665,574 @@
         "required": ["reason"],
         "properties": {
           "reason": { "type": "string", "minLength": 1, "maxLength": 500, "description": "Why, in words. Kept with the change." }
+        }
+      },
+      "OfficeRefusalEnvelope": {
+        "description": "A 409 refusal of a household composition, a family, a transfer or a relationship. Nothing was written. error.code is CONFLICT; each key of error.details is a problem code (OfficeHouseholdProblemCode or FamilyProblemCode) and its value lists the resident ids it is about, empty when it is about nobody in particular.",
+        "allOf": [
+          { "$ref": "#/components/schemas/ErrorEnvelope" },
+          {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "object",
+                "properties": {
+                  "details": {
+                    "type": "object",
+                    "propertyNames": { "anyOf": [{ "$ref": "#/components/schemas/OfficeHouseholdProblemCode" }, { "$ref": "#/components/schemas/FamilyProblemCode" }] },
+                    "additionalProperties": { "type": "array", "items": { "type": "string", "format": "uuid" } }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "SavedViewResource": {
+        "type": "string",
+        "description": "Every staff-console list with a saved-views bar. A view of one costs the key that opens it: resident.view, beneficiary.view, request.view, release.view, case.view, household.view, in this order.",
+        "enum": ["residents", "beneficiaries", "assistance-requests", "releases", "cases", "households"]
+      },
+      "SavedView": {
+        "type": "object",
+        "description": "A name over a list's query parameters. It holds no records; the list it opens applies the reader's scope when opened.",
+        "required": ["id", "resource", "name", "params", "is_shared", "owner_id", "created_at"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "resource": { "$ref": "#/components/schemas/SavedViewResource" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+          "params": { "type": "object", "additionalProperties": { "type": "string" }, "description": "Query parameters as the console writes them in its address bar." },
+          "is_shared": { "type": "boolean", "description": "The office's, listed to everyone who may open the list; otherwise the owner's alone." },
+          "owner_id": { "type": "string", "format": "uuid", "description": "Who saved it. A shared view keeps its author for the record." },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SavedViewCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["resource", "name", "params", "is_shared"],
+        "properties": {
+          "resource": { "$ref": "#/components/schemas/SavedViewResource" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 60, "description": "Trimmed." },
+          "params": {
+            "type": "object",
+            "maxProperties": 12,
+            "propertyNames": { "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,39}$" },
+            "additionalProperties": { "type": "string", "maxLength": 200 },
+            "description": "String keys to string values. A sector of vawc-survivor or cicl needs request.view-sensitive."
+          },
+          "is_shared": { "type": "boolean", "description": "true needs saved-view.share." }
+        }
+      },
+      "SavedViewEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": { "$ref": "#/components/schemas/SavedView" },
+          "meta": { "type": "object" }
+        }
+      },
+      "SavedViewListEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/SavedView" }, "description": "Whole: shared first, then the reader's own, each by name." },
+          "meta": { "type": "object" }
+        }
+      },
+      "OfficeHouseholdRole": {
+        "type": "string",
+        "description": "A member's place in an office household. Exactly one current member is head.",
+        "enum": ["head", "spouse", "child", "parent", "relative", "non-relative"]
+      },
+      "OfficeHouseholdEventKind": {
+        "type": "string",
+        "enum": ["registered", "member-added", "member-removed", "role-changed", "head-set", "factor-corrected", "correction-withdrawn"]
+      },
+      "OfficeHouseholdProblemCode": {
+        "type": "string",
+        "description": "Why a household composition was refused (the console's HouseholdProblemCode), as a key of error.details on a 409. A person outside the writer's scope is reported as member-not-found, so outside-your-barangay is not sent.",
+        "enum": ["no-members", "no-head", "several-heads", "head-not-a-member", "duplicate-member", "member-not-found", "already-a-member", "member-in-another-household", "head-cannot-be-removed", "outside-your-barangay"]
+      },
+      "VulnerabilityFactorCode": {
+        "type": "string",
+        "description": "Household vulnerability factors, in the order every snapshot lists them. protected-member (a member under vawc-survivor or cicl) is read and corrected only with request.view-sensitive.",
+        "enum": ["no-income-recorded", "income-below-threshold", "no-working-age-adult", "child-headed", "many-dependants", "senior-member", "pwd-member", "solo-parent-head", "four-ps-member", "protected-member"]
+      },
+      "VulnerabilityFactorState": {
+        "type": "string",
+        "description": "unknown is \"not asked\", not \"no\". withheld is a reading of protected-member for a reader without request.view-sensitive, never a recorded state: a correction records present, absent or unknown.",
+        "enum": ["present", "absent", "unknown", "withheld"]
+      },
+      "VulnerabilityBand": {
+        "type": "string",
+        "description": "A coarse grouping to sort and filter a list, and nothing else: two primary factors present is high, one is elevated, two contributing factors alone is watch, otherwise none. Not a score and not a decision.",
+        "enum": ["none", "watch", "elevated", "high"]
+      },
+      "VulnerabilityFactorCorrection": {
+        "type": "object",
+        "description": "A person's override of one factor, standing until withdrawn.",
+        "required": ["state", "reason", "actor_id", "actor_name", "corrected_at"],
+        "properties": {
+          "state": { "type": "string", "enum": ["present", "absent", "unknown"] },
+          "reason": { "type": "string" },
+          "actor_id": { "type": "string", "format": "uuid" },
+          "actor_name": { "type": ["string", "null"] },
+          "corrected_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "VulnerabilityFactor": {
+        "type": "object",
+        "description": "One factor, with the arithmetic it came from and the records it read, so a person can check it. Every factor is listed, absent and unknown included.",
+        "required": ["code", "class", "state", "origin", "computed_state", "basis", "correction"],
+        "properties": {
+          "code": { "$ref": "#/components/schemas/VulnerabilityFactorCode" },
+          "class": { "type": "string", "enum": ["primary", "contributing"], "description": "Two classes rather than a weight, so they cannot be summed into a score." },
+          "state": { "$ref": "#/components/schemas/VulnerabilityFactorState" },
+          "origin": { "type": "string", "enum": ["computed", "corrected"] },
+          "computed_state": { "oneOf": [{ "$ref": "#/components/schemas/VulnerabilityFactorState" }, { "type": "null" }], "description": "What the records say, when a correction overrides it; otherwise null." },
+          "basis": {
+            "type": "object",
+            "required": ["observed", "out_of", "threshold", "amount_centavos", "resident_ids"],
+            "properties": {
+              "observed": { "type": "integer", "description": "What was counted: members matched, the head's age, or for income-below-threshold the annual household income in centavos." },
+              "out_of": { "type": ["integer", "null"] },
+              "threshold": { "type": ["integer", "null"], "description": "For income-below-threshold, the annual per-capita poverty threshold times the member count, in centavos." },
+              "amount_centavos": { "type": ["integer", "null"], "description": "The monthly household income it read, in centavos." },
+              "resident_ids": { "type": "array", "items": { "type": "string", "format": "uuid" }, "description": "Exactly which people contributed." }
+            }
+          },
+          "correction": { "oneOf": [{ "$ref": "#/components/schemas/VulnerabilityFactorCorrection" }, { "type": "null" }] }
+        }
+      },
+      "PovertyThreshold": {
+        "type": "object",
+        "description": "The PSA's published threshold, with its provenance beside the figure, so a screen can cite it.",
+        "required": ["annual_per_capita_centavos", "geography", "reference_year", "published_on", "source", "source_url"],
+        "properties": {
+          "annual_per_capita_centavos": { "type": "integer" },
+          "geography": { "type": "string" },
+          "reference_year": { "type": "integer" },
+          "published_on": { "type": "string", "format": "date" },
+          "source": { "type": "string" },
+          "source_url": { "type": "string", "format": "uri" }
+        }
+      },
+      "VulnerabilitySnapshot": {
+        "type": "object",
+        "description": "Advisory evidence a caseworker reads, never a decision: nothing reads it to set eligibility, an amount or is_indigent. Computed here from the unredacted member records and only then disclosed, so every role reads the same band.",
+        "required": ["computed_at", "band", "member_count", "factors", "poverty_threshold"],
+        "properties": {
+          "computed_at": { "type": "string", "format": "date-time" },
+          "band": { "$ref": "#/components/schemas/VulnerabilityBand" },
+          "member_count": { "type": "integer", "minimum": 0 },
+          "factors": { "type": "array", "items": { "$ref": "#/components/schemas/VulnerabilityFactor" } },
+          "poverty_threshold": { "$ref": "#/components/schemas/PovertyThreshold" }
+        }
+      },
+      "OfficeHousehold": {
+        "type": "object",
+        "description": "A household of the office's register, as this reader may see it. On a protected household (is_protected) without request.view-sensitive, purok_or_sitio and street_address are null and withheld names exact_address. Without resident.view-sensitive, monthly_income_centavos is null and withheld names monthly_income when an income is recorded, as on a resident.",
+        "required": ["id", "reference_number", "barangay_id", "purok_or_sitio", "street_address", "head_resident_id", "monthly_income_centavos", "is_indigent", "is_protected", "withheld", "created_at", "created_by", "updated_at", "updated_by"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "reference_number": { "type": "string", "description": "HH-<year>-<sequence>, issued at registration." },
+          "barangay_id": { "type": "string", "format": "uuid" },
+          "purok_or_sitio": { "type": ["string", "null"] },
+          "street_address": { "type": ["string", "null"], "description": "Always recorded; null only when withheld." },
+          "head_resident_id": { "type": "string", "format": "uuid" },
+          "monthly_income_centavos": { "type": ["integer", "null"], "minimum": 0, "description": "Integer centavos, as recorded for the household. Null for a reader without resident.view-sensitive (withheld says so when one is recorded)." },
+          "is_indigent": { "type": "boolean", "description": "Recorded by a person. Nothing computes it." },
+          "is_protected": { "type": "boolean", "description": "A current member is under vawc-survivor or cicl. Said even when the address is withheld." },
+          "withheld": { "type": "array", "items": { "type": "string", "enum": ["exact_address", "monthly_income"] } },
+          "created_at": { "type": "string", "format": "date-time" },
+          "created_by": { "type": "string", "format": "uuid" },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "updated_by": { "type": "string", "format": "uuid" }
+        }
+      },
+      "OfficeHouseholdMember": {
+        "type": "object",
+        "required": ["resident", "role", "is_head", "since"],
+        "properties": {
+          "resident": { "$ref": "#/components/schemas/OfficeResident" },
+          "role": { "$ref": "#/components/schemas/OfficeHouseholdRole" },
+          "is_head": { "type": "boolean" },
+          "since": { "type": "string", "format": "date-time" }
+        }
+      },
+      "OfficeHouseholdEvent": {
+        "type": "object",
+        "description": "One act on a household, from the append-only office_household_events.",
+        "required": ["id", "kind", "resident_id", "role", "factor_code", "factor_state", "reason", "actor_id", "actor_name", "occurred_at"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "kind": { "$ref": "#/components/schemas/OfficeHouseholdEventKind" },
+          "resident_id": { "type": ["string", "null"], "format": "uuid" },
+          "role": { "oneOf": [{ "$ref": "#/components/schemas/OfficeHouseholdRole" }, { "type": "null" }] },
+          "factor_code": { "oneOf": [{ "$ref": "#/components/schemas/VulnerabilityFactorCode" }, { "type": "null" }] },
+          "factor_state": { "type": ["string", "null"], "enum": ["present", "absent", "unknown", null] },
+          "reason": { "type": ["string", "null"], "description": "Null only on registered." },
+          "actor_id": { "type": "string", "format": "uuid" },
+          "actor_name": { "type": ["string", "null"] },
+          "occurred_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "OfficeHouseholdSummary": {
+        "type": "object",
+        "required": ["household", "head", "member_count", "band", "present_factor_count"],
+        "properties": {
+          "household": { "$ref": "#/components/schemas/OfficeHousehold" },
+          "head": { "oneOf": [{ "$ref": "#/components/schemas/OfficeResident" }, { "type": "null" }] },
+          "member_count": { "type": "integer", "minimum": 0 },
+          "band": { "$ref": "#/components/schemas/VulnerabilityBand" },
+          "present_factor_count": { "type": "integer", "minimum": 0, "description": "Factors present as this reader is shown them: a withheld factor is not counted." }
+        }
+      },
+      "OfficeHouseholdDetail": {
+        "type": "object",
+        "required": ["household", "members", "snapshot", "events"],
+        "properties": {
+          "household": { "$ref": "#/components/schemas/OfficeHousehold" },
+          "members": { "type": "array", "items": { "$ref": "#/components/schemas/OfficeHouseholdMember" }, "description": "Current members, head first, then in the order they joined." },
+          "snapshot": { "$ref": "#/components/schemas/VulnerabilitySnapshot" },
+          "events": { "type": "array", "items": { "$ref": "#/components/schemas/OfficeHouseholdEvent" }, "description": "Newest first. Corrections of protected-member are left out for a reader without request.view-sensitive." }
+        }
+      },
+      "OfficeHouseholdEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": { "$ref": "#/components/schemas/OfficeHouseholdDetail" },
+          "meta": { "type": "object" }
+        }
+      },
+      "OfficeHouseholdListEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/OfficeHouseholdSummary" } },
+          "meta": {
+            "type": "object",
+            "properties": { "pagination": { "$ref": "#/components/schemas/Pagination" } }
+          }
+        }
+      },
+      "OfficeHouseholdCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["barangay_id", "street_address", "head_resident_id", "is_indigent"],
+        "properties": {
+          "barangay_id": { "type": "string", "format": "uuid" },
+          "purok_or_sitio": { "type": ["string", "null"], "minLength": 1, "maxLength": 80, "default": null },
+          "street_address": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "head_resident_id": { "type": "string", "format": "uuid" },
+          "monthly_income_centavos": { "type": ["integer", "null"], "minimum": 0, "maximum": 2000000000, "default": null, "description": "Integer centavos. A decimal is refused, never rounded." },
+          "is_indigent": { "type": "boolean", "description": "Recorded by a person." }
+        }
+      },
+      "OfficeHouseholdAddMember": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "resident_id", "role"],
+        "properties": {
+          "kind": { "type": "string", "const": "add-member" },
+          "resident_id": { "type": "string", "format": "uuid" },
+          "role": { "$ref": "#/components/schemas/OfficeHouseholdRole" }
+        }
+      },
+      "OfficeHouseholdRemoveMember": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "resident_id"],
+        "properties": {
+          "kind": { "type": "string", "const": "remove-member" },
+          "resident_id": { "type": "string", "format": "uuid" }
+        }
+      },
+      "OfficeHouseholdChangeRole": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "resident_id", "role"],
+        "properties": {
+          "kind": { "type": "string", "const": "change-role" },
+          "resident_id": { "type": "string", "format": "uuid" },
+          "role": { "$ref": "#/components/schemas/OfficeHouseholdRole" }
+        }
+      },
+      "OfficeHouseholdSetHead": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "resident_id"],
+        "properties": {
+          "kind": { "type": "string", "const": "set-head" },
+          "resident_id": { "type": "string", "format": "uuid" }
+        }
+      },
+      "OfficeHouseholdMembershipChange": {
+        "description": "One intent (the console's MembershipChange).",
+        "oneOf": [
+          { "$ref": "#/components/schemas/OfficeHouseholdAddMember" },
+          { "$ref": "#/components/schemas/OfficeHouseholdRemoveMember" },
+          { "$ref": "#/components/schemas/OfficeHouseholdChangeRole" },
+          { "$ref": "#/components/schemas/OfficeHouseholdSetHead" }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "add-member": "#/components/schemas/OfficeHouseholdAddMember",
+            "remove-member": "#/components/schemas/OfficeHouseholdRemoveMember",
+            "change-role": "#/components/schemas/OfficeHouseholdChangeRole",
+            "set-head": "#/components/schemas/OfficeHouseholdSetHead"
+          }
+        }
+      },
+      "OfficeHouseholdMembership": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["changes", "reason"],
+        "properties": {
+          "changes": { "type": "array", "minItems": 1, "maxItems": 20, "items": { "$ref": "#/components/schemas/OfficeHouseholdMembershipChange" }, "description": "Applied in order, all or none." },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 500, "description": "One reason for the whole change, kept with each event." }
+        }
+      },
+      "OfficeHouseholdCorrection": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "state", "reason"],
+        "properties": {
+          "code": { "$ref": "#/components/schemas/VulnerabilityFactorCode" },
+          "state": { "type": "string", "enum": ["present", "absent", "unknown"] },
+          "reason": { "type": "string", "minLength": 8, "maxLength": 500, "description": "A sentence someone else can read." }
+        }
+      },
+      "OfficeHouseholdCorrectionWithdrawal": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reason"],
+        "properties": {
+          "reason": { "type": "string", "minLength": 8, "maxLength": 500, "description": "A sentence someone else can read." }
+        }
+      },
+      "FamilyRole": {
+        "type": "string",
+        "enum": ["head", "partner", "child", "dependant", "elder", "other-member"]
+      },
+      "RelationshipKind": {
+        "type": "string",
+        "description": "Each stored in one canonical direction: parent-of from A to B is read as child-of from B to A. spouse-of and sibling-of read the same both ways.",
+        "enum": ["parent-of", "spouse-of", "sibling-of", "grandparent-of", "guardian-of", "step-parent-of", "foster-parent-of", "other-relative-of"]
+      },
+      "FamilyEventKind": {
+        "type": "string",
+        "description": "The console's RELATIONSHIP_EVENT_KINDS. No route records family-dissolved, member-left or family-household-changed yet: leaving through a transfer is resident-transferred.",
+        "enum": ["family-formed", "family-dissolved", "member-joined", "member-left", "member-role-changed", "resident-transferred", "relationship-recorded", "relationship-ended", "family-household-changed"]
+      },
+      "FamilyProblemCode": {
+        "type": "string",
+        "description": "Why a family, transfer or relationship was refused (the console's TransferProblemCode and RelationshipProblemCode), as a key of error.details on a 409. A person or family outside the writer's scope is reported as not found, so outside-your-barangay is not sent.",
+        "enum": ["resident-not-found", "family-not-found", "already-in-family", "not-in-source-family", "family-dissolved", "outside-your-barangay", "would-orphan-head", "contradicts-existing", "duplicate-member"]
+      },
+      "OfficeFamilyMemberPeriod": {
+        "type": "object",
+        "description": "One membership period. Leaving closes it; coming back opens a new one. Never deleted.",
+        "required": ["resident_id", "role", "joined_on", "left_on"],
+        "properties": {
+          "resident_id": { "type": "string", "format": "uuid" },
+          "role": { "$ref": "#/components/schemas/FamilyRole" },
+          "joined_on": { "type": "string", "format": "date" },
+          "left_on": { "type": ["string", "null"], "format": "date" }
+        }
+      },
+      "OfficeFamily": {
+        "type": "object",
+        "required": ["id", "reference_number", "name", "household_id", "formed_on", "dissolved_on", "members", "created_at", "created_by", "updated_at", "updated_by"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "reference_number": { "type": "string", "description": "FAM-<year>-<sequence>, issued when recorded." },
+          "name": { "type": "string", "description": "How the office refers to the family, e.g. \"Bautista family\"." },
+          "household_id": { "type": ["string", "null"], "format": "uuid", "description": "Null while the family is between addresses; that is not an error." },
+          "formed_on": { "type": ["string", "null"], "format": "date" },
+          "dissolved_on": { "type": ["string", "null"], "format": "date", "description": "No route dissolves a family yet." },
+          "members": { "type": "array", "items": { "$ref": "#/components/schemas/OfficeFamilyMemberPeriod" }, "description": "Every period, current and closed, in the order people joined." },
+          "created_at": { "type": "string", "format": "date-time" },
+          "created_by": { "type": "string", "format": "uuid" },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "updated_by": { "type": "string", "format": "uuid" }
+        }
+      },
+      "OfficeFamilySummary": {
+        "type": "object",
+        "required": ["family", "head", "member_count", "household_reference", "barangay_id", "relationship_count"],
+        "properties": {
+          "family": { "$ref": "#/components/schemas/OfficeFamily" },
+          "head": { "oneOf": [{ "$ref": "#/components/schemas/OfficeResident" }, { "type": "null" }], "description": "The current head, or the first current member when nobody is recorded as head." },
+          "member_count": { "type": "integer", "minimum": 0, "description": "Current members." },
+          "household_reference": { "type": ["string", "null"] },
+          "barangay_id": { "type": ["string", "null"], "format": "uuid", "description": "The household's barangay; null with no household." },
+          "relationship_count": { "type": "integer", "minimum": 0, "description": "Relationships standing among the current members." }
+        }
+      },
+      "OfficeFamilyDetailMember": {
+        "type": "object",
+        "required": ["resident", "role", "is_current_member"],
+        "properties": {
+          "resident": { "$ref": "#/components/schemas/OfficeResident" },
+          "role": { "oneOf": [{ "$ref": "#/components/schemas/FamilyRole" }, { "type": "null" }], "description": "Null for a former member." },
+          "is_current_member": { "type": "boolean" }
+        }
+      },
+      "OfficeFamilyDetail": {
+        "type": "object",
+        "required": ["family", "members", "relationships", "others_in_household", "history"],
+        "properties": {
+          "family": { "$ref": "#/components/schemas/OfficeFamily" },
+          "members": { "type": "array", "items": { "$ref": "#/components/schemas/OfficeFamilyDetailMember" }, "description": "Everyone who has been a member, former members marked as such." },
+          "relationships": { "type": "array", "items": { "$ref": "#/components/schemas/OfficeRelationship" }, "description": "Among everyone who has been a member, ended ones included." },
+          "others_in_household": { "type": "array", "items": { "$ref": "#/components/schemas/OfficeFamilySummary" }, "description": "Other families in the same household that the reader may see." },
+          "history": { "type": "array", "items": { "$ref": "#/components/schemas/OfficeFamilyEvent" }, "description": "Newest first." }
+        }
+      },
+      "OfficeRelationship": {
+        "type": "object",
+        "required": ["id", "from_resident_id", "to_resident_id", "kind", "since", "until", "created_at", "created_by", "updated_at", "updated_by"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "from_resident_id": { "type": "string", "format": "uuid" },
+          "to_resident_id": { "type": "string", "format": "uuid" },
+          "kind": { "$ref": "#/components/schemas/RelationshipKind" },
+          "since": { "type": ["string", "null"], "format": "date" },
+          "until": { "type": ["string", "null"], "format": "date", "description": "Set once when ended. An ended relationship is kept." },
+          "created_at": { "type": "string", "format": "date-time" },
+          "created_by": { "type": "string", "format": "uuid" },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "updated_by": { "type": "string", "format": "uuid" }
+        }
+      },
+      "OfficeFamilyEvent": {
+        "type": "object",
+        "description": "One act, from the append-only office_family_events.",
+        "required": ["id", "kind", "resident_id", "other_resident_id", "family_id", "to_family_id", "household_id", "relationship_kind", "role", "reason", "actor_id", "actor_name", "occurred_at"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "kind": { "$ref": "#/components/schemas/FamilyEventKind" },
+          "resident_id": { "type": ["string", "null"], "format": "uuid" },
+          "other_resident_id": { "type": ["string", "null"], "format": "uuid", "description": "The other end of a relationship." },
+          "family_id": { "type": ["string", "null"], "format": "uuid", "description": "For a transfer, the family left." },
+          "to_family_id": { "type": ["string", "null"], "format": "uuid" },
+          "household_id": { "type": ["string", "null"], "format": "uuid" },
+          "relationship_kind": { "oneOf": [{ "$ref": "#/components/schemas/RelationshipKind" }, { "type": "null" }] },
+          "role": { "oneOf": [{ "$ref": "#/components/schemas/FamilyRole" }, { "type": "null" }] },
+          "reason": { "type": "string" },
+          "actor_id": { "type": "string", "format": "uuid" },
+          "actor_name": { "type": ["string", "null"] },
+          "occurred_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "OfficeFamilyEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": { "$ref": "#/components/schemas/OfficeFamilyDetail" },
+          "meta": { "type": "object" }
+        }
+      },
+      "OfficeFamilyListEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/OfficeFamilySummary" } },
+          "meta": {
+            "type": "object",
+            "properties": { "pagination": { "$ref": "#/components/schemas/Pagination" } }
+          }
+        }
+      },
+      "OfficeFamilySummaryArrayEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/OfficeFamilySummary" }, "description": "Whole, never paged." },
+          "meta": { "type": "object" }
+        }
+      },
+      "OfficeRelationshipEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": { "$ref": "#/components/schemas/OfficeRelationship" },
+          "meta": { "type": "object" }
+        }
+      },
+      "OfficeFamilyEventListEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/OfficeFamilyEvent" }, "description": "Whole, newest first." },
+          "meta": { "type": "object" }
+        }
+      },
+      "OfficeFamilyCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "household_id", "members", "reason"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "household_id": { "type": ["string", "null"], "format": "uuid", "description": "Required; null for a family between addresses." },
+          "formed_on": { "type": ["string", "null"], "format": "date", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "default": null, "description": "A real calendar date." },
+          "members": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 30,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["resident_id", "role"],
+              "properties": {
+                "resident_id": { "type": "string", "format": "uuid" },
+                "role": { "$ref": "#/components/schemas/FamilyRole" }
+              }
+            }
+          },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 500, "description": "Kept with family-formed and each member-joined." }
+        }
+      },
+      "OfficeFamilyTransfer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["resident_id", "from_family_id", "to_family_id", "role", "move_household", "reason"],
+        "description": "from_family_id and to_family_id are both required and may each be null, but not both.",
+        "anyOf": [
+          { "properties": { "from_family_id": { "type": "string" } } },
+          { "properties": { "to_family_id": { "type": "string" } } }
+        ],
+        "properties": {
+          "resident_id": { "type": "string", "format": "uuid" },
+          "from_family_id": { "type": ["string", "null"], "format": "uuid" },
+          "to_family_id": { "type": ["string", "null"], "format": "uuid" },
+          "role": { "$ref": "#/components/schemas/FamilyRole" },
+          "move_household": { "type": "boolean", "description": "Also move the person into the destination family's household, as a relative." },
+          "reason": { "type": "string", "minLength": 8, "maxLength": 500, "description": "A sentence someone else can read." }
+        }
+      },
+      "OfficeFamilyRoleChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "reason"],
+        "properties": {
+          "role": { "$ref": "#/components/schemas/FamilyRole" },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 500 }
+        }
+      },
+      "OfficeRelationshipCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["to_resident_id", "kind", "reason"],
+        "properties": {
+          "to_resident_id": { "type": "string", "format": "uuid", "description": "Not the resident in the path." },
+          "kind": { "$ref": "#/components/schemas/RelationshipKind" },
+          "since": { "type": ["string", "null"], "format": "date", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "default": null, "description": "A real calendar date." },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 500 }
         }
       },
       "NewsItem": {

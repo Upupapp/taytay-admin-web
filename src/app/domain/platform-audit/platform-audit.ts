@@ -25,7 +25,7 @@ export interface PlatformAuditEntry {
 }
 
 /**
- * Every action the API records at `6544381`, in words. Read from the backend's
+ * Every action the API records at `154a052`, in words. Read from the backend's
  * `audit.record(...)` calls; a code not here is shown as given and said to have no description in
  * this console, never dropped or guessed at.
  */
@@ -53,6 +53,15 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'office.created': 'Added an office to the directory',
   'office.deleted': 'Deleted an office from the directory',
   'office.updated': 'Changed an office in the directory',
+  'office_family.formed': 'Recorded a family with the office',
+  'office_family.role_changed': 'Changed a member’s role in a family',
+  'office_family.transferred': 'Moved a resident between families',
+  'office_household.correction_withdrawn': 'Withdrew a correction of a household’s indicator',
+  'office_household.factor_corrected': 'Corrected a household’s vulnerability indicator',
+  'office_household.membership_changed': 'Changed who lives in a household',
+  'office_household.registered': 'Registered a household with the office',
+  'office_relationship.ended': 'Ended a relationship between two residents',
+  'office_relationship.recorded': 'Recorded a relationship between two residents',
   'office_resident.created': 'Recorded a resident in the office registry',
   'office_resident.deactivated': 'Retired a resident’s registry record',
   'office_resident.reactivated': 'Restored a resident’s registry record',
@@ -60,6 +69,8 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'office_resident.sector_recorded': 'Recorded a resident’s sector membership',
   'office_resident.updated': 'Changed a resident’s registry record',
   'password.reset_completed': 'Reset their password',
+  'saved_view.created': 'Saved a view of a list',
+  'saved_view.removed': 'Took away a saved view of a list',
   'service.created': 'Added a Tulong page',
   'service.deleted': 'Deleted a Tulong page',
   'service.updated': 'Changed a Tulong page',

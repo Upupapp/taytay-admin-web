@@ -12,9 +12,10 @@ export interface NavItem {
   readonly label: string;
   readonly route: string;
   /**
-   * Every port the screen at `route` reads, exactly as its route's `servedGuard` lists them. An
-   * entry is withheld when the bound adapter set cannot serve one of them (`DL-167`), and
-   * `check:unserved` holds this list to the route and the route to the screen.
+   * The screen's primary ports, exactly as its route's `servedGuard` lists them. An entry is
+   * withheld when the bound adapter set cannot serve one of them (`DL-167`). A secondary panel's
+   * port is not listed: the panel says in place that it is not connected (`DL-175`).
+   * `check:unserved` holds this list to the route, and the route to what the screen reads.
    */
   readonly reads: readonly DataPort[];
   /** Two-letter glyph rendered in the sidebar. Keeps the shell icon-library free. */
@@ -67,7 +68,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'Residents',
         route: '/residents',
-        reads: ['resident', 'saved-view'],
+        reads: ['resident'],
         glyph: 'RS',
         permissions: ['resident.view'],
         // Was "Beneficiary and household registry" before TAB 13. The two are

@@ -13,6 +13,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map, switchMap, tap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
+import { NotConnected } from '@core/access/not-connected';
+import { ServedPorts } from '@core/access/served-ports';
 import { SessionStore } from '@core/auth/session.store';
 import {
   ageInYears,
@@ -65,7 +67,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-resident-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, HasPermissionDirective, PageHeader, RouterLink, SavedViewsBar],
+  imports: [DataTable, HasPermissionDirective, NotConnected, PageHeader, RouterLink, SavedViewsBar],
   templateUrl: './resident-list-page.html',
   styleUrl: './resident-list-page.scss',
 })
@@ -75,6 +77,13 @@ export class ResidentListPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+
+  /**
+   * The saved views are a secondary panel: the registry is the screen, and a row of named filters
+   * beside it is not a reason to withhold it (`DL-175`). When the port is not served the bar is
+   * never created — it would read the repository on creation — and a note stands in its place.
+   */
+  protected readonly servesSavedViews = inject(ServedPorts).serves('saved-view');
 
   protected readonly copy = RESIDENTS_COPY.list;
   protected readonly barangays = TAYTAY_BARANGAYS;

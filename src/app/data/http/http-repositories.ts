@@ -97,6 +97,42 @@ import {
   type ResidentRepository,
   type ResidentView,
   type VulnerabilitySector,
+  ASSISTANCE_HISTORY_NOT_CONNECTED,
+  isValidSavedViewName,
+  SAVED_VIEW_NAME_MAX_LENGTH,
+  type FactorState,
+  type HouseholdDetail,
+  type HouseholdDraft,
+  type HouseholdFilter,
+  type HouseholdId,
+  type HouseholdRepository,
+  type HouseholdSummary,
+  type MembershipChange,
+  type ResidentProfile,
+  type SavedView,
+  type SavedViewDraft,
+  type SavedViewId,
+  type SavedViewRepository,
+  type SavedViewResource,
+  type VulnerabilityFactorCode,
+  FamilyDraftInvalidError,
+  isValidTransferReason,
+  RelationshipInvalidError,
+  TransferRefusedError,
+  validateFamilyDraft,
+  type Family,
+  type FamilyDetail,
+  type FamilyDraft,
+  type FamilyFilter,
+  type FamilyId,
+  type FamilyRepository,
+  type FamilyRole,
+  type FamilySummary,
+  type Relationship,
+  type RelationshipEvent,
+  type RelationshipId,
+  type RelationshipKind,
+  type ResidentTransfer,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -154,6 +190,27 @@ import {
   toWireServiceImage,
 } from './mappers/tulong-service.mapper';
 import { toOfficeThread, toPostedMessage, toThreadMessage } from './mappers/office-thread.mapper';
+import {
+  toHouseholdDetail,
+  toHouseholdRefusal,
+  toHouseholdSummary,
+  toWireCorrection,
+  toWireHouseholdDraft,
+  toWireMembership,
+} from './mappers/household.mapper';
+import {
+  toFamilyDetail,
+  toFamilyRefusal,
+  toFamilySummary,
+  toRelationship,
+  toRelationshipEvent,
+  toWireFamilyDraft,
+  toWireRelationship,
+  toWireRoleChange,
+  toWireTransfer,
+  type FamilyRefusalKind,
+} from './mappers/family.mapper';
+import { toSavedView, toWireSavedViewDraft } from './mappers/saved-view.mapper';
 import { toVerificationRequest } from './mappers/verification.mapper';
 import { list } from './mappers/wire';
 import { unserved } from './unserved-repositories';
@@ -1211,7 +1268,7 @@ function readAuditEntry(wire: unknown): PlatformAuditEntry {
 @Injectable()
 export class HttpResidentRepository implements ResidentRepository {
   private readonly api = inject(ApiClient);
-  private barangayIndex$: Observable<BarangayIndex> | null = null;
+  private readonly barangayJoin = new BarangayJoin();
 
   list(filter: ResidentFilter, page: CursorRequest): Observable<CursorPage<ResidentView>> {
     const search = filter.search?.trim() ?? '';
@@ -1220,7 +1277,11 @@ export class HttpResidentRepository implements ResidentRepository {
     }
     if (filter.householdId !== undefined) {
       return throwError(
-        () => new Error('The registry cannot be read by household yet: the API holds no households.'),
+        () =>
+          new Error(
+            'The registry list cannot be filtered by household. Open the household record to ' +
+              'see who lives there.',
+          ),
       );
     }
     return this.barangays().pipe(
@@ -1259,8 +1320,65 @@ export class HttpResidentRepository implements ResidentRepository {
     );
   }
 
-  getProfile(): Observable<never> {
-    return unserved('a resident’s household, families and assistance history');
+  /**
+   * The resident and the household they live in, read from the API's two registers: the record,
+   * then `office/households?resident_id=` (a person is in one household at most) and that
+   * household. `null` for "not found **or** not yours", as `getById` answers.
+   *
+   * The assistance history is **unavailable**, never empty: the API does not serve requests,
+   * payouts or referrals yet, and an empty history would say the office never helped this person
+   * (`DL-112`).
+   */
+  getProfile(id: ResidentId): Observable<ResidentProfile | null> {
+    return this.barangays().pipe(
+      switchMap((barangays) =>
+        this.api.optionalItem(`${API_ENDPOINTS.officeResidents}/${id}`).pipe(
+          switchMap((wire) => {
+            if (wire === null) {
+              return of(null);
+            }
+            const view = readResidentView(wire, barangays);
+            return this.householdOf(id, barangays).pipe(
+              map(
+                (detail): ResidentProfile => ({
+                  view:
+                    detail === null
+                      ? view
+                      : { ...view, resident: { ...view.resident, householdId: detail.household.id } },
+                  household: detail === null ? null : detail.household,
+                  householdMembers: {
+                    kind: 'read',
+                    // Everyone else under the roof, head first — the server's order.
+                    members:
+                      detail === null
+                        ? []
+                        : detail.members.filter((member) => member.view.resident.id !== id),
+                  },
+                  history: { kind: 'unavailable', because: ASSISTANCE_HISTORY_NOT_CONNECTED },
+                }),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  /** The one household this person is in, or `null` when the register places them in none. */
+  private householdOf(id: ResidentId, barangays: BarangayIndex): Observable<HouseholdDetail | null> {
+    return this.api
+      .cursorPage(API_ENDPOINTS.officeHouseholds, { limit: 1, cursor: null }, { resident_id: id })
+      .pipe(
+        switchMap((answer) => {
+          const [row] = answer.items.map((wire) => readHouseholdSummary(wire, barangays));
+          if (row === undefined) {
+            return of(null);
+          }
+          return this.api
+            .optionalItem(`${API_ENDPOINTS.officeHouseholds}/${row.household.id}`)
+            .pipe(map((wire) => (wire === null ? null : readHouseholdDetail(wire, barangays))));
+        }),
+      );
   }
 
   create(draft: ResidentDraft): Observable<Resident> {
@@ -1320,20 +1438,34 @@ export class HttpResidentRepository implements ResidentRepository {
     );
   }
 
-  /**
-   * Whole or not at all, and read once: a barangay missing from the join is one whose residents the
-   * console could not place, and it refuses them rather than guessing.
-   */
   private barangays(): Observable<BarangayIndex> {
-    this.barangayIndex$ ??= this.api.list(API_ENDPOINTS.barangays).pipe(
+    return this.barangayJoin.read();
+  }
+}
+
+/**
+ * `GET barangays`, joined to `TAYTAY_BARANGAYS` by name — one join for the resident and household
+ * adapters, so a barangay reads the same on both.
+ *
+ * Whole or not at all, and read once per adapter: a barangay missing from the join is one whose
+ * records the console could not place, and it refuses them rather than guessing. A failed read is
+ * not kept, so the next call asks again. Created in an adapter's field initialiser, where `inject`
+ * is allowed.
+ */
+class BarangayJoin {
+  private readonly api = inject(ApiClient);
+  private index$: Observable<BarangayIndex> | null = null;
+
+  read(): Observable<BarangayIndex> {
+    this.index$ ??= this.api.list(API_ENDPOINTS.barangays).pipe(
       map((rows) => toBarangayIndex(rows)),
       catchError((error: unknown) => {
-        this.barangayIndex$ = null;
+        this.index$ = null;
         return throwError(() => error);
       }),
       shareReplay({ bufferSize: 1, refCount: false }),
     );
-    return this.barangayIndex$;
+    return this.index$;
   }
 }
 
@@ -1368,4 +1500,501 @@ function readResident(wire: unknown, barangays: BarangayIndex): Resident {
   }
 
   return resident;
+}
+
+/* ── the office's household register (casework phase 1c) ─────────────────── */
+
+/**
+ * The household register, served by the Node API since casework phase 1c: an address and who lives
+ * there, recorded by staff. Not the residents' app households, which are a different table.
+ *
+ * **Redaction is the server's**, the vulnerability snapshot included: it is computed there from the
+ * unredacted members and disclosed for the reader, so every role reads the same band (`DL-44`).
+ * The mapper says what the server said.
+ *
+ * **A refused composition is the domain's error.** The API's 409 names each problem by the
+ * console's own codes; `toHouseholdRefusal` turns them into the `HouseholdCompositionError` the
+ * screens already word, and a conflict it has no words for into the server's own sentence.
+ */
+@Injectable()
+export class HttpHouseholdRepository implements HouseholdRepository {
+  private readonly api = inject(ApiClient);
+  private readonly barangayJoin = new BarangayJoin();
+
+  list(filter: HouseholdFilter, page: CursorRequest): Observable<CursorPage<HouseholdSummary>> {
+    const search = filter.search?.trim() ?? '';
+    if (search.length === 1) {
+      return throwError(
+        () =>
+          new Error(
+            'Type at least two characters of a household number, a surname or a street to search.',
+          ),
+      );
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) => {
+        const barangayId =
+          filter.barangayId === undefined ? undefined : barangays.toApi(filter.barangayId);
+        if (barangayId === null) {
+          return throwError(() => unknownBarangay());
+        }
+        return this.api
+          .cursorPage(API_ENDPOINTS.officeHouseholds, page, {
+            q: search === '' ? undefined : search,
+            barangay_id: barangayId,
+            indigent: filter.indigentOnly === true ? 'true' : undefined,
+            minimum_band: filter.minimumBand,
+          })
+          .pipe(
+            map((answer) => ({
+              ...answer,
+              items: answer.items.map((wire) => readHouseholdSummary(wire, barangays)),
+            })),
+          );
+      }),
+    );
+  }
+
+  /** `null` for "not found **or** not yours" — the server answers both with a 404 (`DL-31`). */
+  getById(id: HouseholdId): Observable<HouseholdDetail | null> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .optionalItem(`${API_ENDPOINTS.officeHouseholds}/${id}`)
+          .pipe(map((wire) => (wire === null ? null : readHouseholdDetail(wire, barangays)))),
+      ),
+    );
+  }
+
+  create(draft: HouseholdDraft): Observable<HouseholdDetail> {
+    if (draft.streetAddress.trim().length === 0) {
+      return throwError(() => new Error('A household needs a street address.'));
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) => {
+        const barangayId = barangays.toApi(draft.barangayId);
+        if (barangayId === null) {
+          return throwError(() => unknownBarangay());
+        }
+        return this.answer(
+          this.api.post(API_ENDPOINTS.officeHouseholds, toWireHouseholdDraft(draft, barangayId)),
+          barangays,
+        );
+      }),
+    );
+  }
+
+  changeMembership(
+    id: HouseholdId,
+    changes: readonly MembershipChange[],
+    reason: string,
+  ): Observable<HouseholdDetail> {
+    // Nothing to change is not a request: the API refuses an empty list, the mock answers the record.
+    if (changes.length === 0) {
+      return this.getById(id).pipe(
+        switchMap((detail) => (detail === null ? throwError(() => householdGone()) : of(detail))),
+      );
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.answer(
+          this.api.post(
+            `${API_ENDPOINTS.officeHouseholds}/${id}/membership`,
+            toWireMembership(changes, reason),
+          ),
+          barangays,
+        ),
+      ),
+    );
+  }
+
+  correctFactor(
+    id: HouseholdId,
+    code: VulnerabilityFactorCode,
+    state: FactorState,
+    reason: string,
+  ): Observable<HouseholdDetail> {
+    // `withheld` is a reading, never a recorded state; the API would refuse it as invalid.
+    if (state === 'withheld') {
+      return throwError(
+        () => new Error('An indicator can be corrected to present, absent or unknown.'),
+      );
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.answer(
+          this.api.post(
+            `${API_ENDPOINTS.officeHouseholds}/${id}/corrections`,
+            toWireCorrection(code, state, reason),
+          ),
+          barangays,
+        ),
+      ),
+    );
+  }
+
+  clearCorrection(
+    id: HouseholdId,
+    code: VulnerabilityFactorCode,
+    reason: string,
+  ): Observable<HouseholdDetail> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.answer(
+          this.api.post(
+            `${API_ENDPOINTS.officeHouseholds}/${id}/corrections/${code}/withdraw`,
+            toWireReason(reason),
+          ),
+          barangays,
+        ),
+      ),
+    );
+  }
+
+  /** A write's answer is the household as it now stands — or the refusal, in the domain's terms. */
+  private answer(sent: Observable<unknown>, barangays: BarangayIndex): Observable<HouseholdDetail> {
+    return sent.pipe(
+      catchError((failure: unknown) => throwError(() => toHouseholdRefusal(failure) ?? failure)),
+      map((wire) => readWrittenHousehold(wire, barangays)),
+    );
+  }
+}
+
+function householdGone(): Error {
+  return new Error('That household was not found. It may be outside the area you cover.');
+}
+
+function readHouseholdSummary(wire: unknown, barangays: BarangayIndex): HouseholdSummary {
+  const summary = toHouseholdSummary(wire, barangays);
+  if (summary === null) {
+    throw new Error(
+      'A household from the server could not be read, so none is shown rather than some: a ' +
+        'household left out of the register is one an officer concludes was never recorded.',
+    );
+  }
+  return summary;
+}
+
+function readHouseholdDetail(wire: unknown, barangays: BarangayIndex): HouseholdDetail {
+  const detail = toHouseholdDetail(wire, barangays);
+  if (detail === null) {
+    throw new Error(
+      'The household record could not be read, so none of it is shown: a member, an indicator or ' +
+        'a line of its history left out would read as not being there.',
+    );
+  }
+  return detail;
+}
+
+function readWrittenHousehold(wire: unknown, barangays: BarangayIndex): HouseholdDetail {
+  const detail = toHouseholdDetail(wire, barangays);
+  if (detail === null) {
+    throw new Error(
+      'The server saved the change, but its answer could not be read. Open the household again ' +
+        'to see it before changing anything twice.',
+    );
+  }
+  return detail;
+}
+
+/* ── families and relationships (casework phase 1c) ──────────────────────── */
+
+/**
+ * Families and the relationships between people, served by the Node API since casework phase 1c:
+ * who belongs to whom, which is not who lives where (`DL-47`). Every change is an act with a reason,
+ * appended and never rewritten (`DL-48`).
+ *
+ * **Redaction is the server's.** Members arrive disclosed for the reader — a protected member
+ * masked and, beside one, everyone's own street withheld — and the mapper says what the server said.
+ *
+ * **The graph is drawn as the mock draws it.** `toFamilyDetail` assembles it with the domain's own
+ * `assignGenerations` and `fromPerspectiveOf`, so the family record reads the same over either
+ * adapter.
+ *
+ * **A refusal is the domain's error.** The API's 409 names each problem by the console's own codes;
+ * `toFamilyRefusal` reads them as the `TransferRefusedError`, `RelationshipInvalidError` or
+ * `FamilyDraftInvalidError` the screens already word, and a conflict outside that vocabulary as the
+ * server's own sentence.
+ *
+ * **Recording a relationship already on file is not a failure** (`DL-51`): the API answers 201 for
+ * a new one and 200 with the one already standing, and both are the relationship asked for.
+ */
+@Injectable()
+export class HttpFamilyRepository implements FamilyRepository {
+  private readonly api = inject(ApiClient);
+  private readonly barangayJoin = new BarangayJoin();
+
+  list(filter: FamilyFilter, page: CursorRequest): Observable<CursorPage<FamilySummary>> {
+    const search = filter.search?.trim() ?? '';
+    if (search.length === 1) {
+      return throwError(
+        () => new Error('Type at least two characters of a family number, a name or a surname.'),
+      );
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) => {
+        const barangayId =
+          filter.barangayId === undefined ? undefined : barangays.toApi(filter.barangayId);
+        if (barangayId === null) {
+          return throwError(() => unknownBarangay());
+        }
+        return this.api
+          .cursorPage(API_ENDPOINTS.officeFamilies, page, {
+            q: search === '' ? undefined : search,
+            barangay_id: barangayId,
+            household_id: filter.householdId,
+            unhoused: filter.unhousedOnly === true ? 'true' : undefined,
+            include_dissolved: filter.includeDissolved === true ? 'true' : undefined,
+          })
+          .pipe(
+            map((answer) => ({
+              ...answer,
+              items: answer.items.map((wire) => readFamilySummary(wire, barangays)),
+            })),
+          );
+      }),
+    );
+  }
+
+  /** `null` for "not found **or** not yours" — the server answers both with a 404 (`DL-31`). */
+  getById(id: FamilyId): Observable<FamilyDetail | null> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .optionalItem(`${API_ENDPOINTS.officeFamilies}/${id}`)
+          .pipe(map((wire) => (wire === null ? null : readFamilyDetail(wire, barangays)))),
+      ),
+    );
+  }
+
+  create(draft: FamilyDraft, reason: string): Observable<FamilyDetail> {
+    // The same rules as the form and the mock, before anything is sent.
+    const problems = validateFamilyDraft(draft, reason);
+    if (problems.length > 0) {
+      return throwError(() => new FamilyDraftInvalidError(problems));
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.refused(
+          this.api.post(API_ENDPOINTS.officeFamilies, toWireFamilyDraft(draft, reason)),
+          'family',
+        ).pipe(map((wire) => readWrittenFamily(wire, barangays))),
+      ),
+    );
+  }
+
+  /** Whole: a person belongs to a handful of families at most, and the API sends them all. */
+  familiesOf(residentId: ResidentId): Observable<readonly FamilySummary[]> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .list(`${API_ENDPOINTS.officeResidents}/${residentId}/families`)
+          .pipe(map((rows) => rows.map((wire) => readFamilySummary(wire, barangays)))),
+      ),
+    );
+  }
+
+  recordRelationship(
+    fromResidentId: ResidentId,
+    toResidentId: ResidentId,
+    kind: RelationshipKind,
+    reason: string,
+  ): Observable<Relationship> {
+    if (reason.trim().length === 0) {
+      return throwError(() => new Error('Say why this relationship is being recorded.'));
+    }
+    // The API refuses this as invalid input; the domain names it, as the mock does.
+    if (fromResidentId === toResidentId) {
+      return throwError(
+        () => new RelationshipInvalidError([{ code: 'same-person', residentId: fromResidentId }]),
+      );
+    }
+    return this.refused(
+      this.api.post(
+        `${API_ENDPOINTS.officeResidents}/${fromResidentId}/relationships`,
+        toWireRelationship(toResidentId, kind, reason),
+      ),
+      'relationship',
+    ).pipe(map(readRelationship));
+  }
+
+  endRelationship(
+    residentId: ResidentId,
+    id: RelationshipId,
+    reason: string,
+  ): Observable<Relationship> {
+    if (reason.trim().length === 0) {
+      return throwError(() => new Error('Say why this relationship has ended.'));
+    }
+    return this.refused(
+      this.api.post(
+        `${API_ENDPOINTS.officeResidents}/${residentId}/relationships/${id}/end`,
+        toWireReason(reason),
+      ),
+      'relationship',
+    ).pipe(map(readRelationship));
+  }
+
+  transferResident(transfer: ResidentTransfer): Observable<FamilyDetail> {
+    if (!isValidTransferReason(transfer.reason)) {
+      return throwError(
+        () => new TransferRefusedError([{ code: 'no-reason', residentId: transfer.residentId }]),
+      );
+    }
+    // A move from nowhere to nowhere describes no change; the API refuses it as invalid.
+    if (transfer.fromFamilyId === null && transfer.toFamilyId === null) {
+      return throwError(
+        () =>
+          new TransferRefusedError([{ code: 'family-not-found', residentId: transfer.residentId }]),
+      );
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.refused(
+          this.api.post(`${API_ENDPOINTS.officeFamilies}/transfers`, toWireTransfer(transfer)),
+          'transfer',
+        ).pipe(map((wire) => readWrittenFamily(wire, barangays))),
+      ),
+    );
+  }
+
+  /** The API answers the family as it now stands; the port asks for the family itself. */
+  changeMemberRole(
+    familyId: FamilyId,
+    residentId: ResidentId,
+    role: FamilyRole,
+    reason: string,
+  ): Observable<Family> {
+    if (reason.trim().length === 0) {
+      return throwError(() => new Error('Say why the role is changing.'));
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.refused(
+          this.api.post(
+            `${API_ENDPOINTS.officeFamilies}/${familyId}/members/${residentId}/role`,
+            toWireRoleChange(role, reason),
+          ),
+          'transfer',
+        ).pipe(map((wire) => readWrittenFamily(wire, barangays).family)),
+      ),
+    );
+  }
+
+  /** Whole and newest first, as the API keeps it. */
+  historyForResident(residentId: ResidentId): Observable<readonly RelationshipEvent[]> {
+    return this.api
+      .list(`${API_ENDPOINTS.officeResidents}/${residentId}/relationship-history`)
+      .pipe(map((rows) => rows.map(readRelationshipEvent)));
+  }
+
+  /** A refused write, read in the domain's terms; anything else passed on untouched. */
+  private refused(sent: Observable<unknown>, kind: FamilyRefusalKind): Observable<unknown> {
+    return sent.pipe(
+      catchError((failure: unknown) => throwError(() => toFamilyRefusal(failure, kind) ?? failure)),
+    );
+  }
+}
+
+function readFamilySummary(wire: unknown, barangays: BarangayIndex): FamilySummary {
+  const summary = toFamilySummary(wire, barangays);
+  if (summary === null) {
+    throw new Error(
+      'A family from the server could not be read, so none is shown rather than some: a family ' +
+        'left out of the registry is one an officer concludes was never recorded.',
+    );
+  }
+  return summary;
+}
+
+function readFamilyDetail(wire: unknown, barangays: BarangayIndex): FamilyDetail {
+  const detail = toFamilyDetail(wire, barangays);
+  if (detail === null) {
+    throw new Error(
+      'The family record could not be read, so none of it is shown: a member, a relationship or ' +
+        'a line of its history left out would read as not being there.',
+    );
+  }
+  return detail;
+}
+
+function readWrittenFamily(wire: unknown, barangays: BarangayIndex): FamilyDetail {
+  const detail = toFamilyDetail(wire, barangays);
+  if (detail === null) {
+    throw new Error(
+      'The server saved the change, but its answer could not be read. Open the family again to ' +
+        'see it before changing anything twice.',
+    );
+  }
+  return detail;
+}
+
+function readRelationship(wire: unknown): Relationship {
+  const relationship = toRelationship(wire);
+  if (relationship === null) {
+    throw new Error(
+      'The server saved the relationship, but its answer could not be read. Open the family again ' +
+        'to see it before recording anything twice.',
+    );
+  }
+  return relationship;
+}
+
+function readRelationshipEvent(wire: unknown): RelationshipEvent {
+  const event = toRelationshipEvent(wire);
+  if (event === null) {
+    throw new Error(
+      'A line of this person’s family history could not be read, so none of it is shown: a ' +
+        'history with a gap reads as one where nothing happened.',
+    );
+  }
+  return event;
+}
+
+/* ── saved views (casework phase 1c, `DL-111`) ───────────────────────────── */
+
+/**
+ * Saved views, kept by the API: a name over a list's query parameters, an account's own or the
+ * office's. The server decides whose a view is, who may share one and how many each list keeps; a
+ * list of them is answered whole, never paged, because those caps bound it.
+ */
+@Injectable()
+export class HttpSavedViewRepository implements SavedViewRepository {
+  private readonly api = inject(ApiClient);
+
+  listFor(resource: SavedViewResource): Observable<readonly SavedView[]> {
+    return this.api
+      .list(API_ENDPOINTS.officeSavedViews, { resource })
+      .pipe(map((rows) => rows.map(readSavedView)));
+  }
+
+  create(draft: SavedViewDraft): Observable<SavedView> {
+    // The same rule as the mock and the bar, before anything is sent.
+    if (!isValidSavedViewName(draft.name)) {
+      return throwError(
+        () =>
+          new Error(`A saved view needs a name of 1 to ${SAVED_VIEW_NAME_MAX_LENGTH} characters.`),
+      );
+    }
+    return this.api
+      .post(API_ENDPOINTS.officeSavedViews, toWireSavedViewDraft(draft))
+      .pipe(map(readSavedView));
+  }
+
+  remove(id: SavedViewId): Observable<void> {
+    return this.api
+      .delete(`${API_ENDPOINTS.officeSavedViews}/${id}`)
+      .pipe(map((): void => undefined));
+  }
+}
+
+function readSavedView(wire: unknown): SavedView {
+  const view = toSavedView(wire);
+  if (view === null) {
+    throw new Error(
+      'A saved view from the server could not be read, so none is shown: whose a view is decides ' +
+        'whether it may be taken away, and this one could not say.',
+    );
+  }
+  return view;
 }

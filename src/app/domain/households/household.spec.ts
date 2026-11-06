@@ -1,10 +1,19 @@
 import {
   applyMembershipChanges,
   asId,
+  asIsoDateTime,
+  centavos,
   compareBands,
+  describeHouseholdEvent,
+  describeMembershipChange,
+  discloseHousehold,
+  householdEventAction,
   isAtLeastBand,
   memberRole,
   validateComposition,
+  type BarangayId,
+  type Household,
+  type HouseholdId,
   type HouseholdMember,
   type ResidentId,
 } from '@domain/index';
@@ -124,5 +133,85 @@ describe('bands order without becoming a score', () => {
     expect(isAtLeastBand('elevated', 'elevated')).toBe(true);
     expect(isAtLeastBand('high', 'elevated')).toBe(true);
     expect(isAtLeastBand('watch', 'elevated')).toBe(false);
+  });
+});
+
+/* ── Disclosure ───────────────────────────────────────────────────────────── */
+
+describe('a household is disclosed as the API discloses it', () => {
+  const recorded: Household = {
+    id: asId<HouseholdId>('hh-test'),
+    referenceNumber: 'HH-2026-000001',
+    headResidentId: ANA,
+    address: {
+      barangayId: asId<BarangayId>('brgy-dolores'),
+      purokOrSitio: 'Purok 3',
+      streetAddress: '12 Rizal Ave.',
+    },
+    members: family,
+    monthlyIncome: centavos(850_000),
+    isIndigent: true,
+    audit: {
+      createdAt: asIsoDateTime('2026-11-06T00:00:00.000Z'),
+      createdBy: null,
+      updatedAt: asIsoDateTime('2026-11-06T00:00:00.000Z'),
+      updatedBy: null,
+    },
+  };
+
+  it('withholds a protected household’s exact address, and names it as withheld', () => {
+    const disclosed = discloseHousehold(recorded, true, { protected: false, means: true });
+    expect(disclosed.household.address.streetAddress).toBeNull();
+    expect(disclosed.household.address.purokOrSitio).toBeNull();
+    expect(disclosed.household.address.barangayId).toBe('brgy-dolores');
+    expect(disclosed.withheld).toEqual(['exactAddress']);
+    expect(disclosed.isProtected).toBe(true);
+  });
+
+  it('withholds the income without the means tier, and says so only when one is recorded', () => {
+    expect(discloseHousehold(recorded, false, { protected: true, means: false }).withheld).toEqual([
+      'monthlyIncome',
+    ]);
+    const unrecorded = { ...recorded, monthlyIncome: null };
+    // A blank that is not named stays "not recorded"; one that is named is never mistaken for it.
+    expect(
+      discloseHousehold(unrecorded, false, { protected: true, means: false }).withheld,
+    ).toEqual([]);
+  });
+
+  it('keeps everything for a reader cleared for both', () => {
+    const disclosed = discloseHousehold(recorded, true, { protected: true, means: true });
+    expect(disclosed.household).toEqual(recorded);
+    expect(disclosed.withheld).toEqual([]);
+  });
+});
+
+/* ── The trail, in words ──────────────────────────────────────────────────── */
+
+describe('a household event is worded once, for both adapters', () => {
+  it('words a membership event exactly as the change it records', () => {
+    expect(
+      describeHouseholdEvent({
+        kind: 'member-added',
+        residentId: BEN,
+        role: 'spouse',
+        factorCode: null,
+        factorState: null,
+      }),
+    ).toBe(describeMembershipChange({ kind: 'add-member', residentId: BEN, role: 'spouse' }));
+    expect(householdEventAction('head-set')).toBe('membership-changed');
+    expect(householdEventAction('registered')).toBe('created');
+  });
+
+  it('refuses to word an event missing a fact its kind needs', () => {
+    expect(
+      describeHouseholdEvent({
+        kind: 'factor-corrected',
+        residentId: null,
+        role: null,
+        factorCode: 'pwd-member',
+        factorState: null,
+      }),
+    ).toBeNull();
   });
 });

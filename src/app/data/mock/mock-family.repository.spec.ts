@@ -5,7 +5,7 @@ import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import {
   ACCESS_CONTEXT,
   asId,
-  DEFAULT_PAGE_REQUEST,
+  isFamilyDraftInvalid,
   isRelationshipInvalid,
   isTransferRefused,
   PermissionDeniedError,
@@ -13,7 +13,11 @@ import {
   type AccessContext,
   type AuthenticatedUser,
   type BarangayId,
+  type CursorPage,
+  type FamilyDraft,
   type FamilyId,
+  type FamilySummary,
+  type HouseholdId,
   type Permission,
   type RelationshipId,
   type ResidentId,
@@ -69,8 +73,12 @@ function authenticated(role: StaffRole, barangayId: BarangayId | null = null): A
   };
 }
 
+let currentUser: AuthenticatedUser | null = null;
+
+/** A fresh injector — and so a freshly seeded store — signed in as `user`. */
 function signedInAs(user: AuthenticatedUser | null): void {
-  const context: AccessContext = { currentUser: () => user };
+  currentUser = user;
+  const context: AccessContext = { currentUser: () => currentUser };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -82,17 +90,29 @@ function signedInAs(user: AuthenticatedUser | null): void {
   });
 }
 
+/** Another reader of the same store: what one role recorded, another reads. */
+function switchTo(user: AuthenticatedUser | null): void {
+  currentUser = user;
+}
+
 const repo = () => TestBed.inject(MockFamilyRepository);
 const residents = () => TestBed.inject(MockResidentRepository);
 
 const REASON = 'Home visit on 12 August confirmed the arrangement';
+
+const FIRST_PAGE = { limit: 20, cursor: null } as const;
+const EVERYTHING = { limit: 50, cursor: null } as const;
+
+/** res-0005 is the seeded protection case (RA 9262); res-0008 is unprotected, at 44 Del Pilar Street. */
+const PROTECTED = asId<ResidentId>('res-0005');
+const UNPROTECTED = asId<ResidentId>('res-0008');
 
 /* ── Household is not family ──────────────────────────────────────────────── */
 
 describe('a household is not a family', () => {
   it('lists two separate families at one address', async () => {
     signedInAs(authenticated('intake-officer'));
-    const page = await firstValueFrom(repo().list({}, { page: 1, pageSize: 50 }));
+    const page = await firstValueFrom(repo().list({}, EVERYTHING));
     const atHh0001 = page.items.filter((summary) => summary.family.householdId === 'hh-0001');
     expect(atHh0001).toHaveLength(2);
     expect(atHh0001.map((summary) => summary.family.id).sort()).toEqual([MERCADO, JOSELITO]);
@@ -114,7 +134,7 @@ describe('a household is not a family', () => {
 
   it('finds unhoused families by filter, because they are a real category', async () => {
     signedInAs(authenticated('mswdo-head'));
-    const page = await firstValueFrom(repo().list({ unhousedOnly: true }, DEFAULT_PAGE_REQUEST));
+    const page = await firstValueFrom(repo().list({ unhousedOnly: true }, FIRST_PAGE));
     expect(page.items.length).toBeGreaterThan(0);
     for (const summary of page.items) {
       expect(summary.family.householdId).toBeNull();
@@ -129,13 +149,202 @@ describe('a household is not a family', () => {
 
   it('hides a dissolved family by default and finds it when asked', async () => {
     signedInAs(authenticated('mswdo-head'));
-    const byDefault = await firstValueFrom(repo().list({}, { page: 1, pageSize: 50 }));
+    const byDefault = await firstValueFrom(repo().list({}, EVERYTHING));
     expect(byDefault.items.some((summary) => summary.family.id === DISSOLVED)).toBe(false);
 
     const including = await firstValueFrom(
-      repo().list({ includeDissolved: true }, { page: 1, pageSize: 50 }),
+      repo().list({ includeDissolved: true }, EVERYTHING),
     );
     expect(including.items.some((summary) => summary.family.id === DISSOLVED)).toBe(true);
+  });
+});
+
+/* ── The list, as the API pages it ────────────────────────────────────────── */
+
+describe('the list is read a cursor page at a time, by reference number', () => {
+  it('orders by reference and follows the cursor to the end, no row twice', async () => {
+    signedInAs(authenticated('mswdo-head'));
+    const everything = await firstValueFrom(repo().list({ includeDissolved: true }, EVERYTHING));
+    const references = everything.items.map((summary) => summary.family.referenceNumber);
+    expect(references).toEqual([...references].sort());
+    expect(everything.hasMore).toBe(false);
+    expect(everything.nextCursor).toBeNull();
+
+    const read: string[] = [];
+    let cursor: string | null = null;
+    do {
+      const page: CursorPage<FamilySummary> = await firstValueFrom(
+        repo().list({ includeDissolved: true }, { limit: 2, cursor }),
+      );
+      read.push(...page.items.map((summary) => summary.family.id));
+      cursor = page.nextCursor;
+      expect(page.hasMore).toBe(cursor !== null);
+    } while (cursor !== null);
+    expect(read).toEqual(everything.items.map((summary) => summary.family.id));
+  });
+
+  it('searches the reference, the name and the head’s surname — every word', async () => {
+    signedInAs(authenticated('mswdo-head'));
+    const ids = async (search: string) =>
+      (await firstValueFrom(repo().list({ search }, EVERYTHING))).items.map(
+        (summary) => summary.family.id,
+      );
+    expect(await ids('bautista')).toEqual([BAUTISTA]);
+    expect(await ids('FAM-DL-2024')).toEqual([BAUTISTA]);
+    expect(await ids('bautista dl')).toEqual([BAUTISTA]);
+    // Every word must match: one that matches nothing empties the list.
+    expect(await ids('bautista zzz')).toEqual([]);
+  });
+
+  it('refuses a barangay outside the reader’s scope rather than answering "none"', async () => {
+    signedInAs(authenticated('barangay-link', SAN_JUAN));
+    await expect(
+      firstValueFrom(
+        repo().list({ barangayId: asId<BarangayId>('brgy-dolores') }, FIRST_PAGE),
+      ),
+    ).rejects.toThrow(PermissionDeniedError);
+  });
+});
+
+/* ── Recording a family ───────────────────────────────────────────────────── */
+
+describe('recording a family', () => {
+  const draft = (overrides: Partial<FamilyDraft> = {}): FamilyDraft => ({
+    name: '  Gonzales–Manalo family ',
+    householdId: null,
+    formedOn: null,
+    members: [
+      { residentId: PROTECTED, role: 'head' },
+      { residentId: UNPROTECTED, role: 'other-member' },
+    ],
+    ...overrides,
+  });
+
+  it('records the family with its founding members, and the reason with each', async () => {
+    signedInAs(authenticated('intake-officer'));
+    const created = await firstValueFrom(repo().create(draft(), REASON));
+    expect(created.family.name).toBe('Gonzales–Manalo family');
+    expect(created.family.referenceNumber).toMatch(/^FAM-\d{4}-\d{6}$/);
+    // Between addresses is a recordable state, not a missing value (DL-47).
+    expect(created.family.householdId).toBeNull();
+    expect(created.family.members.map((member) => [member.residentId, member.role])).toEqual([
+      [PROTECTED, 'head'],
+      [UNPROTECTED, 'other-member'],
+    ]);
+    expect(created.history.map((event) => event.kind).sort()).toEqual([
+      'family-formed',
+      'member-joined',
+      'member-joined',
+    ]);
+    expect(created.history.every((event) => event.reason === REASON)).toBe(true);
+
+    const listed = await firstValueFrom(repo().list({ unhousedOnly: true }, EVERYTHING));
+    expect(listed.items.some((summary) => summary.family.id === created.family.id)).toBe(true);
+  });
+
+  it('places the family in a household when one is named', async () => {
+    signedInAs(authenticated('intake-officer'));
+    const created = await firstValueFrom(
+      repo().create(draft({ householdId: asId<HouseholdId>('hh-0005') }), REASON),
+    );
+    expect(created.family.householdId).toBe('hh-0005');
+  });
+
+  it('refuses a draft the registry cannot hold, naming every problem, and records nothing', async () => {
+    signedInAs(authenticated('intake-officer'));
+    const before = (await firstValueFrom(repo().list({}, EVERYTHING))).items.length;
+    const refused: unknown = await firstValueFrom(
+      repo().create(
+        draft({
+          name: '  ',
+          householdId: asId<HouseholdId>('hh-nowhere'),
+          members: [
+            { residentId: UNPROTECTED, role: 'head' },
+            { residentId: UNPROTECTED, role: 'child' },
+            { residentId: asId<ResidentId>('res-nobody'), role: 'child' },
+          ],
+        }),
+        '   ',
+      ),
+    ).catch((error: unknown) => error);
+
+    expect(isFamilyDraftInvalid(refused)).toBe(true);
+    if (isFamilyDraftInvalid(refused)) {
+      expect(refused.problems.map((problem) => problem.code).sort()).toEqual([
+        'duplicate-member',
+        'household-not-found',
+        'no-name',
+        'no-reason',
+        'resident-not-found',
+      ]);
+    }
+    expect((await firstValueFrom(repo().list({}, EVERYTHING))).items).toHaveLength(before);
+  });
+
+  it('refuses without family.manage', async () => {
+    signedInAs(authenticated('auditor'));
+    await expect(firstValueFrom(repo().create(draft(), REASON))).rejects.toThrow(
+      PermissionDeniedError,
+    );
+  });
+});
+
+/* ── What a reader is shown ───────────────────────────────────────────────── */
+
+describe('a family withholds what the API withholds', () => {
+  it('withholds every member’s own street beside a protected member', async () => {
+    signedInAs(authenticated('intake-officer'));
+    const created = await firstValueFrom(repo().create({
+      name: 'Shared roof family',
+      householdId: null,
+      formedOn: null,
+      members: [
+        { residentId: PROTECTED, role: 'head' },
+        { residentId: UNPROTECTED, role: 'other-member' },
+      ],
+    }, REASON));
+
+    const unprotected = created.graph.nodes.find((node) => node.view.resident.id === UNPROTECTED);
+    expect(unprotected?.view.isProtected).toBe(false);
+    expect(unprotected?.view.resident.address.streetAddress).toBeNull();
+    // Named as withheld, never a blank that reads as "no address on file" (DL-38).
+    expect(unprotected?.view.withheld).toContain('exactAddress');
+
+    const summary = (await firstValueFrom(repo().familiesOf(UNPROTECTED))).find(
+      (candidate) => candidate.family.id === created.family.id,
+    );
+    expect(summary?.headName).toBe('Manalo, C.');
+
+    // The same record, read by somebody cleared for the protected tier.
+    switchTo(authenticated('mswdo-head'));
+    const cleared = await firstValueFrom(repo().getById(created.family.id));
+    const shown = cleared?.graph.nodes.find((node) => node.view.resident.id === UNPROTECTED);
+    expect(shown?.view.resident.address.streetAddress).toBe('44 Del Pilar Street');
+    expect(shown?.view.withheld).not.toContain('exactAddress');
+  });
+
+  it('withholds the streets of a second family living at a protected person’s address', async () => {
+    signedInAs(authenticated('intake-officer'));
+    // hh-0005 is headed by a protected resident; nobody in this new family is protected.
+    const created = await firstValueFrom(repo().create({
+      name: 'Lodger family',
+      householdId: asId<HouseholdId>('hh-0005'),
+      formedOn: null,
+      members: [{ residentId: UNPROTECTED, role: 'head' }],
+    }, REASON));
+
+    const lodger = created.graph.nodes.find((node) => node.view.resident.id === UNPROTECTED);
+    expect(lodger?.view.isProtected).toBe(false);
+    expect(lodger?.view.resident.address.streetAddress).toBeNull();
+    expect(lodger?.view.withheld).toContain('exactAddress');
+  });
+
+  it('leaves members’ streets alone in a family with nobody protected', async () => {
+    signedInAs(authenticated('intake-officer'));
+    const detail = await firstValueFrom(repo().getById(BAUTISTA));
+    for (const node of detail?.graph.nodes ?? []) {
+      expect(node.view.withheld).not.toContain('exactAddress');
+    }
   });
 });
 
@@ -144,14 +353,14 @@ describe('a household is not a family', () => {
 describe('families are read under the same access rules as everything else', () => {
   it('refuses the list without family.view', async () => {
     signedInAs(null);
-    await expect(firstValueFrom(repo().list({}, DEFAULT_PAGE_REQUEST))).rejects.toThrow(
+    await expect(firstValueFrom(repo().list({}, FIRST_PAGE))).rejects.toThrow(
       PermissionDeniedError,
     );
   });
 
   it('confines a barangay link to families at addresses in its barangay', async () => {
     signedInAs(authenticated('barangay-link', SAN_JUAN));
-    const page = await firstValueFrom(repo().list({}, { page: 1, pageSize: 50 }));
+    const page = await firstValueFrom(repo().list({}, EVERYTHING));
     const housed = page.items.filter((summary) => summary.family.householdId !== null);
     expect(housed.length).toBeGreaterThan(0);
     for (const summary of housed) {

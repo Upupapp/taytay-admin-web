@@ -184,9 +184,19 @@ describe('navigation when the API cannot serve a module', () => {
         expect(hrefs, `${item.route} reads nothing unserved`).toContain(item.route);
       }
     }
-    // Residents, Households, Families and Referrals all read it; Cases does not.
+    // Residents and Referrals have it as a primary port; Cases does not.
     expect(hrefs).not.toContain('/referrals');
     expect(hrefs).toContain('/cases');
+  });
+
+  it('keeps an entry whose only unserved ports are its secondary panels’ (DL-175)', async () => {
+    // The registry reads saved views, families and home visits in panels that say so in place;
+    // none of them withholds it. Each of those modules' own entries is still withheld.
+    const hrefs = await hrefsFor(['saved-view', 'family', 'field-visit']);
+
+    expect(hrefs).toContain('/residents');
+    expect(hrefs).not.toContain('/families');
+    expect(hrefs).not.toContain('/visits');
   });
 
   it('links the page that names what was withheld, so nothing is left out unexplained', async () => {

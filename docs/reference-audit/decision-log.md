@@ -6510,3 +6510,140 @@ reading an unserved port can fail.
 | `check:mapper-adoption` | every read through `resident.mapper.ts` | 0 typed calls |
 | `check:consumer-contract` | regenerated | 62 interactions, 273 required fields |
 | `fixtures.spec.ts` | `office-residents-page.json` and `office-resident.json` held to their schemas | — |
+
+## DL-175 — saved views, households and families are served; only a module's primary port gates its menu entry
+
+Phase 1c of the casework decided on 6 November 2026 (`docs/integration/node-api-migration.md`).
+Backend `taytay-backend` `013d74c` (saved views, the office household register, families),
+`154a052` and `0c19dd2` (a protected person's address is not given away by the people she lives
+with); the spec vendored here is `0c19dd2`'s.
+
+### What the server now decides
+
+- **Saved views** (`/api/v1/office/saved-views`, `DL-110`, `DL-111`). Reading one costs the key of
+  the list it opens; a shared view costs `saved-view.share` to save or take away; somebody else's
+  personal view is never acknowledged (404); a view of a protected sector needs
+  `request.view-sensitive` to save and is not listed without it. The list is answered whole — an
+  account keeps at most 50 views per list and the office 50 shared — so it is never mistaken for a
+  first page. A view is taken away, never deleted or edited.
+- **The office household register** (`/api/v1/office/households`). Registry residents grouped by
+  address, recorded by staff. **Not the residents' app households** (`/api/v1/households`, the app's
+  accounts grouping themselves by invitation), which share no table and no route with it and were
+  not touched. One household per person and one head per household are unique indexes; membership
+  changes are the console's intents (`MembershipChange`), applied all or none under row locks and
+  refused with the console's `HouseholdProblemCode`s as `details` keys; every act — registering,
+  each membership change, each correction and its withdrawal — is appended with its reason to a
+  history the database refuses to rewrite.
+- **The vulnerability snapshot is computed by the server** from the unredacted member records, a
+  port of `computeVulnerability` with the PSA threshold's provenance sent beside it (`DL-46`), and
+  only then disclosed, so every role reads the same band (`DL-44`). It stays advisory evidence
+  (`DL-42`): no score, no total, nothing reads it to set anything, and `is_indigent` is recorded by a
+  person. `check:vulnerability` holds on this side; the server's answer carries no decision-shaped
+  field.
+- **Families** (`/api/v1/office/families`, `DL-47`, `DL-48`). Members as periods (joined, left; never
+  deleted, never reopened), a household or none, several families at one address. Relationships
+  resident to resident in one canonical direction, ended and never deleted; recording one already
+  standing answers with it (`DL-51`); a reversed parent link is refused. A transfer is one act, the
+  household following only on request, and a transfer that already landed answers quietly. Every act
+  is appended with actor, time and reason.
+- **Scope and redaction are the resident registry's** (`DL-174`), from one shared copy of its
+  reader: `own-barangay` sees its barangay and nothing else answers but "not found", `assigned-cases`
+  is refused. A family between addresses is in a barangay link's scope only while every current
+  member lives there. Members are the registry's redacted records.
+
+### Disclosure the console did not have before, now on both sides of the seam
+
+1. **A protected household withholds its address.** A household with a member under `vawc-survivor`
+   or `cicl` withholds its street and purok from a reader without `request.view-sensitive`, and is
+   not matched on them: that address is where the protected person lives, and the resident record
+   already withholds it. `HouseholdSummary`/`HouseholdDetail` gain `withheld` (`exactAddress`,
+   `monthlyIncome`) and `isProtected`, and the screens say "withheld", never a blank (`DL-38`).
+2. **So does everybody who lives there.** The household's own address was withheld while every
+   other member was listed with their own record — whose street is, as a rule, the same street.
+   Beside the masked member, the mother's address said where the daughter lives. Every member's
+   street and purok are now withheld from that reader, on a household with a protected member and on
+   a family with one **or living in a household that has one** (a second family at her address lives
+   on her street too). Found by this console's adapter work, fixed on the server (`154a052`,
+   `0c19dd2`) and mirrored in both mock adapters.
+3. **The household's income is means**, behind the same key as a resident's: without
+   `resident.view-sensitive` it is withheld, so are the two income factors, and recording one needs
+   the key. `discloseSnapshot` takes a clearance `{ protected, means }`; a withheld factor reads
+   `origin: 'computed'`, so it does not say that somebody corrected it. The band is not recomputed.
+
+### What the console now does
+
+- `HttpSavedViewRepository`, `HttpHouseholdRepository` and `HttpFamilyRepository` replace their
+  `Unserved…` adapters; `saved-view`, `household` and `family` leave `UNSERVED_PORTS` (fourteen
+  remain). Every read goes through a mapper with no disclosure rule of its own, every body through an
+  explicit `toWire…`. The family graph is assembled from the API's members and relationships with
+  the domain's own `assignGenerations`/`fromPerspectiveOf`, as the mock assembles it.
+- **Both lists read a cursor page**, ordered by reference number by the server, saying "more are
+  available" and never a page count (`DL-161`); sort headers the server cannot honour are gone.
+- **A household and a family can be recorded**: `HouseholdRepository.create` and
+  `FamilyRepository.create` (with a reason), each with a routed form behind its manage key. Without
+  them the served lists could only ever be empty.
+- **The resident profile is read over the API**: the resident, the household they live in and its
+  members. The assistance history is `{ kind: 'unavailable' }` with a sentence saying it is not
+  connected yet and is not a statement that the office never helped them (`DL-112`):
+  `ResidentProfile.history` became a read/unavailable union like `HouseholdComposition`.
+- **"Make head" asks for a reason.** It sent a fixed sentence, "Recorded from the family record.",
+  which the API would keep in the family's history for good as if somebody had said it (`DL-48`).
+- The platform audit trail words the eleven new audit codes.
+
+### Only a module's primary port gates its menu entry (narrows `DL-167`)
+
+`DL-167` withheld every screen that read any unserved port, which kept the Residents menu entry
+withheld for its saved-views bar and the record's field-visit panel. Now a route's `servedGuard` lists
+its **primary** ports — the ones the screen cannot work without — and a **secondary panel** whose port
+is unserved **degrades in place**: no request is made, and `<app-not-connected>` says, where the panel
+would be, that the office's API does not serve it, which is not a statement that there is none.
+`ServedPorts.serves()` answers the question; the sentence is composed once, from
+`DATA_PORT_HOLDINGS`, in the domain.
+
+`check:unserved` rule 3 now holds every routed screen to: what it reads equals what it guards plus
+what it degrades; nothing both; a port counts as degraded only where a file of the screen calls
+`serves('<port>')` **and** that component's template renders the notice for it; a degraded port the
+screen does not read, or a notice with no `serves()` behind it, fails; and **a screen that reads
+ports must guard at least one** — a module whose every panel is optional is one whose menu entry can
+lead to nothing. Rule 4 is unchanged (a menu entry reads exactly what its route guards), so the menu
+is gated by the primary ports alone. Validated against planted regressions: dropping `serves()`,
+guarding and degrading the same port, a list degrading its own primary port and guarding none, a
+`serves()` with no notice, and a degraded port the screen does not read — each fails.
+
+In the `http` configuration **Residents, Households and Families are all in the menu.** The resident
+list degrades nothing now that saved views are served; the resident record degrades its field-visit
+panel in place (and its family panels, should `family` ever be unserved again).
+
+### Where the API's model differs, recorded rather than smoothed
+
+1. **A family's relationships are those among its own members.** A link to somebody in another
+   family (a grandmother recorded in the parents' family) is drawn by the mock and not over the API.
+2. **No household or family is changed after it is recorded** except through membership: the API
+   has no route to change a household's address, income or classification, or to dissolve a family.
+3. **A retired resident can still be added to a household**; neither side refuses it.
+4. **Two heads in one family are allowed**, as the console's few-rules doctrine says (`DL-49`); the
+   server dropped a "several heads" refusal it had on creation for that reason.
+
+### For the owner
+
+- Whether the barangay link should see a family between addresses only when every member lives in
+  its barangay (the choice made; the mock showed such a family to everybody).
+- Whether a household's income should be means-tier as decided here — the mock showed it to every
+  `household.view` holder, including the release officer and the auditor.
+- Whether an office needs to correct a household's address or income, or dissolve a family, through
+  the console; neither is possible yet.
+
+### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:unserved` | rule 3 rewritten: a screen guards its primary ports and degrades the rest in place; the saved-view, household and family bindings and declarations removed together | 14 unserved, all declared; 61 routed screens guarding their primary ports; 2 screens degrade 3 secondary panels in place |
+| `check:routes` | `UNSERVED_CEILING` lowered 17 → 14 | 27 endpoints, 87 composed requests, each at a real route and verb |
+| `check:response-shape` | the three adapters' reads | 42/42 (was 32/32) |
+| `check:wire-adoption` | every new body through a `toWire…` | 48/48 (was 38/38) |
+| `check:port-adoption` | `create` on both ports, each reached by its form | 11 of 216 unreached (was 11 of 214) |
+| `check:query-params` | `resource`; the household and family list filters, as the operations declare | 42 reads (was 32) |
+| `check:consumer-contract` | regenerated | 79 interactions, 348 required fields (was 62, 273) |
+| `check:permission-parity` | the new keys' routes | 0 of 55 disagree |
+| `check:contract-drift` | vendored `0c19dd2` | 130 operations |
+| `check:vulnerability` | `discloseSnapshot` takes a clearance; nothing decision-shaped added | passed |

@@ -1,0 +1,65 @@
+{
+  "data": [
+    {
+      "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e06",
+      "kind": "member-role-changed",
+      "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+      "other_resident_id": null,
+      "family_id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01",
+      "to_family_id": null,
+      "household_id": null,
+      "relationship_kind": null,
+      "role": "head",
+      "reason": "She heads the family since he left.",
+      "actor_id": "0f1e2d3c-4b5a-4968-8776-655443322101",
+      "actor_name": "Ana Reyes",
+      "occurred_at": "2026-11-06T05:40:00.000Z"
+    },
+    {
+      "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e08",
+      "kind": "relationship-ended",
+      "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c07",
+      "other_resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+      "family_id": null,
+      "to_family_id": null,
+      "household_id": null,
+      "relationship_kind": "spouse-of",
+      "role": null,
+      "reason": "Separated; recorded at the home visit.",
+      "actor_id": "0f1e2d3c-4b5a-4968-8776-655443322101",
+      "actor_name": "Ana Reyes",
+      "occurred_at": "2026-11-06T05:20:00.000Z"
+    },
+    {
+      "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e07",
+      "kind": "relationship-recorded",
+      "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+      "other_resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c05",
+      "family_id": null,
+      "to_family_id": null,
+      "household_id": null,
+      "relationship_kind": "parent-of",
+      "role": null,
+      "reason": "Birth certificate presented at intake.",
+      "actor_id": "0f1e2d3c-4b5a-4968-8776-655443322101",
+      "actor_name": null,
+      "occurred_at": "2026-11-06T04:10:00.000Z"
+    },
+    {
+      "id": "9c0d1e2f-3a4b-4c5d-8e6f-7a8b9c0d1e02",
+      "kind": "member-joined",
+      "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+      "other_resident_id": null,
+      "family_id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01",
+      "to_family_id": null,
+      "household_id": null,
+      "relationship_kind": null,
+      "role": "head",
+      "reason": "Recorded at intake on 6 November.",
+      "actor_id": "0f1e2d3c-4b5a-4968-8776-655443322101",
+      "actor_name": "Ana Reyes",
+      "occurred_at": "2026-11-06T03:10:00.000Z"
+    }
+  ],
+  "meta": {}
+}

@@ -1,0 +1,130 @@
+{
+  "data": [
+    {
+      "family": {
+        "id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01",
+        "reference_number": "FAM-2026-000021",
+        "name": "Dela Cruz family",
+        "household_id": "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e01",
+        "formed_on": "2026-11-06",
+        "dissolved_on": null,
+        "members": [
+          {
+            "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+            "role": "head",
+            "joined_on": "2026-11-06",
+            "left_on": null
+          },
+          {
+            "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c05",
+            "role": "child",
+            "joined_on": "2026-11-06",
+            "left_on": null
+          },
+          {
+            "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c07",
+            "role": "partner",
+            "joined_on": "2026-11-06",
+            "left_on": "2026-11-06"
+          }
+        ],
+        "created_at": "2026-11-06T03:10:00.000Z",
+        "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "updated_at": "2026-11-06T05:30:00.000Z",
+        "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+      },
+      "head": {
+        "id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+        "first_name": "Maria",
+        "middle_name": "Santos",
+        "last_name": "Dela Cruz",
+        "suffix": null,
+        "sex": "female",
+        "birth_date": "1984-04-02",
+        "civil_status": "separated",
+        "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+        "purok_or_sitio": null,
+        "street_address": null,
+        "mobile": "09170000103",
+        "email": null,
+        "sectors": [],
+        "philsys_last_four": null,
+        "monthly_income_centavos": null,
+        "is_active": true,
+        "is_protected": false,
+        "given_name_masked": false,
+        "withheld": [
+          "philsys_last_four",
+          "monthly_income",
+          "exact_address"
+        ],
+        "created_at": "2026-11-06T02:00:00.000Z",
+        "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "updated_at": "2026-11-06T02:00:00.000Z",
+        "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+      },
+      "member_count": 2,
+      "household_reference": "HH-2026-000014",
+      "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+      "relationship_count": 1
+    },
+    {
+      "family": {
+        "id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a02",
+        "reference_number": "FAM-2026-000022",
+        "name": "Santos family",
+        "household_id": null,
+        "formed_on": null,
+        "dissolved_on": null,
+        "members": [
+          {
+            "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c08",
+            "role": "head",
+            "joined_on": "2026-11-06",
+            "left_on": null
+          }
+        ],
+        "created_at": "2026-11-06T03:20:00.000Z",
+        "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "updated_at": "2026-11-06T03:20:00.000Z",
+        "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+      },
+      "head": {
+        "id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c08",
+        "first_name": "Rosa",
+        "middle_name": null,
+        "last_name": "Santos",
+        "suffix": null,
+        "sex": "female",
+        "birth_date": "1990-06-30",
+        "civil_status": "single",
+        "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04",
+        "purok_or_sitio": null,
+        "street_address": "7 Luna St.",
+        "mobile": null,
+        "email": null,
+        "sectors": [],
+        "philsys_last_four": null,
+        "monthly_income_centavos": null,
+        "is_active": true,
+        "is_protected": false,
+        "given_name_masked": false,
+        "withheld": [],
+        "created_at": "2026-11-06T02:20:00.000Z",
+        "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "updated_at": "2026-11-06T02:20:00.000Z",
+        "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+      },
+      "member_count": 1,
+      "household_reference": null,
+      "barangay_id": null,
+      "relationship_count": 0
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "has_more": true,
+      "next_cursor": "eyJrIjoiZmFtaWx5In0"
+    }
+  }
+}

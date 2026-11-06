@@ -1,0 +1,306 @@
+{
+  "data": {
+    "household": {
+      "id": "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e01",
+      "reference_number": "HH-2026-000014",
+      "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+      "purok_or_sitio": null,
+      "street_address": null,
+      "head_resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+      "monthly_income_centavos": null,
+      "is_indigent": true,
+      "is_protected": true,
+      "withheld": ["exact_address", "monthly_income"],
+      "created_at": "2026-11-06T03:00:00.000Z",
+      "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+      "updated_at": "2026-11-06T05:00:00.000Z",
+      "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+    },
+    "members": [
+      {
+        "resident": {
+          "id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+          "first_name": "Maria",
+          "middle_name": "Santos",
+          "last_name": "Dela Cruz",
+          "suffix": null,
+          "sex": "female",
+          "birth_date": "1984-04-02",
+          "civil_status": "separated",
+          "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+          "purok_or_sitio": null,
+          "street_address": null,
+          "mobile": "09170000103",
+          "email": null,
+          "sectors": [],
+          "philsys_last_four": null,
+          "monthly_income_centavos": null,
+          "is_active": true,
+          "is_protected": false,
+          "given_name_masked": false,
+          "withheld": ["philsys_last_four", "monthly_income", "exact_address"],
+          "created_at": "2026-11-06T02:00:00.000Z",
+          "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+          "updated_at": "2026-11-06T02:00:00.000Z",
+          "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+        },
+        "role": "head",
+        "is_head": true,
+        "since": "2026-11-06T03:00:00.000Z"
+      },
+      {
+        "resident": {
+          "id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c05",
+          "first_name": "J",
+          "middle_name": null,
+          "last_name": "Dela Cruz",
+          "suffix": null,
+          "sex": "male",
+          "birth_date": "2011-08-19",
+          "civil_status": "single",
+          "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+          "purok_or_sitio": null,
+          "street_address": null,
+          "mobile": null,
+          "email": null,
+          "sectors": [],
+          "philsys_last_four": null,
+          "monthly_income_centavos": null,
+          "is_active": true,
+          "is_protected": true,
+          "given_name_masked": true,
+          "withheld": ["protected_sectors", "exact_address"],
+          "created_at": "2026-11-06T02:30:00.000Z",
+          "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+          "updated_at": "2026-11-06T02:30:00.000Z",
+          "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+        },
+        "role": "child",
+        "is_head": false,
+        "since": "2026-11-06T04:00:00.000Z"
+      }
+    ],
+    "snapshot": {
+      "computed_at": "2026-11-06T06:00:00.000Z",
+      "band": "elevated",
+      "member_count": 2,
+      "factors": [
+        {
+          "code": "no-income-recorded",
+          "class": "contributing",
+          "state": "withheld",
+          "origin": "computed",
+          "computed_state": null,
+          "basis": {
+            "observed": 0,
+            "out_of": null,
+            "threshold": null,
+            "amount_centavos": null,
+            "resident_ids": []
+          },
+          "correction": null
+        },
+        {
+          "code": "income-below-threshold",
+          "class": "primary",
+          "state": "withheld",
+          "origin": "computed",
+          "computed_state": null,
+          "basis": {
+            "observed": 0,
+            "out_of": null,
+            "threshold": null,
+            "amount_centavos": null,
+            "resident_ids": []
+          },
+          "correction": null
+        },
+        {
+          "code": "no-working-age-adult",
+          "class": "primary",
+          "state": "absent",
+          "origin": "computed",
+          "computed_state": null,
+          "basis": {
+            "observed": 1,
+            "out_of": 2,
+            "threshold": 1,
+            "amount_centavos": null,
+            "resident_ids": ["7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03"]
+          },
+          "correction": null
+        },
+        {
+          "code": "child-headed",
+          "class": "primary",
+          "state": "absent",
+          "origin": "computed",
+          "computed_state": null,
+          "basis": {
+            "observed": 42,
+            "out_of": null,
+            "threshold": 18,
+            "amount_centavos": null,
+            "resident_ids": ["7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03"]
+          },
+          "correction": null
+        },
+        {
+          "code": "many-dependants",
+          "class": "contributing",
+          "state": "absent",
+          "origin": "computed",
+          "computed_state": null,
+          "basis": {
+            "observed": 1,
+            "out_of": 2,
+            "threshold": 4,
+            "amount_centavos": null,
+            "resident_ids": ["7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c05"]
+          },
+          "correction": null
+        },
+        {
+          "code": "senior-member",
+          "class": "contributing",
+          "state": "absent",
+          "origin": "computed",
+          "computed_state": null,
+          "basis": {
+            "observed": 0,
+            "out_of": 2,
+            "threshold": 1,
+            "amount_centavos": null,
+            "resident_ids": []
+          },
+          "correction": null
+        },
+        {
+          "code": "pwd-member",
+          "class": "contributing",
+          "state": "absent",
+          "origin": "computed",
+          "computed_state": null,
+          "basis": {
+            "observed": 0,
+            "out_of": 2,
+            "threshold": 1,
+            "amount_centavos": null,
+            "resident_ids": []
+          },
+          "correction": null
+        },
+        {
+          "code": "solo-parent-head",
+          "class": "contributing",
+          "state": "present",
+          "origin": "corrected",
+          "computed_state": "absent",
+          "basis": {
+            "observed": 0,
+            "out_of": 1,
+            "threshold": null,
+            "amount_centavos": null,
+            "resident_ids": ["7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03"]
+          },
+          "correction": {
+            "state": "present",
+            "reason": "Home visit 5 November: the father left in August and sends nothing.",
+            "actor_id": "0f1e2d3c-4b5a-4968-8776-655443322102",
+            "actor_name": "Ana Reyes",
+            "corrected_at": "2026-11-06T05:00:00.000Z"
+          }
+        },
+        {
+          "code": "four-ps-member",
+          "class": "contributing",
+          "state": "absent",
+          "origin": "computed",
+          "computed_state": null,
+          "basis": {
+            "observed": 0,
+            "out_of": 2,
+            "threshold": 1,
+            "amount_centavos": null,
+            "resident_ids": []
+          },
+          "correction": null
+        },
+        {
+          "code": "protected-member",
+          "class": "primary",
+          "state": "withheld",
+          "origin": "computed",
+          "computed_state": null,
+          "basis": {
+            "observed": 0,
+            "out_of": null,
+            "threshold": null,
+            "amount_centavos": null,
+            "resident_ids": []
+          },
+          "correction": null
+        }
+      ],
+      "poverty_threshold": {
+        "annual_per_capita_centavos": 3905500,
+        "geography": "Rizal (province)",
+        "reference_year": 2023,
+        "published_on": "2024-08-15",
+        "source": "Philippine Statistics Authority, 2023 Full Year Official Poverty Statistics, Table 1",
+        "source_url": "https://psa.gov.ph/sites/default/files/phdsd/2023%20FY%20Official%20PovStat%20Publication%20Report_r2.pdf"
+      }
+    },
+    "events": [
+      {
+        "id": "9e8d7c6b-5a49-4382-9716-0f1e2d3c4b04",
+        "kind": "factor-corrected",
+        "resident_id": null,
+        "role": null,
+        "factor_code": "solo-parent-head",
+        "factor_state": "present",
+        "reason": "Home visit 5 November: the father left in August and sends nothing.",
+        "actor_id": "0f1e2d3c-4b5a-4968-8776-655443322102",
+        "actor_name": "Ana Reyes",
+        "occurred_at": "2026-11-06T05:00:00.000Z"
+      },
+      {
+        "id": "9e8d7c6b-5a49-4382-9716-0f1e2d3c4b03",
+        "kind": "member-added",
+        "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c05",
+        "role": "child",
+        "factor_code": null,
+        "factor_state": null,
+        "reason": "Home visit 5 November: her son lives with her.",
+        "actor_id": "0f1e2d3c-4b5a-4968-8776-655443322102",
+        "actor_name": null,
+        "occurred_at": "2026-11-06T04:00:00.000Z"
+      },
+      {
+        "id": "9e8d7c6b-5a49-4382-9716-0f1e2d3c4b02",
+        "kind": "member-added",
+        "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+        "role": "head",
+        "factor_code": null,
+        "factor_state": null,
+        "reason": "Registered as the head of the household.",
+        "actor_id": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "actor_name": "Jose Ramos",
+        "occurred_at": "2026-11-06T03:00:00.000Z"
+      },
+      {
+        "id": "9e8d7c6b-5a49-4382-9716-0f1e2d3c4b01",
+        "kind": "registered",
+        "resident_id": null,
+        "role": null,
+        "factor_code": null,
+        "factor_state": null,
+        "reason": null,
+        "actor_id": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "actor_name": "Jose Ramos",
+        "occurred_at": "2026-11-06T03:00:00.000Z"
+      }
+    ]
+  },
+  "meta": {}
+}

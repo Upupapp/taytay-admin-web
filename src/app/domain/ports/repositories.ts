@@ -104,8 +104,8 @@ import type {
   VulnerabilitySector,
 } from '../residents/resident';
 import type {
+  HouseholdDraft,
   HouseholdFilter,
-  HouseholdSortField,
   MembershipChange,
 } from '../households/household';
 import type { HouseholdDetail, HouseholdSummary } from '../households/household-profile';
@@ -163,9 +163,9 @@ import type {
 } from '../verification/verification-request';
 import type {
   Family,
+  FamilyDraft,
   FamilyFilter,
   FamilyRole,
-  FamilySortField,
   ResidentTransfer,
 } from '../families/family';
 import type { FamilyDetail, FamilySummary } from '../families/family-graph';
@@ -313,11 +313,18 @@ export const RESIDENT_REPOSITORY = new InjectionToken<ResidentRepository>('Resid
  * appears.
  */
 export interface HouseholdRepository {
-  list(
-    filter: HouseholdFilter,
-    page: PageRequest<HouseholdSortField>,
-  ): Observable<Page<HouseholdSummary>>;
+  /**
+   * One cursor page, by reference number — the server's order, not one a caller picks. The API
+   * sends no total, so a screen says "more are available" and never "page 2 of 9" (`DL-161`).
+   */
+  list(filter: HouseholdFilter, page: CursorRequest): Observable<CursorPage<HouseholdSummary>>;
   getById(id: HouseholdId): Observable<HouseholdDetail | null>;
+  /**
+   * Registers a household with its head as its one member. Everybody else joins through
+   * `changeMembership`, each with a reason. A head already under another roof is refused as a
+   * `HouseholdCompositionError`, never moved: one person, one household.
+   */
+  create(draft: HouseholdDraft): Observable<HouseholdDetail>;
   /**
    * Applies composition changes **transactionally**: either every change lands
    * and both sides of the household/resident link agree, or nothing moves and
@@ -356,8 +363,18 @@ export const HOUSEHOLD_REPOSITORY = new InjectionToken<HouseholdRepository>('Hou
  * replacing what was there. Nothing in this port deletes history (`DL-48`).
  */
 export interface FamilyRepository {
-  list(filter: FamilyFilter, page: PageRequest<FamilySortField>): Observable<Page<FamilySummary>>;
+  /**
+   * One cursor page, by reference number — the server's order, not one a caller picks. The API
+   * sends no total, so a screen says "more are available" and never "page 2 of 9" (`DL-161`).
+   */
+  list(filter: FamilyFilter, page: CursorRequest): Observable<CursorPage<FamilySummary>>;
   getById(id: FamilyId): Observable<FamilyDetail | null>;
+  /**
+   * Records a family with its founding members, each with a role, and the household it lives in or
+   * none. The reason is kept with the forming and with each member's joining (`DL-48`). A draft the
+   * registry cannot hold is refused whole as a `FamilyDraftInvalidError`, and nothing is written.
+   */
+  create(draft: FamilyDraft, reason: string): Observable<FamilyDetail>;
   /** Every family a resident currently belongs to. Plural: people overlap. */
   familiesOf(residentId: ResidentId): Observable<readonly FamilySummary[]>;
 
@@ -367,16 +384,15 @@ export interface FamilyRepository {
     kind: RelationshipKind,
     reason: string,
   ): Observable<Relationship>;
-  /** Ends a relationship without deleting it: a former guardian still was one. */
   /**
-   * Ends a relationship between two people, with a reason.
+   * Ends a relationship between two people, with a reason, without deleting it: a former guardian
+   * still was one.
    *
    * Takes the **subject** as well as the relationship, because the API scopes relationships under
    * the resident they are about — the same shape as recording one. A relationship is recorded
    * resident-to-resident so it survives either person moving (`DL-47`), and the route says so.
    *
-   * A DELETE that carries a reason: the standing ends and the event stays (`DL-48`). Nothing here
-   * removes what was true before.
+   * The standing ends and the event stays (`DL-48`). Nothing here removes what was true before.
    */
   endRelationship(
     residentId: ResidentId,
@@ -473,8 +489,9 @@ export interface CaseRepository {
 export const CASE_REPOSITORY = new InjectionToken<CaseRepository>('CaseRepository');
 
 /**
- * Named list parameters. A hook rather than a product surface: the API will own
- * persistence and sharing, and this port is the shape it has to honour.
+ * Named list parameters, an account's own or the office's. The API keeps them and decides who may
+ * share one (`saved-view.share`, `DL-111`); a list of them is answered whole, never paged, because
+ * the server caps how many each list may keep.
  */
 export interface SavedViewRepository {
   listFor(resource: SavedViewResource): Observable<readonly SavedView[]>;

@@ -278,6 +278,42 @@
           {{ relationshipCopy.confirm }}
         </button>
       </app-modal>
+
+      <app-modal
+        [open]="headChange() !== null"
+        [heading]="copy.headHeading"
+        [description]="copy.headDescription"
+        (dismissed)="cancel()"
+      >
+        <div modal-body class="dialogue">
+          @if (headChange(); as change) {
+            <p>{{ change.name }}</p>
+          }
+          <label class="dialogue__field">
+            <span class="dialogue__label">{{ copy.headReason }}</span>
+            <input
+              class="dialogue__input"
+              type="text"
+              [placeholder]="copy.headReasonPlaceholder"
+              [value]="headReason()"
+              (input)="onHeadReason($event)"
+            />
+          </label>
+        </div>
+
+        <button modal-actions type="button" class="btn" (click)="cancel()">
+          {{ copy.headCancel }}
+        </button>
+        <button
+          modal-actions
+          type="button"
+          class="btn btn--primary"
+          [disabled]="!canChangeHead()"
+          (click)="confirmHead()"
+        >
+          {{ copy.headConfirm }}
+        </button>
+      </app-modal>
     }
   </ng-template>
 </app-async-content>

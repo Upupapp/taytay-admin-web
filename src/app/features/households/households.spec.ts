@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter, Router } from '@angular/router';
 import { firstValueFrom, of, type Observable } from 'rxjs';
 
@@ -20,7 +21,9 @@ import {
   toAuthenticatedUser,
   type AuthenticatedUser,
   type BarangayId,
+  type HouseholdId,
   type Page,
+  type ResidentId,
   type StaffRepository,
   type StaffRole,
   type StaffUser,
@@ -29,13 +32,15 @@ import {
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
 
+import { PersonPicker } from '@shared/residents/person-picker';
+
 import { HouseholdDetailPage } from './household-detail-page';
+import { HouseholdFormPage } from './household-form-page';
 import { HouseholdListPage } from './household-list-page';
 import {
   householdFilterParams,
   isHouseholdFilterActive,
   readHouseholdFilter,
-  readHouseholdPage,
 } from './household-query';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
@@ -94,6 +99,7 @@ async function configure(role: StaffRole, barangayId: BarangayId | null = null):
     providers: [
       provideRouter([
         { path: 'households', component: HouseholdListPage },
+        { path: 'households/new', component: HouseholdFormPage },
         { path: 'households/:id', component: HouseholdDetailPage },
         { path: '**', component: StubPage },
       ]),
@@ -159,12 +165,6 @@ describe('the household filter lives in the URL', () => {
     ).toEqual({});
   });
 
-  it('falls back to a sane page and sort', () => {
-    const page = readHouseholdPage(params({ page: 'x', sort: 'vibes' }));
-    expect(page.page).toBe(1);
-    expect(page.sort).toEqual({ field: 'reference', direction: 'asc' });
-  });
-
   it('round-trips a filter through its parameters', () => {
     const filter = { barangayId: SAN_JUAN, minimumBand: 'high' } as const;
     expect(readHouseholdFilter(params(householdFilterParams(filter)))).toEqual(filter);
@@ -214,6 +214,37 @@ describe('the household list', () => {
     }
   });
 
+  it('says how many are shown and whether more follow, never a page count', async () => {
+    const element = html(await openList());
+    const status = element.querySelector('.households__more [role="status"]')?.textContent ?? '';
+    expect(status).toMatch(/\d+ shown\./);
+    expect(status).toContain('every household matching these filters');
+    expect(element.textContent).not.toMatch(/page \d+ of/i);
+  });
+
+  it('says what the search reads, and that it needs two characters', async () => {
+    const element = html(await openList());
+    const hint = element.querySelector('#household-search-hint')?.textContent ?? '';
+    expect(hint).toContain('at least two characters');
+    expect(element.querySelector('input[type="search"]')?.getAttribute('aria-describedby')).toBe(
+      'household-search-hint',
+    );
+  });
+
+  it('offers registration only to a role that may manage households', async () => {
+    const intake = html(await openList('intake-officer'));
+    expect(intake.querySelector('a[href="/households/new"]')?.textContent).toContain(
+      'Register a household',
+    );
+    const auditor = html(await openList('auditor'));
+    expect(auditor.querySelector('a[href="/households/new"]')).toBeNull();
+  });
+
+  it('marks a protected household in the list', async () => {
+    const element = html(await openList());
+    expect(element.querySelector('.households__protected')?.textContent).toContain('Restricted');
+  });
+
   it('confines a barangay link to its own barangay', async () => {
     const element = html(await openList('barangay-link'));
     // The seeded barangay-link account covers San Juan; hh-0002 is in Dolores.
@@ -259,6 +290,15 @@ describe('the household record', () => {
     const element = html(await openDetail(BAUTISTA));
     expect(element.querySelector('.vuln__advisory')?.textContent).toContain(
       'do not decide eligibility',
+    );
+  });
+
+  it('says "withheld" where the server withheld the address, never a blank', async () => {
+    const element = html(await openDetail(PROTECTED_HOUSEHOLD, 'intake-officer'));
+    const facts = element.querySelector('.facts')?.textContent ?? '';
+    expect(facts).toContain('Withheld from your role');
+    expect(element.querySelector('.household__protected')?.textContent).toContain(
+      'protected sector',
     );
   });
 
@@ -389,5 +429,113 @@ describe('correcting an indicator', () => {
     // anything anyway — but the panel must not offer it even to a role that can.
     const element = html(await openDetail(PROTECTED_HOUSEHOLD, 'social-worker'));
     expect(element.querySelector('.vuln__withheld')).toBeNull();
+  });
+});
+
+/* ── Registering a household ──────────────────────────────────────────────── */
+
+describe('registering a household', () => {
+  /** res-0008 belongs to no household; res-0004 already heads one. */
+  const UNATTACHED = asId<ResidentId>('res-0008');
+  const ANOTHER_HOUSEHOLDS_HEAD = asId<ResidentId>('res-0004');
+
+  async function openForm(
+    role: StaffRole = 'intake-officer',
+  ): Promise<ComponentFixture<HouseholdFormPage>> {
+    await configure(role);
+    await TestBed.inject(Router).navigateByUrl('/households/new');
+    const fixture = TestBed.createComponent(HouseholdFormPage);
+    await fixture.whenStable();
+    return fixture;
+  }
+
+  async function fill(
+    fixture: ComponentFixture<HouseholdFormPage>,
+    head: ResidentId,
+    income = '',
+  ): Promise<void> {
+    const view = await firstValueFrom(TestBed.inject(RESIDENT_REPOSITORY).getById(head));
+    const picker = fixture.debugElement.query(By.directive(PersonPicker))
+      .componentInstance as PersonPicker;
+    picker.selected.set(view);
+    const element = html(fixture);
+    const barangay = element.querySelector<HTMLSelectElement>('select');
+    if (barangay !== null) {
+      barangay.value = 'brgy-dolores';
+      barangay.dispatchEvent(new Event('change'));
+    }
+    const street = element.querySelector<HTMLInputElement>('input[autocomplete="street-address"]');
+    if (street !== null) {
+      street.value = '8 Bonifacio St.';
+      street.dispatchEvent(new Event('input'));
+    }
+    const amount = element.querySelector<HTMLInputElement>('input[inputmode="decimal"]');
+    if (amount !== null) {
+      amount.value = income;
+      amount.dispatchEvent(new Event('input'));
+    }
+    await fixture.whenStable();
+  }
+
+  async function submit(fixture: ComponentFixture<HouseholdFormPage>): Promise<void> {
+    html(fixture).querySelector<HTMLButtonElement>('button[type="submit"]')?.click();
+    await fixture.whenStable();
+  }
+
+  it('says, before the button, that the head is the one member and others join later', async () => {
+    const element = html(await openForm());
+    const note = element.querySelector('#household-membership-note');
+    expect(note?.textContent).toContain('one member');
+    expect(note?.textContent).toContain('with a reason');
+    const button = element.querySelector('button[type="submit"]');
+    expect(button?.getAttribute('aria-describedby')).toBe('household-membership-note');
+    // Before it in the document, where somebody deciding reads it.
+    expect(
+      note !== null && button !== null
+        ? note.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING
+        : 0,
+    ).toBeTruthy();
+  });
+
+  it('says what is missing rather than sending an incomplete household', async () => {
+    const fixture = await openForm();
+    await submit(fixture);
+    const missing = html(fixture).querySelector('.household-form__missing')?.textContent ?? '';
+    expect(missing).toContain('barangay');
+    expect(missing).toContain('street address');
+    expect(missing).toContain('head of the household');
+  });
+
+  it('refuses an amount that is not pesos rather than rounding it', async () => {
+    const fixture = await openForm();
+    await fill(fixture, UNATTACHED, '8,500.505');
+    await submit(fixture);
+    expect(html(fixture).querySelector('.household-form__missing')?.textContent).toContain(
+      'at most two decimal places',
+    );
+  });
+
+  it('registers the household and opens it', async () => {
+    const fixture = await openForm();
+    await fill(fixture, UNATTACHED, '8,500.50');
+    await submit(fixture);
+    const router = TestBed.inject(Router);
+    expect(router.url).toMatch(/^\/households\/hh-\d+$/);
+    const id = router.url.split('/').at(-1) ?? '';
+    const detail = await firstValueFrom(
+      TestBed.inject(HOUSEHOLD_REPOSITORY).getById(asId<HouseholdId>(id)),
+    );
+    expect(detail?.household.headResidentId).toBe(UNATTACHED);
+    // Typed as pesos, kept as whole centavos.
+    expect(detail?.household.monthlyIncome?.centavos).toBe(850_050);
+  });
+
+  it('shows a refusal in words when the head already lives under another roof', async () => {
+    const fixture = await openForm();
+    await fill(fixture, ANOTHER_HOUSEHOLDS_HEAD);
+    await submit(fixture);
+    expect(html(fixture).querySelector('.household-form__problems')?.textContent).toContain(
+      'already belongs to another household',
+    );
   });
 });
