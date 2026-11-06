@@ -12,6 +12,7 @@ import {
   REQUIREMENT_STATUS_CATALOG,
   asId,
   centavos,
+  lastFourOf,
   type AdvisoryAcknowledgement,
   type AdvisoryGap,
   type AssessmentAnswers,
@@ -40,6 +41,7 @@ import {
   type IntakeSignal,
   type OpenAssessment,
   type ProgramId,
+  type RequestApproval,
   type RequestAssignment,
   type RequestNote,
   type RequestNoteDraft,
@@ -167,6 +169,8 @@ export function toAssistanceRequest(wire: unknown, barangays: BarangayIndex): As
   }
 
   const requested = int(field(wire, 'requested_amount_centavos'));
+  // The latest approval's figure, or its goods (DL-183): integer centavos, never a float.
+  const approved = int(field(wire, 'approved_amount_centavos'));
 
   return {
     id: requestId,
@@ -180,7 +184,8 @@ export function toAssistanceRequest(wire: unknown, barangays: BarangayIndex): As
     channel,
     referredBy: str(field(wire, 'referred_by')),
     requestedAmount: requested === null ? null : centavos(requested),
-    approvedAmount: null,
+    approvedAmount: approved === null ? null : centavos(approved),
+    approvedInKindDescription: str(field(wire, 'approved_in_kind_description')),
     reasonForRequest: str(field(wire, 'reason_for_request')) ?? '',
     assignedTo: id<StaffUserId>(field(wire, 'assigned_to')),
     assignments,
@@ -487,6 +492,26 @@ export function toWireStatusMove(to: AssistanceRequestStatus, reason: string): S
   return { to, reason: reason.trim() };
 }
 
+/**
+ * The move to `approved`, saying what was approved (`OfficeRequestStatusMove`, `DL-183`): integer
+ * centavos, or the goods described — one, and the other `null`.
+ */
+export interface ApprovalMoveWire {
+  readonly to: 'approved';
+  readonly reason: string;
+  readonly approved_amount_centavos: number | null;
+  readonly approved_in_kind_description: string | null;
+}
+
+export function toWireApproval(approval: RequestApproval, reason: string): ApprovalMoveWire {
+  return {
+    to: 'approved',
+    reason: reason.trim(),
+    approved_amount_centavos: approval.kind === 'money' ? approval.amount.centavos : null,
+    approved_in_kind_description: approval.kind === 'in-kind' ? approval.description.trim() : null,
+  };
+}
+
 /** What `POST office/assistance-requests/{id}/assignment` reads (`OfficeRequestAssignmentWrite`). */
 export interface AssignmentWire {
   readonly assignee_id: string;
@@ -616,12 +641,14 @@ export interface DocumentUploadWire {
 }
 
 export function toWireDocumentUpload(draft: DocumentVersionDraft): DocumentUploadWire {
-  const number = draft.documentNumber?.trim() ?? '';
+  // Only the last four characters leave the browser: nothing longer is held, here or on the API
+  // (DL-183), so nothing longer is sent.
+  const number = lastFourOf(draft.documentNumber);
   const because = draft.replacesBecause?.trim() ?? '';
   return {
     file: draft.file ?? undefined,
     source: draft.source,
-    document_number: number === '' ? undefined : number,
+    document_number: number ?? undefined,
     issued_on: draft.issuedOn ?? undefined,
     expires_on: draft.expiresOn ?? undefined,
     replaces_because: because === '' ? undefined : because,
@@ -846,8 +873,8 @@ function toVersion(value: unknown): DocumentVersion | null {
     version: number,
     file,
     source,
-    // As the server sent it: masked to its last four characters unless this reader may have it
-    // whole. Screens mask it again regardless (`maskDocumentNumber` is idempotent).
+    // As the server sent it: its last four characters, the only part it holds (DL-183). Screens
+    // mask it again regardless (`maskDocumentNumber` is idempotent).
     documentNumber: str(field(value, 'document_number')),
     documentNumberMasked: masked,
     issuedOn: date(field(value, 'issued_on')),

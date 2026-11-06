@@ -138,7 +138,8 @@ export class MockCaseStore {
   }
 
   /**
-   * Names one more request the case covers. Appended; never removed (`DL-179`). Naming one the
+   * Names one more request the case covers. Appended; a link is never removed, only ended with a
+   * reason (`endRequestLink`, `DL-183`), after which the request may be named again. Naming one the
    * case already names answers as it stands, with no second event.
    */
   linkRequest(
@@ -157,6 +158,30 @@ export class MockCaseStore {
     };
     this.cases = this.cases.map((candidate) => (candidate.id === record.id ? updated : candidate));
     this.append('request-linked', record.id, reason, actor, { ...EMPTY_CASE_SUBJECT, requestId });
+    return updated;
+  }
+
+  /**
+   * Ends a request's link to this case, with the reason (`DL-183`). The request leaves the case's
+   * linked requests; the `request-linked` event that named it and the `request-unlinked` event that
+   * ended it both stay in the history, so the file still says it was once part of this case.
+   */
+  endRequestLink(
+    record: StoredCase,
+    requestId: AssistanceRequestId,
+    reason: string,
+    actor: CaseActor,
+  ): StoredCase {
+    if (!record.linkedRequestIds.includes(requestId)) {
+      return record;
+    }
+    const updated: StoredCase = {
+      ...record,
+      linkedRequestIds: record.linkedRequestIds.filter((linked) => linked !== requestId),
+      audit: { ...record.audit, updatedAt: asIsoDateTime(new Date()), updatedBy: actor.id },
+    };
+    this.cases = this.cases.map((candidate) => (candidate.id === record.id ? updated : candidate));
+    this.append('request-unlinked', record.id, reason, actor, { ...EMPTY_CASE_SUBJECT, requestId });
     return updated;
   }
 
@@ -191,9 +216,16 @@ export class MockCaseStore {
     return updated;
   }
 
+  /**
+   * Gives the case to somebody, or to nobody. The open tasks the previous holder owed go with it,
+   * each with its own `task-reassigned` event under the same reason, in the same act (`DL-183`): a
+   * task left with somebody who no longer holds the case is owed by somebody who will not see it.
+   * Anybody else's tasks stay where they are, and nothing moves when the case had nobody.
+   */
   assign(
     record: StoredCase,
     staffUserId: StaffUserId | null,
+    assigneeName: string | null,
     reason: string,
     actor: CaseActor,
   ): StoredCase {
@@ -201,6 +233,18 @@ export class MockCaseStore {
       return record;
     }
     const now = asIsoDateTime(new Date());
+    const previous = record.assignedTo;
+    const owed =
+      previous === null
+        ? []
+        : this.tasks
+            .filter(
+              (task) =>
+                task.caseId === record.id && task.status === 'open' && task.assignedTo === previous,
+            )
+            .sort((a, b) =>
+              a.dueOn === b.dueOn ? (a.id < b.id ? -1 : 1) : a.dueOn < b.dueOn ? -1 : 1,
+            );
     const updated: StoredCase = {
       ...record,
       assignedTo: staffUserId,
@@ -211,6 +255,20 @@ export class MockCaseStore {
       ...EMPTY_CASE_SUBJECT,
       staffUserId,
     });
+    for (const task of owed) {
+      const moved: CaseTask = {
+        ...task,
+        assignedTo: staffUserId,
+        assignedToName: assigneeName,
+        audit: { ...task.audit, updatedAt: now, updatedBy: actor.id },
+      };
+      this.tasks = this.tasks.map((candidate) => (candidate.id === task.id ? moved : candidate));
+      this.append('task-reassigned', record.id, reason, actor, {
+        ...EMPTY_CASE_SUBJECT,
+        taskId: task.id,
+        staffUserId,
+      });
+    }
     return updated;
   }
 
@@ -292,6 +350,33 @@ export class MockCaseStore {
       taskId: task.id,
     });
     return completed;
+  }
+
+  /**
+   * Ends a task that is no longer needed (`DL-183`). **Marks it cancelled; never removes the row.**
+   * Who ended it and when are kept as a completion's are, and the reason is its outcome, so a case
+   * can then close without a task left owed by nobody.
+   */
+  cancelTask(task: CaseTask, reason: string, actor: CaseActor): CaseTask {
+    if (task.status !== 'open') {
+      return task;
+    }
+    const now = asIsoDateTime(new Date());
+    const cancelled: CaseTask = {
+      ...task,
+      status: 'cancelled',
+      completedAt: now,
+      completedBy: actor.id,
+      completedByName: actor.name,
+      outcome: reason.trim(),
+      audit: { ...task.audit, updatedAt: now, updatedBy: actor.id },
+    };
+    this.tasks = this.tasks.map((candidate) => (candidate.id === task.id ? cancelled : candidate));
+    this.append('task-cancelled', task.caseId, reason, actor, {
+      ...EMPTY_CASE_SUBJECT,
+      taskId: task.id,
+    });
+    return cancelled;
   }
 
   /**

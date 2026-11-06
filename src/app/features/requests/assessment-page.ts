@@ -14,7 +14,9 @@ import type { Observable } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom, of, switchMap, filter, tap } from 'rxjs';
 
+import { NotConnected } from '@core/access/not-connected';
 import { PermissionService } from '@core/access/permission.service';
+import { ServedPorts } from '@core/access/served-ports';
 import { describeFailure, isApiFailure } from '@core/http/api-failure';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
@@ -39,6 +41,13 @@ import {
   type StaffUserId,
   ASSISTANCE_REQUEST_REPOSITORY,
   ASSISTANCE_STATUS_CATALOG,
+  RELEASE_REPOSITORY,
+  RELEASE_STATUS_CATALOG,
+  approvalProblem,
+  holdsRequestOpen,
+  parsePesos,
+  type Release,
+  type RequestApproval,
   PROGRAM_REPOSITORY,
   ASSISTANCE_STATUS_TRANSITIONS,
   PAYOUT_RECORDED_STATUSES,
@@ -100,6 +109,15 @@ import { PesoPipe } from '@shared/pipes/peso.pipe';
 
 import { REQUESTS_COPY } from './requests.copy';
 
+/** The statuses a request holds while a payout may be prepared for it (`DL-180`). */
+const PAYABLE: readonly AssistanceRequestStatus[] = ['approved', 'scheduled'];
+
+/** The moves refused while the request's release stands (`DL-183`). */
+const ENDED_UNDER_PAYOUT: readonly AssistanceRequestStatus[] = ['cancelled', 'expired'];
+
+/** The same floor `StatusTransition` holds every other move to. */
+const APPROVAL_REASON_MIN_LENGTH = 8;
+
 /**
  * The assessment workspace.
  *
@@ -139,6 +157,7 @@ import { REQUESTS_COPY } from './requests.copy';
     RouterLink,
     StatusBadge,
     StatusTransition,
+    NotConnected,
   ],
   templateUrl: './assessment-page.html',
   styleUrl: './assessment-page.scss',
@@ -149,6 +168,7 @@ export class AssessmentPage {
   private readonly programs = inject(PROGRAM_REPOSITORY);
   private readonly notifications = inject(NotificationStore);
   private readonly permissions = inject(PermissionService);
+  private readonly releases = inject(RELEASE_REPOSITORY);
 
   readonly id = input.required<string>();
 
@@ -173,14 +193,18 @@ export class AssessmentPage {
   /**
    * The applicant's picture, read fresh rather than copied onto the request.
    *
-   * Not asked for on behalf of a caseload: the server refuses the resident registry to an
-   * `assigned-cases` account (`DL-174`, `DL-178`), and a refusal there takes the reader off this
-   * page. Held as a view state, so a registry that cannot be read is said in place — the request
-   * itself stays readable either way.
+   * A caseload reads it too: the person a request assigned to it is about is its own client, and
+   * the server answers their record and household to it, with the same redaction as anybody's
+   * (`DL-183`, superseding the refusal `DL-178` kept here). Held as a view state, so a record that
+   * cannot be read is said in place — the request itself stays readable either way.
    */
-  protected readonly readsRegistry = computed(
-    () => this.permissions.scope() !== 'assigned-cases' && this.permissions.has('resident.view'),
-  );
+  protected readonly readsRegistry = computed(() => this.permissions.has('resident.view'));
+
+  /**
+   * The registry's own pages are for a reader of the registry. A caseload reads its client here,
+   * in place, and is not offered a link into the list it is refused (`CLAUDE.md` rule 8).
+   */
+  protected readonly linksRegistry = computed(() => this.permissions.scope() !== 'assigned-cases');
 
   private readonly profileState = toSignal(
     toObservable(
@@ -204,12 +228,11 @@ export class AssessmentPage {
   /**
    * The duplicate check reads one named person's whole assistance history, so it is the filers'
    * (`request.create`, `DL-60`) and is not asked for on anybody else's behalf: the API would refuse
-   * it, and a refusal there takes the reader off this page. A caseload is refused it too, whatever
-   * it holds: it reads one person's whole history, beyond the requests assigned to it (`DL-178`).
+   * it, and a refusal there takes the reader off this page. A caseload reads it for a request
+   * assigned to it — its own client's previous assistance (`DL-183`); the check before filing,
+   * which names anybody, stays refused to it and is never asked from here.
    */
-  protected readonly readsAdvisory = computed(
-    () => this.permissions.has('request.create') && this.permissions.scope() !== 'assigned-cases',
-  );
+  protected readonly readsAdvisory = computed(() => this.permissions.has('request.create'));
 
   /** Held as a view state, so a check that could not be read is said in place, never as "nothing found". */
   private readonly advisoryState = toSignal(
@@ -403,10 +426,149 @@ export class AssessmentPage {
   }
 
 
+  /**
+   * Approving is its own act, with what was approved (`DL-183`), and is not among these. Cancelling
+   * and expiring are not offered while the request's release stands: the release is voided first.
+   */
   protected permittedMoves(status: AssistanceRequestStatus): readonly AssistanceRequestStatus[] {
+    const held = this.openRelease() !== null;
     return nextStatuses(ASSISTANCE_STATUS_TRANSITIONS, status).filter(
       (to) =>
-        !PAYOUT_RECORDED_STATUSES.includes(to) && this.permissions.has(permissionForTransition(to)),
+        !PAYOUT_RECORDED_STATUSES.includes(to) &&
+        to !== 'approved' &&
+        !(held && ENDED_UNDER_PAYOUT.includes(to)) &&
+        this.permissions.has(permissionForTransition(to)),
+    );
+  }
+
+  /* ── the payout behind the request (DL-183) ──────────────────────────────
+   *
+   * A request is not cancelled or expired while its release stands — prepared, scheduled,
+   * deferred, unclaimed or being corrected — and the server refuses it. A reader of payouts is told
+   * which release, before where the button would be; anybody else is told the rule, because this
+   * account cannot read the payouts to know.
+   */
+  protected readonly servesReleases = inject(ServedPorts).serves('release');
+  private readonly readsReleases = computed(
+    () => this.servesReleases && this.permissions.has('release.view'),
+  );
+
+  private readonly releaseState = toSignal(
+    toObservable(computed(() => ({ request: this.request(), reads: this.readsReleases() }))).pipe(
+      switchMap(({ request, reads }) =>
+        request === null || !reads || !PAYABLE.includes(request.status)
+          ? of(ready([] as readonly Release[]))
+          : toViewState(this.releases.listForRequest(request.id)),
+      ),
+    ),
+    { initialValue: ready([] as readonly Release[]) as ViewState<readonly Release[]> },
+  );
+
+  protected readonly openRelease = computed(
+    () => (valueOf(this.releaseState()) ?? []).find((release) => holdsRequestOpen(release.status)) ?? null,
+  );
+
+  /** Whether this reader could know of an open release: it reads payouts, and the read succeeded. */
+  private readonly releasesKnown = computed(
+    () => this.readsReleases() && this.releaseState().kind === 'ready',
+  );
+
+  /** Whether the rule about an open release is said here: a payable request this reader could end. */
+  protected endsUnderPayout(status: AssistanceRequestStatus): boolean {
+    return (
+      PAYABLE.includes(status) &&
+      ENDED_UNDER_PAYOUT.some((to) => this.permissions.has(permissionForTransition(to)))
+    );
+  }
+
+  protected releaseStands(release: Release): string {
+    return this.copy.releaseStands(
+      release.referenceNumber,
+      RELEASE_STATUS_CATALOG[release.status].label.toLowerCase(),
+    );
+  }
+
+  protected readonly unknownRelease = computed(() => !this.releasesKnown());
+
+  /* ── approving, with what was approved (DL-183) ─────────────────────────── */
+
+  protected readonly canApprove = computed(() => this.permissions.has('request.approve'));
+  protected readonly approvalKind = signal<RequestApproval['kind']>('money');
+  protected readonly approvalAmount = signal('');
+  protected readonly approvalGoods = signal('');
+  protected readonly approvalReason = signal('');
+  private readonly approvalTried = signal(false);
+
+  /**
+   * What the form says was approved, or the refusal in words. The pesos are read from the text as
+   * two integers (`parsePesos`), never multiplied as a decimal; a figure that cannot be read is
+   * refused, never rounded.
+   */
+  private readonly approvalDraft = computed(
+    (): { readonly approval: RequestApproval } | { readonly problem: string } => {
+      const problems = this.copy.approveProblems;
+      let approval: RequestApproval;
+      if (this.approvalKind() === 'money') {
+        const amount = parsePesos(this.approvalAmount());
+        if (amount === null) {
+          return { problem: problems.amountUnreadable };
+        }
+        approval = { kind: 'money', amount };
+      } else {
+        approval = { kind: 'in-kind', description: this.approvalGoods().trim() };
+      }
+      const problem = approvalProblem(approval);
+      if (problem !== null) {
+        return { problem: problems[problem] };
+      }
+      if (this.approvalReason().trim().length < APPROVAL_REASON_MIN_LENGTH) {
+        return { problem: problems.reasonShort };
+      }
+      return { approval };
+    },
+  );
+
+  /** Said once the approver has tried, never while they are still typing. */
+  protected readonly approvalProblemText = computed(() => {
+    const draft = this.approvalDraft();
+    return this.approvalTried() && 'problem' in draft ? draft.problem : null;
+  });
+
+  protected onApprovalKind(kind: RequestApproval['kind']): void {
+    this.approvalKind.set(kind);
+  }
+
+  protected onApprovalAmount(event: Event): void {
+    this.approvalAmount.set((event.target as HTMLInputElement).value);
+  }
+
+  protected onApprovalGoods(event: Event): void {
+    this.approvalGoods.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  protected onApprovalReason(event: Event): void {
+    this.approvalReason.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  protected approve(): void {
+    this.approvalTried.set(true);
+    const draft = this.approvalDraft();
+    if ('problem' in draft) {
+      return;
+    }
+    this.run(
+      this.requests.approve(
+        asId<AssistanceRequestId>(this.id()),
+        draft.approval,
+        this.approvalReason(),
+      ),
+      this.copy.approvedNotice,
+      () => {
+        this.approvalTried.set(false);
+        this.approvalAmount.set('');
+        this.approvalGoods.set('');
+        this.approvalReason.set('');
+      },
     );
   }
 

@@ -62,6 +62,12 @@ export const RELEASES_COPY = {
       'It may not exist, or it may be outside what your account reads. Open the release from the request’s record.',
     requestHeading: 'For the request',
     requested: 'Asked for:',
+    // DL-183: the approval is the ceiling; the server refuses a money release above it.
+    approvedCeiling: 'Approved:',
+    approvedCeilingNote: 'A money release is prepared at or under this amount, never above it.',
+    approvedGoods: 'Approved as goods:',
+    approvedNoAmount:
+      'The approval recorded no amount, so a money release cannot be prepared against it — only goods.',
     existingUnread:
       'The releases already recorded for this request could not be read, so no new one is offered: a second payout prepared by mistake is one somebody may hand over.',
     existingHeading: 'This request already has a release',

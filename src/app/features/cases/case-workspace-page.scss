@@ -236,6 +236,22 @@ textarea.form__input {
   margin-block-start: var(--space-compact);
 }
 
+/* The open tasks listed where closing is held back, each with its way out (DL-183). */
+.workspace__close-tasks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-compact);
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-compact);
+  }
+}
+
 .workspace__problem {
   margin: 0;
   font-size: 13px;

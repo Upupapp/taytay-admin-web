@@ -444,6 +444,7 @@ describe('the case study', () => {
     referredBy: null,
     requestedAmount: pesos(9000),
     approvedAmount: null,
+    approvedInKindDescription: null,
     reasonForRequest: 'Maintenance medicines',
     assignedTo: null,
     assignments: [],

@@ -86,9 +86,9 @@ export const PERMISSIONS = [
   // certificate was verified, and read its masked number, without being able to
   // pull the scan of somebody's medical abstract off the system.
   'document.download',
-  // Reading a document number in full rather than masked to its last four
-  // characters. Separate again, because a number is disclosive on its own.
-  'document.view-full-number',
+  // There is no key for reading a document number in full: only its last four
+  // characters are ever held (DL-183, RA 10173; RA 11055 for a PhilSys number).
+  // The file, behind `document.download`, is the full evidence.
 
   'release.view',
   'release.schedule',
@@ -358,7 +358,6 @@ const SOCIAL_WORKER_PERMISSIONS: readonly Permission[] = [
   'request.endorse',
   'request.view-sensitive',
   'document.download',
-  'document.view-full-number',
   'referral.manage',
   'report.view',
 ];

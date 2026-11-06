@@ -154,11 +154,12 @@ export const CASE_CATEGORIES: readonly CaseCategory[] = [
  * - `summary`, `reasons`, `taskWords`, `notes`: the case is about a person under `vawc-survivor`
  *   or `cicl` today and the reader lacks `request.view-sensitive` — the rule and the key of a
  *   protected request. That reader cannot add to the case either.
- * - `householdContext`: the reader works a caseload (`assigned-cases`). A case admits its worker to
- *   the case and the person it is about, and does not widen what they read of the registry, so the
- *   subject's household and family are not named.
+ *
+ * A caseload (`assigned-cases`) is no longer refused the subject's household and family: a social
+ * worker reads what they need for their own clients (`DL-183`, superseding `DL-179`'s
+ * `householdContext`).
  */
-export type CaseWithheldField = 'summary' | 'reasons' | 'taskWords' | 'notes' | 'householdContext';
+export type CaseWithheldField = 'summary' | 'reasons' | 'taskWords' | 'notes';
 
 /** What a protected case withholds from a reader without `request.view-sensitive`. */
 export const PROTECTED_CASE_WITHHELD: readonly CaseWithheldField[] = [
@@ -178,8 +179,8 @@ export interface SocialCase {
    */
   readonly subjectResidentId: ResidentId;
   /**
-   * The subject's household today. Null while between addresses — the household may move — and
-   * null when the household is withheld from this reader (`householdContext`, `DL-179`).
+   * The subject's household today. Null while between addresses — the household may move. A
+   * caseload reads it for its own client like anybody else (`DL-183`).
    *
    * There is no family on a case: who the subject belongs to is read from the families they are in
    * today, because a household is not a family and a family is not fixed (`DL-47`).

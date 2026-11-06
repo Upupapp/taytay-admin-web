@@ -41,15 +41,14 @@ export interface CaseWorkspace {
   readonly record: SocialCase;
   readonly subject: ResidentView;
   /**
-   * Where they live, and why the household looks exposed. Advisory only (`DL-42`). `null` both
-   * when there is no household and when it is withheld — `householdContextWithheld` tells the two
-   * apart, and a screen must never say "no household" for the second.
+   * Where they live, and why the household looks exposed. Advisory only (`DL-42`). `null` when there
+   * is no household; a household that could not be read is `householdContextUnread`, never "none".
    */
   readonly household: HouseholdSummary | null;
   readonly vulnerability: VulnerabilitySnapshot | null;
   /**
    * The families the subject belongs to today. A household is not a family (`DL-47`), and a person
-   * may be in more than one. Empty when withheld, as the household is.
+   * may be in more than one.
    */
   readonly families: readonly FamilySummary[];
   readonly householdMembers: readonly ResidentView[];
@@ -70,16 +69,6 @@ export interface CaseWorkspace {
   readonly timeline: readonly CaseTimelineEntry[];
   readonly nextAction: CaseTask | null;
   readonly assignedToName: string | null;
-}
-
-/**
- * The subject's household and family are not named to this reader (`DL-179`): an account that works
- * only its assigned cases is admitted to the case, not to the registry around it.
- */
-export function householdContextWithheld(workspace: {
-  readonly record: Pick<SocialCase, 'withheld'>;
-}): boolean {
-  return workspace.record.withheld.includes('householdContext');
 }
 
 /** How many requests the case names that this reader is not shown (`DL-179`). */

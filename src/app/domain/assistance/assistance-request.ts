@@ -427,6 +427,56 @@ export const STATUS_MOVE_NEEDS_REASON =
   'Say why the request is moving. Every move is kept with its reason, and nothing was sent.';
 
 /**
+ * What an approval says was approved (`DL-183`): an amount in integer centavos, or — for goods,
+ * which nobody at the office prices (`DL-93`) — what the goods are. One, never both. A money
+ * release is then prepared against it and never above it.
+ */
+export type RequestApproval =
+  | { readonly kind: 'money'; readonly amount: Money }
+  | { readonly kind: 'in-kind'; readonly description: string };
+
+/** The API's own ceiling on a centavo figure. */
+export const APPROVED_AMOUNT_MAX_CENTAVOS = 2_000_000_000;
+export const APPROVED_GOODS_MAX_LENGTH = 300;
+
+export type ApprovalProblem = 'amount-not-positive' | 'amount-too-large' | 'goods-missing' | 'goods-too-long';
+
+/** Why an approval cannot be recorded as it stands, or `null`. Refused in words, never rounded. */
+export function approvalProblem(approval: RequestApproval): ApprovalProblem | null {
+  if (approval.kind === 'money') {
+    if (!Number.isSafeInteger(approval.amount.centavos) || approval.amount.centavos < 1) {
+      return 'amount-not-positive';
+    }
+    return approval.amount.centavos > APPROVED_AMOUNT_MAX_CENTAVOS ? 'amount-too-large' : null;
+  }
+  const words = approval.description.trim();
+  if (words === '') {
+    return 'goods-missing';
+  }
+  return words.length > APPROVED_GOODS_MAX_LENGTH ? 'goods-too-long' : null;
+}
+
+/** The refusal of a move to `approved` that does not say what was approved, in the API's sense. */
+export const APPROVAL_NEEDS_WHAT =
+  'An approval says what was approved: the amount, or for goods a description of them. Nothing was sent.';
+
+/** `approved` is its own act, carrying what was approved; it is never a bare status move. */
+export const APPROVAL_IS_ITS_OWN_ACT =
+  'Approving says what was approved. Use the approval form, which records the amount or the goods.';
+
+/**
+ * The refusal of a cancel or an expiry while a payout is still open, in the API's words
+ * (`DL-183`): a payout the office has prepared is ended by its own act, so the release is voided
+ * first and the record says who stopped it and why.
+ */
+export function openReleaseRefusal(releaseReference: string, to: 'cancelled' | 'expired'): string {
+  return (
+    `This request has release ${releaseReference}, which is still open. Void the release first, ` +
+    `then ${to === 'cancelled' ? 'cancel' : 'expire'} the request: a payout the office has prepared is ended by its own act.`
+  );
+}
+
+/**
  * The API's refusal of a save over a draft whose words are withheld from the writer, in its words
  * (`DL-177`): a draft saved from a redacted copy would erase the reason that was withheld.
  */
@@ -472,7 +522,13 @@ export interface AssistanceRequest {
   /** Who sent the applicant, when somebody did. `null` too when withheld — see `withheld`. */
   readonly referredBy: string | null;
   readonly requestedAmount: Money | null;
+  /**
+   * What the latest approval recorded (`DL-183`): the most a money release may be prepared for.
+   * `null` before approval, for goods, and on an approval recorded before the amount was kept.
+   */
   readonly approvedAmount: Money | null;
+  /** The goods the latest approval described, when it approved goods rather than an amount. */
+  readonly approvedInKindDescription: string | null;
   /** `''` when withheld from this reader — read `withheld` before reading it as "none given". */
   readonly reasonForRequest: string;
   /** The social worker it is assigned to for assessment: the latest of `assignments`. */

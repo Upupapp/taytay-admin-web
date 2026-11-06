@@ -46,6 +46,7 @@ const CASE_ID = asId<CaseId>(OFFICE_CASE.data.id);
 const SUBJECT = OFFICE_CASE.data.subject_resident_id;
 const HOUSEHOLD = `${BASE}/office/households/${OFFICE_CASE.data.household_id ?? ''}`;
 const FAMILIES = `${BASE}/office/residents/${SUBJECT}/families`;
+const CASELOAD_FAMILIES = `${BASE}/office/residents/${OFFICE_CASE_CASELOAD.data.subject_resident_id}/families`;
 const SW_1 = asId<StaffUserId>('0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c07');
 const TASK = asId<CaseTaskId>('b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d01');
 const REQUEST = asId<AssistanceRequestId>('8f1e2d3c-4b5a-4968-8776-1a2b3c4d5e02');
@@ -219,16 +220,18 @@ describe('cases over the API (DL-179)', () => {
       expect([...times].sort().reverse()).toEqual(times);
     });
 
-    it('asks nothing of the registry for a caseload, and counts the requests it cannot read', async () => {
+    it('reads a caseload’s own client’s families too, and counts the requests it cannot read', async () => {
       const read = firstValueFrom(cases.getById(CASE_ID));
       barangays();
       http.expectOne(`${CASES}/${CASE_ID}`).flush(OFFICE_CASE_CASELOAD);
-      // No household or family read: the server refuses those routes to a caseload (DL-179).
+      // The client's families are read for a caseload like anybody else (DL-183); this one has no
+      // household on record, so no household is asked for.
+      http.expectOne({ method: 'GET', url: CASELOAD_FAMILIES }).flush(OFFICE_RESIDENT_FAMILIES);
 
       const workspace = await read;
-      expect(workspace?.record.withheld).toEqual(['householdContext']);
+      expect(workspace?.record.withheld).toEqual([]);
       expect(workspace?.household).toBeNull();
-      expect(workspace?.families).toEqual([]);
+      expect(workspace?.householdContextUnread).toBe(false);
       expect(workspace?.record.linkedRequestIds).toHaveLength(2);
       expect(workspace?.requests).toHaveLength(1);
       expect(
@@ -362,6 +365,18 @@ describe('cases over the API (DL-179)', () => {
         { reason: REASON },
       ],
       [
+        'cancels a task no longer needed, the reason its outcome',
+        (repository: CaseRepository) => repository.cancelTask(CASE_ID, TASK, REASON),
+        `tasks/${TASK}/cancel`,
+        { reason: REASON },
+      ],
+      [
+        'ends a request’s link, the reason kept',
+        (repository: CaseRepository) => repository.endRequestLink(CASE_ID, REQUEST, REASON),
+        `requests/${REQUEST}/end`,
+        { reason: REASON },
+      ],
+      [
         'hands a task over',
         (repository: CaseRepository) => repository.assignTask(CASE_ID, TASK, SW_1, REASON),
         `tasks/${TASK}/assignment`,
@@ -379,8 +394,9 @@ describe('cases over the API (DL-179)', () => {
       barangays();
       const request = http.expectOne({ method: 'POST', url: `${CASES}/${CASE_ID}/${path}` });
       expect(request.request.body).toEqual(body);
-      // A caseload's answer: nothing more is read beside it.
+      // A caseload's answer: its client's families are read beside it (DL-183).
       request.flush(OFFICE_CASE_CASELOAD);
+      http.expectOne({ method: 'GET', url: CASELOAD_FAMILIES }).flush(OFFICE_RESIDENT_FAMILIES);
       expect((await written).record.id).toBe(CASE_ID);
     });
 

@@ -101,6 +101,10 @@ import {
   ASSISTANCE_HISTORY_NOT_CONNECTED,
   PROGRAM_UTILIZATION_NOT_CONNECTED,
   STATUS_MOVE_NEEDS_REASON,
+  APPROVAL_IS_ITS_OWN_ACT,
+  APPROVAL_NEEDS_WHAT,
+  approvalProblem,
+  type RequestApproval,
   ASSIGNMENT_NEEDS_REASON,
   DocumentVersionInvalidError,
   REQUEST_NOTE_MAX_LENGTH,
@@ -379,6 +383,7 @@ import {
   toWireNote,
   toWireRequestDraft,
   toWireRequestFiling,
+  toWireApproval,
   toWireRequirementReview,
   toWireStatusMove,
 } from './mappers/assistance-request.mapper';
@@ -391,9 +396,11 @@ import {
   toWireCaseNote,
   toWireCaseOpen,
   toWireCaseRequestLink,
+  toWireCaseRequestLinkEnd,
   toWireCaseStatus,
   toWireCaseTask,
   toWireCaseTaskAssignment,
+  toWireCaseTaskCancellation,
   toWireCaseTaskCompletion,
   toWireCaseTaskReschedule,
   type CaseWorkspaceParts,
@@ -2410,10 +2417,39 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
     if (words === '') {
       return throwError(() => new Error(STATUS_MOVE_NEEDS_REASON));
     }
+    // Approving says what was approved (DL-183); the API refuses a bare move to it.
+    if (to === 'approved') {
+      return throwError(() => new Error(APPROVAL_IS_ITS_OWN_ACT));
+    }
     return this.saved(
       this.api.post(
         `${API_ENDPOINTS.officeAssistanceRequests}/${id}/status`,
         toWireStatusMove(to, words),
+      ),
+    );
+  }
+
+  /**
+   * The move to `approved` with what was approved (DL-183), refused in words before anything is
+   * sent when it says neither an amount nor the goods. A cancel or expiry the API refuses under an
+   * open release is said in the API's words by the HTTP layer.
+   */
+  approve(
+    id: AssistanceRequestId,
+    approval: RequestApproval,
+    reason: string,
+  ): Observable<AssistanceRequest> {
+    const words = reason.trim();
+    if (words === '') {
+      return throwError(() => new Error(STATUS_MOVE_NEEDS_REASON));
+    }
+    if (approvalProblem(approval) !== null) {
+      return throwError(() => new Error(APPROVAL_NEEDS_WHAT));
+    }
+    return this.saved(
+      this.api.post(
+        `${API_ENDPOINTS.officeAssistanceRequests}/${id}/status`,
+        toWireApproval(approval, words),
       ),
     );
   }
@@ -2852,10 +2888,10 @@ const NO_CONTEXT: CaseContext = { household: null, families: [], unread: false }
  * `case-note.view-protected`, and the mapper says what the server said.
  *
  * **The household and family are read beside the case**, from the routes that serve them — the
- * household register and the subject's families — and only for a reader the case does not withhold
- * them from. A caseload (`assigned-cases`) is refused those routes, and the case says so with
- * `household_context`, so nothing is asked on its behalf (`DL-179`). A context that cannot be read
- * is said to be unread rather than shown as "no household".
+ * household register and the subject's families — for every reader the case admits. A caseload
+ * (`assigned-cases`) reads them for its own client like anybody else (`DL-183`, superseding
+ * `DL-179`'s `household_context`). A context that cannot be read is said to be unread rather than
+ * shown as "no household".
  *
  * **The timeline is the domain's one assembly** (`caseTimeline`), from the events, notes, tasks and
  * the linked requests' histories, exactly as the mock builds it.
@@ -2979,6 +3015,20 @@ export class HttpCaseRepository implements CaseRepository {
     );
   }
 
+  /** Ends a request's link to the case, with the reason; the link stays in the history (`DL-183`). */
+  endRequestLink(
+    id: CaseId,
+    requestId: AssistanceRequestId,
+    reason: string,
+  ): Observable<CaseWorkspace> {
+    return this.written(reason, () =>
+      this.api.post(
+        `${API_ENDPOINTS.officeCases}/${id}/requests/${requestId}/end`,
+        toWireCaseRequestLinkEnd(reason),
+      ),
+    );
+  }
+
   changeStatus(id: CaseId, to: CaseStatus, reason: string): Observable<CaseWorkspace> {
     return this.written(reason, () =>
       this.api.post(`${API_ENDPOINTS.officeCases}/${id}/status`, toWireCaseStatus(to, reason)),
@@ -3028,6 +3078,16 @@ export class HttpCaseRepository implements CaseRepository {
       this.api.post(
         `${API_ENDPOINTS.officeCases}/${id}/tasks/${taskId}/complete`,
         toWireCaseTaskCompletion(reason),
+      ),
+    );
+  }
+
+  /** A task no longer needed, ended with the reason as its outcome (`DL-183`). */
+  cancelTask(id: CaseId, taskId: CaseTaskId, reason: string): Observable<CaseWorkspace> {
+    return this.written(reason, () =>
+      this.api.post(
+        `${API_ENDPOINTS.officeCases}/${id}/tasks/${taskId}/cancel`,
+        toWireCaseTaskCancellation(reason),
       ),
     );
   }
@@ -3084,14 +3144,11 @@ export class HttpCaseRepository implements CaseRepository {
   }
 
   /**
-   * The household and the families around the case, read from the routes that serve them — never
-   * for a reader the case withholds them from (`DL-179`), and said to be unread when they fail.
+   * The household and the families around the case, read from the routes that serve them — for a
+   * caseload too, which reads its own client's (`DL-183`) — and said to be unread when they fail.
    */
   private compose(parts: CaseWorkspaceParts, barangays: BarangayIndex): Observable<CaseWorkspace> {
     const record = parts.summary.record;
-    if (record.withheld.includes('householdContext')) {
-      return of(assembleWorkspace(parts, NO_CONTEXT));
-    }
     const householdId = record.householdId;
     const household: Observable<HouseholdDetail | null> =
       householdId === null

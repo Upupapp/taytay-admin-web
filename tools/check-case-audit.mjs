@@ -67,7 +67,13 @@ if (portStart === -1 || portEnd === -1) {
   const port = portsText.slice(portStart, portEnd);
   // Reads answer questions; mutations change the record and must justify it.
   // `listAssignees` (casework phase 3, DL-179) reads who a case may be given to; it changes nothing.
-  const READ_ONLY = new Set(['list', 'queueCounts', 'getById', 'casesForResident', 'listAssignees']);
+  const READ_ONLY = new Set([
+    'list',
+    'queueCounts',
+    'getById',
+    'casesForResident',
+    'listAssignees',
+  ]);
   const methods = [...port.matchAll(/^\s{2}([a-zA-Z]+)\(([\s\S]*?)\):/gm)];
 
   if (methods.length === 0) {
@@ -109,7 +115,9 @@ for (const [index, line] of storeText.split(/\r?\n/).entries()) {
     .split(/\r?\n/)
     .slice(index, index + 3)
     .join(' ');
-  if (!/this\s*\.\s*events\s*=\s*\[\s*(\.\.\.this\s*\.\s*events|\.\.\.MOCK_CASE_EVENTS)/.test(window)) {
+  if (
+    !/this\s*\.\s*events\s*=\s*\[\s*(\.\.\.this\s*\.\s*events|\.\.\.MOCK_CASE_EVENTS)/.test(window)
+  ) {
     problems.push(
       `mock-case.store.ts:${index + 1} assigns \`this.events\` without appending to it. The only ` +
         'way a case history may change is by growing (DL-54).',
@@ -129,14 +137,18 @@ if (FORBIDDEN_STORE.test(storeText)) {
 // Every method that assigns to a record collection must also write the event.
 // `open` and `linkRequest` joined in casework phase 3 (DL-179): opening a case and naming a request
 // it covers are material changes like any other, each written with its event.
+// `cancelTask` and `endRequestLink` joined with DL-183: ending a task or a link is a recorded act
+// with a reason, never a delete.
 const MUTATORS = [
   'open',
   'linkRequest',
+  'endRequestLink',
   'changeStatus',
   'assign',
   'addNote',
   'addTask',
   'completeTask',
+  'cancelTask',
   'assignTask',
   'rescheduleTask',
 ];

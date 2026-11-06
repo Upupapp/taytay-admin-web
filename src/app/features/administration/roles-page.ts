@@ -61,7 +61,6 @@ export class RolesPage {
     return (
       permission.endsWith('view-sensitive') ||
       permission === 'case-note.view-protected' ||
-      permission === 'document.view-full-number' ||
       permission === 'audit.view-detail'
     );
   }

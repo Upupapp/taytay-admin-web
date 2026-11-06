@@ -448,7 +448,9 @@ describe('the workspace offers only what the office record accepts', () => {
     const worker = html(await openWorkspace(MERCADO, 'social-worker', 'staff-sw-1'));
     expect(link(worker)?.getAttribute('href')).toBe(`/visits/schedule?case=${MERCADO}`);
     // Intake reads visits but does not make them.
-    expect(link(html(await openWorkspace(MERCADO, 'intake-officer', 'staff-intake')))).toBeUndefined();
+    expect(
+      link(html(await openWorkspace(MERCADO, 'intake-officer', 'staff-intake'))),
+    ).toBeUndefined();
   });
 
   it('gives the case to a named social worker, or to nobody, from the office’s list', async () => {
@@ -465,13 +467,13 @@ describe('the workspace offers only what the office record accepts', () => {
     ]);
   });
 
-  it('offers a caseload no assignment, and says the household is not shown rather than absent', async () => {
+  it('offers a caseload no assignment, and shows its own client’s household (DL-183)', async () => {
     const element = html(await openWorkspace(MERCADO, 'social-worker', 'staff-sw-1'));
     const text = element.textContent ?? '';
     expect(buttonNamed(element, 'Assign this case')).toBeUndefined();
-    expect(text).toContain('Not shown to your account');
+    expect(text).not.toContain('Not shown to your account');
     expect(text).not.toContain('Not linked to a household');
-    expect(text).not.toContain('No family recorded');
+    expect(element.querySelector('a[href^="/households/"]')).not.toBeNull();
     // Its own case is still worked.
     expect(buttonNamed(element, 'Add a note')).toBeDefined();
   });
@@ -488,6 +490,78 @@ describe('the workspace offers only what the office record accepts', () => {
     expect(element.querySelector('.workspace__close-blocked')?.textContent).toContain(
       'Closing is not offered while a task is open',
     );
+  });
+
+  it('lists the open tasks where closing is held back, and cancels one with a reason (DL-183)', async () => {
+    const fixture = await openWorkspace(MERCADO, 'mswdo-head', 'staff-head');
+    const element = html(fixture);
+    const listed = element.querySelector('.workspace__close-tasks');
+    expect(listed?.textContent).toContain('Confirm the pharmacy accepts the purchase order');
+
+    [...(listed?.querySelectorAll<HTMLButtonElement>('button') ?? [])]
+      .find((button) => button.textContent?.includes('Cancel task'))
+      ?.click();
+    await fixture.whenStable();
+    const modal = element.querySelector('.modal');
+    expect(modal?.textContent).toContain('kept on the case, marked cancelled');
+    const confirm = buttonNamed(element, 'Cancel the task');
+    expect(confirm?.disabled).toBe(true);
+
+    const reason = element.querySelector<HTMLTextAreaElement>('.modal textarea');
+    if (reason) {
+      reason.value = 'The pharmacy closed; the purchase order went to the hospital instead';
+      reason.dispatchEvent(new Event('input'));
+    }
+    await fixture.whenStable();
+    buttonNamed(element, 'Cancel the task')?.click();
+    await fixture.whenStable();
+
+    expect(element.querySelector('.workspace__close-blocked')).toBeNull();
+    expect(optionsOf(element.querySelector('.transition__select'))).toContain('Closed');
+    expect(element.textContent).toContain('Task cancelled');
+  });
+
+  it('says before the assignment that the holder’s open task goes with the case (DL-183)', async () => {
+    const fixture = await openWorkspace(MERCADO, 'mswdo-head', 'staff-head');
+    const element = html(fixture);
+    buttonNamed(element, 'Assign this case')?.click();
+    await fixture.whenStable();
+    expect(element.querySelector('.modal')?.textContent).not.toContain('goes with it');
+
+    const select = element.querySelector<HTMLSelectElement>('.modal select');
+    const jomar = [...(select?.options ?? [])].find((option) =>
+      option.textContent?.includes('Jomar Villanueva'),
+    );
+    if (select && jomar) {
+      select.value = jomar.value;
+      select.dispatchEvent(new Event('change'));
+    }
+    await fixture.whenStable();
+    expect(element.querySelector('.modal')?.textContent).toContain(
+      'The open task Grace Ocampo owes on this case goes with it — to Jomar Villanueva',
+    );
+  });
+
+  it('ends a request’s link with a reason, saying first that it stays in the history (DL-183)', async () => {
+    const fixture = await openWorkspace(MERCADO, 'mswdo-head', 'staff-head');
+    const element = html(fixture);
+    const end = buttonNamed(element, 'End link');
+    expect(end?.getAttribute('aria-label')).toContain('End the link to');
+    end?.click();
+    await fixture.whenStable();
+    expect(element.querySelector('.modal')?.textContent).toContain('kept in the case’s history');
+
+    const reason = element.querySelector<HTMLTextAreaElement>('.modal textarea');
+    if (reason) {
+      reason.value = 'Named here by mistake; it belongs to the household case';
+      reason.dispatchEvent(new Event('input'));
+    }
+    await fixture.whenStable();
+    buttonNamed(element, 'End the link')?.click();
+    await fixture.whenStable();
+
+    expect(buttonNamed(element, 'End link')).toBeUndefined();
+    expect(element.textContent).toContain('no longer part of this case');
   });
 
   it('offers no write on a closed case, and a new case continuing it instead', async () => {

@@ -332,6 +332,18 @@ export function toWireCaseTaskCompletion(reason: string): CaseTaskCompletionWire
   return { reason: reason.trim() };
 }
 
+/**
+ * What `POST office/cases/{id}/tasks/{taskId}/cancel` reads (`OfficeCaseTaskCancellation`): why the
+ * task is no longer needed, kept as its outcome (`DL-183`).
+ */
+export interface CaseTaskCancellationWire {
+  readonly reason: string;
+}
+
+export function toWireCaseTaskCancellation(reason: string): CaseTaskCancellationWire {
+  return { reason: reason.trim() };
+}
+
 /** What `POST office/cases/{id}/tasks/{taskId}/assignment` reads (`OfficeCaseTaskAssignmentWrite`). */
 export interface CaseTaskAssignmentWire {
   readonly assignee_id: string | null;
@@ -368,6 +380,18 @@ export function toWireCaseRequestLink(
   return { request_id: requestId, reason: reason.trim() };
 }
 
+/**
+ * What `POST office/cases/{id}/requests/{requestId}/end` reads (`OfficeCaseRequestLinkEnd`): why the
+ * request is no longer one of this case's interventions (`DL-183`).
+ */
+export interface CaseRequestLinkEndWire {
+  readonly reason: string;
+}
+
+export function toWireCaseRequestLinkEnd(reason: string): CaseRequestLinkEndWire {
+  return { reason: reason.trim() };
+}
+
 /* ── helpers ──────────────────────────────────────────────────────────────── */
 
 const CASE_STATUSES: readonly CaseStatus[] = Object.values(CASE_STATUS_CATALOG).map(
@@ -385,9 +409,11 @@ const EVENT_KINDS: readonly CaseEventKind[] = [
   'note-added',
   'task-added',
   'task-completed',
+  'task-cancelled',
   'task-reassigned',
   'task-rescheduled',
   'request-linked',
+  'request-unlinked',
 ];
 
 const WITHHELD: Readonly<Record<string, CaseWithheldField>> = {
@@ -395,7 +421,6 @@ const WITHHELD: Readonly<Record<string, CaseWithheldField>> = {
   reasons: 'reasons',
   task_words: 'taskWords',
   notes: 'notes',
-  household_context: 'householdContext',
 };
 
 /** Every entry read, or `null` when there is no list or one entry cannot be read. */

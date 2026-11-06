@@ -28,9 +28,11 @@ export type CaseEventKind =
   | 'note-added'
   | 'task-added'
   | 'task-completed'
+  | 'task-cancelled'
   | 'task-reassigned'
   | 'task-rescheduled'
   | 'request-linked'
+  | 'request-unlinked'
   | 'request-status-changed';
 
 /**
@@ -202,7 +204,7 @@ export function caseTimeline(sources: CaseTimelineSources): readonly CaseTimelin
     }
     const task = event.subject.taskId === null ? undefined : tasks.get(event.subject.taskId);
     if (task !== undefined) {
-      if (event.kind === 'task-completed') {
+      if (event.kind === 'task-completed' || event.kind === 'task-cancelled') {
         toldTasks.add(task.id);
       }
       return {
@@ -212,7 +214,7 @@ export function caseTimeline(sources: CaseTimelineSources): readonly CaseTimelin
         isWithheld: task.title === null && taskWordsWithheld,
       };
     }
-    if (event.kind === 'request-linked') {
+    if (event.kind === 'request-linked' || event.kind === 'request-unlinked') {
       const request =
         event.subject.requestId === null ? undefined : requests.get(event.subject.requestId);
       return { ...line, source: 'assistance-request', reference: request?.referenceNumber ?? null };
@@ -244,7 +246,8 @@ export function caseTimeline(sources: CaseTimelineSources): readonly CaseTimelin
       ...BLANK_ENTRY,
       id: `task:${task.id}`,
       source: 'task',
-      kind: 'task-completed',
+      // A cancelled task ended too (`DL-183`), and is told as what it was.
+      kind: task.status === 'cancelled' ? 'task-cancelled' : 'task-completed',
       occurredAt: task.completedAt,
       actorName: task.completedByName ?? UNNAMED_STAFF,
       reason: task.outcome,

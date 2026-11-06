@@ -13,6 +13,7 @@ import {
   documentVersionProblems,
   isDocumentRequestOverdue,
   isOutstandingObligation,
+  lastFourOf,
   maskDocumentNumber,
   sourceHoldsAFile,
   summariseRequirements,
@@ -213,9 +214,16 @@ describe('masking a document number', () => {
     expect(maskDocumentNumber('BC-2026-00817')).toBe('••••0817');
   });
 
-  it('masks a short number entirely rather than revealing most of it', () => {
-    expect(maskDocumentNumber('1234')).toBe('••••');
-    expect(maskDocumentNumber('12')).toBe('••');
+  it('says a kept last four as the same dots, and says it again unchanged (DL-183)', () => {
+    expect(maskDocumentNumber('0817')).toBe('••••0817');
+    expect(maskDocumentNumber('••••0817')).toBe('••••0817');
+  });
+
+  it('keeps the last four characters and nothing more', () => {
+    expect(lastFourOf('PN-2019-448271')).toBe('8271');
+    expect(lastFourOf('  12  ')).toBe('12');
+    expect(lastFourOf('   ')).toBeNull();
+    expect(lastFourOf(null)).toBeNull();
   });
 
   it('reports an absent number as absent', () => {

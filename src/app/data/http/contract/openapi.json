@@ -552,30 +552,127 @@
       "get": {
         "operationId": "getOfficeResident",
         "summary": "Read one resident",
-        "description": "Needs resident.view. Redacted for the reader. A record outside the reader's barangay answers 404, exactly as one that does not exist.",
-        "security": [{ "firebaseIdToken": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "description": "Needs resident.view. Redacted for the reader. A record outside the reader's barangay answers 404, exactly as one that does not exist. A social worker (assigned-cases) reads this for their own clients — the subject of a filed request or a case assigned to them — and for nobody else (404, as absent) (DL-183). The registry's list stays refused to them.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
-          "200": { "description": "The record as this reader may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeResidentEnvelope" } } } },
-          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
-          "404": { "description": "Not found, or not in the reader's scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+          "200": {
+            "description": "The record as this reader may see it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeResidentEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key, or an assigned-cases account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not in the reader's scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
         }
       },
       "patch": {
         "operationId": "updateOfficeResident",
         "summary": "Change a resident's details",
         "description": "Needs resident.update. Absent fields are left as they are; null clears an optional one. Refused when the record has any detail this writer is not shown: saving would replace what was withheld. A PhilSys number or an income needs resident.view-sensitive. Both the record and a new barangay must be in the writer's scope. A change that changes nothing answers 200 and records nothing; otherwise audit office_resident.updated.",
-        "security": [{ "firebaseIdToken": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeResidentPatch" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeResidentPatch"
+              }
+            }
+          }
         },
         "responses": {
-          "200": { "description": "Saved, or already as asked.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeResidentEnvelope" } } } },
-          "403": { "description": "Without the key; an assigned-cases account (cases are not served, so its residents cannot be told apart); details withheld from this writer; a barangay outside the account's own; identity or means without resident.view-sensitive.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
-          "404": { "description": "Not found, or not in the writer's scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
-          "422": { "description": "A field is not valid, or no field was sent.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+          "200": {
+            "description": "Saved, or already as asked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeResidentEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key; an assigned-cases account (cases are not served, so its residents cannot be told apart); details withheld from this writer; a barangay outside the account's own; identity or means without resident.view-sensitive.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not in the writer's scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A field is not valid, or no field was sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -709,13 +806,54 @@
       "get": {
         "operationId": "listOfficeResidentFamilies",
         "summary": "The families a resident belongs to",
-        "description": "Needs family.view. The families this person currently belongs to — plural, because families overlap — that are in the reader's scope, by reference number. Whole, never paged: a person belongs to a handful at most. Heads are redacted for the reader (see OfficeResident). A resident out of scope answers 404, exactly as one that does not exist; an assigned-cases account is 403.",
-        "security": [{ "firebaseIdToken": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "description": "Needs family.view. The families this person currently belongs to — plural, because families overlap — that are in the reader's scope, by reference number. Whole, never paged: a person belongs to a handful at most. Heads are redacted for the reader (see OfficeResident). A resident out of scope answers 404, exactly as one that does not exist. A social worker (assigned-cases) reads this for their own clients — the subject of a filed request or a case assigned to them — and for nobody else (404, as absent) (DL-183).",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
-          "200": { "description": "Every family in scope, as this reader may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeFamilySummaryArrayEnvelope" } } } },
-          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
-          "404": { "description": "Not found, or not in the reader's scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+          "200": {
+            "description": "Every family in scope, as this reader may see it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeFamilySummaryArrayEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key, or an assigned-cases account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not in the reader's scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -723,13 +861,54 @@
       "get": {
         "operationId": "getOfficeResidentRelationshipHistory",
         "summary": "Everything recorded about a resident's families and relationships",
-        "description": "Needs family.view. Every act in office_family_events that names this person at either end, newest first: families formed and joined, transfers, role changes, relationships recorded and ended, each with who acted, when, and the reason given. Whole, never paged. Append-only: nothing in it is rewritten. A resident out of scope answers 404; an assigned-cases account is 403.",
-        "security": [{ "firebaseIdToken": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "description": "Needs family.view. Every act in office_family_events that names this person at either end, newest first: families formed and joined, transfers, role changes, relationships recorded and ended, each with who acted, when, and the reason given. Whole, never paged. Append-only: nothing in it is rewritten. A resident out of scope answers 404. A social worker (assigned-cases) reads this for their own clients — the subject of a filed request or a case assigned to them — and for nobody else (404, as absent) (DL-183).",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
-          "200": { "description": "The history, newest first.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeFamilyEventListEnvelope" } } } },
-          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
-          "404": { "description": "Not found, or not in the reader's scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+          "200": {
+            "description": "The history, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeFamilyEventListEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key, or an assigned-cases account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not in the reader's scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -737,37 +916,171 @@
       "get": {
         "operationId": "listOfficeHouseholds",
         "summary": "List the office's household register",
-        "description": "Needs household.view. An address and who lives there, recorded by staff — not the residents' app households (/api/v1/households); nothing is shared between the two. By reference number. An own-barangay account sees only its barangay; an assigned-cases account is 403, as on the resident registry. q matches every word (up to five) against the reference number, the head's surname and the street address, but not the street address of a protected household for a reader without request.view-sensitive. resident_id answers which household a person is in. minimum_band filters on the advisory band; to fill such a page up to 500 rows are read per request, so a short page can still say has_more. head is the resident registry's redacted record. band is the same for every role, computed from the unredacted records; present_factor_count counts the factors present as this reader is shown them. Nothing here decides eligibility. Every member of a household with a protected member, or of a family with one or living in a household that has one, also has street_address and purok_or_sitio withheld from that reader (withheld names exact_address): people who share a record usually share a roof, and a member's address listed beside the masked one would say where the protected person lives.",
-        "security": [{ "firebaseIdToken": [] }],
+        "description": "Needs household.view. An address and who lives there, recorded by staff — not the residents' app households (/api/v1/households); nothing is shared between the two. By reference number. An own-barangay account sees only its barangay; an assigned-cases account may ask only resident_id, for one of its own clients, and is answered with that household or an empty page; anything else is 403 (DL-183). q matches every word (up to five) against the reference number, the head's surname and the street address, but not the street address of a protected household for a reader without request.view-sensitive. resident_id answers which household a person is in. minimum_band filters on the advisory band; to fill such a page up to 500 rows are read per request, so a short page can still say has_more. head is the resident registry's redacted record. band is the same for every role, computed from the unredacted records; present_factor_count counts the factors present as this reader is shown them. Nothing here decides eligibility. Every member of a household with a protected member, or of a family with one or living in a household that has one, also has street_address and purok_or_sitio withheld from that reader (withheld names exact_address): people who share a record usually share a roof, and a member's address listed beside the masked one would say where the protected person lives.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
         "parameters": [
-          { "name": "q", "in": "query", "schema": { "type": "string", "minLength": 2, "maxLength": 100 } },
-          { "name": "barangay_id", "in": "query", "schema": { "type": "string", "format": "uuid" } },
-          { "name": "indigent", "in": "query", "description": "is_indigent as a person recorded it.", "schema": { "type": "string", "enum": ["true", "false"] } },
-          { "name": "minimum_band", "in": "query", "schema": { "$ref": "#/components/schemas/VulnerabilityBand" } },
-          { "name": "resident_id", "in": "query", "description": "Only the household this resident is in.", "schema": { "type": "string", "format": "uuid" } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 20 } },
-          { "name": "cursor", "in": "query", "schema": { "type": "string", "minLength": 1, "maxLength": 200 } }
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "barangay_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "indigent",
+            "in": "query",
+            "description": "is_indigent as a person recorded it.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "minimum_band",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/VulnerabilityBand"
+            }
+          },
+          {
+            "name": "resident_id",
+            "in": "query",
+            "description": "Only the household this resident is in.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "A page of households, as this reader may see them.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeHouseholdListEnvelope" } } } },
-          "403": { "description": "Without the key; an assigned-cases account; a barangay outside the account's own.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
-          "422": { "description": "A query value or the cursor is not valid.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+          "200": {
+            "description": "A page of households, as this reader may see them.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeHouseholdListEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key; an assigned-cases account; a barangay outside the account's own.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A query value or the cursor is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
         }
       },
       "post": {
         "operationId": "registerOfficeHousehold",
         "summary": "Register a household",
         "description": "Needs household.manage; recording monthly_income_centavos also needs resident.view-sensitive (403 otherwise: never write what the writer may not read). Registered with its head as its one member; others join through membership. The head must be on file, in the writer's scope and in no other household (the database refuses a person in two). The reference number (HH-<year>-<sequence>) is issued here. is_indigent is recorded by a person and nothing computes it: the vulnerability snapshot is advisory evidence, never a decision. An income with a decimal point is 422, never rounded. An own-barangay account registers only in its barangay. Appends registered and member-added (the head) to office_household_events; audit office_household.registered.",
-        "security": [{ "firebaseIdToken": [] }],
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeHouseholdCreate" } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeHouseholdCreate"
+              }
+            }
+          }
         },
         "responses": {
-          "201": { "description": "Registered; the household as this writer may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeHouseholdEnvelope" } } } },
-          "403": { "description": "Without the key; an assigned-cases account; a barangay outside the account's own.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
-          "409": { "description": "Refused; nothing written. details keys are member-not-found (the head is not on file or not in scope) or member-in-another-household, each listing the residents it is about.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeRefusalEnvelope" } } } },
-          "422": { "description": "A field is not valid, or the barangay does not exist.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+          "201": {
+            "description": "Registered; the household as this writer may see it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeHouseholdEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key; an assigned-cases account; a barangay outside the account's own.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refused; nothing written. details keys are member-not-found (the head is not on file or not in scope) or member-in-another-household, each listing the residents it is about.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRefusalEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A field is not valid, or the barangay does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -775,13 +1088,54 @@
       "get": {
         "operationId": "getOfficeHousehold",
         "summary": "Read one household",
-        "description": "Needs household.view. The household, its current members (head first, then in the order they joined) as the resident registry's redacted records, its vulnerability snapshot, and its events newest first. Out of scope answers 404, exactly as one that does not exist. A household with a member under vawc-survivor or cicl (is_protected) withholds street_address and purok_or_sitio from a reader without request.view-sensitive (withheld: [\"exact_address\"]), because that address is where the protected person lives. For that reader the protected-member factor reads withheld, with an empty basis, origin computed and no correction, and its correction events are left out; likewise the two income factors for a reader without resident.view-sensitive; the band is not recomputed, so every role reads the same band. Every member of a household with a protected member, or of a family with one or living in a household that has one, also has street_address and purok_or_sitio withheld from that reader (withheld names exact_address): people who share a record usually share a roof, and a member's address listed beside the masked one would say where the protected person lives.",
-        "security": [{ "firebaseIdToken": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "description": "Needs household.view. The household, its current members (head first, then in the order they joined) as the resident registry's redacted records, its vulnerability snapshot, and its events newest first. Out of scope answers 404, exactly as one that does not exist. A social worker (assigned-cases) reads the household one of their own clients lives in — the subject of a filed request or a case assigned to them — and for nobody else (404, as absent) (DL-183). A household with a member under vawc-survivor or cicl (is_protected) withholds street_address and purok_or_sitio from a reader without request.view-sensitive (withheld: [\"exact_address\"]), because that address is where the protected person lives. For that reader the protected-member factor reads withheld, with an empty basis, origin computed and no correction, and its correction events are left out; likewise the two income factors for a reader without resident.view-sensitive; the band is not recomputed, so every role reads the same band. Every member of a household with a protected member, or of a family with one or living in a household that has one, also has street_address and purok_or_sitio withheld from that reader (withheld names exact_address): people who share a record usually share a roof, and a member's address listed beside the masked one would say where the protected person lives.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
-          "200": { "description": "The household as this reader may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeHouseholdEnvelope" } } } },
-          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
-          "404": { "description": "Not found, or not in the reader's scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+          "200": {
+            "description": "The household as this reader may see it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeHouseholdEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key, or an assigned-cases account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not in the reader's scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -907,13 +1261,54 @@
       "get": {
         "operationId": "getOfficeFamily",
         "summary": "Read one family",
-        "description": "Needs family.view. The family with every membership period; its members, current and former (role null for a former member), as the resident registry's redacted records; the relationships among everyone who has been a member, ended ones included; the other families in the same household that the reader may see; and its history newest first. Out of scope answers 404, exactly as one that does not exist. Every member of a household with a protected member, or of a family with one or living in a household that has one, also has street_address and purok_or_sitio withheld from that reader (withheld names exact_address): people who share a record usually share a roof, and a member's address listed beside the masked one would say where the protected person lives.",
-        "security": [{ "firebaseIdToken": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "description": "Needs family.view. The family with every membership period; its members, current and former (role null for a former member), as the resident registry's redacted records; the relationships among everyone who has been a member, ended ones included; the other families in the same household that the reader may see; and its history newest first. Out of scope answers 404, exactly as one that does not exist. A social worker (assigned-cases) reads a family one of their own clients belongs to — the subject of a filed request or a case assigned to them — and for nobody else (404, as absent) (DL-183). Every member of a household with a protected member, or of a family with one or living in a household that has one, also has street_address and purok_or_sitio withheld from that reader (withheld names exact_address): people who share a record usually share a roof, and a member's address listed beside the masked one would say where the protected person lives.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
-          "200": { "description": "The family as this reader may see it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OfficeFamilyEnvelope" } } } },
-          "403": { "description": "Without the key, or an assigned-cases account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
-          "404": { "description": "Not found, or not in the reader's scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+          "200": {
+            "description": "The family as this reader may see it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeFamilyEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key, or an assigned-cases account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not in the reader's scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -4201,7 +4596,7 @@
       "post": {
         "operationId": "moveOfficeRequest",
         "summary": "Move a request through its lifecycle",
-        "description": "Needs request.view and the key the console’s TRANSITION_PERMISSIONS names for the status moved into — request.approve and release.release are never held together. Only along office_request_transitions; appended with who, when and why, and the database sets the status from the history. Already there answers as it stands. Filing is its own act (409); scheduled and released wait for payouts, which this API does not hold yet (409). Audited office_request.status_changed. A social worker (assigned-cases) is answered only for the filed requests assigned to them; any other request answers as not found.",
+        "description": "Needs request.view and the key the console’s TRANSITION_PERMISSIONS names for the status moved into — request.approve and release.release are never held together. Only along office_request_transitions; appended with who, when and why, and the database sets the status from the history. Already there answers as it stands. A move to approved says what was approved: approved_amount_centavos, or for goods approved_in_kind_description (422 otherwise). Cancelling or expiring is refused while the request has an open release — anything not voided and not handed over — and the message says to void the release first (409); the database refuses it too (DL-183). Filing is its own act (409); scheduled and released wait for payouts, which this API does not hold yet (409). Audited office_request.status_changed. A social worker (assigned-cases) is answered only for the filed requests assigned to them; any other request answers as not found.",
         "security": [
           {
             "firebaseIdToken": []
@@ -4296,7 +4691,7 @@
       "get": {
         "operationId": "getOfficeRequestAdvisory",
         "summary": "The duplicate check for a filed request",
-        "description": "Needs request.create. Reads the person’s other filed requests. Decides nothing (DL-60). Refused to a caseload (assigned-cases): it reads beyond the requests assigned to it.",
+        "description": "Needs request.create. Reads the person’s other filed requests. Decides nothing (DL-60). A social worker (assigned-cases) reads it for a request assigned to them — their own client’s previous assistance — and any other request answers as not found (DL-183). The check before filing stays refused to them.",
         "security": [
           {
             "firebaseIdToken": []
@@ -6251,7 +6646,7 @@
       "post": {
         "operationId": "moveOfficeCase",
         "summary": "Move a case through its lifecycle",
-        "description": "Needs case.view and the key the console’s CASE_TRANSITION_PERMISSIONS names for the status moved into: case.close for closed, case.manage for the rest. Only along office_case_transitions (409 otherwise). Closing is refused while a task is open (409). Already there answers as it stands. Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. A social worker (assigned-cases) is answered only for the cases assigned to them; any other case answers as not found (404). On a case about a person under a protected sector, every write needs request.view-sensitive (403): nobody adds to what they may not read. A closed case is kept as it ended: every write on one is 409. Audited office_case.status_changed.",
+        "description": "Needs case.view and the key the console’s CASE_TRANSITION_PERMISSIONS names for the status moved into: case.close for closed, case.manage for the rest. Only along office_case_transitions (409 otherwise). Closing is refused while a task is open (409): each is completed or cancelled first, with a reason. Already there answers as it stands. Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. A social worker (assigned-cases) is answered only for the cases assigned to them; any other case answers as not found (404). On a case about a person under a protected sector, every write needs request.view-sensitive (403): nobody adds to what they may not read. A closed case is kept as it ended: every write on one is 409. Audited office_case.status_changed.",
         "security": [
           {
             "firebaseIdToken": []
@@ -6346,7 +6741,7 @@
       "post": {
         "operationId": "assignOfficeCase",
         "summary": "Give a case to a social worker, or to nobody",
-        "description": "Needs case.manage, and is refused to a caseload (403). The assignee is an open social worker’s account (422 otherwise), or null. Assigning to whoever holds it answers as it stands. Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. On a case about a person under a protected sector, every write needs request.view-sensitive (403): nobody adds to what they may not read. A closed case is kept as it ended: every write on one is 409. Audited office_case.assigned or office_case.unassigned.",
+        "description": "Needs case.manage, and is refused to a caseload (403). The assignee is an open social worker’s account (422 otherwise), or null. Assigning to whoever holds it answers as it stands. The open tasks the previous holder owed on the case go with it — to the new holder, or to nobody — each with its own task-reassigned event under the same reason, in the same transaction; tasks owed by anybody else, and done or cancelled ones, stay as they are (DL-183). Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. On a case about a person under a protected sector, every write needs request.view-sensitive (403): nobody adds to what they may not read. A closed case is kept as it ended: every write on one is 409. Audited office_case.assigned or office_case.unassigned, and office_case.task_reassigned for each task moved.",
         "security": [
           {
             "firebaseIdToken": []
@@ -6943,7 +7338,7 @@
       "post": {
         "operationId": "linkOfficeCaseRequest",
         "summary": "Name a request this case covers",
-        "description": "Needs case.manage. A filed request the writer may read, about the subject or somebody in the subject’s household today (422 otherwise), and in no other case (409): a request is one intervention in one case. A link is never removed. Already linked here answers as it stands. Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. A social worker (assigned-cases) is answered only for the cases assigned to them; any other case answers as not found (404). On a case about a person under a protected sector, every write needs request.view-sensitive (403): nobody adds to what they may not read. A closed case is kept as it ended: every write on one is 409. Audited office_case.request_linked.",
+        "description": "Needs case.manage. A filed request the writer may read, about the subject or somebody in the subject’s household today (422 otherwise), and linked to no other case now (409): a request is one intervention in one case at a time. A link is never removed; it is ended with a reason (POST …/requests/{requestId}/end), and a request whose link was ended may be named again. Already linked here answers as it stands. Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. A social worker (assigned-cases) is answered only for the cases assigned to them; any other case answers as not found (404). On a case about a person under a protected sector, every write needs request.view-sensitive (403): nobody adds to what they may not read. A closed case is kept as it ended: every write on one is 409. Audited office_case.request_linked.",
         "security": [
           {
             "firebaseIdToken": []
@@ -7192,7 +7587,7 @@
       "post": {
         "operationId": "prepareOfficeRelease",
         "summary": "Prepare a release for an approved request",
-        "description": "Needs release.schedule. States what is handed over: a money release an amount in integer centavos and no goods, an in-kind release a description and no amount (goods are counted, never valued). The person, barangay and approver are read from the request; the approver is whoever last moved it to approved, kept for the self-release warning. One release per request at a time: another is prepared only once the first is voided. Nothing here posts to an account.",
+        "description": "Needs release.schedule. States what is handed over: a money release an amount in integer centavos and no goods, an in-kind release a description and no amount (goods are counted, never valued). The person, barangay and approver are read from the request; the approver is whoever last moved it to approved, kept for the self-release warning. One release per request at a time: another is prepared only once the first is voided. A money release is never prepared above the approved amount (409), nor against an approval that recorded none (409); equal or less is the office’s to decide (DL-183). The database refuses it too. Nothing here posts to an account.",
         "security": [
           {
             "firebaseIdToken": []
@@ -9956,6 +10351,214 @@
           }
         }
       }
+    },
+    "/api/v1/office/cases/{id}/tasks/{taskId}/cancel": {
+      "post": {
+        "operationId": "cancelOfficeCaseTask",
+        "summary": "Cancel a task that is no longer needed, saying why",
+        "description": "Needs case.manage, on an open task of this case (404 if not on it; 409 if done or cancelled). The task is kept, marked cancelled, with who ended it and the reason as its outcome — never deleted (DL-183). A case is closed only when no task is open, so its open tasks are completed or cancelled first. Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. A social worker (assigned-cases) is answered only for the cases assigned to them; any other case answers as not found (404). On a case about a person under a protected sector, every write needs request.view-sensitive (403): nobody adds to what they may not read. A closed case is kept as it ended: every write on one is 409. Audited office_case.task_cancelled.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeCaseTaskCancellation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The whole workspace, read after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeCaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without case.manage, or an uncleared writer on a protected case.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such case in scope, or no such task on it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The task is done or cancelled already, or the case is closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The reason is missing or too short.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/cases/{id}/requests/{requestId}/end": {
+      "post": {
+        "operationId": "endOfficeCaseRequestLink",
+        "summary": "End a request’s link to this case, saying why",
+        "description": "Needs case.manage, on a request linked to this case now that the writer may read (404 otherwise). The link is kept, marked ended with who, when and why, and the case history keeps both the link and its end — never deleted (DL-183). An ended link no longer counts as linked: the request leaves linked_request_ids, and another case may name it, or this one again as a new link. Appends the event that records it, with who, when and why, in the same transaction; the database refuses the change without it. A social worker (assigned-cases) is answered only for the cases assigned to them; any other case answers as not found (404). On a case about a person under a protected sector, every write needs request.view-sensitive (403): nobody adds to what they may not read. A closed case is kept as it ended: every write on one is 409. Audited office_case.request_unlinked.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeCaseRequestLinkEnd"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The whole workspace, read after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeCaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without case.manage, or an uncleared writer on a protected case.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such case in scope, or the request is not linked to it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The case is closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The reason is missing or too short.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10112,12 +10715,81 @@
       "CaseworkPermission": {
         "type": "string",
         "description": "The MSWDO office's keys, in the staff console's vocabulary. Decided by the office role (src/auth/casework.ts). Admin holds every one.",
-        "enum": ["dashboard.view", "resident.view", "resident.view-sensitive", "resident.create", "resident.update", "resident.deactivate", "resident.export", "beneficiary.view", "beneficiary.review-duplicates", "beneficiary.export", "household.view", "household.manage", "household.correct-vulnerability", "family.view", "family.manage", "case.view", "case.manage", "case.note", "case-note.view-protected", "case.close", "program.view", "program.manage", "request.view", "request.create", "request.intake", "request.assess", "request.endorse", "request.approve", "request.reject", "request.schedule", "request.close", "request.view-sensitive", "document.record", "document.download", "document.view-full-number", "release.view", "release.schedule", "release.release", "release.void", "referral.view", "referral.manage", "report.view", "report.export-person-level", "audit.view-detail", "staff.view", "staff.manage", "saved-view.share", "visit.view", "visit.manage", "newsfeed.view", "newsfeed.create", "newsfeed.edit", "newsfeed.publish", "newsfeed.schedule", "newsfeed.archive", "newsfeed.pin", "newsfeed.moderate", "newsfeed.view-insights", "event.view", "event.create", "event.edit", "event.publish", "event.cancel", "event.archive", "event.manage-registrations", "event.export-registrants", "event.mark-attendance", "event.view-insights", "settings.manage"]
+        "enum": [
+          "dashboard.view",
+          "resident.view",
+          "resident.view-sensitive",
+          "resident.create",
+          "resident.update",
+          "resident.deactivate",
+          "resident.export",
+          "beneficiary.view",
+          "beneficiary.review-duplicates",
+          "beneficiary.export",
+          "household.view",
+          "household.manage",
+          "household.correct-vulnerability",
+          "family.view",
+          "family.manage",
+          "case.view",
+          "case.manage",
+          "case.note",
+          "case-note.view-protected",
+          "case.close",
+          "program.view",
+          "program.manage",
+          "request.view",
+          "request.create",
+          "request.intake",
+          "request.assess",
+          "request.endorse",
+          "request.approve",
+          "request.reject",
+          "request.schedule",
+          "request.close",
+          "request.view-sensitive",
+          "document.record",
+          "document.download",
+          "release.view",
+          "release.schedule",
+          "release.release",
+          "release.void",
+          "referral.view",
+          "referral.manage",
+          "report.view",
+          "report.export-person-level",
+          "audit.view-detail",
+          "staff.view",
+          "staff.manage",
+          "saved-view.share",
+          "visit.view",
+          "visit.manage",
+          "newsfeed.view",
+          "newsfeed.create",
+          "newsfeed.edit",
+          "newsfeed.publish",
+          "newsfeed.schedule",
+          "newsfeed.archive",
+          "newsfeed.pin",
+          "newsfeed.moderate",
+          "newsfeed.view-insights",
+          "event.view",
+          "event.create",
+          "event.edit",
+          "event.publish",
+          "event.cancel",
+          "event.archive",
+          "event.manage-registrations",
+          "event.export-registrants",
+          "event.mark-attendance",
+          "event.view-insights",
+          "settings.manage"
+        ]
       },
       "Permission": {
         "type": "string",
         "description": "Every key GET /me may carry: StaffCapability, then CaseworkPermission.",
-        "enum": ["household.view-counts", "digital-id.verify", "news.write", "office-inbox.manage", "user.view", "user.change-role", "user.assign-office", "verification.review", "digital-id.manage", "office.manage", "service.manage", "home.manage", "hotline.manage", "app-config.manage", "audit.view", "dashboard.view", "resident.view", "resident.view-sensitive", "resident.create", "resident.update", "resident.deactivate", "resident.export", "beneficiary.view", "beneficiary.review-duplicates", "beneficiary.export", "household.view", "household.manage", "household.correct-vulnerability", "family.view", "family.manage", "case.view", "case.manage", "case.note", "case-note.view-protected", "case.close", "program.view", "program.manage", "request.view", "request.create", "request.intake", "request.assess", "request.endorse", "request.approve", "request.reject", "request.schedule", "request.close", "request.view-sensitive", "document.record", "document.download", "document.view-full-number", "release.view", "release.schedule", "release.release", "release.void", "referral.view", "referral.manage", "report.view", "report.export-person-level", "audit.view-detail", "staff.view", "staff.manage", "saved-view.share", "visit.view", "visit.manage", "newsfeed.view", "newsfeed.create", "newsfeed.edit", "newsfeed.publish", "newsfeed.schedule", "newsfeed.archive", "newsfeed.pin", "newsfeed.moderate", "newsfeed.view-insights", "event.view", "event.create", "event.edit", "event.publish", "event.cancel", "event.archive", "event.manage-registrations", "event.export-registrants", "event.mark-attendance", "event.view-insights", "settings.manage"]
+        "enum": ["household.view-counts", "digital-id.verify", "news.write", "office-inbox.manage", "user.view", "user.change-role", "user.assign-office", "verification.review", "digital-id.manage", "office.manage", "service.manage", "home.manage", "hotline.manage", "app-config.manage", "audit.view", "dashboard.view", "resident.view", "resident.view-sensitive", "resident.create", "resident.update", "resident.deactivate", "resident.export", "beneficiary.view", "beneficiary.review-duplicates", "beneficiary.export", "household.view", "household.manage", "household.correct-vulnerability", "family.view", "family.manage", "case.view", "case.manage", "case.note", "case-note.view-protected", "case.close", "program.view", "program.manage", "request.view", "request.create", "request.intake", "request.assess", "request.endorse", "request.approve", "request.reject", "request.schedule", "request.close", "request.view-sensitive", "document.record", "document.download", "release.view", "release.schedule", "release.release", "release.void", "referral.view", "referral.manage", "report.view", "report.export-person-level", "audit.view-detail", "staff.view", "staff.manage", "saved-view.share", "visit.view", "visit.manage", "newsfeed.view", "newsfeed.create", "newsfeed.edit", "newsfeed.publish", "newsfeed.schedule", "newsfeed.archive", "newsfeed.pin", "newsfeed.moderate", "newsfeed.view-insights", "event.view", "event.create", "event.edit", "event.publish", "event.cancel", "event.archive", "event.manage-registrations", "event.export-registrants", "event.mark-attendance", "event.view-insights", "settings.manage"]
       },
       "OfficeRole": {
         "type": "string",
@@ -13653,7 +14325,9 @@
           "reason",
           "actor_id",
           "actor_name",
-          "occurred_at"
+          "occurred_at",
+          "approved_amount_centavos",
+          "approved_in_kind_description"
         ],
         "properties": {
           "from": {
@@ -13682,13 +14356,27 @@
           "occurred_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "approved_amount_centavos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "On a move to approved: the amount approved, in integer centavos; null for goods, and on every other move. Null too on an approval recorded before DL-183."
+          },
+          "approved_in_kind_description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "On a move to approved for goods: what was approved."
           }
         }
       },
       "OfficeRequest": {
         "type": "object",
         "additionalProperties": false,
-        "description": "An assistance request, already redacted for the reader. Not sent, because nothing here records them yet: the approved amount and the decision remarks — the approver’s, whose record is phase 4’s; the console reads their absence as none recorded.",
+        "description": "An assistance request, already redacted for the reader. approved_amount_centavos is the latest approval’s (DL-183). Not sent, because nothing here records them apart from the approval’s reason: the decision remarks.",
         "required": [
           "id",
           "reference_number",
@@ -13711,7 +14399,9 @@
           "updated_by",
           "assigned_to",
           "assignments",
-          "assessment"
+          "assessment",
+          "approved_amount_centavos",
+          "approved_in_kind_description"
         ],
         "properties": {
           "id": {
@@ -13857,6 +14547,20 @@
               }
             ],
             "description": "The latest completed case study. Earlier ones are kept and not sent."
+          },
+          "approved_amount_centavos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Integer centavos, from the latest approval: the most a money release may be prepared for. Null before approval, for goods, or on an approval recorded before DL-183."
+          },
+          "approved_in_kind_description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The goods the latest approval described, if it approved goods."
           }
         }
       },
@@ -14045,6 +14749,24 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 500
+          },
+          "approved_amount_centavos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 2000000000,
+            "description": "Integer centavos approved (DL-183). On a move to approved, this or approved_in_kind_description — one, never both; on any other move, neither (422)."
+          },
+          "approved_in_kind_description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "For goods, which nobody at the office prices: what was approved. Only on a move to approved, and only without an amount."
           }
         }
       },
@@ -14492,10 +15214,11 @@
               "string",
               "null"
             ],
-            "description": "Masked to its last four characters (••••1234) unless the reader holds document.view-full-number."
+            "description": "The last four characters, said as ••••1234: nothing longer is held (DL-183, RA 10173; RA 11055 for a PhilSys number). The file, opened with document.download, is the full evidence."
           },
           "document_number_masked": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "True whenever there is a number: only its last four characters are held."
           },
           "issued_on": {
             "type": [
@@ -14920,7 +15643,8 @@
           "document_number": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 60
+            "maxLength": 60,
+            "description": "Up to 60 characters may be sent; only the last four are kept (DL-183)."
           },
           "issued_on": {
             "type": "string",
@@ -15244,10 +15968,9 @@
           "summary",
           "reasons",
           "task_words",
-          "notes",
-          "household_context"
+          "notes"
         ],
-        "description": "summary, reasons, task_words and notes: the case is about a person under vawc-survivor or cicl today and the reader lacks request.view-sensitive. household_context: the reader’s scope is a caseload, which a case does not widen to the registry — household_id is null and the household is not named."
+        "description": "summary, reasons, task_words and notes: the case is about a person under vawc-survivor or cicl today and the reader lacks request.view-sensitive. A caseload is no longer refused the subject’s household (DL-183, superseding household_context)."
       },
       "OfficeCaseTask": {
         "type": "object",
@@ -15296,7 +16019,8 @@
               "open",
               "done",
               "cancelled"
-            ]
+            ],
+            "description": "cancelled: no longer needed, ended with a reason (DL-183). done and cancelled are kept as they ended."
           },
           "due_on": {
             "type": "string",
@@ -15320,14 +16044,16 @@
               "string",
               "null"
             ],
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When and by whom it was done or cancelled; null while open."
           },
           "completed_by": {
             "type": [
               "string",
               "null"
             ],
-            "format": "uuid"
+            "format": "uuid",
+            "description": "When and by whom it was done or cancelled; null while open."
           },
           "completed_by_name": {
             "type": [
@@ -15340,7 +16066,7 @@
               "string",
               "null"
             ],
-            "description": "What happened, in the words of whoever completed it. Null while open, or when withheld."
+            "description": "What happened, in the words of whoever completed it, or why it was cancelled. Null while open, or when withheld."
           },
           "created_at": {
             "type": "string",
@@ -15455,9 +16181,11 @@
               "note-added",
               "task-added",
               "task-completed",
+              "task-cancelled",
               "task-reassigned",
               "task-rescheduled",
-              "request-linked"
+              "request-linked",
+              "request-unlinked"
             ]
           },
           "from_status": {
@@ -15607,7 +16335,7 @@
               "null"
             ],
             "format": "uuid",
-            "description": "The subject’s household today; null when they have none, or when withheld (household_context)."
+            "description": "The subject’s household today; null when they have none."
           },
           "barangay_id": {
             "type": "string",
@@ -18943,6 +19671,36 @@
             ],
             "maxLength": 1000,
             "description": "For a refusal only."
+          }
+        }
+      },
+      "OfficeCaseTaskCancellation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 1000,
+            "description": "Why the task is no longer needed. Kept as its outcome."
+          }
+        }
+      },
+      "OfficeCaseRequestLinkEnd": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 1000,
+            "description": "Why the request is no longer one of this case’s interventions. Kept on the link and on its event."
           }
         }
       }

@@ -11,6 +11,8 @@
       "referred_by": null,
       "reason_for_request": null,
       "requested_amount_centavos": 500000,
+      "approved_amount_centavos": null,
+      "approved_in_kind_description": null,
       "submitted_at": "2026-11-05T02:14:00.000Z",
       "requirements": [
         {
@@ -42,7 +44,9 @@
           "reason": null,
           "actor_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
           "actor_name": "Liezl Padilla",
-          "occurred_at": "2026-11-05T02:14:00.000Z"
+          "occurred_at": "2026-11-05T02:14:00.000Z",
+          "approved_amount_centavos": null,
+          "approved_in_kind_description": null
         },
         {
           "from": "intake-review",
@@ -50,7 +54,9 @@
           "reason": null,
           "actor_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
           "actor_name": null,
-          "occurred_at": "2026-11-05T05:40:00.000Z"
+          "occurred_at": "2026-11-05T05:40:00.000Z",
+          "approved_amount_centavos": null,
+          "approved_in_kind_description": null
         }
       ],
       "is_protected": true,
@@ -82,6 +88,8 @@
       "referred_by": null,
       "reason_for_request": "Maintenance medicines after a hypertension confinement.",
       "requested_amount_centavos": null,
+      "approved_amount_centavos": null,
+      "approved_in_kind_description": null,
       "submitted_at": "2026-11-04T01:00:00.000Z",
       "requirements": [
         {
@@ -134,7 +142,9 @@
           "reason": null,
           "actor_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
           "actor_name": "Liezl Padilla",
-          "occurred_at": "2026-11-04T01:00:00.000Z"
+          "occurred_at": "2026-11-04T01:00:00.000Z",
+          "approved_amount_centavos": null,
+          "approved_in_kind_description": null
         },
         {
           "from": "assessment",
@@ -142,7 +152,9 @@
           "reason": "Assessed at the counter; the bills are in hand.",
           "actor_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
           "actor_name": "Ramon Cruz",
-          "occurred_at": "2026-11-04T07:20:00.000Z"
+          "occurred_at": "2026-11-04T07:20:00.000Z",
+          "approved_amount_centavos": null,
+          "approved_in_kind_description": null
         }
       ],
       "is_protected": false,

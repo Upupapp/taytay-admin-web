@@ -9,20 +9,24 @@ import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import { MockAssistanceRequestRepository } from '@data/mock/mock-assistance-request.repository';
 import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
 import { MockProgramRepository } from '@data/mock/mock-program.repository';
+import { MockReleaseRepository } from '@data/mock/mock-release.repository';
 import { MockResidentRepository } from '@data/mock/mock-resident.repository';
 import {
   ACCESS_CONTEXT,
   ASSISTANCE_REQUEST_REPOSITORY,
   NOTIFICATION_REPOSITORY,
   PROGRAM_REPOSITORY,
+  RELEASE_REPOSITORY,
   RESIDENT_REPOSITORY,
   STAFF_REPOSITORY,
+  UNSERVED_PORTS,
   asId,
   asIsoDateTime,
   EMPTY_ADVISORY,
   EMPTY_INTAKE_DRAFT,
   emptyPage,
   toAuthenticatedUser,
+  type AssistanceRequestId,
   type AuthenticatedUser,
   type Page,
   type ProgramId,
@@ -111,6 +115,8 @@ async function configure(
       { provide: ASSISTANCE_REQUEST_REPOSITORY, useClass: requests },
       { provide: RESIDENT_REPOSITORY, useClass: residents },
       { provide: PROGRAM_REPOSITORY, useClass: MockProgramRepository },
+      { provide: RELEASE_REPOSITORY, useClass: MockReleaseRepository },
+      { provide: UNSERVED_PORTS, useValue: [] },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
     ],
   });
@@ -494,7 +500,7 @@ describe('the assessment workspace', () => {
   it('does not ask for the duplicate check on behalf of a role that does not file', async () => {
     const element = html(await openAssessment(ENDORSED, 'auditor'));
     expect(element.querySelector('app-advisory-panel')).toBeNull();
-    expect(element.textContent).toContain('read by the staff who file requests');
+    expect(element.textContent).toContain('read by the staff who file and assess requests');
   });
 });
 
@@ -557,6 +563,74 @@ describe('the request record where a read fails', () => {
   });
 });
 
+/* ── The decisions round (DL-183) ─────────────────────────────────────────── */
+
+describe('approving says what was approved (DL-183)', () => {
+  const approveSection = (element: HTMLElement) =>
+    element.querySelector('#approve-heading')?.parentElement;
+
+  it('is not offered as a bare move, and asks the approver for the amount', async () => {
+    const element = html(await openAssessment(ENDORSED, 'mswdo-head'));
+    const options = [...element.querySelectorAll('#request-status-destination option')].map(
+      (option) => option.getAttribute('value'),
+    );
+    expect(options).not.toContain('approved');
+    expect(approveSection(element)?.textContent).toContain('Approved amount (₱)');
+  });
+
+  it('refuses an amount it cannot read, in words, and sends nothing', async () => {
+    const fixture = await openAssessment(ENDORSED, 'mswdo-head');
+    const section = approveSection(html(fixture));
+    type(section?.querySelector('input[type="text"]'), 'three thousand');
+    type(section?.querySelector('textarea'), 'Within the programme ceiling.');
+    buttonNamed(section, 'Approve')?.click();
+    await fixture.whenStable();
+    expect(section?.querySelector('[role="alert"]')?.textContent).toContain(
+      'Enter the approved amount in pesos',
+    );
+    const reread = await firstValueFrom(
+      TestBed.inject(ASSISTANCE_REQUEST_REPOSITORY).getById(asId<AssistanceRequestId>(ENDORSED)),
+    );
+    expect(reread?.status).toBe('endorsed');
+  });
+
+  it('records pesos as integer centavos and shows the approved amount', async () => {
+    const fixture = await openAssessment(ENDORSED, 'mswdo-head');
+    const section = approveSection(html(fixture));
+    type(section?.querySelector('input[type="text"]'), '3,000.50');
+    type(section?.querySelector('textarea'), 'Within the programme ceiling.');
+    buttonNamed(section, 'Approve')?.click();
+    await fixture.whenStable();
+    const reread = await firstValueFrom(
+      TestBed.inject(ASSISTANCE_REQUEST_REPOSITORY).getById(asId<AssistanceRequestId>(ENDORSED)),
+    );
+    expect(reread?.status).toBe('approved');
+    expect(reread?.approvedAmount?.centavos).toBe(300_050);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(html(fixture).textContent).toContain('3,000.50');
+  });
+});
+
+describe('a request with an open release is not ended (DL-183)', () => {
+  it('names the release and does not offer cancelling or expiring to a reader of payouts', async () => {
+    // req-0003 is scheduled, and its release RL-… is scheduled into a payout session.
+    const element = html(await openAssessment('req-0003', 'mswdo-head'));
+    expect(element.textContent).toContain('void the release first');
+    expect(element.querySelector('a[href^="/releases/"]')).not.toBeNull();
+    const options = [...element.querySelectorAll('#request-status-destination option')].map(
+      (option) => option.getAttribute('value'),
+    );
+    expect(options).not.toContain('cancelled');
+    expect(options).not.toContain('expired');
+  });
+
+  it('says the rule to a reader who cannot read the payouts', async () => {
+    const element = html(await openAssessment('req-0003', 'intake-officer'));
+    expect(element.textContent).toContain('it is voided first');
+  });
+});
+
 /* ── Phase 2b, served (DL-178) ──────────────────────────────────────────────── */
 
 const buttonNamed = (root: Element | null | undefined, name: string) =>
@@ -579,12 +653,13 @@ function choose(select: HTMLSelectElement | null | undefined, value: string): vo
 }
 
 describe('a caseload on the request record', () => {
-  it('does not read the registry or the duplicate check, and says why', async () => {
+  it('reads its own client’s record and previous assistance in place, with no link into the registry (DL-183)', async () => {
     const element = html(await openAssessment(ENDORSED));
     const applicant = element.querySelector('#applicant-heading')?.parentElement;
-    expect(applicant?.textContent).toContain('not read by an account that works a caseload');
-    expect(applicant?.querySelector('app-resident-summary-card')).toBeNull();
-    expect(element.querySelector('app-advisory-panel')).toBeNull();
+    expect(applicant?.textContent).not.toContain('not read by');
+    expect(applicant?.querySelector('app-resident-summary-card')).not.toBeNull();
+    expect(applicant?.querySelector('a[href^="/residents/"]')).toBeNull();
+    expect(element.querySelector('app-advisory-panel')).not.toBeNull();
   });
 
   it('is not offered assignment, which reads the office’s whole list', async () => {

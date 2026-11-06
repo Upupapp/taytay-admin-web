@@ -150,7 +150,7 @@ export const REQUESTS_COPY = {
       'The person this request is for is under a protected sector, so its words — why they came, who referred them, the reasons for each move and assignment, any remarks, the case study and the notes — are withheld from your account. They are recorded; a colleague cleared for protected records can read them.',
     unknownProgramme: 'A programme this account cannot read',
     registryNotRead:
-      'The resident registry is not read by an account that works a caseload, so the applicant’s record is not shown here. The request names the person; ask an intake officer for anything more.',
+      'The resident registry is not read by this account, so the applicant’s record is not shown here.',
     profileFailed: 'The applicant’s record could not be read, so it is not shown here.',
 
     assignmentHeading: 'Assignment',
@@ -169,7 +169,7 @@ export const REQUESTS_COPY = {
       'Only a filed request that is not over can be assigned. A draft is the counter’s, and a request that has ended is kept as it ended.',
     workersFailed: 'The list of social workers could not be read, so nobody is offered.',
     advisoryNotRead:
-      'The duplicate and previous-assistance check reads this person’s whole assistance history, so it is read by the staff who file requests, not by every account that can open one.',
+      'The duplicate and previous-assistance check reads this person’s whole assistance history, so it is read by the staff who file and assess requests, not by every account that can open one.',
     advisoryFailed:
       'The duplicate and previous-assistance check could not be read, so nothing is shown here — which is not a finding that nothing was found.',
     historyHeading: 'History',
@@ -275,6 +275,39 @@ export const REQUESTS_COPY = {
     payoutMoves:
       'Scheduled and released are recorded with the payout: the request moves when its release is scheduled into a payout session, and again when it is handed over.',
     prepareRelease: 'Prepare the release',
+    approvedGoods: (goods: string): string => `Goods: ${goods}`,
+
+    // DL-183: an approval says what was approved, and is the ceiling a money release is prepared under.
+    approveHeading: 'Approve this request',
+    approveNote:
+      'Approving records what was approved: the amount, or for goods a description of them. A money release is prepared under this amount, never above it; the record keeps it with your reason.',
+    approveKindLegend: 'What is approved',
+    approveKindMoney: 'An amount of money',
+    approveKindGoods: 'Goods',
+    approveAmount: 'Approved amount (₱)',
+    approveAmountHint: 'In pesos, as on the voucher — 3,000 or 3,000.50.',
+    approveContext: (requested: string, recommended: string): string =>
+      `Asked for: ${requested}. Recommended by the assessment: ${recommended}.`,
+    approveGoods: 'What goods are approved',
+    approveGoodsHint: 'Goods are described, never priced.',
+    approveReason: 'Why it is approved',
+    approveSubmit: 'Approve',
+    approvedNotice: 'The request has been approved.',
+    approveProblems: {
+      amountUnreadable: 'Enter the approved amount in pesos, like 3,000 or 3,000.50. Nothing was sent.',
+      'amount-not-positive': 'The approved amount has to be more than nothing. Nothing was sent.',
+      'amount-too-large': 'That amount is beyond what the office record can hold. Nothing was sent.',
+      'goods-missing': 'Say what goods are approved. Nothing was sent.',
+      'goods-too-long': 'Describe the goods in 300 characters or fewer. Nothing was sent.',
+      reasonShort: 'Say why it is approved, in 8 characters or more. Nothing was sent.',
+    },
+
+    // DL-183: a request is not cancelled or expired while its payout stands.
+    releaseStands: (reference: string, status: string): string =>
+      `Release ${reference} is ${status}. A request is not cancelled or expired while its release stands: void the release first, by its own act, and then this request can be ended.`,
+    openReleaseLink: 'Open the release',
+    releaseMayStand:
+      'If a payout has been prepared for this request, it is voided first — by somebody who schedules payouts — and only then can the request be cancelled or expired.',
     moved: 'The request has been moved.',
     failed: 'That change could not be recorded.',
   },

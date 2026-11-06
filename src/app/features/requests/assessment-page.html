@@ -37,6 +37,8 @@
             <dd>
               @if (request.approvedAmount; as amount) {
                 {{ amount | peso }}
+              } @else if (request.approvedInKindDescription; as goods) {
+                {{ copy.approvedGoods(goods) }}
               } @else {
                 {{ copy.notSet }}
               }
@@ -830,14 +832,22 @@
           } @else {
             <p class="assessment__note">{{ copy.applicantNote }}</p>
             @if (profile(); as context) {
-              <app-resident-summary-card
-                [view]="context.view"
-                [routerLink]="'/residents/' + context.view.resident.id"
-              />
-              @if (context.household; as household) {
-                <p class="assessment__fact">
-                  <a [routerLink]="'/households/' + household.id">{{ household.referenceNumber }}</a>
-                </p>
+              @if (linksRegistry()) {
+                <app-resident-summary-card
+                  [view]="context.view"
+                  [routerLink]="'/residents/' + context.view.resident.id"
+                />
+                @if (context.household; as household) {
+                  <p class="assessment__fact">
+                    <a [routerLink]="'/households/' + household.id">{{ household.referenceNumber }}</a>
+                  </p>
+                }
+              } @else {
+                <!-- A caseload reads its client here, in place, and is not linked into the registry (DL-183). -->
+                <app-resident-summary-card [view]="context.view" />
+                @if (context.household; as household) {
+                  <p class="assessment__fact">{{ household.referenceNumber }}</p>
+                }
               }
             }
           }
@@ -870,6 +880,19 @@
         </section>
 
         <div class="assessment__block">
+          @if (endsUnderPayout(request.status)) {
+            <!-- Said before the button, never as a refusal after it (DL-183). -->
+            @if (!servesReleases) {
+              <app-not-connected port="release" />
+            } @else if (openRelease(); as release) {
+              <p class="assessment__note" role="note">
+                {{ releaseStands(release) }}
+                <a [routerLink]="'/releases/' + release.id">{{ copy.openReleaseLink }}</a>
+              </p>
+            } @else if (unknownRelease()) {
+              <p class="assessment__note" role="note">{{ copy.releaseMayStand }}</p>
+            }
+          }
           <app-status-transition
             idPrefix="request-status"
             [heading]="copy.moveHeading"
@@ -883,6 +906,87 @@
           @if (request.status === 'approved' || request.status === 'scheduled') {
             <!-- Scheduled and released are recorded with the payout, never moved here (DL-180). -->
             <p class="assessment__note">{{ copy.payoutMoves }}</p>
+          }
+          @if (request.status === 'endorsed' && canApprove()) {
+            <section class="assessment__approve" aria-labelledby="approve-heading">
+              <h3 class="assessment__heading" id="approve-heading">{{ copy.approveHeading }}</h3>
+              <p class="assessment__note">{{ copy.approveNote }}</p>
+              <p class="assessment__note">
+                {{
+                  copy.approveContext(
+                    (request.requestedAmount | peso: copy.notSet),
+                    (request.assessment?.recommendedAmount | peso: copy.notSet)
+                  )
+                }}
+              </p>
+              <fieldset class="field">
+                <legend class="field__label">{{ copy.approveKindLegend }}</legend>
+                <label>
+                  <input
+                    type="radio"
+                    name="approval-kind"
+                    value="money"
+                    [checked]="approvalKind() === 'money'"
+                    (change)="onApprovalKind('money')"
+                  />
+                  {{ copy.approveKindMoney }}
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="approval-kind"
+                    value="in-kind"
+                    [checked]="approvalKind() === 'in-kind'"
+                    (change)="onApprovalKind('in-kind')"
+                  />
+                  {{ copy.approveKindGoods }}
+                </label>
+              </fieldset>
+              @if (approvalKind() === 'money') {
+                <label class="field field--narrow">
+                  <span class="field__label">{{ copy.approveAmount }}</span>
+                  <input
+                    class="field__input"
+                    type="text"
+                    inputmode="decimal"
+                    autocomplete="off"
+                    [value]="approvalAmount()"
+                    (input)="onApprovalAmount($event)"
+                  />
+                  <span class="field__hint">{{ copy.approveAmountHint }}</span>
+                </label>
+              } @else {
+                <label class="field">
+                  <span class="field__label">{{ copy.approveGoods }}</span>
+                  <textarea
+                    class="field__input"
+                    rows="2"
+                    maxlength="300"
+                    [value]="approvalGoods()"
+                    (input)="onApprovalGoods($event)"
+                  ></textarea>
+                  <span class="field__hint">{{ copy.approveGoodsHint }}</span>
+                </label>
+              }
+              <label class="field">
+                <span class="field__label">{{ copy.approveReason }}</span>
+                <textarea
+                  class="field__input"
+                  rows="2"
+                  maxlength="500"
+                  [value]="approvalReason()"
+                  (input)="onApprovalReason($event)"
+                ></textarea>
+              </label>
+              @if (approvalProblemText(); as problem) {
+                <p class="field__error" role="alert">{{ problem }}</p>
+              }
+              <div class="assessment__actions">
+                <button type="button" class="btn btn--primary" [disabled]="submitting()" (click)="approve()">
+                  {{ copy.approveSubmit }}
+                </button>
+              </div>
+            </section>
           }
           @if (canPrepareRelease(request.status)) {
             <a class="btn" routerLink="/releases/prepare" [queryParams]="{ request: request.id }">

@@ -8,10 +8,12 @@ import {
   userHasPermission,
   type AssistanceRequest,
   type AuthenticatedUser,
+  type Release,
   type Resident,
 } from '@domain/index';
 
 import { MOCK_ASSISTANCE_REQUESTS } from './seed/assistance-requests.seed';
+import { MOCK_DISBURSEMENTS } from './seed/releases.seed';
 
 /**
  * The assistance requests of this session, held once.
@@ -25,6 +27,12 @@ import { MOCK_ASSISTANCE_REQUESTS } from './seed/assistance-requests.seed';
 export class MockAssistanceRequestStore {
   /** Every request, drafts included. Replaced whole on each write, never edited in place. */
   requests: AssistanceRequest[] = [...MOCK_ASSISTANCE_REQUESTS];
+  /**
+   * Every payout of this session, held beside the requests they pay out: the release adapter
+   * writes them, and the request adapter reads them, because a request with an open release is not
+   * cancelled or expired until the release is voided (`DL-183`), as on the server.
+   */
+  releases: readonly Release[] = [...MOCK_DISBURSEMENTS];
 }
 
 /**
@@ -58,7 +66,6 @@ export function discloseRequest(
     withheld.push('assessment');
   }
   const caseStudyWithheld = withheld.includes('assessment');
-  const fullNumbers = userHasPermission(user, 'document.view-full-number');
 
   return {
     ...request,
@@ -87,10 +94,9 @@ export function discloseRequest(
               ...requirement.document,
               versions: requirement.document.versions.map((version) => ({
                 ...version,
-                documentNumber: fullNumbers
-                  ? version.documentNumber
-                  : maskDocumentNumber(version.documentNumber),
-                documentNumberMasked: !fullNumbers && version.documentNumber !== null,
+                // Only the last four are held, so every reader is told the same (DL-183).
+                documentNumber: maskDocumentNumber(version.documentNumber),
+                documentNumberMasked: version.documentNumber !== null,
                 supersededReason: masked ? null : version.supersededReason,
               })),
             },

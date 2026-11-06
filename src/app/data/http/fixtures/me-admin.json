@@ -71,7 +71,6 @@
       "request.view-sensitive",
       "document.record",
       "document.download",
-      "document.view-full-number",
       "release.view",
       "release.schedule",
       "release.release",

@@ -221,10 +221,28 @@ if (!/warning:/.test(adapter)) {
 }
 
 const permissions = read('src/app/domain/access/permission.ts');
-for (const permission of ['document.record', 'document.download', 'document.view-full-number']) {
+for (const permission of ['document.record', 'document.download']) {
   if (!permissions.includes(`'${permission}'`)) {
     problems.push(`The permission ${permission} has gone from the vocabulary.`);
   }
+}
+
+// DL-183: a document number is held as its last four characters, so there is nothing fuller for a
+// key to open. The key must not come back, and both adapters must cut the number before it is kept
+// or sent.
+if (permissions.includes("'document.view-full-number'")) {
+  problems.push(
+    'document.view-full-number is back in the vocabulary. Only the last four characters of a ' +
+      'document number are held (DL-183); a key to read it in full would promise what no record holds.',
+  );
+}
+const uploadMapper = read('src/app/data/http/mappers/assistance-request.mapper.ts');
+const toWireUpload = /export function toWireDocumentUpload[\s\S]*?\n\}/.exec(uploadMapper)?.[0] ?? '';
+if (!/lastFourOf\s*\(\s*draft\s*\.\s*documentNumber\s*\)/.test(toWireUpload)) {
+  problems.push('toWireDocumentUpload sends more than the last four characters of a document number (DL-183).');
+}
+if (!/documentNumber:\s*lastFourOf\s*\(\s*draft\s*\.\s*documentNumber\s*\)/.test(adapter)) {
+  problems.push('The mock adapter keeps more than the last four characters of a document number (DL-183).');
 }
 
 // Reading the checklist must not carry the right to pull the scans.

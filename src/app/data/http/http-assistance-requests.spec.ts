@@ -22,6 +22,8 @@ import {
   DocumentVersionInvalidError,
   EMPTY_INTAKE_DRAFT,
   REQUEST_WITHHELD_FIELDS,
+  APPROVAL_IS_ITS_OWN_ACT,
+  APPROVAL_NEEDS_WHAT,
   STATUS_MOVE_NEEDS_REASON,
   type AssistanceRequestId,
   type AssistanceRequestRepository,
@@ -359,6 +361,56 @@ describe('assistance requests over the API (DL-177, DL-178)', () => {
       const [, endorsed] = OFFICE_REQUESTS_PAGE.data;
       request.flush({ data: endorsed, meta: {} });
       expect((await moved).status).toBe('endorsed');
+    });
+
+    it('approves with the amount in integer centavos, and reads it back (DL-183)', async () => {
+      const approved = firstValueFrom(
+        requests.approve(DRAFT_ID, { kind: 'money', amount: centavos(250_050) }, ' Within the ceiling. '),
+      );
+      barangays();
+      const request = http.expectOne({ method: 'POST', url: `${REQUESTS}/${DRAFT_ID}/status` });
+      expect(request.request.body).toEqual({
+        to: 'approved',
+        reason: 'Within the ceiling.',
+        approved_amount_centavos: 250_050,
+        approved_in_kind_description: null,
+      });
+      request.flush({
+        data: { ...OFFICE_REQUEST.data, approved_amount_centavos: 250_050 },
+        meta: {},
+      });
+      expect((await approved).approvedAmount).toEqual(centavos(250_050));
+    });
+
+    it('approves goods described, with no amount', async () => {
+      const approved = firstValueFrom(
+        requests.approve(DRAFT_ID, { kind: 'in-kind', description: 'Two sacks of rice' }, 'Goods.'),
+      );
+      barangays();
+      const request = http.expectOne({ method: 'POST', url: `${REQUESTS}/${DRAFT_ID}/status` });
+      expect(request.request.body).toEqual({
+        to: 'approved',
+        reason: 'Goods.',
+        approved_amount_centavos: null,
+        approved_in_kind_description: 'Two sacks of rice',
+      });
+      request.flush({
+        data: { ...OFFICE_REQUEST.data, approved_in_kind_description: 'Two sacks of rice' },
+        meta: {},
+      });
+      const read = await approved;
+      expect(read.approvedAmount).toBeNull();
+      expect(read.approvedInKindDescription).toBe('Two sacks of rice');
+    });
+
+    it('refuses a bare move to approved, and an approval that says nothing, before anything is sent', async () => {
+      await expect(
+        firstValueFrom(requests.changeStatus(DRAFT_ID, 'approved', 'Within the ceiling.')),
+      ).rejects.toThrow(APPROVAL_IS_ITS_OWN_ACT);
+      await expect(
+        firstValueFrom(requests.approve(DRAFT_ID, { kind: 'money', amount: centavos(0) }, 'Yes.')),
+      ).rejects.toThrow(APPROVAL_NEEDS_WHAT);
+      http.verify();
     });
 
     it('refuses a move without words before anything is sent', async () => {
@@ -728,7 +780,8 @@ describe('assistance requests over the API (DL-177, DL-178)', () => {
       const form = body instanceof FormData ? body : new FormData();
       expect(form.get('file')).toBeInstanceOf(Blob);
       expect(form.get('source')).toBe('scanned');
-      expect(form.get('document_number')).toBe('BC-2026-4471');
+      // Only the last four characters leave the browser (DL-183).
+      expect(form.get('document_number')).toBe('4471');
       expect(form.get('replaces_because')).toBe('A clearer scan.');
       // A form cannot say null: a field with nothing to say is not sent.
       expect(form.has('issued_on')).toBe(false);

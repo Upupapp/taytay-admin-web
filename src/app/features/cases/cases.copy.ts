@@ -79,10 +79,6 @@ export const CASES_COPY = {
       'Between addresses, or split across two. A recordable state, not missing data.',
     householdLink: 'Open the household',
     membersHeading: 'Who else lives there',
-    /** Never "no household": the household exists, and is not this reader's (`DL-179`). */
-    householdWithheld: 'Not shown to your account',
-    householdWithheldNote:
-      'An account that works only its assigned cases is shown the case and the person it is about, not the household and family around them. Intake or the head can read them.',
     contextFailed:
       'The household or the family could not be read, so neither is shown here — which is not the same as there being none.',
 
@@ -124,11 +120,13 @@ export const CASES_COPY = {
     noTasks: 'No task has been recorded on this case.',
     taskDue: 'Due',
     taskDone: 'Completed',
+    taskCancelled: 'Cancelled',
     taskOutcome: 'Outcome',
     taskOwedBy: 'Owed by',
     taskOwedByNobody: 'Nobody yet',
     addTask: 'Add a task',
     completeTask: 'Mark as done',
+    cancelTask: 'Cancel task',
     handOverTask: 'Hand over',
     rescheduleTask: 'Move the date',
 
@@ -150,6 +148,11 @@ export const CASES_COPY = {
     assignWorker: 'Social worker',
     assignNobody: 'Nobody — take it off any caseload',
     assign: 'Record the assignment',
+    /** Said before the button: the previous holder's open tasks go with the case (`DL-183`). */
+    assignMovesTasks: (count: number, holder: string, to: string | null) =>
+      `${count === 1 ? 'The open task' : `The ${count} open tasks`} ${holder} owes on this case ${
+        count === 1 ? 'goes' : 'go'
+      } with it — ${to === null ? 'to nobody' : `to ${to}`} — each recorded with this reason. Tasks owed by anybody else, and finished ones, stay where they are.`,
     assigneesLoading: 'Reading the social workers…',
     assigneesFailed:
       'The list of social workers could not be read, so nobody is offered. Close this and try again.',
@@ -158,7 +161,10 @@ export const CASES_COPY = {
       'This case is closed. The file is kept in full, and a situation that recurs is opened as a new case rather than reviving this one.',
     continueClosed: 'Open a new case continuing this one',
     closeBlocked: (count: number) =>
-      `Closing is not offered while ${count === 1 ? 'a task is' : `${count} tasks are`} open. Record what happened to each first — mark it done with its outcome — because a task left open on a closed case would be owed by nobody.`,
+      `Closing is not offered while ${count === 1 ? 'a task is' : `${count} tasks are`} open. Record what happened to each first — mark it done with its outcome, or cancel it with the reason it is no longer needed — because a task left open on a closed case would be owed by nobody.`,
+    closeBlockedHeading: 'Open tasks to settle before closing',
+    endLink: 'End link',
+    endLinkLabel: (reference: string) => `End the link to ${reference}`,
   },
 
   noteForm: {
@@ -231,10 +237,36 @@ export const CASES_COPY = {
     saved: 'The task has been completed.',
   },
 
+  /** Ending a task that is no longer needed (`DL-183`). Kept, never deleted. */
+  cancelTaskForm: {
+    heading: 'Cancel a task',
+    description:
+      'A cancelled task is kept on the case, marked cancelled, with your name and the reason as its outcome. It cannot be reopened; if the work is needed after all, add a new task.',
+    reason: 'Why is this task no longer needed?',
+    reasonPlaceholder:
+      'e.g. The family moved to Antipolo; the barangay visit is no longer ours to make',
+    confirm: 'Cancel the task',
+    cancel: 'Keep it open',
+    saved: 'The task has been cancelled.',
+  },
+
+  /** Ending a request's link to the case (`DL-183`). Kept in the history, never removed. */
+  endLinkForm: {
+    heading: 'End this request’s link to the case',
+    description:
+      'The link is kept in the case’s history with your name and the reason, and the request no longer counts as part of this case. It may then be named again — by this case or another one.',
+    reason: 'Why is this request no longer part of the case?',
+    reasonPlaceholder:
+      'e.g. Named here by mistake; it belongs to the fire case opened the same day',
+    confirm: 'End the link',
+    cancel: 'Keep it linked',
+    saved: 'The request is no longer linked to this case.',
+  },
+
   linkForm: {
     heading: 'Name a request in this case',
     description:
-      'A case names the interventions it covers one at a time, with a reason. A request named here stays named — there is no un-naming, and a mistake is corrected with a note.',
+      'A case names the interventions it covers one at a time, with a reason. A request named here stays in the case’s history; if it was named by mistake, its link is ended with a reason, never erased.',
     request: 'Which request?',
     choose: 'Choose a filed request',
     loading: 'Reading this person’s filed requests…',

@@ -10,6 +10,7 @@ import {
   batchProblems,
   canTransition,
   composeManifest,
+  describePesos,
   releaseProblems,
   discloseResident,
   isReleaseOpen,
@@ -80,7 +81,13 @@ export class MockReleaseRepository implements ReleaseRepository {
   private readonly residents = inject(MockResidentStore);
   private readonly requests = inject(MockAssistanceRequestStore);
 
-  private releases: readonly Release[] = [...MOCK_DISBURSEMENTS];
+  /** Held in the request store, so a request can see its open release (`DL-183`). */
+  private get releases(): readonly Release[] {
+    return this.requests.releases;
+  }
+  private set releases(value: readonly Release[]) {
+    this.requests.releases = value;
+  }
   private batches: readonly Omit<ReleaseBatch, 'progress'>[] = [...MOCK_RELEASE_BATCHES];
   private batchSequence = MOCK_RELEASE_BATCHES.length;
   private releaseSequence = MOCK_DISBURSEMENTS.length;
@@ -269,6 +276,27 @@ export class MockReleaseRepository implements ReleaseRepository {
     }
     // Who approved, read from the request's own history: the last move into `approved` (`DL-91`).
     const approval = [...request.statusHistory].reverse().find((change) => change.to === 'approved');
+    // Never above what was approved (`DL-183`), as the server refuses it; goods are not compared.
+    const asked = draft.kind === 'money' ? draft.amount : null;
+    if (asked !== null) {
+      const ceiling = request.approvedAmount;
+      if (ceiling === null) {
+        return throwError(
+          () =>
+            new Error(
+              'The approval of this request recorded no amount, so no money release can be prepared against it.',
+            ),
+        );
+      }
+      if (asked.centavos > ceiling.centavos) {
+        return throwError(
+          () =>
+            new Error(
+              `A release is not prepared above the approved amount: ${describePesos(ceiling)} was approved, and this release says ${describePesos(asked)}.`,
+            ),
+        );
+      }
+    }
 
     this.releaseSequence += 1;
     const now = asIsoDateTime(new Date());

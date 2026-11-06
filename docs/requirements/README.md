@@ -96,10 +96,11 @@ because a complete checklist *looks* like a green light.
 
 ## Privacy
 
-**Numbers are masked** to their last four characters by `maskDocumentNumber` —
-enough for a clerk to confirm they are holding the right paper, not enough to
-reconstruct an identifier. A number short enough that masking would reveal most
-of it is masked whole. The full number needs `document.view-full-number`.
+**Only the last four characters of a number are kept** (`DL-183`) — enough for a
+clerk to confirm they are holding the right paper, not enough to reconstruct an
+identifier. `lastFourOf` cuts it before it is sent, the API cuts it again and
+refuses to store anything longer, and `maskDocumentNumber` says it as `••••1234`
+to every reader. There is no full number to show, and no key to show it.
 
 **Opening a file is a request, not a link.** `openDocument` returns a
 `DocumentAccessGrant` — an opaque, short-lived handle plus the warning to show
@@ -118,7 +119,6 @@ carries no more than the receiving office needs.
 | --- | --- |
 | `document.record` | Intake, social workers, MSWDO head, sysadmin |
 | `document.download` | Social workers, MSWDO head, auditor, sysadmin |
-| `document.view-full-number` | Social workers, MSWDO head, sysadmin |
 
 **Intake records but does not download.** Recording what was presented and
 pulling the scan itself are different disclosures, and the counter needs only

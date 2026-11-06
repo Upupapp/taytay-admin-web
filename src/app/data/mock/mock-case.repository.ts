@@ -297,6 +297,36 @@ export class MockCaseRepository implements CaseRepository {
     return this.respondWith(updated, outcome.user);
   }
 
+  /**
+   * Ends a request's link to this case (`DL-183`): a request this writer can read, linked here now.
+   * The link stays in the history; the request may be named again, here or by another case.
+   */
+  endRequestLink(
+    id: CaseId,
+    requestId: AssistanceRequestId,
+    reason: string,
+  ): Observable<CaseWorkspace> {
+    const outcome = this.writable(id, 'case.manage', reason);
+    if ('error' in outcome) {
+      return outcome.error;
+    }
+    const request = this.requestStore.requests.find((entry) => entry.id === requestId);
+    if (
+      !outcome.record.linkedRequestIds.includes(requestId) ||
+      request === undefined ||
+      !inReach(outcome.user, request)
+    ) {
+      return throwError(() => new Error('That request is not linked to this case.'));
+    }
+    const updated = this.cases.endRequestLink(
+      outcome.record,
+      requestId,
+      reason,
+      actorOf(outcome.user),
+    );
+    return this.respondWith(updated, outcome.user);
+  }
+
   changeStatus(id: CaseId, to: CaseStatus, reason: string): Observable<CaseWorkspace> {
     // The permission the *destination* requires, not a blanket one: closing a
     // case is a different authority from moving it along.
@@ -334,7 +364,13 @@ export class MockCaseRepository implements CaseRepository {
     if (staffUserId !== null && !socialWorkers().some((worker) => worker.id === staffUserId)) {
       return throwError(() => new Error('A case is given to an active social worker.'));
     }
-    const updated = this.cases.assign(outcome.record, staffUserId, reason, actorOf(outcome.user));
+    const updated = this.cases.assign(
+      outcome.record,
+      staffUserId,
+      staffName(staffUserId),
+      reason,
+      actorOf(outcome.user),
+    );
     return this.respondWith(updated, outcome.user);
   }
 
@@ -387,6 +423,16 @@ export class MockCaseRepository implements CaseRepository {
       return outcome.error;
     }
     this.cases.completeTask(outcome.task, reason, actorOf(outcome.user));
+    return this.respondWith(outcome.record, outcome.user);
+  }
+
+  /** A task no longer needed, ended with the reason as its outcome (`DL-183`). Kept, never removed. */
+  cancelTask(id: CaseId, taskId: CaseTaskId, reason: string): Observable<CaseWorkspace> {
+    const outcome = this.taskFor(id, taskId, reason);
+    if ('error' in outcome) {
+      return outcome.error;
+    }
+    this.cases.cancelTask(outcome.task, reason, actorOf(outcome.user));
     return this.respondWith(outcome.record, outcome.user);
   }
 
@@ -613,24 +659,20 @@ export class MockCaseRepository implements CaseRepository {
     return this.isProtected(record) && !userHasPermission(user, 'request.view-sensitive');
   }
 
+  /**
+   * A caseload reads its own client's household and families like anybody else (`DL-183`,
+   * superseding `DL-179`'s `householdContext`); only a protected subject's words are withheld.
+   */
   private withheldFrom(record: StoredCase, user: AuthenticatedUser | null): CaseWithheldField[] {
-    const withheld: CaseWithheldField[] = this.wordsWithheld(record, user)
-      ? [...PROTECTED_CASE_WITHHELD]
-      : [];
-    if (user?.scope === 'assigned-cases') {
-      withheld.push('householdContext');
-    }
-    return withheld;
+    return this.wordsWithheld(record, user) ? [...PROTECTED_CASE_WITHHELD] : [];
   }
 
-  /** The record as this reader may see it: the summary withheld, the household not named. */
+  /** The record as this reader may see it: the summary withheld from a reader not cleared for it. */
   private discloseRecord(record: StoredCase, user: AuthenticatedUser | null): SocialCase {
     const withheld = this.withheldFrom(record, user);
     return {
       ...record,
-      householdId: withheld.includes('householdContext')
-        ? null
-        : (this.residents.householdOfResident(record.subjectResidentId)?.id ?? null),
+      householdId: this.residents.householdOfResident(record.subjectResidentId)?.id ?? null,
       summary: withheld.includes('summary') ? null : record.summary,
       isProtected: this.isProtected(record),
       withheld,
@@ -700,7 +742,7 @@ export class MockCaseRepository implements CaseRepository {
     }
     const disclosed = summary.record;
     const masked = disclosed.withheld.includes('taskWords');
-    // A caseload is admitted to the case, not to the registry around it (`DL-179`).
+    // A caseload reads its own client's household, as the API answers it (`DL-183`).
     const household =
       disclosed.householdId === null
         ? undefined
@@ -718,9 +760,7 @@ export class MockCaseRepository implements CaseRepository {
           ? null
           : this.householdSummary(household, members, snapshot, user),
       vulnerability: snapshot,
-      families: disclosed.withheld.includes('householdContext')
-        ? []
-        : this.familiesOf(record.subjectResidentId, household, user),
+      families: this.familiesOf(record.subjectResidentId, household, user),
       householdMembers: members.map((member) => this.disclose(member, user)),
       householdContextUnread: false,
       requests: this.requestsFor(record, user),

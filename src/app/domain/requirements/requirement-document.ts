@@ -81,19 +81,15 @@ export interface DocumentVersion {
   readonly file: DocumentFile | null;
   readonly source: DocumentSource;
   /**
-   * The number printed on the document, where it has one.
-   *
-   * **Sensitive.** Never rendered whole in a list or table; `maskDocumentNumber`
-   * is the only sanctioned way to put it on a screen without an explicit
-   * permission check.
+   * What is kept of the number printed on the document, where it has one: its last four
+   * characters, and nothing more (`DL-183`). RA 10173 asks for no more than the office needs, and
+   * RA 11055 forbids holding a PhilSys number in full; the file, behind `document.download`, is
+   * the full evidence. `maskDocumentNumber` is how it is put on a screen (`••••1234`).
    */
   readonly documentNumber: string | null;
   /**
-   * Whether `documentNumber` arrived already masked to its last four characters (`••••1234`).
-   *
-   * The server masks it unless the reader holds `document.view-full-number`, so a masked number is
-   * all most readers ever receive. Screens mask it again regardless — masking is idempotent — so a
-   * full number is never shown by default even to a reader allowed to have it.
+   * Whether `documentNumber` arrived already said as `••••1234`. Always, from the API, when there
+   * is a number: nobody reads more of it, because nobody holds more (`DL-183`).
    */
   readonly documentNumberMasked: boolean;
   readonly issuedOn: IsoDate | null;
@@ -193,25 +189,26 @@ export function documentValidity(
 /**
  * A document number reduced to its last four characters.
  *
- * The default rendering everywhere. Four characters is enough for a clerk to
+ * The only rendering anywhere. Four characters is enough for a clerk to
  * confirm they are looking at the right paper against the one in their hand,
  * and not enough to reconstruct an identifier — the same reasoning that limits
- * the PhilSys reference to four digits (RA 11055, `CLAUDE.md` §6.2).
- *
- * A number short enough that masking would reveal most of it is masked whole.
+ * the PhilSys reference to four digits (RA 11055, `CLAUDE.md` §6.2). Only those
+ * four are held (`DL-183`), so there is no fuller rendering to choose. Idempotent:
+ * `••••1234` says `••••1234` again.
  */
 export function maskDocumentNumber(value: string | null): string | null {
-  if (value === null) {
-    return null;
-  }
-  const trimmed = value.trim();
-  if (trimmed.length === 0) {
-    return null;
-  }
-  if (trimmed.length <= 4) {
-    return '•'.repeat(trimmed.length);
-  }
-  return `••••${trimmed.slice(-4)}`;
+  const kept = lastFourOf(value);
+  return kept === null ? null : `••••${kept}`;
+}
+
+/**
+ * What is kept of a document number: its last four characters (`DL-183`). Cut before anything
+ * leaves the browser, so a full number is never sent, and cut again by the API, which refuses to
+ * store anything longer.
+ */
+export function lastFourOf(value: string | null): string | null {
+  const trimmed = value?.trim() ?? '';
+  return trimmed === '' ? null : trimmed.slice(-4);
 }
 
 /* ── Appending a version ──────────────────────────────────────────────────── */

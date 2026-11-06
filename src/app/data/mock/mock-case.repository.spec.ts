@@ -187,14 +187,13 @@ describe('cases are read under the same access rules as everything else', () => 
     expect(page.items.every((summary) => summary.record.assignedTo === SW_1)).toBe(true);
   });
 
-  it('does not name the household or family to a caseload, and says so', async () => {
+  it('reads its own client’s household and family, as the API answers a caseload (DL-183)', async () => {
     signedInAs(authenticated('social-worker', SW_1));
     const view = await workspace(MERCADO);
-    expect(view?.record.withheld).toEqual(['householdContext']);
-    expect(view?.record.householdId).toBeNull();
-    expect(view?.household).toBeNull();
-    expect(view?.families).toEqual([]);
-    expect(view?.householdMembers).toEqual([]);
+    expect(view?.record.withheld).toEqual([]);
+    expect(view?.record.householdId).not.toBeNull();
+    expect(view?.household).not.toBeNull();
+    expect(view?.householdMembers.length).toBeGreaterThan(0);
   });
 
   it('does not narrow a head, who carries the whole office', async () => {
@@ -372,6 +371,103 @@ describe('every material change produces an audit event', () => {
     );
     expect(after.record.status).toBe('closed');
     expect(after.record.closedOn).toBe(todayAsIsoDate());
+  });
+
+  it('cancels a task with a reason, keeps it, and lets the case close once none is open (DL-183)', async () => {
+    signedInAs(authenticated('mswdo-head'));
+    const before = await workspace(MERCADO);
+    const open = before?.tasks.filter((entry) => entry.status === 'open') ?? [];
+    expect(open.length).toBeGreaterThan(0);
+    await expect(
+      firstValueFrom(repo().cancelTask(MERCADO, open[0]?.id ?? asId<CaseTaskId>('x'), 'ok')),
+    ).rejects.toThrow();
+
+    let latest = before;
+    for (const task of open) {
+      latest = await firstValueFrom(
+        repo().cancelTask(
+          MERCADO,
+          task.id,
+          'The family moved; the visit is no longer ours to make',
+        ),
+      );
+      const kept = latest.tasks.find((entry) => entry.id === task.id);
+      expect(kept?.status).toBe('cancelled');
+      expect(kept?.outcome).toBe('The family moved; the visit is no longer ours to make');
+      expect(kept?.completedBy).toBe(asId<StaffUserId>('staff-x'));
+      expect(latest.timeline[0]?.kind).toBe('task-cancelled');
+    }
+    expect(latest?.tasks.length).toBe(before?.tasks.length);
+    const first = open[0];
+    if (first !== undefined) {
+      await expect(
+        firstValueFrom(repo().cancelTask(MERCADO, first.id, 'Cancelling it a second time over')),
+      ).rejects.toThrow(/kept as it ended/);
+    }
+    const closed = await firstValueFrom(
+      repo().changeStatus(MERCADO, 'closed', 'Household re-employed and reports no further need'),
+    );
+    expect(closed.record.status).toBe('closed');
+  });
+
+  it('moves the previous holder’s open tasks with the case, one event each, and nobody else’s (DL-183)', async () => {
+    signedInAs(authenticated('mswdo-head'));
+    await firstValueFrom(
+      repo().addTask(
+        MERCADO,
+        {
+          title: 'Owed by the worker',
+          kind: 'follow-up',
+          dueOn: todayAsIsoDate(),
+          assignedTo: SW_1,
+        },
+        REASON,
+      ),
+    );
+    await firstValueFrom(
+      repo().addTask(
+        MERCADO,
+        { title: 'Owed by nobody', kind: 'follow-up', dueOn: todayAsIsoDate(), assignedTo: null },
+        REASON,
+      ),
+    );
+    const before = await firstValueFrom(
+      repo().addTask(
+        MERCADO,
+        {
+          title: 'Owed by the head',
+          kind: 'review',
+          dueOn: todayAsIsoDate(),
+          assignedTo: asId<StaffUserId>('staff-x'),
+        },
+        REASON,
+      ),
+    );
+    const owed = before.tasks.filter((task) => task.status === 'open' && task.assignedTo === SW_1);
+    expect(owed.length).toBeGreaterThan(0);
+
+    const moved = await firstValueFrom(
+      repo().assign(MERCADO, SW_2, 'Grace is on leave for a month from Monday'),
+    );
+    for (const task of owed) {
+      expect(moved.tasks.find((entry) => entry.id === task.id)?.assignedTo).toBe(SW_2);
+    }
+    expect(moved.tasks.find((task) => task.title === 'Owed by nobody')?.assignedTo).toBeNull();
+    expect(moved.tasks.find((task) => task.title === 'Owed by the head')?.assignedTo).toBe(
+      asId<StaffUserId>('staff-x'),
+    );
+    const reassigned = moved.timeline.filter(
+      (entry) => entry.kind === 'task-reassigned' && entry.reason?.includes('on leave'),
+    );
+    expect(reassigned).toHaveLength(owed.length);
+
+    // Back to nobody: the tasks go with the case, to nobody.
+    const pooled = await firstValueFrom(
+      repo().assign(MERCADO, null, 'Nobody can take it until the new hire starts'),
+    );
+    for (const task of owed) {
+      expect(pooled.tasks.find((entry) => entry.id === task.id)?.assignedTo).toBeNull();
+    }
   });
 
   it('refuses every write on a closed case', async () => {
@@ -628,6 +724,31 @@ describe('a case is opened by an assigner, and names its requests one at a time'
     // Already named here answers as it stands.
     const again = await firstValueFrom(repo().linkRequest(MERCADO, requestId, REASON));
     expect(again.timeline.length).toBe(linked.timeline.length);
+  });
+
+  it('ends a link with a reason, keeps both events, and lets the request be named again (DL-183)', async () => {
+    signedInAs(authenticated('mswdo-head'));
+    const requestId = fileUnlinkedRequest();
+    await firstValueFrom(repo().linkRequest(MERCADO, requestId, REASON));
+    await expect(firstValueFrom(repo().endRequestLink(MERCADO, requestId, 'ok'))).rejects.toThrow();
+
+    const ended = await firstValueFrom(
+      repo().endRequestLink(
+        MERCADO,
+        requestId,
+        'Named here by mistake; it belongs to the fire case',
+      ),
+    );
+    expect(ended.record.linkedRequestIds).not.toContain(requestId);
+    expect(ended.timeline[0]?.kind).toBe('request-unlinked');
+    expect(ended.timeline[0]?.reason).toContain('by mistake');
+    expect(ended.timeline.some((entry) => entry.kind === 'request-linked')).toBe(true);
+    await expect(
+      firstValueFrom(repo().endRequestLink(MERCADO, requestId, 'Ending it a second time over')),
+    ).rejects.toThrow(/not linked to this case/);
+
+    const again = await firstValueFrom(repo().linkRequest(MERCADO, requestId, REASON));
+    expect(again.record.linkedRequestIds).toContain(requestId);
   });
 
   it('refuses a request about somebody outside the subject’s household', async () => {

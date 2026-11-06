@@ -165,6 +165,15 @@ export function isReleased(status: ReleaseStatus): boolean {
   return status === 'released' || status === 'claimed' || status === 'completed';
 }
 
+/**
+ * A payout that keeps its request from being cancelled or expired (`DL-183`): prepared, scheduled,
+ * deferred, unclaimed or being corrected — anything not voided and not handed over. Voiding it is
+ * the release's own act, and comes first.
+ */
+export function holdsRequestOpen(status: ReleaseStatus): boolean {
+  return status !== 'voided' && !isReleased(status);
+}
+
 /** Still the office's to act on. */
 export function isReleaseOpen(status: ReleaseStatus): boolean {
   return status !== 'completed' && status !== 'voided';

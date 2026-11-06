@@ -38,6 +38,13 @@ import {
   isValidAcknowledgement,
   isValidFindings,
   isWithinBarangayScope,
+  lastFourOf,
+  APPROVAL_IS_ITS_OWN_ACT,
+  APPROVAL_NEEDS_WHAT,
+  approvalProblem,
+  holdsRequestOpen,
+  openReleaseRefusal,
+  type RequestApproval,
   PermissionDeniedError,
   permissionForTransition,
   todayAsIsoDate,
@@ -309,7 +316,41 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
         () => new Error('Filing is its own act, and issues the control number. File the draft instead.'),
       );
     }
+    // Approving says what was approved (`DL-183`): its own act, `approve`.
+    if (to === 'approved') {
+      return throwError(() => new Error(APPROVAL_IS_ITS_OWN_ACT));
+    }
+    return this.move(id, to, words, null);
+  }
 
+  /** The move to `approved`, with what was approved (`DL-183`), as the API records it. */
+  approve(
+    id: AssistanceRequestId,
+    approval: RequestApproval,
+    reason: string,
+  ): Observable<AssistanceRequest> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<AssistanceRequest>(user, permissionForTransition('approved'));
+    if (denied) {
+      return denied;
+    }
+    const words = reason.trim();
+    if (words === '') {
+      return throwError(() => new Error(STATUS_MOVE_NEEDS_REASON));
+    }
+    if (approvalProblem(approval) !== null) {
+      return throwError(() => new Error(APPROVAL_NEEDS_WHAT));
+    }
+    return this.move(id, 'approved', words, approval);
+  }
+
+  private move(
+    id: AssistanceRequestId,
+    to: AssistanceRequestStatus,
+    words: string,
+    approval: RequestApproval | null,
+  ): Observable<AssistanceRequest> {
+    const user = this.access.currentUser();
     const current = this.reachable(id);
     if (current === undefined) {
       return throwError(() => new Error(REQUEST_NOT_FOUND));
@@ -329,6 +370,17 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       );
     }
 
+    // A payout still open is voided by its own act before the request is ended (`DL-183`), as the
+    // server refuses it under the request's lock.
+    if (to === 'cancelled' || to === 'expired') {
+      const open = this.store.releases.find(
+        (release) => release.requestId === id && holdsRequestOpen(release.status),
+      );
+      if (open !== undefined) {
+        return throwError(() => new Error(openReleaseRefusal(open.referenceNumber, to)));
+      }
+    }
+
     const change: StatusChange = {
       from: current.status,
       to,
@@ -341,6 +393,12 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     const updated: AssistanceRequest = {
       ...current,
       status: to,
+      ...(approval === null
+        ? {}
+        : {
+            approvedAmount: approval.kind === 'money' ? approval.amount : null,
+            approvedInKindDescription: approval.kind === 'in-kind' ? approval.description.trim() : null,
+          }),
       statusHistory: [...current.statusHistory, change],
       audit: { ...current.audit, updatedAt: change.occurredAt, updatedBy: user?.id ?? null },
     };
@@ -357,12 +415,14 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
    */
   advisoryForCase(id: AssistanceRequestId): Observable<IntakeAdvisory> {
     const user = this.access.currentUser();
-    const denied = denyUnless<IntakeAdvisory>(user, 'request.create') ?? beyondCaseload(user);
+    const denied = denyUnless<IntakeAdvisory>(user, 'request.create');
     if (denied) {
       return denied;
     }
-    const request = this.requests.find((entry) => entry.id === id);
-    if (request === undefined || !isWithinBarangayScope(user, request.barangayId)) {
+    // A caseload reads it for a request assigned to it — its own client's previous assistance —
+    // and any other request is not found (`DL-183`), as the API answers.
+    const request = this.reachable(id);
+    if (request === undefined) {
       return throwError(() => new Error(REQUEST_NOT_FOUND));
     }
     return this.advisoryOver(request.residentId, request.programId, request.id);
@@ -444,6 +504,7 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       referenceNumber: '',
       ...this.fieldsFrom(draft, resident.address.barangayId),
       approvedAmount: null,
+      approvedInKindDescription: null,
       assignedTo: null,
       assignments: [],
       requirements: requirementsFrom(draft.requirements),
@@ -825,7 +886,8 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
               pageCount: null,
             },
       source: draft.source,
-      documentNumber: draft.documentNumber,
+      // Only the last four are kept, as the API keeps them (DL-183).
+      documentNumber: lastFourOf(draft.documentNumber),
       documentNumberMasked: false,
       issuedOn: draft.issuedOn,
       expiresOn: draft.expiresOn,
@@ -1414,9 +1476,8 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
    * The request as this reader may see it, as the API discloses it (`DL-38`, `DL-177`, `DL-178`):
    * protected when its person is under a protected sector **today**, and then its words withheld
    * from a reader without `request.view-sensitive`; the case study's words withheld from a reader
-   * without `case.view` whatever the request; and every document number masked to its last four
-   * characters unless the reader holds `document.view-full-number`. Stored whole; withheld on the
-   * way out.
+   * without `case.view` whatever the request; and every document number said as its last four
+   * characters, the only part of it held (`DL-183`).
    */
   private disclose(request: AssistanceRequest): AssistanceRequest {
     return discloseRequest(

@@ -85,7 +85,9 @@ export const CASE_COPY = {
     'task-reassigned': 'Task handed over',
     'task-rescheduled': 'Task date moved',
     'task-completed': 'Task completed',
+    'task-cancelled': 'Task cancelled — no longer needed',
     'request-linked': 'Assistance request named in this case',
+    'request-unlinked': 'Assistance request no longer part of this case — kept in this history',
     'request-status-changed': 'Assistance request moved',
   } satisfies Record<CaseEventKind, string>,
 

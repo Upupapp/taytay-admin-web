@@ -6,7 +6,6 @@ import {
   caseOpenProblems,
   caseQueueFacts,
   caseTimeline,
-  householdContextWithheld,
   isAllowedTaskAssignee,
   isCaseWritable,
   taskAssigneeChoices,
@@ -579,8 +578,6 @@ describe('opening a case, and writing on one', () => {
     expect(isCaseWritable({ status: 'intervention', withheld: [...PROTECTED_CASE_WITHHELD] })).toBe(
       false,
     );
-    // A caseload is not shown the household, and still works its own case.
-    expect(isCaseWritable({ status: 'intervention', withheld: ['householdContext'] })).toBe(true);
   });
 
   it('withholds every note body on a protected case from a reader not cleared for it', () => {
@@ -598,10 +595,5 @@ describe('the workspace says what it does not show', () => {
         requests: [{ id: REQUEST }],
       }),
     ).toBe(1);
-  });
-
-  it('tells a withheld household from an absent one', () => {
-    expect(householdContextWithheld({ record: { withheld: ['householdContext'] } })).toBe(true);
-    expect(householdContextWithheld({ record: { withheld: [] } })).toBe(false);
   });
 });

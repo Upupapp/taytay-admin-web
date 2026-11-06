@@ -20,6 +20,13 @@
           <!-- What was asked for, not what is handed over: the office states that below. -->
           <p>{{ copy.requested }} {{ assistance.requestedAmount | peso }}</p>
         }
+        @if (assistance.approvedAmount; as ceiling) {
+          <p>{{ copy.approvedCeiling }} {{ ceiling | peso }} — {{ copy.approvedCeilingNote }}</p>
+        } @else if (assistance.approvedInKindDescription; as goods) {
+          <p>{{ copy.approvedGoods }} {{ goods }}. {{ copy.approvedNoAmount }}</p>
+        } @else {
+          <p>{{ copy.approvedNoAmount }}</p>
+        }
       </section>
 
       @if (existing() === null) {

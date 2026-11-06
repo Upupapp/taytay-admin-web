@@ -128,8 +128,9 @@ describe('the registry redacts on the way out, not in the template', () => {
     expect(view?.listedName).toBe('Manalo, C.');
   });
 
-  it('discloses the same record fully to a social worker', async () => {
-    signedInAs(authenticated('social-worker'));
+  it('discloses the same record fully to the social worker whose client it is', async () => {
+    // req-0006, about res-0005, is assigned to sw-1: the person is that worker's client (DL-183).
+    signedInAs({ ...authenticated('social-worker'), id: asId<StaffUserId>('staff-sw-1') });
     const view = await firstValueFrom(repo().getById(PROTECTED));
     expect(view?.resident.sectors).toContain('vawc-survivor');
     expect(view?.resident.contact.mobile).not.toBeNull();
@@ -143,6 +144,35 @@ describe('the registry redacts on the way out, not in the template', () => {
     );
     const found = page.items.find((view) => view.resident.id === PROTECTED);
     expect(found?.resident.sectors).not.toContain('vawc-survivor');
+  });
+});
+
+describe('a caseload reads its own clients and nobody else (DL-183)', () => {
+  const worker = (slug: string): AuthenticatedUser => ({
+    ...authenticated('social-worker'),
+    id: asId<StaffUserId>(`staff-${slug}`),
+  });
+
+  it('reads a client of a request assigned to it, and of a case assigned to it', async () => {
+    signedInAs(worker('sw-1'));
+    // res-0001: req-0001 is assigned to sw-1; res-0002: a case about them is assigned to sw-1.
+    expect(await firstValueFrom(repo().getById(asId<ResidentId>('res-0001')))).not.toBeNull();
+    const profile = await firstValueFrom(repo().getProfile(asId<ResidentId>('res-0002')));
+    expect(profile?.view.resident.id).toBe('res-0002');
+  });
+
+  it('answers anybody else as absent, exactly like a missing record', async () => {
+    signedInAs(worker('sw-1'));
+    // res-0003's request is sw-2's, and no case about them is sw-1's.
+    expect(await firstValueFrom(repo().getById(asId<ResidentId>('res-0003')))).toBeNull();
+    expect(await firstValueFrom(repo().getProfile(asId<ResidentId>('res-0003')))).toBeNull();
+  });
+
+  it('refuses the registry list to a caseload', async () => {
+    signedInAs(worker('sw-1'));
+    await expect(
+      firstValueFrom(repo().list({}, { limit: 20, cursor: null })),
+    ).rejects.toThrow();
   });
 });
 
@@ -178,7 +208,8 @@ describe('the registry is large enough to need paging', () => {
     const masked = protectedRecord.items.find((view) => view.resident.id === PROTECTED);
     expect(masked?.isProtected).toBe(true);
 
-    signedInAs(authenticated('social-worker'));
+    // The worker whose client res-0005 is (req-0006 is assigned to sw-1, DL-183).
+    signedInAs({ ...authenticated('social-worker'), id: asId<StaffUserId>('staff-sw-1') });
     const cleared = await firstValueFrom(repo().getById(PROTECTED));
     const firstName = cleared?.resident.name.first ?? '';
     expect(firstName.length).toBeGreaterThan(1);

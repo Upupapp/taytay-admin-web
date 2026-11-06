@@ -775,6 +775,8 @@
         "withheld"
       ],
       "optional": [
+        "approved_amount_centavos",
+        "approved_in_kind_description",
         "assessment",
         "assigned_to",
         "created_by",
@@ -806,6 +808,8 @@
         "withheld"
       ],
       "optional": [
+        "approved_amount_centavos",
+        "approved_in_kind_description",
         "assessment",
         "assigned_to",
         "created_by",
@@ -837,6 +841,8 @@
         "withheld"
       ],
       "optional": [
+        "approved_amount_centavos",
+        "approved_in_kind_description",
         "assessment",
         "assigned_to",
         "created_by",
@@ -868,6 +874,8 @@
         "withheld"
       ],
       "optional": [
+        "approved_amount_centavos",
+        "approved_in_kind_description",
         "assessment",
         "assigned_to",
         "created_by",
@@ -935,6 +943,8 @@
         "withheld"
       ],
       "optional": [
+        "approved_amount_centavos",
+        "approved_in_kind_description",
         "assessment",
         "assigned_to",
         "created_by",
@@ -966,6 +976,8 @@
         "withheld"
       ],
       "optional": [
+        "approved_amount_centavos",
+        "approved_in_kind_description",
         "assessment",
         "assigned_to",
         "created_by",
@@ -1066,6 +1078,8 @@
         "withheld"
       ],
       "optional": [
+        "approved_amount_centavos",
+        "approved_in_kind_description",
         "assessment",
         "assigned_to",
         "created_by",
@@ -1114,6 +1128,8 @@
         "withheld"
       ],
       "optional": [
+        "approved_amount_centavos",
+        "approved_in_kind_description",
         "assessment",
         "assigned_to",
         "created_by",
@@ -1160,6 +1176,8 @@
         "withheld"
       ],
       "optional": [
+        "approved_amount_centavos",
+        "approved_in_kind_description",
         "assessment",
         "assigned_to",
         "created_by",
@@ -1191,6 +1209,8 @@
         "withheld"
       ],
       "optional": [
+        "approved_amount_centavos",
+        "approved_in_kind_description",
         "assessment",
         "assigned_to",
         "created_by",

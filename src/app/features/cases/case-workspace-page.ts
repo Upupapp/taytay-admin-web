@@ -31,7 +31,6 @@ import {
   asIsoDate,
   assignsCases,
   daysUntil,
-  householdContextWithheld,
   isCaseFieldWithheld,
   isCaseWritable,
   isTaskOpen,
@@ -141,6 +140,8 @@ export class CaseWorkspacePage {
   protected readonly handOverCopy = CASES_COPY.handOverForm;
   protected readonly rescheduleCopy = CASES_COPY.rescheduleForm;
   protected readonly completeCopy = CASES_COPY.completeForm;
+  protected readonly cancelTaskCopy = CASES_COPY.cancelTaskForm;
+  protected readonly endLinkCopy = CASES_COPY.endLinkForm;
   protected readonly linkCopy = CASES_COPY.linkForm;
   protected readonly shared = CASE_COPY;
   protected readonly statusCatalog = CASE_STATUS_CATALOG;
@@ -239,10 +240,6 @@ export class CaseWorkspacePage {
     return withheldNoteCount(workspace.notes);
   }
 
-  protected householdWithheld(workspace: CaseWorkspace): boolean {
-    return householdContextWithheld(workspace);
-  }
-
   protected unreadRequests(workspace: CaseWorkspace): number {
     return unreadLinkedRequestCount(workspace);
   }
@@ -280,7 +277,7 @@ export class CaseWorkspacePage {
    */
   protected dueLabel(task: CaseTask): string {
     if (!isTaskOpen(task)) {
-      return this.copy.taskDone;
+      return task.status === 'cancelled' ? this.copy.taskCancelled : this.copy.taskDone;
     }
     const days = daysUntil(task.dueOn, todayAsIsoDate());
     return days < 0 ? CASES_COPY.list.overdueBy(Math.abs(days)) : CASES_COPY.list.dueIn(days);
@@ -351,6 +348,27 @@ export class CaseWorkspacePage {
 
   protected onAssignReason(event: Event): void {
     this.assignReason.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  /**
+   * Said before the assignment's button (`DL-183`): the open tasks the present holder owes go with
+   * the case to whoever is chosen, or to nobody. `null` when nothing would move.
+   */
+  protected assignMovesTasks(workspace: CaseWorkspace): string | null {
+    const holder = workspace.record.assignedTo;
+    const chosen = this.assignee();
+    if (holder === null || chosen === holder) {
+      return null;
+    }
+    const owed = workspace.tasks.filter((task) => isTaskOpen(task) && task.assignedTo === holder);
+    if (owed.length === 0) {
+      return null;
+    }
+    const to =
+      chosen === null
+        ? null
+        : (this.assignees().find((worker) => worker.id === chosen)?.name ?? UNNAMED_STAFF);
+    return this.copy.assignMovesTasks(owed.length, workspace.assignedToName ?? UNNAMED_STAFF, to);
   }
 
   protected confirmAssign(): void {
@@ -648,6 +666,82 @@ export class CaseWorkspacePage {
     });
   }
 
+  /* ── cancelling a task ───────────────────────────────────────────────── */
+
+  /**
+   * A task no longer needed is cancelled with the reason, kept, never deleted (`DL-183`). Offered
+   * on every open task, and listed again where closing is held back, so the way to a closable case
+   * is on the screen that says it is blocked.
+   */
+  protected readonly cancellingTask = signal<CaseTaskId | null>(null);
+  protected readonly cancelTaskReason = signal('');
+
+  protected readonly canCancelTask = computed(
+    () => isValidCaseReason(this.cancelTaskReason()) && !this.submitting(),
+  );
+
+  protected openCancelTask(task: CaseTask): void {
+    this.cancelTaskReason.set('');
+    this.cancellingTask.set(task.id);
+  }
+
+  protected onCancelTaskReason(event: Event): void {
+    this.cancelTaskReason.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  protected confirmCancelTask(): void {
+    const taskId = this.cancellingTask();
+    if (taskId === null || !this.canCancelTask()) {
+      return;
+    }
+    this.run(
+      this.repository.cancelTask(asId<CaseId>(this.id()), taskId, this.cancelTaskReason().trim()),
+      { message: this.cancelTaskCopy.saved, close: () => this.cancellingTask.set(null) },
+    );
+  }
+
+  /** The open tasks standing between this reader and a closure they could otherwise make. */
+  protected openTasks(workspace: CaseWorkspace): readonly CaseTask[] {
+    return workspace.tasks.filter((task) => isTaskOpen(task));
+  }
+
+  /* ── ending a request's link ──────────────────────────────────────────── */
+
+  /**
+   * A request named in error is no longer part of the case: the link is ended with a reason and
+   * kept in the history, never removed (`DL-183`).
+   */
+  protected readonly endingLink = signal<AssistanceRequestId | null>(null);
+  protected readonly endLinkReason = signal('');
+
+  protected readonly canEndLink = computed(
+    () => isValidCaseReason(this.endLinkReason()) && !this.submitting(),
+  );
+
+  protected openEndLink(request: AssistanceRequest): void {
+    this.endLinkReason.set('');
+    this.endingLink.set(request.id);
+  }
+
+  protected onEndLinkReason(event: Event): void {
+    this.endLinkReason.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  protected confirmEndLink(): void {
+    const requestId = this.endingLink();
+    if (requestId === null || !this.canEndLink()) {
+      return;
+    }
+    this.run(
+      this.repository.endRequestLink(
+        asId<CaseId>(this.id()),
+        requestId,
+        this.endLinkReason().trim(),
+      ),
+      { message: this.endLinkCopy.saved, close: () => this.endingLink.set(null) },
+    );
+  }
+
   protected cancel(): void {
     this.assigning.set(false);
     this.linking.set(false);
@@ -656,6 +750,8 @@ export class CaseWorkspacePage {
     this.handingOver.set(null);
     this.rescheduling.set(null);
     this.completing.set(null);
+    this.cancellingTask.set(null);
+    this.endingLink.set(null);
   }
 
   /** A read a dialog needs, held as a view state so a refusal is said in the dialog. */

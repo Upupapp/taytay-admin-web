@@ -52,7 +52,8 @@ export const REQUIREMENTS_COPY = {
     reasonWithheld: 'Withheld — protected record',
     sourceLabel: 'How the office has it',
     numberLabel: 'Number on the document (optional)',
-    numberHint: 'Shown afterwards to its last four characters only.',
+    numberHint:
+      'Only its last four characters are kept — nothing longer is sent or stored. The file itself is the full record.',
     issuedLabel: 'Issued on (optional)',
     expiresLabel: 'Expires on (optional)',
     expiryBeforeIssue: 'A document cannot expire before it was issued.',

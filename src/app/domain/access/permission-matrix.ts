@@ -91,7 +91,6 @@ export const READ_ONLY_PERMISSIONS: readonly Permission[] = PERMISSIONS.filter(
     permission === 'request.view-sensitive' ||
     permission === 'case-note.view-protected' ||
     permission === 'document.download' ||
-    permission === 'document.view-full-number' ||
     // Opening recorded audit values reads; it changes nothing. Added in TAB 21,
     // and caught by the auditor read-only property test the same way
     // 'document.download' was in TAB 14 — a name-shape heuristic would have

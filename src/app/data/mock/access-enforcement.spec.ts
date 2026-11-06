@@ -166,10 +166,11 @@ describe('permission enforcement on lifecycle transitions', () => {
 
   it('lets the MSWDO head approve an endorsed request', async () => {
     signedInAs(authenticated('mswdo-head'));
+    // Approving is its own act, saying what was approved (DL-183).
     const updated = await firstValueFrom(
-      TestBed.inject(MockAssistanceRequestRepository).changeStatus(
+      TestBed.inject(MockAssistanceRequestRepository).approve(
         REQ_ENDORSED,
-        'approved',
+        { kind: 'money', amount: { centavos: 300_000, currency: 'PHP' } },
         'Within the ceiling.',
       ),
     );

@@ -100,12 +100,8 @@
             <app-resident-summary-card [view]="workspace.subject" />
           }
 
-          @if (householdWithheld(workspace)) {
-            <!-- Withheld, not absent (DL-179): never "no household" to a caseload. -->
-            <h3 class="workspace__subheading">{{ copy.householdHeading }}</h3>
-            <p class="workspace__withheld">{{ copy.householdWithheld }}</p>
-            <p class="workspace__note">{{ copy.householdWithheldNote }}</p>
-          } @else if (workspace.householdContextUnread) {
+          <!-- A caseload reads its own client's household and family too (DL-183). -->
+          @if (workspace.householdContextUnread) {
             <!-- A failed read is said, never shown as "no household" or "no family". -->
             <h3 class="workspace__subheading">{{ copy.householdHeading }}</h3>
             <p class="workspace__withheld" role="status">{{ copy.contextFailed }}</p>
@@ -185,6 +181,11 @@
                   <th scope="col">{{ copy.requestStatus }}</th>
                   <th scope="col">{{ copy.requestRequested }}</th>
                   <th scope="col">{{ copy.requestApproved }}</th>
+                  @if (writable(workspace) && canManage()) {
+                    <th scope="col">
+                      <span class="visually-hidden">{{ copy.endLink }}</span>
+                    </th>
+                  }
                 </tr>
               </thead>
               <tbody>
@@ -204,6 +205,18 @@
                     <td>
                       {{ request.approvedAmount ? (request.approvedAmount | peso) : copy.notSet }}
                     </td>
+                    @if (writable(workspace) && canManage()) {
+                      <td>
+                        <button
+                          type="button"
+                          class="btn btn--subtle"
+                          [attr.aria-label]="copy.endLinkLabel(request.referenceNumber)"
+                          (click)="openEndLink(request)"
+                        >
+                          {{ copy.endLink }}
+                        </button>
+                      </td>
+                    }
                   </tr>
                 }
               </tbody>
@@ -281,6 +294,23 @@
               <p class="workspace__note workspace__close-blocked">
                 {{ copy.closeBlocked(closeBlocked(workspace)) }}
               </p>
+              <!-- The way to a closable case, on the screen that says it is blocked (DL-183). -->
+              <h3 class="workspace__subheading">{{ copy.closeBlockedHeading }}</h3>
+              <ul class="workspace__close-tasks">
+                @for (task of openTasks(workspace); track task.id) {
+                  <li>
+                    <span [class.workspace__withheld]="task.title === null">{{
+                      taskTitle(task)
+                    }}</span>
+                    <button type="button" class="btn btn--subtle" (click)="openComplete(task)">
+                      {{ copy.completeTask }}
+                    </button>
+                    <button type="button" class="btn btn--subtle" (click)="openCancelTask(task)">
+                      {{ copy.cancelTask }}
+                    </button>
+                  </li>
+                }
+              </ul>
             }
           </div>
         }
@@ -320,6 +350,9 @@
                       </button>
                       <button type="button" class="btn btn--subtle" (click)="openReschedule(task)">
                         {{ copy.rescheduleTask }}
+                      </button>
+                      <button type="button" class="btn btn--subtle" (click)="openCancelTask(task)">
+                        {{ copy.cancelTask }}
                       </button>
                     </div>
                   }
@@ -408,6 +441,11 @@
           ></textarea>
           <span class="form__hint">{{ shared.transition.reasonHint }}</span>
         </label>
+
+        @if (assignMovesTasks(workspace); as moving) {
+          <!-- Said before the button: the holder's open tasks go with the case (DL-183). -->
+          <p class="workspace__note" role="status">{{ moving }}</p>
+        }
       </div>
 
       <button modal-actions type="button" class="btn" (click)="cancel()">
@@ -758,6 +796,78 @@
         (click)="confirmComplete()"
       >
         {{ completeCopy.confirm }}
+      </button>
+    </app-modal>
+
+    <!-- ── Cancelling a task (DL-183) ─────────────────────────────────────── -->
+    <app-modal
+      [open]="cancellingTask() !== null"
+      (openChange)="cancellingTask.set(null)"
+      [heading]="cancelTaskCopy.heading"
+      [description]="cancelTaskCopy.description"
+      (dismissed)="cancel()"
+    >
+      <div modal-body class="form">
+        <label class="form__field">
+          <span class="form__label">{{ cancelTaskCopy.reason }}</span>
+          <textarea
+            class="form__input"
+            rows="3"
+            [placeholder]="cancelTaskCopy.reasonPlaceholder"
+            [value]="cancelTaskReason()"
+            (input)="onCancelTaskReason($event)"
+          ></textarea>
+          <span class="form__hint">{{ shared.transition.reasonHint }}</span>
+        </label>
+      </div>
+
+      <button modal-actions type="button" class="btn" (click)="cancel()">
+        {{ cancelTaskCopy.cancel }}
+      </button>
+      <button
+        modal-actions
+        type="button"
+        class="btn btn--primary"
+        [disabled]="!canCancelTask()"
+        (click)="confirmCancelTask()"
+      >
+        {{ cancelTaskCopy.confirm }}
+      </button>
+    </app-modal>
+
+    <!-- ── Ending a link to a request (DL-183) ────────────────────────────── -->
+    <app-modal
+      [open]="endingLink() !== null"
+      (openChange)="endingLink.set(null)"
+      [heading]="endLinkCopy.heading"
+      [description]="endLinkCopy.description"
+      (dismissed)="cancel()"
+    >
+      <div modal-body class="form">
+        <label class="form__field">
+          <span class="form__label">{{ endLinkCopy.reason }}</span>
+          <textarea
+            class="form__input"
+            rows="3"
+            [placeholder]="endLinkCopy.reasonPlaceholder"
+            [value]="endLinkReason()"
+            (input)="onEndLinkReason($event)"
+          ></textarea>
+          <span class="form__hint">{{ shared.transition.reasonHint }}</span>
+        </label>
+      </div>
+
+      <button modal-actions type="button" class="btn" (click)="cancel()">
+        {{ endLinkCopy.cancel }}
+      </button>
+      <button
+        modal-actions
+        type="button"
+        class="btn btn--primary"
+        [disabled]="!canEndLink()"
+        (click)="confirmEndLink()"
+      >
+        {{ endLinkCopy.confirm }}
       </button>
     </app-modal>
   }

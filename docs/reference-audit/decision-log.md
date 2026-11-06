@@ -7580,3 +7580,148 @@ sent every member of staff to `/dashboard`, and the dashboard was unserved, so s
 
 The backend's tests cover empty-office zeros, absent-not-zero groups for each role, the refusals,
 scope per role, centavos and goods, the period, referrals and the residents' app.
+
+## DL-183 — the owner's decisions round: seven casework rules decided as best practice, held by the server and said by the console
+
+Backend `taytay-backend` `fb43122` (migration `0034_casework_decisions.sql`); the spec
+vendored here is its. Console: the commit that adds this entry. The owner was asked seven open
+questions from the casework build and answered "decide the best practice". Each answer below is
+the decision, its basis, and where it is held. Supersedes `DL-179`'s `household_context` and the
+`document.view-full-number` grant (`DL-77`, `DL-178`). Kept as built, with no change: intake may
+assign cases; a barangay link and a release officer read an assessment's recommendation but not its
+findings; the idempotency key stays in the body; a prepared release is never edited; a goods-only
+recipient already counts as a resident served.
+
+### 1. A document number is held as its last four characters
+
+- **Basis.** RA 10173 (data minimisation: no more than the purpose needs) and RA 11055 (a PhilSys
+  number is never held in full, `CLAUDE.md` §6.2). Four characters let a clerk match the paper in
+  their hand; the file itself, opened only with `document.download` behind a warning, is the full
+  evidence. A key that read the number "in full" protected a copy the office did not need to keep.
+- **Server.** The route cuts the number to its last four before it is written; migration `0034`
+  cuts every number already held — setting the version table's append-only guard aside for that
+  one statement, inside the migration's own transaction, and restoring it unchanged — and adds a
+  `CHECK` refusing anything longer. Every reader is answered `••••1234`, and
+  `document_number_masked` is true whenever there is a number.
+- **Console.** `document.view-full-number` is retired from `PERMISSIONS`, the role table, the
+  matrix, the roles page and the `GET /me` fixture, in parity with `src/auth/casework.ts` (the
+  backend's parity test reads this file). `lastFourOf` cuts the number before `toWireDocumentUpload`
+  sends it and before the mock keeps it; `maskDocumentNumber` says `••••1234` to everybody and is
+  idempotent. The form says only the last four are kept. `check:documents` now fails if the key
+  returns or either adapter keeps or sends more.
+- A number of four characters or fewer is kept whole, as typed: it is too short to be an identifier
+  of consequence, and dropping it would read as "no number recorded".
+
+### 2. A case's reassignment moves the previous holder's open tasks
+
+- **Basis.** A task is what the office undertook to do (`DL-55`), owed by whoever holds the family.
+  A task left with a worker who no longer holds the case is owed by somebody who will not see it,
+  and it falls out of every queue that matters.
+- **Server.** In the same transaction as the `assigned`/`unassigned` event, each open task owed by
+  the previous holder gets its own `task-reassigned` event, under the reassignment's reason, to the
+  new holder — or to nobody, when the case goes back to nobody — each mirrored to the audit trail.
+  Tasks owed by anybody else, done or cancelled tasks, and tasks when the case had no holder stay
+  as they are.
+- **Console.** The assign dialog says, before its button, how many open tasks the present holder
+  owes and that they go with the case — to the chosen worker, or to nobody — each recorded with the
+  same reason. The mock moves only the previous holder's open tasks, one `task-reassigned` event
+  each; anybody else's, and finished ones, stay where they are.
+
+### 3. A case task can be cancelled, with a reason
+
+- **Basis.** `DL-53` keeps closure terminal and refuses it while a task is open; without a way to
+  end a task that is no longer needed, the only exits were completing it untruthfully or never
+  closing the case. Cancelling is appended, never a delete (`DL-54`).
+- **Server.** `POST office/cases/{id}/tasks/{taskId}/cancel` with a required reason (8+ characters)
+  appends `task-cancelled`; the database sets the terminal `cancelled` status, who ended it, when,
+  and the reason as its outcome. Closing is still refused while any task is open (409, now naming
+  "complete or cancel").
+- **Console.** `CaseRepository.cancelTask` (`toWireCaseTaskCancellation`). Every open task offers
+  "Cancel task" with a required reason, saying first that the task is kept, marked cancelled, with
+  the reason as its outcome. Where closing is held back, the open tasks are listed with "Mark as
+  done" and "Cancel task", so the way to close is on the same screen. The timeline says "Task
+  cancelled", and a cancelled task reads "Cancelled", never "Completed". `check:case-audit` counts
+  the new mutator.
+
+### 4. A request's link to a case can be ended, with a reason
+
+- **Basis.** `DL-52`: a case names its interventions explicitly. A link made in error otherwise
+  stayed forever, and a request could never move to the case it belonged to.
+- **Server.** `POST office/cases/{id}/requests/{requestId}/end` with a required reason appends
+  `request-unlinked`; the link row is marked `ended_at`, `ended_by`, `ended_reason` by the event's
+  trigger and never deleted. An ended link no longer counts — it leaves `linked_request_ids`, and
+  the request may be named by another case or by this one again as a new link with its own event
+  — and the case history keeps both events. One standing link per request is a partial unique
+  index; the database refuses a delete, or an end without its event.
+- **Console.** `CaseRepository.endRequestLink` (`toWireCaseRequestLinkEnd`). Each linked request
+  offers "End link" with a required reason, saying before the button that the link stays in the
+  case's history and the request may be named again; the timeline says it is no longer part of
+  the case and is kept in the history. The mock drops it from `linkedRequestIds` and appends
+  `request-unlinked` in the same act.
+
+### 5. A social worker reads what they need for their own clients, and nothing more
+
+- **Basis.** RA 10173's proportionality, both ways: a worker assessing a family needs the person's
+  record, household, family and previous assistance — refusing them pushed the work back to intake
+  and the screens said "not available" where the worker needed the facts — but needs nobody else's.
+  Supersedes `DL-179`'s `household_context`.
+- **Server.** A *client* is the subject of a filed request or a case assigned to the worker. For a
+  client — and nobody else, who answers 404 as absent — a caseload now reads `GET
+  office/residents/{id}`, `GET office/households/{id}`, `GET office/households?resident_id=` (that
+  filter alone), `GET office/families/{id}`, `…/residents/{id}/families` and
+  `…/relationship-history`, and `GET office/assistance-requests/{id}/advisory` for a request
+  assigned to them. The normal redaction tiers (`request.view-sensitive`, `resident.view-sensitive`)
+  apply unchanged. The registry's lists, its search, the pre-filing advisory and every registry
+  write stay 403. A case no longer withholds `household_context`.
+- **Console.** `householdContext` is gone from the domain, the mapper, the mock and the HTTP
+  adapter: a social worker's case page reads and shows the client's household, members and
+  families like anybody else's, and still says "could not be read" when that read fails. The
+  request page shows the client's record and household in place — with no links into the registry,
+  whose route stays closed to a caseload — and the previous-assistance check; the check before
+  filing stays refused. The mock resident repository mirrors the server: clients only, the list
+  refused.
+- **Tested both ways** on the server: allowed for an assigned subject, refused for anybody else, and
+  lost again when the case or request is taken off the worker.
+
+### 6. Approval records the approved amount
+
+- **Basis.** A release is the office paying out what it decided; without a recorded figure nothing
+  could check a payout against the decision, and the self-release warning (`DL-91`) was the only
+  control on the money's size. Integer centavos (`CLAUDE.md` rule 6); goods are described, never
+  priced (`DL-93`).
+- **Server.** A move to `approved` requires `approved_amount_centavos` (integer, ≥ 1) or, for goods,
+  `approved_in_kind_description` — one, never both — kept on the status change and answered on the
+  request and its history. Preparing a money release above the latest approval's amount is 409, and
+  so is one against an approval that recorded no amount; equal or less is allowed. The database
+  refuses both (`CHECK … NOT VALID`, so an approval recorded before this decision is kept as it was,
+  and a money release against it is refused rather than invented).
+- **Console.** Approving is its own act, `AssistanceRequestRepository.approve(id, approval,
+  reason)` with a `RequestApproval` (an amount, or goods described; `toWireApproval`), and the
+  status-move control no longer offers `approved`. The form takes pesos as text and reads them into
+  integer centavos with `parsePesos` — two integers, never a decimal multiplied (`check:money`) —
+  or takes a goods description, and refuses anything else in words before sending. The request
+  shows the approved amount (`PesoPipe`) or the goods; the prepare-release page shows the approved
+  amount and says a money release goes at or under it; the mock refuses a release above it, as the
+  server does.
+
+### 7. A request with an open release is not cancelled or expired
+
+- **Basis.** Cancelling a request under a payout that is still scheduled leaves money planned for a
+  request the office has closed. The release is voided by its own act first (`DL-90`), so the
+  record says who stopped the payout and why.
+- **Server.** A move to `cancelled` or `expired` is 409 while the request has a release that is not
+  voided and not handed over, saying to void the release first; the database refuses it too.
+- **Console.** Before where the cancel and expire buttons would be, a reader of payouts is told
+  which release is still open (`holdsRequestOpen`), with a link to it, and is not offered the move;
+  a reader who cannot read payouts is told the rule. The mock refuses in the server's words, and
+  the HTTP adapter passes on the server's 409.
+
+### What was not done
+
+- The console reads the **latest** approval's figure onto the request and shows that; each
+  `status_history` entry's own approved amount is served but not yet mapped onto the console's
+  history rows.
+- An approval recorded before this decision has no amount, so no money release can be prepared
+  against it (409, by design). There is no real data yet; on staging such a request is voided or
+  cancelled and filed again.
+- Nothing is pushed or deployed: migration `0034` runs on the next staging deploy.

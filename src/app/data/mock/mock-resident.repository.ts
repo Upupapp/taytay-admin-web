@@ -35,6 +35,8 @@ import {
 
 import { historySummaryFor } from './mock-assistance-history';
 import { denyUnless } from './mock-access';
+import { MockAssistanceRequestStore } from './mock-assistance-request.store';
+import { MockCaseStore } from './mock-case.store';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
 
@@ -57,12 +59,43 @@ export class MockResidentRepository implements ResidentRepository {
   private readonly latency = inject(MockLatency);
   private readonly access = inject(ACCESS_CONTEXT);
   private readonly store = inject(MockResidentStore);
+  private readonly requests = inject(MockAssistanceRequestStore);
+  private readonly cases = inject(MockCaseStore);
+
+  /**
+   * Whether this reader may read this person, as the API decides it (`DL-183`): their barangay for
+   * everybody but a caseload, and for a caseload its own clients — the subject of a filed request
+   * or a case assigned to it — and nobody else.
+   */
+  private readable(user: AuthenticatedUser | null, resident: Resident): boolean {
+    if (!canReadRecord(user, 'resident.view', resident.address.barangayId)) {
+      return false;
+    }
+    if (user === null || user.scope !== 'assigned-cases') {
+      return true;
+    }
+    return (
+      this.requests.requests.some(
+        (request) =>
+          request.residentId === resident.id &&
+          request.referenceNumber !== '' &&
+          request.assignedTo === user.id,
+      ) ||
+      this.cases
+        .allCases()
+        .some((record) => record.subjectResidentId === resident.id && record.assignedTo === user.id)
+    );
+  }
 
   list(filter: ResidentFilter, page: CursorRequest): Observable<CursorPage<ResidentView>> {
     const user = this.access.currentUser();
     const denied = denyUnless<CursorPage<ResidentView>>(user, 'resident.view');
     if (denied) {
       return denied;
+    }
+    // The registry's list is not a caseload's: it reads its own clients one at a time (`DL-183`).
+    if (user?.scope === 'assigned-cases') {
+      return throwError(() => new PermissionDeniedError('resident.view'));
     }
 
     // A filter can only narrow what scope allows. Asking for another barangay is refused, as the
@@ -110,7 +143,7 @@ export class MockResidentRepository implements ResidentRepository {
     // Out of scope is reported exactly like "does not exist". A distinguishable
     // refusal would confirm that this resident is on file, which is precisely
     // what the scope rule exists to withhold (`DL-31`).
-    if (!resident || !canReadRecord(user, 'resident.view', resident.address.barangayId)) {
+    if (!resident || !this.readable(user, resident)) {
       return this.latency.respond(null);
     }
     return this.latency.respond(this.disclose(resident, user));
@@ -120,7 +153,7 @@ export class MockResidentRepository implements ResidentRepository {
   getProfile(id: ResidentId): Observable<ResidentProfile | null> {
     const user = this.access.currentUser();
     const resident = this.store.find(id);
-    if (!resident || !canReadRecord(user, 'resident.view', resident.address.barangayId)) {
+    if (!resident || !this.readable(user, resident)) {
       return this.latency.respond(null);
     }
 

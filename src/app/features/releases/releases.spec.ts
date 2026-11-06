@@ -440,6 +440,9 @@ describe('preparing a release for an approved request', () => {
           ...template,
           id: asId<AssistanceRequestId>(APPROVED),
           status: 'approved',
+          // The approval's ceiling (DL-183): a money release is prepared at or under it.
+          approvedAmount: { centavos: 300_000, currency: 'PHP' },
+          approvedInKindDescription: null,
           statusHistory: [
             ...template.statusHistory,
             {
@@ -475,6 +478,21 @@ describe('preparing a release for an approved request', () => {
     expect(prepared[0]?.amount?.centavos).toBe(150_050);
     expect(prepared[0]?.approvedBy).toBe('staff-head');
     expect(prepared[0]?.status).toBe('for-release');
+  });
+
+  it('refuses a money release above the approved amount, and records nothing (DL-183)', async () => {
+    const fixture = await openPrepare(APPROVED);
+    expect(html(fixture).textContent).toContain('never above it');
+    const page = fixture.componentInstance as unknown as {
+      amountText: { set: (value: string) => void };
+      prepare: () => Promise<void>;
+    };
+    page.amountText.set('3,000.01');
+    await page.prepare();
+    const prepared = await firstValueFrom(
+      TestBed.inject(RELEASE_REPOSITORY).listForRequest(asId<AssistanceRequestId>(APPROVED)),
+    );
+    expect(prepared).toHaveLength(0);
   });
 
   it('offers no second form for a request that already has a release', async () => {

@@ -10,8 +10,12 @@ import {
   EMPTY_INTAKE_DRAFT,
   ROLE_DEFINITIONS,
   REQUEST_WITHHELD_FIELDS,
+  APPROVAL_IS_ITS_OWN_ACT,
+  APPROVAL_NEEDS_WHAT,
   STATUS_MOVE_NEEDS_REASON,
   WITHHELD_DRAFT_REFUSAL,
+  centavos,
+  type Release,
   isTerminalAssistanceStatus,
   type AccessContext,
   type AssistanceRequest,
@@ -28,6 +32,7 @@ import {
 import type { AppEnvironment } from '@env/environment.model';
 
 import { MockAssistanceRequestRepository } from './mock-assistance-request.repository';
+import { MockAssistanceRequestStore } from './mock-assistance-request.store';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
   name: 'local-mock',
@@ -210,9 +215,13 @@ describe('MockAssistanceRequestRepository', () => {
     it('records a legal status change in the history, with its reason', async () => {
       const repo = repository();
       const id = asId<AssistanceRequestId>('req-0001');
-      const updated = await firstValueFrom(repo.changeStatus(id, 'approved', 'Within ceiling.'));
+      const updated = await firstValueFrom(
+        repo.approve(id, { kind: 'money', amount: centavos(900_000) }, 'Within ceiling.'),
+      );
 
       expect(updated.status).toBe('approved');
+      expect(updated.approvedAmount).toEqual(centavos(900_000));
+      expect(updated.approvedInKindDescription).toBeNull();
       const latest = updated.statusHistory.at(-1);
       expect(latest?.from).toBe('endorsed');
       expect(latest?.to).toBe('approved');
@@ -223,15 +232,18 @@ describe('MockAssistanceRequestRepository', () => {
     it('persists the change for subsequent reads', async () => {
       const repo = repository();
       const id = asId<AssistanceRequestId>('req-0001');
-      await firstValueFrom(repo.changeStatus(id, 'approved', 'Within ceiling.'));
+      await firstValueFrom(
+        repo.approve(id, { kind: 'money', amount: centavos(500_000) }, 'Within ceiling.'),
+      );
       const reread = await firstValueFrom(repo.getById(id));
       expect(reread?.status).toBe('approved');
+      expect(reread?.approvedAmount).toEqual(centavos(500_000));
     });
 
     it('refuses a move without words, as the API does', async () => {
       const repo = repository();
       await expect(
-        firstValueFrom(repo.changeStatus(asId<AssistanceRequestId>('req-0001'), 'approved', '  ')),
+        firstValueFrom(repo.changeStatus(asId<AssistanceRequestId>('req-0001'), 'returned', '  ')),
       ).rejects.toThrow(STATUS_MOVE_NEEDS_REASON);
     });
 
@@ -257,7 +269,7 @@ describe('MockAssistanceRequestRepository', () => {
       const repo = repository();
       await expect(
         firstValueFrom(
-          repo.changeStatus(asId<AssistanceRequestId>('req-0005'), 'approved', 'Again.'),
+          repo.changeStatus(asId<AssistanceRequestId>('req-0005'), 'cancelled', 'Again.'),
         ),
       ).rejects.toThrow();
     });
@@ -266,9 +278,85 @@ describe('MockAssistanceRequestRepository', () => {
       const repo = repository();
       await expect(
         firstValueFrom(
-          repo.changeStatus(asId<AssistanceRequestId>('req-nope'), 'approved', 'Within ceiling.'),
+          repo.changeStatus(asId<AssistanceRequestId>('req-nope'), 'returned', 'Within ceiling.'),
         ),
       ).rejects.toThrow(/was not found/);
+    });
+  });
+
+  describe('approval says what was approved (DL-183)', () => {
+    it('refuses a bare move to approved: approving is its own act', async () => {
+      const repo = repository();
+      await expect(
+        firstValueFrom(
+          repo.changeStatus(asId<AssistanceRequestId>('req-0001'), 'approved', 'Within ceiling.'),
+        ),
+      ).rejects.toThrow(APPROVAL_IS_ITS_OWN_ACT);
+    });
+
+    it('refuses an approval that says neither an amount nor the goods', async () => {
+      const repo = repository();
+      const id = asId<AssistanceRequestId>('req-0001');
+      await expect(
+        firstValueFrom(repo.approve(id, { kind: 'money', amount: centavos(0) }, 'Within ceiling.')),
+      ).rejects.toThrow(APPROVAL_NEEDS_WHAT);
+      await expect(
+        firstValueFrom(repo.approve(id, { kind: 'in-kind', description: '  ' }, 'Within ceiling.')),
+      ).rejects.toThrow(APPROVAL_NEEDS_WHAT);
+      expect((await firstValueFrom(repo.getById(id)))?.status).toBe('endorsed');
+    });
+
+    it('records goods described and no amount', async () => {
+      const repo = repository();
+      const approved = await firstValueFrom(
+        repo.approve(
+          asId<AssistanceRequestId>('req-0001'),
+          { kind: 'in-kind', description: ' Two sacks of rice ' },
+          'Goods, as the programme gives.',
+        ),
+      );
+      expect(approved.approvedAmount).toBeNull();
+      expect(approved.approvedInKindDescription).toBe('Two sacks of rice');
+    });
+
+    it('is refused to a role without request.approve', async () => {
+      const repo = repository();
+      signedIn = userFor('intake-officer');
+      await expect(
+        firstValueFrom(
+          repo.approve(
+            asId<AssistanceRequestId>('req-0001'),
+            { kind: 'money', amount: centavos(100_000) },
+            'Within ceiling.',
+          ),
+        ),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('a request with an open release is not ended (DL-183)', () => {
+    it('refuses cancelling or expiring while the payout stands, and allows it once voided', async () => {
+      const repo = repository();
+      const store = TestBed.inject(MockAssistanceRequestStore);
+      const id = asId<AssistanceRequestId>('req-0003');
+      const open = store.releases.find(
+        (release) => release.requestId === id && release.status !== 'voided',
+      );
+      expect(open).toBeDefined();
+      if (open === undefined) {
+        return;
+      }
+      await expect(
+        firstValueFrom(repo.changeStatus(id, 'cancelled', 'The family withdrew.')),
+      ).rejects.toThrow(/Void the release first/);
+      await expect(
+        firstValueFrom(repo.changeStatus(id, 'expired', 'Not claimed in time.')),
+      ).rejects.toThrow(/Void the release first/);
+
+      const voided: Release = { ...open, status: 'voided' };
+      store.releases = store.releases.map((release) => (release.id === open.id ? voided : release));
+      const ended = await firstValueFrom(repo.changeStatus(id, 'cancelled', 'The family withdrew.'));
+      expect(ended.status).toBe('cancelled');
     });
   });
 
@@ -374,19 +462,30 @@ describe('the mock holds phase 2b to the server’s rules (DL-178)', () => {
       await expect(firstValueFrom(repo.listNotes(OTHERS))).rejects.toThrow(/not found/);
     });
 
-    it('is refused what reads beyond it: drafts, the duplicate check and the list of social workers', async () => {
+    it('is refused what reads beyond it: drafts, the check before filing and the list of social workers', async () => {
       const repo = repository();
       caseload();
       await expect(
         firstValueFrom(repo.saveDraft(draftFor('res-0001', 'prog-aics-medical'), null)),
       ).rejects.toThrow(/assigned to your account/);
-      await expect(firstValueFrom(repo.advisoryForCase(ENDORSED))).rejects.toThrow(
-        /assigned to your account/,
-      );
+      await expect(
+        firstValueFrom(repo.advisoryFor(asId<ResidentId>('res-0001'), null)),
+      ).rejects.toThrow(/assigned to your account/);
       await expect(firstValueFrom(repo.listSocialWorkers())).rejects.toThrow(/whole list/);
       await expect(
         firstValueFrom(repo.assignForAssessment(ENDORSED, SW_1, 'Mine.')),
       ).rejects.toThrow(/whole list/);
+    });
+
+    it('reads the previous-assistance check on its own request, and on nobody else’s (DL-183)', async () => {
+      const repo = repository();
+      caseload();
+      const mine = await firstValueFrom(repo.advisoryForCase(ENDORSED));
+      expect(mine.signals).toBeDefined();
+      // req-0003 is assigned to sw-2.
+      await expect(
+        firstValueFrom(repo.advisoryForCase(asId<AssistanceRequestId>('req-0003'))),
+      ).rejects.toThrow(/was not found/);
     });
   });
 
@@ -576,18 +675,18 @@ describe('the mock holds phase 2b to the server’s rules (DL-178)', () => {
       expect(asked.every((entry) => entry.isWithheld && entry.message === null)).toBe(true);
     });
 
-    it('masks a document number unless the reader may have it whole', async () => {
+    it('says every document number as its last four, the only part held, to every reader (DL-183)', async () => {
       const repo = repository();
       signedIn = userFor('intake-officer');
-      const masked = await requirementOf(repo, ENDORSED);
-      expect(masked.document?.versions[0]).toMatchObject({
+      const intake = await requirementOf(repo, ENDORSED);
+      expect(intake.document?.versions[0]).toMatchObject({
         documentNumber: '••••8271',
         documentNumberMasked: true,
       });
       signedIn = userFor('social-worker');
       signedIn = { ...signedIn, id: SW_1 };
-      const whole = await requirementOf(repo, ENDORSED);
-      expect(whole.document?.versions[0]?.documentNumber).toBe('PN-2019-448271');
+      const worker = await requirementOf(repo, ENDORSED);
+      expect(worker.document?.versions[0]?.documentNumber).toBe('••••8271');
     });
   });
 

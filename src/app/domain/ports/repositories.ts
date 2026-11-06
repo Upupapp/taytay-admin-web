@@ -47,6 +47,7 @@ import type {
   AssistanceRequest,
   AssistanceRequestFilter,
   AssistanceRequestStatus,
+  RequestApproval,
   RequestNote,
   RequestNoteDraft,
   RequirementStatus,
@@ -470,15 +471,28 @@ export interface CaseRepository {
    */
   open(draft: CaseOpenDraft, reason: string): Observable<CaseWorkspace>;
   /**
-   * Names one more request the case covers (`DL-52`, `DL-179`), under the rules of opening. There
-   * is no unlink: a request wrongly named stays named, and the remedy is a note.
+   * Names one more request the case covers (`DL-52`, `DL-179`), under the rules of opening. A link
+   * is never removed: it is ended with `endRequestLink`, and a request whose link was ended may be
+   * named again, here or by another case.
    */
   linkRequest(id: CaseId, requestId: AssistanceRequestId, reason: string): Observable<CaseWorkspace>;
+  /**
+   * Ends a request's link to this case, with the reason (`DL-183`). The link and its end both stay in
+   * the case's history; the request no longer counts as this case's. Only a request the writer can
+   * read, linked here now.
+   */
+  endRequestLink(
+    id: CaseId,
+    requestId: AssistanceRequestId,
+    reason: string,
+  ): Observable<CaseWorkspace>;
 
   changeStatus(id: CaseId, to: CaseStatus, reason: string): Observable<CaseWorkspace>;
   /**
    * Gives the case to a named social worker, or to nobody with `null` — a recorded act either way.
-   * Refused to a caseload: a social worker does not reassign their own case (`DL-179`).
+   * Refused to a caseload: a social worker does not reassign their own case (`DL-179`). The open
+   * tasks the previous holder owed go with the case, each its own recorded move under the same
+   * reason; anybody else's stay where they are (`DL-183`).
    */
   assign(id: CaseId, staffUserId: StaffUserId | null, reason: string): Observable<CaseWorkspace>;
 
@@ -492,6 +506,11 @@ export interface CaseRepository {
   addTask(id: CaseId, draft: CaseTaskDraft, reason: string): Observable<CaseWorkspace>;
   /** The reason is the outcome: what actually happened when the task was done. */
   completeTask(id: CaseId, taskId: CaseTaskId, reason: string): Observable<CaseWorkspace>;
+  /**
+   * Ends a task that is no longer needed (`DL-183`). Kept, marked cancelled, the reason its outcome;
+   * a case closes only when no task is open, so this is the honest way out of one nobody will do.
+   */
+  cancelTask(id: CaseId, taskId: CaseTaskId, reason: string): Observable<CaseWorkspace>;
   /**
    * Hands a task to somebody, or to nobody with `null`. Only the writer or whoever holds the case
    * may owe it (`DL-179`).
@@ -659,10 +678,26 @@ export interface AssistanceRequestRepository {
     reason: string,
   ): Observable<AssistanceRequest>;
 
+  /**
+   * Any move but `approved`, which is its own act (`approve`). Cancelling or expiring is refused
+   * while the request has an open release — anything not voided and not handed over — and the
+   * refusal says to void the release first (`DL-183`).
+   */
   changeStatus(
     id: AssistanceRequestId,
     to: AssistanceRequestStatus,
     reason: string | null,
+  ): Observable<AssistanceRequest>;
+
+  /**
+   * The move to `approved`, saying what was approved (`DL-183`): an amount in integer centavos, or
+   * the goods described. Kept on the request's history, and the ceiling a money release is
+   * prepared under.
+   */
+  approve(
+    id: AssistanceRequestId,
+    approval: RequestApproval,
+    reason: string,
   ): Observable<AssistanceRequest>;
 
   /**

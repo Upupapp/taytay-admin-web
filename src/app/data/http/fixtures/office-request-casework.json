@@ -10,6 +10,8 @@
     "referred_by": null,
     "reason_for_request": "Burial costs for a deceased parent.",
     "requested_amount_centavos": 1000000,
+    "approved_amount_centavos": null,
+    "approved_in_kind_description": null,
     "submitted_at": "2026-11-02T01:30:00.000Z",
     "assigned_to": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c07",
     "assignments": [
@@ -123,7 +125,9 @@
         "reason": "Filed at the counter.",
         "actor_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
         "actor_name": "Liezl Padilla",
-        "occurred_at": "2026-11-02T01:30:00.000Z"
+        "occurred_at": "2026-11-02T01:30:00.000Z",
+        "approved_amount_centavos": null,
+        "approved_in_kind_description": null
       }
     ],
     "is_protected": false,

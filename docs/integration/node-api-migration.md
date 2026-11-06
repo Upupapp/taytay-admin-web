@@ -43,6 +43,7 @@ sign-in only, hosted on Linode.
 | 15 | Casework phase 4: releases and payout sessions | backend + console | done (`DL-180`): `taytay-backend` `da22eec` — `/api/v1/office/releases` and `/office/release-batches`: a release prepared for an approved request in integer centavos or as goods with no amount, every act an event appended in the same transaction and the only thing that moves it, the request scheduled and released through its own history as the payout is, sessions with no status counted from their members, the payout list composed by the server, self-release recorded and never refused, every money write carrying `idempotency_key` in its body; `release` out of `UNSERVED_PORTS` (ten remain) |
 | 16 | Casework phase 5: referrals and field visits | backend + console | done (`DL-181`): `taytay-backend` `6436b70` — `/api/v1/office/referrals`, `/office/service-providers` (read-only, empty until somebody keeps it) and `/office/visits`: a referral drafted with nothing disclosed, the basis and each field beyond the minimum their own acts and only while a draft, `send` with no body refused without a basis by the route and again by the database under the row lock, the sheet composed by the server from what the reader could read, overdue derived; a visit's observations each with their kind and a third party named, appended only, closed once, and no column for where anybody was (tested against `information_schema`); a caseload reads only its own cases' and requests' records, and a protected client's words are withheld in the data layer; `referral` and `field-visit` out of `UNSERVED_PORTS` (eight remain) |
 | 17 | Casework phase 6a: the dashboard | backend + console | done (`DL-182`): `taytay-backend` `0ec3ffb` — `GET /api/v1/office/dashboard`: every figure counted in SQL under the scope of the list it opens (a barangay link its barangay, a caseload its assigned requests and referrals), filed requests only, payouts in integer centavos with goods counted beside them and never valued, each attention item with the key that acts on it and its basis in words, payouts `null` for a reader the release list refuses, and a residents' app block — open resident accounts by verification and new in the period, ID reviews waiting, cards in force — behind `user.view`, `verification.review` and `digital-id.manage`, absent for everybody else. Console: `HttpDashboardRepository` through `dashboard.mapper.ts`, whole or not at all; the screen shows the basis under each attention item, payout figures only to a reader of the releases, goods as a count, and the residents' app with each figure a link to the list it counts. Seven ports remain unserved. |
+| 18 | The owner's decisions round | backend + console | done (`DL-183`): `taytay-backend` `fb43122`, migration `0034_casework_decisions.sql` — a document number held as its last four characters (cut on write, cut in place by the migration, refused longer by a `CHECK`) and `document.view-full-number` retired in both repos; a reassignment moves the previous holder's open tasks, one event each; `…/tasks/{taskId}/cancel` and `…/requests/{requestId}/end`, each with a required reason, appended and never deleted; a social worker reads their own clients' record, household, families and filed-request advisory and nobody else's, the registry's lists still refused; an approval records `approved_amount_centavos` (or goods described) and a money release above it is refused; a request with an open release is not cancelled or expired. Console: `approve()` with the amount read from pesos without floating point, `cancelTask` and `endRequestLink` on the case page, the close flow listing open tasks, the household and advisory shown to a caseload, and the open release named before cancel or expire. |
 
 **Next: casework phase 6** — the work queues, reports, search and events.
 
@@ -310,3 +311,31 @@ dashboard follows the list); whether the residents' app figures should be narrow
 a resident declared in the app (they are not: it is self-declared, and not the office's registry);
 and whether "residents served" should go on counting people who received only goods (it does).
 **Next: phase 6 — the work queues, reports, search and events.**
+
+## Decided 2026-11-06: the owner's decisions round (`DL-183`)
+
+The owner was asked seven questions left open by the casework phases and answered "decide the best
+practice". Each answer, its basis and where it is held are in `DL-183`; in short:
+
+1. **Document numbers** are held as their last four characters (RA 10173; RA 11055 for a PhilSys
+   number). `document.view-full-number` is retired in both repos; the file, behind
+   `document.download`, is the full evidence.
+2. **Reassigning a case** moves the previous holder's open tasks to the new holder, one recorded
+   move each, in the same transaction; anybody else's tasks stay.
+3. **A case task can be cancelled** with a reason — terminal, kept. A case still closes only with no
+   open task; the console's close flow lists them and offers to cancel each.
+4. **A request's link to a case can be ended** with a reason. The link is kept and marked ended, the
+   history keeps both events, and the request may be named again.
+5. **A social worker reads their own clients** — the subject of a request or case assigned to them —
+   record, household, families and previous-assistance check, with the normal redaction; nobody
+   else's, and never the registry's lists or search. Supersedes `DL-179`'s `household_context`.
+6. **Approval records the approved amount** in integer centavos (or goods described), and a money
+   release is never prepared above it.
+7. **A request with an open release** is not cancelled or expired: the release is voided first.
+
+Kept as built, with no change: intake may assign cases; a barangay link and a release officer read
+an assessment's recommendation but not its findings; the idempotency key stays in the body; a
+prepared release is never edited; a goods-only recipient already counts as a resident served.
+
+Of the "For the owner" questions from the phases above, this round answers phase 4's (the
+idempotency key stays in the body); the others are still open.

@@ -405,7 +405,8 @@ describe('a resident can be traced without searching four more lists', () => {
   });
 
   it('warns that a protected record needs careful handling', async () => {
-    const element = html(await openDetail('res-0005', 'social-worker'));
+    // A cleared role that reads the registry: a caseload reads only its own clients (DL-183).
+    const element = html(await openDetail('res-0005', 'mswdo-head'));
     expect(element.textContent).toContain('Protected record');
     expect(element.textContent).toContain('RA 9262');
   });
@@ -618,7 +619,7 @@ describe('registering and correcting a record', () => {
   });
 
   it('lets a cleared role edit that same record', async () => {
-    const element = html(await openForm('social-worker', 'res-0005'));
+    const element = html(await openForm('mswdo-head', 'res-0005'));
     expect(element.querySelector('form')).not.toBeNull();
   });
 });

@@ -10,6 +10,8 @@
     "referred_by": "Brgy. San Juan — Kagawad Santos",
     "reason_for_request": "Burial costs for a deceased parent.",
     "requested_amount_centavos": 1000000,
+    "approved_amount_centavos": null,
+    "approved_in_kind_description": null,
     "submitted_at": null,
     "requirements": [
       {

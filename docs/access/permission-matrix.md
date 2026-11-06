@@ -35,7 +35,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-83 permissions × 7 roles. `X` means the role holds the permission.
+82 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -75,7 +75,6 @@ self-registration), `DL-33` (accessible authentication).
 | `request.view-sensitive`          | X     | X    | X   |        |      |      |       |
 | `document.record`                 | X     | X    | X   | X      |      |      |       |
 | `document.download`               | X     | X    | X   |        |      |      | X     |
-| `document.view-full-number`       | X     | X    | X   |        |      |      |       |
 | `release.view`               | X     | X    |     |        | X    |      | X     |
 | `release.schedule`           | X     | X    |     |        | X    |      |       |
 | `release.release`            | X     |      |     |        | X    |      |       |
@@ -273,11 +272,12 @@ TAB 05 called sensitive, and it reaches the head and the administrator only.
 replaces a copy when it lapses. `document.download` opens the file itself, and
 intake does **not** hold it — recording what somebody handed over and pulling
 the scan of their medical abstract off the system are different disclosures, and
-the counter needs only the first. `document.view-full-number` is narrower again,
-because a document number is disclosive on its own; everywhere else the number
-is masked to its last four characters.
+the counter needs only the first. There is no key for a document number in full:
+only its last four characters are held, by the API and by this console, and every
+reader is shown `••••1234` (`DL-183`, which retired `document.view-full-number`).
+The file, behind `document.download`, is the full evidence.
 
-The auditor holds `document.download` and neither of the others: oversight has to
+The auditor holds `document.download` and not `document.record`: oversight has to
 be able to check that the office held what it claims to have held.
 
 ---
