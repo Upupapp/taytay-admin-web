@@ -267,7 +267,7 @@ officers should assign cases (they do) when they do not assign requests; whether
 cancel open tasks rather than refuse (refused now); whether a wrongly linked request needs an
 unlink (none now).
 
-**Phase 4 done** (`DL-180`, `taytay-backend` `da22eec`): releases. A release is prepared for an
+**Phase 4 done** (`DL-180`, `taytay-backend` `da22eec`, console `e6ce50a`): releases. A release is prepared for an
 approved request — an amount in integer centavos, or goods described and never valued — with its
 approver read from the request's history; every act appends an event in the same transaction, and
 the request moves `approved → scheduled → released` through its own history as the payout is

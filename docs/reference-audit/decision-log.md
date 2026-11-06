@@ -7229,7 +7229,7 @@ thresholds, task kinds and event kinds with this console's domain files (11/11).
 ## DL-180 — releases are served: payouts in centavos, sessions counted from their members, the request moving with them
 
 Phase 4 of the casework (`docs/integration/node-api-migration.md`). Backend `taytay-backend`
-`da22eec`; the spec vendored here is its.
+`da22eec`; the spec vendored here is its. Console `e6ce50a`.
 
 ### What the server now decides
 
