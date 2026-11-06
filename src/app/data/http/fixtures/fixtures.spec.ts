@@ -44,6 +44,12 @@ import OFFICE_REQUEST_ADVISORY from './office-request-advisory.json';
 import OFFICE_REQUEST_NOTES from './office-request-notes.json';
 import OFFICE_REQUEST_REFUSAL from './office-request-refusal.json';
 import OFFICE_REQUESTS_PAGE from './office-requests-page.json';
+import OFFICE_REQUEST_CASEWORK from './office-request-casework.json';
+import OFFICE_DOCUMENT_REQUESTS from './office-document-requests.json';
+import OFFICE_ASSESSMENT_TEMPLATES from './office-assessment-templates.json';
+import OFFICE_OPEN_ASSESSMENT from './office-open-assessment.json';
+import OFFICE_SOCIAL_WORKERS from './office-social-workers.json';
+import OFFICE_DOCUMENT_GRANT from './office-document-grant.json';
 import OFFICE_REQUIREMENT_TEMPLATE from './office-requirement-template.json';
 import OFFICE_REQUIREMENT_TEMPLATE_REFUSAL from './office-requirement-template-refusal.json';
 import OFFICE_REQUIREMENT_TEMPLATES from './office-requirement-templates.json';
@@ -258,6 +264,16 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['office-request-advisory', OFFICE_REQUEST_ADVISORY, 'OfficeRequestAdvisoryEnvelope'],
     ['office-request-notes', OFFICE_REQUEST_NOTES, 'OfficeRequestNoteListEnvelope'],
     ['office-request-refusal', OFFICE_REQUEST_REFUSAL, 'OfficeRequestRefusalEnvelope'],
+    ['office-request-casework', OFFICE_REQUEST_CASEWORK, 'OfficeRequestEnvelope'],
+    ['office-document-requests', OFFICE_DOCUMENT_REQUESTS, 'OfficeDocumentRequestListEnvelope'],
+    [
+      'office-assessment-templates',
+      OFFICE_ASSESSMENT_TEMPLATES,
+      'OfficeAssessmentTemplateListEnvelope',
+    ],
+    ['office-open-assessment', OFFICE_OPEN_ASSESSMENT, 'OfficeOpenAssessmentEnvelope'],
+    ['office-social-workers', OFFICE_SOCIAL_WORKERS, 'OfficeSocialWorkerListEnvelope'],
+    ['office-document-grant', OFFICE_DOCUMENT_GRANT, 'OfficeDocumentGrantEnvelope'],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
     ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],

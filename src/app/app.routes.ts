@@ -319,6 +319,14 @@ export const routes: Routes = [
                 (m) => m.RequirementTemplatesPage,
               ),
           },
+          // The whole record, edited with a reason (`DL-178`), guarded as creating one is.
+          {
+            path: ':id/edit',
+            title: 'Edit programme — Taytay Social Welfare',
+            canActivate: [servedGuard('program'), permissionGuard('program.manage')],
+            loadComponent: () =>
+              import('@features/programs/program-form-page').then((m) => m.ProgramFormPage),
+          },
           {
             path: ':id',
             title: 'Programme — Taytay Social Welfare',

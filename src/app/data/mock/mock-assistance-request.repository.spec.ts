@@ -1,9 +1,11 @@
 import { TestBed } from '@angular/core/testing';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, lastValueFrom } from 'rxjs';
 
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import {
   ACCESS_CONTEXT,
+  ASSIGNMENT_NEEDS_REASON,
+  PROTECTED_WRITE_REFUSAL,
   asId,
   EMPTY_INTAKE_DRAFT,
   ROLE_DEFINITIONS,
@@ -322,6 +324,340 @@ describe('MockAssistanceRequestRepository', () => {
       await expect(firstValueFrom(repo.submitIntake(draft.id, null))).rejects.toThrow(
         /Choose the programme/,
       );
+    });
+  });
+});
+
+/* ── Phase 2b, held to the server's rules (DL-178) ─────────────────────────── */
+
+describe('the mock holds phase 2b to the server’s rules (DL-178)', () => {
+  const ENDORSED = asId<AssistanceRequestId>('req-0001');
+  const IN_INTAKE = asId<AssistanceRequestId>('req-0002');
+  const OTHERS = asId<AssistanceRequestId>('req-0003');
+  const SW_1 = asId<StaffUserId>('staff-sw-1');
+  const SW_2 = asId<StaffUserId>('staff-sw-2');
+
+  /** A social worker signed in as the seed's own, so the seeded assignments are theirs. */
+  const caseload = (): void => {
+    signedIn = { ...userFor('social-worker'), id: SW_1 };
+  };
+
+  const requirementOf = async (
+    repo: MockAssistanceRequestRepository,
+    id: AssistanceRequestId,
+    index = 0,
+  ) => {
+    const request = await firstValueFrom(repo.getById(id));
+    const requirement = request?.requirements[index];
+    if (requirement === undefined) {
+      throw new Error('the seed changed');
+    }
+    return requirement;
+  };
+
+  describe('a caseload', () => {
+    it('lists only the filed requests assigned to it, whatever assignee it asks for', async () => {
+      const repo = repository();
+      caseload();
+      const rows = await everyPage((cursor) =>
+        firstValueFrom(repo.list({ assignedTo: SW_2 }, { limit: 50, cursor })),
+      );
+      expect(rows.length).toBeGreaterThan(0);
+      expect(rows.every((request) => request.assignedTo === SW_1)).toBe(true);
+      expect(rows.every((request) => request.referenceNumber !== '')).toBe(true);
+    });
+
+    it('reads a request assigned to somebody else as not found', async () => {
+      const repo = repository();
+      caseload();
+      expect(await firstValueFrom(repo.getById(OTHERS))).toBeNull();
+      await expect(firstValueFrom(repo.listNotes(OTHERS))).rejects.toThrow(/not found/);
+    });
+
+    it('is refused what reads beyond it: drafts, the duplicate check and the list of social workers', async () => {
+      const repo = repository();
+      caseload();
+      await expect(
+        firstValueFrom(repo.saveDraft(draftFor('res-0001', 'prog-aics-medical'), null)),
+      ).rejects.toThrow(/assigned to your account/);
+      await expect(firstValueFrom(repo.advisoryForCase(ENDORSED))).rejects.toThrow(
+        /assigned to your account/,
+      );
+      await expect(firstValueFrom(repo.listSocialWorkers())).rejects.toThrow(/whole list/);
+      await expect(
+        firstValueFrom(repo.assignForAssessment(ENDORSED, SW_1, 'Mine.')),
+      ).rejects.toThrow(/whole list/);
+    });
+  });
+
+  describe('assigning for assessment', () => {
+    it('appends an assignment with who, when and why, and follows it with assignedTo', async () => {
+      const repo = repository();
+      signedIn = userFor('mswdo-head');
+      const saved = await firstValueFrom(
+        repo.assignForAssessment(IN_INTAKE, SW_2, ' Home visit needed. '),
+      );
+      expect(saved.assignedTo).toBe(SW_2);
+      expect(saved.assignments.at(-1)).toMatchObject({
+        assigneeId: SW_2,
+        assigneeName: 'Jomar Villanueva',
+        reason: 'Home visit needed.',
+        actorName: 'mswdo-head',
+      });
+    });
+
+    it('answers the same assignee as it stands, appending nothing', async () => {
+      const repo = repository();
+      signedIn = userFor('mswdo-head');
+      const before = await firstValueFrom(repo.getById(ENDORSED));
+      const saved = await firstValueFrom(repo.assignForAssessment(ENDORSED, SW_1, 'Again.'));
+      expect(saved.assignments.length).toBe(before?.assignments.length);
+    });
+
+    it('refuses no reason, an account that is not a social worker, and a request that is over', async () => {
+      const repo = repository();
+      signedIn = userFor('mswdo-head');
+      await expect(
+        firstValueFrom(repo.assignForAssessment(IN_INTAKE, SW_2, '  ')),
+      ).rejects.toThrow(ASSIGNMENT_NEEDS_REASON);
+      await expect(
+        firstValueFrom(
+          repo.assignForAssessment(IN_INTAKE, asId<StaffUserId>('staff-intake'), 'Why not.'),
+        ),
+      ).rejects.toThrow(/Not the open account of a social worker/);
+      await expect(
+        firstValueFrom(repo.assignForAssessment(asId('req-0005'), SW_2, 'Late.')),
+      ).rejects.toThrow(/kept as it ended/);
+    });
+
+    it('lists the open social workers by name', async () => {
+      const repo = repository();
+      signedIn = userFor('mswdo-head');
+      const workers = await firstValueFrom(repo.listSocialWorkers());
+      expect(workers.map((worker) => worker.name)).toEqual(['Grace Ocampo', 'Jomar Villanueva']);
+    });
+  });
+
+  describe('the assessment', () => {
+    it('is opened, answered and completed only while the request is in assessment', async () => {
+      const repo = repository();
+      await expect(firstValueFrom(repo.openAssessment(ENDORSED, 'aics-general'))).rejects.toThrow(
+        /while the request is in assessment, and this one is endorsed/,
+      );
+    });
+
+    it('completes with the form it was opened from, and moves the request nowhere', async () => {
+      const repo = repository();
+      const opened = await firstValueFrom(repo.openAssessment(PROTECTED, 'aics-general'));
+      // A second open answers with the one already open, whichever form was asked for.
+      const again = await firstValueFrom(repo.openAssessment(PROTECTED, 'medical-assistance'));
+      expect(again.templateCode).toBe('aics-general');
+
+      const templates = await firstValueFrom(repo.listAssessmentTemplates());
+      const form = templates.find((template) => template.code === opened.templateCode);
+      const answers: Record<string, string | null> = {};
+      for (const question of form?.questions ?? []) {
+        answers[question.code] = question.kind === 'choice' ? (question.choices[0] ?? null) : '2';
+      }
+      await firstValueFrom(repo.answerAssessment(PROTECTED, answers));
+      const saved = await firstValueFrom(
+        repo.recordAssessment(PROTECTED, {
+          findings: 'Household of five in one rented room; sole earner out of work.',
+          recommendedAmount: null,
+          homeVisitConducted: true,
+          recommendation: 'recommend-refer',
+          reason: null,
+        }),
+      );
+      expect(saved.status).toBe('assessment');
+      expect(saved.assessment).toMatchObject({
+        templateCode: 'aics-general',
+        templateVersion: opened.templateVersion,
+        recommendation: 'recommend-refer',
+      });
+    });
+
+    it('withholds the study’s words from a reader without case access', async () => {
+      const repo = repository();
+      signedIn = userFor('release-officer');
+      const request = await firstValueFrom(repo.getById(ENDORSED));
+      expect(request?.withheld).toEqual(['assessment']);
+      expect(request?.assessment?.findings).toBeNull();
+      expect(request?.assessment?.recommendation).toBe('recommend-approve');
+    });
+  });
+
+  describe('reviewing and recording documents', () => {
+    it('asks for words where the applicant must be told why, and checks only what was presented', async () => {
+      const repo = repository();
+      const presented = await requirementOf(repo, IN_INTAKE);
+      await expect(
+        firstValueFrom(repo.reviewRequirement(IN_INTAKE, presented.id, 'rejected', ' ')),
+      ).rejects.toThrow(/not accepted/);
+      await expect(
+        firstValueFrom(repo.reviewRequirement(IN_INTAKE, presented.id, 'pending', null)),
+      ).rejects.toThrow(/verdict/);
+
+      // req-0001's billing statement was excused and never presented.
+      const neverPresented = await requirementOf(repo, ENDORSED, 3);
+      expect(neverPresented.submittedAt).toBeNull();
+      await expect(
+        firstValueFrom(repo.reviewRequirement(ENDORSED, neverPresented.id, 'verified', null)),
+      ).rejects.toThrow(/Only a document that was presented/);
+
+      const needs = await firstValueFrom(
+        repo.reviewRequirement(IN_INTAKE, presented.id, 'needs-replacement', 'Torn in half.'),
+      );
+      expect(needs.requirements[0]).toMatchObject({
+        status: 'needs-replacement',
+        remarks: 'Torn in half.',
+      });
+      expect(needs.requirements[0]?.reviewedAt).not.toBeNull();
+    });
+
+    it('reads a requirement submitted again when a new version is recorded, even after it was verified', async () => {
+      const repo = repository();
+      // req-0002's first document was verified.
+      const verified = await requirementOf(repo, IN_INTAKE);
+      expect(verified.status).toBe('verified');
+      const upload = await lastValueFrom(
+        repo.recordDocument(IN_INTAKE, verified.id, {
+          file: new File(['%PDF-1.4'], 'cruz-id.pdf', { type: 'application/pdf' }),
+          source: 'uploaded',
+          documentNumber: 'PN-2020-123456',
+          issuedOn: null,
+          expiresOn: null,
+          replacesBecause: verified.document === null ? null : 'A clearer copy.',
+        }),
+      );
+      expect(upload.kind).toBe('done');
+      const after = upload.kind === 'done' ? upload.result.requirements[0] : undefined;
+      expect(after?.status).toBe('submitted');
+      const current = after?.document?.versions.at(-1);
+      // Named as the server names it, never by the uploader's own file name.
+      expect(current?.file?.fileName).toBe(`${verified.code}-v${current?.version ?? 0}.pdf`);
+    });
+
+    it('answers the open requests for a document when it is recorded', async () => {
+      const repo = repository();
+      const requests = await firstValueFrom(repo.listDocumentRequests(OTHERS));
+      const open = requests.find((entry) => entry.state === 'open');
+      if (open === undefined) {
+        throw new Error('the seed changed');
+      }
+      await lastValueFrom(
+        repo.recordDocument(OTHERS, open.requirementId, {
+          file: null,
+          source: 'encoded',
+          documentNumber: null,
+          issuedOn: null,
+          expiresOn: null,
+          replacesBecause: 'Seen at the counter.',
+        }),
+      );
+      const after = await firstValueFrom(repo.listDocumentRequests(OTHERS));
+      expect(after.find((entry) => entry.id === open.id)).toMatchObject({
+        state: 'answered',
+        closedBy: signedIn.id,
+      });
+    });
+
+    it('refuses every addition to a protected request from a writer it is withheld from', async () => {
+      const repo = repository();
+      signedIn = userFor('intake-officer');
+      const requirement = await requirementOf(repo, PROTECTED);
+      await expect(
+        firstValueFrom(repo.reviewRequirement(PROTECTED, requirement.id, 'waived', 'Excused.')),
+      ).rejects.toThrow(PROTECTED_WRITE_REFUSAL);
+      await expect(
+        firstValueFrom(repo.addNote(PROTECTED, { sensitivity: 'routine', body: 'Called.' })),
+      ).rejects.toThrow(/withheld from your account/);
+      const asked = await firstValueFrom(repo.listDocumentRequests(PROTECTED));
+      expect(asked.every((entry) => entry.isWithheld && entry.message === null)).toBe(true);
+    });
+
+    it('masks a document number unless the reader may have it whole', async () => {
+      const repo = repository();
+      signedIn = userFor('intake-officer');
+      const masked = await requirementOf(repo, ENDORSED);
+      expect(masked.document?.versions[0]).toMatchObject({
+        documentNumber: '••••8271',
+        documentNumberMasked: true,
+      });
+      signedIn = userFor('social-worker');
+      signedIn = { ...signedIn, id: SW_1 };
+      const whole = await requirementOf(repo, ENDORSED);
+      expect(whole.document?.versions[0]?.documentNumber).toBe('PN-2019-448271');
+    });
+  });
+
+  describe('opening a file', () => {
+    it('grants with the server’s warning, and exchanges the grant once for the bytes it holds', async () => {
+      const repo = repository();
+      const verified = await requirementOf(repo, IN_INTAKE);
+      const upload = await lastValueFrom(
+        repo.recordDocument(IN_INTAKE, verified.id, {
+          file: new File(['%PDF-1.4'], 'scan.pdf', { type: 'application/pdf' }),
+          source: 'uploaded',
+          documentNumber: null,
+          issuedOn: null,
+          expiresOn: null,
+          replacesBecause: verified.document === null ? null : 'A clearer copy.',
+        }),
+      );
+      const version =
+        upload.kind === 'done' ? upload.result.requirements[0]?.document?.versions.at(-1) : undefined;
+      if (version === undefined) {
+        throw new Error('nothing was recorded');
+      }
+      const grant = await firstValueFrom(repo.openDocument(IN_INTAKE, verified.id, version.id));
+      expect(grant.redactedForSharing).toBe(false);
+      expect(grant.warning).toContain('Opening it is recorded against your account');
+
+      expect(await firstValueFrom(repo.readDocumentFile(grant))).toBeInstanceOf(Blob);
+      await expect(firstValueFrom(repo.readDocumentFile(grant))).rejects.toThrow(/used once/);
+    });
+
+    it('says a seeded file holds no bytes, rather than hand over a stand-in', async () => {
+      const repo = repository();
+      const requirement = await requirementOf(repo, ENDORSED);
+      const version = requirement.document?.versions[0];
+      if (version === undefined) {
+        throw new Error('the seed changed');
+      }
+      const grant = await firstValueFrom(repo.openDocument(ENDORSED, requirement.id, version.id));
+      await expect(firstValueFrom(repo.readDocumentFile(grant))).rejects.toThrow(/none of its bytes/);
+    });
+
+    it('refuses a protected request’s file to a reader not cleared for it', async () => {
+      const repo = repository();
+      signedIn = {
+        ...userFor('release-officer'),
+        permissions: new Set<Permission>(['request.view', 'document.download']),
+      };
+      const requirement = await requirementOf(repo, PROTECTED, 1);
+      await expect(
+        firstValueFrom(repo.openDocument(PROTECTED, requirement.id, asId('dv-0000'))),
+      ).rejects.toThrow(/protected sector/);
+    });
+  });
+
+  describe('notes', () => {
+    it('appends a note and answers with the list, newest first', async () => {
+      const repo = repository();
+      signedIn = userFor('intake-officer');
+      const notes = await firstValueFrom(
+        repo.addNote(ENDORSED, { sensitivity: 'routine', body: ' Applicant called. ' }),
+      );
+      expect(notes[0]).toMatchObject({ body: 'Applicant called.', sensitivity: 'routine' });
+    });
+
+    it('refuses the protected tier to an account not cleared for it', async () => {
+      const repo = repository();
+      signedIn = userFor('intake-officer');
+      await expect(
+        firstValueFrom(repo.addNote(ENDORSED, { sensitivity: 'protected', body: 'Safety plan.' })),
+      ).rejects.toThrow();
     });
   });
 });

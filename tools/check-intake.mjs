@@ -165,9 +165,15 @@ const assistanceBinding = /provide:\s*ASSISTANCE_REQUEST_REPOSITORY,\s*useClass:
 )?.[1];
 
 /*
- * Since casework phase 2a (`DL-177`) the port is served — intake, filing, the lifecycle — while the
- * assessment is not, so the binding is a served adapter whose assessment save still refuses before
- * anything is sent. The premise of the rule is that refusal, so it is read from the adapter's own
+ * Since casework phase 2b (`DL-178`) the assessment is served, and the server keeps both figures —
+ * `recommended_amount_centavos` and `home_visit_conducted` — beside the findings. So the binding's
+ * `recordAssessment` sends a real `toWireAssessment`, and the rule below holds that mapper to them:
+ * the not-recorded notice is required exactly while it drops either, and stops applying on its own
+ * once it sends both. The refusal branches stay for a binding that does not send at all.
+ *
+ * Before that (`DL-177`) the port was served — intake, filing, the lifecycle — while the
+ * assessment was not, so the binding was a served adapter whose assessment save still refused before
+ * anything was sent. The premise of the rule is that refusal, so it is read from the adapter's own
  * source rather than inferred from its name: the body of its `recordAssessment` must answer with
  * `unserved(`. A served adapter whose `recordAssessment` sends anything — with no `toWireAssessment`
  * this check can hold to the screen — is the blind case, and fails.
@@ -185,6 +191,20 @@ function recordAssessmentRefuses(className) {
   return false;
 }
 
+/** Whether the bound adapter's `recordAssessment` sends its body through `toWireAssessment`. */
+function recordAssessmentSendsMapper(className) {
+  for (const file of httpFiles) {
+    const source = read(file);
+    const start = source.search(new RegExp(`export class ${className}\\b`));
+    if (start < 0) continue;
+    const classEnd = source.indexOf('\n}\n', start);
+    const body = source.slice(start, classEnd < 0 ? undefined : classEnd);
+    const method = /\n {2}recordAssessment\s*\([^)]*\)[^{]*\{([\s\S]*?)\n {2}\}\n/.exec(body);
+    return method !== null && /this\s*\.\s*api\b/.test(method[1]) && /toWireAssessment\s*\(/.test(method[1]);
+  }
+  return false;
+}
+
 if (assessmentMapper === null && assistanceBinding === 'UnservedAssistanceRequestRepository') {
   notes.push('not-recorded: no assessment endpoint is served — the http adapter refuses the save, so nothing is silently discarded');
 } else if (assessmentMapper === null && assistanceBinding !== undefined && recordAssessmentRefuses(assistanceBinding)) {
@@ -198,8 +218,27 @@ if (assessmentMapper === null && assistanceBinding === 'UnservedAssistanceReques
       '`toWireAssessment` exists under data/http — the not-recorded rule is blind.',
   );
 } else {
-  const sends = (field) => new RegExp(`['\"\`]${field}['\"\`]`).test(assessmentMapper[0]);
-  const dropped = ['recommended_amount', 'home_visit_conducted'].filter((field) => !sends(field));
+  /*
+   * A field is sent when the mapper writes it as a key of what it returns — `home_visit_conducted:
+   * …`, quoted or not — under the server's own name. The amount is `recommended_amount_centavos`:
+   * integer centavos, as `Money` holds them. A comment or a string that merely mentions a name
+   * does not count; a key does.
+   */
+  const sends = (field) =>
+    new RegExp(`(?:^|[\\s{,])['\"\`]?${field}['\"\`]?\\s*:`, 'm').test(
+      assessmentMapper[0].replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, ''),
+    );
+  const dropped = ['recommended_amount_centavos', 'home_visit_conducted'].filter(
+    (field) => !sends(field),
+  );
+
+  // The mapper must be the one the binding sends: a `toWireAssessment` nobody calls proves nothing.
+  if (assistanceBinding !== undefined && !recordAssessmentSendsMapper(assistanceBinding)) {
+    problems.push(
+      `${assistanceBinding}.recordAssessment does not send toWireAssessment(…). A mapper the bound ` +
+        'adapter does not use says nothing about what reaches the office record.',
+    );
+  }
 
   if (dropped.length > 0) {
     const template = read('src/app/features/requests/assessment-page.html');

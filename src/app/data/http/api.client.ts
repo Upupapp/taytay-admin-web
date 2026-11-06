@@ -166,6 +166,20 @@ export class ApiClient {
     return this.http.get(this.url(path), { responseType: 'blob' });
   }
 
+  /**
+   * A `POST` the API answers with bytes instead of an envelope — today only
+   * `POST office/document-files`, which exchanges a single-use grant for a document's file
+   * (`DL-178`).
+   *
+   * A `POST` because the exchange uses the grant up, and so the handle travels in a body rather
+   * than a path every request log keeps. The bearer token goes in the `Authorization` header the
+   * interceptor adds, exactly as for `blob`, and **never in a URL** (rule 5). The caller turns the
+   * bytes into an object URL it must revoke.
+   */
+  postBlob<TBody = unknown>(path: string, body: TBody): Observable<Blob> {
+    return this.http.post(this.url(path), body, { responseType: 'blob' });
+  }
+
   post<TItem, TBody = unknown>(path: string, body: TBody): Observable<TItem> {
     return this.http
       .post<ApiItemResponse<TItem>>(this.url(path), body)

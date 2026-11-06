@@ -1,0 +1,15 @@
+{
+  "data": {
+    "id": "2c3d4e5f-6a7b-4c8d-9e0f-1a2b3c4d5e61",
+    "template_code": "aics-general",
+    "template_version": "2026.08.1",
+    "completed": false,
+    "answers": {
+      "household_size": "5",
+      "remarks": null
+    },
+    "opened_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c07",
+    "opened_at": "2026-11-05T05:00:00.000Z"
+  },
+  "meta": {}
+}

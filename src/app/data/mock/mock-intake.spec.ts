@@ -361,7 +361,16 @@ describe('filing a request', () => {
 /* ── Assessment ───────────────────────────────────────────────────────────── */
 
 describe('the case study', () => {
-  const REQ = asId<AssistanceRequestId>('req-0001');
+  /*
+   * In assessment and assigned to the seed's first social worker: an assessment is opened, answered
+   * and completed only while a request is in assessment, and a caseload works only what is assigned
+   * to it, as on the server (`DL-178`).
+   */
+  const REQ = asId<AssistanceRequestId>('req-0006');
+  const assessor = (): AuthenticatedUser => ({
+    ...authenticated('social-worker'),
+    id: asId<StaffUserId>('staff-sw-1'),
+  });
 
   /**
    * An assessment is opened from a published form before anything can be filed against it.
@@ -384,7 +393,7 @@ describe('the case study', () => {
   };
 
   it('records findings, a home visit and a recommendation', async () => {
-    signedInAs(authenticated('social-worker'));
+    signedInAs(assessor());
     await openAndAnswer();
     const updated = await firstValueFrom(
       repo().recordAssessment(REQ, {
@@ -398,13 +407,14 @@ describe('the case study', () => {
     );
     expect(updated.assessment?.homeVisitConducted).toBe(true);
     expect(updated.assessment?.recommendedAmount?.centavos).toBe(600_000);
-    // A recommendation is not an approval: the money field is untouched.
+    // A recommendation is not an approval: the money field is untouched, and completing the
+    // study moves the request nowhere — endorsing is its own move (DL-178).
     expect(updated.approvedAmount).toBeNull();
-    expect(updated.status).toBe('endorsed');
+    expect(updated.status).toBe('assessment');
   });
 
   it('refuses findings too short to stand as a case study', async () => {
-    signedInAs(authenticated('social-worker'));
+    signedInAs(assessor());
     await openAndAnswer();
     await expect(
       firstValueFrom(

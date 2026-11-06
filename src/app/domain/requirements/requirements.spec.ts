@@ -1,4 +1,5 @@
 import {
+  DOCUMENT_UPLOAD_POLICY,
   EXPIRY_WARNING_DAYS,
   REQUIREMENT_OBLIGATIONS,
   asId,
@@ -43,6 +44,9 @@ function version(overrides: Partial<DocumentVersion> = {}): DocumentVersion {
     issuedOn: asIsoDate('2026-01-01'),
     expiresOn: asIsoDate('2026-12-31'),
     receivedBy: asId<StaffUserId>('staff-1'),
+    receivedByName: 'A staff member',
+    documentNumberMasked: false,
+    supersededBy: null,
     receivedAt: asIsoDateTime('2026-01-02T00:00:00.000Z'),
     supersededAt: null,
     supersededReason: null,
@@ -60,6 +64,8 @@ function requirement(overrides: Partial<SubmittedRequirement> = {}): SubmittedRe
     applicability: 'undecided',
     appliesWhen: null,
     applicabilityDecidedBy: null,
+    applicabilityDecidedAt: null,
+    accepts: DOCUMENT_UPLOAD_POLICY,
     applicabilityReason: null,
     submittedAt: null,
     reviewedBy: null,
@@ -303,9 +309,12 @@ describe('asking an applicant for a document', () => {
       message: 'Please bring the certificate.',
       neededBy: asIsoDate('2026-07-01'),
       requestedBy: asId<StaffUserId>('staff-1'),
+      requestedByName: 'A staff member',
       requestedAt: asIsoDateTime('2026-06-01T00:00:00.000Z'),
       closedAt: null,
       withdrawnReason: null,
+      closedBy: null,
+      isWithheld: false,
     };
 
     expect(isDocumentRequestOverdue(base, today)).toBe(true);

@@ -158,6 +158,8 @@ const VERBS = {
   optionalItem: 'GET',
   /** Image bytes (`DL-167`): a read, judged at its verb like any other. */
   blob: 'GET',
+  /** Bytes for a single-use grant (`DL-178`): a POST, because the exchange uses the grant up. */
+  postBlob: 'POST',
   post: 'POST',
   patch: 'PATCH',
   /** A body that carries a file (`DL-170`): judged at its verb exactly as a JSON body is. */

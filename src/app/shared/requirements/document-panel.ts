@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 
 import {
+  DOCUMENT_SOURCES,
   DOCUMENT_SOURCE_LABELS,
   DOCUMENT_VALIDITY_LABELS,
   currentVersion,
@@ -13,7 +14,10 @@ import {
   type RequirementDocument,
   DOCUMENT_UPLOAD_POLICY,
   refusalFor,
+  asIsoDate,
+  type DocumentSource,
   type DocumentVersionDraft,
+  type UploadPolicy,
 } from '@domain/index';
 
 import { REQUIREMENTS_COPY } from './requirements.copy';
@@ -34,6 +38,9 @@ import { REQUIREMENTS_COPY } from './requirements.copy';
  *    and the page asks the data layer, which may refuse. A component holding a
  *    URL it may not follow is one copy-paste from an unauthorised download.
  */
+/** Gives each panel on a page its own control ids. */
+let nextPanelId = 0;
+
 @Component({
   selector: 'app-document-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -81,7 +88,10 @@ import { REQUIREMENTS_COPY } from './requirements.copy';
           }
           <div class="document__fact">
             <dt>{{ copy.received }}</dt>
-            <dd>{{ version.receivedAt | date: 'd MMM y' }}</dd>
+            <dd>
+              {{ version.receivedAt | date: 'd MMM y' }}
+              {{ copy.receivedBy(version.receivedByName) }}
+            </dd>
           </div>
         </dl>
 
@@ -109,9 +119,21 @@ import { REQUIREMENTS_COPY } from './requirements.copy';
                   </span>
                   <span class="document__history-date">
                     {{ version.receivedAt | date: 'd MMM y' }}
+                    {{ copy.receivedBy(version.receivedByName) }}
                   </span>
                 </p>
-                @if (version.supersededReason) {
+                <p class="document__history-line">
+                  {{ sourceLabel(version) }}
+                  @if (maskedNumber(version); as masked) {
+                    · {{ copy.documentNumber }} <span class="document__masked">{{ masked }}</span>
+                  }
+                </p>
+                @if (reasonsWithheld()) {
+                  <p class="document__history-reason">
+                    <span class="document__history-reason-label">{{ copy.replacedBecause }}</span>
+                    {{ copy.reasonWithheld }}
+                  </p>
+                } @else if (version.supersededReason) {
                   <p class="document__history-reason">
                     <span class="document__history-reason-label">{{ copy.replacedBecause }}</span>
                     {{ version.supersededReason }}
@@ -141,27 +163,83 @@ import { REQUIREMENTS_COPY } from './requirements.copy';
       -->
       @if (canUpload()) {
         <form class="document__upload" (submit)="submit($event)">
-          <label class="field" [attr.for]="'document-file'">
-            <span class="field__label">{{ copy.uploadLabel }}</span>
-            <input
-              id="document-file"
+          <label class="field" [attr.for]="fieldId('source')">
+            <span class="field__label">{{ copy.sourceLabel }}</span>
+            <select
               class="field__control"
-              type="file"
-              [accept]="acceptAttribute"
-              (change)="onFile($event)"
-            />
-            <span class="field__hint">{{ copy.uploadHint }}</span>
+              [id]="fieldId('source')"
+              [value]="source()"
+              (change)="onSource($event)"
+            >
+              @for (option of sources; track option) {
+                <option [value]="option" [selected]="option === source()">
+                  {{ sourceLabels[option] }}
+                </option>
+              }
+            </select>
           </label>
 
-          @if (refusal() !== null) {
-            <p class="field__error" role="alert">{{ refusalMessage() }}</p>
+          @if (holdsFile()) {
+            <label class="field" [attr.for]="fieldId('file')">
+              <span class="field__label">{{ copy.uploadLabel }}</span>
+              <input
+                class="field__control"
+                type="file"
+                [id]="fieldId('file')"
+                [accept]="acceptAttribute()"
+                (change)="onFile($event)"
+              />
+              <span class="field__hint">{{ copy.uploadHint }}</span>
+            </label>
+
+            @if (refusal() !== null) {
+              <p class="field__error" role="alert">{{ refusalMessage() }}</p>
+            }
+          } @else {
+            <p class="field__hint">{{ copy.noFileForSource }}</p>
+          }
+
+          <label class="field" [attr.for]="fieldId('number')">
+            <span class="field__label">{{ copy.numberLabel }}</span>
+            <input
+              class="field__control"
+              type="text"
+              autocomplete="off"
+              [id]="fieldId('number')"
+              [value]="documentNumber()"
+              (input)="onNumber($event)"
+            />
+            <span class="field__hint">{{ copy.numberHint }}</span>
+          </label>
+          <label class="field" [attr.for]="fieldId('issued')">
+            <span class="field__label">{{ copy.issuedLabel }}</span>
+            <input
+              class="field__control"
+              type="date"
+              [id]="fieldId('issued')"
+              [value]="issuedOn()"
+              (input)="onIssued($event)"
+            />
+          </label>
+          <label class="field" [attr.for]="fieldId('expires')">
+            <span class="field__label">{{ copy.expiresLabel }}</span>
+            <input
+              class="field__control"
+              type="date"
+              [id]="fieldId('expires')"
+              [value]="expiresOn()"
+              (input)="onExpires($event)"
+            />
+          </label>
+          @if (expiryBeforeIssue()) {
+            <p class="field__error" role="alert">{{ copy.expiryBeforeIssue }}</p>
           }
 
           @if (isReplacement()) {
-            <label class="field" [attr.for]="'document-because'">
+            <label class="field" [attr.for]="fieldId('because')">
               <span class="field__label">{{ copy.replacesBecauseLabel }}</span>
               <input
-                id="document-because"
+                [id]="fieldId('because')"
                 class="field__control"
                 type="text"
                 [value]="replacesBecause()"
@@ -199,6 +277,16 @@ export class DocumentPanel {
   /** Whether this reader may open the file at all. */
   readonly canDownload = input(false);
   readonly today = input<Date>(new Date());
+  /**
+   * What the office accepts, as the requirement publishes it (`accepts`). A file is refused by
+   * this before anything is sent; the server refuses again by the bytes.
+   */
+  readonly policy = input<UploadPolicy>(DOCUMENT_UPLOAD_POLICY);
+  /**
+   * Whether the words on this record are withheld from the reader (`requirementRemarks`): a
+   * replacement's reason is then said as withheld, never left blank as though none was given.
+   */
+  readonly reasonsWithheld = input(false);
 
   /** Whether this reader may add a version. Hiding it is usability, never protection. */
   readonly canUpload = input(false);
@@ -211,10 +299,32 @@ export class DocumentPanel {
   readonly versionSubmitted = output<DocumentVersionDraft>();
 
   protected readonly copy = REQUIREMENTS_COPY.document;
-  protected readonly acceptAttribute = DOCUMENT_UPLOAD_POLICY.mimeTypes.join(',');
+  protected readonly acceptAttribute = computed(() => this.policy().mimeTypes.join(','));
+  protected readonly sources = DOCUMENT_SOURCES;
+  protected readonly sourceLabels = DOCUMENT_SOURCE_LABELS;
+
+  /** Ids unique to this panel: a record page shows one panel per requirement. */
+  private readonly instance = nextPanelId++;
+
+  protected fieldId(name: string): string {
+    return `document-${this.instance}-${name}`;
+  }
 
   protected readonly chosen = signal<File | null>(null);
   protected readonly replacesBecause = signal('');
+  protected readonly source = signal<DocumentSource>('uploaded');
+  protected readonly documentNumber = signal('');
+  protected readonly issuedOn = signal('');
+  protected readonly expiresOn = signal('');
+
+  /** `encoded` and `external-verification` hold no file, so none is asked for (`DL-77`). */
+  protected readonly holdsFile = computed(() => sourceHoldsAFile(this.source()));
+
+  protected readonly expiryBeforeIssue = computed(() => {
+    const issued = this.issuedOn();
+    const expires = this.expiresOn();
+    return issued !== '' && expires !== '' && expires < issued;
+  });
 
   /**
    * Refused **before** the request, by the transport's own rule.
@@ -226,14 +336,17 @@ export class DocumentPanel {
   protected readonly refusal = computed(() => {
     const file = this.chosen();
 
-    return file === null ? null : refusalFor(file);
+    return file === null || !this.holdsFile() ? null : refusalFor(file, this.policy());
   });
 
   /** Replacing needs a reason; a first version does not (`DL-77`). */
   protected readonly isReplacement = computed(() => this.current() !== null);
 
   protected readonly canSubmit = computed(() => {
-    if (this.chosen() === null || this.refusal() !== null || this.uploading()) {
+    if (this.uploading() || this.expiryBeforeIssue()) {
+      return false;
+    }
+    if (this.holdsFile() && (this.chosen() === null || this.refusal() !== null)) {
       return false;
     }
 
@@ -260,23 +373,38 @@ export class DocumentPanel {
     this.replacesBecause.set((event.target as HTMLInputElement).value);
   }
 
+  protected onSource(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.source.set(DOCUMENT_SOURCES.find((candidate) => candidate === value) ?? 'uploaded');
+  }
+
+  protected onNumber(event: Event): void {
+    this.documentNumber.set((event.target as HTMLInputElement).value);
+  }
+
+  protected onIssued(event: Event): void {
+    this.issuedOn.set((event.target as HTMLInputElement).value);
+  }
+
+  protected onExpires(event: Event): void {
+    this.expiresOn.set((event.target as HTMLInputElement).value);
+  }
+
   protected submit(event: Event): void {
     event.preventDefault();
 
-    const file = this.chosen();
-
-    if (file === null || !this.canSubmit()) {
+    if (!this.canSubmit()) {
       return;
     }
 
+    const number = this.documentNumber().trim();
     this.versionSubmitted.emit({
-      file,
-      // `uploaded` is what this control does. A scan taken on a device, or a document seen and
-      // handed back, are different sources and are recorded by different acts.
-      source: 'uploaded',
-      documentNumber: null,
-      issuedOn: null,
-      expiresOn: null,
+      // A source that holds no file sends none, whatever was chosen before the source changed.
+      file: this.holdsFile() ? this.chosen() : null,
+      source: this.source(),
+      documentNumber: number === '' ? null : number,
+      issuedOn: this.issuedOn() === '' ? null : asIsoDate(this.issuedOn()),
+      expiresOn: this.expiresOn() === '' ? null : asIsoDate(this.expiresOn()),
       replacesBecause: this.isReplacement() ? this.replacesBecause().trim() : null,
     });
   }

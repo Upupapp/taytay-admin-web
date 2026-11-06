@@ -1,7 +1,7 @@
 import { HttpErrorResponse, type HttpInterceptorFn, type HttpRequest } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, switchMap, throwError } from 'rxjs';
+import { catchError, from, switchMap, throwError } from 'rxjs';
 
 import { RETURN_URL_PARAM } from '../access/access.guards';
 import { APP_ENVIRONMENT } from '../config/app-environment.token';
@@ -136,58 +136,89 @@ export const httpErrorInterceptor: HttpInterceptorFn = (request, next) => {
         return throwError(() => error);
       }
 
-      const failure = readApiError(error);
-
-      /*
-       * Branch on `code`, never on `message` — the message is written for
-       * operators and may be reworded at any time (`conventions.md` §4).
-       *
-       * The status is the fallback rather than the primary, and only where the
-       * envelope is missing: a refusal that never reached the application, or
-       * an error page from something in front of the API, still has to send the
-       * user somewhere sensible.
-       */
-      switch (failure.code ?? codeFromStatus(failure.status)) {
-        case 'UNAUTHENTICATED':
-          /*
-           * The token is gone or the server refused it. End the session
-           * locally without a round-trip: `signOut()` would call
-           * `POST auth/sign-out` with the credential that was just rejected,
-           * and answer 401 again.
-           *
-           * The current URL is carried so the user comes back to the screen
-           * they were on rather than the dashboard. What it does **not** yet
-           * carry is unsaved work — see the deferred item in TAB 02's report.
-           */
-          returnToSignIn(session, router);
-          break;
-
-        case 'FORBIDDEN':
-          void router.navigate(['/forbidden']);
-          break;
-
-        case 'VALIDATION_FAILED':
-          // The form owns this one: it renders `details` beside the fields.
-          // A toast as well would say the same thing twice, less usefully.
-          break;
-
-        // `INVALID_STATE_TRANSITION` had its own warning here. The Node API
-        // never sends it — a refused transition there is a `CONFLICT`, which
-        // is also what a closed account receives on every write — so the case
-        // is gone rather than kept for a code that cannot arrive.
-
-        case 'RATE_LIMITED':
-          notifications.warning('Too many requests', describeFailure(failure));
-          break;
-
-        default:
-          notifications.error('Request failed', describeFailure(failure));
-      }
-
-      return throwError(() => failure);
+      return from(withReadableBody(error)).pipe(switchMap((readable) => refuse(readable)));
     }),
   );
+
+  function refuse(error: HttpErrorResponse) {
+    const failure = readApiError(error);
+
+    /*
+     * Branch on `code`, never on `message` — the message is written for
+     * operators and may be reworded at any time (`conventions.md` §4).
+     *
+     * The status is the fallback rather than the primary, and only where the
+     * envelope is missing: a refusal that never reached the application, or
+     * an error page from something in front of the API, still has to send the
+     * user somewhere sensible.
+     */
+    switch (failure.code ?? codeFromStatus(failure.status)) {
+      case 'UNAUTHENTICATED':
+        /*
+         * The token is gone or the server refused it. End the session
+         * locally without a round-trip: `signOut()` would call
+         * `POST auth/sign-out` with the credential that was just rejected,
+         * and answer 401 again.
+         *
+         * The current URL is carried so the user comes back to the screen
+         * they were on rather than the dashboard. What it does **not** yet
+         * carry is unsaved work — see the deferred item in TAB 02's report.
+         */
+        returnToSignIn(session, router);
+        break;
+
+      case 'FORBIDDEN':
+        void router.navigate(['/forbidden']);
+        break;
+
+      case 'VALIDATION_FAILED':
+        // The form owns this one: it renders `details` beside the fields.
+        // A toast as well would say the same thing twice, less usefully.
+        break;
+
+      // `INVALID_STATE_TRANSITION` had its own warning here. The Node API
+      // never sends it — a refused transition there is a `CONFLICT`, which
+      // is also what a closed account receives on every write — so the case
+      // is gone rather than kept for a code that cannot arrive.
+
+      case 'RATE_LIMITED':
+        notifications.warning('Too many requests', describeFailure(failure));
+        break;
+
+      default:
+        notifications.error('Request failed', describeFailure(failure));
+    }
+
+    return throwError(() => failure);
+  }
 };
+
+/**
+ * The error with its body readable as JSON.
+ *
+ * A request that asks for bytes (`ApiClient.blob`, `ApiClient.postBlob`) receives its *refusal* as
+ * bytes too: the envelope arrives as a `Blob`, and read as it stands the server's sentence — "That
+ * file is not available to open…" — would be replaced by a status line. So a JSON body that arrived
+ * as a `Blob` is read back into an object first; anything else is passed through untouched.
+ */
+async function withReadableBody(error: HttpErrorResponse): Promise<HttpErrorResponse> {
+  const body: unknown = error.error;
+  if (!(body instanceof Blob) || !body.type.includes('json')) {
+    return error;
+  }
+  try {
+    const parsed: unknown = JSON.parse(await body.text());
+    return new HttpErrorResponse({
+      error: parsed,
+      headers: error.headers,
+      status: error.status,
+      statusText: error.statusText,
+      url: error.url ?? undefined,
+    });
+  } catch {
+    return error;
+  }
+}
 
 /**
  * Only for a response that carried no envelope. Anything richer would be

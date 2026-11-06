@@ -118,7 +118,9 @@ export function toAssessmentDraft(request: AssistanceRequest): AssessmentDraft {
   return existing === null
     ? EMPTY_ASSESSMENT
     : {
-        findings: existing.findings,
+        // Withheld findings are not the reader's to start from: the form opens empty rather than
+        // presenting a blank as what the assessor wrote (`DL-178`).
+        findings: existing.findings ?? '',
         recommendedAmount: existing.recommendedAmount,
         homeVisitConducted: existing.homeVisitConducted,
         // A recorded assessment that predates this field reads as "not enough information",
@@ -152,7 +154,8 @@ export function assessmentReadiness(
   if (assessment === null) {
     codes.push('no-assessment');
   } else {
-    if (!isValidFindings(assessment.findings)) {
+    // Withheld findings (`null`) are not short findings: this reader cannot say, so nothing is said.
+    if (assessment.findings !== null && !isValidFindings(assessment.findings)) {
       codes.push('findings-too-short');
     }
     if (!assessment.homeVisitConducted) {

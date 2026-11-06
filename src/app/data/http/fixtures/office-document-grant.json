@@ -1,0 +1,12 @@
+{
+  "data": {
+    "version_id": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c01",
+    "file_name": "death-certificate-v1.pdf",
+    "mime_type": "application/pdf",
+    "handle": "h7Y2xQ9pL3mN8vB1cR5tW0zK4dF6gJ2sA9eU7iO3yT1",
+    "expires_at": "2026-11-06T02:05:00.000Z",
+    "redacted_for_sharing": false,
+    "warning": "death-certificate-v1.pdf is version 1 of the Death certificate, replaced on 2026-11-04 and kept as evidence. It holds personal information about an applicant (RA 10173). Open it only for this request’s work, and do not save it outside office systems or forward it. Opening it is recorded against your account. The copy is the one the office holds: nothing in it has been redacted."
+  },
+  "meta": {}
+}

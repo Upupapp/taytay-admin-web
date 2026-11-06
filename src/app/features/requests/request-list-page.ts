@@ -10,20 +10,24 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { map, switchMap, tap } from 'rxjs';
+import { map, of, switchMap, tap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
+import { PermissionService } from '@core/access/permission.service';
 import {
   ASSISTANCE_REQUEST_REPOSITORY,
   ASSISTANCE_STATUS_CATALOG,
+  asId,
   isWithheldFromReader,
   type AssistanceRequest,
   type AssistanceRequestFilter,
   type AssistanceRequestStatus,
   type CursorPage,
+  type SocialWorker,
+  type StaffUserId,
 } from '@domain/index';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { LOADING, ready, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
@@ -82,6 +86,39 @@ export class RequestListPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly permissions = inject(PermissionService);
+
+  /**
+   * A caseload (`assigned-cases`) reads the requests assigned to it and nothing else, whatever it
+   * asks for (`DL-178`): its list is its caseload, and the office's unfinished intakes are not part
+   * of it, so they are not asked for.
+   */
+  protected readonly isCaseload = computed(() => this.permissions.scope() === 'assigned-cases');
+
+  /**
+   * Narrowing by assignee reads the office's list of social workers, which is the assigners' — a
+   * holder of `request.assess` who is not a caseload, such as the head reading a worker's caseload.
+   */
+  protected readonly filtersByAssignee = computed(
+    () => this.permissions.has('request.assess') && !this.isCaseload(),
+  );
+
+  private readonly workerState = toSignal(
+    toObservable(this.filtersByAssignee).pipe(
+      switchMap((reads) =>
+        reads
+          ? toViewState(this.repository.listSocialWorkers())
+          : of(ready([] as readonly SocialWorker[])),
+      ),
+    ),
+    { initialValue: LOADING as ViewState<readonly SocialWorker[]> },
+  );
+
+  protected readonly socialWorkers = computed(() => valueOf(this.workerState()) ?? []);
+  protected readonly workersFailure = computed(() => {
+    const state = this.workerState();
+    return state.kind === 'error' ? state.message : null;
+  });
 
   protected readonly copy = REQUESTS_COPY.list;
   protected readonly statusCatalog = ASSISTANCE_STATUS_CATALOG;
@@ -128,9 +165,13 @@ export class RequestListPage {
    * a view state, so a refusal is said where the drafts would be rather than breaking the screen.
    */
   protected readonly draftState = toSignal(
-    toObservable(this.generation).pipe(
-      switchMap(() =>
-        toViewState(this.repository.list({ status: 'draft' }, { limit: DRAFT_LIMIT, cursor: null })),
+    toObservable(computed(() => ({ generation: this.generation(), caseload: this.isCaseload() }))).pipe(
+      switchMap(({ caseload }) =>
+        caseload
+          ? of(ready<CursorPage<AssistanceRequest>>({ items: [], hasMore: false, nextCursor: null }))
+          : toViewState(
+              this.repository.list({ status: 'draft' }, { limit: DRAFT_LIMIT, cursor: null }),
+            ),
       ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<AssistanceRequest>> },
@@ -164,6 +205,7 @@ export class RequestListPage {
     () =>
       (this.filter().search ?? '').length > 0 ||
       this.filter().status !== undefined ||
+      this.filter().assignedTo !== undefined ||
       this.filter().openOnly === true,
   );
 
@@ -229,6 +271,10 @@ export class RequestListPage {
     this.patch({ status: (event.target as HTMLSelectElement).value || null });
   }
 
+  protected onAssignee(event: Event): void {
+    this.patch({ assigned: (event.target as HTMLSelectElement).value || null });
+  }
+
   protected onOpenOnly(event: Event): void {
     this.patch({ open: (event.target as HTMLInputElement).checked ? 'true' : null });
   }
@@ -287,7 +333,12 @@ interface ParamReader {
 
 /** The filter, and nothing else: the server orders the list and pages it by cursor. */
 export function readRequestQuery(params: ParamReader): { readonly filter: AssistanceRequestFilter } {
-  const filter: { search?: string; status?: AssistanceRequestStatus; openOnly?: boolean } = {};
+  const filter: {
+    search?: string;
+    status?: AssistanceRequestStatus;
+    assignedTo?: StaffUserId;
+    openOnly?: boolean;
+  } = {};
 
   const search = params.get('q')?.trim();
   if (search) {
@@ -296,6 +347,12 @@ export function readRequestQuery(params: ParamReader): { readonly filter: Assist
   const status = params.get('status');
   if (status && (STATUSES as readonly string[]).includes(status)) {
     filter.status = status as AssistanceRequestStatus;
+  }
+  const assigned = params.get('assigned')?.trim();
+  if (assigned) {
+    // A social worker's id, as the list of social workers gave it; the server refuses one it does
+    // not know, and a caseload's list is its own whatever is sent (`DL-178`).
+    filter.assignedTo = asId<StaffUserId>(assigned);
   }
   if (params.get('open') === 'true') {
     filter.openOnly = true;

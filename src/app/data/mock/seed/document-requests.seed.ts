@@ -22,29 +22,36 @@ export const MOCK_DOCUMENT_REQUESTS: readonly DocumentRequest[] = [
   {
     id: asId<DocumentRequestId>('dr-0001'),
     assistanceRequestId: asId<AssistanceRequestId>('req-0003'),
-    requirementId: asId<RequirementId>('rq-0011'),
+    // The request's own indigency certificate: a request names a requirement on its own request.
+    requirementId: asId<RequirementId>('rq-0022'),
     state: 'open',
     channel: 'sms',
     message:
       'Pakidala po ang barangay certificate of indigency sa susunod ninyong pagpunta sa MSWDO.',
     neededBy: asIsoDate('2026-07-25'),
     requestedBy: asId<StaffUserId>('staff-intake'),
+    requestedByName: 'Liezl Padilla',
     requestedAt: daysBeforeAnchor(20),
     closedAt: null,
     withdrawnReason: null,
+    closedBy: null,
+    isWithheld: false,
   },
   {
     id: asId<DocumentRequestId>('dr-0002'),
     assistanceRequestId: asId<AssistanceRequestId>('req-0003'),
-    requirementId: asId<RequirementId>('rq-0012'),
+    requirementId: asId<RequirementId>('rq-0021'),
     state: 'answered',
     channel: 'in-person',
-    message: 'Told at the counter to bring the medical certificate from the attending physician.',
+    message: 'Told at the counter to bring the certificate of enrolment from the school.',
     neededBy: asIsoDate('2026-07-20'),
     requestedBy: asId<StaffUserId>('staff-intake'),
+    requestedByName: 'Liezl Padilla',
     requestedAt: daysBeforeAnchor(24),
     closedAt: daysBeforeAnchor(18),
     withdrawnReason: null,
+    closedBy: asId<StaffUserId>('staff-intake'),
+    isWithheld: false,
   },
   {
     id: asId<DocumentRequestId>('dr-0003'),
@@ -55,11 +62,14 @@ export const MOCK_DOCUMENT_REQUESTS: readonly DocumentRequest[] = [
     message: 'Asked through the barangay for a copy of the death certificate.',
     neededBy: asIsoDate('2026-07-15'),
     requestedBy: asId<StaffUserId>('staff-sw-1'),
+    requestedByName: 'Grace Ocampo',
     requestedAt: daysBeforeAnchor(30),
     closedAt: daysBeforeAnchor(26),
     // Withdrawn rather than left open: the office confirmed the document
     // directly with the civil registrar, so chasing the family for a copy they
     // would have had to pay for was no longer necessary.
     withdrawnReason: 'Confirmed directly with the civil registrar; no copy needed from the family.',
+    closedBy: asId<StaffUserId>('staff-sw-1'),
+    isWithheld: false,
   },
 ];

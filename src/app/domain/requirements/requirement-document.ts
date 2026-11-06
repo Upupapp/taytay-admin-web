@@ -88,17 +88,39 @@ export interface DocumentVersion {
    * permission check.
    */
   readonly documentNumber: string | null;
+  /**
+   * Whether `documentNumber` arrived already masked to its last four characters (`••••1234`).
+   *
+   * The server masks it unless the reader holds `document.view-full-number`, so a masked number is
+   * all most readers ever receive. Screens mask it again regardless — masking is idempotent — so a
+   * full number is never shown by default even to a reader allowed to have it.
+   */
+  readonly documentNumberMasked: boolean;
   readonly issuedOn: IsoDate | null;
   /** `null` means "does not expire", which is different from "unknown". */
   readonly expiresOn: IsoDate | null;
   readonly receivedBy: StaffUserId;
+  readonly receivedByName: string;
   readonly receivedAt: IsoDateTime;
   /** Set when a later version replaced this one. Never unset. */
   readonly supersededAt: IsoDateTime | null;
-  /** Why it was replaced. Required on the version being superseded. */
+  /** Who recorded the version that replaced this one. */
+  readonly supersededBy: StaffUserId | null;
+  /**
+   * Why it was replaced. Required on the version being superseded. `null` too when withheld from
+   * this reader on a protected request (`requirementRemarks`), so read that before "none given".
+   */
   readonly supersededReason: string | null;
 }
 
+/**
+ * The versions presented against one requirement.
+ *
+ * The API holds no document apart from its versions — they hang off the requirement — so a document
+ * read from it takes the **requirement's** id as its own. There is exactly one document per
+ * requirement, so the two never disagree, and nothing addresses a document by this id: every act
+ * names the request, the requirement and, to open one, the version.
+ */
 export interface RequirementDocument {
   readonly id: RequirementDocumentId;
   readonly requirementId: RequirementId;

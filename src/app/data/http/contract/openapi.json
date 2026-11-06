@@ -3660,7 +3660,7 @@
       "get": {
         "operationId": "listOfficeRequests",
         "summary": "Assistance requests, a cursor page at a time",
-        "description": "Needs request.view; assigned-cases is refused (no cases are held to tell a caseload); own-barangay reads its barangay. Filed requests newest filing first; drafts only with status=draft, newest first. q matches the control number only — never the reason. Each request is redacted for the reader.",
+        "description": "Needs request.view; assigned-cases reads only the filed requests assigned to it; own-barangay reads its barangay. Filed requests newest filing first; drafts only with status=draft, newest first. q matches the control number only — never the reason. Each request is redacted for the reader.",
         "security": [
           {
             "firebaseIdToken": []
@@ -3736,6 +3736,15 @@
                 "false"
               ]
             }
+          },
+          {
+            "name": "assigned_to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Held for assessment by this account. A caseload always reads its own, whatever is sent."
           }
         ],
         "responses": {
@@ -3784,7 +3793,7 @@
       "post": {
         "operationId": "createOfficeRequestDraft",
         "summary": "Save a new draft",
-        "description": "Needs request.create. No control number: nothing is filed. The person must be in the writer’s scope and the programme active; the checklist is the programme’s documents (template then its own) with the answers applied by code. Audited office_request.draft_created.",
+        "description": "Needs request.create. No control number: nothing is filed. The person must be in the writer’s scope and the programme active; the checklist is the programme’s documents (template then its own) with the answers applied by code. Audited office_request.draft_created. Refused to a caseload (assigned-cases): it reads beyond the requests assigned to it.",
         "security": [
           {
             "firebaseIdToken": []
@@ -3848,7 +3857,7 @@
       "get": {
         "operationId": "getOfficeIntakeAdvisory",
         "summary": "The duplicate check before a request exists",
-        "description": "Needs request.create. For the person (in scope) and, when chosen, the programme. Decides nothing (DL-60).",
+        "description": "Needs request.create. For the person (in scope) and, when chosen, the programme. Decides nothing (DL-60). Refused to a caseload (assigned-cases): it reads beyond the requests assigned to it.",
         "security": [
           {
             "firebaseIdToken": []
@@ -3931,7 +3940,7 @@
       "get": {
         "operationId": "getOfficeRequest",
         "summary": "Read one request",
-        "description": "Needs request.view. Out of scope answers as not found.",
+        "description": "Needs request.view. Out of scope answers as not found. A social worker (assigned-cases) is answered only for the filed requests assigned to them; any other request answers as not found.",
         "security": [
           {
             "firebaseIdToken": []
@@ -3970,7 +3979,7 @@
             }
           },
           "403": {
-            "description": "Without request.view, or a caseload scope.",
+            "description": "Without request.view.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3994,7 +4003,7 @@
       "patch": {
         "operationId": "updateOfficeRequestDraft",
         "summary": "Save over a draft",
-        "description": "Needs request.create. Replaces the draft whole. A writer from whom part of the request is withheld cannot save over it (403). A filed request is kept as filed (409). Audited office_request.draft_updated.",
+        "description": "Needs request.create. Replaces the draft whole. A writer from whom part of the request is withheld cannot save over it (403). A filed request is kept as filed (409). Audited office_request.draft_updated. Refused to a caseload (assigned-cases): it reads beyond the requests assigned to it.",
         "security": [
           {
             "firebaseIdToken": []
@@ -4089,7 +4098,7 @@
       "post": {
         "operationId": "fileOfficeRequest",
         "summary": "File a draft",
-        "description": "Needs request.create. Appends draft→submitted to the history and issues the control number in one act; already filed answers as it stands. The duplicate check is read again here: a caution needs an acknowledgement answering it, kept with who and when; none flagged needs none. Refused while the intake record is incomplete — never on the strength of a signal. Audited office_request.filed.",
+        "description": "Needs request.create. Appends draft→submitted to the history and issues the control number in one act; already filed answers as it stands. The duplicate check is read again here: a caution needs an acknowledgement answering it, kept with who and when; none flagged needs none. Refused while the intake record is incomplete — never on the strength of a signal. Audited office_request.filed. Refused to a caseload (assigned-cases): it reads beyond the requests assigned to it.",
         "security": [
           {
             "firebaseIdToken": []
@@ -4191,7 +4200,7 @@
       "post": {
         "operationId": "moveOfficeRequest",
         "summary": "Move a request through its lifecycle",
-        "description": "Needs request.view and the key the console’s TRANSITION_PERMISSIONS names for the status moved into — request.approve and release.release are never held together. Only along office_request_transitions; appended with who, when and why, and the database sets the status from the history. Already there answers as it stands. Filing is its own act (409); scheduled and released wait for payouts, which this API does not hold yet (409). Audited office_request.status_changed.",
+        "description": "Needs request.view and the key the console’s TRANSITION_PERMISSIONS names for the status moved into — request.approve and release.release are never held together. Only along office_request_transitions; appended with who, when and why, and the database sets the status from the history. Already there answers as it stands. Filing is its own act (409); scheduled and released wait for payouts, which this API does not hold yet (409). Audited office_request.status_changed. A social worker (assigned-cases) is answered only for the filed requests assigned to them; any other request answers as not found.",
         "security": [
           {
             "firebaseIdToken": []
@@ -4240,7 +4249,7 @@
             }
           },
           "403": {
-            "description": "Without the key for the status moved into, or a caseload scope.",
+            "description": "Without the key for the status moved into.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4286,7 +4295,7 @@
       "get": {
         "operationId": "getOfficeRequestAdvisory",
         "summary": "The duplicate check for a filed request",
-        "description": "Needs request.create. Reads the person’s other filed requests. Decides nothing (DL-60).",
+        "description": "Needs request.create. Reads the person’s other filed requests. Decides nothing (DL-60). Refused to a caseload (assigned-cases): it reads beyond the requests assigned to it.",
         "security": [
           {
             "firebaseIdToken": []
@@ -4351,7 +4360,7 @@
       "get": {
         "operationId": "listOfficeRequestNotes",
         "summary": "Notes on a request",
-        "description": "Needs request.view. Whole, newest first. A protected note’s body is withheld without case-note.view-protected, and every note’s body on a protected request without request.view-sensitive; the entries are still listed (DL-58).",
+        "description": "Needs request.view. Whole, newest first. A protected note’s body is withheld without case-note.view-protected, and every note’s body on a protected request without request.view-sensitive; the entries are still listed (DL-58). A social worker (assigned-cases) is answered only for the filed requests assigned to them; any other request answers as not found.",
         "security": [
           {
             "firebaseIdToken": []
@@ -4390,7 +4399,7 @@
             }
           },
           "403": {
-            "description": "Without request.view, or a caseload scope.",
+            "description": "Without request.view.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4414,7 +4423,7 @@
       "post": {
         "operationId": "addOfficeRequestNote",
         "summary": "Append a note",
-        "description": "Needs case.note; a protected note needs case-note.view-protected, and a protected request request.view-sensitive — nobody writes what they may not read. Appended, never edited or removed. Audited office_request.note_added.",
+        "description": "Needs case.note; a protected note needs case-note.view-protected, and a protected request request.view-sensitive — nobody writes what they may not read. Appended, never edited or removed. Audited office_request.note_added. A social worker (assigned-cases) is answered only for the filed requests assigned to them; any other request answers as not found.",
         "security": [
           {
             "firebaseIdToken": []
@@ -4463,7 +4472,7 @@
             }
           },
           "403": {
-            "description": "Without the keys above, or a caseload scope.",
+            "description": "Without the keys above.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4484,6 +4493,1248 @@
           },
           "422": {
             "description": "A malformed body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/social-workers": {
+      "get": {
+        "operationId": "listOfficeSocialWorkers",
+        "summary": "The social workers a request may be assigned to",
+        "description": "Needs request.assess, and is refused to a caseload: assigning is done from the office’s whole list. Open staff accounts in the social-worker role; id and name only.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every one, by name.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeSocialWorkerListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without request.assess, or a caseload scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assistance-requests/{id}/assignment": {
+      "post": {
+        "operationId": "assignOfficeRequest",
+        "summary": "Assign a request to a social worker for assessment",
+        "description": "Needs request.assess, and is refused to a caseload. Appends an assignment with who, when and why; the assignee is an open social worker’s account. A draft (409) is not assigned, nor a request that is over (409). Assigning to whoever holds it answers as it stands. On a protected request, every write needs request.view-sensitive: nobody adds to what they may not read. Audited office_request.assigned.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeRequestAssignmentWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request, as the assigner may read it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without request.assess, a caseload scope, or an uncleared writer on a protected request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in the reader’s scope (a caseload: not assigned to them).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A draft, or a request that is over.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A malformed body, or a refusal in words; nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assessment-templates": {
+      "get": {
+        "operationId": "listOfficeAssessmentTemplates",
+        "summary": "The assessment forms",
+        "description": "Needs request.assess; a caseload may read them. The current version of each form. Reference data: a new version is a migration.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every form, in order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeAssessmentTemplateListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without request.assess.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assistance-requests/{id}/assessment": {
+      "post": {
+        "operationId": "openOfficeRequestAssessment",
+        "summary": "Open an assessment, or answer with the one open",
+        "description": "Needs request.assess, while the request is in assessment (409 otherwise). Opens from the current version of the form, pinned now and read once: 201. With one already open — whichever form — answers with it: 200, and its template_code says which. A social worker (assigned-cases) is answered only for the filed requests assigned to them; any other request answers as not found. On a protected request, every write needs request.view-sensitive: nobody adds to what they may not read. Audited office_request.assessment_opened.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeAssessmentOpen"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The assessment already open.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeOpenAssessmentEnvelope"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Opened.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeOpenAssessmentEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without request.assess, or an uncleared writer on a protected request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in the reader’s scope (a caseload: not assigned to them).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not in assessment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A malformed body, or a refusal in words; nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assistance-requests/{id}/assessment/answers": {
+      "post": {
+        "operationId": "answerOfficeRequestAssessment",
+        "summary": "Answer questions on the open assessment",
+        "description": "Needs request.assess, while in assessment with an assessment open (409 otherwise). A patch: each answer is appended, the latest is the answer, and a question not sent keeps its own. A choice must be one of its choices; anything else is accepted as written. An unknown question or choice is 422, keyed answers.<code>. A social worker (assigned-cases) is answered only for the filed requests assigned to them; any other request answers as not found. On a protected request, every write needs request.view-sensitive: nobody adds to what they may not read. Audited office_request.assessment_answered.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeAssessmentAnswers"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The open assessment, every answer so far.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeOpenAssessmentEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without request.assess, or an uncleared writer on a protected request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in the reader’s scope (a caseload: not assigned to them).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not in assessment, or none open.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A malformed body, or a refusal in words; nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assistance-requests/{id}/assessment/complete": {
+      "post": {
+        "operationId": "completeOfficeRequestAssessment",
+        "summary": "Complete the open assessment",
+        "description": "Needs request.assess, while in assessment with an assessment open (409 otherwise). Records the findings and the recommendation the assessor chose; nothing derives one. Refused (422) while a required question is unanswered, findings are under 20 characters, or recommend-deny has no reason. The request does not move: endorsing is POST …/status. Kept as completed; a later assessment is a new one. A social worker (assigned-cases) is answered only for the filed requests assigned to them; any other request answers as not found. On a protected request, every write needs request.view-sensitive: nobody adds to what they may not read. Audited office_request.assessment_completed.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeAssessmentCompletion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request, with its assessment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without request.assess, or an uncleared writer on a protected request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in the reader’s scope (a caseload: not assigned to them).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not in assessment, or none open.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Not completable as it stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeAssessmentRefusalEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assistance-requests/{id}/requirements/{requirementId}/review": {
+      "post": {
+        "operationId": "reviewOfficeRequestRequirement",
+        "summary": "Review one document",
+        "description": "Needs request.intake, on a filed request that is not over (409). Appended to the requirement’s history; the database moves it. Only a document that was presented can be verified, rejected, expire or need replacing (409); waived, rejected and needs-replacement need remarks (422). A social worker (assigned-cases) is answered only for the filed requests assigned to them; any other request answers as not found. On a protected request, every write needs request.view-sensitive: nobody adds to what they may not read. Audited office_request.requirement_reviewed.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requirementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeRequirementReview"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without request.intake, or an uncleared writer on a protected request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in scope, or no such document on it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A draft, a request that is over, or a document never presented.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A malformed body, or a refusal in words; nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assistance-requests/{id}/requirements/{requirementId}/applicability": {
+      "post": {
+        "operationId": "ruleOfficeRequestRequirement",
+        "summary": "Rule on whether a conditional document applies",
+        "description": "Needs document.record, on a filed request that is not over (409). A person’s ruling with a reason; the condition is stated in words and never evaluated here. Only a conditional document is ruled on (409): a required one is excused by a waiver. A social worker (assigned-cases) is answered only for the filed requests assigned to them; any other request answers as not found. On a protected request, every write needs request.view-sensitive: nobody adds to what they may not read. Audited office_request.requirement_ruled.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requirementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeRequirementRuling"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without document.record, or an uncleared writer on a protected request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in scope, or no such document on it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A draft, a request that is over, or not conditional.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A malformed body, or a refusal in words; nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assistance-requests/{id}/requirements/{requirementId}/documents": {
+      "post": {
+        "operationId": "recordOfficeRequestDocument",
+        "summary": "Record a version of a document",
+        "description": "Needs document.record, on a filed request that is not over (409). Appends a version: the one in force is marked superseded with replaces_because (required then), and kept. The requirement reads submitted again; open requests for this document are answered. The bytes go to MediaStore (never the media table, which any staff account reads) under a name this server gives; the uploader’s file name is not kept. A PDF, JPEG or PNG by its bytes (422), 10 MB at most (413). A social worker (assigned-cases) is answered only for the filed requests assigned to them; any other request answers as not found. On a protected request, every write needs request.view-sensitive: nobody adds to what they may not read. Audited office_request.document_recorded.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requirementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeDocumentUpload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The request, with the new version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without document.record, or an uncleared writer on a protected request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in scope, or no such document on it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A draft, a request that is over, or another version recorded meanwhile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Larger than 10 MB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A malformed body, or a refusal in words; nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assistance-requests/{id}/requirements/{requirementId}/documents/{versionId}/access": {
+      "post": {
+        "operationId": "grantOfficeRequestDocument",
+        "summary": "Ask to open one version’s file",
+        "description": "Needs document.download; on a protected request, request.view-sensitive too (403). Issues a single-use handle for five minutes, with the warning to show before opening. A superseded version opens like any other; a version with no file is 409. A social worker (assigned-cases) is answered only for the filed requests assigned to them; any other request answers as not found. Audited office_request.document_access_granted.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requirementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The grant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeDocumentGrantEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without document.download, or a protected request without request.view-sensitive.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in scope, document or version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "This version holds no file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/document-files": {
+      "post": {
+        "operationId": "openOfficeRequestDocument",
+        "summary": "Exchange a grant for the file",
+        "description": "Needs document.download. The handle travels in the body, never a path a request log keeps. Used once, within five minutes, by the account it was issued to — anything else is 404, and does not use it. The checks that issued it are asked again. Answers the bytes, not an envelope: Cache-Control no-store, nosniff, attachment. Audited office_request.document_opened.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeDocumentFileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The file.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without document.download, or a protected request without request.view-sensitive.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No usable grant: used, expired, another account’s, or its copy unreadable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A malformed body, or a refusal in words; nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assistance-requests/{id}/document-requests": {
+      "get": {
+        "operationId": "listOfficeRequestDocumentRequests",
+        "summary": "What the applicant was asked to bring",
+        "description": "Needs request.view. Whole: open first, then the most recently asked. On a protected request the words are withheld from a reader without request.view-sensitive, and the entries listed. A social worker (assigned-cases) is answered only for the filed requests assigned to them; any other request answers as not found.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeDocumentRequestListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without request.view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in the reader’s scope (a caseload: not assigned to them).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "askForOfficeRequestDocument",
+        "summary": "Record that the applicant was asked for a document",
+        "description": "Needs document.record, on a filed request that is not over (409). Who asked is this server’s to record. needed_by may not be past (422). A social worker (assigned-cases) is answered only for the filed requests assigned to them; any other request answers as not found. On a protected request, every write needs request.view-sensitive: nobody adds to what they may not read. Audited office_request.document_requested.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeDocumentRequestWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Every request for a document on this request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeDocumentRequestListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without document.record, or an uncleared writer on a protected request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in the reader’s scope (a caseload: not assigned to them).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A draft, or a request that is over.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A malformed body, or a refusal in words; nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/assistance-requests/{id}/document-requests/{documentRequestId}/withdraw": {
+      "post": {
+        "operationId": "withdrawOfficeRequestDocumentRequest",
+        "summary": "Withdraw a request for a document",
+        "description": "Needs document.record. Closes an open one as withdrawn with a reason; the row stays, so “no longer needed” is told from “never asked”. Already closed is 409. A social worker (assigned-cases) is answered only for the filed requests assigned to them; any other request answers as not found. On a protected request, every write needs request.view-sensitive: nobody adds to what they may not read. Audited office_request.document_request_withdrawn.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "documentRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeDocumentRequestWithdrawal"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Every request for a document on this request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeDocumentRequestListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without document.record, or an uncleared writer on a protected request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request in scope, or no such request for a document.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A malformed body, or a refusal in words; nothing was written.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8054,7 +9305,7 @@
       "OfficeRequestRequirement": {
         "type": "object",
         "additionalProperties": false,
-        "description": "One document the programme asked for when the draft was last saved, and what the counter recorded. Label, obligation and circumstances are the programme’s. Reviewing a document and recording its file are not served yet.",
+        "description": "One document the programme asked for, and what the office did about it. Label, obligation and circumstances are the programme’s; status, review and ruling are people’s acts, each appended to the requirement’s history.",
         "required": [
           "id",
           "code",
@@ -8064,7 +9315,14 @@
           "applicability",
           "status",
           "submitted_at",
-          "remarks"
+          "remarks",
+          "applicability_decided_by",
+          "applicability_decided_at",
+          "applicability_reason",
+          "reviewed_by",
+          "reviewed_at",
+          "accepts",
+          "document_versions"
         ],
         "properties": {
           "id": {
@@ -8106,8 +9364,13 @@
             "enum": [
               "pending",
               "submitted",
-              "waived"
-            ]
+              "verified",
+              "rejected",
+              "waived",
+              "expired",
+              "needs-replacement"
+            ],
+            "description": "The console’s RequirementStatus. pending, submitted and waived are written at the counter; a new version reads submitted again, whatever the last one was; the rest are a person’s review."
           },
           "submitted_at": {
             "type": [
@@ -8121,7 +9384,52 @@
               "string",
               "null"
             ],
-            "description": "Why it was excused. Withheld (null) on a protected request from a reader without request.view-sensitive."
+            "description": "The words of the act that set the status: required for waived, rejected and needs-replacement. Withheld (null) on a protected request from a reader without request.view-sensitive."
+          },
+          "applicability_decided_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "applicability_decided_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "applicability_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why a person ruled as they did. Withheld like remarks."
+          },
+          "reviewed_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "reviewed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "accepts": {
+            "$ref": "#/components/schemas/OfficeDocumentAccepts"
+          },
+          "document_versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeDocumentVersion"
+            },
+            "description": "Every version presented, oldest first; the last is in force. Appended; nothing removes one."
           }
         }
       },
@@ -8169,7 +9477,7 @@
       "OfficeRequest": {
         "type": "object",
         "additionalProperties": false,
-        "description": "An assistance request, already redacted for the reader. Not sent, because nothing here records them yet: the approved amount, the assignee, the assessment and the decision remarks — the console reads their absence as none recorded.",
+        "description": "An assistance request, already redacted for the reader. Not sent, because nothing here records them yet: the approved amount and the decision remarks — the approver’s, whose record is phase 4’s; the console reads their absence as none recorded.",
         "required": [
           "id",
           "reference_number",
@@ -8189,7 +9497,10 @@
           "created_at",
           "created_by",
           "updated_at",
-          "updated_by"
+          "updated_by",
+          "assigned_to",
+          "assignments",
+          "assessment"
         ],
         "properties": {
           "id": {
@@ -8287,10 +9598,12 @@
                 "referred_by",
                 "status_reasons",
                 "requirement_remarks",
-                "notes"
+                "notes",
+                "assignment_reasons",
+                "assessment"
               ]
             },
-            "description": "What was withheld from this reader, so a screen says so rather than showing a blank."
+            "description": "What was withheld from this reader, so a screen says so rather than showing a blank. A protected request withholds all seven from a reader without request.view-sensitive; assessment (the findings and the recommendation’s reason) is also withheld from a reader without case.view — the casework record of a family."
           },
           "created_at": {
             "type": "string",
@@ -8307,6 +9620,32 @@
           "updated_by": {
             "type": "string",
             "format": "uuid"
+          },
+          "assigned_to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The social worker holding it for assessment, from the last assignment."
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeRequestAssignment"
+            },
+            "description": "Every assignment, oldest first. Appended; never edited."
+          },
+          "assessment": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OfficeRequestAssessment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The latest completed case study. Earlier ones are kept and not sent."
           }
         }
       },
@@ -8708,6 +10047,936 @@
             "$ref": "#/components/schemas/ErrorEnvelope"
           }
         ]
+      },
+      "OfficeRequestAssignment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "assignee_id",
+          "assignee_name",
+          "reason",
+          "actor_id",
+          "actor_name",
+          "occurred_at"
+        ],
+        "properties": {
+          "assignee_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "assignee_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Withheld (null) on a protected request from a reader without request.view-sensitive."
+          },
+          "actor_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "actor_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OfficeAssessmentRecommendation": {
+        "type": "string",
+        "enum": [
+          "recommend-approve",
+          "recommend-deny",
+          "recommend-refer",
+          "insufficient-information"
+        ],
+        "description": "The console’s ASSESSMENT_RECOMMENDATIONS: verbs about what the assessor suggests, never a state a request reaches. Chosen by a person; nothing derives one."
+      },
+      "OfficeRequestAssessment": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "A completed case study. Completing one moves the request nowhere; endorsing is a separate move.",
+        "required": [
+          "template_code",
+          "template_version",
+          "assessed_by",
+          "assessed_by_name",
+          "assessed_at",
+          "findings",
+          "recommended_amount_centavos",
+          "home_visit_conducted",
+          "recommendation",
+          "recommendation_reason"
+        ],
+        "properties": {
+          "template_code": {
+            "type": "string"
+          },
+          "template_version": {
+            "type": "string",
+            "description": "Pinned when the assessment was opened, and read once."
+          },
+          "assessed_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "assessed_by_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "assessed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "findings": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null when withheld: see withheld.assessment."
+          },
+          "recommended_amount_centavos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Integer centavos. What the assessor suggests, never what is granted."
+          },
+          "home_visit_conducted": {
+            "type": "boolean"
+          },
+          "recommendation": {
+            "$ref": "#/components/schemas/OfficeAssessmentRecommendation"
+          },
+          "recommendation_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Required for recommend-deny. Null when withheld."
+          }
+        }
+      },
+      "OfficeDocumentAccepts": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mime_types",
+          "max_bytes"
+        ],
+        "description": "What a file must be: the console refuses anything else before sending, and this server by its bytes.",
+        "properties": {
+          "mime_types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "application/pdf",
+                "image/jpeg",
+                "image/png"
+              ]
+            }
+          },
+          "max_bytes": {
+            "type": "integer",
+            "const": 10485760
+          }
+        }
+      },
+      "OfficeDocumentVersion": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "source",
+          "file",
+          "document_number",
+          "document_number_masked",
+          "issued_on",
+          "expires_on",
+          "received_by",
+          "received_by_name",
+          "received_at",
+          "superseded_at",
+          "superseded_by",
+          "superseded_reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-based and never reused."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "uploaded",
+              "scanned",
+              "encoded",
+              "external-verification"
+            ],
+            "description": "encoded and external-verification hold no file."
+          },
+          "file": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "file_name",
+                  "mime_type",
+                  "byte_size",
+                  "page_count"
+                ],
+                "properties": {
+                  "file_name": {
+                    "type": "string",
+                    "description": "Given by this server: <document code>-v<version>.<ext>. The uploader’s own file name is not kept."
+                  },
+                  "mime_type": {
+                    "type": "string",
+                    "enum": [
+                      "application/pdf",
+                      "image/jpeg",
+                      "image/png"
+                    ]
+                  },
+                  "byte_size": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "page_count": {
+                    "type": "null",
+                    "description": "Nothing here counts pages."
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Never a link: opening the file is its own grant (document.download)."
+          },
+          "document_number": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Masked to its last four characters (••••1234) unless the reader holds document.view-full-number."
+          },
+          "document_number_masked": {
+            "type": "boolean"
+          },
+          "issued_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "expires_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Null means does not expire when issued_on is known, and not recorded when it is not."
+          },
+          "received_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "received_by_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "superseded_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "superseded_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "superseded_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Required when superseded. Withheld like remarks."
+          }
+        }
+      },
+      "OfficeSocialWorker": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "OfficeSocialWorkerListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeSocialWorker"
+            },
+            "description": "Open staff accounts in the social-worker role, by name. Their id and name, nothing more."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeRequestAssignmentWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "assignee_id",
+          "reason"
+        ],
+        "properties": {
+          "assignee_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
+      },
+      "OfficeAssessmentQuestion": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "label",
+          "kind",
+          "required",
+          "choices"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "choice",
+              "integer",
+              "text"
+            ],
+            "description": "integer is recorded as text: the office counts, it does not compute. No weight, total or threshold on any question."
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Empty for anything but choice."
+          }
+        }
+      },
+      "OfficeAssessmentTemplate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "version",
+          "label",
+          "status",
+          "questions"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "placeholder-pending-lgu-approval",
+              "adopted"
+            ],
+            "description": "Every form today is a placeholder the office has not adopted, and says so."
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeAssessmentQuestion"
+            }
+          }
+        }
+      },
+      "OfficeAssessmentTemplateListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeAssessmentTemplate"
+            },
+            "description": "The version of each form a new assessment is opened from."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeOpenAssessment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "template_code",
+          "template_version",
+          "completed",
+          "answers",
+          "opened_by",
+          "opened_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "template_code": {
+            "type": "string"
+          },
+          "template_version": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean",
+            "const": false
+          },
+          "answers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "description": "The latest answer to each question answered; null is asked and left blank."
+          },
+          "opened_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "opened_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OfficeOpenAssessmentEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeOpenAssessment"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeAssessmentOpen": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "template_code"
+        ],
+        "properties": {
+          "template_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          }
+        }
+      },
+      "OfficeAssessmentAnswers": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "answers"
+        ],
+        "properties": {
+          "answers": {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 60,
+            "additionalProperties": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 2000
+            },
+            "description": "A patch: only the codes sent are written. A blank is kept as null."
+          }
+        }
+      },
+      "OfficeAssessmentCompletion": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "findings",
+          "recommended_amount_centavos",
+          "home_visit_conducted",
+          "recommendation",
+          "reason"
+        ],
+        "properties": {
+          "findings": {
+            "type": "string",
+            "maxLength": 5000,
+            "description": "20 characters or more (the console’s FINDINGS_MIN_LENGTH)."
+          },
+          "recommended_amount_centavos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "home_visit_conducted": {
+            "type": "boolean"
+          },
+          "recommendation": {
+            "$ref": "#/components/schemas/OfficeAssessmentRecommendation"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000,
+            "description": "Required for recommend-deny, and only then."
+          }
+        }
+      },
+      "OfficeAssessmentRefusalEnvelope": {
+        "description": "A 422 refusal to complete. Nothing was written. Keys of error.details: unanswered-required (the form’s own labels), findings, reason.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ErrorEnvelope"
+          }
+        ]
+      },
+      "OfficeRequirementReview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "remarks"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "rejected",
+              "waived",
+              "expired",
+              "needs-replacement"
+            ]
+          },
+          "remarks": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500,
+            "description": "Required for waived, rejected and needs-replacement."
+          }
+        }
+      },
+      "OfficeRequirementRuling": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "applicability",
+          "reason"
+        ],
+        "properties": {
+          "applicability": {
+            "type": "string",
+            "enum": [
+              "applies",
+              "does-not-apply"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
+      },
+      "OfficeDocumentUpload": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source"
+        ],
+        "description": "multipart/form-data. A form cannot say null: a field left out is null.",
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "Required for uploaded and scanned; refused for encoded and external-verification. A PDF, JPEG or PNG by its bytes, 10 MB at most."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "uploaded",
+              "scanned",
+              "encoded",
+              "external-verification"
+            ]
+          },
+          "document_number": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "issued_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "expires_on": {
+            "type": "string",
+            "format": "date",
+            "description": "Not before issued_on."
+          },
+          "replaces_because": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "Required when a version is already in force; ignored on the first."
+          }
+        }
+      },
+      "OfficeDocumentGrant": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version_id",
+          "file_name",
+          "mime_type",
+          "handle",
+          "expires_at",
+          "redacted_for_sharing",
+          "warning"
+        ],
+        "properties": {
+          "version_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "mime_type": {
+            "type": "string",
+            "enum": [
+              "application/pdf",
+              "image/jpeg",
+              "image/png"
+            ]
+          },
+          "handle": {
+            "type": "string",
+            "description": "Opaque, single-use, five minutes; exchanged for the bytes by the same account at POST /api/v1/office/document-files. Kept here only as its hash."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "redacted_for_sharing": {
+            "type": "boolean",
+            "const": false,
+            "description": "This server keeps the copy the office received and makes no other."
+          },
+          "warning": {
+            "type": "string",
+            "description": "Composed here, to show before the file opens: what it is, how to handle it (protected sector or RA 10173), that opening it is recorded, and that nothing was redacted."
+          }
+        }
+      },
+      "OfficeDocumentGrantEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeDocumentGrant"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeDocumentFileRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "handle"
+        ],
+        "properties": {
+          "handle": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 200
+          }
+        }
+      },
+      "OfficeDocumentRequestChannel": {
+        "type": "string",
+        "enum": [
+          "in-person",
+          "sms",
+          "phone-call",
+          "barangay-relay"
+        ],
+        "description": "No email: the LGU supplied no relay."
+      },
+      "OfficeDocumentRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "request_id",
+          "requirement_id",
+          "state",
+          "channel",
+          "message",
+          "needed_by",
+          "requested_by",
+          "requested_by_name",
+          "requested_at",
+          "closed_at",
+          "closed_by",
+          "withdrawn_reason",
+          "is_withheld"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requirement_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "answered",
+              "withdrawn"
+            ],
+            "description": "answered when a version is recorded for the document; withdrawn with a reason. Closed once, never removed."
+          },
+          "channel": {
+            "$ref": "#/components/schemas/OfficeDocumentRequestChannel"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What the applicant was told. Null when withheld."
+          },
+          "needed_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "requested_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requested_by_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "requested_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "closed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "closed_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "withdrawn_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null when answered, open, or withheld."
+          },
+          "is_withheld": {
+            "type": "boolean",
+            "description": "A protected request read without request.view-sensitive: the words are withheld, the entry is listed."
+          }
+        }
+      },
+      "OfficeDocumentRequestListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeDocumentRequest"
+            },
+            "description": "Whole: open first, then the most recently asked."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeDocumentRequestWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "requirement_id",
+          "channel",
+          "message",
+          "needed_by"
+        ],
+        "properties": {
+          "requirement_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/OfficeDocumentRequestChannel"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "needed_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Not before today in Manila."
+          }
+        }
+      },
+      "OfficeDocumentRequestWithdrawal": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
       }
     }
   }

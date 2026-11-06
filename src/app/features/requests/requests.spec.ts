@@ -1,12 +1,11 @@
 import { Component, type Type } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, of, type Observable } from 'rxjs';
+import { firstValueFrom, lastValueFrom, of, throwError, type Observable } from 'rxjs';
 
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
-import { unserved } from '@data/http/unserved-repositories';
 import { MockAssistanceRequestRepository } from '@data/mock/mock-assistance-request.repository';
 import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
 import { MockProgramRepository } from '@data/mock/mock-program.repository';
@@ -94,6 +93,7 @@ async function configure(
   role: StaffRole,
   id = 'staff-intake',
   requests: Type<unknown> = MockAssistanceRequestRepository,
+  residents: Type<unknown> = MockResidentRepository,
 ): Promise<void> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -109,7 +109,7 @@ async function configure(
       { provide: ACCESS_CONTEXT, useExisting: SessionState },
       { provide: STAFF_REPOSITORY, useValue: staffRepository(staffUser(role, id)) },
       { provide: ASSISTANCE_REQUEST_REPOSITORY, useClass: requests },
-      { provide: RESIDENT_REPOSITORY, useClass: MockResidentRepository },
+      { provide: RESIDENT_REPOSITORY, useClass: residents },
       { provide: PROGRAM_REPOSITORY, useClass: MockProgramRepository },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
     ],
@@ -421,7 +421,8 @@ describe('the advisory panel', () => {
 
 describe('the assessment workspace', () => {
   it('shows the applicant’s picture beside the request, read fresh', async () => {
-    const element = html(await openAssessment(ENDORSED));
+    // The head reads the registry; a caseload does not (DL-178), and is tested below.
+    const element = html(await openAssessment(ENDORSED, 'mswdo-head'));
     expect(element.querySelector('#applicant-heading')).not.toBeNull();
     expect(element.textContent).toContain('Mercado');
     expect(element.textContent).toContain('TAY-2026-000841');
@@ -458,7 +459,9 @@ describe('the assessment workspace', () => {
 
   it('hides the case-study form from a role that cannot assess', async () => {
     const element = html(await openAssessment(ENDORSED, 'intake-officer'));
-    expect(element.querySelector('#study-heading')).toBeNull();
+    // The completed study is the request's and is read; writing one is not offered.
+    expect(element.textContent).not.toContain('Save the case study');
+    expect(element.textContent).not.toContain('Open the assessment');
     // …but still shows the request and the advisory.
     expect(element.querySelector('#request-heading')).not.toBeNull();
   });
@@ -495,49 +498,258 @@ describe('the assessment workspace', () => {
   });
 });
 
-/* ── Phase 2b not connected: said in place, and nothing else breaks (DL-177) ── */
+/* ── A section that cannot be read degrades in place (DL-177, DL-178) ─────── */
 
-const NOT_YET = 'a request’s assessment or the review of its documents yet';
+const FAILED_TEMPLATES = 'The assessment forms could not be read.';
+const FAILED_ASKS = 'What the applicant was asked to bring could not be read.';
 
-/** The served port with its phase 2b reads unserved, as the http adapter answers them. */
-class PhaseTwoBNotConnected extends MockAssistanceRequestRepository {
+/** The served port with two of its reads failing, as a refused or broken read answers. */
+class TwoReadsFail extends MockAssistanceRequestRepository {
   override listAssessmentTemplates(): Observable<never> {
-    return unserved(NOT_YET);
+    return throwError(() => new Error(FAILED_TEMPLATES));
   }
 
   override listDocumentRequests(): Observable<never> {
-    return unserved(NOT_YET);
+    return throwError(() => new Error(FAILED_ASKS));
   }
 }
 
-describe('the request record where the assessment is not connected yet', () => {
-  it('says so in place of the case study, and offers no form whose save goes nowhere', async () => {
-    const element = html(await openAssessment(ENDORSED, 'social-worker', PhaseTwoBNotConnected));
+/** The registry refusing a read, as the server refuses it to some accounts. */
+class RegistryRefuses extends MockResidentRepository {
+  override getProfile(): Observable<never> {
+    return throwError(() => new Error('The resident registry could not be read.'));
+  }
+}
+
+const IN_ASSESSMENT = 'req-0006';
+
+describe('the request record where a read fails', () => {
+  it('says so in place of the form, and offers no form whose save goes nowhere', async () => {
+    const element = html(await openAssessment(IN_ASSESSMENT, 'social-worker', TwoReadsFail));
     const study = element.querySelector('#study-heading')?.parentElement;
-    expect(study?.querySelector('[role="note"]')?.textContent).toContain(NOT_YET);
-    expect(study?.querySelector('textarea')).toBeNull();
+    expect(study?.querySelector('.assessment__notconnected')?.textContent).toContain(
+      FAILED_TEMPLATES,
+    );
     expect(element.textContent).not.toContain('Save the case study');
   });
 
-  it('says so once in the documents, and offers none of the acts on them', async () => {
-    const element = html(await openAssessment(ENDORSED, 'social-worker', PhaseTwoBNotConnected));
+  it('says so where the asks would be, and keeps the rest of the document review', async () => {
+    const element = html(await openAssessment(IN_ASSESSMENT, 'social-worker', TwoReadsFail));
     const documents = element.querySelector('#documents-heading')?.parentElement;
-    expect(documents?.querySelector('.assessment__notconnected')?.textContent).toContain(NOT_YET);
-    // The checklist itself is the request's, and still read.
-    expect(documents?.querySelectorAll('.documents__item').length).toBeGreaterThan(0);
-    expect(documents?.querySelector('app-document-panel')).toBeNull();
-    const buttons = [...(documents?.querySelectorAll('button') ?? [])].map((button) =>
-      button.textContent?.trim(),
+    expect(documents?.querySelector('.assessment__notconnected')?.textContent).toContain(
+      FAILED_ASKS,
     );
-    expect(buttons).not.toContain('Verify');
+    expect(documents?.querySelector('app-document-panel')).not.toBeNull();
+    expect(documents?.textContent).not.toContain('Ask the applicant for this');
   });
 
-  it('still shows the request, its history, the check and the move', async () => {
-    const element = html(await openAssessment(ENDORSED, 'social-worker', PhaseTwoBNotConnected));
+  it('says the applicant’s record could not be read, and the request still stands', async () => {
+    await configure('mswdo-head', 'staff-head', MockAssistanceRequestRepository, RegistryRefuses);
+    await TestBed.inject(Router).navigateByUrl(`/assistance-requests/${ENDORSED}`);
+    const fixture = TestBed.createComponent(AssessmentPage);
+    fixture.componentRef.setInput('id', ENDORSED);
+    await fixture.whenStable();
+    const element = html(fixture);
+    const applicant = element.querySelector('#applicant-heading')?.parentElement;
+    expect(applicant?.textContent).toContain('could not be read');
     expect(element.textContent).toContain('TAY-2026-000841');
-    expect(element.querySelector('#history-heading')).not.toBeNull();
-    expect(element.querySelector('app-advisory-panel')).not.toBeNull();
     expect(element.querySelector('.transition')).not.toBeNull();
+  });
+});
+
+/* ── Phase 2b, served (DL-178) ──────────────────────────────────────────────── */
+
+const buttonNamed = (root: Element | null | undefined, name: string) =>
+  [...(root?.querySelectorAll('button') ?? [])].find(
+    (node) => (node.textContent ?? '').trim() === name,
+  );
+
+function type(field: HTMLInputElement | HTMLTextAreaElement | null | undefined, text: string): void {
+  if (field) {
+    field.value = text;
+    field.dispatchEvent(new Event('input'));
+  }
+}
+
+function choose(select: HTMLSelectElement | null | undefined, value: string): void {
+  if (select) {
+    select.value = value;
+    select.dispatchEvent(new Event('change'));
+  }
+}
+
+describe('a caseload on the request record', () => {
+  it('does not read the registry or the duplicate check, and says why', async () => {
+    const element = html(await openAssessment(ENDORSED));
+    const applicant = element.querySelector('#applicant-heading')?.parentElement;
+    expect(applicant?.textContent).toContain('not read by an account that works a caseload');
+    expect(applicant?.querySelector('app-resident-summary-card')).toBeNull();
+    expect(element.querySelector('app-advisory-panel')).toBeNull();
+  });
+
+  it('is not offered assignment, which reads the office’s whole list', async () => {
+    const element = html(await openAssessment(ENDORSED));
+    const assignment = element.querySelector('#assignment-heading')?.parentElement;
+    expect(assignment?.textContent).toContain('Assigned for assessment to');
+    expect(assignment?.querySelector('select')).toBeNull();
+  });
+
+  it('answers a request not assigned to it as not available', async () => {
+    // req-0003 is assigned to another social worker.
+    const element = html(await openAssessment('req-0003'));
+    expect(element.textContent).toContain('That request is not available');
+  });
+});
+
+describe('assigning a request for assessment', () => {
+  async function asHead(id = 'req-0002'): Promise<ComponentFixture<AssessmentPage>> {
+    await configure('mswdo-head', 'staff-head');
+    await TestBed.inject(Router).navigateByUrl(`/assistance-requests/${id}`);
+    const fixture = TestBed.createComponent(AssessmentPage);
+    fixture.componentRef.setInput('id', id);
+    await fixture.whenStable();
+    return fixture;
+  }
+
+  it('offers the office’s social workers to the head, and refuses an assignment without a reason', async () => {
+    const fixture = await asHead();
+    const assignment = html(fixture).querySelector('#assignment-heading')?.parentElement;
+    const options = [...(assignment?.querySelectorAll('option') ?? [])].map((node) =>
+      node.textContent?.trim(),
+    );
+    expect(options).toContain('Grace Ocampo');
+
+    choose(assignment?.querySelector('select'), 'staff-sw-1');
+    buttonNamed(assignment, 'Assign for assessment')?.click();
+    await fixture.whenStable();
+    expect(assignment?.querySelector('[role="alert"]')?.textContent).toContain('Say why');
+    expect(assignment?.querySelectorAll('.history__item').length).toBe(0);
+  });
+
+  it('records the assignment with who, when and why', async () => {
+    const fixture = await asHead();
+    const assignment = () => html(fixture).querySelector('#assignment-heading')?.parentElement;
+    choose(assignment()?.querySelector('select'), 'staff-sw-1');
+    type(assignment()?.querySelector('input'), 'Home visit before endorsement.');
+    buttonNamed(assignment(), 'Assign for assessment')?.click();
+    await fixture.whenStable();
+    expect(assignment()?.textContent).toContain('Assigned to Grace Ocampo');
+    expect(assignment()?.textContent).toContain('Home visit before endorsement.');
+  });
+});
+
+describe('the notes on a request', () => {
+  it('lists them, a withheld one said as withheld, and adds one with its tier', async () => {
+    const fixture = await openAssessment(ENDORSED, 'intake-officer');
+    const notes = () => html(fixture).querySelector('#notes-heading')?.parentElement;
+    // The intake officer is not cleared for the protected tier, so it is not offered.
+    const tiers = [...(notes()?.querySelectorAll('select option') ?? [])].map((node) =>
+      node.textContent?.trim(),
+    );
+    expect(tiers).toEqual(['Routine']);
+
+    buttonNamed(notes(), 'Add the note')?.click();
+    await fixture.whenStable();
+    expect(notes()?.querySelector('[role="alert"]')?.textContent).toContain('Nothing was sent');
+
+    type(notes()?.querySelector('textarea'), 'Applicant called to confirm Monday.');
+    buttonNamed(notes(), 'Add the note')?.click();
+    await fixture.whenStable();
+    expect(notes()?.textContent).toContain('Applicant called to confirm Monday.');
+  });
+
+  it('offers the protected tier only to an account cleared for it', async () => {
+    const element = html(await openAssessment(ENDORSED));
+    const notes = element.querySelector('#notes-heading')?.parentElement;
+    const tiers = [...(notes?.querySelectorAll('select option') ?? [])].map((node) =>
+      node.textContent?.trim(),
+    );
+    expect(tiers).toEqual(['Routine', 'Protected — case-note clearance only']);
+  });
+});
+
+describe('the case study, opened, answered and completed', () => {
+  it('opens a form, saves answers and completes the study — which moves the request nowhere', async () => {
+    const fixture = await openAssessment(IN_ASSESSMENT);
+    const study = () => html(fixture).querySelector('#study-heading')?.parentElement;
+
+    choose(study()?.querySelector('select'), 'aics-general');
+    await fixture.whenStable();
+    buttonNamed(study(), 'Open the assessment')?.click();
+    await fixture.whenStable();
+    expect(study()?.textContent).toContain('version 2026.08.1');
+
+    const repository = TestBed.inject(ASSISTANCE_REQUEST_REPOSITORY);
+    const templates = await firstValueFrom(repository.listAssessmentTemplates());
+    const form = templates.find((template) => template.code === 'aics-general');
+    // Answered through the controls, as an assessor would.
+    for (const question of form?.questions ?? []) {
+      const control = html(fixture).querySelector(`#answer-${question.code}`);
+      if (control instanceof HTMLSelectElement) {
+        choose(control, question.choices[0] ?? '');
+      } else if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) {
+        type(control, question.kind === 'integer' ? '3' : 'Recorded at the visit.');
+      }
+    }
+    await fixture.whenStable();
+    buttonNamed(study(), 'Save the answers')?.click();
+    await fixture.whenStable();
+
+    type(
+      study()?.querySelector<HTMLTextAreaElement>('textarea[placeholder^="e.g. Home visit"]'),
+      'Household of five in one rented room; sole earner out of work.',
+    );
+    await fixture.whenStable();
+    buttonNamed(study(), 'Save the case study')?.click();
+    await fixture.whenStable();
+
+    expect(study()?.textContent).toContain('The completed case study');
+    expect(study()?.textContent).toContain('Household of five in one rented room');
+    const request = await firstValueFrom(repository.getById(asId(IN_ASSESSMENT)));
+    expect(request?.status).toBe('assessment');
+  });
+
+  it('says a form is opened only in assessment, on a request that is not', async () => {
+    const element = html(await openAssessment(ENDORSED));
+    const study = element.querySelector('#study-heading')?.parentElement;
+    expect(study?.textContent).toContain('while the request is in assessment');
+    expect(study?.textContent).toContain('The completed case study');
+    expect(buttonNamed(study, 'Open the assessment')).toBeUndefined();
+  });
+
+  it('withholds the study’s words from an account with no case access', async () => {
+    const element = html(await openAssessment(ENDORSED, 'release-officer'));
+    const study = element.querySelector('#study-heading')?.parentElement;
+    expect(study?.textContent).toContain('Withheld — case records are not shown to your account');
+    expect(study?.textContent).not.toContain('Widowed senior citizen');
+  });
+});
+
+describe('reviewing documents', () => {
+  it('asks for remarks before rejecting, and sends nothing without them', async () => {
+    const fixture = await openAssessment('req-0002', 'intake-officer');
+    const documents = html(fixture).querySelector('#documents-heading')?.parentElement;
+    const before = documents?.querySelector('app-status-badge')?.textContent;
+    buttonNamed(documents, 'Reject')?.click();
+    await fixture.whenStable();
+    expect(documents?.querySelector('.field__error')?.textContent).toContain(
+      'Say why the document was not accepted',
+    );
+    expect(documents?.querySelector('app-status-badge')?.textContent).toBe(before);
+  });
+
+  it('offers a fresh-copy verdict, held apart from rejecting', async () => {
+    const element = html(await openAssessment('req-0002', 'intake-officer'));
+    const documents = element.querySelector('#documents-heading')?.parentElement;
+    expect(buttonNamed(documents, 'Needs a fresh copy')).toBeDefined();
+  });
+
+  it('offers nothing on a protected request to an account its words are withheld from, and says why', async () => {
+    const element = html(await openAssessment('req-0006', 'intake-officer'));
+    const documents = element.querySelector('#documents-heading')?.parentElement;
+    expect(documents?.textContent).toContain('cannot add to it');
+    expect(buttonNamed(documents, 'Verify')).toBeUndefined();
+    expect(buttonNamed(documents, 'Record this document')).toBeUndefined();
   });
 });
 
@@ -605,6 +817,54 @@ describe('the document checklist', () => {
     const modal = html(fixture).querySelector('.access');
     expect(modal?.textContent).toContain('valid-id-mercado.pdf');
     expect(modal?.textContent).toContain('personal information');
+  });
+
+  it('fetches the bytes only once the warning is confirmed, and offers them in this tab', async () => {
+    const created = vi.fn(() => 'blob:office/1');
+    Object.assign(URL, { createObjectURL: created, revokeObjectURL: vi.fn() });
+    await configure('social-worker', 'staff-sw-1');
+    const repository = TestBed.inject(ASSISTANCE_REQUEST_REPOSITORY);
+    const before = await firstValueFrom(repository.getById(asId(IN_ASSESSMENT)));
+    const requirement = before?.requirements[0];
+    await lastValueFrom(
+      repository.recordDocument(asId(IN_ASSESSMENT), asId(requirement?.id ?? ''), {
+        file: new File(['%PDF-1.4'], 'dela-cruz-scan.pdf', { type: 'application/pdf' }),
+        source: 'uploaded',
+        documentNumber: null,
+        issuedOn: null,
+        expiresOn: null,
+        replacesBecause: null,
+      }),
+    );
+    await TestBed.inject(Router).navigateByUrl(`/assistance-requests/${IN_ASSESSMENT}`);
+    const fixture = TestBed.createComponent(AssessmentPage);
+    fixture.componentRef.setInput('id', IN_ASSESSMENT);
+    await fixture.whenStable();
+
+    buttonNamed(html(fixture), 'Open document')?.click();
+    await fixture.whenStable();
+    const modal = () => html(fixture).querySelector('.access');
+    // The name is the server's for it, never the uploader's.
+    expect(modal()?.textContent).toContain('solo-parent-id-v1.pdf');
+    expect(modal()?.textContent).not.toContain('dela-cruz');
+    expect(created).not.toHaveBeenCalled();
+
+    buttonNamed(html(fixture), 'Open it')?.click();
+    await fixture.whenStable();
+    expect(created).toHaveBeenCalledTimes(1);
+    const link = modal()?.querySelector('a');
+    expect(link?.getAttribute('download')).toBe('solo-parent-id-v1.pdf');
+    expect(link?.getAttribute('href')).toBe('blob:office/1');
+  });
+
+  it('says a seeded file holds no bytes rather than open a stand-in', async () => {
+    Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:office/2'), revokeObjectURL: vi.fn() });
+    const fixture = await openAssessment(ENDORSED);
+    buttonNamed(html(fixture), 'Open document')?.click();
+    await fixture.whenStable();
+    buttonNamed(html(fixture), 'Open it')?.click();
+    await fixture.whenStable();
+    expect(html(fixture).querySelector('.access')).toBeNull();
   });
 
   it('marks an expired document expired rather than rejected', async () => {

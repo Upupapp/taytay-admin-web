@@ -1,3 +1,5 @@
+import type { CaseNoteSensitivity, RequirementStatus } from '@domain/index';
+
 /** Every user-facing string for the assistance-request screens (`DL-23`). */
 export const REQUESTS_COPY = {
   list: {
@@ -7,6 +9,11 @@ export const REQUESTS_COPY = {
     startIntake: 'Start an intake',
     // Not "your": the office record lists every unfinished intake the reader's scope covers,
     // whoever began it, so a colleague's half-done intake can be finished rather than retyped.
+    assignedTo: 'Assigned to',
+    anyone: 'Anyone',
+    workersFailed: 'The list of social workers could not be read, so the list cannot be narrowed by one.',
+    caseloadNote:
+      'Your caseload: the filed requests assigned to you for assessment. Requests not assigned to you, and unfinished intakes, are worked by others.',
     draftsHeading: 'Unfinished intakes',
     draftsNote:
       'A draft is not a request. Nothing has been filed, nobody has been given a control number, and the applicant is not waiting on an answer yet.',
@@ -140,7 +147,27 @@ export const REQUESTS_COPY = {
     withheld: 'Withheld — protected record',
     remarksWithheld: 'Remarks withheld — protected record',
     protectedNote:
-      'The person this request is for is under a protected sector, so its words — why they came, who referred them, the reasons for each move and any remarks — are withheld from your account. They are recorded; a colleague cleared for protected records can read them.',
+      'The person this request is for is under a protected sector, so its words — why they came, who referred them, the reasons for each move and assignment, any remarks, the case study and the notes — are withheld from your account. They are recorded; a colleague cleared for protected records can read them.',
+    unknownProgramme: 'A programme this account cannot read',
+    registryNotRead:
+      'The resident registry is not read by an account that works a caseload, so the applicant’s record is not shown here. The request names the person; ask an intake officer for anything more.',
+    profileFailed: 'The applicant’s record could not be read, so it is not shown here.',
+
+    assignmentHeading: 'Assignment',
+    assignedTo: 'Assigned for assessment to',
+    assignedUnnamed: 'a staff account with no name on record',
+    notAssigned: 'Not assigned to a social worker yet.',
+    assignedLine: (name: string): string => `Assigned to ${name}`,
+    assignTo: 'Assign to',
+    assignReason: 'Why',
+    assignReasonHint:
+      'Kept with the assignment, against your name. The history says who handed this over and why.',
+    assign: 'Assign for assessment',
+    assigned: 'The request has been assigned.',
+    assignChooseWorker: 'Choose the social worker this is being assigned to. Nothing was sent.',
+    assignNotWorkable:
+      'Only a filed request that is not over can be assigned. A draft is the counter’s, and a request that has ended is kept as it ended.',
+    workersFailed: 'The list of social workers could not be read, so nobody is offered.',
     advisoryNotRead:
       'The duplicate and previous-assistance check reads this person’s whole assistance history, so it is read by the staff who file requests, not by every account that can open one.',
     advisoryFailed:
@@ -150,11 +177,32 @@ export const REQUESTS_COPY = {
     noReasonGiven: 'No reason was recorded with this move.',
 
     documentsHeading: 'Documents',
-    documentsNote: 'Verify what was presented, or waive it with a reason.',
+    documentsNote:
+      'Check what was presented, or excuse it. Rejecting, asking for a fresh copy and excusing each need remarks — the applicant has to be told why.',
+    documentsNotWorkable:
+      'This request is a draft or has ended, so its documents are shown as they stand and nothing more is recorded against them.',
     verify: 'Verify',
     reject: 'Reject',
     waive: 'Waive',
+    needsReplacement: 'Needs a fresh copy',
     remarks: 'Remarks',
+    remarksHint: 'Required to reject, to ask for a fresh copy, or to waive.',
+    onlyWaive:
+      'Nothing has been presented for this yet, so it can only be excused. Record the document first to check it.',
+    reviewed: 'The review has been recorded.',
+    ruled: 'The ruling has been recorded.',
+    /** Where the applicant must be told why, the words the server asks for, said before sending. */
+    reviewNeedsWords: {
+      pending: null,
+      submitted: null,
+      verified: null,
+      expired: null,
+      waived:
+        'Say why the document is being excused. An excuse nobody gave a reason for reads as an oversight.',
+      rejected:
+        'Say why the document was not accepted. The applicant has to be told what to bring instead.',
+      'needs-replacement': 'Say why a fresh copy is needed — damaged, illegible, or out of date.',
+    } as Readonly<Record<RequirementStatus, string | null>>,
 
     studyHeading: 'Case study',
     studyNote:
@@ -164,10 +212,23 @@ export const REQUESTS_COPY = {
       'e.g. Home visit on 12 August. Household of five in a rented room; sole earner out of work since June; two children in public school.',
     homeVisit: 'A home visit was conducted',
     recommendedAmount: 'Recommended amount (₱)',
-    notRecordedHeading: 'These two are not saved to the office record',
-    notRecorded:
-      'The system of record holds one amount anywhere \u2014 money actually released \u2014 and no field for a recommended amount or for whether a home visit was made. Both stay on this screen while the case is open and neither reaches the record an approver or an auditor reads. Write anything an approver must see into the findings.',
     recommendation: 'What you recommend',
+    completedHeading: 'The completed case study',
+    studyForm: 'Form',
+    studyBy: 'Assessed by',
+    homeVisitFact: 'Home visit',
+    yes: 'Made',
+    no: 'Not made',
+    noRecommendation: 'None recorded',
+    studyWithheld: 'Withheld — case records are not shown to your account',
+    noStudyYet: 'No case study has been completed on this request.',
+    notInAssessment:
+      'An assessment is opened, answered and completed while the request is in assessment. Move it there first.',
+    versionLabel: (version: string): string => `version ${version}`,
+    alreadyOpen: (label: string): string =>
+      `An assessment was already open on this request, from “${label}”. One is open at a time, so it is shown here instead.`,
+    completeMovesNothing:
+      'Saving the case study keeps it on the request and moves it nowhere. Endorsing it is a separate move, below.',
     formHeading: 'The assessment form',
     formIntro:
       'An assessment is opened from a published form and pins that form\u2019s version, so the answers stay attached to the questions that were actually asked.',
@@ -187,6 +248,23 @@ export const REQUESTS_COPY = {
       'A recommendation advises the decision; it does not make it. Approving, refusing and referring are each a separate act by somebody holding that authority.',
     saveStudy: 'Save the case study',
     studySaved: 'The case study has been saved.',
+
+    notesHeading: 'Notes',
+    noNotes: 'No note has been written on this request.',
+    notesFailed: 'The notes could not be read, so none is shown — which is not the same as there being none.',
+    notesLoading: 'Reading the notes…',
+    noteWithheld: 'Withheld — this note is not shown to your account.',
+    noteBody: 'Add a note',
+    noteSensitivity: 'Who may read it',
+    noteSensitivityLabels: {
+      routine: 'Routine',
+      protected: 'Protected — case-note clearance only',
+    } as Readonly<Record<CaseNoteSensitivity, string>>,
+    noteSensitivityHint: 'A note is kept for good: it is never edited or removed.',
+    addNote: 'Add the note',
+    noteAdded: 'The note has been added.',
+    noteEmpty: 'Write the note before adding it. Nothing was sent.',
+    noteTooLong: (max: number): string => `A note is at most ${max} characters. Nothing was sent.`,
 
     readinessHeading: 'Before endorsing',
     readinessNote:

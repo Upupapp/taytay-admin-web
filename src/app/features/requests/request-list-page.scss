@@ -146,3 +146,16 @@
   padding: 0 var(--space-base);
   font-size: 13px;
 }
+
+/* Said where the narrowing would be, never as an empty choice that reads as "nobody". */
+.filters__problem {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
+.requests__caseload {
+  margin: 0;
+  padding: var(--space-snug) var(--space-base);
+  font-size: 13px;
+}

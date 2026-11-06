@@ -123,6 +123,53 @@ export function blankRequirement(): ProgramRequirement {
   return { code: '', label: '', obligation: 'required', appliesWhen: null, notes: null };
 }
 
+/**
+ * The form a recorded programme fills (`DL-178`): the inverse of `readProgramForm`, so editing
+ * starts from what the record says and a save sends the whole record back. Amounts are written as
+ * the pesos and centavos they are, read from integer centavos without a float.
+ */
+export function programFormFrom(draft: ProgramDraft): ProgramFormValue {
+  const window = draft.reviewWindow;
+  return {
+    name: draft.name,
+    category: draft.category,
+    status: draft.status,
+    description: draft.description,
+    legalBasis: draft.legalBasis ?? '',
+    fundingSource: draft.fundingSource,
+    maximumGrant: pesoText(draft.maximumGrant),
+    minAge: wholeText(draft.eligibility.minAge),
+    maxAge: wholeText(draft.eligibility.maxAge),
+    requiredSectors: draft.eligibility.requiredSectors,
+    incomeCeiling: pesoText(draft.eligibility.maxMonthlyHouseholdIncome),
+    residencyMonths: wholeText(draft.eligibility.residencyMonthsRequired),
+    eligibilityNotes: draft.eligibility.notes ?? '',
+    responsibility: draft.responsibility,
+    guidance: draft.guidance,
+    requirementTemplateCode: draft.requirementTemplateCode,
+    requirements: draft.requirements,
+    ownWindow: window !== null,
+    lookbackMonths: window === null ? '' : String(window.lookbackMonths),
+    sameProgrammeDays: window === null ? '' : String(window.sameProgrammeDays),
+    windowProvenance: window?.provenance ?? 'convention-pending-confirmation',
+    windowBasis: window?.basis ?? '',
+    windowConfirmedOn: window?.confirmedOn ?? '',
+  };
+}
+
+function pesoText(amount: Money | null): string {
+  if (amount === null) {
+    return '';
+  }
+  const fraction = amount.centavos % 100;
+  const whole = (amount.centavos - fraction) / 100;
+  return fraction === 0 ? String(whole) : `${whole}.${String(fraction).padStart(2, '0')}`;
+}
+
+function wholeText(value: number | null): string {
+  return value === null ? '' : String(value);
+}
+
 /** Composes the draft the form describes, and says what in it could not be read. */
 export function readProgramForm(form: ProgramFormValue): ProgramFormReading {
   const problems = new Set<ProgramFieldProblem>();

@@ -1,3 +1,4 @@
+import { DOCUMENT_UPLOAD_POLICY } from '../requirements/upload-policy';
 import { canTransition, nextStatuses } from '../shared/status';
 import {
   ASSISTANCE_STATUS_CATALOG,
@@ -84,6 +85,8 @@ describe('outstandingRequirements', () => {
       applicability: 'undecided',
       appliesWhen: null,
       applicabilityDecidedBy: null,
+      applicabilityDecidedAt: null,
+      accepts: DOCUMENT_UPLOAD_POLICY,
       applicabilityReason: null,
       submittedAt: null,
       reviewedBy: null,

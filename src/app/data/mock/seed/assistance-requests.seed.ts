@@ -1,4 +1,5 @@
 import {
+  DOCUMENT_UPLOAD_POLICY,
   asId,
   asIsoDate,
   pesos,
@@ -6,6 +7,7 @@ import {
   type AssistanceRequestId,
   type BarangayId,
   type DocumentVersion,
+  type RequestAssignment,
   type DocumentVersionId,
   type RequestNote,
   type RequestNoteId,
@@ -21,6 +23,26 @@ import { daysBeforeAnchor, stamp } from './seed-utils';
 
 const staff = (slug: string): StaffUserId => asId<StaffUserId>(`staff-${slug}`);
 const brgy = (slug: string): BarangayId => asId<BarangayId>(`brgy-${slug}`);
+
+/**
+ * The one assignment a seeded request carries, made by the head. `assignedTo` follows the latest
+ * assignment on the server and nothing else writes it (`DL-178`), so a seeded assignee without one
+ * would be a request nobody could say was handed over.
+ */
+function assigned(slug: string): RequestAssignment {
+  const names: Readonly<Record<string, string>> = {
+    'sw-1': 'Grace Ocampo',
+    'sw-2': 'Jomar Villanueva',
+  };
+  return {
+    assigneeId: staff(slug),
+    assigneeName: names[slug] ?? 'A staff member',
+    reason: 'Assigned for the case study and home visit.',
+    actorId: staff('head'),
+    actorName: 'Teodoro Lim',
+    occurredAt: daysBeforeAnchor(14),
+  };
+}
 
 /* ── Documents ────────────────────────────────────────────────────────────── */
 
@@ -51,6 +73,9 @@ function scanned(
         issuedOn: null,
         expiresOn: null,
         receivedBy: asId<StaffUserId>('staff-intake'),
+        receivedByName: 'Liezl Padilla',
+        documentNumberMasked: false,
+        supersededBy: null,
         receivedAt: daysBeforeAnchor(received),
         supersededAt: null,
         supersededReason: null,
@@ -75,6 +100,7 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     reasonForRequest:
       'Maintenance medicines and follow-up laboratory work after a hypertension confinement.',
     assignedTo: staff('sw-1'),
+    assignments: [assigned('sw-1')],
     requirements: [
       {
         id: asId<RequirementId>('rq-0001'),
@@ -85,6 +111,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: daysBeforeAnchor(12),
         reviewedBy: staff('intake'),
@@ -105,6 +133,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: daysBeforeAnchor(12),
         reviewedBy: staff('intake'),
@@ -127,6 +157,9 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
               issuedOn: asIsoDate('2026-01-14'),
               expiresOn: asIsoDate('2026-07-14'),
               receivedBy: asId<StaffUserId>('staff-intake'),
+              receivedByName: 'Liezl Padilla',
+              documentNumberMasked: false,
+              supersededBy: asId<StaffUserId>('staff-intake'),
               receivedAt: daysBeforeAnchor(30),
               supersededAt: daysBeforeAnchor(12),
               supersededReason:
@@ -143,6 +176,9 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
               // exercised by a record that reached it honestly.
               expiresOn: asIsoDate('2026-07-28'),
               receivedBy: asId<StaffUserId>('staff-intake'),
+              receivedByName: 'Liezl Padilla',
+              documentNumberMasked: false,
+              supersededBy: null,
               receivedAt: daysBeforeAnchor(12),
               supersededAt: null,
               supersededReason: null,
@@ -159,6 +195,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: daysBeforeAnchor(11),
         reviewedBy: staff('sw-1'),
@@ -175,6 +213,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: null,
         reviewedBy: staff('sw-1'),
@@ -185,6 +225,9 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     ],
     assessment: {
       assessedBy: staff('sw-1'),
+      assessedByName: 'Grace Ocampo',
+      templateCode: 'aics-general',
+      templateVersion: '2026.08.1',
       assessedAt: daysBeforeAnchor(8),
       findings:
         'Widowed senior citizen living with an out-of-school grandson. No regular income beyond the social pension. Assistance is warranted.',
@@ -255,6 +298,7 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     approvedAmount: null,
     reasonForRequest: 'Physical therapy sessions following a workplace injury.',
     assignedTo: null,
+    assignments: [],
     requirements: [
       {
         id: asId<RequirementId>('rq-0011'),
@@ -265,6 +309,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: daysBeforeAnchor(3),
         reviewedBy: staff('intake'),
@@ -281,6 +327,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: daysBeforeAnchor(3),
         reviewedBy: null,
@@ -297,6 +345,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: null,
         reviewedBy: null,
@@ -352,6 +402,7 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     approvedAmount: pesos(3000),
     reasonForRequest: 'School-opening expenses for two learners in elementary school.',
     assignedTo: staff('sw-2'),
+    assignments: [assigned('sw-2')],
     requirements: [
       {
         id: asId<RequirementId>('rq-0021'),
@@ -362,6 +413,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: daysBeforeAnchor(26),
         reviewedBy: staff('intake'),
@@ -378,6 +431,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: daysBeforeAnchor(26),
         reviewedBy: staff('intake'),
@@ -388,6 +443,9 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     ],
     assessment: {
       assessedBy: staff('sw-2'),
+      assessedByName: 'Jomar Villanueva',
+      templateCode: 'aics-general',
+      templateVersion: '2026.08.1',
       assessedAt: daysBeforeAnchor(22),
       findings: 'Registered solo parent and 4Ps household member. Eligible for the full grant.',
       recommendedAmount: pesos(3000),
@@ -465,6 +523,7 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     approvedAmount: null,
     reasonForRequest: 'Capital for a small sari-sari store after being laid off.',
     assignedTo: staff('sw-2'),
+    assignments: [assigned('sw-2')],
     requirements: [
       {
         id: asId<RequirementId>('rq-0031'),
@@ -475,6 +534,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: daysBeforeAnchor(35),
         reviewedBy: staff('sw-2'),
@@ -491,6 +552,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: daysBeforeAnchor(35),
         reviewedBy: staff('intake'),
@@ -546,6 +609,7 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     approvedAmount: pesos(8000),
     reasonForRequest: 'Funeral costs for a deceased spouse.',
     assignedTo: staff('sw-1'),
+    assignments: [assigned('sw-1')],
     requirements: [
       {
         id: asId<RequirementId>('rq-0041'),
@@ -556,6 +620,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: daysBeforeAnchor(58),
         reviewedBy: staff('intake'),
@@ -572,6 +638,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: daysBeforeAnchor(58),
         reviewedBy: staff('intake'),
@@ -588,6 +656,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: daysBeforeAnchor(57),
         reviewedBy: staff('sw-1'),
@@ -598,6 +668,9 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     ],
     assessment: {
       assessedBy: staff('sw-1'),
+      assessedByName: 'Grace Ocampo',
+      templateCode: 'aics-general',
+      templateVersion: '2026.08.1',
       assessedAt: daysBeforeAnchor(55),
       findings: 'Bedridden senior citizen with no other source of support. Full grant recommended.',
       recommendedAmount: pesos(8000),
@@ -691,6 +764,7 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     approvedAmount: null,
     reasonForRequest: 'Monthly solo parent support and referral for protective services.',
     assignedTo: staff('sw-1'),
+    assignments: [assigned('sw-1')],
     requirements: [
       {
         id: asId<RequirementId>('rq-0051'),
@@ -701,6 +775,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: daysBeforeAnchor(6),
         reviewedBy: staff('intake'),
@@ -717,6 +793,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: daysBeforeAnchor(5),
         reviewedBy: null,
@@ -772,6 +850,7 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
     approvedAmount: null,
     reasonForRequest: 'Household displaced by flooding along the riverside.',
     assignedTo: null,
+    assignments: [],
     requirements: [
       {
         id: asId<RequirementId>('rq-0061'),
@@ -782,6 +861,8 @@ export const MOCK_ASSISTANCE_REQUESTS: readonly AssistanceRequest[] = [
         applicability: 'undecided',
         appliesWhen: null,
         applicabilityDecidedBy: null,
+        applicabilityDecidedAt: null,
+        accepts: DOCUMENT_UPLOAD_POLICY,
         applicabilityReason: null,
         submittedAt: daysBeforeAnchor(1),
         reviewedBy: null,

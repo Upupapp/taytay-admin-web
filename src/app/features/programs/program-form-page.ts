@@ -1,6 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
+import { of, switchMap } from 'rxjs';
 
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
@@ -17,12 +26,16 @@ import {
   PROGRAM_CATEGORY_LABELS,
   PROGRAM_REPOSITORY,
   PROGRAM_STATUS_CATALOG,
+  asId,
   programProblems,
+  toProgramDraft,
   VULNERABILITY_SECTOR_LABELS,
   VULNERABILITY_SECTORS,
   WINDOW_PROVENANCES,
   type AdministeringAgency,
+  type AssistanceProgram,
   type EligibilityGuideline,
+  type ProgramId,
   type LguRole,
   type ProgramCategory,
   type ProgramStatus,
@@ -33,12 +46,13 @@ import {
 } from '@domain/index';
 import { PROGRAM_COPY } from '@shared/programs/program.copy';
 import { ResponsibilityNotice } from '@shared/programs/responsibility-notice';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { LOADING, ready, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import {
   blankGuideline,
   emptyProgramForm,
+  programFormFrom,
   readDateInput,
   readProgramForm,
   refusalSentences,
@@ -84,6 +98,11 @@ const STATUSES = Object.keys(PROGRAM_STATUS_CATALOG) as readonly ProgramStatus[]
  * for good, and a programme is never deleted. The server's own refusal arrives in its own words.
  *
  * Like every catalog screen, it never branches on a particular programme (`DL-66`).
+ *
+ * **The same form edits a recorded programme** (`/programs/:id/edit`, owner decision, `DL-178`):
+ * filled from the record, sent whole with a reason through the same `save(draft, id, reason)` — a
+ * `PATCH` that takes every field — so guidance, documents and the review window are editable after
+ * creation too. It replaced a partial edit on the record that offered six of them.
  */
 @Component({
   selector: 'app-program-form-page',
@@ -115,7 +134,39 @@ export class ProgramFormPage {
   protected readonly provenances = GUIDANCE_PROVENANCES;
   protected readonly windowProvenances = WINDOW_PROVENANCES;
 
+  /** The programme being edited, from the route; absent when recording a new one. */
+  readonly id = input<string>();
+
+  protected readonly editing = computed(() => this.id() !== undefined);
+
+  /** The record being edited, held as a view state: one that cannot be read is said, not a crash. */
+  protected readonly recordState = toSignal(
+    toObservable(this.id).pipe(
+      switchMap((id) =>
+        id === undefined
+          ? of(ready(null))
+          : toViewState(this.repository.getById(asId<ProgramId>(id))),
+      ),
+    ),
+    { initialValue: LOADING as ViewState<AssistanceProgram | null> },
+  );
+
+  protected readonly record = computed(() => valueOf(this.recordState()) ?? null);
+
   protected readonly form = signal<ProgramFormValue>(emptyProgramForm());
+  private hydrated = false;
+
+  constructor() {
+    // Filled from the record once, then left alone: a reload must not wipe what somebody typed.
+    effect(() => {
+      const program = this.record();
+      if (program === null || this.hydrated) {
+        return;
+      }
+      this.hydrated = true;
+      this.form.set(programFormFrom(toProgramDraft(program)));
+    });
+  }
   protected readonly reason = signal('');
   protected readonly attempted = signal(false);
   protected readonly saving = signal(false);
@@ -127,10 +178,17 @@ export class ProgramFormPage {
     initialValue: LOADING as ViewState<readonly RequirementTemplate[]>,
   });
   protected readonly templatesFailed = computed(() => this.templatesState().kind === 'error');
-  /** No new programme adopts a retired template (`DL-177`), so none is offered. */
-  protected readonly adoptable = computed(() =>
-    (valueOf(this.templatesState()) ?? []).filter(isAdoptable),
-  );
+  /**
+   * No new programme adopts a retired template (`DL-177`), so none is offered — except the one a
+   * recorded programme already names, which it keeps through any other change: retiring never
+   * quietly changes what an applicant is asked for.
+   */
+  protected readonly adoptable = computed(() => {
+    const kept = this.record()?.requirementTemplateCode ?? null;
+    return (valueOf(this.templatesState()) ?? []).filter(
+      (template) => isAdoptable(template) || template.code === kept,
+    );
+  });
   protected readonly chosenTemplate = computed(
     () =>
       this.adoptable().find((template) => template.code === this.form().requirementTemplateCode) ??
@@ -161,6 +219,19 @@ export class ProgramFormPage {
   protected problemText(code: string): string {
     return PROGRAMS_COPY.problem[code] ?? code;
   }
+
+  /** Closing dates the programme's end; moving away from closed clears it — said before saving. */
+  protected readonly statusConsequence = computed(() => {
+    const was = this.record()?.status ?? null;
+    const now = this.form().status;
+    if (now === 'closed' && was !== 'closed') {
+      return this.detailCopy.closing;
+    }
+    if (was === 'closed' && now !== 'closed') {
+      return this.detailCopy.reopening;
+    }
+    return null;
+  });
 
   /* ── typing ─────────────────────────────────────────────────────────────── */
 
@@ -349,16 +420,23 @@ export class ProgramFormPage {
       return;
     }
     this.saving.set(true);
-    this.repository.save(this.reading().draft, null, this.reason().trim()).subscribe({
-      next: (created) => {
-        this.saving.set(false);
-        this.notifications.success(this.copy.saved);
-        void this.router.navigate(['/programs', created.id]);
-      },
-      error: (failure: unknown) => {
-        this.saving.set(false);
-        this.refusal.set(refusalSentences(failure, this.copy.failed));
-      },
-    });
+    const id = this.id();
+    this.repository
+      .save(
+        this.reading().draft,
+        id === undefined ? null : asId<ProgramId>(id),
+        this.reason().trim(),
+      )
+      .subscribe({
+        next: (saved) => {
+          this.saving.set(false);
+          this.notifications.success(id === undefined ? this.copy.saved : this.detailCopy.saved);
+          void this.router.navigate(['/programs', saved.id]);
+        },
+        error: (failure: unknown) => {
+          this.saving.set(false);
+          this.refusal.set(refusalSentences(failure, this.copy.failed));
+        },
+      });
   }
 }

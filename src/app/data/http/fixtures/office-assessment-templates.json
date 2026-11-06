@@ -1,0 +1,34 @@
+{
+  "data": [
+    {
+      "code": "aics-general",
+      "version": "2026.08.1",
+      "label": "AICS general intake assessment",
+      "status": "placeholder-pending-lgu-approval",
+      "questions": [
+        {
+          "code": "household_size",
+          "label": "Household size",
+          "kind": "integer",
+          "required": true,
+          "choices": []
+        },
+        {
+          "code": "income_source",
+          "label": "Main source of income",
+          "kind": "choice",
+          "required": true,
+          "choices": ["none", "informal", "formal"]
+        },
+        {
+          "code": "remarks",
+          "label": "Remarks",
+          "kind": "text",
+          "required": false,
+          "choices": []
+        }
+      ]
+    }
+  ],
+  "meta": {}
+}

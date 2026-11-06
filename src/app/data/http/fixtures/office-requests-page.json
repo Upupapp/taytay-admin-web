@@ -22,7 +22,17 @@
           "applicability": "undecided",
           "status": "waived",
           "submitted_at": null,
-          "remarks": null
+          "remarks": null,
+          "applicability_decided_by": null,
+          "applicability_decided_at": null,
+          "applicability_reason": null,
+          "reviewed_by": null,
+          "reviewed_at": null,
+          "accepts": {
+            "mime_types": ["application/pdf", "image/jpeg", "image/png"],
+            "max_bytes": 10485760
+          },
+          "document_versions": []
         }
       ],
       "status_history": [
@@ -49,12 +59,17 @@
         "referred_by",
         "status_reasons",
         "requirement_remarks",
-        "notes"
+        "notes",
+        "assignment_reasons",
+        "assessment"
       ],
       "created_at": "2026-11-05T01:58:00.000Z",
       "created_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
       "updated_at": "2026-11-05T05:40:00.000Z",
-      "updated_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02"
+      "updated_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+      "assigned_to": null,
+      "assignments": [],
+      "assessment": null
     },
     {
       "id": "8f1e2d3c-4b5a-4968-8776-1a2b3c4d5e02",
@@ -78,7 +93,17 @@
           "applicability": "undecided",
           "status": "submitted",
           "submitted_at": "2026-11-04T01:00:00.000Z",
-          "remarks": null
+          "remarks": null,
+          "applicability_decided_by": null,
+          "applicability_decided_at": null,
+          "applicability_reason": null,
+          "reviewed_by": null,
+          "reviewed_at": null,
+          "accepts": {
+            "mime_types": ["application/pdf", "image/jpeg", "image/png"],
+            "max_bytes": 10485760
+          },
+          "document_versions": []
         },
         {
           "id": "1d2c3b4a-5f6e-4d7c-8b9a-0e1f2a3b4c03",
@@ -89,7 +114,17 @@
           "applicability": "does-not-apply",
           "status": "waived",
           "submitted_at": null,
-          "remarks": "The applicant claims for herself."
+          "remarks": "The applicant claims for herself.",
+          "applicability_decided_by": null,
+          "applicability_decided_at": null,
+          "applicability_reason": null,
+          "reviewed_by": null,
+          "reviewed_at": null,
+          "accepts": {
+            "mime_types": ["application/pdf", "image/jpeg", "image/png"],
+            "max_bytes": 10485760
+          },
+          "document_versions": []
         }
       ],
       "status_history": [
@@ -115,7 +150,10 @@
       "created_at": "2026-11-04T00:42:00.000Z",
       "created_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
       "updated_at": "2026-11-04T07:20:00.000Z",
-      "updated_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02"
+      "updated_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+      "assigned_to": null,
+      "assignments": [],
+      "assessment": null
     }
   ],
   "meta": {

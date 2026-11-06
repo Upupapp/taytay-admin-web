@@ -746,9 +746,23 @@
     },
     {
       "method": "GET",
+      "path": "office/assessment-templates",
+      "consumer": "assistance-request.mapper.ts#toAssessmentTemplate",
+      "required": [
+        "code",
+        "label",
+        "questions",
+        "status",
+        "version"
+      ],
+      "optional": []
+    },
+    {
+      "method": "GET",
       "path": "office/assistance-requests",
       "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
       "required": [
+        "assignments",
         "barangay_id",
         "channel",
         "created_at",
@@ -761,6 +775,8 @@
         "withheld"
       ],
       "optional": [
+        "assessment",
+        "assigned_to",
         "created_by",
         "is_protected",
         "program_id",
@@ -777,6 +793,7 @@
       "path": "office/assistance-requests",
       "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
       "required": [
+        "assignments",
         "barangay_id",
         "channel",
         "created_at",
@@ -789,6 +806,8 @@
         "withheld"
       ],
       "optional": [
+        "assessment",
+        "assigned_to",
         "created_by",
         "is_protected",
         "program_id",
@@ -805,6 +824,7 @@
       "path": "office/assistance-requests/{id}",
       "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
       "required": [
+        "assignments",
         "barangay_id",
         "channel",
         "created_at",
@@ -817,6 +837,8 @@
         "withheld"
       ],
       "optional": [
+        "assessment",
+        "assigned_to",
         "created_by",
         "is_protected",
         "program_id",
@@ -833,6 +855,7 @@
       "path": "office/assistance-requests/{id}",
       "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
       "required": [
+        "assignments",
         "barangay_id",
         "channel",
         "created_at",
@@ -845,6 +868,8 @@
         "withheld"
       ],
       "optional": [
+        "assessment",
+        "assigned_to",
         "created_by",
         "is_protected",
         "program_id",
@@ -870,9 +895,34 @@
     },
     {
       "method": "POST",
-      "path": "office/assistance-requests/{id}/file",
+      "path": "office/assistance-requests/{id}/assessment",
+      "consumer": "assistance-request.mapper.ts#toOpenAssessment",
+      "required": [
+        "answers",
+        "completed",
+        "template_code",
+        "template_version"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/assistance-requests/{id}/assessment/answers",
+      "consumer": "assistance-request.mapper.ts#toOpenAssessment",
+      "required": [
+        "answers",
+        "completed",
+        "template_code",
+        "template_version"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/assistance-requests/{id}/assessment/complete",
       "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
       "required": [
+        "assignments",
         "barangay_id",
         "channel",
         "created_at",
@@ -885,6 +935,139 @@
         "withheld"
       ],
       "optional": [
+        "assessment",
+        "assigned_to",
+        "created_by",
+        "is_protected",
+        "program_id",
+        "reason_for_request",
+        "reference_number",
+        "referred_by",
+        "requested_amount_centavos",
+        "submitted_at",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/assistance-requests/{id}/assignment",
+      "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
+      "required": [
+        "assignments",
+        "barangay_id",
+        "channel",
+        "created_at",
+        "id",
+        "requirements",
+        "resident_id",
+        "status",
+        "status_history",
+        "updated_at",
+        "withheld"
+      ],
+      "optional": [
+        "assessment",
+        "assigned_to",
+        "created_by",
+        "is_protected",
+        "program_id",
+        "reason_for_request",
+        "reference_number",
+        "referred_by",
+        "requested_amount_centavos",
+        "submitted_at",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/assistance-requests/{id}/document-requests",
+      "consumer": "assistance-request.mapper.ts#toDocumentRequest",
+      "required": [
+        "channel",
+        "id",
+        "is_withheld",
+        "message",
+        "request_id",
+        "requested_at",
+        "requirement_id",
+        "state"
+      ],
+      "optional": [
+        "closed_at",
+        "closed_by",
+        "needed_by",
+        "requested_by",
+        "requested_by_name",
+        "withdrawn_reason"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/assistance-requests/{id}/document-requests",
+      "consumer": "assistance-request.mapper.ts#toDocumentRequest",
+      "required": [
+        "channel",
+        "id",
+        "is_withheld",
+        "message",
+        "request_id",
+        "requested_at",
+        "requirement_id",
+        "state"
+      ],
+      "optional": [
+        "closed_at",
+        "closed_by",
+        "needed_by",
+        "requested_by",
+        "requested_by_name",
+        "withdrawn_reason"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/assistance-requests/{id}/document-requests/{documentRequestId}/withdraw",
+      "consumer": "assistance-request.mapper.ts#toDocumentRequest",
+      "required": [
+        "channel",
+        "id",
+        "is_withheld",
+        "message",
+        "request_id",
+        "requested_at",
+        "requirement_id",
+        "state"
+      ],
+      "optional": [
+        "closed_at",
+        "closed_by",
+        "needed_by",
+        "requested_by",
+        "requested_by_name",
+        "withdrawn_reason"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/assistance-requests/{id}/file",
+      "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
+      "required": [
+        "assignments",
+        "barangay_id",
+        "channel",
+        "created_at",
+        "id",
+        "requirements",
+        "resident_id",
+        "status",
+        "status_history",
+        "updated_at",
+        "withheld"
+      ],
+      "optional": [
+        "assessment",
+        "assigned_to",
         "created_by",
         "is_protected",
         "program_id",
@@ -915,9 +1098,10 @@
     },
     {
       "method": "POST",
-      "path": "office/assistance-requests/{id}/status",
+      "path": "office/assistance-requests/{id}/requirements/{requirementId}/applicability",
       "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
       "required": [
+        "assignments",
         "barangay_id",
         "channel",
         "created_at",
@@ -930,6 +1114,85 @@
         "withheld"
       ],
       "optional": [
+        "assessment",
+        "assigned_to",
+        "created_by",
+        "is_protected",
+        "program_id",
+        "reason_for_request",
+        "reference_number",
+        "referred_by",
+        "requested_amount_centavos",
+        "submitted_at",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/assistance-requests/{id}/requirements/{requirementId}/documents/{versionId}/access",
+      "consumer": "assistance-request.mapper.ts#toDocumentAccessGrant",
+      "required": [
+        "expires_at",
+        "file_name",
+        "handle",
+        "mime_type",
+        "redacted_for_sharing",
+        "version_id",
+        "warning"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/assistance-requests/{id}/requirements/{requirementId}/review",
+      "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
+      "required": [
+        "assignments",
+        "barangay_id",
+        "channel",
+        "created_at",
+        "id",
+        "requirements",
+        "resident_id",
+        "status",
+        "status_history",
+        "updated_at",
+        "withheld"
+      ],
+      "optional": [
+        "assessment",
+        "assigned_to",
+        "created_by",
+        "is_protected",
+        "program_id",
+        "reason_for_request",
+        "reference_number",
+        "referred_by",
+        "requested_amount_centavos",
+        "submitted_at",
+        "updated_by"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/assistance-requests/{id}/status",
+      "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
+      "required": [
+        "assignments",
+        "barangay_id",
+        "channel",
+        "created_at",
+        "id",
+        "requirements",
+        "resident_id",
+        "status",
+        "status_history",
+        "updated_at",
+        "withheld"
+      ],
+      "optional": [
+        "assessment",
+        "assigned_to",
         "created_by",
         "is_protected",
         "program_id",
@@ -1511,6 +1774,17 @@
         "resource"
       ],
       "optional": []
+    },
+    {
+      "method": "GET",
+      "path": "office/social-workers",
+      "consumer": "assistance-request.mapper.ts#toSocialWorker",
+      "required": [
+        "id"
+      ],
+      "optional": [
+        "name"
+      ]
     },
     {
       "method": "GET",

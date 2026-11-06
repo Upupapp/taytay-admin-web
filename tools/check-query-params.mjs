@@ -64,7 +64,8 @@ const READ_HELPERS = {
 };
 
 /* Writes. Excluded because their arguments are a BODY, which `check:wire-adoption` owns. */
-const WRITE_HELPERS = new Set(['post', 'patch', 'postForm', 'patchForm', 'delete']);
+/* `postBlob` (`DL-178`) answers bytes, but its argument is a body — the grant's handle — not a query. */
+const WRITE_HELPERS = new Set(['post', 'patch', 'postForm', 'patchForm', 'delete', 'postBlob']);
 
 {
   const client = readFileSync(join(HTTP, 'api.client.ts'), 'utf8');

@@ -1,0 +1,137 @@
+{
+  "data": {
+    "id": "8f1e2d3c-4b5a-4968-8776-1a2b3c4d5e21",
+    "reference_number": "TAY-2026-000317",
+    "resident_id": "3c2b1a09-8f7e-4d6c-9b5a-1f2e3d4c5b02",
+    "program_id": "5b0e7c1e-2f4a-4c3e-9a51-0d6c1f2a7b10",
+    "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04",
+    "status": "assessment",
+    "channel": "walk-in",
+    "referred_by": null,
+    "reason_for_request": "Burial costs for a deceased parent.",
+    "requested_amount_centavos": 1000000,
+    "submitted_at": "2026-11-02T01:30:00.000Z",
+    "assigned_to": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c07",
+    "assignments": [
+      {
+        "assignee_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c07",
+        "assignee_name": "Grace Ocampo",
+        "reason": "Home visit needed before endorsement.",
+        "actor_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+        "actor_name": "Teodoro Lim",
+        "occurred_at": "2026-11-03T02:00:00.000Z"
+      }
+    ],
+    "assessment": {
+      "template_code": "aics-general",
+      "template_version": "2026.08.1",
+      "assessed_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c07",
+      "assessed_by_name": "Grace Ocampo",
+      "assessed_at": "2026-11-05T06:00:00.000Z",
+      "findings": "Household of five in one rented room; sole earner out of work since June.",
+      "recommended_amount_centavos": 800000,
+      "home_visit_conducted": true,
+      "recommendation": "recommend-approve",
+      "recommendation_reason": null
+    },
+    "requirements": [
+      {
+        "id": "1d2c3b4a-5f6e-4d7c-8b9a-0e1f2a3b4c21",
+        "code": "death-certificate",
+        "label": "Death certificate",
+        "obligation": "required",
+        "applies_when": null,
+        "applicability": "undecided",
+        "applicability_decided_by": null,
+        "applicability_decided_at": null,
+        "applicability_reason": null,
+        "status": "submitted",
+        "submitted_at": "2026-11-04T01:30:00.000Z",
+        "reviewed_by": null,
+        "reviewed_at": null,
+        "remarks": null,
+        "accepts": {
+          "mime_types": ["application/pdf", "image/jpeg", "image/png"],
+          "max_bytes": 10485760
+        },
+        "document_versions": [
+          {
+            "id": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c01",
+            "version": 1,
+            "source": "scanned",
+            "file": {
+              "file_name": "death-certificate-v1.pdf",
+              "mime_type": "application/pdf",
+              "byte_size": 184320,
+              "page_count": null
+            },
+            "document_number": "••••4471",
+            "document_number_masked": true,
+            "issued_on": "2026-10-28",
+            "expires_on": null,
+            "received_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
+            "received_by_name": "Liezl Padilla",
+            "received_at": "2026-11-02T01:30:00.000Z",
+            "superseded_at": "2026-11-04T01:30:00.000Z",
+            "superseded_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
+            "superseded_reason": "The first scan was illegible."
+          },
+          {
+            "id": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c02",
+            "version": 2,
+            "source": "encoded",
+            "file": null,
+            "document_number": "••••4471",
+            "document_number_masked": true,
+            "issued_on": "2026-10-28",
+            "expires_on": null,
+            "received_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
+            "received_by_name": "Liezl Padilla",
+            "received_at": "2026-11-04T01:30:00.000Z",
+            "superseded_at": null,
+            "superseded_by": null,
+            "superseded_reason": null
+          }
+        ]
+      },
+      {
+        "id": "1d2c3b4a-5f6e-4d7c-8b9a-0e1f2a3b4c22",
+        "code": "guardianship",
+        "label": "Proof of guardianship",
+        "obligation": "conditional",
+        "applies_when": "Only when the applicant is claiming for a minor.",
+        "applicability": "does-not-apply",
+        "applicability_decided_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
+        "applicability_decided_at": "2026-11-02T02:00:00.000Z",
+        "applicability_reason": "The deceased was the applicant's parent; no minor is involved.",
+        "status": "pending",
+        "submitted_at": null,
+        "reviewed_by": null,
+        "reviewed_at": null,
+        "remarks": null,
+        "accepts": {
+          "mime_types": ["application/pdf", "image/jpeg", "image/png"],
+          "max_bytes": 10485760
+        },
+        "document_versions": []
+      }
+    ],
+    "status_history": [
+      {
+        "from": "draft",
+        "to": "submitted",
+        "reason": "Filed at the counter.",
+        "actor_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
+        "actor_name": "Liezl Padilla",
+        "occurred_at": "2026-11-02T01:30:00.000Z"
+      }
+    ],
+    "is_protected": false,
+    "withheld": [],
+    "created_at": "2026-11-02T01:00:00.000Z",
+    "created_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c05",
+    "updated_at": "2026-11-05T06:00:00.000Z",
+    "updated_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c07"
+  },
+  "meta": {}
+}

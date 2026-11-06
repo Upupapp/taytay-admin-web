@@ -1,48 +1,55 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a
-    page-actions
-    *appHasPermission="'request.create'"
-    class="btn btn--primary"
-    routerLink="/assistance-requests/new"
-  >
-    {{ copy.startIntake }}
-  </a>
+  <!-- Not offered to a caseload: the server refuses it intake, so the link would bounce (DL-178). -->
+  @if (!isCaseload()) {
+    <a
+      page-actions
+      *appHasPermission="'request.create'"
+      class="btn btn--primary"
+      routerLink="/assistance-requests/new"
+    >
+      {{ copy.startIntake }}
+    </a>
+  }
 </app-page-header>
 
 <!-- Drafts sit apart from the table on purpose: nothing here has been filed,
      and counting them as requests would inflate the office's workload. -->
-<section class="card drafts" aria-labelledby="drafts-heading">
-  <h2 class="drafts__heading" id="drafts-heading">{{ copy.draftsHeading }}</h2>
-  <p class="drafts__note">{{ copy.draftsNote }}</p>
+@if (isCaseload()) {
+  <p class="card requests__caseload" role="note">{{ copy.caseloadNote }}</p>
+} @else {
+  <section class="card drafts" aria-labelledby="drafts-heading">
+    <h2 class="drafts__heading" id="drafts-heading">{{ copy.draftsHeading }}</h2>
+    <p class="drafts__note">{{ copy.draftsNote }}</p>
 
-  @if (draftFailure(); as message) {
-    <p class="drafts__problem" role="alert">{{ message }}</p>
-  } @else if (draftState().kind === 'loading') {
-    <p class="drafts__empty" role="status">{{ copy.loadingDrafts }}</p>
-  } @else if (drafts().length === 0) {
-    <p class="drafts__empty">{{ copy.noDrafts }}</p>
-  } @else {
-    <ul class="drafts__list">
-      @for (draft of drafts(); track draft.id) {
-        <li class="drafts__item">
-          <span class="drafts__label">{{ copy.unnamedDraft }}</span>
-          <span class="drafts__reason">{{ reasonText(draft) }}</span>
-          <a
-            *appHasPermission="'request.create'"
-            class="btn btn--subtle"
-            [routerLink]="resumeLink(draft)"
-          >
-            {{ copy.resume }}
-          </a>
-        </li>
+    @if (draftFailure(); as message) {
+      <p class="drafts__problem" role="alert">{{ message }}</p>
+    } @else if (draftState().kind === 'loading') {
+      <p class="drafts__empty" role="status">{{ copy.loadingDrafts }}</p>
+    } @else if (drafts().length === 0) {
+      <p class="drafts__empty">{{ copy.noDrafts }}</p>
+    } @else {
+      <ul class="drafts__list">
+        @for (draft of drafts(); track draft.id) {
+          <li class="drafts__item">
+            <span class="drafts__label">{{ copy.unnamedDraft }}</span>
+            <span class="drafts__reason">{{ reasonText(draft) }}</span>
+            <a
+              *appHasPermission="'request.create'"
+              class="btn btn--subtle"
+              [routerLink]="resumeLink(draft)"
+            >
+              {{ copy.resume }}
+            </a>
+          </li>
+        }
+      </ul>
+      @if (moreDrafts()) {
+        <!-- Said, never hidden: a draft left off the list is one nobody resumes. -->
+        <p class="drafts__more" role="note">{{ copy.moreDrafts(drafts().length) }}</p>
       }
-    </ul>
-    @if (moreDrafts()) {
-      <!-- Said, never hidden: a draft left off the list is one nobody resumes. -->
-      <p class="drafts__more" role="note">{{ copy.moreDrafts(drafts().length) }}</p>
     }
-  }
-</section>
+  </section>
+}
 
 <div class="card requests">
   <div class="filters">
@@ -69,6 +76,24 @@
         }
       </select>
     </label>
+
+    @if (filtersByAssignee()) {
+      @if (workersFailure(); as message) {
+        <p class="filters__problem" role="note">{{ copy.workersFailed }} {{ message }}</p>
+      } @else {
+        <label class="filters__field">
+          <span class="filters__label">{{ copy.assignedTo }}</span>
+          <select class="filters__input" (change)="onAssignee($event)">
+            <option value="" [selected]="!filter().assignedTo">{{ copy.anyone }}</option>
+            @for (worker of socialWorkers(); track worker.id) {
+              <option [value]="worker.id" [selected]="filter().assignedTo === worker.id">
+                {{ worker.name }}
+              </option>
+            }
+          </select>
+        </label>
+      }
+    }
 
     <label class="filters__check">
       <input type="checkbox" [checked]="filter().openOnly === true" (change)="onOpenOnly($event)" />

@@ -64,6 +64,8 @@ const HELPERS = [
   'item',
   'optionalItem',
   'blob',
+  // Bytes for a grant (`DL-178`): answers `Blob`, takes no type argument for its answer.
+  'postBlob',
   'post',
   'patch',
   // Form bodies (`DL-170`): their answer is an envelope like any write's, so a generic on one

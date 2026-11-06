@@ -112,6 +112,7 @@ async function configure(
         { path: 'programs', component: ProgramListPage },
         { path: 'programs/new', component: ProgramFormPage },
         { path: 'programs/templates', component: RequirementTemplatesPage },
+        { path: 'programs/:id/edit', component: ProgramFormPage },
         { path: 'programs/:id', component: ProgramDetailPage },
         { path: '**', component: StubPage },
       ]),
@@ -151,6 +152,16 @@ async function openDetail(
 
 const html = (fixture: ComponentFixture<unknown>) => fixture.nativeElement as HTMLElement;
 const repo = () => TestBed.inject(PROGRAM_REPOSITORY);
+
+/** The whole record's form, at `/programs/:id/edit` (`DL-178`). */
+async function openEdit(id: string): Promise<ComponentFixture<ProgramFormPage>> {
+  await configure('mswdo-head');
+  await TestBed.inject(Router).navigateByUrl(`/programs/${id}/edit`);
+  const fixture = TestBed.createComponent(ProgramFormPage);
+  fixture.componentRef.setInput('id', id);
+  await fixture.whenStable();
+  return fixture;
+}
 
 /* ── The URL is the filter ────────────────────────────────────────────────── */
 
@@ -248,9 +259,14 @@ describe('programme rules are rendered from the record', () => {
 /* ── Editing ──────────────────────────────────────────────────────────────── */
 
 describe('editing a programme', () => {
-  it('is offered to a role that may manage the catalog', async () => {
+  it('is offered to a role that may manage the catalog, as the whole record’s own page', async () => {
     const element = html(await openDetail(AICS_MEDICAL));
-    expect(element.textContent).toContain('Edit this programme');
+    const link = [...element.querySelectorAll('a')].find((anchor) =>
+      anchor.textContent?.includes('Edit this programme'),
+    );
+    expect(link?.getAttribute('href')).toBe(`/programs/${AICS_MEDICAL}/edit`);
+    // The partial edit on the record is gone: nothing is edited in place.
+    expect(element.querySelector('#edit-heading')).toBeNull();
   });
 
   it('is withheld from a role that may only read it', async () => {
@@ -261,12 +277,7 @@ describe('editing a programme', () => {
   });
 
   it('does not offer "the municipality runs this" for a DSWD programme', async () => {
-    const fixture = await openDetail(AICS_MEDICAL);
-    const element = html(fixture);
-    [...element.querySelectorAll('button')]
-      .find((button) => button.textContent?.includes('Edit this programme'))
-      ?.click();
-    await fixture.whenStable();
+    const fixture = await openEdit(AICS_MEDICAL);
 
     const options = [...html(fixture).querySelectorAll('select option')].map((option) =>
       option.textContent?.trim(),
@@ -581,11 +592,24 @@ class ServerRefuses extends MockProgramRepository {
 }
 
 describe('a change to a programme says why', () => {
-  it('asks for a reason before the button acts, and sends it with the change', async () => {
-    const fixture = await openDetail(AICS_MEDICAL);
+  it('fills the whole form from the record — guidance, documents and window included', async () => {
+    const fixture = await openEdit(AICS_MEDICAL);
     const root = html(fixture);
-    press(root, 'Edit this programme');
-    await fixture.whenStable();
+    const record = await firstValueFrom(repo().getById(asId(AICS_MEDICAL)));
+    expect(root.querySelector('h1')?.textContent).toContain('Edit programme');
+    expect(control(root, 'Name').value).toBe(record?.name);
+    // What the partial edit never offered: the guidance and the documents asked for.
+    expect(root.textContent).toContain('Add a guideline');
+    expect(root.textContent).toContain('Add a document');
+    const guidelines = [...root.querySelectorAll('.program-form__entry-legend')].filter((legend) =>
+      /^Guideline \d+/.test(legend.textContent?.trim() ?? ''),
+    );
+    expect(guidelines.length).toBe(record?.guidance.length);
+  });
+
+  it('asks for a reason before the button acts, and sends the whole record with it', async () => {
+    const fixture = await openEdit(AICS_MEDICAL);
+    const root = html(fixture);
     expect(root.textContent).toContain(PROGRAMS_COPY.detail.keptForever);
 
     const save = vi.spyOn(repo(), 'save');
@@ -597,14 +621,20 @@ describe('a change to a programme says why', () => {
     enter(control(root, 'Why — kept with this version'), 'The DSWD ceiling changed.');
     press(root, 'Save the programme');
     await fixture.whenStable();
-    expect(save.mock.calls[0]?.[2]).toBe('The DSWD ceiling changed.');
+    const [draft, id, reason] = save.mock.calls[0] ?? [];
+    const record = await firstValueFrom(repo().getById(asId(AICS_MEDICAL)));
+    expect(id).toBe(AICS_MEDICAL);
+    expect(reason).toBe('The DSWD ceiling changed.');
+    // The whole record went back: the PATCH replaces every field, so nothing is dropped.
+    expect(draft?.guidance).toEqual(record?.guidance);
+    expect(draft?.requirements).toEqual(record?.requirements);
+    expect(draft?.responsibility.administeredBy).toBe(record?.responsibility.administeredBy);
+    expect(TestBed.inject(Router).url).toBe(`/programs/${AICS_MEDICAL}`);
   });
 
   it('says that closing dates the end before it is saved', async () => {
-    const fixture = await openDetail(EDUCATIONAL);
+    const fixture = await openEdit(EDUCATIONAL);
     const root = html(fixture);
-    press(root, 'Edit this programme');
-    await fixture.whenStable();
     expect(root.textContent).not.toContain(PROGRAMS_COPY.detail.closing);
     enter(control(root, 'Status'), 'closed');
     await fixture.whenStable();

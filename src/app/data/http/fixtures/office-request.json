@@ -21,7 +21,17 @@
         "applicability": "undecided",
         "status": "submitted",
         "submitted_at": "2026-11-06T01:30:00.000Z",
-        "remarks": null
+        "remarks": null,
+        "applicability_decided_by": null,
+        "applicability_decided_at": null,
+        "applicability_reason": null,
+        "reviewed_by": null,
+        "reviewed_at": null,
+        "accepts": {
+          "mime_types": ["application/pdf", "image/jpeg", "image/png"],
+          "max_bytes": 10485760
+        },
+        "document_versions": []
       },
       {
         "id": "1d2c3b4a-5f6e-4d7c-8b9a-0e1f2a3b4c10",
@@ -32,7 +42,17 @@
         "applicability": "undecided",
         "status": "pending",
         "submitted_at": null,
-        "remarks": null
+        "remarks": null,
+        "applicability_decided_by": null,
+        "applicability_decided_at": null,
+        "applicability_reason": null,
+        "reviewed_by": null,
+        "reviewed_at": null,
+        "accepts": {
+          "mime_types": ["application/pdf", "image/jpeg", "image/png"],
+          "max_bytes": 10485760
+        },
+        "document_versions": []
       }
     ],
     "status_history": [],
@@ -41,7 +61,10 @@
     "created_at": "2026-11-06T01:30:00.000Z",
     "created_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
     "updated_at": "2026-11-06T01:30:00.000Z",
-    "updated_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01"
+    "updated_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c01",
+    "assigned_to": null,
+    "assignments": [],
+    "assessment": null
   },
   "meta": {}
 }

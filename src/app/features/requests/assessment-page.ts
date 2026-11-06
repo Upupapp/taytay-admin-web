@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   effect,
   inject,
@@ -26,6 +27,16 @@ import {
   type DocumentAccessGrant,
   type DocumentVersionId,
   type SubmittedRequirement,
+  ASSIGNMENT_NEEDS_REASON,
+  PROTECTED_FILE_REFUSAL,
+  PROTECTED_WRITE_REFUSAL,
+  REQUEST_NOTE_MAX_LENGTH,
+  isTerminalAssistanceStatus,
+  type CaseNoteSensitivity,
+  type RequestNote,
+  type SocialWorker,
+  type SocialWorkerAssessment,
+  type StaffUserId,
   ASSISTANCE_REQUEST_REPOSITORY,
   ASSISTANCE_STATUS_CATALOG,
   PROGRAM_REPOSITORY,
@@ -68,9 +79,11 @@ import {
   type RequirementId,
   type RequirementStatus,
   type ResidentProfile,
+  type AssistanceProgram,
   type DocumentVersionDraft,
   uploadPercent as percentOf,
 } from '@domain/index';
+import { ObjectUrls } from '@shared/media/object-urls';
 import { DocumentPanel } from '@shared/requirements/document-panel';
 import { REQUIREMENTS_COPY } from '@shared/requirements/requirements.copy';
 import { AdvisoryPanel } from '@shared/intake/advisory-panel';
@@ -103,6 +116,12 @@ import { REQUESTS_COPY } from './requests.copy';
  *  - **The lifecycle move reuses `StatusTransition`** from TAB 10, which is why
  *    that control was built generic. Reason capture, permission intersection
  *    and the refusal to move without words are inherited, not re-implemented.
+ *
+ * Since casework phase 2b (`DL-178`) every section is served: assignment for
+ * assessment, the form and the case study, the document review, recording and
+ * opening a file, what the applicant was asked to bring, and the notes. Each
+ * read is held as a view state, so one that fails says so in its own section
+ * and the rest of the record stands.
  */
 @Component({
   selector: 'app-assessment-page',
@@ -150,22 +169,46 @@ export class AssessmentPage {
 
   protected readonly request = computed(() => valueOf(this.state()) ?? null);
 
-  /** The applicant's picture, read fresh rather than copied onto the request. */
-  protected readonly profile = toSignal(
-    toObservable(computed(() => this.request()?.residentId ?? null)).pipe(
-      switchMap((residentId) =>
-        residentId === null ? of(null) : this.residents.getProfile(residentId),
+  /**
+   * The applicant's picture, read fresh rather than copied onto the request.
+   *
+   * Not asked for on behalf of a caseload: the server refuses the resident registry to an
+   * `assigned-cases` account (`DL-174`, `DL-178`), and a refusal there takes the reader off this
+   * page. Held as a view state, so a registry that cannot be read is said in place — the request
+   * itself stays readable either way.
+   */
+  protected readonly readsRegistry = computed(
+    () => this.permissions.scope() !== 'assigned-cases' && this.permissions.has('resident.view'),
+  );
+
+  private readonly profileState = toSignal(
+    toObservable(
+      computed(() => ({ residentId: this.request()?.residentId ?? null, reads: this.readsRegistry() })),
+    ).pipe(
+      switchMap(({ residentId, reads }) =>
+        residentId === null || !reads
+          ? of(ready(null))
+          : toViewState(this.residents.getProfile(residentId)),
       ),
     ),
-    { initialValue: null as ResidentProfile | null },
+    { initialValue: ready(null) as ViewState<ResidentProfile | null> },
   );
+
+  protected readonly profile = computed(() => valueOf(this.profileState()) ?? null);
+  protected readonly profileFailure = computed(() => {
+    const state = this.profileState();
+    return state.kind === 'error' ? state.message : null;
+  });
 
   /**
    * The duplicate check reads one named person's whole assistance history, so it is the filers'
    * (`request.create`, `DL-60`) and is not asked for on anybody else's behalf: the API would refuse
-   * it, and a refusal there takes the reader off this page.
+   * it, and a refusal there takes the reader off this page. A caseload is refused it too, whatever
+   * it holds: it reads one person's whole history, beyond the requests assigned to it (`DL-178`).
    */
-  protected readonly readsAdvisory = computed(() => this.permissions.has('request.create'));
+  protected readonly readsAdvisory = computed(
+    () => this.permissions.has('request.create') && this.permissions.scope() !== 'assigned-cases',
+  );
 
   /** Held as a view state, so a check that could not be read is said in place, never as "nothing found". */
   private readonly advisoryState = toSignal(
@@ -190,6 +233,174 @@ export class AssessmentPage {
 
   protected readonly canAssess = computed(() => this.permissions.has('request.assess'));
   protected readonly canReviewDocuments = computed(() => this.permissions.has('request.intake'));
+
+  /* ── who may do what here ────────────────────────────────────────────────
+   *
+   * Every act below is hidden from a reader the server would refuse, and the reason is said once in
+   * its place. That is usability, never protection — the server refuses independently (`CLAUDE.md`
+   * rule 4) — but it matters more than usual here: the console answers any `403` by leaving the page
+   * for the forbidden screen, so an act offered to somebody the server refuses takes them away from
+   * the record they were working on.
+   */
+
+  /** A caseload (`assigned-cases`) works the requests assigned to it and reads nothing beyond them. */
+  protected readonly isCaseload = computed(() => this.permissions.scope() === 'assigned-cases');
+
+  /**
+   * Nobody adds to what they may not read (`DL-178`): on a protected request read without
+   * `request.view-sensitive`, every addition is refused by the server, so none is offered.
+   */
+  protected uncleared(request: AssistanceRequest): boolean {
+    return request.isProtected && isWithheldFromReader(request, 'reasonForRequest');
+  }
+
+  /** Reviewing, ruling, recording, asking and assigning are for a filed request that is not over. */
+  protected workable(request: AssistanceRequest): boolean {
+    return (
+      request.referenceNumber !== '' &&
+      !isTerminalAssistanceStatus(request.status) &&
+      !this.uncleared(request)
+    );
+  }
+
+  protected readonly protectedWriteRefusal = PROTECTED_WRITE_REFUSAL;
+  protected readonly protectedFileRefusal = PROTECTED_FILE_REFUSAL;
+
+  /* ── assignment for assessment (DL-178) ──────────────────────────────────
+   *
+   * Assigning reads the office's whole list of social workers, so it is the assigners' — holders of
+   * `request.assess` who are not themselves a caseload. The history is everybody's who can read the
+   * request: who handed it over, to whom, when and why, or "withheld" where the reason is.
+   */
+  protected readonly canAssign = computed(
+    () => this.permissions.has('request.assess') && !this.isCaseload(),
+  );
+
+  private readonly workerState = toSignal(
+    toObservable(this.canAssign).pipe(
+      switchMap((assigns) =>
+        assigns
+          ? toViewState(this.requests.listSocialWorkers())
+          : of(ready([] as readonly SocialWorker[])),
+      ),
+    ),
+    { initialValue: LOADING as ViewState<readonly SocialWorker[]> },
+  );
+
+  protected readonly socialWorkers = computed(() => valueOf(this.workerState()) ?? []);
+  protected readonly workersUnavailable = computed(() => {
+    const state = this.workerState();
+    return state.kind === 'error' ? state.message : null;
+  });
+
+  protected readonly assignee = signal('');
+  protected readonly assignReason = signal('');
+  protected readonly assignProblem = signal<string | null>(null);
+
+  protected assigneeName(request: AssistanceRequest): string | null {
+    if (request.assignedTo === null) {
+      return null;
+    }
+    const latest = [...request.assignments]
+      .reverse()
+      .find((assignment) => assignment.assigneeId === request.assignedTo);
+    return latest?.assigneeName ?? this.copy.assignedUnnamed;
+  }
+
+  protected onAssignee(event: Event): void {
+    this.assignee.set((event.target as HTMLSelectElement).value);
+  }
+
+  protected onAssignReason(event: Event): void {
+    this.assignReason.set((event.target as HTMLInputElement).value);
+  }
+
+  protected onNoteBody(event: Event): void {
+    this.noteBody.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  /** Only a tier this reader is offered is taken; anything else reads as routine. */
+  protected onNoteSensitivity(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.noteSensitivity.set(this.noteSensitivities().find((tier) => tier === value) ?? 'routine');
+  }
+
+  protected assign(): void {
+    const assigneeId = this.assignee();
+    const reason = this.assignReason().trim();
+    if (assigneeId === '') {
+      this.assignProblem.set(this.copy.assignChooseWorker);
+      return;
+    }
+    if (reason === '') {
+      this.assignProblem.set(ASSIGNMENT_NEEDS_REASON);
+      return;
+    }
+    this.assignProblem.set(null);
+    this.run(
+      this.requests.assignForAssessment(
+        asId<AssistanceRequestId>(this.id()),
+        asId<StaffUserId>(assigneeId),
+        reason,
+      ),
+      this.copy.assigned,
+      () => {
+        this.assignee.set('');
+        this.assignReason.set('');
+      },
+    );
+  }
+
+  /* ── notes (DL-58, DL-178) ───────────────────────────────────────────────
+   *
+   * Listed whole, newest first, a withheld body said as withheld and the entry still there. Adding
+   * one is `case.note`; the protected tier is offered only to a holder of
+   * `case-note.view-protected`, because nobody writes a note they could not then read.
+   */
+  private readonly noteReloads = signal(0);
+  private readonly noteState = toSignal(
+    toObservable(computed(() => ({ id: this.id(), nonce: this.noteReloads() }))).pipe(
+      switchMap(({ id }) => toViewState(this.requests.listNotes(asId<AssistanceRequestId>(id)))),
+    ),
+    { initialValue: LOADING as ViewState<readonly RequestNote[]> },
+  );
+
+  protected readonly notesView = computed(() => this.noteState());
+  protected readonly notesList = computed(() => valueOf(this.noteState()) ?? []);
+  protected readonly canNote = computed(() => this.permissions.has('case.note'));
+  protected readonly noteSensitivities = computed((): readonly CaseNoteSensitivity[] =>
+    this.permissions.has('case-note.view-protected') ? ['routine', 'protected'] : ['routine'],
+  );
+  protected readonly noteBody = signal('');
+  protected readonly noteSensitivity = signal<CaseNoteSensitivity>('routine');
+  protected readonly noteProblem = signal<string | null>(null);
+  protected readonly noteMax = REQUEST_NOTE_MAX_LENGTH;
+
+  protected addNote(): void {
+    const body = this.noteBody().trim();
+    if (body === '') {
+      this.noteProblem.set(this.copy.noteEmpty);
+      return;
+    }
+    if (body.length > REQUEST_NOTE_MAX_LENGTH) {
+      this.noteProblem.set(this.copy.noteTooLong(REQUEST_NOTE_MAX_LENGTH));
+      return;
+    }
+    this.noteProblem.set(null);
+    this.run(
+      this.requests.addNote(asId<AssistanceRequestId>(this.id()), {
+        sensitivity: this.noteSensitivity(),
+        body,
+      }),
+      this.copy.noteAdded,
+      () => {
+        this.noteBody.set('');
+        this.noteSensitivity.set('routine');
+        this.noteReloads.update((n) => n + 1);
+      },
+    );
+  }
+
 
   protected permittedMoves(status: AssistanceRequestStatus): readonly AssistanceRequestStatus[] {
     return nextStatuses(ASSISTANCE_STATUS_TRANSITIONS, status).filter((to) =>
@@ -248,6 +459,8 @@ export class AssessmentPage {
 
   protected readonly chosenTemplate = signal<string>('');
   protected readonly openAssessment = signal<OpenAssessment | null>(null);
+  /** Set when the server answered with an assessment already open from another form. */
+  protected readonly alreadyOpenFrom = signal<string | null>(null);
   protected readonly answers = signal<Record<string, string | null>>({});
 
   protected readonly template = computed(
@@ -289,13 +502,25 @@ export class AssessmentPage {
       next: (assessment) => {
         this.openAssessment.set(assessment);
         this.answers.set({ ...assessment.answers });
+        // One assessment is open per request, whichever form it came from: the server answers with
+        // it rather than opening a second, and the screen says which form that is.
+        this.alreadyOpenFrom.set(
+          assessment.templateCode === code ? null : this.templateLabel(assessment.templateCode),
+        );
         this.submitting.set(false);
       },
-      error: (error: unknown) => {
-        this.notifications.error(error instanceof Error ? error.message : this.copy.failed);
-        this.submitting.set(false);
-      },
+      error: (error: unknown) => this.failed(error),
     });
+  }
+
+  protected templateLabel(code: string): string {
+    return this.templates().find((candidate) => candidate.code === code)?.label ?? code;
+  }
+
+  protected recommendationLabel(assessment: SocialWorkerAssessment): string {
+    return assessment.recommendation === null
+      ? this.copy.noRecommendation
+      : ASSESSMENT_RECOMMENDATION_LABELS[assessment.recommendation];
   }
 
   protected onAnswer(code: string, event: Event): void {
@@ -317,10 +542,7 @@ export class AssessmentPage {
         this.notifications.success(this.copy.answersSaved);
         this.submitting.set(false);
       },
-      error: (error: unknown) => {
-        this.notifications.error(error instanceof Error ? error.message : this.copy.failed);
-        this.submitting.set(false);
-      },
+      error: (error: unknown) => this.failed(error),
     });
   }
 
@@ -329,6 +551,8 @@ export class AssessmentPage {
   }
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => this.objectUrls.revokeAll());
+
     // Fills the form from the record once, then leaves the worker's typing
     // alone: a reload after saving must not wipe an edit in progress.
     effect(() => {
@@ -348,12 +572,14 @@ export class AssessmentPage {
     });
   }
 
-  protected readonly programList = toSignal(this.programs.listActive(), { initialValue: [] });
+  private readonly programState = toSignal(toViewState(this.programs.listActive()), {
+    initialValue: LOADING as ViewState<readonly AssistanceProgram[]>,
+  });
 
   protected programmeName(request: AssistanceRequest): string {
+    const programs = valueOf(this.programState()) ?? [];
     return (
-      this.programList().find((program) => program.id === request.programId)?.name ??
-      'Unknown programme'
+      programs.find((program) => program.id === request.programId)?.name ?? this.copy.unknownProgramme
     );
   }
 
@@ -426,6 +652,11 @@ export class AssessmentPage {
         reason: this.reason().trim() === '' ? null : this.reason().trim(),
       }),
       this.copy.studySaved,
+      // The completed study is the request's now; the form it was written on is closed.
+      () => {
+        this.openAssessment.set(null);
+        this.alreadyOpenFrom.set(null);
+      },
     );
   }
 
@@ -441,10 +672,10 @@ export class AssessmentPage {
    */
 
   /**
-   * The document workflow — what was asked for, and the acts of reviewing, recording, ruling and
-   * opening — is read through its own list. Where that list cannot be read (not connected yet,
-   * `DL-177`, or failed), the acts on it are not offered and the reason is said once, in place:
-   * an empty "nothing asked for" would assert something about the applicant nobody checked.
+   * What the applicant was asked to bring, read through its own list. Where that list cannot be
+   * read, asking and withdrawing are not offered and the reason is said once, in place: an empty
+   * "nothing asked for" would assert something about the applicant nobody checked. The rest of the
+   * document review does not depend on it and stands.
    */
   private readonly documentState = toSignal(
     toObservable(computed(() => ({ id: this.id(), nonce: this.reloads() }))).pipe(
@@ -523,8 +754,8 @@ export class AssessmentPage {
         this.askDraft(requirementId),
       ),
       this.documentCopy.requestSent,
+      () => this.closeAsk(),
     );
-    this.closeAsk();
   }
 
   protected readonly withdrawing = signal<DocumentRequestId | null>(null);
@@ -551,8 +782,8 @@ export class AssessmentPage {
         this.withdrawReason().trim(),
       ),
       this.documentCopy.requestWithdrawn,
+      () => this.closeWithdraw(),
     );
-    this.closeWithdraw();
   }
 
   protected readonly remarksFor = signal<Record<string, string>>({});
@@ -566,8 +797,19 @@ export class AssessmentPage {
     return this.remarksFor()[requirementId] ?? '';
   }
 
+  /** Where the applicant must be told why, a review carries words — as the server requires. */
+  protected readonly reviewProblem = signal<{ readonly requirementId: string; readonly message: string } | null>(
+    null,
+  );
+
   protected review(requirementId: RequirementId, status: RequirementStatus): void {
     const remarks = this.remarksValue(requirementId).trim();
+    const needsWords = this.copy.reviewNeedsWords[status];
+    if (remarks === '' && needsWords !== null) {
+      this.reviewProblem.set({ requirementId, message: needsWords });
+      return;
+    }
+    this.reviewProblem.set(null);
     this.run(
       this.requests.reviewRequirement(
         asId<AssistanceRequestId>(this.id()),
@@ -575,8 +817,14 @@ export class AssessmentPage {
         status,
         remarks === '' ? null : remarks,
       ),
-      this.copy.studySaved,
+      this.copy.reviewed,
+      () => this.remarksFor.update((current) => ({ ...current, [requirementId]: '' })),
     );
+  }
+
+  protected reviewProblemFor(requirementId: RequirementId): string | null {
+    const problem = this.reviewProblem();
+    return problem !== null && problem.requirementId === requirementId ? problem.message : null;
   }
 
   /* ── documents (TAB 14) ─────────────────────────────────────────────────── */
@@ -671,6 +919,11 @@ export class AssessmentPage {
     return CONDITIONAL_APPLICABILITY_LABELS[requirement.applicability];
   }
 
+  /** A ruling is somebody's, at a time; the record says whose and when where it can. */
+  protected rulingWhen(requirement: SubmittedRequirement): string | null {
+    return requirement.applicabilityDecidedAt;
+  }
+
   protected needsApplicabilityDecision(requirement: SubmittedRequirement): boolean {
     return awaitsApplicabilityDecision(requirement.obligation, requirement.applicability);
   }
@@ -705,7 +958,8 @@ export class AssessmentPage {
         applicability,
         reason,
       ),
-      this.copy.studySaved,
+      this.copy.ruled,
+      () => this.applicabilityReasons.update((current) => ({ ...current, [requirementId]: '' })),
     );
   }
 
@@ -716,36 +970,62 @@ export class AssessmentPage {
    * Two steps rather than one because the warning has to be true: it names the
    * file and says whether the record is protected, and only the server knows
    * that. A warning composed client-side from a guess would be reassuring
-   * exactly when it should not be.
+   * exactly when it should not be. The warning shown is the grant's, word for
+   * word.
    */
   protected askToOpen(requirementId: RequirementId, versionId: DocumentVersionId): void {
+    this.fileReady.set(null);
     this.requests
       .openDocument(asId<AssistanceRequestId>(this.id()), requirementId, versionId)
       .subscribe({
         next: (grant) => this.pendingAccess.set(grant),
-        error: () => this.notifications.error(this.accessCopy.denied),
+        error: (error: unknown) => this.failed(error, this.accessCopy.failed),
       });
   }
 
   protected cancelOpen(): void {
     this.pendingAccess.set(null);
+    this.fileReady.set(null);
+    this.objectUrls.revokeAll();
   }
 
+  /** The bytes, once fetched: an address in this tab only, given back when the dialog closes. */
+  protected readonly fileReady = signal<{ readonly url: string; readonly fileName: string } | null>(
+    null,
+  );
+  protected readonly fetchingFile = signal(false);
+  private readonly objectUrls = new ObjectUrls();
+
   /**
-   * Confirms the open.
+   * Confirms the open: exchanges the grant for the file, once.
    *
-   * There is no backend to stream bytes from in this build, so this reports
-   * what would happen rather than pretending a file arrived. Saying "opened" for
-   * something that did not open is the kind of false success `DL-22` exists to
-   * prevent.
+   * The bytes become an object URL only this tab can read, offered as a link carrying the file's
+   * name, and revoked when the dialog closes or the page is left. Nothing is said to have opened
+   * until the bytes have arrived (`DL-22`).
    */
   protected confirmOpen(): void {
     const grant = this.pendingAccess();
-    if (grant === null) {
+    if (grant === null || this.fetchingFile()) {
       return;
     }
-    this.pendingAccess.set(null);
-    this.notifications.info(grant.fileName, grant.warning);
+    this.fetchingFile.set(true);
+    this.requests.readDocumentFile(grant).subscribe({
+      next: (bytes) => {
+        this.fetchingFile.set(false);
+        this.objectUrls.revokeAll();
+        this.fileReady.set({ url: this.objectUrls.make(bytes), fileName: grant.fileName });
+      },
+      error: (error: unknown) => {
+        this.fetchingFile.set(false);
+        this.pendingAccess.set(null);
+        this.failed(error, this.accessCopy.failed);
+      },
+    });
+  }
+
+  /** Whether this reader is offered "Open" at all on this request. */
+  protected opensFiles(request: AssistanceRequest): boolean {
+    return this.canDownloadDocuments() && !this.uncleared(request);
   }
 
   /* ── the lifecycle move ─────────────────────────────────────────────────── */
@@ -763,27 +1043,36 @@ export class AssessmentPage {
    * It was typed to `changeStatus`'s observable, which meant every other act had to be cast into
    * shape at the call site. A cast to make a helper accept a caller is a helper that was too
    * narrow, and `CLAUDE.md` §2.2 forbids reaching for one to get past the type system.
+   *
+   * `kept` runs only once the server has kept the act — a form is cleared after a save, never
+   * before one that might fail and leave the words nowhere.
    */
-  private run<T>(call: Observable<T>, message: string): void {
+  private run<T>(call: Observable<T>, message: string, kept?: () => void): void {
     this.submitting.set(true);
     call.subscribe({
       next: () => {
         this.submitting.set(false);
         this.notifications.success(message);
+        kept?.();
         this.reloads.update((value) => value + 1);
       },
-      error: (failure: unknown) => {
-        this.submitting.set(false);
-        if (isApiFailure(failure)) {
-          // A conflict or a refusal has already been said, in the server's words, by the HTTP
-          // layer; a validation refusal is left to the screen, so it is said here.
-          if (failure.status === 422 || failure.code === 'VALIDATION_FAILED') {
-            this.notifications.error(describeFailure(failure));
-          }
-          return;
-        }
-        this.notifications.error(failure instanceof Error ? failure.message : this.copy.failed);
-      },
+      error: (failure: unknown) => this.failed(failure),
     });
+  }
+
+  /**
+   * A refusal in its own words, said once. A conflict or a refusal has already been said, in the
+   * server's words, by the HTTP layer; a validation refusal is left to the screen, so it is said
+   * here; anything raised in the console says its own sentence.
+   */
+  private failed(failure: unknown, fallback: string = this.copy.failed): void {
+    this.submitting.set(false);
+    if (isApiFailure(failure)) {
+      if (failure.status === 422 || failure.code === 'VALIDATION_FAILED') {
+        this.notifications.error(describeFailure(failure));
+      }
+      return;
+    }
+    this.notifications.error(failure instanceof Error ? failure.message : fallback);
   }
 }

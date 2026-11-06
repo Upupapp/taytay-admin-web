@@ -3,12 +3,16 @@ import { concat, filter, of, Observable, throwError } from 'rxjs';
 
 import {
   ACCESS_CONTEXT,
-  canReadRecord,
+  ASSIGNMENT_NEEDS_REASON,
   hasSensitiveSector,
+  maskDocumentNumber,
+  PROTECTED_FILE_REFUSAL,
+  PROTECTED_WRITE_REFUSAL,
+  refusalFor,
+  REQUEST_NOTE_MAX_LENGTH,
   ASSISTANCE_STATUS_CATALOG,
   ASSISTANCE_STATUS_TRANSITIONS,
   asId,
-  asIsoDate,
   asIsoDateTime,
   byRequestUrgency,
   documentRequestProblems,
@@ -26,6 +30,7 @@ import {
   isOutstandingObligation,
   REASON_MIN_LENGTH,
   REQUEST_WITHHELD_FIELDS,
+  DOCUMENT_UPLOAD_POLICY,
   STATUS_MOVE_NEEDS_REASON,
   userHasPermission,
   WITHHELD_DRAFT_REFUSAL,
@@ -40,6 +45,7 @@ import {
   permissionForTransition,
   todayAsIsoDate,
   type AdvisoryAcknowledgement,
+  type AuthenticatedUser,
   type AssessmentDraft,
   type AssistanceRequest,
   type AssistanceRequestFilter,
@@ -64,8 +70,12 @@ import {
   type ProgramId,
   type RequirementDocument,
   type RequirementDocumentId,
+  type RequestAssignment,
   type RequestNote,
+  type RequestNoteId,
+  type RequestNoteDraft,
   type RequirementId,
+  type SocialWorker,
   type RequirementStatus,
   type ResidentId,
   type StaffUserId,
@@ -80,6 +90,7 @@ import { MOCK_ASSISTANCE_REQUESTS, MOCK_REQUEST_NOTES } from './seed/assistance-
 import { MOCK_DOCUMENT_REQUESTS } from './seed/document-requests.seed';
 import { MOCK_DISBURSEMENTS } from './seed/releases.seed';
 import { MOCK_PROGRAMS } from './seed/programs.seed';
+import { MOCK_STAFF } from './seed/staff.seed';
 import { denyUnless } from './mock-access';
 import { MockCaseStore } from './mock-case.store';
 import { MockLatency } from './mock-latency';
@@ -130,8 +141,10 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
 
     const drafts = filter.status === 'draft';
     const search = filter.search?.trim().toLowerCase() ?? '';
+    // A caseload always reads its own assignments, whatever `assignedTo` it sends (`DL-178`).
+    const assignedTo = user?.scope === 'assigned-cases' ? user.id : filter.assignedTo;
     const filtered = this.requests.filter((request) => {
-      if (!isWithinBarangayScope(user, request.barangayId)) {
+      if (!inReach(user, request)) {
         return false;
       }
       if (drafts ? request.status !== 'draft' : request.referenceNumber === '') {
@@ -146,7 +159,7 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       if (filter.barangayId && request.barangayId !== filter.barangayId) {
         return false;
       }
-      if (filter.assignedTo && request.assignedTo !== filter.assignedTo) {
+      if (assignedTo !== undefined && request.assignedTo !== assignedTo) {
         return false;
       }
       if (filter.openOnly && isTerminalAssistanceStatus(request.status)) {
@@ -176,11 +189,68 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
   }
 
   getById(id: AssistanceRequestId): Observable<AssistanceRequest | null> {
-    const request = this.requests.find((candidate) => candidate.id === id);
-    if (!request || !canReadRecord(this.access.currentUser(), 'request.view', request.barangayId)) {
+    const user = this.access.currentUser();
+    const request = this.reachable(id);
+    if (request === undefined || !userHasPermission(user, 'request.view')) {
       return this.latency.respond(null);
     }
     return this.latency.respond(this.disclose(request));
+  }
+
+  /** Whole, newest first, a withheld body `null` and the entry still listed (`DL-58`). */
+  listNotes(id: AssistanceRequestId): Observable<readonly RequestNote[]> {
+    const user = this.access.currentUser();
+    const request = this.reachable(id);
+    if (request === undefined || !userHasPermission(user, 'request.view')) {
+      return throwError(() => new Error(REQUEST_NOT_FOUND));
+    }
+    return this.latency.respond(this.notesFor(request));
+  }
+
+  /**
+   * Appends a note, and answers with the whole list as this reader may see it — as the server
+   * does. Nobody writes what they may not read: a protected note needs the protected tier, and a
+   * protected request's notes need `request.view-sensitive` (`DL-58`, `DL-178`).
+   */
+  addNote(id: AssistanceRequestId, note: RequestNoteDraft): Observable<readonly RequestNote[]> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<readonly RequestNote[]>(user, 'case.note');
+    if (denied) {
+      return denied;
+    }
+    const request = this.reachable(id);
+    if (request === undefined) {
+      return throwError(() => new Error(REQUEST_NOT_FOUND));
+    }
+    if (this.disclose(request).withheld.includes('notes')) {
+      return throwError(
+        () =>
+          new Error('Notes on this request are withheld from your account, so it cannot add one.'),
+      );
+    }
+    if (note.sensitivity === 'protected' && !userHasPermission(user, 'case-note.view-protected')) {
+      return throwError(() => new PermissionDeniedError('case-note.view-protected'));
+    }
+    const body = note.body.trim();
+    if (body === '' || body.length > REQUEST_NOTE_MAX_LENGTH) {
+      return throwError(
+        () => new Error(`Write the note — between 1 and ${REQUEST_NOTE_MAX_LENGTH} characters.`),
+      );
+    }
+
+    this.noteSequence += 1;
+    const appended: RequestNote = {
+      id: asId<RequestNoteId>(`note-s${String(this.noteSequence).padStart(4, '0')}`),
+      requestId: id,
+      authorId: user?.id ?? null,
+      authorName: user?.displayName ?? UNKNOWN_ACTOR,
+      body,
+      isWithheld: false,
+      sensitivity: note.sensitivity,
+      createdAt: asIsoDateTime(new Date()),
+    };
+    this.notes = [...this.notes, appended];
+    return this.latency.respond(this.notesFor(request));
   }
 
   /**
@@ -191,24 +261,20 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
    * without `request.view-sensitive` (`DL-177`) — a routine note about a VAWC survivor's visit says
    * what happened to her as plainly as the reason does.
    */
-  listNotes(id: AssistanceRequestId): Observable<readonly RequestNote[]> {
-    const user = this.access.currentUser();
-    const request = this.requests.find((candidate) => candidate.id === id);
-    if (request === undefined || !canReadRecord(user, 'request.view', request.barangayId)) {
-      return throwError(() => new Error('That request was not found.'));
-    }
-    const mayReadProtected = userHasPermission(user, 'case-note.view-protected');
+  private notesFor(request: AssistanceRequest): readonly RequestNote[] {
+    const mayReadProtected = userHasPermission(this.access.currentUser(), 'case-note.view-protected');
     const wordsWithheld = this.disclose(request).withheld.includes('notes');
-
-    const notes = MOCK_REQUEST_NOTES.filter((note) => note.requestId === id).map(
-      (note): RequestNote => {
+    const notes = this.notes
+      .filter((note) => note.requestId === request.id)
+      .map((note): RequestNote => {
         const cleared = (note.sensitivity === 'routine' || mayReadProtected) && !wordsWithheld;
         return cleared ? note : { ...note, body: null, isWithheld: true };
-      },
-    );
-
-    return this.latency.respond(sortItems(notes, (note) => note.createdAt, 'desc'));
+      });
+    return sortItems(notes, (note) => note.createdAt, 'desc');
   }
+
+  private notes: readonly RequestNote[] = [...MOCK_REQUEST_NOTES];
+  private noteSequence = 0;
 
   changeStatus(
     id: AssistanceRequestId,
@@ -236,9 +302,9 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       );
     }
 
-    const current = this.requests.find((request) => request.id === id);
-    if (current === undefined || !isWithinBarangayScope(user, current.barangayId)) {
-      return throwError(() => new Error('That request was not found.'));
+    const current = this.reachable(id);
+    if (current === undefined) {
+      return throwError(() => new Error(REQUEST_NOT_FOUND));
     }
     // A move to where the request already is answers as it stands, as the API answers it.
     if (current.status === to) {
@@ -283,13 +349,13 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
    */
   advisoryForCase(id: AssistanceRequestId): Observable<IntakeAdvisory> {
     const user = this.access.currentUser();
-    const denied = denyUnless<IntakeAdvisory>(user, 'request.create');
+    const denied = denyUnless<IntakeAdvisory>(user, 'request.create') ?? beyondCaseload(user);
     if (denied) {
       return denied;
     }
     const request = this.requests.find((entry) => entry.id === id);
     if (request === undefined || !isWithinBarangayScope(user, request.barangayId)) {
-      return throwError(() => new Error('That request was not found.'));
+      return throwError(() => new Error(REQUEST_NOT_FOUND));
     }
     return this.advisoryOver(request.residentId, request.programId, request.id);
   }
@@ -304,7 +370,7 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
    */
   advisoryFor(residentId: ResidentId, programId: ProgramId | null): Observable<IntakeAdvisory> {
     const user = this.access.currentUser();
-    const denied = denyUnless<IntakeAdvisory>(user, 'request.create');
+    const denied = denyUnless<IntakeAdvisory>(user, 'request.create') ?? beyondCaseload(user);
     if (denied) {
       return denied;
     }
@@ -322,7 +388,7 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
    */
   saveDraft(draft: IntakeDraft, id: AssistanceRequestId | null): Observable<AssistanceRequest> {
     const user = this.access.currentUser();
-    const denied = denyUnless<AssistanceRequest>(user, 'request.create');
+    const denied = denyUnless<AssistanceRequest>(user, 'request.create') ?? beyondCaseload(user);
     if (denied) {
       return denied;
     }
@@ -371,6 +437,7 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       ...this.fieldsFrom(draft, resident.address.barangayId),
       approvedAmount: null,
       assignedTo: null,
+      assignments: [],
       requirements: requirementsFrom(draft.requirements),
       assessment: null,
       statusHistory: [],
@@ -404,7 +471,7 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     acknowledgement: AdvisoryAcknowledgement | null,
   ): Observable<AssistanceRequest> {
     const user = this.access.currentUser();
-    const denied = denyUnless<AssistanceRequest>(user, 'request.create');
+    const denied = denyUnless<AssistanceRequest>(user, 'request.create') ?? beyondCaseload(user);
     if (denied) {
       return denied;
     }
@@ -460,10 +527,10 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
   /*
    * ── The assessment form ─────────────────────────────────────────────────────────────────
    *
-   * The seed mirrors `config/assessment.php` on the server, `placeholder-pending-lgu-approval`
-   * and all. Marking them adopted here would be the more convenient mock — and a mock that is
-   * more convenient than the thing it stands in for is one a screen gets built against, which is
-   * how the checklist came to think an absent line meant an unticked one.
+   * The seed mirrors the server's templates, `placeholder-pending-lgu-approval` and all. Marking
+   * them adopted here would be the more convenient mock — and a mock that is more convenient than
+   * the thing it stands in for is one a screen gets built against, which is how the checklist came
+   * to think an absent line meant an unticked one.
    */
   listAssessmentTemplates(): Observable<readonly AssessmentTemplate[]> {
     const denied = denyUnless<readonly AssessmentTemplate[]>(
@@ -475,29 +542,33 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
   }
 
   /**
-   * Opens an assessment, or returns the one already open.
+   * Opens an assessment, or returns the one already open — whichever form it was opened from, as
+   * the server answers (`DL-178`).
    *
-   * **Idempotent per case, like the server**, and for the server's stated reason: two open
-   * assessments on one case are two competing sets of findings, and nothing says which the
-   * approver should read. A mock that opened a second one would let a screen be written that
-   * quietly discards answers.
+   * **Idempotent per request, like the server**, and for the server's stated reason: two open
+   * assessments on one request are two competing sets of findings, and nothing says which the
+   * approver should read. Only while the request is in `assessment`, as there.
    */
   openAssessment(id: AssistanceRequestId, templateCode: string): Observable<OpenAssessment> {
-    const denied = denyUnless<OpenAssessment>(this.access.currentUser(), 'request.assess');
-    if (denied) {
-      return denied;
+    const found = this.writable<OpenAssessment>(id, 'request.assess');
+    if ('error' in found) {
+      return found.error;
+    }
+    const outside = outsideAssessment<OpenAssessment>(found.request);
+    if (outside) {
+      return outside;
+    }
+
+    const existing = this.assessments.get(id);
+    if (existing !== undefined && !existing.completed) {
+      return of(existing);
     }
 
     const template = ASSESSMENT_TEMPLATE_SEED.find(
       (candidate) => candidate.code === templateCode,
     );
     if (template === undefined) {
-      return throwError(() => new Error('Unknown assessment template.'));
-    }
-
-    const existing = this.assessments.get(id);
-    if (existing !== undefined && !existing.completed) {
-      return of(existing);
+      return throwError(() => new Error('No form the office publishes has that code.'));
     }
 
     const opened: OpenAssessment = {
@@ -520,14 +591,18 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     id: AssistanceRequestId,
     answers: AssessmentAnswers,
   ): Observable<OpenAssessment> {
-    const denied = denyUnless<OpenAssessment>(this.access.currentUser(), 'request.assess');
-    if (denied) {
-      return denied;
+    const found = this.writable<OpenAssessment>(id, 'request.assess');
+    if ('error' in found) {
+      return found.error;
+    }
+    const outside = outsideAssessment<OpenAssessment>(found.request);
+    if (outside) {
+      return outside;
     }
 
     const existing = this.assessments.get(id);
     if (existing === undefined || existing.completed) {
-      return throwError(() => new Error('No assessment is in progress for that case.'));
+      return throwError(() => new Error('No assessment is open on this request. Open one first.'));
     }
 
     const template = ASSESSMENT_TEMPLATE_SEED.find(
@@ -552,25 +627,26 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
   private readonly assessments = new Map<AssistanceRequestId, OpenAssessment>();
 
   /**
-   * Records the case study. Held apart from any status move: writing findings
-   * and endorsing on them are two acts, and the second one is what `DL-08`
-   * keeps away from the person who did the first.
+   * Completes the open assessment. Held apart from any status move, as the server holds it:
+   * writing findings and endorsing on them are two acts, and the second one is what `DL-08` keeps
+   * away from the person who did the first. **Completing moves the request nowhere.**
    */
   recordAssessment(
     id: AssistanceRequestId,
     assessment: AssessmentDraft,
   ): Observable<AssistanceRequest> {
     const user = this.access.currentUser();
-    const denied = denyUnless<AssistanceRequest>(user, 'request.assess');
-    if (denied) {
-      return denied;
+    const found = this.writable<AssistanceRequest>(id, 'request.assess');
+    if ('error' in found) {
+      return found.error;
     }
-    if (!isValidFindings(assessment.findings)) {
-      return throwError(() => new Error('A case study needs findings somebody else could act on.'));
+    const outside = outsideAssessment<AssistanceRequest>(found.request);
+    if (outside) {
+      return outside;
     }
 
     /*
-     * The server's three preconditions, held here too.
+     * The server's preconditions, held here too.
      *
      * A mock that completes what the server would refuse is worse than no mock: every screen and
      * every spec is written against the permissive version, and the failure only appears against
@@ -579,7 +655,7 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
      */
     const open = this.assessments.get(id);
     if (open === undefined || open.completed) {
-      return throwError(() => new Error('No assessment is in progress for that case.'));
+      return throwError(() => new Error('No assessment is open on this request. Open one first.'));
     }
 
     const template = ASSESSMENT_TEMPLATE_SEED.find(
@@ -594,6 +670,9 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
           ),
       );
     }
+    if (!isValidFindings(assessment.findings)) {
+      return throwError(() => new Error('A case study needs findings somebody else could act on.'));
+    }
 
     const problems = assessmentProblems(assessment);
     if (problems.length > 0) {
@@ -602,29 +681,33 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
 
     this.assessments.set(id, { ...open, completed: true });
 
-    const current = this.requests.find((request) => request.id === id);
-    if (current === undefined || !isWithinBarangayScope(user, current.barangayId)) {
-      return throwError(() => new PermissionDeniedError('request.assess'));
-    }
-
     const now = asIsoDateTime(new Date());
+    const reason = assessment.reason?.trim() ?? '';
     const updated: AssistanceRequest = {
-      ...current,
+      ...found.request,
       assessment: {
-        assessedBy: user?.id ?? current.assignedTo ?? asId('staff-unknown'),
+        templateCode: open.templateCode,
+        templateVersion: open.templateVersion,
+        assessedBy: user?.id ?? asId<StaffUserId>('staff-unknown'),
+        assessedByName: user?.displayName ?? UNKNOWN_ACTOR,
         assessedAt: now,
         findings: assessment.findings.trim(),
         recommendedAmount: assessment.recommendedAmount,
         homeVisitConducted: assessment.homeVisitConducted,
         recommendation: assessment.recommendation,
-        recommendationReason: assessment.reason,
+        recommendationReason: reason === '' ? null : reason,
       },
-      audit: { ...current.audit, updatedAt: now, updatedBy: user?.id ?? null },
+      audit: { ...found.request.audit, updatedAt: now, updatedBy: user?.id ?? null },
     };
     this.requests = this.requests.map((request) => (request.id === id ? updated : request));
-    return this.latency.respond(updated);
+    return this.latency.respond(this.disclose(updated));
   }
 
+  /**
+   * A person's review of one document, by the server's rules (`DL-178`): the five verdicts a
+   * person gives, words required where the applicant must be told why, and only a document that
+   * was presented can be anything but excused.
+   */
   reviewRequirement(
     id: AssistanceRequestId,
     requirementId: RequirementId,
@@ -632,41 +715,43 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     remarks: string | null,
   ): Observable<AssistanceRequest> {
     const user = this.access.currentUser();
-    const denied = denyUnless<AssistanceRequest>(user, 'request.intake');
-    if (denied) {
-      return denied;
+    const found = this.locateWritable<AssistanceRequest>(id, requirementId, 'request.intake');
+    if ('error' in found) {
+      return found.error;
     }
-    // A waiver is an excuse for a missing document, and an excuse nobody signed
-    // is indistinguishable from an oversight.
-    if (status === 'waived' && (remarks === null || remarks.trim().length === 0)) {
-      return throwError(() => new Error('Say why the requirement is being waived.'));
+    const verdict = REVIEW_VERDICTS.find((candidate) => candidate === status);
+    if (verdict === undefined) {
+      return throwError(
+        () =>
+          new Error('A review records a verdict: verified, rejected, waived, expired or needs replacement.'),
+      );
     }
-
-    const current = this.requests.find((request) => request.id === id);
-    if (current === undefined || !isWithinBarangayScope(user, current.barangayId)) {
-      return throwError(() => new PermissionDeniedError('request.intake'));
+    const words = remarks?.trim() ?? '';
+    const needsWords = REVIEW_NEEDS_WORDS[verdict];
+    if (words === '' && needsWords !== null) {
+      return throwError(() => new Error(needsWords));
     }
-    if (!current.requirements.some((requirement) => requirement.id === requirementId)) {
-      return throwError(() => new Error('That requirement is not on this request.'));
+    if (verdict !== 'waived' && found.requirement.submittedAt === null) {
+      return throwError(
+        () =>
+          new Error(
+            'Only a document that was presented can be checked. Record it first, or excuse it with a reason.',
+          ),
+      );
     }
 
     const now = asIsoDateTime(new Date());
-    const updated: AssistanceRequest = {
-      ...current,
-      requirements: current.requirements.map((requirement) =>
-        requirement.id === requirementId
-          ? {
-              ...requirement,
-              status,
-              reviewedBy: user?.id ?? null,
-              remarks: remarks === null ? requirement.remarks : remarks.trim(),
-            }
-          : requirement,
+    return this.latency.respond(
+      this.disclose(
+        this.saveRequirement(found.request, requirementId, (requirement) => ({
+          ...requirement,
+          status: verdict,
+          reviewedBy: user?.id ?? null,
+          reviewedAt: now,
+          remarks: words === '' ? requirement.remarks : words,
+        })),
       ),
-      audit: { ...current.audit, updatedAt: now, updatedBy: user?.id ?? null },
-    };
-    this.requests = this.requests.map((request) => (request.id === id ? updated : request));
-    return this.latency.respond(updated);
+    );
   }
 
   /* ── documents (TAB 14) ─────────────────────────────────────────────────── */
@@ -677,12 +762,7 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     draft: DocumentVersionDraft,
   ): Observable<DocumentUpload<AssistanceRequest>> {
     const user = this.access.currentUser();
-    const denied = denyUnless<DocumentUpload<AssistanceRequest>>(user, 'document.record');
-    if (denied) {
-      return denied;
-    }
-
-    const found = this.locate<DocumentUpload<AssistanceRequest>>(
+    const found = this.locateWritable<DocumentUpload<AssistanceRequest>>(
       id,
       requirementId,
       'document.record',
@@ -698,46 +778,71 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     if (problems.length > 0) {
       return throwError(() => new DocumentVersionInvalidError(problems));
     }
+    // The server reads the bytes; the mock reads what it can — the size and the declared type,
+    // against the policy the requirement publishes.
+    const refused = draft.file === null ? null : refusalFor(draft.file, requirement.accepts);
+    if (refused !== null) {
+      return throwError(
+        () =>
+          new Error(
+            refused.reason === 'too-large'
+              ? 'That file is larger than 10 MB. Scan it again at a lower resolution, or in parts.'
+              : 'The file must be a PDF, a JPEG or a PNG.',
+          ),
+      );
+    }
 
     const now = asIsoDateTime(new Date());
     this.documentSequence += 1;
+    const versionNumber = (existing?.versions.length ?? 0) + 1;
+    const versionId = asId<DocumentVersionId>(`dv-${String(this.documentSequence).padStart(4, '0')}`);
     const version: DocumentVersion = {
-      id: asId<DocumentVersionId>(`dv-${String(this.documentSequence).padStart(4, '0')}`),
+      id: versionId,
       // Numbered from the length of the history, never from a count of the
       // live ones: version 3 stays version 3 forever.
-      version: (existing?.versions.length ?? 0) + 1,
+      version: versionNumber,
       /*
-       * The stored shape is derived from the file, not the file itself.
-       *
-       * A `DocumentVersion` describes bytes the office holds; a draft carries the bytes being
-       * sent. The mock does here what the server does for real — records what it received.
-       * `pageCount` stays null: nothing in the browser counts the pages of a PDF, and a guess
-       * would appear on screen as though somebody had checked.
+       * The stored shape is derived from the file, not the file itself, and named as the server
+       * names it — `<code>-v<n>.<ext>` — never by the uploader's own file name, which can say more
+       * than the office needs to hold. `pageCount` stays null: nothing counts the pages of a PDF,
+       * and a guess would appear on screen as though somebody had checked.
        */
       file:
         draft.file === null
           ? null
           : {
-              fileName: draft.file.name,
+              fileName: `${requirement.code}-v${versionNumber}${extensionFor(draft.file.type)}`,
               mimeType: draft.file.type,
               byteSize: draft.file.size,
               pageCount: null,
             },
       source: draft.source,
       documentNumber: draft.documentNumber,
+      documentNumberMasked: false,
       issuedOn: draft.issuedOn,
       expiresOn: draft.expiresOn,
       receivedBy: user?.id ?? asId<StaffUserId>('staff-unknown'),
+      receivedByName: user?.displayName ?? UNKNOWN_ACTOR,
       receivedAt: now,
       supersededAt: null,
+      supersededBy: null,
       supersededReason: null,
     };
+    if (draft.file !== null) {
+      // Held for the session so a grant for it can be exchanged for these bytes, as on the server.
+      this.heldFiles.set(versionId, draft.file);
+    }
 
     // The previous version is *marked* superseded, never removed. This is the
     // whole point of the model: what the office saw when it decided survives.
-    const priorVersions = (existing?.versions ?? []).map((entry, index, all) =>
-      index === all.length - 1
-        ? { ...entry, supersededAt: now, supersededReason: draft.replacesBecause?.trim() ?? null }
+    const priorVersions = (existing?.versions ?? []).map((entry) =>
+      entry.supersededAt === null
+        ? {
+            ...entry,
+            supersededAt: now,
+            supersededBy: user?.id ?? null,
+            supersededReason: draft.replacesBecause?.trim() ?? null,
+          }
         : entry,
     );
 
@@ -753,11 +858,21 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     const saved = this.saveRequirement(request, requirementId, (entry) => ({
       ...entry,
       document,
-      // Presenting a document moves a pending requirement to submitted; it
-      // never marks it verified. Checking it is a separate act by a person.
-      status: entry.status === 'verified' ? entry.status : 'submitted',
-      submittedAt: entry.submittedAt ?? now,
+      // Presenting reads `submitted` again, whatever the last version's review was — a verified
+      // certificate replaced by a new copy has a copy nobody has checked yet (`DL-178`). Checking
+      // it is a separate act by a person.
+      status: 'submitted',
+      submittedAt: now,
     }));
+
+    // What the applicant was asked to bring is answered by bringing it.
+    this.documentRequests = this.documentRequests.map((entry) =>
+      entry.assistanceRequestId === id &&
+      entry.requirementId === requirementId &&
+      entry.state === 'open'
+        ? { ...entry, state: 'answered' as const, closedAt: now, closedBy: user?.id ?? null }
+        : entry,
+    );
 
     /*
      * A halfway emission before the result, so the progress state is reachable in development.
@@ -775,7 +890,10 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
         sentBytes: Math.round(bytes / 2),
         totalBytes: bytes,
       }).pipe(filter(() => bytes > 0)),
-      this.latency.respond<DocumentUpload<AssistanceRequest>>({ kind: 'done', result: saved }),
+      this.latency.respond<DocumentUpload<AssistanceRequest>>({
+        kind: 'done',
+        result: this.disclose(saved),
+      }),
     );
   }
 
@@ -786,32 +904,39 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     reason: string,
   ): Observable<AssistanceRequest> {
     const user = this.access.currentUser();
-    const denied = denyUnless<AssistanceRequest>(user, 'document.record');
-    if (denied) {
-      return denied;
-    }
-
-    if (reason.trim().length === 0) {
-      return throwError(() => new Error('Say why this document does or does not apply.'));
-    }
-
-    const found = this.locate<AssistanceRequest>(id, requirementId, 'document.record');
+    const found = this.locateWritable<AssistanceRequest>(id, requirementId, 'document.record');
     if ('error' in found) {
       return found.error;
+    }
+    if (applicability === 'undecided') {
+      return throwError(
+        () => new Error('Undecided is not a ruling. Say whether the document applies, and why.'),
+      );
+    }
+    if (reason.trim().length === 0) {
+      return throwError(() => new Error('Say why this document does or does not apply.'));
     }
     if (found.requirement.obligation !== 'conditional') {
       // Ruling on a required document would let staff quietly excuse one
       // without recording a waiver, which is the audited path for that.
-      return throwError(() => new Error('Only a conditional document can be ruled on this way.'));
+      return throwError(
+        () =>
+          new Error(
+            'Only a conditional document is ruled on. A required one is excused with a waiver and its reason.',
+          ),
+      );
     }
 
     return this.latency.respond(
-      this.saveRequirement(found.request, requirementId, (entry) => ({
-        ...entry,
-        applicability,
-        applicabilityDecidedBy: user?.id ?? null,
-        applicabilityReason: reason.trim(),
-      })),
+      this.disclose(
+        this.saveRequirement(found.request, requirementId, (entry) => ({
+          ...entry,
+          applicability,
+          applicabilityDecidedBy: user?.id ?? null,
+          applicabilityDecidedAt: asIsoDateTime(new Date()),
+          applicabilityReason: reason.trim(),
+        })),
+      ),
     );
   }
 
@@ -820,20 +945,18 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     draft: DocumentRequestDraft,
   ): Observable<readonly DocumentRequest[]> {
     const user = this.access.currentUser();
-    const denied = denyUnless<readonly DocumentRequest[]>(user, 'document.record');
-    if (denied) {
-      return denied;
-    }
-
-    const today = asIsoDate(new Date().toISOString().slice(0, 10));
-    const problems = documentRequestProblems(draft, today);
-    if (problems.length > 0) {
-      return throwError(() => new Error('That document request needs correcting.'));
-    }
-
-    const found = this.locate<readonly DocumentRequest[]>(id, draft.requirementId, 'document.record');
+    const found = this.locateWritable<readonly DocumentRequest[]>(
+      id,
+      draft.requirementId,
+      'document.record',
+    );
     if ('error' in found) {
       return found.error;
+    }
+
+    const problems = documentRequestProblems(draft, todayAsIsoDate());
+    if (problems.length > 0) {
+      return throwError(() => new Error('That document request needs correcting.'));
     }
 
     this.documentRequestSequence += 1;
@@ -846,13 +969,16 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       message: draft.message.trim(),
       neededBy: draft.neededBy,
       requestedBy: user?.id ?? asId<StaffUserId>('staff-unknown'),
+      requestedByName: user?.displayName ?? UNKNOWN_ACTOR,
       requestedAt: asIsoDateTime(new Date()),
       closedAt: null,
+      closedBy: null,
       withdrawnReason: null,
+      isWithheld: false,
     };
 
     this.documentRequests = [...this.documentRequests, record];
-    return this.latency.respond(this.documentRequestsFor(id));
+    return this.latency.respond(this.documentRequestsFor(found.request));
   }
 
   listDocumentRequests(id: AssistanceRequestId): Observable<readonly DocumentRequest[]> {
@@ -861,7 +987,11 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     if (denied) {
       return denied;
     }
-    return this.latency.respond(this.documentRequestsFor(id));
+    const request = this.reachable(id);
+    if (request === undefined) {
+      return throwError(() => new Error(REQUEST_NOT_FOUND));
+    }
+    return this.latency.respond(this.documentRequestsFor(request));
   }
 
   /**
@@ -875,12 +1005,10 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     documentRequestId: DocumentRequestId,
     reason: string,
   ): Observable<readonly DocumentRequest[]> {
-    const denied = denyUnless<readonly DocumentRequest[]>(
-      this.access.currentUser(),
-      'document.record',
-    );
-    if (denied) {
-      return denied;
+    const user = this.access.currentUser();
+    const found = this.writable<readonly DocumentRequest[]>(id, 'document.record');
+    if ('error' in found) {
+      return found.error;
     }
 
     if (reason.trim().length === 0) {
@@ -894,10 +1022,13 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     );
 
     if (existing === undefined) {
-      return throwError(() => new Error('That request was not found.'));
+      return throwError(() => new Error('That request for a document was not found.'));
     }
     if (existing.state !== 'open') {
-      return throwError(() => new Error('That request is already closed.'));
+      return throwError(
+        () =>
+          new Error('That request for a document is already closed, and is kept as it was closed.'),
+      );
     }
 
     this.documentRequests = this.documentRequests.map((entry) =>
@@ -907,13 +1038,19 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
             state: 'withdrawn' as const,
             withdrawnReason: reason.trim(),
             closedAt: asIsoDateTime(new Date()),
+            closedBy: user?.id ?? null,
           }
         : entry,
     );
 
-    return this.latency.respond(this.documentRequestsFor(id));
+    return this.latency.respond(this.documentRequestsFor(found.request));
   }
 
+  /**
+   * A grant to open one version's file, with the server's warning (`DL-178`): what the file is,
+   * how to handle it, that opening it is recorded, and that nothing in it was redacted — the
+   * office keeps the copy it received and makes no other, so `redactedForSharing` is `false`.
+   */
   openDocument(
     id: AssistanceRequestId,
     requirementId: RequirementId,
@@ -927,71 +1064,235 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       return denied;
     }
 
-    const found = this.locate<DocumentAccessGrant>(id, requirementId, 'document.download');
-    if ('error' in found) {
-      return found.error;
+    const request = this.reachable(id);
+    if (request === undefined) {
+      return throwError(() => new Error(REQUEST_NOT_FOUND));
+    }
+    const isProtected = this.disclose(request).isProtected;
+    if (isProtected && !userHasPermission(user, 'request.view-sensitive')) {
+      return throwError(() => new Error(PROTECTED_FILE_REFUSAL));
+    }
+    const requirement = request.requirements.find((entry) => entry.id === requirementId);
+    if (requirement === undefined) {
+      return throwError(() => new Error('That document is not on this request.'));
+    }
+    const version = requirement.document?.versions.find((entry) => entry.id === versionId);
+    if (version === undefined) {
+      return throwError(() => new Error('That version is not on this document.'));
+    }
+    if (version.file === null) {
+      return throwError(
+        () =>
+          new Error(
+            'This version was recorded without a file — encoded from paper, or confirmed with the office that issued it — so there is nothing to open.',
+          ),
+      );
     }
 
-    const version = found.requirement.document?.versions.find((entry) => entry.id === versionId);
-    if (version === undefined || version.file === null) {
-      return throwError(() => new Error('There is no file to open for that document.'));
-    }
+    this.grantSequence += 1;
+    // Opaque and short-lived, never a durable public URL: a link that keeps working is a link
+    // that gets forwarded.
+    const handle = `mock-grant-${String(this.grantSequence).padStart(6, '0')}-${versionId}`;
+    const expiresAt = asIsoDateTime(new Date(Date.now() + GRANT_LIFETIME_MS));
+    this.grants.set(handle, { versionId, userId: user?.id ?? null, expiresAt });
 
-    // Sensitive records are shared in redacted form by default. The office
-    // routinely attaches a document to a referral, and the copy that leaves the
-    // building should not carry more than the receiving office needs.
-    const resident = this.residents.find(found.request.residentId);
-    const isSensitive = resident !== undefined && hasSensitiveSector(resident);
+    const replaced =
+      version.supersededAt === null
+        ? ''
+        : `, replaced on ${version.supersededAt.slice(0, 10)} and kept as evidence`;
+    const handling = isProtected
+      ? 'This request is held under a protected sector (RA 9262 or RA 9344). Open the file only for this request’s work, and do not save, print or forward it.'
+      : 'It holds personal information about an applicant (RA 10173). Open it only for this request’s work, and do not save it outside office systems or forward it.';
 
-    const grant: DocumentAccessGrant = {
+    return this.latency.respond<DocumentAccessGrant>({
       versionId,
       fileName: version.file.fileName,
       mimeType: version.file.mimeType,
-      // Opaque and short-lived, never a durable public URL: a link that keeps
-      // working is a link that gets forwarded.
-      handle: `mock-grant:${versionId}`,
-      expiresAt: asIsoDateTime(new Date(Date.now() + 5 * 60_000)),
-      redactedForSharing: isSensitive,
-      warning: isSensitive
-        ? 'This record is handled under a protected sector. Open it only if this is your work, and do not forward the file.'
-        : 'This file contains personal information. Do not save it outside office systems.',
-    };
+      handle,
+      expiresAt,
+      redactedForSharing: false,
+      warning:
+        `${version.file.fileName} is version ${version.version} of the ${requirement.label}${replaced}. ` +
+        `${handling} Opening it is recorded against your account. The copy is the one the office ` +
+        'holds: nothing in it has been redacted.',
+    });
+  }
 
-    return this.latency.respond(grant);
+  /**
+   * Exchanges a grant for the bytes: once, within five minutes, by the account it was issued to,
+   * as the server does. The seed describes files and holds none of their bytes, so a seeded
+   * version says so rather than handing over a stand-in that would read as the real document.
+   */
+  readDocumentFile(grant: DocumentAccessGrant): Observable<Blob> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<Blob>(user, 'document.download');
+    if (denied) {
+      return denied;
+    }
+    const issued = this.grants.get(grant.handle);
+    this.grants.delete(grant.handle);
+    if (
+      issued === undefined ||
+      issued.userId !== (user?.id ?? null) ||
+      issued.expiresAt < asIsoDateTime(new Date())
+    ) {
+      return throwError(() => new Error(GRANT_GONE));
+    }
+    const held = this.heldFiles.get(issued.versionId);
+    if (held === undefined) {
+      return throwError(
+        () =>
+          new Error(
+            'The development data describes this file but holds none of its bytes, so nothing was opened.',
+          ),
+      );
+    }
+    return this.latency.respond<Blob>(held);
+  }
+
+  private grantSequence = 0;
+  private readonly grants = new Map<
+    string,
+    { readonly versionId: DocumentVersionId; readonly userId: StaffUserId | null; readonly expiresAt: string }
+  >();
+  private readonly heldFiles = new Map<DocumentVersionId, Blob>();
+
+  /* ── assignment (DL-178) ────────────────────────────────────────────────── */
+
+  /** The open social-worker accounts, by name. Refused to a caseload, as on the server. */
+  listSocialWorkers(): Observable<readonly SocialWorker[]> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<readonly SocialWorker[]>(user, 'request.assess');
+    if (denied) {
+      return denied;
+    }
+    if (user?.scope === 'assigned-cases') {
+      return throwError(() => new Error(ASSIGNING_REFUSAL));
+    }
+    return this.latency.respond(socialWorkers());
+  }
+
+  assignForAssessment(
+    id: AssistanceRequestId,
+    assigneeId: StaffUserId,
+    reason: string,
+  ): Observable<AssistanceRequest> {
+    const user = this.access.currentUser();
+    if (user?.scope === 'assigned-cases' && userHasPermission(user, 'request.assess')) {
+      return throwError(() => new Error(ASSIGNING_REFUSAL));
+    }
+    const found = this.writable<AssistanceRequest>(id, 'request.assess');
+    if ('error' in found) {
+      return found.error;
+    }
+    const words = reason.trim();
+    if (words === '') {
+      return throwError(() => new Error(ASSIGNMENT_NEEDS_REASON));
+    }
+    const ended = refuseUnfiledOrEnded<AssistanceRequest>(found.request);
+    if (ended) {
+      return ended;
+    }
+    const assignee = socialWorkers().find((worker) => worker.id === assigneeId);
+    if (assignee === undefined) {
+      return throwError(
+        () =>
+          new Error(
+            'Not the open account of a social worker. A request is assigned to a social worker for assessment.',
+          ),
+      );
+    }
+    // Assigning to whoever holds it answers as it stands, as the server answers it.
+    if (found.request.assignedTo === assigneeId) {
+      return this.latency.respond(this.disclose(found.request));
+    }
+
+    const now = asIsoDateTime(new Date());
+    const assignment: RequestAssignment = {
+      assigneeId,
+      assigneeName: assignee.name,
+      reason: words,
+      actorId: user?.id ?? null,
+      actorName: user?.displayName ?? UNKNOWN_ACTOR,
+      occurredAt: now,
+    };
+    const updated: AssistanceRequest = {
+      ...found.request,
+      assignedTo: assigneeId,
+      assignments: [...found.request.assignments, assignment],
+      audit: { ...found.request.audit, updatedAt: now, updatedBy: user?.id ?? null },
+    };
+    this.requests = this.requests.map((request) => (request.id === id ? updated : request));
+    return this.latency.respond(this.disclose(updated));
   }
 
   /* ── document helpers ───────────────────────────────────────────────────── */
 
-  private documentRequestsFor(id: AssistanceRequestId): readonly DocumentRequest[] {
+  /** Open first, newest first, and the words withheld as the request's own are (`DL-178`). */
+  private documentRequestsFor(request: AssistanceRequest): readonly DocumentRequest[] {
+    const withheld = this.disclose(request).withheld.includes('requirementRemarks');
     return this.documentRequests
-      .filter((entry) => entry.assistanceRequestId === id)
+      .filter((entry) => entry.assistanceRequestId === request.id)
+      .map((entry): DocumentRequest =>
+        withheld ? { ...entry, message: null, withdrawnReason: null, isWithheld: true } : entry,
+      )
       .slice()
       .sort(byRequestUrgency);
   }
 
+  /** The request as this reader may reach it, or `undefined` — answered as "not found" (`DL-31`). */
+  private reachable(id: AssistanceRequestId): AssistanceRequest | undefined {
+    const request = this.requests.find((entry) => entry.id === id);
+    return request !== undefined && inReach(this.access.currentUser(), request) ? request : undefined;
+  }
+
   /**
-   * Finds a request and one of its requirements, refusing out of scope. Shared
-   * so every document operation applies the same check in the same order.
+   * A request this reader may add to: the permission, the request in reach, and — on a protected
+   * request — `request.view-sensitive`, because nobody adds to what they may not read (`DL-178`).
    */
-  private locate<TValue>(
+  private writable<TValue>(
+    id: AssistanceRequestId,
+    permission: Permission,
+  ): { readonly request: AssistanceRequest } | { readonly error: Observable<TValue> } {
+    const user = this.access.currentUser();
+    const denied = denyUnless<TValue>(user, permission);
+    if (denied) {
+      return { error: denied };
+    }
+    const request = this.reachable(id);
+    if (request === undefined) {
+      return { error: throwError(() => new Error(REQUEST_NOT_FOUND)) };
+    }
+    if (this.disclose(request).withheld.includes('reasonForRequest')) {
+      return { error: throwError(() => new Error(PROTECTED_WRITE_REFUSAL)) };
+    }
+    return { request };
+  }
+
+  /**
+   * A writable request and one of its requirements, for a request that is filed and not over.
+   * Shared so every document act applies the same checks in the same order as the server.
+   */
+  private locateWritable<TValue>(
     id: AssistanceRequestId,
     requirementId: RequirementId,
     permission: Permission,
   ):
     | { readonly request: AssistanceRequest; readonly requirement: SubmittedRequirement }
     | { readonly error: Observable<TValue> } {
-    const user = this.access.currentUser();
-    const request = this.requests.find((entry) => entry.id === id);
-    if (request === undefined || !isWithinBarangayScope(user, request.barangayId)) {
-      return { error: throwError(() => new PermissionDeniedError(permission)) };
+    const found = this.writable<TValue>(id, permission);
+    if ('error' in found) {
+      return found;
     }
-    const requirement = request.requirements.find((entry) => entry.id === requirementId);
+    const ended = refuseUnfiledOrEnded<TValue>(found.request);
+    if (ended) {
+      return { error: ended };
+    }
+    const requirement = found.request.requirements.find((entry) => entry.id === requirementId);
     if (requirement === undefined) {
-      return {
-        error: throwError(() => new Error('That requirement is not on this request.')),
-      };
+      return { error: throwError(() => new Error('That document is not on this request.')) };
     }
-    return { request, requirement };
+    return { request: found.request, requirement };
   }
 
   private saveRequirement(
@@ -1102,24 +1403,60 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
   }
 
   /**
-   * The request as this reader may see it, as the API discloses it (`DL-38`, `DL-177`): protected
-   * when its person is under a protected sector **today**, and then its words withheld from a
-   * reader without `request.view-sensitive`. Stored whole; withheld on the way out.
+   * The request as this reader may see it, as the API discloses it (`DL-38`, `DL-177`, `DL-178`):
+   * protected when its person is under a protected sector **today**, and then its words withheld
+   * from a reader without `request.view-sensitive`; the case study's words withheld from a reader
+   * without `case.view` whatever the request; and every document number masked to its last four
+   * characters unless the reader holds `document.view-full-number`. Stored whole; withheld on the
+   * way out.
    */
   private disclose(request: AssistanceRequest): AssistanceRequest {
+    const user = this.access.currentUser();
     const resident = this.residents.find(request.residentId);
     const isProtected = resident !== undefined && hasSensitiveSector(resident);
-    if (!isProtected || userHasPermission(this.access.currentUser(), 'request.view-sensitive')) {
-      return { ...request, isProtected, withheld: [] };
+    const masked = isProtected && !userHasPermission(user, 'request.view-sensitive');
+    const withheld = masked ? [...REQUEST_WITHHELD_FIELDS] : [];
+    if (!masked && !userHasPermission(user, 'case.view')) {
+      withheld.push('assessment');
     }
+    const caseStudyWithheld = withheld.includes('assessment');
+    const fullNumbers = userHasPermission(user, 'document.view-full-number');
+
     return {
       ...request,
       isProtected,
-      withheld: REQUEST_WITHHELD_FIELDS,
-      reasonForRequest: '',
-      referredBy: null,
-      statusHistory: request.statusHistory.map((change) => ({ ...change, reason: null })),
-      requirements: request.requirements.map((requirement) => ({ ...requirement, remarks: null })),
+      withheld,
+      reasonForRequest: masked ? '' : request.reasonForRequest,
+      referredBy: masked ? null : request.referredBy,
+      statusHistory: masked
+        ? request.statusHistory.map((change) => ({ ...change, reason: null }))
+        : request.statusHistory,
+      assignments: masked
+        ? request.assignments.map((assignment) => ({ ...assignment, reason: null }))
+        : request.assignments,
+      assessment:
+        request.assessment === null || !caseStudyWithheld
+          ? request.assessment
+          : { ...request.assessment, findings: null, recommendationReason: null },
+      requirements: request.requirements.map((requirement) => ({
+        ...requirement,
+        remarks: masked ? null : requirement.remarks,
+        applicabilityReason: masked ? null : requirement.applicabilityReason,
+        document:
+          requirement.document === null
+            ? null
+            : {
+                ...requirement.document,
+                versions: requirement.document.versions.map((version) => ({
+                  ...version,
+                  documentNumber: fullNumbers
+                    ? version.documentNumber
+                    : maskDocumentNumber(version.documentNumber),
+                  documentNumberMasked: !fullNumbers && version.documentNumber !== null,
+                  supersededReason: masked ? null : version.supersededReason,
+                })),
+              },
+      })),
     };
   }
 
@@ -1204,7 +1541,9 @@ function requirementsFrom(
       applicability: entry.applicability,
       appliesWhen: entry.appliesWhen,
       applicabilityDecidedBy: null,
+      applicabilityDecidedAt: null,
       applicabilityReason: null,
+      accepts: DOCUMENT_UPLOAD_POLICY,
       submittedAt: entry.presented ? asIsoDateTime(new Date()) : null,
       reviewedBy: null,
       reviewedAt: null,
@@ -1292,4 +1631,114 @@ function highestDocumentVersionSerial(requests: readonly AssistanceRequest[]): n
       ),
     ),
   );
+}
+
+/* ── the server's rules, held here too (DL-178) ────────────────────────────── */
+
+const REQUEST_NOT_FOUND = 'That request was not found.';
+
+/** Who wrote something, when the session holds no name for them. */
+const UNKNOWN_ACTOR = 'A staff account with no name on record';
+
+/** The server's refusal of assigning to a caseload: it reads the office's whole list. */
+const ASSIGNING_REFUSAL =
+  'Assigning a request for assessment is done from the office’s whole list, and your account works ' +
+  'the requests assigned to it. Ask whoever assigns them.';
+
+const GRANT_GONE =
+  'That file is not available to open. A grant is used once, within five minutes, by the account it ' +
+  'was issued to. Ask to open the file again.';
+
+/** How long a grant to open a file lasts, as on the server: long enough to confirm, too short to forward. */
+const GRANT_LIFETIME_MS = 5 * 60_000;
+
+/** The verdicts a person gives a document. `pending` and `submitted` are states, never a review. */
+const REVIEW_VERDICTS = ['verified', 'rejected', 'waived', 'expired', 'needs-replacement'] as const;
+
+type ReviewVerdict = (typeof REVIEW_VERDICTS)[number];
+
+/** Where the applicant must be told why, the words are required — in the server's sentences. */
+const REVIEW_NEEDS_WORDS: Readonly<Record<ReviewVerdict, string | null>> = {
+  verified: null,
+  expired: null,
+  waived:
+    'Say why the document is being excused. An excuse nobody gave a reason for reads as an oversight.',
+  rejected:
+    'Say why the document was not accepted. The applicant has to be told what to bring instead.',
+  'needs-replacement': 'Say why a fresh copy is needed — damaged, illegible, or out of date.',
+};
+
+/**
+ * Whether this reader reaches the request at all. A caseload (`assigned-cases`) reads the filed
+ * requests assigned to it and nothing else; everything else answers as not found (`DL-178`).
+ */
+function inReach(user: AuthenticatedUser | null, request: AssistanceRequest): boolean {
+  if (user === null || !isWithinBarangayScope(user, request.barangayId)) {
+    return false;
+  }
+  return (
+    user.scope !== 'assigned-cases' ||
+    (request.referenceNumber !== '' && request.assignedTo === user.id)
+  );
+}
+
+/**
+ * Starting, saving and filing a request, and the duplicate check, read beyond a caseload — the
+ * person's whole history, the office's whole register — so they are refused to one (`DL-178`).
+ */
+function beyondCaseload<TValue>(user: AuthenticatedUser | null): Observable<TValue> | null {
+  return user?.scope === 'assigned-cases'
+    ? throwError(
+        () =>
+          new Error(
+            'Starting, saving and filing a request read beyond the requests assigned to your account. An intake officer does this.',
+          ),
+      )
+    : null;
+}
+
+/** A draft's checklist is the counter's, and a request that is over is kept as it ended. */
+function refuseUnfiledOrEnded<TValue>(request: AssistanceRequest): Observable<TValue> | null {
+  if (request.referenceNumber === '') {
+    return throwError(
+      () => new Error('This request is still a draft. Its checklist is saved with the draft.'),
+    );
+  }
+  if (isTerminalAssistanceStatus(request.status)) {
+    const label = ASSISTANCE_STATUS_CATALOG[request.status].label.toLowerCase();
+    return throwError(() => new Error(`This request is ${label}, and is kept as it ended.`));
+  }
+  return null;
+}
+
+/** An assessment is opened, answered and completed while the request is in `assessment`. */
+function outsideAssessment<TValue>(request: AssistanceRequest): Observable<TValue> | null {
+  if (request.status === 'assessment') {
+    return null;
+  }
+  const label = ASSISTANCE_STATUS_CATALOG[request.status].label.toLowerCase();
+  return throwError(
+    () =>
+      new Error(
+        `An assessment is opened, answered and completed while the request is in assessment, and this one is ${label}.`,
+      ),
+  );
+}
+
+/** The open accounts in the social-worker role, by name — nothing more, as the server lists them. */
+function socialWorkers(): readonly SocialWorker[] {
+  return MOCK_STAFF.filter((staff) => staff.role === 'social-worker' && staff.isActive).map(
+    (staff) => ({ id: staff.id, name: `${staff.name.first} ${staff.name.last}` }),
+  );
+}
+
+/** The extension the server gives a stored file, from its type. */
+function extensionFor(mimeType: string): string {
+  return mimeType === 'application/pdf'
+    ? '.pdf'
+    : mimeType === 'image/jpeg'
+      ? '.jpg'
+      : mimeType === 'image/png'
+        ? '.png'
+        : '';
 }

@@ -23,6 +23,7 @@
  * | `cursorPage` / `everyPage`| an array plus `meta.pagination`       | `cursor-page`  |
  * | `list`                    | an array, `meta: {}`                  | `list`         |
  * | `blob`                    | no envelope at all: bytes             | `binary`       |
+ * | `postBlob`                | no envelope at all: bytes, at `POST`  | `binary`       |
  *
  * `binary` (`DL-167`) is a `200` whose every content type is a non-JSON media type with a
  * `format: binary` schema — `GET media/{id}/content` and nothing else today. It is matched both
@@ -95,10 +96,17 @@ function envelopeOf(operation) {
 
 const normalise = (path) => path.replace(/\{[^}]*\}/g, '{}');
 
+/*
+ * Keyed by verb as well as path. Every read helper is a `GET` except `postBlob` (`DL-178`), which
+ * exchanges a single-use grant for a document's bytes: a `POST`, because it uses the grant up, and
+ * whose answer is held to the `POST` operation's envelope exactly as a `GET`'s is.
+ */
 const serverEnvelope = new Map();
 for (const [path, item] of Object.entries(spec.paths ?? {})) {
-  if (item.get !== undefined) {
-    serverEnvelope.set(normalise(path.replace(/^\/api\/v1\//, '')), envelopeOf(item.get));
+  for (const verb of ['get', 'post']) {
+    if (item[verb] !== undefined) {
+      serverEnvelope.set(`${verb} ${normalise(path.replace(/^\/api\/v1\//, ''))}`, envelopeOf(item[verb]));
+    }
   }
 }
 
@@ -145,7 +153,12 @@ const NEEDS = {
   list: 'list',
   /** Bytes, not an envelope: only a route whose every answer is a binary media type. */
   blob: 'binary',
+  /** Bytes for a grant, at `POST` (`DL-178`): judged against that operation's answer. */
+  postBlob: 'binary',
 };
+
+/** The verb a read helper is judged at; anything not named here is a `GET`. */
+const VERB_OF = { postBlob: 'post' };
 
 const WRITES = new Set(['post', 'patch', 'postForm', 'patchForm', 'delete']);
 
@@ -215,6 +228,7 @@ while ((match = start.exec(adapters)) !== null) {
 
   reads.push({
     needs,
+    verb: VERB_OF[match[1]] ?? 'get',
     helper: match[1],
     path: path.replace(/\/$/, ''),
     line: adapters.slice(0, match.index).split('\n').length,
@@ -241,11 +255,11 @@ if (reads.length + unresolved !== readSites || unresolved > 0) {
 let agree = 0;
 
 for (const entry of reads) {
-  const server = serverEnvelope.get(normalise(entry.path));
+  const server = serverEnvelope.get(`${entry.verb} ${normalise(entry.path)}`);
 
   if (server === undefined || server === 'undeclared') {
     failures.push(
-      `${ADAPTERS}:${entry.line} reads GET ${entry.path} with ${entry.helper}, and the spec declares no ` +
+      `${ADAPTERS}:${entry.line} reads ${entry.verb.toUpperCase()} ${entry.path} with ${entry.helper}, and the spec declares no ` +
         `envelope for it. A read nobody can check is not one this check may call agreed.`,
     );
     continue;
@@ -259,7 +273,7 @@ for (const entry of reads) {
           ? 'data is an object, so the screen shows nothing.'
           : `${entry.helper} needs ${entry.needs} and the route answers ${server}.`;
 
-    failures.push(`${ADAPTERS}:${entry.line} ${entry.helper} GET ${entry.path} <- ${server}. ${consequence}`);
+    failures.push(`${ADAPTERS}:${entry.line} ${entry.helper} ${entry.verb.toUpperCase()} ${entry.path} <- ${server}. ${consequence}`);
     continue;
   }
 

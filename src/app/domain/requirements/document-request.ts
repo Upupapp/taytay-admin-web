@@ -53,24 +53,33 @@ export interface DocumentRequest {
   readonly requirementId: RequirementId;
   readonly state: DocumentRequestState;
   readonly channel: DocumentRequestChannel;
-  /** What the applicant was actually told, in the words used. */
-  readonly message: string;
+  /**
+   * What the applicant was actually told, in the words used.
+   *
+   * `null` only when withheld from this reader (`isWithheld`) on a protected request: that the
+   * office asked is not the disclosure, what it asked may be. A screen says "withheld" there — never
+   * a blank, which would read as the office having asked without saying what (`DL-178`).
+   */
+  readonly message: string | null;
   readonly neededBy: IsoDate | null;
   /**
    * Who asked, or `null` where the office record does not say.
    *
-   * Nullable because the API's projection carries no requester. The whole point of recording a
-   * request is that an applicant who says they were never told can be checked against something —
-   * and "the office asked" without "and this is who" is a weaker record than it looks. A fabricated
-   * id would be worse: it would name somebody. The gap is in
-   * `docs/integration/backend-requests.md`.
+   * The whole point of recording a request is that an applicant who says they were never told can
+   * be checked against something — and "the office asked" without "and this is who" is a weaker
+   * record than it looks. A fabricated id would be worse: it would name somebody.
    */
   readonly requestedBy: StaffUserId | null;
+  readonly requestedByName: string;
   readonly requestedAt: IsoDateTime;
   /** Set when the state leaves `open`. Never unset. */
   readonly closedAt: IsoDateTime | null;
-  /** Why it was withdrawn. `null` when it was simply answered. */
+  /** Who closed it: whoever recorded the document that answered it, or withdrew it. */
+  readonly closedBy: StaffUserId | null;
+  /** Why it was withdrawn. `null` when it was simply answered — or withheld (`isWithheld`). */
   readonly withdrawnReason: string | null;
+  /** The words were withheld from this reader; the entry is still listed (`DL-58`'s pattern). */
+  readonly isWithheld: boolean;
 }
 
 export interface DocumentRequestDraft {

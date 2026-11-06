@@ -48,6 +48,16 @@ export const REQUIREMENTS_COPY = {
         .map((type) => type.split('/')[1]?.toUpperCase() ?? type)
         .join(', ')}.`,
     versionLabel: (version: number): string => `Version ${version}`,
+    receivedBy: (name: string): string => `by ${name}`,
+    reasonWithheld: 'Withheld — protected record',
+    sourceLabel: 'How the office has it',
+    numberLabel: 'Number on the document (optional)',
+    numberHint: 'Shown afterwards to its last four characters only.',
+    issuedLabel: 'Issued on (optional)',
+    expiresLabel: 'Expires on (optional)',
+    expiryBeforeIssue: 'A document cannot expire before it was issued.',
+    noFileForSource:
+      'Nothing to attach: a document encoded from paper, or confirmed with the office that issued it, holds no file.',
   },
 
   checklist: {
@@ -111,6 +121,10 @@ export const REQUIREMENTS_COPY = {
     redacted: 'A copy shared outside the office is redacted.',
     failed: 'That document could not be opened.',
     denied: 'Your account cannot open documents. Ask a social worker or the MSWDO head.',
+    fetching: 'Fetching the file…',
+    ready: 'The file has arrived in this tab only.',
+    save: (fileName: string): string => `Open ${fileName}`,
+    done: 'Close',
   },
 
   requests: {

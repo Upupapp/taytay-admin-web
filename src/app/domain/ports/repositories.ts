@@ -48,7 +48,9 @@ import type {
   AssistanceRequestFilter,
   AssistanceRequestStatus,
   RequestNote,
+  RequestNoteDraft,
   RequirementStatus,
+  SocialWorker,
 } from '../assistance/assistance-request';
 import type {
   BeneficiaryDetail,
@@ -605,6 +607,30 @@ export interface AssistanceRequestRepository {
   ): Observable<CursorPage<AssistanceRequest>>;
   getById(id: AssistanceRequestId): Observable<AssistanceRequest | null>;
   listNotes(id: AssistanceRequestId): Observable<readonly RequestNote[]>;
+
+  /**
+   * Appends a note and answers with the whole list as this reader may see it (`DL-58`). Never
+   * edited or removed. A `protected` note needs `case-note.view-protected`, and any note on a
+   * protected request `request.view-sensitive` — nobody adds to what they may not read.
+   */
+  addNote(id: AssistanceRequestId, note: RequestNoteDraft): Observable<readonly RequestNote[]>;
+
+  /**
+   * The open social-worker accounts a request can be assigned to. Read from the office's whole
+   * list, so a caseload (`assigned-cases`) is refused it, as it is refused assigning.
+   */
+  listSocialWorkers(): Observable<readonly SocialWorker[]>;
+
+  /**
+   * Assigns a filed request to a social worker for assessment, with a required reason (`DL-178`).
+   * Appended to the request's assignments; assigning to whoever holds it answers as it stands.
+   */
+  assignForAssessment(
+    id: AssistanceRequestId,
+    assigneeId: StaffUserId,
+    reason: string,
+  ): Observable<AssistanceRequest>;
+
   changeStatus(
     id: AssistanceRequestId,
     to: AssistanceRequestStatus,
@@ -767,6 +793,14 @@ export interface AssistanceRequestRepository {
     requirementId: RequirementId,
     versionId: DocumentVersionId,
   ): Observable<DocumentAccessGrant>;
+
+  /**
+   * Exchanges a grant for the file's bytes — once, within its life, by the account it was issued
+   * to. The second half of opening a file: asked only after the reader has seen the grant's
+   * warning and confirmed. The handle travels in a request body, never a URL a log keeps, and the
+   * caller turns the bytes into an object URL it must revoke.
+   */
+  readDocumentFile(grant: DocumentAccessGrant): Observable<Blob>;
 }
 
 /**

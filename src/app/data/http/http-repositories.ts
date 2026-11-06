@@ -100,7 +100,31 @@ import {
   ASSISTANCE_HISTORY_NOT_CONNECTED,
   PROGRAM_UTILIZATION_NOT_CONNECTED,
   STATUS_MOVE_NEEDS_REASON,
+  ASSIGNMENT_NEEDS_REASON,
+  DocumentVersionInvalidError,
+  REQUEST_NOTE_MAX_LENGTH,
+  documentRequestProblems,
+  documentVersionProblems,
+  refusalFor,
+  todayAsIsoDate,
   type AdvisoryAcknowledgement,
+  type AssessmentAnswers,
+  type AssessmentDraft,
+  type AssessmentTemplate,
+  type ConditionalApplicability,
+  type DocumentAccessGrant,
+  type DocumentRequest,
+  type DocumentRequestDraft,
+  type DocumentRequestId,
+  type DocumentUpload,
+  type DocumentVersionDraft,
+  type DocumentVersionId,
+  type OpenAssessment,
+  type RequestNoteDraft,
+  type RequirementId,
+  type RequirementStatus,
+  type SocialWorker,
+  type StaffUserId,
   type AssistanceRequest,
   type AssistanceRequestFilter,
   type AssistanceRequestId,
@@ -238,11 +262,28 @@ import {
   toWireRequirementTemplatePatch,
 } from './mappers/program.mapper';
 import {
+  REVIEW_VERDICTS,
+  toAssessmentTemplate,
   toAssistanceRequest,
+  toDocumentAccessGrant,
+  toDocumentRequest,
   toIntakeAdvisory,
+  toOpenAssessment,
   toRequestNote,
+  toSocialWorker,
+  toWireApplicabilityRuling,
+  toWireAssessment,
+  toWireAssessmentAnswers,
+  toWireAssessmentOpen,
+  toWireAssignment,
+  toWireDocumentFileRequest,
+  toWireDocumentRequest,
+  toWireDocumentRequestWithdrawal,
+  toWireDocumentUpload,
+  toWireNote,
   toWireRequestDraft,
   toWireRequestFiling,
+  toWireRequirementReview,
   toWireStatusMove,
 } from './mappers/assistance-request.mapper';
 import { toSavedView, toWireSavedViewDraft } from './mappers/saved-view.mapper';
@@ -2166,12 +2207,10 @@ function readRequirementTemplate(wire: unknown): RequirementTemplate {
 
 /* ── assistance requests (casework phase 2a) ─────────────────────────────── */
 
-/** Who the eleven phase 2b methods name in their refusal: "…does not serve {this}." */
-const ASSESSMENT_NOT_CONNECTED = 'a request’s assessment or the review of its documents yet';
-
 /**
- * Assistance requests over the API (casework phase 2a, `DL-177`): intake, filing and the
- * lifecycle, served; the assessment and the document review, not connected yet.
+ * Assistance requests over the API (casework phase 2a, `DL-177`, and 2b, `DL-178`): intake, filing,
+ * the lifecycle, notes, assignment for assessment, the assessment, the document review, the files
+ * presented and what the applicant was asked to bring.
  *
  * **Redaction is the server's.** A request whose person is under a protected sector arrives with its
  * words withheld from a reader without `request.view-sensitive`, and `withheld` saying which; the
@@ -2184,10 +2223,12 @@ const ASSESSMENT_NOT_CONNECTED = 'a request’s assessment or the review of its 
  *
  * **Barangays are joined by name**, as the registry's are (`DL-174`).
  *
- * **Phase 2b is not connected.** The assessment, reviewing a document, recording its file, ruling on
- * a conditional one, asking the applicant for one and opening one have no route yet. Each of those
- * methods makes no request and answers with the unserved refusal, so the record screen shows that
- * sentence where the section would be — never an empty form whose save goes nowhere (`DL-32`).
+ * **A caseload is served** (`DL-178`). A social worker reads and works the filed requests assigned
+ * to them; the server answers anything else as not found, and refuses them the office-wide reads —
+ * drafts, filing, the duplicate check, the list of social workers — with a sentence.
+ *
+ * **Opening a file is two acts.** A grant with the server's warning, then — only after the reader
+ * confirms — the bytes for that grant, through `ApiClient.postBlob` with the handle in a body.
  */
 @Injectable()
 export class HttpAssistanceRequestRepository implements AssistanceRequestRepository {
@@ -2199,15 +2240,6 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
     if (search.length === 1) {
       return throwError(
         () => new Error('Type at least two characters of a control number to search the requests.'),
-      );
-    }
-    if (filter.assignedTo !== undefined) {
-      return throwError(
-        () =>
-          new Error(
-            'The request list cannot be filtered by who it is assigned to: the office record holds ' +
-              'no assignee yet, so nothing was sent.',
-          ),
       );
     }
     return this.barangays().pipe(
@@ -2223,6 +2255,8 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
             status: filter.status,
             program_id: filter.programId,
             barangay_id: barangayId,
+            // A caseload always reads its own assignments, whatever is sent here (`DL-178`).
+            assigned_to: filter.assignedTo,
             open_only: filter.openOnly === true ? 'true' : undefined,
           })
           .pipe(
@@ -2320,50 +2354,242 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
     );
   }
 
-  /* ── phase 2b: no route yet, so no request ─────────────────────────────── */
+  /* ── phase 2b (DL-178) ─────────────────────────────────────────────────── */
 
-  listAssessmentTemplates(): Observable<never> {
-    return unserved(ASSESSMENT_NOT_CONNECTED);
+  /** Appended, then the whole list as this reader may see it — the server answers with it. */
+  addNote(id: AssistanceRequestId, note: RequestNoteDraft): Observable<readonly RequestNote[]> {
+    const body = note.body.trim();
+    if (body === '' || body.length > REQUEST_NOTE_MAX_LENGTH) {
+      return throwError(
+        () =>
+          new Error(
+            `Write the note — between 1 and ${REQUEST_NOTE_MAX_LENGTH} characters. Nothing was sent.`,
+          ),
+      );
+    }
+    return this.api
+      .post(`${API_ENDPOINTS.officeAssistanceRequests}/${id}/notes`, toWireNote(note))
+      .pipe(map(readNotes));
   }
 
-  openAssessment(): Observable<never> {
-    return unserved(ASSESSMENT_NOT_CONNECTED);
+  /** Whole, as the server answers it. Refused to a caseload by the server, as assigning is. */
+  listSocialWorkers(): Observable<readonly SocialWorker[]> {
+    return this.api
+      .list(API_ENDPOINTS.officeSocialWorkers)
+      .pipe(map((rows) => rows.map(readSocialWorker)));
   }
 
-  answerAssessment(): Observable<never> {
-    return unserved(ASSESSMENT_NOT_CONNECTED);
+  assignForAssessment(
+    id: AssistanceRequestId,
+    assigneeId: StaffUserId,
+    reason: string,
+  ): Observable<AssistanceRequest> {
+    const words = reason.trim();
+    if (words === '') {
+      return throwError(() => new Error(ASSIGNMENT_NEEDS_REASON));
+    }
+    return this.saved(
+      this.api.post(
+        `${API_ENDPOINTS.officeAssistanceRequests}/${id}/assignment`,
+        toWireAssignment(assigneeId, words),
+      ),
+    );
   }
 
-  recordAssessment(): Observable<never> {
-    return unserved(ASSESSMENT_NOT_CONNECTED);
+  /** The current version of each published form, whole. A form it cannot read refuses the list. */
+  listAssessmentTemplates(): Observable<readonly AssessmentTemplate[]> {
+    return this.api
+      .list(API_ENDPOINTS.officeAssessmentTemplates)
+      .pipe(map((rows) => rows.map(readAssessmentTemplate)));
   }
 
-  reviewRequirement(): Observable<never> {
-    return unserved(ASSESSMENT_NOT_CONNECTED);
+  /** `201` opened, or `200` the one already open — whichever form it was opened from. */
+  openAssessment(id: AssistanceRequestId, templateCode: string): Observable<OpenAssessment> {
+    return this.api
+      .post(
+        `${API_ENDPOINTS.officeAssistanceRequests}/${id}/assessment`,
+        toWireAssessmentOpen(templateCode),
+      )
+      .pipe(map(readOpenAssessment));
   }
 
-  recordDocument(): Observable<never> {
-    return unserved(ASSESSMENT_NOT_CONNECTED);
+  /** A patch: only the codes sent are written. The server takes between one and sixty. */
+  answerAssessment(id: AssistanceRequestId, answers: AssessmentAnswers): Observable<OpenAssessment> {
+    if (Object.keys(answers).length === 0) {
+      return throwError(() => new Error('Answer a question before saving. Nothing was sent.'));
+    }
+    return this.api
+      .post(
+        `${API_ENDPOINTS.officeAssistanceRequests}/${id}/assessment/answers`,
+        toWireAssessmentAnswers(answers),
+      )
+      .pipe(map(readOpenAssessment));
   }
 
-  decideApplicability(): Observable<never> {
-    return unserved(ASSESSMENT_NOT_CONNECTED);
+  /**
+   * Completes the open assessment with the findings, the recommendation the assessor chose, the
+   * recommended amount and whether a home visit was made — all four kept by the server. Completing
+   * moves the request nowhere; endorsing is the status move.
+   */
+  recordAssessment(id: AssistanceRequestId, assessment: AssessmentDraft): Observable<AssistanceRequest> {
+    return this.saved(
+      this.api.post(
+        `${API_ENDPOINTS.officeAssistanceRequests}/${id}/assessment/complete`,
+        toWireAssessment(assessment),
+      ),
+    );
   }
 
-  requestDocument(): Observable<never> {
-    return unserved(ASSESSMENT_NOT_CONNECTED);
+  /** A person's verdict on one document. `pending` and `submitted` are states, never a verdict. */
+  reviewRequirement(
+    id: AssistanceRequestId,
+    requirementId: RequirementId,
+    status: RequirementStatus,
+    remarks: string | null,
+  ): Observable<AssistanceRequest> {
+    const verdict = REVIEW_VERDICTS.find((candidate) => candidate === status);
+    if (verdict === undefined) {
+      return throwError(
+        () =>
+          new Error(
+            'A review records a verdict — verified, rejected, waived, expired or needs replacement. Nothing was sent.',
+          ),
+      );
+    }
+    return this.saved(
+      this.api.post(
+        `${API_ENDPOINTS.officeAssistanceRequests}/${id}/requirements/${requirementId}/review`,
+        toWireRequirementReview(verdict, remarks),
+      ),
+    );
   }
 
-  listDocumentRequests(): Observable<never> {
-    return unserved(ASSESSMENT_NOT_CONNECTED);
+  /**
+   * Appends a version as a form. The office's rules — a file for a source that holds one and none
+   * for one that does not, an expiry after the issue, the type and size the office accepts — are
+   * applied before anything is sent; the server applies them again by the bytes.
+   *
+   * **No upload progress is reported.** `HttpClient` reports upload events only to a request asked
+   * to, and `ApiClient` does not ask; an `uploading` figure made up here would be a bar that moves
+   * for a reason other than the bytes. So the one emission is `done` (`DL-178`).
+   */
+  recordDocument(
+    id: AssistanceRequestId,
+    requirementId: RequirementId,
+    draft: DocumentVersionDraft,
+  ): Observable<DocumentUpload<AssistanceRequest>> {
+    // Whether this replaces a version is the server's to know; the reason is checked there.
+    const problems = documentVersionProblems(draft, false);
+    if (problems.length > 0) {
+      return throwError(() => new DocumentVersionInvalidError(problems));
+    }
+    const refusal = draft.file === null ? null : refusalFor(draft.file);
+    if (refusal !== null) {
+      return throwError(
+        () =>
+          new Error(
+            refusal.reason === 'too-large'
+              ? 'That file is larger than the office accepts. Nothing was sent.'
+              : 'The file must be a PDF, a JPEG or a PNG. Nothing was sent.',
+          ),
+      );
+    }
+    return this.saved(
+      this.api.postForm(
+        `${API_ENDPOINTS.officeAssistanceRequests}/${id}/requirements/${requirementId}/documents`,
+        toWireDocumentUpload(draft),
+      ),
+    ).pipe(map((result): DocumentUpload<AssistanceRequest> => ({ kind: 'done', result })));
   }
 
-  withdrawDocumentRequest(): Observable<never> {
-    return unserved(ASSESSMENT_NOT_CONNECTED);
+  /** A person's ruling on a conditional document, with its reason. `undecided` is not a ruling. */
+  decideApplicability(
+    id: AssistanceRequestId,
+    requirementId: RequirementId,
+    applicability: ConditionalApplicability,
+    reason: string,
+  ): Observable<AssistanceRequest> {
+    const words = reason.trim();
+    if (applicability === 'undecided' || words === '') {
+      return throwError(
+        () =>
+          new Error(
+            'A ruling says whether the document applies, and why. Nothing was sent.',
+          ),
+      );
+    }
+    return this.saved(
+      this.api.post(
+        `${API_ENDPOINTS.officeAssistanceRequests}/${id}/requirements/${requirementId}/applicability`,
+        toWireApplicabilityRuling(applicability, words),
+      ),
+    );
   }
 
-  openDocument(): Observable<never> {
-    return unserved(ASSESSMENT_NOT_CONNECTED);
+  /** Records what the applicant was told to bring; answers with the whole list. */
+  requestDocument(
+    id: AssistanceRequestId,
+    draft: DocumentRequestDraft,
+  ): Observable<readonly DocumentRequest[]> {
+    if (documentRequestProblems(draft, todayAsIsoDate()).length > 0) {
+      return throwError(
+        () =>
+          new Error(
+            'Say what the applicant was told, and a date that has not passed. Nothing was sent.',
+          ),
+      );
+    }
+    return this.api
+      .post(
+        `${API_ENDPOINTS.officeAssistanceRequests}/${id}/document-requests`,
+        toWireDocumentRequest(draft),
+      )
+      .pipe(map(readDocumentRequests));
+  }
+
+  /** Whole: open first, then the most recently asked, the words withheld where the request's are. */
+  listDocumentRequests(id: AssistanceRequestId): Observable<readonly DocumentRequest[]> {
+    return this.api
+      .list(`${API_ENDPOINTS.officeAssistanceRequests}/${id}/document-requests`)
+      .pipe(map(readDocumentRequests));
+  }
+
+  withdrawDocumentRequest(
+    id: AssistanceRequestId,
+    documentRequestId: DocumentRequestId,
+    reason: string,
+  ): Observable<readonly DocumentRequest[]> {
+    const words = reason.trim();
+    if (words === '') {
+      return throwError(
+        () => new Error('Withdrawing a request needs a reason. Nothing was sent.'),
+      );
+    }
+    return this.api
+      .post(
+        `${API_ENDPOINTS.officeAssistanceRequests}/${id}/document-requests/${documentRequestId}/withdraw`,
+        toWireDocumentRequestWithdrawal(words),
+      )
+      .pipe(map(readDocumentRequests));
+  }
+
+  /** A grant with the server's warning. Nothing opens until the reader has seen it and confirmed. */
+  openDocument(
+    id: AssistanceRequestId,
+    requirementId: RequirementId,
+    versionId: DocumentVersionId,
+  ): Observable<DocumentAccessGrant> {
+    return this.api
+      .post(
+        `${API_ENDPOINTS.officeAssistanceRequests}/${id}/requirements/${requirementId}/documents/${versionId}/access`,
+        {},
+      )
+      .pipe(map(readGrant));
+  }
+
+  /** The bytes, for a grant: once, within five minutes, by this account. */
+  readDocumentFile(grant: DocumentAccessGrant): Observable<Blob> {
+    return this.api.postBlob(API_ENDPOINTS.officeDocumentFiles, toWireDocumentFileRequest(grant));
   }
 
   /** A write's answer, read with the barangay join — read first, so a failed join sends nothing. */
@@ -2420,4 +2646,74 @@ function readAdvisory(wire: unknown): IntakeAdvisory {
     );
   }
   return advisory;
+}
+
+function readNotes(wire: unknown): readonly RequestNote[] {
+  if (!Array.isArray(wire)) {
+    throw new Error(
+      'The server kept the note, but its answer could not be read. Open the request again to see ' +
+        'it before adding it twice.',
+    );
+  }
+  return wire.map(readRequestNote);
+}
+
+function readSocialWorker(wire: unknown): SocialWorker {
+  const worker = toSocialWorker(wire);
+  if (worker === null) {
+    throw new Error(
+      'The list of social workers could not be read, so none is offered: a list missing a name ' +
+        'reads as that person not working here.',
+    );
+  }
+  return worker;
+}
+
+function readAssessmentTemplate(wire: unknown): AssessmentTemplate {
+  const template = toAssessmentTemplate(wire);
+  if (template === null) {
+    throw new Error(
+      'An assessment form from the server could not be read, so none is offered: a form shown ' +
+        'without one of its questions is answered by somebody who believes they answered it all.',
+    );
+  }
+  return template;
+}
+
+function readOpenAssessment(wire: unknown): OpenAssessment {
+  const assessment = toOpenAssessment(wire);
+  if (assessment === null) {
+    throw new Error(
+      'The open assessment could not be read, so it is not shown: an answer shown blank that was ' +
+        'recorded is one an assessor types over. Open the request again.',
+    );
+  }
+  return assessment;
+}
+
+function readDocumentRequests(wire: unknown): readonly DocumentRequest[] {
+  if (!Array.isArray(wire)) {
+    throw new Error('What the applicant was asked to bring could not be read, so none is shown.');
+  }
+  return wire.map((entry) => {
+    const asked = toDocumentRequest(entry);
+    if (asked === null) {
+      throw new Error(
+        'What the applicant was asked to bring could not be read, so none is shown rather than ' +
+          'some: an entry left out reads as the office never having asked.',
+      );
+    }
+    return asked;
+  });
+}
+
+function readGrant(wire: unknown): DocumentAccessGrant {
+  const grant = toDocumentAccessGrant(wire);
+  if (grant === null) {
+    throw new Error(
+      'The server’s permission to open the file could not be read, so nothing was opened: the ' +
+        'warning it carries is the server’s to give, and none is written here.',
+    );
+  }
+  return grant;
 }

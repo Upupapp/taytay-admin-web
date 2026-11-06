@@ -1,4 +1,5 @@
 import {
+  DOCUMENT_UPLOAD_POLICY,
   assessmentProblems,
   ASSISTANCE_LOOKBACK_MONTHS,
   EMPTY_ADVISORY,
@@ -445,6 +446,7 @@ describe('the case study', () => {
     approvedAmount: null,
     reasonForRequest: 'Maintenance medicines',
     assignedTo: null,
+    assignments: [],
     requirements: [],
     assessment: null,
     statusHistory: [],
@@ -470,6 +472,9 @@ describe('the case study', () => {
       ...base,
       assessment: {
         assessedBy: asId('staff-sw-1'),
+        assessedByName: 'Grace Ocampo',
+        templateCode: 'aics-general',
+        templateVersion: '2026.08.1',
         assessedAt: NOW,
         findings: 'Home visit on 12 August; household of five in one rented room.',
         recommendedAmount: pesos(5000),
@@ -494,6 +499,8 @@ describe('the case study', () => {
           applicability: 'undecided',
           appliesWhen: null,
           applicabilityDecidedBy: null,
+          applicabilityDecidedAt: null,
+          accepts: DOCUMENT_UPLOAD_POLICY,
           applicabilityReason: null,
           submittedAt: null,
           reviewedBy: null,

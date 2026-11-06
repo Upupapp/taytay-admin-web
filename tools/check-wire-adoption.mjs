@@ -64,6 +64,11 @@ const WRITE_HELPERS = {
   delete: { verb: 'delete', media: 'application/json' },
   postForm: { verb: 'post', media: 'multipart/form-data' },
   patchForm: { verb: 'patch', media: 'multipart/form-data' },
+  /**
+   * A JSON body answered with bytes (`DL-178`): the grant's handle. A body like any other, so it is
+   * held to its operation's schema and must travel through a `toWire…` mapper.
+   */
+  postBlob: { verb: 'post', media: 'application/json' },
 };
 const READ_HELPERS = new Set(['cursorPage', 'everyPage', 'list', 'item', 'optionalItem', 'blob']);
 const WRITE_VERBS = Object.fromEntries(Object.values(WRITE_HELPERS).map(({ verb }) => [verb, verb]));
@@ -126,7 +131,7 @@ function declaredKeys(operation) {
 function callsIn(text) {
   const out = [];
   // Whitespace around the dot, for the reason `check:routes` records (`DL-143`).
-  const start = /this\s*\.\s*api\s*\.\s*(postForm|patchForm|post|patch|delete)\s*[<(]/g;
+  const start = /this\s*\.\s*api\s*\.\s*(postForm|patchForm|postBlob|post|patch|delete)\s*[<(]/g;
   let m;
 
   while ((m = start.exec(text)) !== null) {
@@ -206,7 +211,7 @@ let checked = 0;
  * walker that misses a call reports a spotless adapter, and two writes cannot clear a number set
  * for seventy-two.
  */
-const rawSites = [...src.matchAll(/this\s*\.\s*api\s*\.\s*(postForm|patchForm|post|patch|delete)\b/g)].length;
+const rawSites = [...src.matchAll(/this\s*\.\s*api\s*\.\s*(postForm|patchForm|postBlob|post|patch|delete)\b/g)].length;
 
 if (calls.length !== rawSites) {
   failures.push(`${rawSites} write call sites and ${calls.length} were walked. The walker is broken, not the code.`);

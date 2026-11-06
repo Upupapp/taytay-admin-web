@@ -14,6 +14,7 @@ import type {
 } from '../shared/ids';
 import type { Money } from '../shared/money';
 import type { RequirementDocument } from '../requirements/requirement-document';
+import type { UploadPolicy } from '../requirements/upload-policy';
 import type {
   ConditionalApplicability,
   RequirementObligation,
@@ -229,13 +230,21 @@ export interface SubmittedRequirement {
   readonly applicability: ConditionalApplicability;
   /** The circumstances a conditional document is needed in, in words. */
   readonly appliesWhen: string | null;
-  /** Who ruled on applicability, and why. Both `null` while undecided. */
+  /** Who ruled on applicability, when, and why. All `null` while undecided. */
   readonly applicabilityDecidedBy: StaffUserId | null;
+  readonly applicabilityDecidedAt: IsoDateTime | null;
+  /** `null` too when withheld from this reader — read `requirementRemarks` in `withheld` first. */
   readonly applicabilityReason: string | null;
   readonly submittedAt: IsoDateTime | null;
   readonly reviewedBy: StaffUserId | null;
   readonly reviewedAt: IsoDateTime | null;
   readonly remarks: string | null;
+  /**
+   * What the office accepts as this document's file, as the server publishes it on every
+   * requirement (`accepts`). A screen refuses a file by this before anything is sent; the server
+   * refuses again by the bytes, which is where the guarantee lives.
+   */
+  readonly accepts: UploadPolicy;
   /** What was presented against it, with every version ever presented (`DL-77`). */
   readonly document: RequirementDocument | null;
 }
@@ -298,10 +307,23 @@ export interface StatusChange {
   readonly occurredAt: IsoDateTime;
 }
 
+/**
+ * A case study as it was completed: the form it was opened from, pinned at its version, and what
+ * the assessor wrote and advised.
+ *
+ * `findings` and `recommendationReason` are the casework record of a family, so the server
+ * withholds them from a reader without `case.view` — the barangay link, the release officer — and
+ * on a protected request from one without `request.view-sensitive`; `withheld` then lists
+ * `assessment` (`DL-178`). `null` there is "withheld", never "the assessor found nothing".
+ */
 export interface SocialWorkerAssessment {
+  readonly templateCode: string;
+  readonly templateVersion: string;
   readonly assessedBy: StaffUserId;
+  readonly assessedByName: string;
   readonly assessedAt: IsoDateTime;
-  readonly findings: string;
+  /** `null` only when withheld from this reader — see `withheld`. */
+  readonly findings: string | null;
   readonly recommendedAmount: Money | null;
   readonly homeVisitConducted: boolean;
   /**
@@ -313,6 +335,45 @@ export interface SocialWorkerAssessment {
   /** Why, when the recommendation was refusal. The server requires it for that one value. */
   readonly recommendationReason: string | null;
 }
+
+/**
+ * One assignment of a request to a social worker for assessment. Appended, never edited: the
+ * request's `assignedTo` follows the latest, and the history says who handed it over, when and why
+ * (`DL-178`).
+ */
+export interface RequestAssignment {
+  readonly assigneeId: StaffUserId;
+  readonly assigneeName: string;
+  /** `null` when withheld from this reader (`assignmentReasons` in `withheld`). */
+  readonly reason: string | null;
+  readonly actorId: StaffUserId | null;
+  readonly actorName: string;
+  readonly occurredAt: IsoDateTime;
+}
+
+/** An open social-worker account a request can be assigned to — a name and nothing more. */
+export interface SocialWorker {
+  readonly id: StaffUserId;
+  readonly name: string;
+}
+
+/**
+ * Why an assignment was refused before anything was sent. The history keeps every hand-over with
+ * its words, and the API refuses one without them: a caseload whose owner cannot say why a family
+ * was put on it is one nobody can rebalance.
+ */
+export const ASSIGNMENT_NEEDS_REASON =
+  'Say why this request is being assigned. Every assignment is kept with its reason, and nothing ' +
+  'was sent.';
+
+/** What a note says and how closely it is held (`DL-58`). Who wrote it and when are the server's. */
+export interface RequestNoteDraft {
+  readonly sensitivity: CaseNoteSensitivity;
+  readonly body: string;
+}
+
+/** The API's limit on a note's length, in characters. */
+export const REQUEST_NOTE_MAX_LENGTH = 2000;
 
 /**
  * What a request may withhold from the person reading it (`DL-38`, `DL-177`).
@@ -330,14 +391,24 @@ export type RequestWithheldField =
   | 'referredBy'
   | 'statusReasons'
   | 'requirementRemarks'
-  | 'notes';
+  | 'notes'
+  | 'assignmentReasons'
+  | 'assessment';
 
+/**
+ * Everything a protected request withholds from a reader without `request.view-sensitive`.
+ * `requirementRemarks` covers every word on a document: review remarks, a ruling's reason and a
+ * replacement's reason. `assessment` is also withheld **alone** from any reader without
+ * `case.view`, protected request or not (`DL-178`).
+ */
 export const REQUEST_WITHHELD_FIELDS: readonly RequestWithheldField[] = [
   'reasonForRequest',
   'referredBy',
   'statusReasons',
   'requirementRemarks',
   'notes',
+  'assignmentReasons',
+  'assessment',
 ];
 
 /**
@@ -355,6 +426,20 @@ export const STATUS_MOVE_NEEDS_REASON =
 export const WITHHELD_DRAFT_REFUSAL =
   'Part of this request is withheld from your account, so it cannot be saved over. A colleague ' +
   'cleared for protected records can.';
+
+/**
+ * The API's refusal of any addition to a protected request by a reader from whom its words are
+ * withheld, in its words (`DL-178`): nobody adds to what they may not read. A screen says this in
+ * place of the acts rather than offering one the server answers with a 403.
+ */
+export const PROTECTED_WRITE_REFUSAL =
+  'Part of this request is withheld from your account, so it cannot add to it. A colleague ' +
+  'cleared for protected records can.';
+
+/** The API's refusal to open a protected request's file without `request.view-sensitive`. */
+export const PROTECTED_FILE_REFUSAL =
+  'This request is under a protected sector, and its files are opened only by a colleague cleared ' +
+  'for protected records.';
 
 export function isWithheldFromReader(
   request: Pick<AssistanceRequest, 'withheld'>,
@@ -383,7 +468,10 @@ export interface AssistanceRequest {
   readonly approvedAmount: Money | null;
   /** `''` when withheld from this reader — read `withheld` before reading it as "none given". */
   readonly reasonForRequest: string;
+  /** The social worker it is assigned to for assessment: the latest of `assignments`. */
   readonly assignedTo: StaffUserId | null;
+  /** Every assignment, oldest first. Appended, never edited (`DL-178`). */
+  readonly assignments: readonly RequestAssignment[];
   readonly requirements: readonly SubmittedRequirement[];
   readonly assessment: SocialWorkerAssessment | null;
   readonly statusHistory: readonly StatusChange[];

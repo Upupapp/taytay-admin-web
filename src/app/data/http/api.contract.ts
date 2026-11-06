@@ -222,10 +222,21 @@ export const API_ENDPOINTS = {
    * first, drafts only with `status=draft` — by `q` (part of a control number), `status`,
    * `program_id`, `barangay_id`, `open_only`; one by `{id}`; `POST` and `PATCH {id}` with the whole
    * draft; `POST {id}/file` with the acknowledgement or none; `POST {id}/status` with a reason;
-   * `advisory?resident_id&program_id` and `{id}/advisory`; `{id}/notes`, whole. Redacted by the
-   * server. The assessment and the document review are not served (phase 2b).
+   * `advisory?resident_id&program_id` and `{id}/advisory`; `{id}/notes`, whole, and appended to.
+   * Redacted by the server. Phase 2b (`DL-178`): `assigned_to` on the list; `{id}/assignment`;
+   * `{id}/assessment`, `…/answers`, `…/complete`; `{id}/requirements/{rid}/review`, `…/applicability`,
+   * `…/documents` (a form) and `…/documents/{vid}/access`; `{id}/document-requests`, `…/withdraw`.
    */
   officeAssistanceRequests: 'office/assistance-requests',
+  /** The open social-worker accounts a request can be assigned to (`DL-178`, `request.assess`). */
+  officeSocialWorkers: 'office/social-workers',
+  /** The published assessment forms, current versions, answered whole (`DL-178`). */
+  officeAssessmentTemplates: 'office/assessment-templates',
+  /**
+   * A document's bytes for a single-use grant (`DL-178`): `POST` with the handle in the body —
+   * never a path a request log keeps — answered with the bytes, not an envelope.
+   */
+  officeDocumentFiles: 'office/document-files',
   /**
    * The office directory, written (`DL-170`, `office.manage`): `POST` and `PATCH {id}` as forms,
    * because they carry the banner; `DELETE {id}`. Read through `offices`, which is public.

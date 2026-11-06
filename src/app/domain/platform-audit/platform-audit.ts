@@ -67,6 +67,20 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'office_request.filed': 'Filed an assistance request and issued its control number',
   'office_request.note_added': 'Added a note to an assistance request',
   'office_request.status_changed': 'Moved an assistance request on, with a reason',
+  'office_request.assigned': 'Assigned an assistance request to a social worker, with a reason',
+  'office_request.assessment_opened': 'Opened an assessment form on an assistance request',
+  'office_request.assessment_answered': 'Answered questions on an assessment form',
+  'office_request.assessment_completed':
+    'Completed a case study, with findings and a recommendation — which decides nothing',
+  'office_request.requirement_reviewed': 'Reviewed a document presented for an assistance request',
+  'office_request.requirement_ruled': 'Ruled whether a conditional document applies, with a reason',
+  'office_request.document_recorded':
+    'Recorded a document for an assistance request — a replaced version is kept',
+  'office_request.document_access_granted': 'Was given a single-use grant to open a document',
+  'office_request.document_opened': 'Opened a document presented for an assistance request',
+  'office_request.document_requested': 'Recorded that an applicant was asked to bring a document',
+  'office_request.document_request_withdrawn':
+    'Withdrew a request for a document, with a reason — the request is kept',
   'office_requirement_template.created': 'Recorded a requirement template for the catalogue',
   'office_requirement_template.retired': 'Retired a requirement template from the catalogue',
   'office_requirement_template.updated': 'Changed a requirement template in the catalogue',
