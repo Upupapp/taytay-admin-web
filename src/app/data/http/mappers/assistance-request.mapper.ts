@@ -104,10 +104,14 @@ export function toAssistanceRequest(wire: unknown, barangays: BarangayIndex): As
   const referenceNumber = str(field(wire, 'reference_number'));
   const programId = id<ProgramId>(field(wire, 'program_id'));
   const submittedAt = dateTime(field(wire, 'submitted_at'));
-  const filed = status !== 'draft';
+  const filed = referenceNumber !== null || submittedAt !== null;
   // A filed request without its control number, programme or filing time is one nobody could
-  // quote, place or date: refused rather than shown half-read.
+  // quote, place or date: refused rather than shown half-read. Only a draft — or a draft cancelled
+  // before it was filed, which never had a number — may come without them.
   if (filed && (referenceNumber === null || programId === null || submittedAt === null)) {
+    return null;
+  }
+  if (!filed && status !== 'draft' && status !== 'cancelled') {
     return null;
   }
 

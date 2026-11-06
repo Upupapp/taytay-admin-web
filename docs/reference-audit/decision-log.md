@@ -6756,3 +6756,174 @@ The mock still computes figures and answers `read`.
 | `check:permission-parity` | `program.view`, `program.manage` | 0 of 55 disagree |
 | `check:contract-drift` | vendored `f887038` | 135 operations (was 130) |
 | `check:programs` | nothing branches on a programme; no verdict on the port | passed |
+
+## DL-177 — assistance requests are served: intake, filing and the lifecycle; programmes get an editor
+
+Phase 2a of the casework (`docs/integration/node-api-migration.md`). Backend `taytay-backend`
+`54c68f0` (the programme editor) and `cf42d64` (assistance requests); the spec vendored here is
+`cf42d64`'s. Console `ddf9b13` (the programme editor) and `91ab104` (assistance requests).
+
+### Part 1 — the programme editor (owner-approved; answers `DL-176`'s first, second and fourth questions)
+
+- **A programme's change says why.** `POST`/`PATCH office/programs` require a `reason`, kept beside
+  the version it explains in `office_program_revisions`; a reason alone is refused. Revisions written
+  before reasons were asked for keep none — null says so rather than inventing one — and the
+  database refuses any new revision without one.
+- **Requirement templates are written by people** (`/api/v1/office/requirement-templates`): listed
+  whole (at most 200, retired ones included), created, changed and retired, each act with a reason
+  kept with the template whole in an append-only history; refused by the console's
+  `TemplateProblemCode`s plus the two halves of a conditional document (`DL-76`). **Retiring is one
+  way**: no new programme adopts a retired set, and one that already names it keeps asking for its
+  documents through any other change — retiring never quietly changes what an applicant is asked
+  for. `program_count`, counted when read, says how many programmes a change would reach.
+- **The console** has a routed "New programme" form for the whole `ProgramDraft` (guidance,
+  sources, documents, eligibility parameters, review window), the domain's rules shown as the form
+  is filled and enforced on save — a national programme is never offered as one the municipality
+  runs (`DL-65`); the record's edit asks for a reason; and `/programs/templates` lists, creates,
+  changes and retires templates. Every consequence is stated **above** its button (`DL-124`): the
+  version and its reason are kept for good, a template change reaches the N programmes naming it
+  from that moment, retiring is one way. The server's refusal reaches the form in its own words.
+  The record's edit no longer disables its button; it acts, then says what is missing (as the
+  household form does). `ProgramRepository.save` takes the reason; `listTemplates`, `saveTemplate`
+  and `retireTemplate` join the port, each reached by a screen; the mock keeps every version with
+  its reason and refuses what the server refuses.
+
+### Part 2 — what the server now decides about assistance requests
+
+- **The lifecycle is this console's**, held three times and compared by a test: the backend's
+  `lifecycle.ts` for its routes, `office_request_statuses` and `office_request_transitions` for its
+  database, and `assistance-request.ts`, `transition-permissions.ts` and the intake constants here,
+  read without running them (as `casework.ts`'s role-table parity test reads `permission.ts`).
+- **A move is an appended row.** Each status change is a row in `office_request_status_changes`
+  with who, when and why (a reason is required on every move); a trigger checks it against the
+  transitions table and only then sets the status. The database refuses any other write to the
+  status, any change to the history, any change to what a filed request says, and any delete. Each
+  move needs the key `TRANSITION_PERMISSIONS` names for the status moved into, so
+  `request.approve` and `release.release` — never held together — keep the approver from releasing
+  (`DL-08`).
+- **A draft has no control number** (`DL-63`). `TAY-YYYY-NNNNNN` is issued at filing, once; a
+  retried filing answers as it stands. Drafts are listed only when asked for (`status=draft`) and
+  never among filed requests. The checklist is the **programme's** documents — template, then its
+  own list — with the counter's answers applied by code; a code the programme does not ask for is
+  refused.
+- **Filing refuses a record, never an applicant.** `422` keyed by the console's own
+  `IntakeProblemCode`s — `no-programme`, `no-reason`, `reason-too-short`,
+  `missing-mandatory-requirement` (a required document, or a conditional one ruled to apply,
+  neither presented nor excused with a reason; excusing is always open) — while the intake record
+  does not yet say what happened at the counter. Nothing refuses on the strength of a signal.
+- **The duplicate check decides nothing** (`DL-60`): `assessIntake`, ported — rule, finding and
+  records read for each signal, tones `note` and `caution` only, no score, total, `eligible` or
+  recommendation. A caution needs the encoder's sentence at filing, kept with who and when; a check
+  that changed since it was read is `409`, so nobody acknowledges a caution they never saw.
+- **Scope and redaction are the registry's** (`DL-174`), from the one shared reader: `own-barangay`
+  reads its barangay and nothing else answers but "not found"; `assigned-cases` is refused on every
+  route. A request whose person is under `vawc-survivor` or `cicl` withholds its **words** — the
+  reason, the referral, the history's reasons, a waiver's remarks, its notes — from a reader without
+  `request.view-sensitive`, and `withheld`/`is_protected` say so (`DL-38`); that reader cannot save
+  over the draft. Notes keep the protected tier of `DL-58`.
+
+### Decisions made here
+
+1. **The advisory reads filed requests only** (changes `assessIntake`). A draft is not a request
+   (`DL-63`); counted, the draft being filed flagged *itself* as an open request under the same
+   programme, so a resumed draft could never be filed against the API (the console asked for an
+   acknowledgement the server, which excludes the request being filed, then refused as
+   "nothing flagged"), and an abandoned draft raised a caution for ever.
+2. **The advisory names what it did not read.** `IntakeAdvisory.unread` (`releases`, `cases`, each
+   with a sentence): three of the six signals are counted from payouts and cases, which the API does
+   not hold yet, and their silence would read as "nobody at this address was helped" (`DL-112`).
+   The panel renders them beside the signals; the mock reads both and answers none.
+3. **Scheduling and releasing are refused** (`409`, a sentence) until payouts are served
+   (phase 4): a request marked released with no record of what was handed over would be a claim
+   that money moved which nobody could check, and the duplicate check would never see it. The
+   transitions table is mirrored whole; this is a separate, named gate.
+4. **`channel` and `referredBy` are on `AssistanceRequest`.** A resumed draft reset them to
+   walk-in; against a server that keeps them, re-saving would have overwritten an encoded or
+   referred intake.
+5. **The request list reads a cursor page** (`CursorRequest` → `CursorPage`), filed requests
+   newest filing first, "N shown. More are available." and "Show more", never a page count
+   (`DL-161`); page and sort left the URL. Search matches the **control number only** — the mock
+   matched the reason, which discloses it (`DL-109`).
+6. **Notes are served read-only to the console.** The API appends a note (`case.note`, the
+   protected tier needing `case-note.view-protected`), but the port has no write method and no
+   screen reads notes, so the console makes no such request; adding one would grow
+   `check:port-adoption`.
+
+### What the console now does
+
+- `HttpAssistanceRequestRepository` replaces `UnservedAssistanceRequestRepository`;
+  `assistance-request` leaves `UNSERVED_PORTS` (twelve remain). **Requests and intake are in the
+  menu** against the API. Every read goes through `assistance-request.mapper.ts` (no disclosure rule
+  of its own; an unknown status refuses the record, an unknown signal code or tone is dropped as the
+  domain says); every body through an explicit `toWire…`. Barangays are joined by name as the
+  registry's are.
+- **Phase 2b methods degrade in place**: `listAssessmentTemplates`, `openAssessment`,
+  `answerAssessment`, `recordAssessment`, `reviewRequirement`, `recordDocument`,
+  `decideApplicability`, `requestDocument`, `listDocumentRequests`, `withdrawDocumentRequest` and
+  `openDocument` answer the unserved refusal and make no request. The request record shows the
+  sentence where the assessment and the document review would be, and nothing else breaks — reads
+  that went straight into `toSignal` (which rethrows on read) now go through view states.
+- The record gains a **History** section (each move with its reason, or "withheld"), asks for the
+  duplicate check only of a reader holding `request.create` (the auditor and the release officer
+  were sent to the forbidden page by the API's `403`), and hides the document actions with the
+  reason shown once while the document list cannot be read.
+- Intake restores `channel`/`referredBy` on resume, says so instead of offering a form when a
+  draft's words are withheld from the reader, and shows the server's refusal in its words. The
+  drafts section reads "Unfinished intakes" (the server lists everyone's, not the reader's), and
+  "Start an intake" and "Resume" are shown only to `request.create`.
+- `check:intake`'s not-recorded rule no longer assumes an unserved binding: it reads the bound
+  adapter's `recordAssessment` and accepts it only while it refuses without sending — validated by
+  making it send a request (fails) and restoring it (passes).
+- The platform audit trail words the five `office_request.*` codes and the three
+  `office_requirement_template.*` codes.
+
+### Where the API's model differs, recorded rather than smoothed
+
+1. **Scheduled and released** are refused by the API (above); the mock, which holds releases,
+   still moves to them. The record still offers the move against the API, and the server's
+   sentence answers it.
+2. **The social worker is refused** on every request route, as on the registry (`DL-174`); the mock
+   serves them.
+3. **The checklist is the programme's** on the API; the mock accepts what the screen sends.
+4. **`recordsRead`** counts the person's own filed requests on the API and the office's in the mock.
+5. **Fields the API does not hold** — the approved amount, the assignee, the assessment, decision
+   remarks, a requirement's reviewer and applicability ruling — are `null` from the API, and the
+   mock does not withhold them on a protected request. Which of them a protected request should
+   withhold is a phase 2b question.
+6. **A draft with no programme** keeps `programId: ''`, as the mock did, rather than widening the
+   type.
+7. **An abandoned draft** cancelled before filing is in neither list: it has no control number and
+   is not a draft any more. It is still read by its address, and the mapper reads it — it refused
+   every non-draft without a number until this entry was written, which would have shown cancelling
+   a draft as a failure.
+
+### For the owner
+
+- Whether a social worker should read requests before cases exist (the same question as the
+  registry's, `DL-174`).
+- Whether an intake officer without `request.view-sensitive` should be able to start a request for
+  a protected person (allowed: nothing is withheld from what they are writing) but not save over it
+  afterwards (refused: they cannot read what they would overwrite).
+- Whether a reason should be required on every status move (it is, on both sides) or only on
+  returned, rejected, cancelled and expired.
+- Whether retiring a requirement template should stay one way (the choice made), or be reversible.
+- Whether the programme record's edit should become the full form (guidance, documents, review
+  window are editable only when a programme is created).
+- The review windows (`ASSISTANCE_LOOKBACK_MONTHS`, `SAME_PROGRAMME_WINDOW_DAYS`) are still
+  conventions awaiting the office's confirmation (`DL-68`); the server holds the same figures.
+
+### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:contract-drift` | vendored `54c68f0`, then `cf42d64` | 149 operations (was 135) |
+| `check:routes` | `UNSERVED_CEILING` lowered 13 → 12 | 30 endpoints, 105 composed requests (was 28, 92) |
+| `check:unserved` | the request binding and declaration removed together | 12 unserved, all declared; 63 routed screens (was 61) |
+| `check:response-shape` | the template and request reads | 53/53 (was 46/46) |
+| `check:wire-adoption` | every new body through a `toWire…` | 57/57 (was 50/50) |
+| `check:port-adoption` | three template methods, each reached | 11 of 219 unreached (was 11 of 216) |
+| `check:query-params` | the request list and the advisory | 53 reads (was 46) |
+| `check:consumer-contract` | regenerated | 97 interactions, 516 required fields (was 84, 413) |
+| `check:permission-parity` | the new routes' keys | 0 of 57 disagree |
+| `check:intake` | the not-recorded rule reads the bound adapter | passed; nothing decision-shaped |
+| `check:programs` | nothing branches on a programme | passed |

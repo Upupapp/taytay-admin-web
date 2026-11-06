@@ -231,6 +231,22 @@ describe('assistance requests over the API (DL-177)', () => {
     expect(await missing).toBeNull();
   });
 
+  it('reads a draft cancelled before filing, and refuses any other status without a number', async () => {
+    const cancelled = firstValueFrom(requests.getById(DRAFT_ID));
+    barangays();
+    http
+      .expectOne({ method: 'GET', url: `${REQUESTS}/${DRAFT_ID}` })
+      .flush({ ...OFFICE_REQUEST, data: { ...OFFICE_REQUEST.data, status: 'cancelled' } });
+    // Only a draft can be cancelled before it is filed, and it never had a control number.
+    expect((await cancelled)?.status).toBe('cancelled');
+
+    const halfRead = firstValueFrom(requests.getById(DRAFT_ID));
+    http
+      .expectOne({ method: 'GET', url: `${REQUESTS}/${DRAFT_ID}` })
+      .flush({ ...OFFICE_REQUEST, data: { ...OFFICE_REQUEST.data, status: 'approved' } });
+    await expect(halfRead).rejects.toThrow();
+  });
+
   describe('intake', () => {
     it('creates a draft with the whole body, flat and in centavos, and no control number', async () => {
       const saved = firstValueFrom(requests.saveDraft(draft(), null));

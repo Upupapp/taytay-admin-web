@@ -9,10 +9,10 @@ sign-in only, hosted on Linode.
 
 | | |
 |---|---|
-| Console ports the Node API serves fully | 5 of 20 casework ports — the resident registry (`DL-174`), saved views, households and families (`DL-175`), the programme catalogue (`DL-176`, utilization said to be not connected until releases are served); the resident profile is read with its household, and says the assistance history is not connected yet; 12 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines, the home screen, the app's settings; `DL-171` digital IDs, Balita, the audit trail) |
-| Served in part (mostly different concepts with the same name) | 4 — staff, notification, governance, newsfeed; the resident (`DL-174`), household (`DL-175`) and program (`DL-176`) ports left this row for the one above |
-| No endpoint at all | 11 — cases, requests, beneficiaries, visits, releases, referrals, dashboard, work, reports, search, events |
-| Node staff endpoints with no console screen | 0 — step 6 is complete (`DL-171`) |
+| Console ports the Node API serves fully | 5 of 20 casework ports — the resident registry (`DL-174`), saved views, households and families (`DL-175`), the programme catalogue with its editor (`DL-176`, `DL-177`; utilization said to be not connected until releases are served); the resident profile is read with its household, and says the assistance history is not connected yet; 12 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines, the home screen, the app's settings; `DL-171` digital IDs, Balita, the audit trail) |
+| Served in part (mostly different concepts with the same name) | 5 — assistance requests (`DL-177`: intake, filing, the lifecycle, the duplicate check and notes; the assessment and documents say in place that they are not connected yet), staff, notification, governance, newsfeed; the resident (`DL-174`), household (`DL-175`) and program (`DL-176`) ports left this row for the one above |
+| No endpoint at all | 10 — cases, beneficiaries, visits, releases, referrals, dashboard, work, reports, search, events |
+| Node staff endpoints with no console screen | 1 — `POST office/assistance-requests/{id}/notes` (`DL-177`: the console port has no note write and no screen reads notes yet) |
 
 ## Plan
 
@@ -37,6 +37,7 @@ sign-in only, hosted on Linode.
 | 9 | Casework phase 1b: the office's resident registry | backend + console | done (`DL-174`): `taytay-backend` `6544381` — `/api/v1/office/residents`, redacted and scoped on the server, sectors and retirements as append-only histories with reasons; `HttpResidentRepository` in the console, `resident` out of `UNSERVED_PORTS`. **The Residents menu entry stays withheld** — its list also reads `saved-view`, its record `family` and `field-visit`. **Not run against a live API.** For the owner: the social worker's `assigned-cases` scope is refused until cases exist; saved views, or a list without its bar, to bring the list back |
 | 10 | Casework phase 1c: saved views, the office household register, families; only a module's primary port gates its menu entry | backend + console | done (`DL-175`): `taytay-backend` `013d74c`, `154a052`, `0c19dd2` — `/api/v1/office/saved-views`, `/office/households` (the vulnerability snapshot computed and disclosed on the server), `/office/families` with relationships and transfers as appended acts; `saved-view`, `household`, `family` out of `UNSERVED_PORTS` (fourteen remain). A secondary panel whose port is unserved now says so in place, and `check:unserved` holds it; **Residents, Households and Families are in the menu** against the API. **Not run against a live API** |
 | 11 | Casework phase 1d: the programme catalogue | backend + console | done (`DL-176`): `taytay-backend` `f887038` — `/api/v1/office/programs`, programmes as records with their responsibility refused by route and database when it would misdescribe the office, guidance that never gates, documents required/optional/conditional, every version kept; `program` out of `UNSERVED_PORTS` (thirteen remain), the list read a cursor page at a time; utilization said to be not connected, never a zero. **Programmes is in the menu** against the API. **Not run against a live API.** No form in the console creates a programme |
+| 12 | Casework phase 2a: the programme editor; assistance requests — intake, filing, the lifecycle | backend + console | done (`DL-177`): `taytay-backend` `54c68f0` — a programme's change keeps its reason, requirement templates are written with a reason and retired one way; `cf42d64` — `/api/v1/office/assistance-requests`: drafts with no control number, filing that issues one and refuses an incomplete intake record by the console's own codes, moves only along the console's transitions as appended rows with who, when and why (the lifecycle compared with this console's domain by a test), the duplicate check that decides nothing and names what it could not read, notes in two tiers, scope and redaction as the registry's. Console `ddf9b13` (new-programme form, template editor) and `91ab104`: `assistance-request` out of `UNSERVED_PORTS` (twelve remain), **Requests and intake are in the menu** against the API; the assessment and documents say in place that they are not connected yet; scheduling and releasing are refused by the API until payouts are served. **Not run against a live API** |
 
 ## For the owner to decide
 
@@ -199,6 +200,8 @@ household; its assistance history says it is not connected yet.
 | 1b | The office's resident registry | ✓ `DL-174` |
 | 1c | Saved views, households, families; a module's menu entry gated by its primary port only | ✓ `DL-175` |
 | 1d | Programmes, with guidelines and responsibility (`DL-65`, `DL-66`) | ✓ `DL-176` |
+| 2a | The programme editor; assistance requests — intake, filing, the lifecycle, the duplicate check (`DL-60`, `DL-63`) | ✓ `DL-177` |
+| 2b | The assessment, requirements and documents (append-only versions, `DL-77`), document requests | next |
 
 **Phase 1 is complete** (1a–1d ✓). **Next: phase 2 — assistance requests**: intake → assessment →
 approval, requirements and documents (append-only versions, `DL-77`), advisory evidence that decides
@@ -216,9 +219,29 @@ either yet.
 Utilization is counted from releases and is said to be not connected until phase 4 — no request is
 made and no figure shown, never a zero.
 
-**For the owner, from phase 1d** (`DL-176`): whether the console should get a "new programme" form
+**For the owner, from phase 1d** (`DL-176`; the form, the template editor and the reason were approved and built in phase 2a, `DL-177`; the transition rules for a programme's status are still open): whether the console should get a "new programme" form
 with guidance, sources and documents (without one the API's catalogue is filled only by the seed or by
 direct API calls); whether requirement templates need an editor or stay seed-only; whether a
 programme's status needs transition rules (`closed` terminal, say — none was invented); and whether
 a change to a programme should carry a reason (the console asks none; the revisions keep who, when
 and what, not why).
+
+**Phase 2a done** (`DL-177`, `taytay-backend` `54c68f0`, `cf42d64`): the programme editor — a
+"new programme" form, a reason on every change kept beside the version, requirement templates written
+with a reason and retired one way — and assistance requests served: intake drafts with no control
+number, filing that issues one, the lifecycle as this console states it (moves appended with who, when
+and why, refused by the database off the transitions), the duplicate check that decides nothing and
+says what it could not read, scope and redaction as the registry's. Scheduling and releasing wait for
+payouts (phase 4).
+
+**Next: phase 2b** — the assessment (templates, answers, the recorded assessment), the requirement
+review (verify, reject, waive, rule on a conditional document), document files as append-only versions
+(`DL-77`) and document requests. Their methods are on the served adapter already and answer, in place,
+that they are not connected yet.
+
+**For the owner, from phase 2a** (`DL-177`): whether a social worker should read requests before cases
+exist; whether an uncleared intake officer may start a protected person's request but not save over it
+(the choice made); whether every status move needs a reason (the choice made) or only the refusing
+ones; whether retiring a requirement template stays one way (the choice made); whether the programme
+record's edit should become the full form; and the review windows, still conventions awaiting the
+office's confirmation (`DL-68`).
