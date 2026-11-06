@@ -127,10 +127,14 @@ export class ApiClient {
       .pipe(map((response) => response.data));
   }
 
-  /** `params` for the reads that are a query rather than a record by id. */
-  item<TItem>(path: string, params: Record<string, string> = {}): Observable<TItem> {
+  /**
+   * `params` for the reads that are a query rather than a record by id. A key left `undefined` is
+   * not sent, as on `list`, so an optional filter is written in the call's object literal where
+   * `check:query-params` can read it.
+   */
+  item<TItem>(path: string, params: Record<string, unknown> = {}): Observable<TItem> {
     return this.http
-      .get<ApiItemResponse<TItem>>(this.url(path), { params })
+      .get<ApiItemResponse<TItem>>(this.url(path), { params: toFilterParams(params) })
       .pipe(map((response) => response.data));
   }
 

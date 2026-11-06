@@ -8,7 +8,6 @@ import { NAVIGATION } from '@core/navigation/navigation';
 import { provideDataAccess } from '@data/data-access.providers.mock';
 import {
   UnservedBeneficiaryRepository,
-  UnservedDashboardRepository,
   UnservedEventRepository,
   UnservedGovernanceRepository,
   UnservedNewsfeedRepository,
@@ -159,8 +158,7 @@ describe('the http adapter set', () => {
     UnservedGovernanceRepository,
     UnservedNewsfeedRepository,
     UnservedEventRepository,
-    UnservedDashboardRepository,
-  ] as const;
+    ] as const;
 
   it('declares exactly the ports its unserved adapters stand in for, once each', () => {
     expect(UNSERVED_HTTP_PORTS).toHaveLength(adapters.length);

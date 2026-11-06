@@ -67,6 +67,8 @@ import OFFICE_REFERRAL_NO_BASIS_REFUSAL from './office-referral-no-basis-refusal
 import OFFICE_SERVICE_PROVIDERS from './office-service-providers.json';
 import OFFICE_VISITS_PAGE from './office-visits-page.json';
 import OFFICE_VISIT from './office-visit.json';
+import OFFICE_DASHBOARD from './office-dashboard.json';
+import OFFICE_DASHBOARD_INTAKE from './office-dashboard-intake.json';
 import OFFICE_DOCUMENT_GRANT from './office-document-grant.json';
 import OFFICE_REQUIREMENT_TEMPLATE from './office-requirement-template.json';
 import OFFICE_REQUIREMENT_TEMPLATE_REFUSAL from './office-requirement-template-refusal.json';
@@ -310,6 +312,8 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['office-service-providers', OFFICE_SERVICE_PROVIDERS, 'OfficeServiceProviderListEnvelope'],
     ['office-visits-page', OFFICE_VISITS_PAGE, 'OfficeVisitListEnvelope'],
     ['office-visit', OFFICE_VISIT, 'OfficeVisitEnvelope'],
+    ['office-dashboard', OFFICE_DASHBOARD, 'OfficeDashboardEnvelope'],
+    ['office-dashboard-intake', OFFICE_DASHBOARD_INTAKE, 'OfficeDashboardEnvelope'],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
     ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],

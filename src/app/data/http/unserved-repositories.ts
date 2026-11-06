@@ -9,18 +9,18 @@ import {
   type GovernanceRepository,
   type NewsfeedRepository,
   type EventRepository,
-  type DashboardRepository,
   type DataPort,
 } from '@domain/index';
 
 /**
  * THE PORTS THE API DOES NOT SERVE, AND WHAT THEY SAY INSTEAD.
  *
- * The Node API that replaced the Laravel one on 2026-10-20 is the back office of the residents'
- * app. It has no route for cases, assistance requests, releases, referrals, visits,
- * reports, events or most of what this console was built to do (`DL-164`,
- * `docs/integration/node-api-gap-map.md`). In the `http` configuration each of those ports is
- * bound to a class here.
+ * The Node API that replaced the Laravel one on 2026-10-20 began as the back office of the
+ * residents' app (`DL-164`, `docs/integration/node-api-gap-map.md`). The casework has moved onto it
+ * a phase at a time since — the registry, programmes, requests, cases, releases, referrals, visits
+ * and the dashboard (`DL-174` to `DL-182`). What is left has no route yet: the beneficiary
+ * registry, the work queues, reports, search, governance, the newsfeed and events. In the `http`
+ * configuration each of those ports is bound to a class here.
  *
  * ## What an unserved adapter does
  *
@@ -293,15 +293,6 @@ export class UnservedEventRepository implements EventRepository {
   }
 }
 
-@Injectable()
-export class UnservedDashboardRepository implements DashboardRepository {
-  static readonly port: DataPort = 'dashboard';
-
-  summary(): Observable<never> {
-    return unserved('the dashboard');
-  }
-}
-
 /**
  * The ports this adapter set says it cannot serve, bound to `UNSERVED_PORTS` by
  * `data-access.providers.ts` (`DL-167`).
@@ -322,5 +313,4 @@ export const UNSERVED_HTTP_PORTS: readonly DataPort[] = [
   UnservedGovernanceRepository.port,
   UnservedNewsfeedRepository.port,
   UnservedEventRepository.port,
-  UnservedDashboardRepository.port,
 ];

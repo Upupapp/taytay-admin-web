@@ -1,0 +1,59 @@
+{
+  "data": {
+    "generated_at": "2026-11-06T09:30:00.000Z",
+    "applied_filter": { "barangay_id": null, "category": null, "period": "last-30-days" },
+    "attention": [
+      {
+        "kind": "awaiting-approval",
+        "severity": "critical",
+        "count": 1,
+        "permission": "request.approve",
+        "basis": "Filed requests whose status is endorsed: a social worker has endorsed them and the decision is the head’s."
+      },
+      {
+        "kind": "missing-requirements",
+        "severity": "warning",
+        "count": 3,
+        "permission": "request.intake",
+        "basis": "Open filed requests with a required document, or a conditional one ruled to apply, that is neither verified nor waived. A conditional document nobody has ruled on yet is not counted against the applicant."
+      }
+    ],
+    "requests": {
+      "open": 3,
+      "awaiting_approval": 1,
+      "by_status": [
+        { "status": "submitted", "count": 2 },
+        { "status": "endorsed", "count": 1 }
+      ],
+      "by_barangay": [
+        { "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04", "count": 2 },
+        { "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01", "count": 1 }
+      ]
+    },
+    "payouts": {
+      "scheduled": 1,
+      "released_amount_centavos": 373457,
+      "goods_released": 1,
+      "residents_served": 3,
+      "by_category": [
+        {
+          "category": "medical-assistance",
+          "amount_centavos": 373457,
+          "money_count": 2,
+          "goods_count": 0
+        },
+        { "category": "food-and-relief", "amount_centavos": 0, "money_count": 0, "goods_count": 1 }
+      ]
+    },
+    "resident_app": {
+      "accounts": {
+        "registered": 4,
+        "registered_in_period": 2,
+        "by_verification": { "unverified": 1, "pending": 1, "verified": 1, "rejected": 1 }
+      },
+      "verification_requests_waiting": 1,
+      "digital_ids_active": 1
+    }
+  },
+  "meta": {}
+}

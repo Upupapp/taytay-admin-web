@@ -5746,6 +5746,87 @@
         }
       }
     },
+    "/api/v1/office/dashboard": {
+      "get": {
+        "operationId": "getOfficeDashboard",
+        "summary": "The office dashboard",
+        "description": "Needs dashboard.view. What needs attention, the caseload and payout position, and — for whoever holds a residents’ app key — the app’s accounts, ID reviews and cards. Every figure is counted under the scope of the list it links to: a barangay link counts its own barangay, a social worker (assigned-cases) the filed requests and referrals assigned to them. Filed requests only; a draft is not counted. A group the reader’s lists would refuse is null, never zero: `payouts` without release.view or for a caseload, `resident_app` without user.view, verification.review or digital-id.manage, and each of its figures without its own key. Money is integer centavos of money releases; goods are counted beside it and never valued. Read-only.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "barangay_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Outside an own-barangay reader’s barangay is 403."
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeProgramCategory"
+            },
+            "description": "The programme type of the request a figure counts."
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeDashboardPeriod"
+            },
+            "description": "How far back the released figures and new accounts reach. Defaults to all-time."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every figure, under the reader’s scope and the filter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeDashboardEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or a barangay outside an own-barangay reader’s.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The query could not be validated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/office/cases": {
       "get": {
         "operationId": "listOfficeCases",
@@ -15878,6 +15959,369 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/OfficeCaseWorkspace"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeDashboardPeriod": {
+        "type": "string",
+        "enum": [
+          "all-time",
+          "last-30-days",
+          "last-90-days"
+        ]
+      },
+      "OfficeDashboardAttention": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "severity",
+          "count",
+          "permission",
+          "basis"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "awaiting-approval",
+              "returned-to-applicant",
+              "missing-requirements",
+              "payout-due",
+              "unclaimed-payout",
+              "referral-unanswered"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "warning",
+              "info"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "permission": {
+            "$ref": "#/components/schemas/Permission",
+            "description": "The key that acts on it. The console shows a signal only to an account holding it."
+          },
+          "basis": {
+            "type": "string",
+            "description": "The rule this server applied, in words."
+          }
+        },
+        "description": "Something that needs action. A kind with a count of zero is left out."
+      },
+      "OfficeDashboardRequests": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "open",
+          "awaiting_approval",
+          "by_status",
+          "by_barangay"
+        ],
+        "properties": {
+          "open": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Filed requests not in a terminal status."
+          },
+          "awaiting_approval": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Filed requests whose status is endorsed."
+          },
+          "by_status": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "count"
+              ],
+              "properties": {
+                "status": {
+                  "$ref": "#/components/schemas/OfficeRequestStatus"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "description": "Largest first. A status nobody is in is left out."
+          },
+          "by_barangay": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "barangay_id",
+                "count"
+              ],
+              "properties": {
+                "barangay_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "description": "Requests, not people: largest first."
+          }
+        }
+      },
+      "OfficeDashboardPayouts": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scheduled",
+          "released_amount_centavos",
+          "goods_released",
+          "residents_served",
+          "by_category"
+        ],
+        "properties": {
+          "scheduled": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Releases scheduled into a session and not handed over."
+          },
+          "released_amount_centavos": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Integer centavos of money releases handed over in the period."
+          },
+          "goods_released": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "In-kind releases handed over in the period. Counted, never valued."
+          },
+          "residents_served": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Distinct people a release was handed to in the period."
+          },
+          "by_category": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "category",
+                "amount_centavos",
+                "money_count",
+                "goods_count"
+              ],
+              "properties": {
+                "category": {
+                  "$ref": "#/components/schemas/OfficeProgramCategory"
+                },
+                "amount_centavos": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "money_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "goods_count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "description": "Handed over in the period, by the programme type of the request; largest amount first."
+          }
+        }
+      },
+      "OfficeDashboardResidentApp": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "accounts",
+          "verification_requests_waiting",
+          "digital_ids_active"
+        ],
+        "properties": {
+          "accounts": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "registered",
+                  "registered_in_period",
+                  "by_verification"
+                ],
+                "properties": {
+                  "registered": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Open resident accounts (registered or verified, not closed). Staff accounts are not counted."
+                  },
+                  "registered_in_period": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Of those, created in the period."
+                  },
+                  "by_verification": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "unverified",
+                      "pending",
+                      "verified",
+                      "rejected"
+                    ],
+                    "properties": {
+                      "unverified": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "pending": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "verified": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "rejected": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null without user.view."
+          },
+          "verification_requests_waiting": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Pending ID reviews. Null without verification.review."
+          },
+          "digital_ids_active": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Cards active and not past their expiry. Null without digital-id.manage."
+          }
+        }
+      },
+      "OfficeDashboard": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "generated_at",
+          "applied_filter",
+          "attention",
+          "requests",
+          "payouts",
+          "resident_app"
+        ],
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "applied_filter": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "barangay_id",
+              "category",
+              "period"
+            ],
+            "properties": {
+              "barangay_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "category": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OfficeProgramCategory"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "period": {
+                "$ref": "#/components/schemas/OfficeDashboardPeriod"
+              }
+            },
+            "description": "The filter as asked, echoed."
+          },
+          "attention": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeDashboardAttention"
+            },
+            "description": "Most urgent first, then largest."
+          },
+          "requests": {
+            "$ref": "#/components/schemas/OfficeDashboardRequests"
+          },
+          "payouts": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OfficeDashboardPayouts"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null without release.view, and for a caseload."
+          },
+          "resident_app": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OfficeDashboardResidentApp"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null without user.view, verification.review or digital-id.manage."
+          }
+        }
+      },
+      "OfficeDashboardEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeDashboard"
           },
           "meta": {
             "type": "object"

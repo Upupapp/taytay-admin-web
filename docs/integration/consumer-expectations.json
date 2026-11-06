@@ -1393,6 +1393,21 @@
     },
     {
       "method": "GET",
+      "path": "office/dashboard",
+      "consumer": "dashboard.mapper.ts#toDashboardSummary",
+      "required": [
+        "applied_filter",
+        "attention",
+        "generated_at"
+      ],
+      "optional": [
+        "payouts",
+        "requests",
+        "resident_app"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "office/families",
       "consumer": "family.mapper.ts#toFamilySummary",
       "required": [],

@@ -71,6 +71,8 @@
                  ranking survives without colour. -->
             <span class="attention__severity">{{ card.severityLabel }}</span>
             <span class="attention__message">{{ card.message }}</span>
+            <!-- The rule the server counted by, so the figure can be checked (DL-98). -->
+            <p class="attention__basis">{{ copy.attentionBasis }} {{ card.signal.basis }}</p>
             <a
               class="btn attention__action"
               [routerLink]="card.drillDown.route"
@@ -116,27 +118,34 @@
       <span class="visually-hidden">{{ copy.viewRecords }}</span>
     </a>
 
-    <a
-      class="card metric"
-      [routerLink]="scheduledPayoutsLink(summary).route"
-      [queryParams]="scheduledPayoutsLink(summary).queryParams"
-    >
-      <span class="metric__label">{{ copy.scheduledPayouts }}</span>
-      <span class="metric__value">{{ summary.scheduledPayouts }}</span>
-      <span class="metric__hint">{{ copy.scheduledPayoutsHint }}</span>
-      <span class="visually-hidden">{{ copy.viewRecords }}</span>
-    </a>
+    <!-- Payouts only for a reader who may open the releases they count: absent, not zero (DL-182). -->
+    @if (summary.payouts; as payouts) {
+      <a
+        class="card metric"
+        [routerLink]="scheduledPayoutsLink(summary).route"
+        [queryParams]="scheduledPayoutsLink(summary).queryParams"
+      >
+        <span class="metric__label">{{ copy.scheduledPayouts }}</span>
+        <span class="metric__value">{{ payouts.scheduledPayouts }}</span>
+        <span class="metric__hint">{{ copy.scheduledPayoutsHint }}</span>
+        <span class="visually-hidden">{{ copy.viewRecords }}</span>
+      </a>
 
-    <a
-      class="card metric"
-      [routerLink]="disbursedLink(summary).route"
-      [queryParams]="disbursedLink(summary).queryParams"
-    >
-      <span class="metric__label">{{ copy.disbursed }}</span>
-      <span class="metric__value">{{ summary.disbursedInPeriod | peso }}</span>
-      <span class="metric__hint">{{ copy.disbursedHint(summary.residentsServedInPeriod) }}</span>
-      <span class="visually-hidden">{{ copy.viewRecords }}</span>
-    </a>
+      <a
+        class="card metric"
+        [routerLink]="disbursedLink(summary).route"
+        [queryParams]="disbursedLink(summary).queryParams"
+      >
+        <span class="metric__label">{{ copy.disbursed }}</span>
+        <span class="metric__value">{{ payouts.disbursedInPeriod | peso }}</span>
+        <span class="metric__hint">{{
+          copy.disbursedHint(payouts.residentsServedInPeriod, payouts.goodsReleasedInPeriod)
+        }}</span>
+        <span class="visually-hidden">{{ copy.viewRecords }}</span>
+      </a>
+    } @else {
+      <p class="metrics__note">{{ copy.payoutsNotShown }}</p>
+    }
   </section>
 
   <!-- ── Breakdowns. Every one is a real table with decorative bars. ────── -->
@@ -161,16 +170,70 @@
       />
     </section>
 
-    <section class="card panel">
-      <app-chart-table
-        [caption]="copy.byCategoryCaption"
-        [summary]="copy.byCategorySummary"
-        [labelHeader]="copy.categoryHeader"
-        [valueHeader]="copy.amountHeader"
-        [rows]="categoryRows()"
-      />
-    </section>
+    @if (summary.payouts) {
+      <section class="card panel">
+        <app-chart-table
+          [caption]="copy.byCategoryCaption"
+          [summary]="copy.byCategorySummary"
+          [labelHeader]="copy.categoryHeader"
+          [valueHeader]="copy.amountHeader"
+          [rows]="categoryRows()"
+        />
+      </section>
+    }
   </div>
+
+  <!-- ── The residents' app: only for whoever administers it, each figure behind its own key ── -->
+  @if (summary.residentApp; as app) {
+    <section class="app-figures" aria-labelledby="app-figures-heading">
+      <h2 id="app-figures-heading" class="app-figures__heading">{{ copy.residentAppHeading }}</h2>
+      <p class="app-figures__notice">{{ copy.residentAppNotice }}</p>
+
+      <div class="metrics">
+        @if (app.accounts; as accounts) {
+          <a class="card metric" routerLink="/users">
+            <span class="metric__label">{{ copy.accounts }}</span>
+            <span class="metric__value">{{ accounts.registered }}</span>
+            <span class="metric__hint">
+              {{ copy.accountsHint }}
+              @if (accountsNew(summary, accounts.registeredInPeriod); as fresh) {
+                {{ fresh }}
+              }
+            </span>
+            <span class="visually-hidden">{{ copy.viewRecords }}</span>
+          </a>
+        }
+        @if (app.verificationsWaiting !== null) {
+          <a class="card metric" routerLink="/verification">
+            <span class="metric__label">{{ copy.verificationsWaiting }}</span>
+            <span class="metric__value">{{ app.verificationsWaiting }}</span>
+            <span class="metric__hint">{{ copy.verificationsWaitingHint }}</span>
+            <span class="visually-hidden">{{ copy.viewRecords }}</span>
+          </a>
+        }
+        @if (app.digitalIdsActive !== null) {
+          <a class="card metric" routerLink="/digital-ids">
+            <span class="metric__label">{{ copy.digitalIdsActive }}</span>
+            <span class="metric__value">{{ app.digitalIdsActive }}</span>
+            <span class="metric__hint">{{ copy.digitalIdsActiveHint }}</span>
+            <span class="visually-hidden">{{ copy.viewRecords }}</span>
+          </a>
+        }
+      </div>
+
+      @if (app.accounts) {
+        <section class="card panel">
+          <app-chart-table
+            [caption]="copy.byVerificationCaption"
+            [summary]="copy.byVerificationSummary"
+            [labelHeader]="copy.verificationHeader"
+            [valueHeader]="copy.accountsHeader"
+            [rows]="verificationRows()"
+          />
+        </section>
+      }
+    </section>
+  }
 
   <!-- ── Quick actions, gated on what the user may actually do ──────────── -->
   <section class="card quick" aria-labelledby="quick-heading">

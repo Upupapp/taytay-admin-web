@@ -9,26 +9,33 @@ import {
   outstandingRequirements,
   sortAttention,
   sumMoney,
-  ZERO_PESOS,
+  userHasPermission,
+  type AccountVerificationStatus,
   type AssistanceRequest,
   type AssistanceRequestStatus,
   type AttentionSignal,
+  type AuthenticatedUser,
   type BarangayCount,
   type CategoryTotal,
   type DashboardFilter,
+  type DashboardPayouts,
   type DashboardPeriod,
   type DashboardRepository,
   type DashboardSummary,
   type Release,
   type Money,
   type ProgramCategory,
+  type ResidentAppFigures,
   type StatusCount,
 } from '@domain/index';
 
 import { MOCK_ASSISTANCE_REQUESTS } from './seed/assistance-requests.seed';
+import { MOCK_APP_ACCOUNTS } from './seed/app-accounts.seed';
 import { MOCK_DISBURSEMENTS } from './seed/releases.seed';
 import { MOCK_PROGRAMS } from './seed/programs.seed';
 import { MOCK_REFERRALS } from './seed/referrals.seed';
+import { MOCK_VERIFICATION_REQUESTS } from './seed/verification-requests.seed';
+import { MOCK_SEED_DIGITAL_IDS } from './mock-digital-id.repository';
 import { denyUnless } from './mock-access';
 import { MockLatency } from './mock-latency';
 
@@ -38,6 +45,30 @@ const PERIOD_DAYS: Readonly<Record<DashboardPeriod, number | null>> = {
   'last-90-days': 90,
 };
 
+/** A release handed over: the statuses that carry a release date, and that nothing goes back from. */
+const HANDED_OVER: readonly Release['status'][] = ['released', 'claimed', 'completed'];
+
+/**
+ * The rule each signal applied, in the words the API states it (`DL-98`, `DL-182`), so the mock
+ * reads the same as the server it stands in for.
+ */
+const BASIS: Readonly<Record<AttentionSignal['kind'], string>> = {
+  'awaiting-approval':
+    'Filed requests whose status is endorsed: a social worker has endorsed them and the decision is the head’s.',
+  'returned-to-applicant':
+    'Filed requests whose status is returned: the applicant was asked for more.',
+  'missing-requirements':
+    'Open filed requests with a required document, or a conditional one ruled to apply, that is ' +
+    'neither verified nor waived. A conditional document nobody has ruled on yet is not counted ' +
+    'against the applicant.',
+  'payout-due': 'Releases scheduled into a payout session and not yet handed over.',
+  'unclaimed-payout':
+    'Releases marked unclaimed: scheduled, and nobody came to collect. The record does not say why.',
+  'referral-unanswered':
+    'Referrals sent to another organisation with no acknowledgement recorded. With a programme ' +
+    'type chosen, only referrals made from a request of that type are counted.',
+};
+
 /**
  * Derives every dashboard figure from the same seed the list screens use, so
  * a headline number and the table behind it cannot disagree in a demo.
@@ -45,9 +76,10 @@ const PERIOD_DAYS: Readonly<Record<DashboardPeriod, number | null>> = {
  * Access is enforced here as in every other adapter (`DL-30`). Until TAB 06
  * this repository had **no** check at all, which meant an anonymous or
  * unprivileged caller could read municipality-wide counts — aggregate figures
- * are still information about residents. It now requires `dashboard.view` and
- * respects barangay scope, so a `barangay-link` sees their own barangay's
- * numbers rather than the municipality's.
+ * are still information about residents. It requires `dashboard.view` and
+ * narrows as the lists do (`DL-182`): a `barangay-link` counts its own
+ * barangay, a caseload the filed requests assigned to it, and a reader the
+ * release list refuses gets no payout figures at all rather than zeroes.
  */
 @Injectable()
 export class MockDashboardRepository implements DashboardRepository {
@@ -63,43 +95,159 @@ export class MockDashboardRepository implements DashboardRepository {
 
     const period = filter.period ?? 'all-time';
     const since = periodStart(period);
+    const caseload = user?.scope === 'assigned-cases';
 
+    // Filed requests only, as the request list reads them: a draft is somebody's unfinished form.
     const requests = MOCK_ASSISTANCE_REQUESTS.filter(
       (request) =>
+        request.status !== 'draft' &&
         isWithinBarangayScope(user, request.barangayId) &&
+        (!caseload || request.assignedTo === user.id) &&
         matchesBarangay(request.barangayId, filter) &&
         matchesCategory(request.programId, filter),
     );
 
     const requestIds = new Set(requests.map((request) => request.id));
-    const releases = MOCK_DISBURSEMENTS.filter((d) => requestIds.has(d.requestId));
-
-    const released = releases.filter(
-      (d) =>
-        (d.status === 'released' || d.status === 'claimed') && withinPeriod(d.releasedAt, since),
-    );
+    const payouts =
+      userHasPermission(user, 'release.view') && !caseload
+        ? payoutsOf(
+            MOCK_DISBURSEMENTS.filter((d) => requestIds.has(d.requestId)),
+            requests,
+            since,
+          )
+        : null;
+    const narrowed =
+      caseload ||
+      user?.scope === 'own-barangay' ||
+      filter.barangayId !== undefined ||
+      filter.category !== undefined;
+    const unansweredReferrals = userHasPermission(user, 'referral.view')
+      ? MOCK_REFERRALS.filter(
+          (referral) =>
+            referral.status === 'sent' &&
+            referral.respondedAt === null &&
+            // A referral naming no request carries no barangay or programme here, so it is
+            // counted only when nothing narrows the figures.
+            (referral.requestId === null ? !narrowed : requestIds.has(referral.requestId)),
+        ).length
+      : null;
 
     const summary: DashboardSummary = {
       generatedAt: asIsoDateTime(new Date()),
       appliedFilter: filter,
-      attention: sortAttention(buildAttention(requests, releases, requestIds)),
+      attention: sortAttention(buildAttention(requests, payouts, unansweredReferrals)),
 
       openRequests: requests.filter((r) => !isTerminalAssistanceStatus(r.status)).length,
       awaitingApproval: countByStatus(requests, 'endorsed'),
-      scheduledPayouts: releases.filter((d) => d.status === 'scheduled').length,
-      residentsServedInPeriod: new Set(released.map((d) => d.residentId)).size,
-      // Goods reached families too, but carry no peso figure. Left out of the
-      // money total rather than counted as zero (`DL-93`).
-      disbursedInPeriod: sumMoney(
-        released.filter((d) => d.amount !== null).map((d) => d.amount as Money),
-      ),
-
       requestsByStatus: byStatus(requests),
       requestsByBarangay: byBarangay(requests),
-      disbursedByCategory: byCategory(released, requests),
+
+      payouts,
+      residentApp: residentAppFor(user, since),
     };
 
     return this.latency.respond(summary);
+  }
+}
+
+/* ── payouts ──────────────────────────────────────────────────────────────── */
+
+function payoutsOf(
+  releases: readonly Release[],
+  requests: readonly AssistanceRequest[],
+  since: Date | null,
+): DashboardPayouts {
+  const released = releases.filter(
+    (d) => HANDED_OVER.includes(d.status) && withinPeriod(d.releasedAt, since),
+  );
+  return {
+    scheduledPayouts: releases.filter((d) => d.status === 'scheduled').length,
+    residentsServedInPeriod: new Set(released.map((d) => d.residentId)).size,
+    // Goods reached families too, but carry no peso figure. Left out of the
+    // money total rather than counted as zero, and counted beside it (`DL-93`).
+    disbursedInPeriod: sumMoney(moneyOf(released)),
+    goodsReleasedInPeriod: released.filter((d) => d.amount === null).length,
+    disbursedByCategory: byCategory(released, requests),
+  };
+}
+
+function moneyOf(releases: readonly Release[]): readonly Money[] {
+  return releases.flatMap((d) => (d.amount === null ? [] : [d.amount]));
+}
+
+/* ── the residents' app ───────────────────────────────────────────────────── */
+
+/**
+ * The app's accounts, ID reviews and cards, each behind the key of the list it counts, and absent
+ * for a reader who holds none of them (`DL-182`).
+ *
+ * The seed's accounts carry no registration date, so they are all taken as registered before any
+ * recent period: "new in the last 30 days" reads zero in the demo rather than an invented figure.
+ */
+function residentAppFor(
+  user: AuthenticatedUser | null,
+  since: Date | null,
+): ResidentAppFigures | null {
+  const accounts = userHasPermission(user, 'user.view');
+  const reviews = userHasPermission(user, 'verification.review');
+  const cards = userHasPermission(user, 'digital-id.manage');
+  if (!accounts && !reviews && !cards) {
+    return null;
+  }
+
+  const residents = MOCK_APP_ACCOUNTS.filter(
+    (account) => account.role === 'registered' || account.role === 'verified',
+  );
+  const byVerification: Record<AccountVerificationStatus, number> = {
+    unverified: 0,
+    pending: 0,
+    verified: 0,
+    rejected: 0,
+  };
+  for (const account of residents) {
+    byVerification[verificationOf(account.id, account.role)] += 1;
+  }
+  const now = Date.now();
+
+  return {
+    accounts: accounts
+      ? {
+          registered: residents.length,
+          registeredInPeriod: since === null ? residents.length : 0,
+          byVerification,
+        }
+      : null,
+    verificationsWaiting: reviews
+      ? MOCK_VERIFICATION_REQUESTS.filter((request) => request.status === 'pending').length
+      : null,
+    digitalIdsActive: cards
+      ? MOCK_SEED_DIGITAL_IDS.filter(
+          (card) => card.status === 'active' && new Date(card.expiresAt).getTime() > now,
+        ).length
+      : null,
+  };
+}
+
+/** A verified account is verified; otherwise its latest ID review says, and none means unverified. */
+function verificationOf(
+  accountId: (typeof MOCK_APP_ACCOUNTS)[number]['id'],
+  role: (typeof MOCK_APP_ACCOUNTS)[number]['role'],
+): AccountVerificationStatus {
+  if (role === 'verified') {
+    return 'verified';
+  }
+  const latest = MOCK_VERIFICATION_REQUESTS.filter((request) => request.accountId === accountId)
+    .slice()
+    .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))[0];
+  switch (latest?.status) {
+    case 'pending':
+      return 'pending';
+    case 'rejected':
+      return 'rejected';
+    case 'approved':
+      return 'verified';
+    case undefined:
+      return 'unverified';
   }
 }
 
@@ -111,12 +259,13 @@ export class MockDashboardRepository implements DashboardRepository {
  * Every signal is a count of records that exist under the current filter, so
  * each one can be traced by following its drill-down. Signals with a zero count
  * are dropped rather than shown as "0" — an empty list is a real answer, and a
- * wall of zeroes is noise.
+ * wall of zeroes is noise. Payout and referral signals are counted only for a
+ * reader who may read those lists.
  */
 function buildAttention(
   requests: readonly AssistanceRequest[],
-  releases: readonly Release[],
-  requestIds: ReadonlySet<AssistanceRequest['id']>,
+  payouts: DashboardPayouts | null,
+  unansweredReferrals: number | null,
 ): readonly AttentionSignal[] {
   const signals: AttentionSignal[] = [];
 
@@ -127,7 +276,7 @@ function buildAttention(
     permission: AttentionSignal['permission'],
   ): void => {
     if (count > 0) {
-      signals.push({ kind, severity, count, permission });
+      signals.push({ kind, severity, count, permission, basis: BASIS[kind] });
     }
   };
 
@@ -144,35 +293,27 @@ function buildAttention(
   ).length;
   push('missing-requirements', 'warning', missing, 'request.intake');
 
-  // Money committed and dated, not yet handed over.
-  push(
-    'payout-due',
-    'critical',
-    releases.filter((d) => d.status === 'scheduled').length,
-    'release.release',
-  );
+  if (payouts !== null) {
+    // Money committed and dated, not yet handed over.
+    push('payout-due', 'critical', payouts.scheduledPayouts, 'release.release');
+  }
 
-  // Released but never collected — the grant may lapse. Acting on it means
-  // re-scheduling, so the permission is `schedule`, not `view`: this list is a
-  // to-do, and a read permission would put items on a read-only role's list
-  // that they cannot do anything about.
-  push(
-    'unclaimed-payout',
-    'warning',
-    releases.filter((d) => d.status === 'unclaimed').length,
-    'release.schedule',
-  );
+  // Scheduled, and nobody came. Acting on it means re-scheduling, so the
+  // permission is `schedule`, not `view`: this list is a to-do, and a read
+  // permission would put items on a read-only role's list that they cannot do
+  // anything about.
+  if (payouts !== null) {
+    const unclaimed = MOCK_DISBURSEMENTS.filter(
+      (d) => d.status === 'unclaimed' && requests.some((request) => request.id === d.requestId),
+    ).length;
+    push('unclaimed-payout', 'warning', unclaimed, 'release.schedule');
+  }
 
-  // Sent to a partner office with no acknowledgement.
-  const unanswered = MOCK_REFERRALS.filter(
-    (referral) =>
-      referral.status === 'sent' &&
-      referral.respondedAt === null &&
-      (referral.requestId === null || requestIds.has(referral.requestId)),
-  ).length;
-  // Chasing a referral is `referral.manage`; merely being able to read one
-  // does not make it your job.
-  push('referral-unanswered', 'info', unanswered, 'referral.manage');
+  // Sent to a partner office with no acknowledgement. Chasing a referral is
+  // `referral.manage`; merely being able to read one does not make it your job.
+  if (unansweredReferrals !== null) {
+    push('referral-unanswered', 'info', unansweredReferrals, 'referral.manage');
+  }
 
   return signals;
 }
@@ -229,15 +370,12 @@ function byStatus(requests: readonly AssistanceRequest[]): readonly StatusCount[
 }
 
 function byBarangay(requests: readonly AssistanceRequest[]): readonly BarangayCount[] {
-  const counts = new Map<string, number>();
+  const counts = new Map<AssistanceRequest['barangayId'], number>();
   for (const request of requests) {
     counts.set(request.barangayId, (counts.get(request.barangayId) ?? 0) + 1);
   }
   return [...counts.entries()]
-    .map(([barangayId, count]) => ({
-      barangayId: barangayId as BarangayCount['barangayId'],
-      count,
-    }))
+    .map(([barangayId, count]) => ({ barangayId, count }))
     .sort((a, b) => b.count - a.count);
 }
 
@@ -253,13 +391,25 @@ function byCategory(
     if (category === null) {
       continue;
     }
-    const existing = totals.get(category);
-    totals.set(category, {
+    const existing = totals.get(category) ?? {
       category,
-      amount: sumMoney([existing?.amount ?? ZERO_PESOS, release.amount ?? ZERO_PESOS]),
-      count: (existing?.count ?? 0) + 1,
-    });
+      amount: sumMoney([]),
+      count: 0,
+      goodsCount: 0,
+    };
+    totals.set(
+      category,
+      release.amount === null
+        ? { ...existing, goodsCount: existing.goodsCount + 1 }
+        : {
+            ...existing,
+            amount: sumMoney([existing.amount, release.amount]),
+            count: existing.count + 1,
+          },
+    );
   }
 
-  return [...totals.values()].sort((a, b) => b.amount.centavos - a.amount.centavos);
+  return [...totals.values()].sort(
+    (a, b) => b.amount.centavos - a.amount.centavos || b.goodsCount - a.goodsCount,
+  );
 }

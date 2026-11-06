@@ -42,6 +42,7 @@ import {
 import {
   HttpAppAccountRepository,
   HttpCaseRepository,
+  HttpDashboardRepository,
   HttpReleaseRepository,
   HttpReferralRepository,
   HttpFieldVisitRepository,
@@ -69,7 +70,6 @@ import {
 import { identitySignInMethod } from './http/identity/identity.provider';
 import {
   UnservedBeneficiaryRepository,
-  UnservedDashboardRepository,
   UnservedEventRepository,
   UnservedGovernanceRepository,
   UnservedNewsfeedRepository,
@@ -102,17 +102,17 @@ import {
  * names no mock class at all, and `angular.json` swaps in `data-access.providers.mock.ts` for the
  * one configuration that wants them.
  *
- * ## Twenty-one ports served, eleven unserved
+ * ## Twenty-five ports served, seven unserved
  *
  * The Node API serves the signed-in account, its inbox, residents' ID verification review
  * (`DL-167`), the office inbox, the office directory and app accounts with their roles (`DL-168`),
  * the directory as an administrator keeps it, Tulong pages, hotlines, the home screen and the
  * app's settings (`DL-170`), residents’ digital IDs, Balita and the API's audit trail (`DL-171`),
  * the office's resident registry (`DL-174`), its household register, families and saved views
- * (casework phase 1c), its programme catalogue (`DL-176`) and assistance requests — intake, filing
- * and the lifecycle, with the assessment and the document review said to be not connected yet
- * (casework phase 2a, `DL-177`) — and cases, the office's continuing file on a person (casework
- * phase 3, `DL-179`) — and nothing else this console has a port for (`DL-164`). Every other port is bound to an `Unserved…` adapter that makes no request and
+ * (casework phase 1c), its programme catalogue (`DL-176`), assistance requests (`DL-177`,
+ * `DL-178`), cases (`DL-179`), releases (`DL-180`), referrals and field visits (`DL-181`), and
+ * the dashboard (`DL-182`) — and nothing else this console has a port for (`DL-164`). Every other
+ * port is bound to an `Unserved…` adapter that makes no request and
  * fails with a sentence saying so (`DL-165`). A port moves from that list to an `Http…` adapter
  * only when the API serves the thing the port names — not something with the same word on it.
  */
@@ -138,7 +138,7 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: DIGITAL_ID_REPOSITORY, useClass: HttpDigitalIdRepository },
     { provide: BALITA_REPOSITORY, useClass: HttpBalitaRepository },
     { provide: PLATFORM_AUDIT_REPOSITORY, useClass: HttpPlatformAuditRepository },
-    { provide: DASHBOARD_REPOSITORY, useClass: UnservedDashboardRepository },
+    { provide: DASHBOARD_REPOSITORY, useClass: HttpDashboardRepository },
     { provide: WORK_REPOSITORY, useClass: UnservedWorkRepository },
     { provide: REPORT_REPOSITORY, useClass: UnservedReportRepository },
     { provide: SEARCH_REPOSITORY, useClass: UnservedSearchRepository },

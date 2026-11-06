@@ -128,6 +128,15 @@
   text-decoration: none;
 }
 
+/* The basis sits on its own line under the message: the rule the count applied (DL-98). */
+.attention__basis {
+  flex: 1 0 100%;
+  order: 1;
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
+
 .attention__clear {
   padding: var(--space-base);
 }
@@ -184,6 +193,13 @@
   font-size: 12.5px;
 }
 
+.metrics__note {
+  align-self: center;
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 13.5px;
+}
+
 /* ── Breakdowns ───────────────────────────────────────────────────────────── */
 
 .panels {
@@ -197,6 +213,26 @@
   padding: var(--space-base);
   min-inline-size: 0;
   overflow-x: auto;
+}
+
+/* ── The residents' app ───────────────────────────────────────────────────── */
+
+.app-figures {
+  margin-block-start: var(--space-card);
+}
+
+.app-figures__heading {
+  font-size: 15px;
+}
+
+.app-figures__notice {
+  margin-block: var(--space-1) var(--space-snug);
+  color: var(--c-text-muted);
+  font-size: 13.5px;
+}
+
+.app-figures .panel {
+  margin-block-start: var(--space-base);
 }
 
 /* ── Quick actions ────────────────────────────────────────────────────────── */

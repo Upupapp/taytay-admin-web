@@ -1,0 +1,28 @@
+{
+  "data": {
+    "generated_at": "2026-11-06T09:30:00.000Z",
+    "applied_filter": {
+      "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+      "category": "medical-assistance",
+      "period": "all-time"
+    },
+    "attention": [
+      {
+        "kind": "missing-requirements",
+        "severity": "warning",
+        "count": 1,
+        "permission": "request.intake",
+        "basis": "Open filed requests with a required document, or a conditional one ruled to apply, that is neither verified nor waived. A conditional document nobody has ruled on yet is not counted against the applicant."
+      }
+    ],
+    "requests": {
+      "open": 1,
+      "awaiting_approval": 0,
+      "by_status": [{ "status": "submitted", "count": 1 }],
+      "by_barangay": [{ "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01", "count": 1 }]
+    },
+    "payouts": null,
+    "resident_app": null
+  },
+  "meta": {}
+}

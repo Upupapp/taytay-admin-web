@@ -160,7 +160,7 @@ Welfare and Development Office (MSWDO). It has three parts:
 
 | ID          | Requirement                                                                                                                                        | Status              |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| FR-STAFF-22 | An administrative dashboard summarises requests, cases and requests by barangay.                                                                   | In progress (today) |
+| FR-STAFF-22 | An administrative dashboard summarises requests, cases and requests by barangay.                                                                   | Done (`DL-182`)     |
 | FR-STAFF-23 | Work queues show what a named person owes, and office alerts show what is wrong with the data. Lateness is said in words (`DL-96`–`DL-103`).       | Planned (phase 6)   |
 | FR-STAFF-24 | Fourteen reports, thirteen of them aggregate. Small counts are withheld, and every export carries its own handling conditions (`DL-104`–`DL-108`). | Planned (phase 6)   |
 | FR-STAFF-25 | Search covers names, reference numbers, barangay and status only. Recent searches are never saved (`DL-109`, `DL-110`).                            | Planned (phase 6)   |
@@ -243,7 +243,7 @@ is allowed only in a development debug build. Staging and production builds refu
 | 3    | Cases                                                                                                                                      | Done                                                                                       | 2026-11-06                      | `DL-179`                                      |
 | 4    | Releases and payout sessions                                                                                                               | Done                                                                                       | 2026-11-06                      | `DL-180`                                      |
 | 5    | Referrals and field visits                                                                                                                 | **In progress**: the server is done (`taytay-backend` `6436b70`), the console is finishing | 2026-11-06                      | `DL-181` (cited; not yet in the decision log) |
-| 6    | Dashboard, work queues, reports, search, newsfeed and events, governance                                                                   | **Next**. The dashboard is being served today                                              | —                               | —                                             |
+| 6    | Dashboard, work queues, reports, search, newsfeed and events, governance                                                                   | **Next**. The dashboard is served (`DL-182`)                                               | —                               | —                                             |
 
 The phase detail and the owner's open questions from each phase are in
 `taytay-admin-web/docs/integration/node-api-migration.md`.

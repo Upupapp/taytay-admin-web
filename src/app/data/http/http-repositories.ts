@@ -223,6 +223,9 @@ import {
   type FieldVisitFilter,
   type FieldVisitId,
   type FieldVisitRepository,
+  type DashboardFilter,
+  type DashboardRepository,
+  type DashboardSummary,
   type Referral,
   type ReferralDraft,
   type ReferralFilter,
@@ -245,6 +248,7 @@ import type { IdentityGrant, IdentityPort } from './identity/identity.model';
 import { IdentityProvider } from './identity/identity.provider';
 import { invalidCredentials, signInUnavailable } from './identity/sign-in-messages';
 import { toServerIdentity } from './mappers/me.mapper';
+import { toDashboardSummary } from './mappers/dashboard.mapper';
 import {
   RELEASE_REASON_MIN_LENGTH,
   toRelease,
@@ -3839,4 +3843,49 @@ function readWrittenVisit(wire: unknown): FieldVisit {
     );
   }
   return visit;
+}
+
+/**
+ * The dashboard (`DL-182`): one read, every figure counted by the server under the scope of the
+ * list it opens.
+ *
+ * The barangay is joined to the API's id before it is sent and back again on the way in, as on every
+ * other served list; a barangay the two lists do not share is refused before anything is sent,
+ * because a filter that cannot be applied would answer with the municipality's figures under a
+ * heading naming one barangay.
+ */
+@Injectable()
+export class HttpDashboardRepository implements DashboardRepository {
+  private readonly api = inject(ApiClient);
+  private readonly barangayJoin = new BarangayJoin();
+
+  summary(filter: DashboardFilter): Observable<DashboardSummary> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) => {
+        const barangayId =
+          filter.barangayId === undefined ? undefined : barangays.toApi(filter.barangayId);
+        if (barangayId === null) {
+          return throwError(() => unknownBarangay());
+        }
+        return this.api
+          .item(API_ENDPOINTS.officeDashboard, {
+            barangay_id: barangayId,
+            category: filter.category,
+            period: filter.period,
+          })
+          .pipe(map((wire) => readDashboard(wire, barangays)));
+      }),
+    );
+  }
+}
+
+function readDashboard(wire: unknown, barangays: BarangayIndex): DashboardSummary {
+  const summary = toDashboardSummary(wire, barangays);
+  if (summary === null) {
+    throw new Error(
+      'The dashboard figures could not be read, so none is shown: a total that leaves out what it ' +
+        'could not read is a wrong total.',
+    );
+  }
+  return summary;
 }

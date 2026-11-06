@@ -177,7 +177,7 @@ describe('sortAttention', () => {
     kind: AttentionSignal['kind'],
     severity: AttentionSignal['severity'],
     count: number,
-  ): AttentionSignal => ({ kind, severity, count, permission: 'request.view' });
+  ): AttentionSignal => ({ kind, severity, count, permission: 'request.view', basis: 'A test.' });
 
   it('puts critical before warning before info', async () => {
     const sorted = sortAttention([
@@ -232,6 +232,18 @@ describe('every metric traces back to filtered records', () => {
       status: 'unclaimed',
     });
     expect(attentionDrillDown('referral-unanswered', {}).route).toBe('/referrals');
+  });
+
+  it('states the rule each signal counted by, as the counter gave it (DL-98)', async () => {
+    const element = html(await setUp('mswdo-head'));
+    const bases = Array.from(element.querySelectorAll('.attention__basis')).map(
+      (node) => node.textContent?.trim() ?? '',
+    );
+    expect(bases.length).toBeGreaterThan(0);
+    for (const basis of bases) {
+      expect(basis.startsWith(DASHBOARD_COPY.attentionBasis)).toBe(true);
+      expect(basis.length).toBeGreaterThan(DASHBOARD_COPY.attentionBasis.length + 10);
+    }
   });
 
   it('makes every breakdown row a drill-down too', async () => {
@@ -377,5 +389,95 @@ describe('dashboard data is access-controlled like every other repository', () =
     for (const signal of summary.attention) {
       expect(signal.count).toBeGreaterThan(0);
     }
+  });
+});
+
+/* ── what a reader's lists would refuse is absent, not zero (DL-182) ─────── */
+
+describe('payouts and the residents’ app are absent for a reader who cannot open them', () => {
+  function repo(role: StaffRole, barangayId: BarangayId | null = null): MockDashboardRepository {
+    const definition = ROLE_DEFINITIONS[role];
+    const user: AuthenticatedUser = {
+      id: asId<StaffUserId>('staff-x'),
+      displayName: 'Test',
+      email: 'test@example.gov.ph',
+      role,
+      roleLabel: definition.label,
+      position: 'Tester',
+      barangayId,
+      scope: definition.scope,
+      permissions: new Set(definition.permissions),
+    };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: APP_ENVIRONMENT, useValue: TEST_ENVIRONMENT },
+        { provide: ACCESS_CONTEXT, useValue: { currentUser: () => user } },
+        MockDashboardRepository,
+      ],
+    });
+    return TestBed.inject(MockDashboardRepository);
+  }
+
+  it('gives payout figures only to a reader of the release list', async () => {
+    for (const role of ['intake-officer', 'social-worker', 'barangay-link'] as const) {
+      const summary = await firstValueFrom(repo(role, SAN_JUAN).summary({}));
+      expect(summary.payouts, role).toBeNull();
+      expect(
+        summary.attention.some((s) => s.kind === 'payout-due'),
+        role,
+      ).toBe(false);
+    }
+    for (const role of ['mswdo-head', 'release-officer', 'auditor'] as const) {
+      expect((await firstValueFrom(repo(role).summary({}))).payouts, role).not.toBeNull();
+    }
+  });
+
+  it('sums money only, and counts goods beside it (DL-93)', async () => {
+    const payouts = (await firstValueFrom(repo('mswdo-head').summary({}))).payouts;
+    expect(payouts?.goodsReleasedInPeriod).toBeGreaterThan(0);
+    expect(Number.isInteger(payouts?.disbursedInPeriod.centavos)).toBe(true);
+    const goodsRows = payouts?.disbursedByCategory.filter((row) => row.goodsCount > 0) ?? [];
+    expect(goodsRows.length).toBeGreaterThan(0);
+  });
+
+  it('counts a caseload’s own requests and nothing else', async () => {
+    const caseload = await firstValueFrom(repo('social-worker').summary({}));
+    const office = await firstValueFrom(repo('mswdo-head').summary({}));
+    expect(caseload.openRequests).toBeLessThan(office.openRequests);
+  });
+
+  it('gives the residents’ app only to whoever holds its keys', async () => {
+    expect((await firstValueFrom(repo('mswdo-head').summary({}))).residentApp).toBeNull();
+    const app = (await firstValueFrom(repo('system-administrator').summary({}))).residentApp;
+    expect(app?.accounts?.registered).toBeGreaterThan(0);
+    expect(app?.verificationsWaiting).toBeGreaterThan(0);
+    expect(app?.digitalIdsActive).not.toBeNull();
+    const accounts = app?.accounts;
+    if (accounts) {
+      const { unverified, pending, verified, rejected } = accounts.byVerification;
+      expect(unverified + pending + verified + rejected).toBe(accounts.registered);
+    }
+  });
+
+  it('says payout figures are not shown, rather than showing zeroes or a link that bounces', async () => {
+    const element = html(await setUp('intake-officer'));
+    expect(element.querySelector('.metrics')?.textContent).toContain(
+      DASHBOARD_COPY.payoutsNotShown,
+    );
+    expect(element.textContent).not.toContain(DASHBOARD_COPY.scheduledPayouts);
+    expect(element.querySelector('a.metric[href^="/releases"]')).toBeNull();
+    expect(element.querySelector('.app-figures')).toBeNull();
+  });
+
+  it('shows the administrator the app, each figure a link to the list it counts', async () => {
+    const element = html(await setUp('system-administrator'));
+    const section = element.querySelector('.app-figures');
+    expect(section?.textContent).toContain(DASHBOARD_COPY.residentAppNotice);
+    const links = Array.from(section?.querySelectorAll<HTMLAnchorElement>('a.metric') ?? []).map(
+      (link) => link.getAttribute('href'),
+    );
+    expect(links).toEqual(['/users', '/verification', '/digital-ids']);
+    expect(section?.querySelector('table')).not.toBeNull();
   });
 });

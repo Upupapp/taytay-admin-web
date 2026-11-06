@@ -7475,3 +7475,108 @@ The backend's own test compares its referral statuses, labels, transitions, dest
 urgencies, follow-up days, bases and their labels, shared fields and their labels, the handling
 notice, provider statuses and channels, and the visit statuses, labels, transitions, purposes,
 observation kinds and minimum length with this console's domain files.
+
+## DL-182 — the dashboard is served: every figure counted under the scope of the list it opens, and what a reader's lists refuse is absent, not zero
+
+Casework phase 6a (`docs/integration/node-api-migration.md`). Backend `taytay-backend` `0ec3ffb`;
+the spec vendored here is its. Console: the commit that adds this entry. The owner made this a
+priority deliverable ("Citizen roster and administrative dashboard"): until now the default route
+sent every member of staff to `/dashboard`, and the dashboard was unserved, so sign-in landed on
+`/unavailable`.
+
+### What the server now decides
+
+- **One read, `GET office/dashboard`, behind `dashboard.view`**, filtered by `barangay_id`,
+  `category` and `period` and nothing else (anything else is 422). Read-only: every figure is
+  counted in SQL on the request that asks for it, and nothing is stored.
+- **Every figure is counted under the scope of the list it links to.** `all-barangays` counts the
+  municipality; `own-barangay` counts its barangay, and a `barangay_id` outside it is 403, as on the
+  request list; a caseload counts the filed requests assigned to it and the referrals naming its
+  case or its request. A number and the list it opens therefore agree, which is what the screen's
+  drill-downs always claimed.
+- **Filed requests only.** A draft is somebody's unfinished form; the request list does not show
+  one among filed requests, so the dashboard does not count one.
+- **Payouts are `null`, not zero, for a reader the release list refuses** — without `release.view`,
+  or a caseload. An intake officer, a social worker and a barangay link used to see a payout total
+  and a card linking to `/releases`, a list their guard refuses (`CLAUDE.md` rule 8). For everybody
+  else: scheduled, and for releases handed over (`released`, `claimed`, `completed`) in the period,
+  **integer centavos of money releases with goods counted beside them and never valued**
+  (`DL-93`), the people served, and the same per programme type.
+- **Each attention item carries the key that acts on it and its basis in words** (`DL-98`): the
+  rule the server ran, so the figure can be checked. `missing-requirements` does not count an
+  undecided conditional document against the applicant (`DL-76`, `DL-78`); `referral-unanswered`
+  is a referral sent with no acknowledgement, counted only for a reader of referrals. A zero is
+  left out.
+- **The residents' app has a block of its own**, for whoever administers it: open resident accounts
+  (staff are not citizens) by verification status and new in the period, ID reviews waiting, and
+  digital IDs active and unexpired. Each figure sits behind the key of the list it counts —
+  `user.view`, `verification.review`, `digital-id.manage` — and the block is `null` for a reader
+  who holds none of them. Administrators alone hold them today.
+
+### Decisions made here
+
+1. **No small-cell suppression on the dashboard.** The brief asked to apply `DL-105` to any
+   people-count broken down by barangay *if the domain applies it there*. It does not: the only
+   breakdown by barangay counts **requests**, and `suppressSmallCells` says in its own words that a
+   count of requests identifies nobody on its own. Every row also opens records the reader may
+   already read. No people-count is broken down by barangay, and none was added.
+2. **The basis comes from the counter.** The domain's `AttentionSignal` gains `basis`, written by
+   whoever counted — the API, or the mock in the API's words — rather than by this console's copy,
+   which would describe a rule it did not run. The copy still words the *message* (`DL-23`).
+3. **Absent is `null` at every level.** `payouts` and `residentApp` are `null` on the summary, and
+   each residents' app figure is `null` without its own key; the mapper keeps a wire `null` a
+   `null` and never turns it into a zero. The screen says payout figures are not shown, rather than
+   leaving a gap a reader takes for "nothing paid out".
+4. **The residents' app figures are the whole app's.** The barangay and programme filters do not
+   narrow them — a resident's barangay in the app is self-declared, not the office's registry — and
+   the screen says so. The period does reach them: "new in the period". The period filter's label
+   is now **Period**, since it governs more than releases.
+5. **Whole or not at all.** Every other mapper drops a row it cannot read; an aggregate cannot,
+   because a dropped barangay reads as "no requests there". One unreadable value refuses the
+   summary, and the screen says it could not load.
+6. **"Residents served" counts people who received goods only.** They were served; their goods
+   are counted, not valued.
+7. **`ApiClient.item` drops a key left `undefined`**, as `list` always has, so an optional filter is
+   written in the call's object literal where `check:query-params` can read it.
+
+### What the console now does
+
+- `HttpDashboardRepository` serves the port through `mappers/dashboard.mapper.ts`, the barangay
+  joined to the API's id on the way out and back to the console's on the way in; a barangay the
+  two lists do not share is refused before anything is sent.
+- The screen shows the basis under each attention item; the payout cards and the
+  released-by-programme table only to a reader of the releases; a programme that released only
+  goods as "1 release of goods", never "₱0"; and the residents' app — accounts, ID reviews waiting,
+  digital IDs in force, each a link to `/users`, `/verification` or `/digital-ids`, with a table of
+  accounts by verification (a table, `DL-108`).
+- The mock counts the same way: filed requests, a caseload's own, payouts only for a reader of
+  releases, and the app's figures from its seeds. The seeded accounts carry no registration date, so
+  "new in the period" reads zero there rather than an invented figure.
+- `dashboard` leaves `UNSERVED_HTTP_PORTS`; seven ports remain, and the header of
+  `unserved-repositories.ts`, which still said the API served no cases or releases, says what is
+  left.
+
+### For the owner
+
+- Whether intake officers, social workers and barangay links should see payout figures. They no
+  longer do, because the release list refuses them; granting `release.view` would bring them back.
+- Whether the residents' app figures should be narrowed by the barangay a resident declared in the
+  app.
+- Whether "residents served" should go on counting people who received only goods.
+
+### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:contract-drift` | vendored `0ec3ffb` | 209 operations (was 208) |
+| `check:routes` | unserved ceiling lowered 8 → 7 | 40 endpoints, 166 composed requests; 7 of 33 ports unrouted |
+| `check:unserved` | `dashboard` served | passed |
+| `check:response-shape` | the dashboard read, an item | 84/84 (was 83/83) |
+| `check:query-params` | `barangay_id`, `category`, `period` as an inline literal | 83 reads (was 82) |
+| `check:port-adoption` | unchanged | 8 of 227 unreached |
+| `check:consumer-contract` | regenerated | 137 interactions, 755 required fields (was 136, 752) |
+| `check:community` | the section's class names say `app-figures`, not `resident-app`: it is staff-facing figures about the app, not a resident surface (`DL-123`) | passed |
+| `check:permission-parity` | unchanged | 0 of 61 disagree |
+
+The backend's tests cover empty-office zeros, absent-not-zero groups for each role, the refusals,
+scope per role, centavos and goods, the period, referrals and the residents' app.

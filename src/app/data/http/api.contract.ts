@@ -265,6 +265,12 @@ export const API_ENDPOINTS = {
    * where anybody was (`DL-86`).
    */
   officeVisits: 'office/visits',
+  /**
+   * The dashboard (`DL-182`): one summary, answered whole, by `barangay_id`, `category` and
+   * `period`. Every figure is counted by the server under the scope of the list it opens; a group
+   * the reader's lists would refuse — payouts, the residents' app — is null, never zero.
+   */
+  officeDashboard: 'office/dashboard',
   /** The open social-worker accounts a request can be assigned to (`DL-178`, `request.assess`). */
   officeSocialWorkers: 'office/social-workers',
   /** The published assessment forms, current versions, answered whole (`DL-178`). */

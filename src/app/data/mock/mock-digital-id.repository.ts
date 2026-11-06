@@ -58,6 +58,9 @@ const SEED: readonly HeldCard[] = [
   },
 ];
 
+/** The seed's cards as issued, for the mock dashboard's count of cards in force (`DL-182`). */
+export const MOCK_SEED_DIGITAL_IDS: readonly DigitalIdCard[] = SEED.map((held) => held.card);
+
 /**
  * Digital IDs for the `local-mock` configuration (`DL-171`), behaving as the API's handlers do: a
  * check re-checks `digital-id.verify` and every other act `digital-id.manage` (rule 4); only a

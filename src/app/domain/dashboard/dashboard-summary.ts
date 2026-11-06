@@ -7,7 +7,7 @@ import type { ProgramCategory } from '../programs/program';
 /* ── Drill-down filter ────────────────────────────────────────────────────── */
 
 /**
- * How long a window the money figures cover.
+ * How long a window the released figures, and the app accounts counted as new, cover.
  *
  * `all-time` is the default because a municipal office's first question is
  * usually "what is outstanding", not "what happened in the last 30 days".
@@ -84,6 +84,13 @@ export interface AttentionSignal {
    * to be told about payouts they cannot release.
    */
   readonly permission: Permission;
+  /**
+   * The rule the count applied, in words, as whoever counted it states it — "filed requests
+   * whose status is endorsed". A signal nobody can check is one an office learns to dismiss
+   * (`DL-98`), and the counter is the only party that knows the rule it actually ran, so the
+   * sentence comes with the count rather than being guessed here (`DL-182`).
+   */
+  readonly basis: string;
 }
 
 /**
@@ -114,8 +121,77 @@ export interface BarangayCount {
 
 export interface CategoryTotal {
   readonly category: ProgramCategory;
+  /** Money releases only. Goods are never valued, so they add nothing here (`DL-93`). */
   readonly amount: Money;
+  /** The money releases summed into `amount`. */
   readonly count: number;
+  /** In-kind releases, counted beside the amount rather than valued at zero (`DL-93`). */
+  readonly goodsCount: number;
+}
+
+/* ── Payouts ──────────────────────────────────────────────────────────────── */
+
+/**
+ * What was scheduled and handed over, under the filter.
+ *
+ * Held apart from the request figures because not every reader of the dashboard may read the
+ * releases behind them: the release list is `release.view`'s and is refused to a caseload. A
+ * reader it refuses gets `null` — no payout figures at all — rather than zeroes the list would
+ * contradict, or a link to a list that would bounce them (`CLAUDE.md` rule 8, `DL-182`).
+ */
+export interface DashboardPayouts {
+  readonly scheduledPayouts: number;
+  readonly residentsServedInPeriod: number;
+  /**
+   * Renamed from `disbursedThisMonth` in TAB 06. The old name was inaccurate:
+   * it summed every released release regardless of date, so the label
+   * claimed a window the number never respected. It now means exactly what the
+   * `period` filter says. Money releases only (`DL-93`).
+   */
+  readonly disbursedInPeriod: Money;
+  /** In-kind releases handed over in the period: counted, never valued (`DL-93`). */
+  readonly goodsReleasedInPeriod: number;
+  readonly disbursedByCategory: readonly CategoryTotal[];
+}
+
+/* ── The residents' app ───────────────────────────────────────────────────── */
+
+/** An app account's verification standing, as the API keeps it on the account. */
+export type AccountVerificationStatus = 'unverified' | 'pending' | 'verified' | 'rejected';
+
+export const ACCOUNT_VERIFICATION_STATUSES: readonly AccountVerificationStatus[] = [
+  'unverified',
+  'pending',
+  'verified',
+  'rejected',
+];
+
+/** Open resident accounts: a resident's, not closed. Staff accounts are not citizens. */
+export interface ResidentAppAccounts {
+  readonly registered: number;
+  /** Of those, created within the dashboard's period. */
+  readonly registeredInPeriod: number;
+  readonly byVerification: Readonly<Record<AccountVerificationStatus, number>>;
+}
+
+/**
+ * The residents' app, in counts, for whoever administers it (`DL-182`).
+ *
+ * **Operational need.** The owner's deliverable is a citizen roster and an administrative
+ * dashboard. The administrator who reviews IDs and keeps the app's accounts has nowhere else that
+ * says how many residents use the app, how many are waiting on an ID review and how many cards are
+ * in force — the figures that say whether the review queue is keeping up. Counts only: no name, no
+ * barangay, nothing about any one resident (`CLAUDE.md` §6.1).
+ *
+ * Each figure is `null` when the reader does not hold the key of the list it counts —
+ * `user.view`, `verification.review`, `digital-id.manage` — and the whole block is `null` on the
+ * summary, **absent rather than zero**, for a reader who holds none of them. These figures are the
+ * whole app's: the barangay and programme filters do not narrow them.
+ */
+export interface ResidentAppFigures {
+  readonly accounts: ResidentAppAccounts | null;
+  readonly verificationsWaiting: number | null;
+  readonly digitalIdsActive: number | null;
 }
 
 /* ── Summary ──────────────────────────────────────────────────────────────── */
@@ -128,19 +204,18 @@ export interface DashboardSummary {
   /** Ordered by urgency. Empty means genuinely nothing needs attention. */
   readonly attention: readonly AttentionSignal[];
 
+  /** Filed requests: a draft is somebody's unfinished form, and is not counted. */
   readonly openRequests: number;
   readonly awaitingApproval: number;
-  readonly scheduledPayouts: number;
-  readonly residentsServedInPeriod: number;
-  /**
-   * Renamed from `disbursedThisMonth` in TAB 06. The old name was inaccurate:
-   * it summed every released release regardless of date, so the label
-   * claimed a window the number never respected. It now means exactly what the
-   * `period` filter says.
-   */
-  readonly disbursedInPeriod: Money;
-
   readonly requestsByStatus: readonly StatusCount[];
+  /**
+   * Requests, not people. `DL-105`'s small-cell rule is for counts of people or households, and
+   * every row opens records the reader may already read, so nothing here is withheld.
+   */
   readonly requestsByBarangay: readonly BarangayCount[];
-  readonly disbursedByCategory: readonly CategoryTotal[];
+
+  /** `null` for a reader the release list refuses. */
+  readonly payouts: DashboardPayouts | null;
+  /** `null` — absent, not zero — for a reader who holds none of the app's keys. */
+  readonly residentApp: ResidentAppFigures | null;
 }

@@ -7,6 +7,7 @@ import { map, switchMap } from 'rxjs';
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { PermissionService } from '@core/access/permission.service';
 import {
+  ACCOUNT_VERIFICATION_STATUSES,
   ASSISTANCE_STATUS_CATALOG,
   DASHBOARD_PERIODS,
   DASHBOARD_REPOSITORY,
@@ -172,22 +173,47 @@ export class DashboardPage {
     });
   });
 
+  /**
+   * Money per programme type, with goods said beside it as a count. A category that released only
+   * goods draws no bar — it has no peso figure — and says so in words, never as "₱0" (`DL-93`).
+   */
   protected readonly categoryRows = computed<readonly ChartRow[]>(() => {
     const summary = valueOf(this.state());
-    if (!summary) {
+    if (!summary?.payouts) {
       return [];
     }
-    return summary.disbursedByCategory.map((row) => {
+    return summary.payouts.disbursedByCategory.map((row) => {
       const drill = categoryDrillDown(summary.appliedFilter, row.category);
       return {
         key: row.category,
         label: PROGRAM_CATEGORY_LABELS[row.category],
         value: toDecimal(row.amount),
-        display: PESO.format(toDecimal(row.amount)),
+        display: this.copy.categoryDisplay(
+          PESO.format(toDecimal(row.amount)),
+          row.count,
+          row.goodsCount,
+        ),
         routerLink: drill.route,
         queryParams: drill.queryParams,
       };
     });
+  });
+
+  /**
+   * The app's accounts by verification standing. Each row opens the accounts list — the list these
+   * figures count — unfiltered, because the app's figures are not narrowed by the dashboard filter.
+   */
+  protected readonly verificationRows = computed<readonly ChartRow[]>(() => {
+    const accounts = valueOf(this.state())?.residentApp?.accounts;
+    if (!accounts) {
+      return [];
+    }
+    return ACCOUNT_VERIFICATION_STATUSES.map((status) => ({
+      key: status,
+      label: this.copy.verificationStatus[status],
+      value: accounts.byVerification[status],
+      routerLink: '/users',
+    }));
   });
 
   /* ── drill-down targets for the headline figures ────────────────────────── */
@@ -206,6 +232,14 @@ export class DashboardPage {
 
   protected disbursedLink(summary: DashboardSummary): DrillDown {
     return releasesDrillDown(summary.appliedFilter, { status: 'released' });
+  }
+
+  /** "12 new in the last 30 days", or nothing when the period is every record. */
+  protected accountsNew(summary: DashboardSummary, registeredInPeriod: number): string | null {
+    const period = summary.appliedFilter.period ?? 'all-time';
+    return period === 'all-time'
+      ? null
+      : this.copy.accountsNew(registeredInPeriod, this.copy.period[period]);
   }
 
   protected periodLabel(period: DashboardPeriod): string {
