@@ -35,6 +35,10 @@ import OFFICE_FAMILY_CONFLICT from './office-family-conflict.json';
 import OFFICE_RELATIONSHIP from './office-relationship.json';
 import OFFICE_RELATIONSHIP_HISTORY from './office-relationship-history.json';
 import OFFICE_RESIDENT_FAMILIES from './office-resident-families.json';
+import OFFICE_PROGRAM from './office-program.json';
+import OFFICE_PROGRAM_REFUSAL from './office-program-refusal.json';
+import OFFICE_PROGRAM_TEMPLATES from './office-program-templates.json';
+import OFFICE_PROGRAMS_PAGE from './office-programs-page.json';
 import SAVED_VIEW from './saved-view.json';
 import SAVED_VIEWS from './saved-views.json';
 import DELETED from './deleted.json';
@@ -226,6 +230,10 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['office-family-conflict', OFFICE_FAMILY_CONFLICT, 'ErrorEnvelope'],
     ['saved-views', SAVED_VIEWS, 'SavedViewListEnvelope'],
     ['saved-view', SAVED_VIEW, 'SavedViewEnvelope'],
+    ['office-programs-page', OFFICE_PROGRAMS_PAGE, 'OfficeProgramListEnvelope'],
+    ['office-program', OFFICE_PROGRAM, 'OfficeProgramEnvelope'],
+    ['office-program-templates', OFFICE_PROGRAM_TEMPLATES, 'OfficeRequirementTemplateListEnvelope'],
+    ['office-program-refusal', OFFICE_PROGRAM_REFUSAL, 'ErrorEnvelope'],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
     ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],

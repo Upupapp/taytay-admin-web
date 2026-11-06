@@ -15,7 +15,6 @@ import {
   UnservedFieldVisitRepository,
   UnservedGovernanceRepository,
   UnservedNewsfeedRepository,
-  UnservedProgramRepository,
   UnservedReferralRepository,
   UnservedReleaseRepository,
   UnservedReportRepository,
@@ -159,7 +158,6 @@ const OFFERED = MENU.filter((item) => !WITHHELD.includes(item)).map((item) => it
 describe('the http adapter set', () => {
   const adapters = [
     UnservedCaseRepository,
-    UnservedProgramRepository,
     UnservedAssistanceRequestRepository,
     UnservedBeneficiaryRepository,
     UnservedFieldVisitRepository,

@@ -7,26 +7,27 @@ import {
   asIsoDate,
   asIsoDateTime,
   guidanceProblems,
-  paginate,
   PermissionDeniedError,
   responsibilityProblems,
   reviewWindowProblems,
   summariseUtilization,
   type AssistanceProgram,
+  type CursorPage,
+  type CursorRequest,
   type Money,
-  type Page,
-  type PageRequest,
   type ProgramDraft,
   type ProgramFilter,
   type ProgramId,
   type ProgramRepository,
   type ProgramUtilization,
+  type ProgramUtilizationReading,
+  type ProgramUtilizationSummary,
   type RequirementTemplate,
 } from '@domain/index';
 
 import { denyUnless } from './mock-access';
 import { MockLatency } from './mock-latency';
-import { matchesSearch, sortItems } from './mock-query';
+import { matchesSearch } from './mock-query';
 import { MOCK_ASSISTANCE_REQUESTS } from './seed/assistance-requests.seed';
 import { MOCK_DISBURSEMENTS } from './seed/releases.seed';
 import { MOCK_PROGRAMS } from './seed/programs.seed';
@@ -52,7 +53,7 @@ export class MockProgramRepository implements ProgramRepository {
   private programs: readonly AssistanceProgram[] = [...MOCK_PROGRAMS];
   private sequence = 0;
 
-  list(filter: ProgramFilter, page: PageRequest): Observable<Page<AssistanceProgram>> {
+  list(filter: ProgramFilter, page: CursorRequest): Observable<CursorPage<AssistanceProgram>> {
     const filtered = this.programs.filter((program) => {
       if (filter.category && program.category !== filter.category) {
         return false;
@@ -63,8 +64,21 @@ export class MockProgramRepository implements ProgramRepository {
       return matchesSearch([program.name, program.code, program.description], filter.search);
     });
 
-    const sorted = sortItems(filtered, (program) => program.name, page.sort?.direction ?? 'asc');
-    return this.latency.respond(paginate(sorted, page));
+    // The office record's order — name, then id — and its cursor: the id of the last row read.
+    const sorted = [...filtered].sort(
+      (a, b) =>
+        a.name.toLowerCase().localeCompare(b.name.toLowerCase()) || a.id.localeCompare(b.id),
+    );
+    const after = page.cursor ? sorted.findIndex((program) => program.id === page.cursor) : -1;
+    const rest = sorted.slice(after + 1);
+    const items = rest.slice(0, Math.max(1, page.limit));
+    const hasMore = rest.length > items.length;
+    const last = items[items.length - 1];
+    return this.latency.respond({
+      items,
+      hasMore,
+      nextCursor: hasMore && last !== undefined ? last.id : null,
+    });
   }
 
   getById(id: ProgramId): Observable<AssistanceProgram | null> {
@@ -137,25 +151,31 @@ export class MockProgramRepository implements ProgramRepository {
     return this.latency.respond(created);
   }
 
-  utilizationFor(id: ProgramId): Observable<ProgramUtilization> {
+  utilizationFor(id: ProgramId): Observable<ProgramUtilizationReading> {
     const user = this.access.currentUser();
-    const denied = denyUnless<ProgramUtilization>(user, 'program.view');
+    const denied = denyUnless<ProgramUtilizationReading>(user, 'program.view');
     if (denied) {
       return denied;
     }
     if (!this.programs.some((program) => program.id === id)) {
       return throwError(() => new PermissionDeniedError('program.view'));
     }
-    return this.latency.respond(this.utilization(id));
+    return this.latency.respond<ProgramUtilizationReading>({
+      kind: 'read',
+      utilization: this.utilization(id),
+    });
   }
 
-  utilizationSummary(): Observable<readonly ProgramUtilization[]> {
+  utilizationSummary(): Observable<ProgramUtilizationSummary> {
     const user = this.access.currentUser();
-    const denied = denyUnless<readonly ProgramUtilization[]>(user, 'program.view');
+    const denied = denyUnless<ProgramUtilizationSummary>(user, 'program.view');
     if (denied) {
       return denied;
     }
-    return this.latency.respond(this.programs.map((program) => this.utilization(program.id)));
+    return this.latency.respond<ProgramUtilizationSummary>({
+      kind: 'read',
+      rows: this.programs.map((program) => this.utilization(program.id)),
+    });
   }
 
   private utilization(programId: ProgramId): ProgramUtilization {

@@ -2974,7 +2974,378 @@
             }
           }
         }
+      },
+    "/api/v1/office/programs": {
+      "get": {
+        "operationId": "listOfficePrograms",
+        "summary": "List the office's programmes",
+        "description": "Needs program.view. The catalogue is the office's policy and holds no personal data, so no scope narrows it: every office role reads it whole. By name, then id, a cursor page at a time. q matches every word against the name, the reference and the description. How much a programme has been used is not served: it is counted from releases, which this API does not hold yet.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeProgramCategory"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeProgramStatus"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of programmes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeProgramListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without program.view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A filter or the cursor is not valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createOfficeProgram",
+        "summary": "Record a programme",
+        "description": "Needs program.manage. The server issues the reference and dates it from today in Asia/Manila. Refused with the console's rule names when the record would misdescribe the office or its guidance and documents are incomplete (OfficeProgramRefusalEnvelope). Appends the record whole to its revisions and audits office_program.created, in one transaction.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeProgramWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Recorded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeProgramEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without program.manage.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A rule of the catalogue (OfficeProgramRefusalEnvelope), a malformed field, or a template that does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [{ "$ref": "#/components/schemas/OfficeProgramRefusalEnvelope" }, { "$ref": "#/components/schemas/ErrorEnvelope" }]
+                }
+              }
+            }
+          }
+        }
       }
+    },
+    "/api/v1/office/programs/{id}": {
+      "get": {
+        "operationId": "getOfficeProgram",
+        "summary": "Read one programme",
+        "description": "Needs program.view. The catalogue is the office's policy and holds no personal data, so no scope narrows it: every office role reads it whole.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The programme.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeProgramEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without program.view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such programme.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateOfficeProgram",
+        "summary": "Change a programme",
+        "description": "Needs program.manage. The rules are checked against the whole record as it would stand, under a row lock. Moving to closed dates effective_to today; moving away from closed clears it. Nothing changed writes nothing — no revision, no audit. Otherwise appends the record whole to its revisions and audits office_program.updated. There is no delete: a programme that is over is closed.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeProgramPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The programme as it now stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeProgramEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without program.manage.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such programme.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A rule of the catalogue (OfficeProgramRefusalEnvelope), a malformed field, an empty body, or a template that does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [{ "$ref": "#/components/schemas/OfficeProgramRefusalEnvelope" }, { "$ref": "#/components/schemas/ErrorEnvelope" }]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/programs/{id}/requirement-templates": {
+      "get": {
+        "operationId": "listOfficeProgramRequirementTemplates",
+        "summary": "The document sets a programme starts from",
+        "description": "Needs program.view. The catalogue is the office's policy and holds no personal data, so no scope narrows it: every office role reads it whole. Answered whole: the programme's template, or an empty list when it has none.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The programme's templates.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRequirementTemplateListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without program.view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such programme.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   },
   "components": {
     "securitySchemes": {
@@ -5488,7 +5859,820 @@
             "type": "object"
           }
         }
+      },
+    "OfficeProgramCategory": {
+      "type": "string",
+      "enum": [
+        "crisis-intervention",
+        "medical-assistance",
+        "burial-assistance",
+        "educational-assistance",
+        "food-and-relief",
+        "livelihood",
+        "senior-citizen",
+        "pwd",
+        "solo-parent",
+        "child-welfare",
+        "women-welfare",
+        "disaster-response"
+      ]
+    },
+    "OfficeProgramStatus": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "suspended",
+        "closed"
+      ],
+      "description": "No transition rule: any status may follow any other, and every change is kept in the programme's revisions."
+    },
+    "AdministeringAgency": {
+      "type": "string",
+      "enum": [
+        "dswd",
+        "doh",
+        "deped",
+        "dole",
+        "other-national",
+        "lgu-taytay"
+      ],
+      "description": "Every agency but lgu-taytay is national."
+    },
+    "LguRole": {
+      "type": "string",
+      "enum": [
+        "owner",
+        "augmenter",
+        "referrer",
+        "facilitator"
+      ],
+      "description": "owner: the municipality decides and pays. augmenter: adds municipal funds to another agency's grant. referrer: takes the application and passes it to the agency that decides. facilitator: helps the resident apply and holds no funds."
+    },
+    "OfficeProgramProblemCode": {
+      "type": "string",
+      "enum": [
+        "national-programme-claimed-as-owned",
+        "funds-claimed-without-holding",
+        "lgu-role-without-statement",
+        "claim-without-source",
+        "no-guidance-recorded",
+        "statement-too-short",
+        "statute-without-source",
+        "non-positive-window",
+        "confirmed-without-basis",
+        "confirmed-without-date",
+        "duplicate-code",
+        "label-too-short",
+        "condition-without-circumstances",
+        "circumstances-without-condition"
+      ],
+      "description": "Why a programme record cannot be kept: the console's own rule names (responsibilityProblems, guidanceProblems, reviewWindowProblems, templateProblems), plus the two halves of a conditional document. Each is about the record, never about a person."
+    },
+    "OfficeProgramSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "url",
+        "verified_on"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 500,
+          "description": "http or https."
+        },
+        "verified_on": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Null when recorded from a reference nobody retrieved and read."
+        }
       }
+    },
+    "OfficeProgramResponsibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Whose programme it is and what the office's part in it is (DL-65). A national programme recorded as the municipality's (owner), an augmenter where neither the administering agency nor the fund holder is lgu-taytay, and a national programme with no source are refused by the route and by the database.",
+      "required": [
+        "administered_by",
+        "funds_held_by",
+        "lgu_role",
+        "statement",
+        "sources"
+      ],
+      "properties": {
+        "administered_by": {
+          "$ref": "#/components/schemas/AdministeringAgency"
+        },
+        "funds_held_by": {
+          "$ref": "#/components/schemas/AdministeringAgency"
+        },
+        "lgu_role": {
+          "$ref": "#/components/schemas/LguRole"
+        },
+        "statement": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "What staff may honestly tell an applicant; 20 characters or more (lgu-role-without-statement)."
+        },
+        "sources": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "$ref": "#/components/schemas/OfficeProgramSource"
+          }
+        }
+      }
+    },
+    "OfficeEligibilityGuideline": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Guidance a worker reads, never a gate (DL-66). No weight refuses anybody; nothing on the server reads a guideline to decide anything.",
+      "required": [
+        "code",
+        "weight",
+        "statement",
+        "provenance",
+        "basis",
+        "source_url",
+        "verified_on"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "age-range",
+            "sector",
+            "income-ceiling",
+            "residency",
+            "frequency",
+            "documents",
+            "other"
+          ]
+        },
+        "weight": {
+          "type": "string",
+          "enum": [
+            "expected",
+            "usual",
+            "context"
+          ]
+        },
+        "statement": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "12 characters or more (statement-too-short)."
+        },
+        "provenance": {
+          "type": "string",
+          "enum": [
+            "statute",
+            "issuance",
+            "office-convention"
+          ],
+          "description": "statute needs a source_url (statute-without-source)."
+        },
+        "basis": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "source_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri",
+          "maxLength": 500
+        },
+        "verified_on": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        }
+      }
+    },
+    "OfficeProgramRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A document asked for. A conditional one states its circumstances in applies_when, in words, for a person to rule on; the server never evaluates it (DL-76). applies_when is required for conditional and null otherwise.",
+      "required": [
+        "code",
+        "label",
+        "obligation",
+        "applies_when",
+        "notes"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{1,59}$"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "3 characters or more (label-too-short)."
+        },
+        "obligation": {
+          "type": "string",
+          "enum": [
+            "required",
+            "optional",
+            "conditional"
+          ]
+        },
+        "applies_when": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    },
+    "OfficeProgramEligibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The structured half of the guidance, kept beside the worded half. Read by nothing on the server.",
+      "required": [
+        "min_age",
+        "max_age",
+        "required_sectors",
+        "max_monthly_household_income_centavos",
+        "residency_months_required",
+        "notes"
+      ],
+      "properties": {
+        "min_age": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 130
+        },
+        "max_age": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 130
+        },
+        "required_sectors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/VulnerabilitySector"
+          }
+        },
+        "max_monthly_household_income_centavos": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 2000000000,
+          "description": "Integer centavos."
+        },
+        "residency_months_required": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1200
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      }
+    },
+    "OfficeReviewWindow": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How much assistance history intake is shown for this programme (DL-68). Decides nothing. Both windows above zero (non-positive-window); a provenance other than convention-pending-confirmation names its basis and confirmed_on.",
+      "required": [
+        "lookback_months",
+        "same_programme_days",
+        "provenance",
+        "basis",
+        "confirmed_on"
+      ],
+      "properties": {
+        "lookback_months": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1200
+        },
+        "same_programme_days": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 36500
+        },
+        "provenance": {
+          "type": "string",
+          "enum": [
+            "convention-pending-confirmation",
+            "office-confirmed",
+            "issuance-based"
+          ]
+        },
+        "basis": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 300
+        },
+        "confirmed_on": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        }
+      }
+    },
+    "OfficeProgramWrite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "category",
+        "status",
+        "description",
+        "legal_basis",
+        "funding_source",
+        "maximum_grant_centavos",
+        "eligibility",
+        "responsibility",
+        "guidance",
+        "requirement_template_code",
+        "requirements",
+        "review_window"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "category": {
+          "$ref": "#/components/schemas/OfficeProgramCategory"
+        },
+        "status": {
+          "$ref": "#/components/schemas/OfficeProgramStatus"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "legal_basis": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "funding_source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "maximum_grant_centavos": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 2000000000,
+          "description": "Integer centavos; a decimal is refused, never rounded. A ceiling the office states, not a balance."
+        },
+        "eligibility": {
+          "$ref": "#/components/schemas/OfficeProgramEligibility"
+        },
+        "responsibility": {
+          "$ref": "#/components/schemas/OfficeProgramResponsibility"
+        },
+        "guidance": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "$ref": "#/components/schemas/OfficeEligibilityGuideline"
+          },
+          "description": "At least one (no-guidance-recorded)."
+        },
+        "requirement_template_code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z0-9][a-z0-9-]{1,59}$",
+          "description": "A template that exists; 422 otherwise."
+        },
+        "requirements": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "$ref": "#/components/schemas/OfficeProgramRequirement"
+          },
+          "description": "What this programme adds on top of its template; its own entry wins on a shared code. Codes unique (duplicate-code)."
+        },
+        "review_window": {
+          "oneOf": [
+            {
+              "$ref": "#/components/schemas/OfficeReviewWindow"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Null: the office default."
+        }
+      },
+      "description": "The console's ProgramDraft. No code: the office's reference is issued by the server."
+    },
+    "OfficeProgramPatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "category": {
+          "$ref": "#/components/schemas/OfficeProgramCategory"
+        },
+        "status": {
+          "$ref": "#/components/schemas/OfficeProgramStatus"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "legal_basis": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "funding_source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "maximum_grant_centavos": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 2000000000,
+          "description": "Integer centavos; a decimal is refused, never rounded. A ceiling the office states, not a balance."
+        },
+        "eligibility": {
+          "$ref": "#/components/schemas/OfficeProgramEligibility"
+        },
+        "responsibility": {
+          "$ref": "#/components/schemas/OfficeProgramResponsibility"
+        },
+        "guidance": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "$ref": "#/components/schemas/OfficeEligibilityGuideline"
+          },
+          "description": "At least one (no-guidance-recorded)."
+        },
+        "requirement_template_code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z0-9][a-z0-9-]{1,59}$",
+          "description": "A template that exists; 422 otherwise."
+        },
+        "requirements": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "$ref": "#/components/schemas/OfficeProgramRequirement"
+          },
+          "description": "What this programme adds on top of its template; its own entry wins on a shared code. Codes unique (duplicate-code)."
+        },
+        "review_window": {
+          "oneOf": [
+            {
+              "$ref": "#/components/schemas/OfficeReviewWindow"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Null: the office default."
+        }
+      },
+      "description": "Absent leaves a part as it is; a nested record is replaced whole. The rules are checked against the whole record as it would stand."
+    },
+    "OfficeProgram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "code",
+        "name",
+        "category",
+        "status",
+        "description",
+        "legal_basis",
+        "funding_source",
+        "maximum_grant_centavos",
+        "eligibility",
+        "responsibility",
+        "guidance",
+        "requirement_template_code",
+        "requirements",
+        "review_window",
+        "effective_from",
+        "effective_to",
+        "created_at",
+        "created_by",
+        "updated_at",
+        "updated_by"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "code": {
+          "type": "string",
+          "description": "The office's reference (PRG-0001). Carries no meaning."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "category": {
+          "$ref": "#/components/schemas/OfficeProgramCategory"
+        },
+        "status": {
+          "$ref": "#/components/schemas/OfficeProgramStatus"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "legal_basis": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "funding_source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "maximum_grant_centavos": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 2000000000,
+          "description": "Integer centavos; a decimal is refused, never rounded. A ceiling the office states, not a balance."
+        },
+        "eligibility": {
+          "$ref": "#/components/schemas/OfficeProgramEligibility"
+        },
+        "responsibility": {
+          "$ref": "#/components/schemas/OfficeProgramResponsibility"
+        },
+        "guidance": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "$ref": "#/components/schemas/OfficeEligibilityGuideline"
+          },
+          "description": "At least one (no-guidance-recorded)."
+        },
+        "requirement_template_code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z0-9][a-z0-9-]{1,59}$",
+          "description": "A template that exists; 422 otherwise."
+        },
+        "requirements": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "$ref": "#/components/schemas/OfficeProgramRequirement"
+          },
+          "description": "What this programme adds on top of its template; its own entry wins on a shared code. Codes unique (duplicate-code)."
+        },
+        "review_window": {
+          "oneOf": [
+            {
+              "$ref": "#/components/schemas/OfficeReviewWindow"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Null: the office default."
+        },
+        "effective_from": {
+          "type": "string",
+          "format": "date"
+        },
+        "effective_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "The day it was closed, while it is closed."
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_by": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "OfficeProgramEnvelope": {
+      "type": "object",
+      "required": [
+        "data",
+        "meta"
+      ],
+      "properties": {
+        "data": {
+          "$ref": "#/components/schemas/OfficeProgram"
+        },
+        "meta": {
+          "type": "object"
+        }
+      }
+    },
+    "OfficeProgramListEnvelope": {
+      "type": "object",
+      "required": [
+        "data",
+        "meta"
+      ],
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/OfficeProgram"
+          }
+        },
+        "meta": {
+          "type": "object",
+          "properties": {
+            "pagination": {
+              "$ref": "#/components/schemas/Pagination"
+            }
+          }
+        }
+      }
+    },
+    "OfficeRequirementTemplate": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A named document set several programmes start from (DL-67). No route writes one yet: they come from the development seed.",
+      "required": [
+        "code",
+        "name",
+        "description",
+        "requirements",
+        "created_at",
+        "updated_at"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/OfficeProgramRequirement"
+          }
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "OfficeRequirementTemplateListEnvelope": {
+      "type": "object",
+      "required": [
+        "data",
+        "meta"
+      ],
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/OfficeRequirementTemplate"
+          },
+          "description": "Whole: the programme's template, or none."
+        },
+        "meta": {
+          "type": "object"
+        }
+      }
+    },
+    "OfficeProgramRefusalEnvelope": {
+      "description": "A 422 refusal of a programme record. Nothing was written. error.code is VALIDATION_FAILED; each key of error.details is an OfficeProgramProblemCode, its value one sentence saying what to change. A malformed field answers 422 with field keys instead.",
+      "allOf": [
+        {
+          "$ref": "#/components/schemas/ErrorEnvelope"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "object",
+              "properties": {
+                "details": {
+                  "type": "object",
+                  "propertyNames": {
+                    "$ref": "#/components/schemas/OfficeProgramProblemCode"
+                  },
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
     }
   }
 }

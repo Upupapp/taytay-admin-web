@@ -3,7 +3,6 @@ import { throwError, type Observable } from 'rxjs';
 
 import {
   type CaseRepository,
-  type ProgramRepository,
   type AssistanceRequestRepository,
   type BeneficiaryRepository,
   type FieldVisitRepository,
@@ -23,7 +22,7 @@ import {
  * THE PORTS THE API DOES NOT SERVE, AND WHAT THEY SAY INSTEAD.
  *
  * The Node API that replaced the Laravel one on 2026-10-20 is the back office of the residents'
- * app. It has no route for cases, assistance requests, releases, referrals, visits, programmes,
+ * app. It has no route for cases, assistance requests, releases, referrals, visits,
  * reports, events or most of what this console was built to do (`DL-164`,
  * `docs/integration/node-api-gap-map.md`). In the `http` configuration each of those ports is
  * bound to a class here.
@@ -118,39 +117,6 @@ export class UnservedCaseRepository implements CaseRepository {
 
   rescheduleTask(): Observable<never> {
     return unserved('cases');
-  }
-}
-
-@Injectable()
-export class UnservedProgramRepository implements ProgramRepository {
-  static readonly port: DataPort = 'program';
-
-  list(): Observable<never> {
-    return unserved('programmes');
-  }
-
-  getById(): Observable<never> {
-    return unserved('programmes');
-  }
-
-  listActive(): Observable<never> {
-    return unserved('programmes');
-  }
-
-  listRequirementTemplates(): Observable<never> {
-    return unserved('programmes');
-  }
-
-  save(): Observable<never> {
-    return unserved('programmes');
-  }
-
-  utilizationFor(): Observable<never> {
-    return unserved('programmes');
-  }
-
-  utilizationSummary(): Observable<never> {
-    return unserved('programmes');
   }
 }
 
@@ -644,7 +610,6 @@ export class UnservedDashboardRepository implements DashboardRepository {
  */
 export const UNSERVED_HTTP_PORTS: readonly DataPort[] = [
   UnservedCaseRepository.port,
-  UnservedProgramRepository.port,
   UnservedAssistanceRequestRepository.port,
   UnservedBeneficiaryRepository.port,
   UnservedFieldVisitRepository.port,

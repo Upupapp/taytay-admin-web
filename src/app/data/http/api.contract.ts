@@ -205,6 +205,12 @@ export const API_ENDPOINTS = {
    */
   officeSavedViews: 'office/saved-views',
   /**
+   * The programme catalogue (casework phase 1d, `DL-176`): cursor-paged by name, `q`, `category`,
+   * `status`; one by `{id}`; `{id}/requirement-templates`, answered whole; `POST` and `PATCH {id}`
+   * with the whole draft. Refusals name the console's own rules. Utilization is not served.
+   */
+  officePrograms: 'office/programs',
+  /**
    * The office directory, written (`DL-170`, `office.manage`): `POST` and `PATCH {id}` as forms,
    * because they carry the banner; `DELETE {id}`. Read through `offices`, which is public.
    */

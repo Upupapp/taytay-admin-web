@@ -6647,3 +6647,112 @@ panel in place (and its family panels, should `family` ever be unserved again).
 | `check:permission-parity` | the new keys' routes | 0 of 55 disagree |
 | `check:contract-drift` | vendored `0c19dd2` | 130 operations |
 | `check:vulnerability` | `discloseSnapshot` takes a clearance; nothing decision-shaped added | passed |
+
+## DL-176 — programmes are served: the catalogue as records, its rules on the server, utilization said to be not connected
+
+Phase 1d of the casework, the last of phase 1 (`docs/integration/node-api-migration.md`). Backend
+`taytay-backend` `f887038`; the spec vendored here is `f887038`'s.
+
+### What the server now decides
+
+- **Programmes are records** (`/api/v1/office/programs`, `DL-66`): name, category, status,
+  description, legal basis, funding source, a maximum grant in integer centavos, the structured
+  eligibility parameters (read by nothing on the server), the responsibility record, guidance,
+  documents, an optional review window, effective dates. The reference (`PRG-0001`) is issued by the
+  server and means nothing; `check:programs` still holds every screen to never branching on it.
+- **Whose programme it is** (`DL-65`): a national programme recorded as `owner`, an `augmenter`
+  where neither the agency nor the fund holder is `lgu-taytay`, and a national programme with no
+  source are refused by the route **and by `CHECK` constraints**, so no path to the table records
+  them. A statement under twenty characters is refused too. AICS is a DSWD programme with
+  DSWD-disbursed funds; the development seed's AICS sample says so.
+- **Guidance never gates** (`DL-66`): three weights, none of which refuses anybody; strict bodies
+  refuse any field the schema does not name, so a `blocks`, `score` or `eligible` cannot be stored.
+- **Documents** (`DL-76`): `required`, `optional` or `conditional`, a conditional one with its
+  circumstances in words that nothing evaluates. A conditional document without them, or
+  circumstances on one that is not conditional, is refused.
+- **Refusals name the console's own rules.** A 422 whose `details` keys are
+  `responsibilityProblems`, `guidanceProblems`, `reviewWindowProblems` and `templateProblems` codes,
+  plus `condition-without-circumstances` and `circumstances-without-condition`, each with a
+  sentence. A change is checked against the record as it would stand, under a row lock.
+- **Every version is kept whole** in `office_program_revisions`, appended in the same act as the
+  change, and the database refuses to rewrite it or to delete a programme: a request decided under
+  last year's wording stays explicable. Audit `office_program.created` / `office_program.updated`.
+- **No scope narrows the catalogue.** It holds no personal data, so `program.view` reads it whole —
+  the social worker, refused the registry while cases are not served (`DL-174`), reads programmes,
+  and so does the barangay link. `program.manage` writes (the head and the administrator).
+- **No status transition rule** — the console states none for a programme, and none was invented.
+  Moving to `closed` dates `effective_to`; moving away clears it. The mock never set it.
+- **Templates are read under their programme**, whole (`DL-67`). No route writes one: the
+  development seed is the only source, so in production a programme lists its own documents.
+
+### Utilization is not served, and the screens say so (the choice)
+
+Utilization is counted from releases (`DL-69`, `DL-159`), which the API does not hold until phase 4.
+Of the two honest options — leave it unserved and say so in place, or have the server answer an
+explicit "not available" — the first was chosen: an endpoint whose only answer is "not available"
+would fix a shape before the figures and their small-cell suppression (`DL-105`) exist to design
+it from, and phase 4 can add the route and the adapter read it without touching a screen.
+
+So `utilizationFor` and `utilizationSummary` answer a reading — `{ kind: 'read', … }` or
+`{ kind: 'unavailable', because }` — as the resident's assistance history does (`DL-175`). The
+http adapter answers `unavailable` with `PROGRAM_UTILIZATION_NOT_CONNECTED` and asks the API
+nothing. The list drops its two utilization columns and states the sentence above the table — a
+column of dashes would read as "nothing handed over"; the record states it in place of the figures.
+Never a zero: a zero says the programme delivered nothing, which is the finding that gets it closed.
+The mock still computes figures and answers `read`.
+
+### What the console now does
+
+- `HttpProgramRepository` replaces `UnservedProgramRepository`; `program` leaves `UNSERVED_PORTS`
+  (thirteen remain). **Programmes is in the menu** in the `http` configuration. Intake, assessment
+  and the beneficiary list also read `program` but stay withheld for their own primary ports.
+- **`ProgramRepository.list` reads a cursor page** by name (`CursorRequest` → `CursorPage`), with
+  "show more" and "N shown", never a page count, as the registry lists do (`DL-161`, `DL-174`).
+  `listActive` reads in full through `everyPage`: a picker missing a programme tells an intake
+  officer the office does not run it. A one-letter search is refused with a sentence, unsent.
+- `save` sends the **whole draft** through `toWireProgramDraft`, `POST` or `PATCH`; the server's
+  refusal reaches the form as its message.
+- The mapper refuses a programme whose responsibility, a guideline, a document or its review window
+  cannot be read, rather than default it: a defaulted responsibility could show a DSWD programme as
+  the municipality's, and a dropped document asks an applicant for less than the office does.
+- Copy: the empty catalogue no longer says "Add a programme" — no form in this console records one —
+  and the utilization column reads "Releases", which is what it has counted since `DL-159`.
+- The platform audit trail words the two new codes.
+
+### Where the API's model differs, recorded rather than smoothed
+
+1. **No programme can be created from the console.** `save(draft, null)` is served (`POST`), and
+   no screen calls it; the record screen edits an existing programme. Against the API the catalogue
+   is therefore empty until a form exists or programmes are recorded another way; `npm run
+   dev:memory` and the development seed add three samples named "(sample)".
+2. **The console edits part of the record** — name, description, status, funding, legal basis,
+   ceiling and the responsibility's agency, fund holder, role and statement. Guidance, sources,
+   documents, the eligibility parameters and the review window cannot be changed from it.
+3. **Templates have no editor and no write route.**
+4. **Revisions are kept but not readable** through the API; the console has no screen for them.
+
+### For the owner
+
+- Whether the console should get a "new programme" form, with guidance, sources and documents.
+  Without one, the catalogue the API serves can be filled only by the seed or by direct API calls.
+- Whether requirement templates need an editor (a route and a screen), or stay seed-only.
+- Whether a programme's status needs transition rules — `closed` terminal, for instance. None is
+  stated in the console, and none was invented.
+- Whether a change to a programme should carry a reason. The console asks none; the revisions keep
+  who, when and what the record said, not why.
+- Utilization arrives with releases (phase 4).
+
+### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:unserved` | the programme binding and declaration removed together | 13 unserved, all declared; 61 routed screens guarding their primary ports |
+| `check:routes` | `UNSERVED_CEILING` lowered 14 → 13 | 28 endpoints, 92 composed requests, each at a real route and verb |
+| `check:response-shape` | the programme reads | 46/46 (was 42/42) |
+| `check:wire-adoption` | both writes through `toWireProgramDraft` | 50/50 (was 48/48) |
+| `check:port-adoption` | the port's seven methods, each reached | 11 of 216 unreached (unchanged) |
+| `check:query-params` | `q`, `category`, `status` | 46 reads (was 42) |
+| `check:consumer-contract` | regenerated | 84 interactions, 413 required fields (was 79, 348) |
+| `check:permission-parity` | `program.view`, `program.manage` | 0 of 55 disagree |
+| `check:contract-drift` | vendored `f887038` | 135 operations (was 130) |
+| `check:programs` | nothing branches on a programme; no verdict on the port | passed |

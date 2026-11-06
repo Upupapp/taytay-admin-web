@@ -60,6 +60,8 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'office_household.factor_corrected': 'Corrected a household’s vulnerability indicator',
   'office_household.membership_changed': 'Changed who lives in a household',
   'office_household.registered': 'Registered a household with the office',
+  'office_program.created': 'Recorded a programme in the office catalogue',
+  'office_program.updated': 'Changed a programme in the office catalogue',
   'office_relationship.ended': 'Ended a relationship between two residents',
   'office_relationship.recorded': 'Recorded a relationship between two residents',
   'office_resident.created': 'Recorded a resident in the office registry',

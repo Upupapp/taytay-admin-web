@@ -23,14 +23,22 @@ export const PROGRAMS_COPY = {
     columnName: 'Programme',
     columnRun: 'Run by',
     columnStatus: 'Status',
-    columnUsage: 'Filed',
+    columnUsage: 'Releases',
     columnReleased: 'Handed over',
 
     emptyHeading: 'No programmes yet',
+    // No form in this console records a programme yet; the sentence must not promise one (DL-176).
     emptyMessage:
-      'The catalog is empty. Add a programme to start recording what the office offers.',
+      'The catalog is empty. This console has no form to record a programme yet; programmes are recorded through the office’s API.',
     noResultsHeading: 'No programmes match those filters',
     noResultsMessage: 'Try a different category, or clear the filters.',
+    shown: (count: number) => `${count} shown.`,
+    moreAvailable: 'More are available.',
+    noMore: 'That is every programme matching these filters.',
+    showMore: 'Show more',
+    loadingMore: 'Loading more…',
+    moreFailed:
+      'The next programmes could not be loaded. The ones above are still correct; try again.',
   },
 
   detail: {

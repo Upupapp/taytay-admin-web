@@ -68,3 +68,32 @@
   font-size: 13px;
   font-weight: 600;
 }
+
+.catalog__note {
+  margin: 0;
+  padding: var(--space-snug) var(--space-base);
+  border-block-end: 1px solid var(--c-border);
+  border-inline-start: 3px solid var(--c-border-strong);
+  background: var(--c-surface-muted);
+  color: var(--c-text);
+  font-size: 13px;
+}
+
+.catalog__more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-base);
+  padding: var(--space-base);
+}
+
+.catalog__hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--c-text-subtle);
+}
+
+.catalog__problem {
+  margin: 0;
+  font-size: 13px;
+}

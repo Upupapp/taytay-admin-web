@@ -12,6 +12,7 @@ import {
   ACCESS_CONTEXT,
   NOTIFICATION_REPOSITORY,
   PROGRAM_REPOSITORY,
+  PROGRAM_UTILIZATION_NOT_CONNECTED,
   STAFF_REPOSITORY,
   asId,
   emptyPage,
@@ -20,6 +21,8 @@ import {
   type AuthenticatedUser,
   type Page,
   type ProgramId,
+  type ProgramUtilizationReading,
+  type ProgramUtilizationSummary,
   type StaffRepository,
   type StaffRole,
   type StaffUser,
@@ -82,7 +85,21 @@ function staffRepository(user: StaffUser): StaffRepository {
 @Component({ template: 'stub' })
 class StubPage {}
 
-async function configure(role: StaffRole): Promise<void> {
+/** The catalogue as the API serves it: programmes read, utilization not (`DL-176`). */
+class UnconnectedUtilization extends MockProgramRepository {
+  override utilizationFor(): Observable<ProgramUtilizationReading> {
+    return of({ kind: 'unavailable', because: PROGRAM_UTILIZATION_NOT_CONNECTED });
+  }
+
+  override utilizationSummary(): Observable<ProgramUtilizationSummary> {
+    return of({ kind: 'unavailable', because: PROGRAM_UTILIZATION_NOT_CONNECTED });
+  }
+}
+
+async function configure(
+  role: StaffRole,
+  programs: typeof MockProgramRepository = MockProgramRepository,
+): Promise<void> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -94,15 +111,18 @@ async function configure(role: StaffRole): Promise<void> {
       { provide: APP_ENVIRONMENT, useValue: TEST_ENVIRONMENT },
       { provide: ACCESS_CONTEXT, useExisting: SessionState },
       { provide: STAFF_REPOSITORY, useValue: staffRepository(staffUser(role)) },
-      { provide: PROGRAM_REPOSITORY, useClass: MockProgramRepository },
+      { provide: PROGRAM_REPOSITORY, useClass: programs },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
     ],
   });
   await firstValueFrom(TestBed.inject(SessionStore).load());
 }
 
-async function openList(role: StaffRole = 'mswdo-head'): Promise<ComponentFixture<ProgramListPage>> {
-  await configure(role);
+async function openList(
+  role: StaffRole = 'mswdo-head',
+  programs: typeof MockProgramRepository = MockProgramRepository,
+): Promise<ComponentFixture<ProgramListPage>> {
+  await configure(role, programs);
   await TestBed.inject(Router).navigateByUrl('/programs');
   const fixture = TestBed.createComponent(ProgramListPage);
   await fixture.whenStable();
@@ -112,8 +132,9 @@ async function openList(role: StaffRole = 'mswdo-head'): Promise<ComponentFixtur
 async function openDetail(
   id: string,
   role: StaffRole = 'mswdo-head',
+  programs: typeof MockProgramRepository = MockProgramRepository,
 ): Promise<ComponentFixture<ProgramDetailPage>> {
-  await configure(role);
+  await configure(role, programs);
   await TestBed.inject(Router).navigateByUrl(`/programs/${id}`);
   const fixture = TestBed.createComponent(ProgramDetailPage);
   fixture.componentRef.setInput('id', id);
@@ -290,8 +311,9 @@ describe('the data layer refuses a misrepresentation the form hid', () => {
     await configure('mswdo-head');
     const usage = await firstValueFrom(repo().utilizationFor(asId<ProgramId>(AICS_MEDICAL)));
 
-    expect(usage.programId).toBe(AICS_MEDICAL);
-    expect(usage.isWithheld).toBe(false);
+    const read = usage.kind === 'read' ? usage.utilization : null;
+    expect(read?.programId).toBe(AICS_MEDICAL);
+    expect(read?.isWithheld).toBe(false);
   });
 
   /**
@@ -308,6 +330,54 @@ describe('the data layer refuses a misrepresentation the form hid', () => {
     await configure('mswdo-head');
     const summary = await firstValueFrom(repo().utilizationSummary());
 
-    expect(summary.some((row) => (row.releaseCount ?? 0) > 0)).toBe(true);
+    const rows = summary.kind === 'read' ? summary.rows : [];
+    expect(rows.some((row) => (row.releaseCount ?? 0) > 0)).toBe(true);
+  });
+});
+
+/* ── Utilization the API cannot count (`DL-176`) ─────────────────────────── */
+
+describe('where releases are not served, utilization says so and shows no figure', () => {
+  it('drops the two utilization columns from the list and says why above it', async () => {
+    const fixture = await openList('mswdo-head', UnconnectedUtilization);
+    const element = html(fixture);
+    expect(element.textContent).toContain('not connected yet');
+    expect(element.textContent).toContain('not a statement that the programme was never used');
+    const headers = [...element.querySelectorAll('th')].map((cell) => cell.textContent?.trim());
+    expect(headers).not.toContain('Releases');
+    expect(headers).not.toContain('Handed over');
+    // The catalogue itself is still read.
+    expect(element.textContent).toContain('Medical Assistance');
+  });
+
+  it('shows the sentence on the record in place of the figures, and no zero', async () => {
+    const element = html(await openDetail(AICS_MEDICAL, 'mswdo-head', UnconnectedUtilization));
+    const usage = element.querySelector('[aria-labelledby="usage-heading"]');
+    expect(usage?.textContent).toContain(PROGRAM_UTILIZATION_NOT_CONNECTED);
+    expect(usage?.querySelector('dl')).toBeNull();
+    expect(usage?.textContent).not.toContain('Nothing has been handed over');
+  });
+});
+
+/* ── The list is read a cursor page at a time ─────────────────────────────── */
+
+describe('the catalogue pages as the office record does', () => {
+  it('answers by name, one page at a time, and follows its cursor to the end', async () => {
+    await configure('mswdo-head');
+    const first = await firstValueFrom(repo().list({}, { limit: 2, cursor: null }));
+    expect(first.items).toHaveLength(2);
+    expect(first.hasMore).toBe(true);
+    const names = first.items.map((program) => program.name.toLowerCase());
+    expect([...names].sort()).toEqual(names);
+    const rest = await firstValueFrom(repo().list({}, { limit: 50, cursor: first.nextCursor }));
+    expect(rest.items.some((program) => first.items.includes(program))).toBe(false);
+    expect(rest.hasMore).toBe(false);
+    expect(rest.nextCursor).toBeNull();
+  });
+
+  it('says how many are shown, never a page count', async () => {
+    const text = html(await openList()).textContent ?? '';
+    expect(text).toMatch(/\d+ shown\./);
+    expect(text).not.toMatch(/page \d+ of/i);
   });
 });

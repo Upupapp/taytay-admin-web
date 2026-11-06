@@ -2,27 +2,27 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   inject,
   signal,
   TemplateRef,
   viewChild,
 } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { combineLatest, map, switchMap } from 'rxjs';
+import { combineLatest, map, switchMap, tap } from 'rxjs';
 
 import {
-  DEFAULT_PAGE_SIZE,
   PROGRAM_CATEGORY_LABELS,
   PROGRAM_REPOSITORY,
   PROGRAM_STATUS_CATALOG,
-  emptyPage,
   type AssistanceProgram,
-  type Page,
+  type CursorPage,
   type ProgramCategory,
   type ProgramFilter,
   type ProgramStatus,
   type ProgramUtilization,
+  type ProgramUtilizationSummary,
 } from '@domain/index';
 import { PROGRAM_COPY } from '@shared/programs/program.copy';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
@@ -40,8 +40,15 @@ export interface CatalogRow {
   readonly utilization: ProgramUtilization | null;
 }
 
+/** The first page of the catalogue, and beside it every programme's utilization or why it is not read. */
+interface CatalogReading {
+  readonly page: CursorPage<AssistanceProgram>;
+  readonly usage: ProgramUtilizationSummary;
+}
+
 const STATUSES: readonly ProgramStatus[] = ['draft', 'active', 'suspended', 'closed'];
 const CATEGORIES = Object.keys(PROGRAM_CATEGORY_LABELS) as readonly ProgramCategory[];
+const PAGE_SIZE = 20;
 
 /**
  * The programme catalog.
@@ -52,8 +59,15 @@ const CATEGORIES = Object.keys(PROGRAM_CATEGORY_LABELS) as readonly ProgramCateg
  * "Run by" column is read from each programme's responsibility record, never
  * from a condition in this component.
  *
+ * Paged as the office record pages it: one cursor page at a time, by name, with
+ * "show more" following the cursor and the count said as "shown, more
+ * available" — never "page 1 of N", because the server sends no total
+ * (`DL-161`, `DL-176`).
+ *
  * Utilization is merged in here rather than fetched per row, so the list makes
- * two calls whatever its length.
+ * two calls whatever its length. Where it cannot be read, its two columns go and
+ * the sentence saying why stands above the table: a column of dashes would read
+ * as "nothing handed over" (`DL-176`).
  */
 @Component({
   selector: 'app-program-list-page',
@@ -66,6 +80,7 @@ export class ProgramListPage {
   private readonly repository = inject(PROGRAM_REPOSITORY);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly copy = PROGRAMS_COPY.list;
   protected readonly shared = PROGRAM_COPY;
@@ -88,23 +103,53 @@ export class ProgramListPage {
 
   protected readonly searchText = signal(this.query().filter.search ?? '');
 
+  /** Further pages of the reading the first page began; emptied whenever the filter changes. */
+  private readonly further = signal<readonly CursorPage<AssistanceProgram>[]>([]);
+  protected readonly loadingMore = signal(false);
+  protected readonly moreFailed = signal(false);
+
   protected readonly state = toSignal(
     toObservable(this.query).pipe(
+      tap(() => {
+        this.further.set([]);
+        this.moreFailed.set(false);
+        this.loadingMore.set(false);
+      }),
       switchMap((query) =>
         toViewState(
           combineLatest([
-            this.repository.list(query.filter, { page: query.page, pageSize: DEFAULT_PAGE_SIZE }),
+            this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null }),
             this.repository.utilizationSummary(),
-          ]).pipe(map(([page, usage]) => merge(page, usage))),
+          ]).pipe(map(([page, usage]): CatalogReading => ({ page, usage }))),
         ),
       ),
     ),
-    { initialValue: LOADING as ViewState<Page<CatalogRow>> },
+    { initialValue: LOADING as ViewState<CatalogReading> },
   );
 
   protected readonly isLoading = computed(() => this.state().kind === 'loading');
-  protected readonly page = computed(() => valueOf(this.state()) ?? emptyPage<CatalogRow>());
-  protected readonly rows = computed(() => this.page().items);
+  private readonly reading = computed(() => valueOf(this.state()) ?? null);
+  /** Why utilization was not read, or `null` when it was (or has not arrived yet). */
+  protected readonly usageUnavailable = computed(() => {
+    const usage = this.reading()?.usage ?? null;
+    return usage !== null && usage.kind === 'unavailable' ? usage.because : null;
+  });
+  protected readonly rows = computed<readonly CatalogRow[]>(() => {
+    const reading = this.reading();
+    if (reading === null) {
+      return [];
+    }
+    const usage = reading.usage.kind === 'read' ? reading.usage.rows : [];
+    const byProgram = new Map(usage.map((entry) => [entry.programId, entry]));
+    return [reading.page, ...this.further()]
+      .flatMap((page) => page.items)
+      .map((program) => ({ program, utilization: byProgram.get(program.id) ?? null }));
+  });
+  private readonly lastPage = computed(() => this.further().at(-1) ?? this.reading()?.page ?? null);
+  protected readonly hasMore = computed(() => {
+    const last = this.lastPage();
+    return last !== null && last.hasMore && last.nextCursor !== null;
+  });
   protected readonly filter = computed(() => this.query().filter);
   protected readonly hasFilters = computed(
     () =>
@@ -119,23 +164,34 @@ export class ProgramListPage {
     { key: 'name', header: this.copy.columnName, cell: this.nameCell() },
     { key: 'run', header: this.copy.columnRun, cell: this.runCell() },
     { key: 'status', header: this.copy.columnStatus, cell: this.statusCell() },
-    {
-      /*
-       * Releases, not requests filed. The office record reports what a programme delivered and
-       * carries no count of what was asked of it (`DL-159`) — and a withheld cell prints the em
-       * dash rather than a zero, because "too few to report" is not "none" (`DL-105`).
-       */
-      key: 'releases',
-      header: this.copy.columnUsage,
-      align: 'end',
-      width: '90px',
-      value: (row) =>
-        row.utilization === null || row.utilization.releaseCount === null
-          ? '—'
-          : String(row.utilization.releaseCount),
-    },
-    { key: 'released', header: this.copy.columnReleased, align: 'end', cell: this.releasedCell() },
+    ...(this.usageUnavailable() === null ? this.usageColumns() : []),
   ]);
+
+  private usageColumns(): readonly TableColumn<CatalogRow>[] {
+    return [
+      {
+        /*
+         * Releases, not requests filed. The office record reports what a programme delivered and
+         * carries no count of what was asked of it (`DL-159`) — and a withheld cell prints the em
+         * dash rather than a zero, because "too few to report" is not "none" (`DL-105`).
+         */
+        key: 'releases',
+        header: this.copy.columnUsage,
+        align: 'end',
+        width: '90px',
+        value: (row) =>
+          row.utilization === null || row.utilization.releaseCount === null
+            ? '—'
+            : String(row.utilization.releaseCount),
+      },
+      {
+        key: 'released',
+        header: this.copy.columnReleased,
+        align: 'end',
+        cell: this.releasedCell(),
+      },
+    ];
+  }
 
   protected detailLink(row: CatalogRow): string {
     return `/programs/${row.program.id}`;
@@ -175,36 +231,41 @@ export class ProgramListPage {
     void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
   }
 
-  protected onPageChanged(page: number): void {
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { page: page > 1 ? String(page) : null },
-      queryParamsHandling: 'merge',
-    });
+  /** Follows the cursor one page further, for the filter the first page was read with. */
+  protected showMore(): void {
+    const cursor = this.lastPage()?.nextCursor ?? null;
+    if (cursor === null || this.loadingMore()) {
+      return;
+    }
+    const filter: ProgramFilter = this.filter();
+    this.loadingMore.set(true);
+    this.moreFailed.set(false);
+    this.repository
+      .list(filter, { limit: PAGE_SIZE, cursor })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (page) => {
+          // The filter changed meanwhile: this page continues a list nobody is looking at.
+          if (filter === this.filter()) {
+            this.further.update((pages) => [...pages, page]);
+          }
+          this.loadingMore.set(false);
+        },
+        error: () => {
+          this.loadingMore.set(false);
+          this.moreFailed.set(true);
+        },
+      });
   }
 
   private patch(changes: Readonly<Record<string, string | null>>): void {
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { ...changes, page: null },
+      queryParams: changes,
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
   }
-}
-
-function merge(
-  page: Page<AssistanceProgram>,
-  usage: readonly ProgramUtilization[],
-): Page<CatalogRow> {
-  const byProgram = new Map(usage.map((entry) => [entry.programId, entry]));
-  return {
-    ...page,
-    items: page.items.map((program) => ({
-      program,
-      utilization: byProgram.get(program.id) ?? null,
-    })),
-  };
 }
 
 /* ── The URL is the filter (`DL-36`) ───────────────────────────────────────── */
@@ -213,10 +274,7 @@ interface ParamReader {
   get(name: string): string | null;
 }
 
-export function readCatalogQuery(params: ParamReader): {
-  readonly filter: ProgramFilter;
-  readonly page: number;
-} {
+export function readCatalogQuery(params: ParamReader): { readonly filter: ProgramFilter } {
   const filter: { search?: string; category?: ProgramCategory; status?: ProgramStatus } = {};
 
   const search = params.get('q')?.trim();
@@ -231,7 +289,5 @@ export function readCatalogQuery(params: ParamReader): {
   if (status && (STATUSES as readonly string[]).includes(status)) {
     filter.status = status as ProgramStatus;
   }
-
-  const page = Number.parseInt(params.get('page') ?? '', 10);
-  return { filter, page: Number.isInteger(page) && page > 0 ? page : 1 };
+  return { filter };
 }

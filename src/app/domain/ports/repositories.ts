@@ -81,7 +81,10 @@ import type { AuthenticatedUser, StaffFilter, StaffUser } from '../access/staff-
 import type { MfaCredentials, SignInCredentials, SignInOutcome } from '../access/credentials';
 import type { AppNotification } from '../notifications/notification';
 import type { AssistanceProgram, ProgramDraft, ProgramFilter } from '../programs/program';
-import type { ProgramUtilization } from '../programs/program-utilization';
+import type {
+  ProgramUtilizationReading,
+  ProgramUtilizationSummary,
+} from '../programs/program-utilization';
 import type { RequirementTemplate } from '../programs/requirement-template';
 import type { DashboardFilter, DashboardSummary } from '../dashboard/dashboard-summary';
 import type {
@@ -515,7 +518,8 @@ export const SAVED_VIEW_REPOSITORY = new InjectionToken<SavedViewRepository>('Sa
  * cannot record a national programme as municipally owned.
  */
 export interface ProgramRepository {
-  list(filter: ProgramFilter, page: PageRequest): Observable<Page<AssistanceProgram>>;
+  /** One cursor page, by name, as the office record orders it (`DL-176`). */
+  list(filter: ProgramFilter, page: CursorRequest): Observable<CursorPage<AssistanceProgram>>;
   getById(id: ProgramId): Observable<AssistanceProgram | null>;
   listActive(): Observable<readonly AssistanceProgram[]>;
 
@@ -534,9 +538,12 @@ export interface ProgramRepository {
    */
   save(draft: ProgramDraft, id: ProgramId | null): Observable<AssistanceProgram>;
 
-  /** How much a programme has been used. A description of the past (`DL-69`). */
-  utilizationFor(id: ProgramId): Observable<ProgramUtilization>;
-  utilizationSummary(): Observable<readonly ProgramUtilization[]>;
+  /**
+   * How much a programme has been used. A description of the past (`DL-69`) — or, where releases
+   * are not served, a statement that it could not be read, never a zero (`DL-176`).
+   */
+  utilizationFor(id: ProgramId): Observable<ProgramUtilizationReading>;
+  utilizationSummary(): Observable<ProgramUtilizationSummary>;
 }
 
 export const PROGRAM_REPOSITORY = new InjectionToken<ProgramRepository>('ProgramRepository');

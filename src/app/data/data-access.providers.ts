@@ -50,6 +50,7 @@ import {
   HttpResidentRepository,
   HttpFamilyRepository,
   HttpHouseholdRepository,
+  HttpProgramRepository,
   HttpSavedViewRepository,
   HttpHotlineRepository,
   HttpTulongServiceRepository,
@@ -70,7 +71,6 @@ import {
   UnservedFieldVisitRepository,
   UnservedGovernanceRepository,
   UnservedNewsfeedRepository,
-  UnservedProgramRepository,
   UnservedReferralRepository,
   UnservedReleaseRepository,
   UnservedReportRepository,
@@ -117,7 +117,7 @@ import {
 export function provideDataAccess(): EnvironmentProviders {
   return makeEnvironmentProviders([
     { provide: RESIDENT_REPOSITORY, useClass: HttpResidentRepository },
-    { provide: PROGRAM_REPOSITORY, useClass: UnservedProgramRepository },
+    { provide: PROGRAM_REPOSITORY, useClass: HttpProgramRepository },
     { provide: ASSISTANCE_REQUEST_REPOSITORY, useClass: UnservedAssistanceRequestRepository },
     { provide: RELEASE_REPOSITORY, useClass: UnservedReleaseRepository },
     { provide: REFERRAL_REPOSITORY, useClass: UnservedReferralRepository },

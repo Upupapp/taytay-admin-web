@@ -98,6 +98,15 @@ import {
   type ResidentView,
   type VulnerabilitySector,
   ASSISTANCE_HISTORY_NOT_CONNECTED,
+  PROGRAM_UTILIZATION_NOT_CONNECTED,
+  type AssistanceProgram,
+  type ProgramDraft,
+  type ProgramFilter,
+  type ProgramId,
+  type ProgramRepository,
+  type ProgramUtilizationReading,
+  type ProgramUtilizationSummary,
+  type RequirementTemplate,
   isValidSavedViewName,
   SAVED_VIEW_NAME_MAX_LENGTH,
   type FactorState,
@@ -210,6 +219,11 @@ import {
   toWireTransfer,
   type FamilyRefusalKind,
 } from './mappers/family.mapper';
+import {
+  toAssistanceProgram,
+  toRequirementTemplate,
+  toWireProgramDraft,
+} from './mappers/program.mapper';
 import { toSavedView, toWireSavedViewDraft } from './mappers/saved-view.mapper';
 import { toVerificationRequest } from './mappers/verification.mapper';
 import { list } from './mappers/wire';
@@ -1997,4 +2011,93 @@ function readSavedView(wire: unknown): SavedView {
     );
   }
   return view;
+}
+
+/**
+ * The programme catalogue over the API (casework phase 1d, `DL-176`).
+ *
+ * The office's policy, held as records. Nothing here discloses or withholds anything — the
+ * catalogue holds no personal data — and nothing here decides anything: the server refuses a record
+ * that would misdescribe the office (`DL-65`) with the console's own rule names, and this adapter
+ * neither repeats nor second-guesses that refusal.
+ *
+ * Utilization is not asked for. It is counted from releases, which the API does not serve, so both
+ * reads answer that it could not be read — never a zero, which would say the programme delivered
+ * nothing (`DL-105`, `DL-112`).
+ */
+@Injectable()
+export class HttpProgramRepository implements ProgramRepository {
+  private readonly api = inject(ApiClient);
+
+  list(filter: ProgramFilter, page: CursorRequest): Observable<CursorPage<AssistanceProgram>> {
+    const search = filter.search?.trim() ?? '';
+    if (search.length === 1) {
+      return throwError(() => new Error('Type at least two letters to search the programmes.'));
+    }
+    return this.api
+      .cursorPage(API_ENDPOINTS.officePrograms, page, {
+        q: search === '' ? undefined : search,
+        category: filter.category,
+        status: filter.status,
+      })
+      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readProgram) })));
+  }
+
+  getById(id: ProgramId): Observable<AssistanceProgram | null> {
+    return this.api
+      .optionalItem(`${API_ENDPOINTS.officePrograms}/${id}`)
+      .pipe(map((wire) => (wire === null ? null : readProgram(wire))));
+  }
+
+  /** Read in full: a picker missing a programme tells an intake officer the office does not run it (`DL-161`). */
+  listActive(): Observable<readonly AssistanceProgram[]> {
+    return this.api
+      .everyPage(API_ENDPOINTS.officePrograms, { status: 'active' })
+      .pipe(map((rows) => rows.map(readProgram)));
+  }
+
+  listRequirementTemplates(id: ProgramId): Observable<readonly RequirementTemplate[]> {
+    return this.api
+      .list(`${API_ENDPOINTS.officePrograms}/${id}/requirement-templates`)
+      .pipe(map((rows) => rows.map(readRequirementTemplate)));
+  }
+
+  /** The whole draft every time: the server checks its rules against exactly what the form showed. */
+  save(draft: ProgramDraft, id: ProgramId | null): Observable<AssistanceProgram> {
+    const saved =
+      id === null
+        ? this.api.post(API_ENDPOINTS.officePrograms, toWireProgramDraft(draft))
+        : this.api.patch(`${API_ENDPOINTS.officePrograms}/${id}`, toWireProgramDraft(draft));
+    return saved.pipe(map(readProgram));
+  }
+
+  utilizationFor(): Observable<ProgramUtilizationReading> {
+    return of({ kind: 'unavailable', because: PROGRAM_UTILIZATION_NOT_CONNECTED });
+  }
+
+  utilizationSummary(): Observable<ProgramUtilizationSummary> {
+    return of({ kind: 'unavailable', because: PROGRAM_UTILIZATION_NOT_CONNECTED });
+  }
+}
+
+function readProgram(wire: unknown): AssistanceProgram {
+  const program = toAssistanceProgram(wire);
+  if (program === null) {
+    throw new Error(
+      'A programme from the server could not be read, so none is shown: whose programme it is ' +
+        'decides what an applicant is told, and this one could not say.',
+    );
+  }
+  return program;
+}
+
+function readRequirementTemplate(wire: unknown): RequirementTemplate {
+  const template = toRequirementTemplate(wire);
+  if (template === null) {
+    throw new Error(
+      'A programme’s document set from the server could not be read, so none is shown: a list ' +
+        'missing a document would ask an applicant for less than the office does.',
+    );
+  }
+  return template;
 }

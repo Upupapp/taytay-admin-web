@@ -885,6 +885,141 @@
     },
     {
       "method": "GET",
+      "path": "office/programs",
+      "consumer": "program.mapper.ts#toAssistanceProgram",
+      "required": [
+        "category",
+        "code",
+        "created_at",
+        "created_by",
+        "effective_from",
+        "eligibility",
+        "funding_source",
+        "guidance",
+        "id",
+        "name",
+        "requirements",
+        "responsibility",
+        "status",
+        "updated_at",
+        "updated_by"
+      ],
+      "optional": [
+        "description",
+        "effective_to",
+        "legal_basis",
+        "maximum_grant_centavos",
+        "requirement_template_code",
+        "review_window"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/programs",
+      "consumer": "program.mapper.ts#toAssistanceProgram",
+      "required": [
+        "category",
+        "code",
+        "created_at",
+        "created_by",
+        "effective_from",
+        "eligibility",
+        "funding_source",
+        "guidance",
+        "id",
+        "name",
+        "requirements",
+        "responsibility",
+        "status",
+        "updated_at",
+        "updated_by"
+      ],
+      "optional": [
+        "description",
+        "effective_to",
+        "legal_basis",
+        "maximum_grant_centavos",
+        "requirement_template_code",
+        "review_window"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/programs/{id}",
+      "consumer": "program.mapper.ts#toAssistanceProgram",
+      "required": [
+        "category",
+        "code",
+        "created_at",
+        "created_by",
+        "effective_from",
+        "eligibility",
+        "funding_source",
+        "guidance",
+        "id",
+        "name",
+        "requirements",
+        "responsibility",
+        "status",
+        "updated_at",
+        "updated_by"
+      ],
+      "optional": [
+        "description",
+        "effective_to",
+        "legal_basis",
+        "maximum_grant_centavos",
+        "requirement_template_code",
+        "review_window"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "office/programs/{id}",
+      "consumer": "program.mapper.ts#toAssistanceProgram",
+      "required": [
+        "category",
+        "code",
+        "created_at",
+        "created_by",
+        "effective_from",
+        "eligibility",
+        "funding_source",
+        "guidance",
+        "id",
+        "name",
+        "requirements",
+        "responsibility",
+        "status",
+        "updated_at",
+        "updated_by"
+      ],
+      "optional": [
+        "description",
+        "effective_to",
+        "legal_basis",
+        "maximum_grant_centavos",
+        "requirement_template_code",
+        "review_window"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/programs/{id}/requirement-templates",
+      "consumer": "program.mapper.ts#toRequirementTemplate",
+      "required": [
+        "code",
+        "created_at",
+        "name",
+        "requirements",
+        "updated_at"
+      ],
+      "optional": [
+        "description"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "office/residents",
       "consumer": "resident.mapper.ts#toResidentView",
       "required": [

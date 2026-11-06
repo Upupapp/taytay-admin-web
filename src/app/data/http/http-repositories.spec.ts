@@ -21,12 +21,15 @@ import {
   isTransferRefused,
   VULNERABILITY_FACTOR_CODES,
   PERMISSIONS,
+  PROGRAM_UTILIZATION_NOT_CONNECTED,
   SignInError,
+  toProgramDraft,
   type AppAccountId,
   type BarangayId,
   type FamilyDraft,
   type FamilyId,
   type HouseholdId,
+  type ProgramId,
   type RelationshipId,
   type ResidentDraft,
   type ResidentId,
@@ -94,6 +97,10 @@ import OFFICE_FAMILY_CONFLICT from './fixtures/office-family-conflict.json';
 import OFFICE_RELATIONSHIP from './fixtures/office-relationship.json';
 import OFFICE_RELATIONSHIP_HISTORY from './fixtures/office-relationship-history.json';
 import OFFICE_RESIDENT_FAMILIES from './fixtures/office-resident-families.json';
+import OFFICE_PROGRAM from './fixtures/office-program.json';
+import OFFICE_PROGRAM_REFUSAL from './fixtures/office-program-refusal.json';
+import OFFICE_PROGRAM_TEMPLATES from './fixtures/office-program-templates.json';
+import OFFICE_PROGRAMS_PAGE from './fixtures/office-programs-page.json';
 import SAVED_VIEW from './fixtures/saved-view.json';
 import SAVED_VIEWS from './fixtures/saved-views.json';
 import {
@@ -111,6 +118,7 @@ import {
   HttpOfficeRepository,
   HttpPlatformAuditRepository,
   HttpResidentRepository,
+  HttpProgramRepository,
   HttpSavedViewRepository,
   HttpSessionRefresher,
   HttpStaffRepository,
@@ -120,6 +128,7 @@ import {
 import { toFamilyRefusal } from './mappers/family.mapper';
 import { toHomeBanner } from './mappers/home.mapper';
 import { toHouseholdRefusal } from './mappers/household.mapper';
+import { toAssistanceProgram } from './mappers/program.mapper';
 import { toThreadMessage } from './mappers/office-thread.mapper';
 import { toVerificationRequest } from './mappers/verification.mapper';
 import { UnservedError } from './unserved-repositories';
@@ -170,6 +179,7 @@ describe('the Node adapters', () => {
         HttpResidentRepository,
         HttpHouseholdRepository,
         HttpFamilyRepository,
+        HttpProgramRepository,
         HttpSavedViewRepository,
       ],
     });
@@ -1842,6 +1852,165 @@ describe('the Node adapters', () => {
         .expectOne({ method: 'GET', url: `${BASE}/office/residents/nobody` })
         .flush({ error: { code: 'NOT_FOUND' } }, { status: 404, statusText: 'Not Found' });
       expect(await profile).toBeNull();
+    });
+  });
+
+  describe('programmes (casework phase 1d, DL-176)', () => {
+    let programs: HttpProgramRepository;
+
+    beforeEach(() => {
+      programs = TestBed.inject(HttpProgramRepository);
+      tokens.hold('fixture-token', null);
+    });
+
+    it('reads a cursor page by name, with the filters the API declares', async () => {
+      const page = firstValueFrom(
+        programs.list(
+          { search: ' medical ', category: 'crisis-intervention', status: 'active' },
+          { limit: 20, cursor: null },
+        ),
+      );
+      const request = http.expectOne((r) => r.url === `${BASE}/office/programs`);
+      expect(request.request.params.get('q')).toBe('medical');
+      expect(request.request.params.get('category')).toBe('crisis-intervention');
+      expect(request.request.params.get('status')).toBe('active');
+      request.flush(OFFICE_PROGRAMS_PAGE);
+
+      const answer = await page;
+      expect(answer.hasMore).toBe(true);
+      expect(answer.nextCursor).toBe(OFFICE_PROGRAMS_PAGE.meta.pagination.next_cursor);
+      const [aics, senior] = answer.items;
+      // Whose programme it is, read from the record and never defaulted (DL-65).
+      expect(aics?.responsibility).toEqual({
+        administeredBy: 'dswd',
+        fundsHeldBy: 'dswd',
+        lguRole: 'referrer',
+        statement: OFFICE_PROGRAMS_PAGE.data[0]?.responsibility.statement,
+        sources: [
+          {
+            title: 'DSWD — AICS is a DSWD service',
+            url: 'https://aics.dswd.gov.ph/aics-program/',
+            verifiedOn: null,
+          },
+        ],
+      });
+      expect(aics?.maximumGrant).toBeNull();
+      expect(aics?.guidance.map((guideline) => guideline.weight)).toEqual(['expected', 'usual']);
+      expect(senior?.maximumGrant).toEqual({ centavos: 100000, currency: 'PHP' });
+      expect(senior?.eligibility.requiredSectors).toEqual(['senior-citizen']);
+      expect(senior?.reviewWindow?.provenance).toBe('convention-pending-confirmation');
+    });
+
+    it('asks nothing for a one-letter search the API would refuse', async () => {
+      await expect(
+        firstValueFrom(programs.list({ search: 'm' }, { limit: 20, cursor: null })),
+      ).rejects.toThrow(/at least two letters/);
+      http.expectNone(`${BASE}/office/programs`);
+    });
+
+    it('refuses a programme whose responsibility it cannot read, rather than default it', async () => {
+      const page = firstValueFrom(programs.list({}, { limit: 20, cursor: null }));
+      const [first] = OFFICE_PROGRAMS_PAGE.data;
+      http.expectOne((r) => r.url === `${BASE}/office/programs`).flush({
+        ...OFFICE_PROGRAMS_PAGE,
+        data: [{ ...first, responsibility: { ...first?.responsibility, lgu_role: 'decider' } }],
+      });
+      await expect(page).rejects.toThrow(/could not be read/);
+    });
+
+    it('reads one programme, and an absent one as absent', async () => {
+      const id = OFFICE_PROGRAM.data.id;
+      const one = firstValueFrom(programs.getById(asId<ProgramId>(id)));
+      http.expectOne(`${BASE}/office/programs/${id}`).flush(OFFICE_PROGRAM);
+      expect((await one)?.code).toBe('PRG-0001');
+
+      const missing = firstValueFrom(programs.getById(asId<ProgramId>(id)));
+      http
+        .expectOne(`${BASE}/office/programs/${id}`)
+        .flush(null, { status: 404, statusText: 'Not Found' });
+      expect(await missing).toBeNull();
+    });
+
+    it('reads the active programmes in full for a picker', async () => {
+      const active = firstValueFrom(programs.listActive());
+      const request = http.expectOne((r) => r.url === `${BASE}/office/programs`);
+      expect(request.request.params.get('status')).toBe('active');
+      request.flush({
+        ...OFFICE_PROGRAMS_PAGE,
+        meta: { pagination: { has_more: false, next_cursor: null } },
+      });
+      expect((await active).map((program) => program.code)).toEqual(['PRG-0001', 'PRG-0002']);
+    });
+
+    it('reads a programme’s document set under it, a conditional one with its circumstances', async () => {
+      const id = OFFICE_PROGRAM.data.id;
+      const templates = firstValueFrom(programs.listRequirementTemplates(asId<ProgramId>(id)));
+      http
+        .expectOne(`${BASE}/office/programs/${id}/requirement-templates`)
+        .flush(OFFICE_PROGRAM_TEMPLATES);
+      const [template] = await templates;
+      expect(template?.code).toBe('aics-standard-sample');
+      expect(
+        template?.requirements.find((entry) => entry.obligation === 'conditional')?.appliesWhen,
+      ).toBe('When somebody other than the applicant files the request on their behalf.');
+    });
+
+    it('saves the whole draft in the API’s words, creating with POST and changing with PATCH', async () => {
+      const program = toAssistanceProgram(OFFICE_PROGRAM.data);
+      if (program === null) {
+        throw new Error('The programme fixture could not be read.');
+      }
+      const draft = { ...toProgramDraft(program), legalBasis: '  ' };
+      const unsent = [
+        'id',
+        'code',
+        'effective_from',
+        'effective_to',
+        'created_at',
+        'created_by',
+        'updated_at',
+        'updated_by',
+      ];
+
+      const changed = firstValueFrom(programs.save(draft, program.id));
+      const patch = http.expectOne({
+        method: 'PATCH',
+        url: `${BASE}/office/programs/${program.id}`,
+      });
+      expect(patch.request.body).toEqual({
+        ...Object.fromEntries(
+          Object.entries(OFFICE_PROGRAM.data).filter(([key]) => !unsent.includes(key)),
+        ),
+        legal_basis: null,
+      });
+      patch.flush(OFFICE_PROGRAM);
+      expect((await changed).id).toBe(program.id);
+
+      const created = firstValueFrom(programs.save(draft, null));
+      http
+        .expectOne({ method: 'POST', url: `${BASE}/office/programs` })
+        .flush(OFFICE_PROGRAM, { status: 201, statusText: 'Created' });
+      expect((await created).code).toBe('PRG-0001');
+    });
+
+    it('passes the server’s refusal of a misdescribed programme on', async () => {
+      const program = toAssistanceProgram(OFFICE_PROGRAM.data);
+      if (program === null) {
+        throw new Error('The programme fixture could not be read.');
+      }
+      const saved = firstValueFrom(programs.save(toProgramDraft(program), program.id));
+      http
+        .expectOne({ method: 'PATCH', url: `${BASE}/office/programs/${program.id}` })
+        .flush(OFFICE_PROGRAM_REFUSAL, { status: 422, statusText: 'Unprocessable Entity' });
+      await expect(saved).rejects.toBeTruthy();
+    });
+
+    it('says utilization is not connected, and asks the API nothing for it', async () => {
+      const one = await firstValueFrom(programs.utilizationFor());
+      const all = await firstValueFrom(programs.utilizationSummary());
+      expect(one).toEqual({ kind: 'unavailable', because: PROGRAM_UTILIZATION_NOT_CONNECTED });
+      expect(all).toEqual({ kind: 'unavailable', because: PROGRAM_UTILIZATION_NOT_CONNECTED });
+      http.verify();
     });
   });
 

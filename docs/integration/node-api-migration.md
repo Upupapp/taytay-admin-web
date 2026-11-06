@@ -9,8 +9,8 @@ sign-in only, hosted on Linode.
 
 | | |
 |---|---|
-| Console ports the Node API serves fully | 4 of 20 casework ports — the resident registry (`DL-174`), saved views, households and families (`DL-175`); the resident profile is read with its household, and says the assistance history is not connected yet; 12 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines, the home screen, the app's settings; `DL-171` digital IDs, Balita, the audit trail) |
-| Served in part (mostly different concepts with the same name) | 5 — program, staff, notification, governance, newsfeed; the resident (`DL-174`) and household (`DL-175`) ports left this row for the one above |
+| Console ports the Node API serves fully | 5 of 20 casework ports — the resident registry (`DL-174`), saved views, households and families (`DL-175`), the programme catalogue (`DL-176`, utilization said to be not connected until releases are served); the resident profile is read with its household, and says the assistance history is not connected yet; 12 platform ports added (`DL-167` verification review; `DL-168` office inbox, office directory, app accounts; `DL-170` directory offices, Tulong pages, hotlines, the home screen, the app's settings; `DL-171` digital IDs, Balita, the audit trail) |
+| Served in part (mostly different concepts with the same name) | 4 — staff, notification, governance, newsfeed; the resident (`DL-174`), household (`DL-175`) and program (`DL-176`) ports left this row for the one above |
 | No endpoint at all | 11 — cases, requests, beneficiaries, visits, releases, referrals, dashboard, work, reports, search, events |
 | Node staff endpoints with no console screen | 0 — step 6 is complete (`DL-171`) |
 
@@ -36,6 +36,7 @@ sign-in only, hosted on Linode.
 | 8 | Casework phase 1a: office roles on staff accounts, casework keys and scope on `/me`; an office role narrows the platform keys and the routes check the key | backend + console | done (`DL-173`, `DL-174`): `taytay-backend` `7996668`, `a4fa8d9`, `ee83617`. The auditor and the barangay link hold no Balita or inbox key; the head and the auditor read the audit trail |
 | 9 | Casework phase 1b: the office's resident registry | backend + console | done (`DL-174`): `taytay-backend` `6544381` — `/api/v1/office/residents`, redacted and scoped on the server, sectors and retirements as append-only histories with reasons; `HttpResidentRepository` in the console, `resident` out of `UNSERVED_PORTS`. **The Residents menu entry stays withheld** — its list also reads `saved-view`, its record `family` and `field-visit`. **Not run against a live API.** For the owner: the social worker's `assigned-cases` scope is refused until cases exist; saved views, or a list without its bar, to bring the list back |
 | 10 | Casework phase 1c: saved views, the office household register, families; only a module's primary port gates its menu entry | backend + console | done (`DL-175`): `taytay-backend` `013d74c`, `154a052`, `0c19dd2` — `/api/v1/office/saved-views`, `/office/households` (the vulnerability snapshot computed and disclosed on the server), `/office/families` with relationships and transfers as appended acts; `saved-view`, `household`, `family` out of `UNSERVED_PORTS` (fourteen remain). A secondary panel whose port is unserved now says so in place, and `check:unserved` holds it; **Residents, Households and Families are in the menu** against the API. **Not run against a live API** |
+| 11 | Casework phase 1d: the programme catalogue | backend + console | done (`DL-176`): `taytay-backend` `f887038` — `/api/v1/office/programs`, programmes as records with their responsibility refused by route and database when it would misdescribe the office, guidance that never gates, documents required/optional/conditional, every version kept; `program` out of `UNSERVED_PORTS` (thirteen remain), the list read a cursor page at a time; utilization said to be not connected, never a zero. **Programmes is in the menu** against the API. **Not run against a live API.** No form in the console creates a programme |
 
 ## For the owner to decide
 
@@ -197,7 +198,12 @@ household; its assistance history says it is not connected yet.
 | 1a | Office roles on staff accounts, casework keys and scope on `/me`, the routes check the key | ✓ `DL-173`, `DL-174` |
 | 1b | The office's resident registry | ✓ `DL-174` |
 | 1c | Saved views, households, families; a module's menu entry gated by its primary port only | ✓ `DL-175` |
-| 1d | Programmes, with guidelines and responsibility (`DL-65`, `DL-66`) | next |
+| 1d | Programmes, with guidelines and responsibility (`DL-65`, `DL-66`) | ✓ `DL-176` |
+
+**Phase 1 is complete** (1a–1d ✓). **Next: phase 2 — assistance requests**: intake → assessment →
+approval, requirements and documents (append-only versions, `DL-77`), advisory evidence that decides
+nothing (`DL-60`). Its screens already read `program`, now served; `assistance-request` is what keeps
+them withheld.
 
 **For the owner, from phase 1c** (`DL-175`): whether a barangay link should see a family between
 addresses only while every member lives in its barangay (the choice made); whether a household's
@@ -205,3 +211,14 @@ income is means, withheld from the release officer, the barangay link and the au
 resident's is (the choice made; the mock showed it to them); and whether the console needs to change
 a household's address, income or classification, or dissolve a family — the API has no route for
 either yet.
+
+**Phase 1d done** (`DL-176`, `taytay-backend` `f887038`): the programme catalogue, served as records.
+Utilization is counted from releases and is said to be not connected until phase 4 — no request is
+made and no figure shown, never a zero.
+
+**For the owner, from phase 1d** (`DL-176`): whether the console should get a "new programme" form
+with guidance, sources and documents (without one the API's catalogue is filled only by the seed or by
+direct API calls); whether requirement templates need an editor or stay seed-only; whether a
+programme's status needs transition rules (`closed` terminal, say — none was invented); and whether
+a change to a programme should carry a reason (the console asks none; the revisions keep who, when
+and what, not why).

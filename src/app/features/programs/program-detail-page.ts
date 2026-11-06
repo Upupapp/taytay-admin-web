@@ -39,7 +39,7 @@ import {
   type ProgramId,
   type ProgramRequirement,
   type ProgramStatus,
-  type ProgramUtilization,
+  type ProgramUtilizationReading,
   type RequirementTemplate,
 } from '@domain/index';
 import { PROGRAM_COPY } from '@shared/programs/program.copy';
@@ -56,7 +56,8 @@ import { PROGRAMS_COPY } from './programs.copy';
 export interface ProgramView {
   readonly program: AssistanceProgram;
   readonly templates: readonly RequirementTemplate[];
-  readonly utilization: ProgramUtilization;
+  /** Or why it could not be read: never a zero standing in for an answer (`DL-176`). */
+  readonly utilization: ProgramUtilizationReading;
 }
 
 /**

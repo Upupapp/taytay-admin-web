@@ -1,0 +1,72 @@
+{
+  "data": {
+    "id": "5b0e7c1e-2f4a-4c3e-9a51-0d6c1f2a7b10",
+    "code": "PRG-0001",
+    "name": "Medical Assistance — AICS (sample)",
+    "category": "crisis-intervention",
+    "status": "active",
+    "description": "Sample record. Help with hospital bills and medicine, assessed by DSWD on the office’s referral.",
+    "legal_basis": "DSWD AICS guidelines",
+    "funding_source": "DSWD (AICS)",
+    "maximum_grant_centavos": null,
+    "eligibility": {
+      "min_age": null,
+      "max_age": null,
+      "required_sectors": [],
+      "max_monthly_household_income_centavos": null,
+      "residency_months_required": null,
+      "notes": null
+    },
+    "responsibility": {
+      "administered_by": "dswd",
+      "funds_held_by": "dswd",
+      "lgu_role": "referrer",
+      "statement": "This is a DSWD programme. The MSWDO receives the request, assesses it and refers it to DSWD, which decides and releases the assistance.",
+      "sources": [
+        {
+          "title": "DSWD — AICS is a DSWD service",
+          "url": "https://aics.dswd.gov.ph/aics-program/",
+          "verified_on": null
+        }
+      ]
+    },
+    "guidance": [
+      {
+        "code": "residency",
+        "weight": "expected",
+        "statement": "The applicant normally lives in Taytay (sample guidance).",
+        "provenance": "office-convention",
+        "basis": "Sample office convention",
+        "source_url": null,
+        "verified_on": null
+      },
+      {
+        "code": "documents",
+        "weight": "usual",
+        "statement": "A medical certificate or hospital bill usually accompanies the request (sample guidance).",
+        "provenance": "issuance",
+        "basis": "DSWD AICS guidelines",
+        "source_url": "https://aics.dswd.gov.ph/aics-program/",
+        "verified_on": null
+      }
+    ],
+    "requirement_template_code": "aics-standard-sample",
+    "requirements": [
+      {
+        "code": "medical-certificate",
+        "label": "Medical certificate or hospital bill",
+        "obligation": "required",
+        "applies_when": null,
+        "notes": null
+      }
+    ],
+    "review_window": null,
+    "effective_from": "2026-11-06",
+    "effective_to": null,
+    "created_at": "2026-11-06T02:10:00.000Z",
+    "created_by": "9d2f5c3a-1b7e-4e0a-8c6d-3f4e5a6b7c80",
+    "updated_at": "2026-11-06T02:10:00.000Z",
+    "updated_by": "9d2f5c3a-1b7e-4e0a-8c6d-3f4e5a6b7c80"
+  },
+  "meta": {}
+}

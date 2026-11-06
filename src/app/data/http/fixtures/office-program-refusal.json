@@ -1,0 +1,12 @@
+{
+  "error": {
+    "code": "VALIDATION_FAILED",
+    "message": "That programme entry cannot be saved as it stands.",
+    "details": {
+      "national-programme-claimed-as-owned": [
+        "A national programme cannot be recorded as one the municipality owns. Record the office as referrer, augmenter or facilitator."
+      ]
+    },
+    "request_id": "req-programs-1"
+  }
+}

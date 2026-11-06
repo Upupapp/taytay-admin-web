@@ -106,3 +106,31 @@ export function summariseUtilization(input: UtilizationInput): ProgramUtilizatio
 export function isUnused(utilization: ProgramUtilization): boolean {
   return utilization.releaseCount === 0;
 }
+
+/**
+ * How much one programme has been used, or why it could not be read.
+ *
+ * A union for the reason `AssistanceHistoryReading` is one (`DL-175`). Utilization is counted from
+ * releases, and where the API serving the catalogue does not serve releases, the console cannot
+ * say how much a programme delivered. A zero would say it delivered nothing — the finding that gets
+ * a programme closed — and a blank would read as the same thing (`DL-105`, `DL-112`).
+ */
+export type ProgramUtilizationReading =
+  | { readonly kind: 'read'; readonly utilization: ProgramUtilization }
+  /** `because` is shown to the reader, so it names what is missing rather than a defect. */
+  | { readonly kind: 'unavailable'; readonly because: string };
+
+/** Every programme's utilization at once, or why none of it could be read. */
+export type ProgramUtilizationSummary =
+  | { readonly kind: 'read'; readonly rows: readonly ProgramUtilization[] }
+  | { readonly kind: 'unavailable'; readonly because: string };
+
+/**
+ * Why utilization could not be read — in the domain, because the data layer decides the answer is
+ * unavailable and the sentence has to travel with that decision, or the list and the record word
+ * the absence differently.
+ */
+export const PROGRAM_UTILIZATION_NOT_CONNECTED =
+  'How much this programme has been used — releases made and what reached somebody — is not ' +
+  'connected yet: the office’s API does not serve releases, so none of it was read. This is not a ' +
+  'statement that the programme was never used.';
