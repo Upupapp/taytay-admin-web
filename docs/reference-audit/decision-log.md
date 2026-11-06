@@ -6927,3 +6927,163 @@ Phase 2a of the casework (`docs/integration/node-api-migration.md`). Backend `ta
 | `check:permission-parity` | the new routes' keys | 0 of 57 disagree |
 | `check:intake` | the not-recorded rule reads the bound adapter | passed; nothing decision-shaped |
 | `check:programs` | nothing branches on a programme | passed |
+
+## DL-178 — the rest of a request is served: assignment, the assessment, documents and what the applicant was asked for
+
+Phase 2b of the casework (`docs/integration/node-api-migration.md`), which completes phase 2.
+Backend `taytay-backend` `240803d`; the spec vendored here is its. Console `f3ac8d3`.
+
+### Owner decisions implemented
+
+1. **A request is assigned to a social worker for assessment**, with who, when and why, appended
+   (`office_request_assignments`); the request's `assigned_to` follows that history and nothing else
+   writes it. Assigning needs `request.assess` from an account that is not itself a caseload — the
+   MSWDO head, an administrator; the list of whom to assign (`GET office/social-workers`) gives an id
+   and a name, nothing more. **`assigned-cases` is served for the first time**: a social worker
+   reads, moves, notes and works the filed requests assigned to them, and any other request answers
+   as not found. Starting, saving and filing a request, the duplicate check (which reads the person's
+   *other* requests), assigning and the resident registry stay refused to a caseload — "everything
+   else stays refused". Cases join the caseload in phase 3.
+2. **The programme edit page is the full form** — the same fields as New programme, a reason
+   required, through the existing `PATCH` (which already took every field).
+3. **The request page has a notes box**: the notes listed, and a note added with its tier
+   (`DL-58`; `protected` offered only to `case-note.view-protected`). `DL-177`'s sixth decision —
+   notes served read-only — is superseded.
+
+### What the server now decides
+
+- **The assessment** is the console's two forms, held by the server as fixed reference data and
+  still marked `placeholder-pending-lgu-approval` (compared question by question with the seed). One
+  is opened only while the request is in `assessment`, from the current version, pinned then and
+  read once; one at a time — asking again answers with the one open. Answers are appended as a
+  patch. Completing it records the findings (20 characters or more), the recommended amount, whether
+  a home visit was made, and **the recommendation the assessor chose** — a reason required only for
+  `recommend-deny`. Nothing derives a recommendation, and **completing moves the request nowhere**:
+  endorsing is the transitions' move, as it was, and `assessmentReadiness` still gates nothing
+  (`DL-60`). Because the API now takes the amount and the home-visit fact, `toWireAssessment` sends
+  both and `check:intake`'s "dropped field declared on screen" rule stopped applying on its own, as
+  it was written to.
+- **What the office did about a document is a person's act, appended.** A filed request's
+  checklist moves only by a row in `office_request_requirement_events` — presented, reviewed or
+  ruled — whose trigger alone writes it (`0029` had frozen it whole at filing). `waived`,
+  `rejected` and `needs-replacement` need words; only something presented can be anything but
+  waived; a conditional document is ruled on with a reason and never evaluated (`DL-76`).
+- **Versions are appended** (`DL-77`): replacing one supersedes the version in force with a required
+  reason and keeps it; the database refuses a delete, an edit, a second supersession or a gap in the
+  numbering. **A new version reads `submitted` again, whatever the last one's review was** — the
+  mock had kept `verified`, which put an unchecked file under a checked status.
+- **Files** are PDF, JPEG or PNG by their bytes and 10 MB at most — the domain's
+  `DOCUMENT_UPLOAD_POLICY`, published on each requirement as `accepts` and compared by a test — and
+  are stored through `MediaStore`, **not** the `media` table, which any staff account can read. The
+  server names the file (`<code>-v<n>.<ext>`); **the uploader's own file name is not kept**, because
+  it says more than the office needs to hold and would be repeated on every screen that lists it.
+- **Document numbers are held whole and answered masked** to their last four characters unless the
+  reader holds `document.view-full-number`.
+- **Opening a file is its own grant**: `document.download`, and `request.view-sensitive` on a
+  protected request. The server issues a single-use, five-minute handle — kept only as its hash —
+  with a warning it composes (what the file is, how to handle it, that the opening is recorded, that
+  nothing was redacted: `redactedForSharing` is always false, because the server keeps the copy the
+  office received and makes no other). The handle is exchanged for the bytes in a `POST` body, by the
+  same account, because request paths are logged.
+- **What the applicant was asked to bring** is recorded with who asked, how and by when; it is
+  answered when the document is recorded, withdrawn with a reason, closed once and never removed.
+- **Redaction.** A protected request also withholds its assignment reasons, its documents' words and
+  its case study, and refuses every write from an uncleared account ("nobody adds to what they may
+  not read"). **The case study's words are withheld from an account without `case.view`** — the
+  barangay link and the release officer, whose roles were given no case access precisely so the
+  casework record of their neighbours is not theirs to read.
+
+### Decisions made here
+
+1. **Who assigns.** `request.assess` from an account that is not itself a caseload — the head and
+   an administrator. An intake officer does not assign (the role holds no `request.assess`, and
+   moving a request into assessment already needed that key); a social worker does not reassign
+   their own. The assignee must be an **open account in the `social-worker` role**: the owner said
+   "assigned to a social worker", and a head who assesses needs no assignment to read the request.
+2. **A caseload is refused everything that reads beyond its requests** — the duplicate check on a
+   request it holds included, because the check names the person's *other* requests, and the
+   resident registry. So a social worker assessing does not see the applicant's resident record or
+   the previous-assistance signals. The console asks for neither on their behalf (a `403` takes a
+   reader off the page), and says so in place.
+3. **The case study's words are withheld from an account without `case.view`** (the barangay link
+   and the release officer), as well as on a protected request. The recommendation itself, the
+   amount and the home-visit fact are not words about the family and stay visible.
+4. **Every write on a protected request needs `request.view-sensitive`**, assignment included:
+   nobody adds to what they may not read (`DL-177` refused only saving over a draft). An intake
+   officer therefore cannot record or review a document on a VAWC survivor's request.
+5. **Review words are required for `waived`, `rejected` and `needs-replacement`** — the applicant
+   has to be told what to bring instead — and only something presented can be checked, refused,
+   lapse or need replacing.
+6. **"Document numbers held and shown masked"** is read as: held whole (a clerk must still be able to
+   read one back against paper, and `document.view-full-number` exists for that), shown masked.
+   Holding only the last four would make that key meaningless and could not be undone; truncating
+   the column later can.
+7. **The file is fetched only after the reader confirms the server's warning**, and offered as a
+   download link released when the dialog closes — never opened automatically. Upload progress is
+   not shown: `ApiClient` does not read upload events, so the adapter reports only "done" rather
+   than a bar that would be invented (`DL-87`).
+8. **An open assessment is found by opening it.** The request carries the latest *completed* case
+   study; the open one, with its answers, is answered only by `POST …/assessment`, which returns the
+   one open (whichever form) or opens one. The page's "Open the assessment" therefore resumes or
+   opens, and says which form it came from.
+9. **The forms stay placeholders.** The server holds the console's two forms as fixed reference data,
+   still `placeholder-pending-lgu-approval`; adopting Taytay's own is a migration and the office's
+   decision (`DL-68`'s pattern).
+
+### What the console now does
+
+- `HttpAssistanceRequestRepository` serves every method; the "not connected yet" sentence for the
+  assessment and the documents is gone. Every read through `assistance-request.mapper.ts`, every
+  body through an explicit `toWire…` (the document as a form held to the operation's form schema).
+- **The request record works end to end**: an assignment panel for holders of `request.assess` who
+  are not a caseload (a social worker chosen, a reason required, the history with who, when and
+  why, or "withheld"); the case study (forms → open → answers as a patch → complete with the
+  recommendation a person chose); document review, rulings with a reason, a version recorded with
+  the file refused before sending by the policy the requirement publishes, replaced with a reason
+  and the old version kept and listed with its masked number; opening a file as two acts — the
+  grant with the server's warning, then the bytes through `ApiClient.postBlob`, the handle in a
+  body and the bearer in a header; what the applicant was asked to bring, asked and withdrawn with
+  its words; the **notes box**. Every read is a view state, so one that fails says so in its section
+  and the rest stands. Completion counts and decides nothing (`DL-78`).
+- The port gains `listSocialWorkers`, `assignForAssessment`, `addNote` and `readDocumentFile`,
+  each reached by the record page. The withheld vocabulary gains `assignmentReasons` and
+  `assessment`.
+- The request list narrows by assignee for the head; a social worker's list is their caseload.
+- **The programme record's edit is the whole New programme form**, filled from the record and saved
+  whole with a reason through the existing `PATCH`; the partial edit is gone (`/programs/:id/edit`).
+- The mock is brought to the server's rules where it was more permissive: caseload scope, assessment
+  only in assessment, review words and presented-first, a new version reads `submitted` and answers
+  open requests for it, protected writes refused, the case study withheld without `case.view`,
+  numbers masked without `document.view-full-number`, a grant used once, a new version named as the
+  server names it. Two seeded requests for a document named another request's requirements; they
+  now name their own.
+- The error interceptor reads a JSON refusal that arrives as a `Blob`, so a refused file exchange
+  reaches the screen in the server's words.
+- The platform audit trail words the eleven new `office_request.*` codes.
+
+### For the owner
+
+- Whether a social worker assessing a request should see the applicant's resident record and the
+  previous-assistance check (refused today: decision 2), or wait for cases (phase 3).
+- Whether an intake officer should be able to record documents on a protected person's request
+  (refused today: decision 4), which would mean giving intake `request.view-sensitive`.
+- Whether intake officers, not only the head, should assign requests for assessment.
+- The assessment forms are placeholders; the office's own instrument, when adopted, replaces them.
+- A social worker can still reach the intake page by typing its address (they hold
+  `request.create`); the server refuses them, and only the list's link is hidden.
+
+### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:contract-drift` | vendored `240803d` | 163 operations (was 149) |
+| `check:routes` | `postBlob` taught | 33 endpoints, 120 composed requests (was 30, 105); 12 of 33 ports unrouted |
+| `check:unserved` | the programme edit route | 12 unserved, all declared; 64 routed screens (was 63) |
+| `check:response-shape` | knows `postBlob`, judged at `POST` | 57/57 (was 53/53) |
+| `check:wire-adoption` | every new body through a `toWire…`, the handle mapped | 69/69 (was 57/57) |
+| `check:port-adoption` | four methods, each reached; `listNotes` reached too; baseline lowered | 10 of 223 unreached (was 11 of 219) |
+| `check:query-params` | the list's `assigned_to` | 56 reads (was 53) |
+| `check:consumer-contract` | regenerated | 109 interactions, 611 required fields (was 97, 516) |
+| `check:permission-parity` | the new routes' keys | 0 of 58 disagree |
+| `check:intake` | the not-recorded rule reads `toWireAssessment`'s keys under the server's names and requires `recordAssessment` to send it — validated by two planted breaks | passed; nothing decision-shaped |
+| `check:documents` | nothing removes a version | passed |
