@@ -56,6 +56,12 @@
 .shell__nav {
   flex: 1 1 auto;
   min-block-size: 0;
+  /* The nav may shrink below its content (min-block-size: 0), so it must scroll: otherwise its
+     lower links run on underneath the account footer, which takes the clicks, and on a laptop
+     screen part of the menu cannot be reached at all. The footer stays put, so signing out is
+     always one click away. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .shell__account {
