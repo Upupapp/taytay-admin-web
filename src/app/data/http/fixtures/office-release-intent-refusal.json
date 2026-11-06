@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "CONFLICT",
+    "message": "That idempotency key was already used for a different act. Each act the officer commits carries its own key; a retry of the same act carries the same key and the same body.",
+    "details": {},
+    "request_id": "req_4c2e8a1b9d07"
+  }
+}

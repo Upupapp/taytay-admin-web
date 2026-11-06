@@ -55,6 +55,11 @@ import OFFICE_CASE_CASELOAD from './office-case-caseload.json';
 import OFFICE_CASE_CLOSED_REFUSAL from './office-case-closed-refusal.json';
 import OFFICE_CASE_QUEUE_COUNTS from './office-case-queue-counts.json';
 import OFFICE_CASE_ASSIGNEES from './office-case-assignees.json';
+import OFFICE_RELEASES_PAGE from './office-releases-page.json';
+import OFFICE_RELEASE from './office-release.json';
+import OFFICE_RELEASE_BATCHES from './office-release-batches.json';
+import OFFICE_RELEASE_MANIFEST from './office-release-manifest.json';
+import OFFICE_RELEASE_INTENT_REFUSAL from './office-release-intent-refusal.json';
 import OFFICE_DOCUMENT_GRANT from './office-document-grant.json';
 import OFFICE_REQUIREMENT_TEMPLATE from './office-requirement-template.json';
 import OFFICE_REQUIREMENT_TEMPLATE_REFUSAL from './office-requirement-template-refusal.json';
@@ -286,6 +291,11 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['office-case-closed-refusal', OFFICE_CASE_CLOSED_REFUSAL, 'ErrorEnvelope'],
     ['office-case-queue-counts', OFFICE_CASE_QUEUE_COUNTS, 'OfficeCaseQueueCountListEnvelope'],
     ['office-case-assignees', OFFICE_CASE_ASSIGNEES, 'OfficeCaseAssigneeListEnvelope'],
+    ['office-releases-page', OFFICE_RELEASES_PAGE, 'OfficeReleaseListEnvelope'],
+    ['office-release', OFFICE_RELEASE, 'OfficeReleaseEnvelope'],
+    ['office-release-batches', OFFICE_RELEASE_BATCHES, 'OfficeReleaseBatchListEnvelope'],
+    ['office-release-manifest', OFFICE_RELEASE_MANIFEST, 'OfficeReleaseManifestEnvelope'],
+    ['office-release-intent-refusal', OFFICE_RELEASE_INTENT_REFUSAL, 'ErrorEnvelope'],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
     ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],

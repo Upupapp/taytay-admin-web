@@ -880,6 +880,15 @@
             [busy]="submitting()"
             (confirmed)="onTransition($event)"
           />
+          @if (request.status === 'approved' || request.status === 'scheduled') {
+            <!-- Scheduled and released are recorded with the payout, never moved here (DL-180). -->
+            <p class="assessment__note">{{ copy.payoutMoves }}</p>
+          }
+          @if (canPrepareRelease(request.status)) {
+            <a class="btn" routerLink="/releases/prepare" [queryParams]="{ request: request.id }">
+              {{ copy.prepareRelease }}
+            </a>
+          }
         </div>
 
         <section class="card assessment__block" aria-labelledby="history-heading">

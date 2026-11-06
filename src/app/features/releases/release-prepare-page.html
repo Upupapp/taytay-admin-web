@@ -1,0 +1,148 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions class="btn" routerLink="/releases">{{ copy.back }}</a>
+</app-page-header>
+
+<app-async-content [state]="requestState()" [content]="prepareContent" [skeletonLines]="6">
+  <ng-template #prepareContent let-assistance>
+    @if (assistance === null) {
+      <div class="card">
+        <h2>{{ copy.notFoundHeading }}</h2>
+        <p>{{ copy.notFoundMessage }}</p>
+      </div>
+    } @else {
+      <section class="card" aria-labelledby="prepare-request-heading">
+        <h2 id="prepare-request-heading">{{ copy.requestHeading }}</h2>
+        <p>
+          <a [routerLink]="['/requests', assistance.id]">{{ assistance.referenceNumber }}</a>
+          <app-status-badge [catalog]="requestCatalog" [status]="assistance.status" />
+        </p>
+        @if (assistance.requestedAmount) {
+          <!-- What was asked for, not what is handed over: the office states that below. -->
+          <p>{{ copy.requested }} {{ assistance.requestedAmount | peso }}</p>
+        }
+      </section>
+
+      @if (existing() === null) {
+        <p class="card" role="alert">{{ copy.existingUnread }}</p>
+      } @else if (openRelease(); as open) {
+        <section class="card" aria-labelledby="prepare-existing-heading">
+          <h2 id="prepare-existing-heading">{{ copy.existingHeading }}</h2>
+          <p>{{ copy.existingMessage }}</p>
+          <p>
+            <a [routerLink]="['/releases', open.id]">{{ open.referenceNumber }}</a>
+            <app-status-badge [catalog]="releaseCatalog" [status]="open.status" />
+          </p>
+        </section>
+      } @else if (!isApproved()) {
+        <p class="card" role="status">{{ copy.notApproved }}</p>
+      } @else {
+        <section class="card" aria-labelledby="prepare-form-heading">
+          <h2 id="prepare-form-heading">{{ copy.formHeading }}</h2>
+
+          <fieldset class="field">
+            <legend class="field__label">{{ copy.kind }}</legend>
+            @for (value of kinds; track value) {
+              <label class="check">
+                <input
+                  type="radio"
+                  name="release-kind"
+                  [checked]="kind() === value"
+                  (change)="onKind(value)"
+                />
+                <span>{{ kindLabel(value) }}</span>
+              </label>
+            }
+          </fieldset>
+
+          @if (kind() === 'money') {
+            <label class="field" for="release-amount">
+              <span class="field__label">{{ copy.amount }}</span>
+              <input
+                id="release-amount"
+                class="field__control"
+                type="text"
+                inputmode="decimal"
+                aria-describedby="release-amount-hint"
+                [value]="amountText()"
+                (input)="onText('amount', $event)"
+              />
+              <span class="field__hint" id="release-amount-hint">{{ copy.amountHint }}</span>
+            </label>
+
+            <label class="field" for="release-method">
+              <span class="field__label">{{ copy.method }}</span>
+              <select id="release-method" class="field__control" (change)="onMethod($event)">
+                @for (value of moneyMethods; track value) {
+                  <option [value]="value" [selected]="method() === value">
+                    {{ methodLabel(value) }}
+                  </option>
+                }
+              </select>
+            </label>
+          } @else {
+            <!-- Goods are counted, never valued: there is no amount to type. -->
+            <label class="field" for="release-goods">
+              <span class="field__label">{{ copy.goods }}</span>
+              <textarea
+                id="release-goods"
+                class="field__control"
+                rows="2"
+                aria-describedby="release-goods-hint"
+                [value]="goods()"
+                (input)="onText('goods', $event)"
+              ></textarea>
+              <span class="field__hint" id="release-goods-hint">{{ copy.goodsHint }}</span>
+            </label>
+          }
+
+          <label class="field" for="release-funding">
+            <span class="field__label">{{ copy.fundingSource }}</span>
+            <input
+              id="release-funding"
+              class="field__control"
+              type="text"
+              aria-describedby="release-funding-hint"
+              [value]="fundingSource()"
+              (input)="onText('funding', $event)"
+            />
+            <span class="field__hint" id="release-funding-hint">{{ copy.fundingSourceHint }}</span>
+          </label>
+
+          <label class="field" for="release-reference">
+            <span class="field__label">{{ copy.approvingReference }}</span>
+            <input
+              id="release-reference"
+              class="field__control"
+              type="text"
+              [value]="approvingReference()"
+              (input)="onText('reference', $event)"
+            />
+          </label>
+
+          <label class="field" for="release-remarks">
+            <span class="field__label">{{ copy.remarks }}</span>
+            <textarea
+              id="release-remarks"
+              class="field__control"
+              rows="2"
+              [value]="remarks()"
+              (input)="onText('remarks', $event)"
+            ></textarea>
+          </label>
+
+          <!-- Stated where the officer decides, not only in a decision log (DL-89). -->
+          <p class="field__hint">{{ copy.boundaryNotice }}</p>
+
+          <button
+            type="button"
+            class="btn btn--primary"
+            [disabled]="!canPrepare()"
+            (click)="prepare()"
+          >
+            {{ saving() ? copy.preparing : copy.prepare }}
+          </button>
+        </section>
+      }
+    }
+  </ng-template>
+</app-async-content>

@@ -49,6 +49,13 @@ export type AssistanceRequestStatus =
   | 'cancelled'
   | 'expired';
 
+/**
+ * Moves a request makes **with its payout**, never as a bare status change: it is scheduled when its
+ * release is scheduled into a payout session, and released when the release is recorded as handed
+ * over (`DL-180`). The API refuses both on the request's own status route.
+ */
+export const PAYOUT_RECORDED_STATUSES: readonly AssistanceRequestStatus[] = ['scheduled', 'released'];
+
 export const ASSISTANCE_STATUS_CATALOG: StatusCatalog<AssistanceRequestStatus> = {
   draft: {
     value: 'draft',

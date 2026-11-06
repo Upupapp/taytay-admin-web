@@ -100,6 +100,23 @@
       }
     </ng-template>
   </app-async-content>
+
+  @if (hasAny()) {
+    <div class="releases__more">
+      <!-- The groups above sort what has been read; they never claim to be the whole office. -->
+      <p class="releases__hint" role="status">
+        {{ copy.shown(releases().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
+      </p>
+      @if (hasMore()) {
+        <button type="button" class="btn" [disabled]="loadingMore()" (click)="showMore()">
+          {{ loadingMore() ? copy.loadingMore : copy.showMore }}
+        </button>
+      }
+      @if (moreFailed()) {
+        <p class="releases__problem" role="alert">{{ copy.moreFailed }}</p>
+      }
+    </div>
+  }
 </div>
 
 <ng-template #rows let-releases>

@@ -255,7 +255,7 @@ describe('scenario: approved assistance becomes a release', () => {
   it('ties every release to a request and a resident that both exist', async () => {
     await signedInAs('system-administrator');
     const releases = await firstValueFrom(
-      TestBed.inject(RELEASE_REPOSITORY).list({}, PAGE),
+      TestBed.inject(RELEASE_REPOSITORY).list({}, { limit: 500 }),
     );
     const residents = TestBed.inject(RESIDENT_REPOSITORY);
     const requests = TestBed.inject(ASSISTANCE_REQUEST_REPOSITORY);
@@ -272,7 +272,7 @@ describe('scenario: approved assistance becomes a release', () => {
   it('keeps money and goods apart on every record', async () => {
     await signedInAs('system-administrator');
     const releases = await firstValueFrom(
-      TestBed.inject(RELEASE_REPOSITORY).list({}, PAGE),
+      TestBed.inject(RELEASE_REPOSITORY).list({}, { limit: 500 }),
     );
 
     // `DL-93`: an in-kind release carries a description and no amount.

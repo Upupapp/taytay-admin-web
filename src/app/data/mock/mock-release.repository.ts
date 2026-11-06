@@ -5,6 +5,7 @@ import {
   ACCESS_CONTEXT,
   RELEASE_STATUS_TRANSITIONS,
   asId,
+  batchProgress,
   asIsoDateTime,
   batchProblems,
   canTransition,
@@ -13,8 +14,8 @@ import {
   discloseResident,
   isReleaseOpen,
   isWithinBarangayScope,
-  paginate,
   PermissionDeniedError,
+  releaseDraftProblems,
   todayAsIsoDate,
   userHasPermission,
   type AuthenticatedUser,
@@ -23,11 +24,12 @@ import {
   type ReleaseFilter,
   type ReleaseId,
   type ReleaseRepository,
-  type ReleaseSortField,
   type ReleaseStatus,
-  type Page,
-  type PageRequest,
+  type CursorPage,
+  type CursorRequest,
   type Permission,
+  type ReleaseDraft,
+  type ReleaseKind,
   type ReleaseAcknowledgementDraft,
   type ReleaseBatch,
   type ReleaseBatchDraft,
@@ -38,9 +40,10 @@ import {
 } from '@domain/index';
 
 import { denyUnless } from './mock-access';
+import { MockAssistanceRequestStore } from './mock-assistance-request.store';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
-import { matchesSearch, sortItems } from './mock-query';
+import { matchesSearch } from './mock-query';
 import {
   MOCK_DISBURSEMENTS,
   MOCK_RELEASE_APPROVERS,
@@ -75,27 +78,38 @@ export class MockReleaseRepository implements ReleaseRepository {
   private readonly latency = inject(MockLatency);
   private readonly access = inject(ACCESS_CONTEXT);
   private readonly residents = inject(MockResidentStore);
+  private readonly requests = inject(MockAssistanceRequestStore);
 
   private releases: readonly Release[] = [...MOCK_DISBURSEMENTS];
-  private batches: readonly ReleaseBatch[] = [...MOCK_RELEASE_BATCHES];
+  private batches: readonly Omit<ReleaseBatch, 'progress'>[] = [...MOCK_RELEASE_BATCHES];
   private batchSequence = MOCK_RELEASE_BATCHES.length;
+  private releaseSequence = MOCK_DISBURSEMENTS.length;
 
-  list(
-    filter: ReleaseFilter,
-    page: PageRequest<ReleaseSortField>,
-  ): Observable<Page<Release>> {
+  /** Newest prepared first, a cursor page at a time, as the API pages it. */
+  list(filter: ReleaseFilter, page: CursorRequest): Observable<CursorPage<Release>> {
     const user = this.access.currentUser();
-    const denied = denyUnless<Page<Release>>(user, 'release.view');
+    const denied = denyUnless<CursorPage<Release>>(user, 'release.view');
     if (denied) {
       return denied;
     }
 
-    const visible = this.releases.filter(
-      (release) => this.isReadable(release, user) && matchesFilter(release, filter),
-    );
-    const sort = page.sort ?? { field: 'scheduledFor' as const, direction: 'desc' as const };
-    const sorted = sortItems(visible, (release) => sortKey(release, sort.field), sort.direction);
-    return this.latency.respond(paginate(sorted, page));
+    const sorted = this.releases
+      .filter((release) => this.isReadable(release, user) && matchesFilter(release, filter))
+      .sort(
+        (a, b) =>
+          b.audit.createdAt.localeCompare(a.audit.createdAt) || b.id.localeCompare(a.id),
+      );
+    // The id of the last row read stands in for the server's opaque cursor.
+    const after = page.cursor ? sorted.findIndex((release) => release.id === page.cursor) : -1;
+    const rest = sorted.slice(after + 1);
+    const items = rest.slice(0, Math.max(1, page.limit));
+    const hasMore = rest.length > items.length;
+    const last = items[items.length - 1];
+    return this.latency.respond({
+      items,
+      hasMore,
+      nextCursor: hasMore && last !== undefined ? last.id : null,
+    });
   }
 
   getById(id: ReleaseId): Observable<Release | null> {
@@ -161,7 +175,9 @@ export class MockReleaseRepository implements ReleaseRepository {
       return denied;
     }
     return this.latency.respond(
-      [...this.batches].sort((a, b) => (a.scheduledFor < b.scheduledFor ? 1 : -1)),
+      [...this.batches]
+        .sort((a, b) => (a.scheduledFor < b.scheduledFor ? 1 : -1))
+        .map((batch) => this.counted(batch, user)),
     );
   }
 
@@ -170,7 +186,8 @@ export class MockReleaseRepository implements ReleaseRepository {
     if (!userHasPermission(user, 'release.view')) {
       return this.latency.respond(null);
     }
-    return this.latency.respond(this.batches.find((batch) => batch.id === id) ?? null);
+    const batch = this.batches.find((entry) => entry.id === id);
+    return this.latency.respond(batch === undefined ? null : this.counted(batch, user));
   }
 
   createBatch(draft: ReleaseBatchDraft): Observable<ReleaseBatch> {
@@ -188,7 +205,7 @@ export class MockReleaseRepository implements ReleaseRepository {
 
     this.batchSequence += 1;
     const now = asIsoDateTime(new Date());
-    const batch: ReleaseBatch = {
+    const batch: Omit<ReleaseBatch, 'progress'> = {
       id: asId<ReleaseBatchId>(`rbt-${String(this.batchSequence).padStart(4, '0')}`),
       referenceNumber: `RB-${today.slice(0, 4)}-${String(this.batchSequence).padStart(4, '0')}`,
       title: draft.title.trim(),
@@ -215,7 +232,73 @@ export class MockReleaseRepository implements ReleaseRepository {
         : release,
     );
 
-    return this.latency.respond(batch);
+    return this.latency.respond(this.counted(batch, user));
+  }
+
+  prepare(draft: ReleaseDraft): Observable<Release> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<Release>(user, 'release.schedule');
+    if (denied) {
+      return denied;
+    }
+    if (releaseDraftProblems(draft).length > 0) {
+      return throwError(() => new Error('That release needs correcting. Nothing was recorded.'));
+    }
+    // One payout per request at a time, as on the server.
+    if (
+      this.releases.some(
+        (release) => release.requestId === draft.requestId && release.status !== 'voided',
+      )
+    ) {
+      return throwError(
+        () => new Error('This request already has a release. Void it before preparing another.'),
+      );
+    }
+    const request = this.requests.requests.find((entry) => entry.id === draft.requestId);
+    const beneficiary =
+      request === undefined ? undefined : this.residents.find(request.residentId);
+    if (
+      request === undefined ||
+      beneficiary === undefined ||
+      !isWithinBarangayScope(user, beneficiary.address.barangayId)
+    ) {
+      return throwError(() => new PermissionDeniedError('release.schedule'));
+    }
+    if (request.status !== 'approved' && request.status !== 'scheduled') {
+      return throwError(() => new Error('A release is prepared for an approved request.'));
+    }
+    // Who approved, read from the request's own history: the last move into `approved` (`DL-91`).
+    const approval = [...request.statusHistory].reverse().find((change) => change.to === 'approved');
+
+    this.releaseSequence += 1;
+    const now = asIsoDateTime(new Date());
+    const kind: ReleaseKind = draft.kind;
+    const release: Release = {
+      id: asId<ReleaseId>(`rel-${String(this.releaseSequence).padStart(4, '0')}`),
+      requestId: draft.requestId,
+      residentId: beneficiary.id,
+      referenceNumber: `RL-${todayAsIsoDate().slice(0, 4)}-${String(this.releaseSequence).padStart(6, '0')}`,
+      status: 'for-release',
+      method: draft.method,
+      kind,
+      amount: draft.amount,
+      inKindDescription: draft.inKindDescription,
+      fundingSourceLabel: draft.fundingSourceLabel,
+      approvingReference: draft.approvingReference,
+      approvedBy: approval?.actorId ?? null,
+      batchId: null,
+      scheduledFor: null,
+      releasedAt: null,
+      releasedBy: null,
+      acknowledgedAt: null,
+      acknowledgement: null,
+      deferralReason: null,
+      instrumentReference: null,
+      remarks: draft.remarks,
+      audit: { createdAt: now, createdBy: user?.id ?? null, updatedAt: now, updatedBy: user?.id ?? null },
+    };
+    this.releases = [...this.releases, release];
+    return this.latency.respond(release);
   }
 
   manifestFor(id: ReleaseBatchId): Observable<ReleaseManifest | null> {
@@ -399,6 +482,17 @@ export class MockReleaseRepository implements ReleaseRepository {
 
   /* ── internals ──────────────────────────────────────────────────────────── */
 
+  /** A session as planned, with its members counted as they stand (`DL-90`). */
+  private counted(
+    batch: Omit<ReleaseBatch, 'progress'>,
+    user: AuthenticatedUser | null,
+  ): ReleaseBatch {
+    const members = this.releases.filter(
+      (release) => batch.releaseIds.includes(release.id) && this.isReadable(release, user),
+    );
+    return { ...batch, progress: batchProgress(members) };
+  }
+
   private isReadable(release: Release, user: AuthenticatedUser | null): boolean {
     const beneficiary = this.residents.find(release.residentId);
     return (
@@ -491,21 +585,4 @@ function matchesFilter(release: Release, filter: ReleaseFilter): boolean {
     [release.referenceNumber, release.instrumentReference, release.remarks, release.inKindDescription],
     filter.search,
   );
-}
-
-function sortKey(release: Release, field: ReleaseSortField): string {
-  switch (field) {
-    case 'scheduledFor':
-      // Unscheduled sorts last rather than first: it is not more urgent than
-      // something with a date, it simply has none.
-      return release.scheduledFor ?? '9999-12-31';
-    case 'status':
-      return release.status;
-    case 'amount':
-      // Padded so string ordering matches numeric ordering, and goods sort
-      // together at the bottom rather than as zero-value money.
-      return String(release.amount?.centavos ?? 0).padStart(12, '0');
-    case 'referenceNumber':
-      return release.referenceNumber;
-  }
 }

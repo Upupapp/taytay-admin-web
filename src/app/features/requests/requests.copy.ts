@@ -272,6 +272,9 @@ export const REQUESTS_COPY = {
     readinessClear: 'Nothing outstanding.',
 
     moveHeading: 'Move this request on',
+    payoutMoves:
+      'Scheduled and released are recorded with the payout: the request moves when its release is scheduled into a payout session, and again when it is handed over.',
+    prepareRelease: 'Prepare the release',
     moved: 'The request has been moved.',
     failed: 'That change could not be recorded.',
   },

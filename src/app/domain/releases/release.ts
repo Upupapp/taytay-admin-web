@@ -9,7 +9,8 @@ import type {
   StaffUserId,
 } from '../shared/ids';
 import { sumMoney, ZERO_PESOS, type Money } from '../shared/money';
-import type { StatusCatalog, StatusTransitions } from '../shared/status';
+import type { Permission } from '../access/permission';
+import { nextStatuses, type StatusCatalog, type StatusTransitions } from '../shared/status';
 
 export type PayoutMethod = 'cash' | 'check' | 'e-wallet' | 'bank-transfer' | 'in-kind';
 
@@ -119,6 +120,45 @@ export const RELEASE_STATUS_TRANSITIONS: StatusTransitions<ReleaseStatus> = {
   completed: [],
   voided: [],
 };
+
+/**
+ * The key a move **into** each status needs, as the API checks it: voiding is its own grant, what
+ * happens at the table is the releasing officer's, and the rest is scheduling.
+ */
+export const RELEASE_TRANSITION_PERMISSIONS: Readonly<Record<ReleaseStatus, Permission>> = {
+  'for-release': 'release.schedule',
+  scheduled: 'release.schedule',
+  released: 'release.release',
+  claimed: 'release.release',
+  unclaimed: 'release.schedule',
+  deferred: 'release.release',
+  'needs-correction': 'release.schedule',
+  completed: 'release.schedule',
+  voided: 'release.void',
+};
+
+/**
+ * Moves that are their own act, never a bare status change: handing over names the officer, a
+ * receipt says how it was evidenced, and a deferral says what the office got wrong (`DL-94`).
+ */
+export const RELEASE_OWN_ACTS: readonly ReleaseStatus[] = ['released', 'claimed', 'deferred'];
+
+/**
+ * The status moves a person holding these keys may make on this release. Back to `scheduled` only
+ * for a release already in a payout session: a schedule with no date and no place is not one a
+ * family can be told about.
+ */
+export function statusMovesFor(
+  release: Release,
+  holds: (permission: Permission) => boolean,
+): readonly ReleaseStatus[] {
+  return nextStatuses(RELEASE_STATUS_TRANSITIONS, release.status).filter(
+    (to) =>
+      !RELEASE_OWN_ACTS.includes(to) &&
+      holds(RELEASE_TRANSITION_PERMISSIONS[to]) &&
+      (to !== 'scheduled' || release.batchId !== null),
+  );
+}
 
 /** Something actually reached the beneficiary. */
 export function isReleased(status: ReleaseStatus): boolean {
@@ -272,6 +312,59 @@ export function sumReleased(releases: readonly Release[]): Money {
     .filter((release) => isReleased(release.status) && release.amount !== null)
     .map((release) => release.amount as Money);
   return amounts.length === 0 ? ZERO_PESOS : sumMoney(amounts);
+}
+
+/**
+ * What the office states when it prepares a release for an approved request.
+ *
+ * The person, the barangay and who approved are the request's, read by the data layer, never typed
+ * here. A money release states an amount and no goods; an in-kind release describes the goods and
+ * states no amount (`DL-93`). Nothing here names an account: the funding source is a label the office
+ * was given (`DL-89`).
+ */
+export interface ReleaseDraft {
+  readonly requestId: AssistanceRequestId;
+  readonly kind: ReleaseKind;
+  readonly method: PayoutMethod;
+  readonly amount: Money | null;
+  readonly inKindDescription: string | null;
+  readonly fundingSourceLabel: string | null;
+  readonly approvingReference: string | null;
+  readonly remarks: string | null;
+}
+
+export type ReleaseDraftProblem =
+  | 'money-needs-an-amount'
+  | 'money-is-not-goods'
+  | 'goods-need-a-description'
+  | 'goods-carry-no-amount'
+  | 'method-does-not-match-kind';
+
+/** The draft's own coherence, before anything is sent. The server refuses the same. */
+export function releaseDraftProblems(draft: ReleaseDraft): readonly ReleaseDraftProblem[] {
+  const problems: ReleaseDraftProblem[] = [];
+  if (draft.kind === 'money') {
+    if (draft.amount === null || draft.amount.centavos <= 0 || !Number.isInteger(draft.amount.centavos)) {
+      problems.push('money-needs-an-amount');
+    }
+    if (draft.inKindDescription !== null) {
+      problems.push('money-is-not-goods');
+    }
+    if (draft.method === 'in-kind') {
+      problems.push('method-does-not-match-kind');
+    }
+  } else {
+    if ((draft.inKindDescription ?? '').trim().length === 0) {
+      problems.push('goods-need-a-description');
+    }
+    if (draft.amount !== null) {
+      problems.push('goods-carry-no-amount');
+    }
+    if (draft.method !== 'in-kind') {
+      problems.push('method-does-not-match-kind');
+    }
+  }
+  return problems;
 }
 
 export interface ReleaseFilter {

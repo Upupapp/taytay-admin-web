@@ -96,7 +96,7 @@ import type {
   DeferralReason,
   Release,
   ReleaseFilter,
-  ReleaseSortField,
+  ReleaseDraft,
   ReleaseStatus,
 } from '../releases/release';
 import type {
@@ -1023,10 +1023,11 @@ export const FIELD_VISIT_REPOSITORY = new InjectionToken<FieldVisitRepository>(
  * retry a new key, and a new key is a new intent (`TAB 08` step 3).
  */
 export interface ReleaseRepository {
-  list(
-    filter: ReleaseFilter,
-    page: PageRequest<ReleaseSortField>,
-  ): Observable<Page<Release>>;
+  /**
+   * One cursor page, newest prepared first. A list somebody browses: the screen says more exist,
+   * never "page 1 of N" (`DL-161`).
+   */
+  list(filter: ReleaseFilter, page: CursorRequest): Observable<CursorPage<Release>>;
   getById(id: ReleaseId): Observable<Release | null>;
   listForRequest(id: AssistanceRequestId): Observable<readonly Release[]>;
   /** The release queue, ordered by what the office must act on first. */
@@ -1039,6 +1040,13 @@ export interface ReleaseRepository {
   getBatch(id: ReleaseBatchId): Observable<ReleaseBatch | null>;
   /** Schedules releases into a payout session. Each stays individually tracked. */
   createBatch(draft: ReleaseBatchDraft, intent: WriteIntent): Observable<ReleaseBatch>;
+
+  /**
+   * What is to be handed over for an approved request: an amount or the goods, how, and the label
+   * and reference the office was given. The request's person and approver are the data layer's to
+   * read, never the screen's to state.
+   */
+  prepare(draft: ReleaseDraft, intent: WriteIntent): Observable<Release>;
 
   /**
    * The printable payout list. Composed by the data layer from the batch, so a

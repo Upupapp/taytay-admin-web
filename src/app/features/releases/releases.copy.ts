@@ -13,7 +13,9 @@ export const RELEASES_COPY = {
     batches: 'Payout sessions',
 
     search: 'Search',
-    searchPlaceholder: 'Voucher, reference or remarks',
+    // The API searches reference numbers only (`DL-109`): saying more would promise a match on
+    // words it never reads.
+    searchPlaceholder: 'Release or request number',
     status: 'Status',
     allStatuses: 'Any status',
     kind: 'What is released',
@@ -37,10 +39,53 @@ export const RELEASES_COPY = {
     goods: 'Goods',
     notScheduled: 'Not scheduled',
 
+    shown: (count: number) => `${count} shown, newest prepared first.`,
+    moreAvailable: 'More are available, and the groups above count only what is shown.',
+    noMore: 'That is every release matching these filters.',
+    showMore: 'Show more',
+    loadingMore: 'Loading more…',
+    moreFailed:
+      'The next releases could not be loaded. The ones above are still correct; try again.',
+
     emptyHeading: 'Nothing to release',
     emptyMessage: 'Approved requests appear here once they are ready to be paid out.',
     noResultsHeading: 'No releases match those filters',
     noResultsMessage: 'Try a wider status, or clear the filters.',
+  },
+
+  prepare: {
+    title: 'Prepare a release',
+    subtitle: 'What the office hands over for an approved request, before it is scheduled.',
+    back: 'Back to releases',
+    notFoundHeading: 'That request is not available',
+    notFoundMessage:
+      'It may not exist, or it may be outside what your account reads. Open the release from the request’s record.',
+    requestHeading: 'For the request',
+    requested: 'Asked for:',
+    existingUnread:
+      'The releases already recorded for this request could not be read, so no new one is offered: a second payout prepared by mistake is one somebody may hand over.',
+    existingHeading: 'This request already has a release',
+    existingMessage:
+      'One payout per request at a time. Open it to schedule or record it, or void it before preparing another.',
+    notApproved:
+      'A release is prepared for an approved request. This one is not approved, so nothing is offered here.',
+    formHeading: 'What is handed over',
+    kind: 'Money or goods',
+    amount: 'Amount, in pesos',
+    amountHint: 'Up to two decimal places. It is kept as whole centavos, never rounded.',
+    method: 'How it is paid',
+    goods: 'The goods',
+    goodsHint: 'Say what is handed over. Goods are counted, never given a peso value.',
+    fundingSource: 'Funding source',
+    fundingSourceHint: 'The label the office was given. Nothing here posts to an account.',
+    approvingReference: 'Approval reference',
+    remarks: 'Remarks',
+    boundaryNotice:
+      'This records what the office will hand over. It is not the accounting system and posts nothing to it.',
+    prepare: 'Prepare the release',
+    preparing: 'Preparing…',
+    prepared: 'Release prepared. Schedule it into a payout session next.',
+    failed: 'The release was not prepared. Nothing was recorded; try again.',
   },
 
   detail: {
@@ -66,6 +111,9 @@ export const RELEASES_COPY = {
       'This screen records what the office handed over. It is not the accounting system and posts nothing to it.',
 
     selfReleaseHeading: 'Check before you release',
+
+    moveHeading: 'Move this release on',
+    moved: 'Release moved.',
 
     releaseHeading: 'Record the release',
     instrument: 'Cheque, e-wallet or receipt number',

@@ -18,13 +18,16 @@ import {
   asId,
   canTransition,
   isSelfRelease,
+  statusMovesFor,
   type AcknowledgementKind,
   type DeferralReason,
   type Release,
   type ReleaseId,
+  type ReleaseStatus,
   type StaffUserId,
   WriteIntent,
 } from '@domain/index';
+import { StatusTransition, type StatusTransitionRequest } from '@shared/cases/status-transition';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -49,7 +52,7 @@ import { RELEASES_COPY } from './releases.copy';
 @Component({
   selector: 'app-release-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, PageHeader, PesoPipe, RouterLink, StatusBadge],
+  imports: [AsyncContent, DatePipe, PageHeader, PesoPipe, RouterLink, StatusBadge, StatusTransition],
   templateUrl: './release-detail-page.html',
   styleUrl: './release-detail-page.scss',
 })
@@ -63,6 +66,7 @@ export class ReleaseDetailPage {
 
   protected readonly copy = RELEASES_COPY.detail;
   protected readonly statusCatalog = RELEASE_STATUS_CATALOG;
+  protected readonly transitions = RELEASE_STATUS_TRANSITIONS;
   protected readonly selfReleaseWarning = SELF_RELEASE_WARNING;
 
   protected readonly deferralReasons = Object.keys(
@@ -125,6 +129,33 @@ export class ReleaseDetailPage {
       canTransition(RELEASE_STATUS_TRANSITIONS, release.status, 'deferred')
     );
   });
+
+  /**
+   * Every other move — unclaimed, needing correction, back on the schedule, completed, voided — with
+   * a reason, under the key the move needs. Handing over, a receipt and a deferral are their own
+   * acts above.
+   */
+  protected readonly permittedMoves = computed<readonly ReleaseStatus[]>(() => {
+    const release = this.release();
+    return release === null
+      ? []
+      : statusMovesFor(release, (permission) => this.permissions.has(permission));
+  });
+
+  protected onTransition(event: StatusTransitionRequest<ReleaseStatus>): void {
+    const action = `status:${event.to}`;
+    void this.run(
+      this.repository.changeStatus(
+        asId<ReleaseId>(this.id()),
+        event.to,
+        event.reason,
+        this.intentFor(action),
+      ),
+      this.copy.moved,
+      () => undefined,
+      action,
+    );
+  }
 
   protected kindLabel(release: Release): string {
     return RELEASE_KIND_LABELS[release.kind];

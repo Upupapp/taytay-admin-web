@@ -41,6 +41,7 @@ import {
   ASSISTANCE_STATUS_CATALOG,
   PROGRAM_REPOSITORY,
   ASSISTANCE_STATUS_TRANSITIONS,
+  PAYOUT_RECORDED_STATUSES,
   EMPTY_ADVISORY,
   REQUIREMENT_STATUS_CATALOG,
   RESIDENT_REPOSITORY,
@@ -403,8 +404,16 @@ export class AssessmentPage {
 
 
   protected permittedMoves(status: AssistanceRequestStatus): readonly AssistanceRequestStatus[] {
-    return nextStatuses(ASSISTANCE_STATUS_TRANSITIONS, status).filter((to) =>
-      this.permissions.has(permissionForTransition(to)),
+    return nextStatuses(ASSISTANCE_STATUS_TRANSITIONS, status).filter(
+      (to) =>
+        !PAYOUT_RECORDED_STATUSES.includes(to) && this.permissions.has(permissionForTransition(to)),
+    );
+  }
+
+  /** An approved request's payout is prepared on the release, by whoever schedules payouts. */
+  protected canPrepareRelease(status: AssistanceRequestStatus): boolean {
+    return (
+      (status === 'approved' || status === 'scheduled') && this.permissions.has('release.schedule')
     );
   }
 

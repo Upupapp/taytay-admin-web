@@ -26,7 +26,8 @@ const AUGUST_BATCH = asId<ReleaseBatchId>('rbt-0001');
  * what stops a session reading as "released" while somebody in it went home
  * with nothing.
  */
-export const MOCK_RELEASE_BATCHES: readonly ReleaseBatch[] = [
+/** Sessions as planned. What each amounts to is counted from its members when read (`DL-90`). */
+export const MOCK_RELEASE_BATCHES: readonly Omit<ReleaseBatch, 'progress'>[] = [
   {
     id: AUGUST_BATCH,
     referenceNumber: 'RB-2026-0014',

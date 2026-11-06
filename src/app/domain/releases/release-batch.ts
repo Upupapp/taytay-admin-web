@@ -35,6 +35,12 @@ export interface ReleaseBatch {
   /** Who is running the table. The releasing officer for the session. */
   readonly officerId: StaffUserId;
   readonly releaseIds: readonly ReleaseId[];
+  /**
+   * What the session amounts to, **counted from its members as they stand** — never a state of its
+   * own. The mock counts through `batchProgress`; the API counts the same way on every read and
+   * stores nothing (`DL-90`, `DL-180`).
+   */
+  readonly progress: BatchProgress;
   readonly notes: string | null;
   /** Set when the office closes the session, whatever happened in it. */
   readonly closedAt: IsoDateTime | null;

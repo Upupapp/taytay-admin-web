@@ -1,8 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { map, switchMap } from 'rxjs';
+import { switchMap, tap } from 'rxjs';
 
 import {
   RELEASE_REPOSITORY,
@@ -10,7 +17,9 @@ import {
   RELEASE_KIND_LABELS,
   isReleaseOpen,
   isReleased,
+  type CursorPage,
   type Release,
+  type ReleaseFilter,
   type ReleaseStatus,
   type ReleaseKind,
 } from '@domain/index';
@@ -24,11 +33,11 @@ import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import { RELEASES_COPY } from './releases.copy';
 
 /**
- * Bucketed rather than paged, so the whole working set is fetched at once. A
- * municipal office does not hold more open releases than this, and the cap is
- * stated rather than implicit.
+ * Read a cursor page at a time, newest prepared first, as the API pages it (`DL-161`). The buckets
+ * sort what has been read, and the screen says when more exist rather than letting a bucket read
+ * as complete.
  */
-const LIST_LIMIT = 300;
+const PAGE_SIZE = 50;
 
 /**
  * The release queue.
@@ -48,6 +57,7 @@ const LIST_LIMIT = 300;
 })
 export class ReleaseListPage {
   private readonly repository = inject(RELEASE_REPOSITORY);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly copy = RELEASES_COPY.list;
   protected readonly statusCatalog = RELEASE_STATUS_CATALOG;
@@ -68,29 +78,72 @@ export class ReleaseListPage {
    */
   private readonly settledSearch = debouncedTerm(this.search);
 
-  private readonly query = computed(() => ({
+  private readonly query = computed<ReleaseFilter>(() => ({
     ...(this.settledSearch() ? { search: this.settledSearch() } : {}),
     ...(this.status() ? { status: this.status() as ReleaseStatus } : {}),
     ...(this.kind() ? { kind: this.kind() as ReleaseKind } : {}),
     ...(this.openOnly() ? { openOnly: true } : {}),
   }));
 
+  /** Further pages of the reading the first page began; emptied whenever the filter changes. */
+  private readonly further = signal<readonly CursorPage<Release>[]>([]);
+  protected readonly loadingMore = signal(false);
+  protected readonly moreFailed = signal(false);
+
   protected readonly state = toSignal(
     toObservable(this.query).pipe(
+      tap(() => {
+        this.further.set([]);
+        this.moreFailed.set(false);
+        this.loadingMore.set(false);
+      }),
       switchMap((filter) =>
-        toViewState(
-          this.repository
-            .list(filter, { page: 1, pageSize: LIST_LIMIT })
-            .pipe(map((page) => page.items)),
-        ),
+        toViewState(this.repository.list(filter, { limit: PAGE_SIZE, cursor: null })),
       ),
     ),
-    { initialValue: LOADING as ViewState<readonly Release[]> },
+    { initialValue: LOADING as ViewState<CursorPage<Release>> },
   );
 
-  protected readonly releases = computed<readonly Release[]>(
-    () => valueOf(this.state()) ?? [],
+  protected readonly releases = computed<readonly Release[]>(() => [
+    ...(valueOf(this.state())?.items ?? []),
+    ...this.further().flatMap((page) => page.items),
+  ]);
+
+  private readonly lastPage = computed(
+    () => this.further().at(-1) ?? valueOf(this.state()) ?? null,
   );
+
+  protected readonly hasMore = computed(() => {
+    const last = this.lastPage();
+    return last !== null && last.hasMore && last.nextCursor !== null;
+  });
+
+  /** Follows the cursor one page further, for the filter the first page was read with. */
+  protected showMore(): void {
+    const cursor = this.lastPage()?.nextCursor ?? null;
+    if (cursor === null || this.loadingMore()) {
+      return;
+    }
+    const filter = this.query();
+    this.loadingMore.set(true);
+    this.moreFailed.set(false);
+    this.repository
+      .list(filter, { limit: PAGE_SIZE, cursor })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (page) => {
+          // The filter changed meanwhile: this page continues a list nobody is looking at.
+          if (filter === this.query()) {
+            this.further.update((pages) => [...pages, page]);
+          }
+          this.loadingMore.set(false);
+        },
+        error: () => {
+          this.loadingMore.set(false);
+          this.moreFailed.set(true);
+        },
+      });
+  }
 
   /** What the office itself must fix before anybody can be paid. */
   protected readonly needsOffice = computed(() =>

@@ -351,7 +351,7 @@ export const routes: Routes = [
       },
       {
         path: 'releases',
-        // `sessions` must precede `:id`, or it is read as a release id.
+        // `sessions` and `prepare` must precede `:id`, or each is read as a release id.
         children: [
           {
             path: '',
@@ -367,6 +367,17 @@ export const routes: Routes = [
             canActivate: [servedGuard('release'), permissionGuard('release.view')],
             loadComponent: () =>
               import('@features/releases/payout-session-page').then((m) => m.PayoutSessionPage),
+          },
+          {
+            // Reached from an approved request's record, with `?request=`.
+            path: 'prepare',
+            title: 'Prepare a release — Taytay Social Welfare',
+            canActivate: [
+              servedGuard('release', 'assistance-request'),
+              permissionGuard('release.schedule'),
+            ],
+            loadComponent: () =>
+              import('@features/releases/release-prepare-page').then((m) => m.ReleasePreparePage),
           },
           {
             path: ':id',

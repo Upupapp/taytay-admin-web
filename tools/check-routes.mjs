@@ -290,7 +290,7 @@ for (const [pattern, what] of [
  * the owner); never raise it. Raising it means
  * a screen that worked against the API has stopped.
  */
-const UNSERVED_CEILING = 11;
+const UNSERVED_CEILING = 10;
 
 if (unservedBindings.length > UNSERVED_CEILING) {
   failures.push(

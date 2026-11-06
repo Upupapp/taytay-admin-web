@@ -198,6 +198,20 @@ import {
   type CaseTaskId,
   type CaseWorkspace,
   type IsoDate,
+  type DeferralReason,
+  type Release,
+  type ReleaseAcknowledgementDraft,
+  type ReleaseBatch,
+  type ReleaseBatchDraft,
+  type ReleaseBatchId,
+  type ReleaseDraft,
+  type ReleaseFilter,
+  type ReleaseId,
+  type ReleaseManifest,
+  type ReleaseRepository,
+  type ReleaseStatus,
+  type WriteIntent,
+  releaseDraftProblems,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -206,6 +220,19 @@ import type { IdentityGrant, IdentityPort } from './identity/identity.model';
 import { IdentityProvider } from './identity/identity.provider';
 import { invalidCredentials, signInUnavailable } from './identity/sign-in-messages';
 import { toServerIdentity } from './mappers/me.mapper';
+import {
+  RELEASE_REASON_MIN_LENGTH,
+  toRelease,
+  toReleaseApprover,
+  toReleaseBatch,
+  toReleaseManifest,
+  toWireReleaseAcknowledgement,
+  toWireReleaseBatchOpen,
+  toWireReleaseDeferral,
+  toWireReleaseHandOver,
+  toWireReleasePrepare,
+  toWireReleaseStatus,
+} from './mappers/release.mapper';
 import { toNotification } from './mappers/notification.mapper';
 import {
   toAccountBarangay,
@@ -3139,4 +3166,249 @@ function readCaseAssignee(wire: unknown): SocialWorker {
     );
   }
   return worker;
+}
+
+/* ── releases (casework phase 4, `DL-180`) ───────────────────────────────────────────────────── */
+
+/**
+ * Releases and payout sessions against `office/releases` and `office/release-batches`.
+ *
+ * **This is not the treasury system** (`DL-89`): it reads and writes what the office scheduled,
+ * handed over and got acknowledged, and nothing here posts anywhere. Every money write forwards the
+ * intent the screen holds, as `idempotency_key` in its body, so a retry of the same act replays the
+ * first answer rather than paying a second time (`check:money`). The payout list is composed by the
+ * server (`DL-92`), and who approved is read from the server's record of the request (`DL-91`).
+ */
+@Injectable()
+export class HttpReleaseRepository implements ReleaseRepository {
+  private readonly api = inject(ApiClient);
+
+  list(filter: ReleaseFilter, page: CursorRequest): Observable<CursorPage<Release>> {
+    const refusal = releaseSearchProblem(filter);
+    if (refusal !== null) {
+      return throwError(() => refusal);
+    }
+    return this.api
+      .cursorPage(API_ENDPOINTS.officeReleases, page, {
+        q: releaseSearchOf(filter),
+        status: filter.status,
+        kind: filter.kind,
+        method: filter.method,
+        batch_id: filter.batchId,
+        resident_id: filter.residentId,
+        scheduled_from: filter.scheduledFrom,
+        scheduled_to: filter.scheduledTo,
+        open_only: filter.openOnly === true ? 'true' : undefined,
+      })
+      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readRelease) })));
+  }
+
+  /** `null` for "not found **or** not yours": the server answers both with a 404 (`DL-31`). */
+  getById(id: ReleaseId): Observable<Release | null> {
+    return this.api
+      .optionalItem(`${API_ENDPOINTS.officeReleases}/${id}`)
+      .pipe(map((wire) => (wire === null ? null : readRelease(wire))));
+  }
+
+  /** Every release for one request, whole, or an error (`DL-161`). */
+  listForRequest(id: AssistanceRequestId): Observable<readonly Release[]> {
+    return this.api
+      .everyPage(API_ENDPOINTS.officeReleases, { request_id: id })
+      .pipe(map((rows) => rows.map(readRelease)));
+  }
+
+  /** Every open release, whole, in the order the server says the office acts on them. */
+  queue(filter: ReleaseFilter): Observable<readonly Release[]> {
+    const refusal = releaseSearchProblem(filter);
+    if (refusal !== null) {
+      return throwError(() => refusal);
+    }
+    return this.api
+      .list(`${API_ENDPOINTS.officeReleases}/queue`, {
+        q: releaseSearchOf(filter),
+        status: filter.status,
+        kind: filter.kind,
+        method: filter.method,
+        batch_id: filter.batchId,
+        resident_id: filter.residentId,
+        scheduled_from: filter.scheduledFrom,
+        scheduled_to: filter.scheduledTo,
+      })
+      .pipe(map((rows) => rows.map(readRelease)));
+  }
+
+  /** Read from the server's record of the request's approval, kept on the release (`DL-91`). */
+  approverFor(id: ReleaseId): Observable<StaffUserId | null> {
+    return this.api
+      .optionalItem(`${API_ENDPOINTS.officeReleases}/${id}`)
+      .pipe(map((wire) => (wire === null ? null : toReleaseApprover(wire))));
+  }
+
+  listBatches(): Observable<readonly ReleaseBatch[]> {
+    return this.api
+      .list(API_ENDPOINTS.officeReleaseBatches)
+      .pipe(map((rows) => rows.map(readReleaseBatch)));
+  }
+
+  getBatch(id: ReleaseBatchId): Observable<ReleaseBatch | null> {
+    return this.api
+      .optionalItem(`${API_ENDPOINTS.officeReleaseBatches}/${id}`)
+      .pipe(map((wire) => (wire === null ? null : readReleaseBatch(wire))));
+  }
+
+  createBatch(draft: ReleaseBatchDraft, intent: WriteIntent): Observable<ReleaseBatch> {
+    return this.api
+      .post(API_ENDPOINTS.officeReleaseBatches, toWireReleaseBatchOpen(draft, intent))
+      .pipe(map(readWrittenBatch));
+  }
+
+  prepare(draft: ReleaseDraft, intent: WriteIntent): Observable<Release> {
+    if (releaseDraftProblems(draft).length > 0) {
+      return throwError(
+        () =>
+          new Error(
+            'Money needs an amount and no goods; goods need a description and no amount. Nothing was sent.',
+          ),
+      );
+    }
+    return this.api
+      .post(API_ENDPOINTS.officeReleases, toWireReleasePrepare(draft, intent))
+      .pipe(map(readWrittenRelease));
+  }
+
+  /** Composed by the server from the session; a screen never assembles one (`DL-92`). */
+  manifestFor(id: ReleaseBatchId): Observable<ReleaseManifest | null> {
+    return this.api
+      .optionalItem(`${API_ENDPOINTS.officeReleaseBatches}/${id}/manifest`)
+      .pipe(map((wire) => (wire === null ? null : readManifest(wire))));
+  }
+
+  markReleased(
+    id: ReleaseId,
+    instrumentReference: string | null,
+    remarks: string | null,
+    intent: WriteIntent,
+  ): Observable<Release> {
+    return this.api
+      .post(
+        `${API_ENDPOINTS.officeReleases}/${id}/release`,
+        toWireReleaseHandOver(instrumentReference, remarks, intent),
+      )
+      .pipe(map(readWrittenRelease));
+  }
+
+  acknowledge(
+    id: ReleaseId,
+    acknowledgement: ReleaseAcknowledgementDraft,
+    intent: WriteIntent,
+  ): Observable<Release> {
+    return this.api
+      .post(
+        `${API_ENDPOINTS.officeReleases}/${id}/acknowledgement`,
+        toWireReleaseAcknowledgement(acknowledgement, intent),
+      )
+      .pipe(map(readWrittenRelease));
+  }
+
+  deferRelease(
+    id: ReleaseId,
+    reason: DeferralReason,
+    remarks: string,
+    intent: WriteIntent,
+  ): Observable<Release> {
+    if (remarks.trim().length === 0) {
+      return throwError(() => new Error('Say what happened when they came. Nothing was sent.'));
+    }
+    return this.api
+      .post(
+        `${API_ENDPOINTS.officeReleases}/${id}/deferral`,
+        toWireReleaseDeferral(reason, remarks, intent),
+      )
+      .pipe(map(readWrittenRelease));
+  }
+
+  changeStatus(
+    id: ReleaseId,
+    to: ReleaseStatus,
+    reason: string,
+    intent: WriteIntent,
+  ): Observable<Release> {
+    if (reason.trim().length < RELEASE_REASON_MIN_LENGTH) {
+      return throwError(
+        () =>
+          new Error(`Say why, in ${RELEASE_REASON_MIN_LENGTH} characters or more. Nothing was sent.`),
+      );
+    }
+    return this.api
+      .post(`${API_ENDPOINTS.officeReleases}/${id}/status`, toWireReleaseStatus(to, reason, intent))
+      .pipe(map(readWrittenRelease));
+  }
+}
+
+/** The search the server takes: part of a release or request number, or none (`DL-109`). */
+function releaseSearchOf(filter: ReleaseFilter): string | undefined {
+  const search = filter.search?.trim() ?? '';
+  return search === '' ? undefined : search;
+}
+
+function releaseSearchProblem(filter: ReleaseFilter): Error | null {
+  const search = filter.search?.trim() ?? '';
+  return search !== '' && (search.length < 2 || search.length > 40)
+    ? new Error('Type between 2 and 40 characters of a release or request number to search.')
+    : null;
+}
+
+function readRelease(wire: unknown): Release {
+  const release = toRelease(wire);
+  if (release === null) {
+    throw new Error(
+      'A release from the server could not be read, so none is shown rather than some: a payout ' +
+        'left out of the list is one nobody follows up.',
+    );
+  }
+  return release;
+}
+
+function readWrittenRelease(wire: unknown): Release {
+  const release = toRelease(wire);
+  if (release === null) {
+    throw new Error(
+      'The server recorded the act, but its answer could not be read. Open the release again to ' +
+        'see it before recording anything twice.',
+    );
+  }
+  return release;
+}
+
+function readReleaseBatch(wire: unknown): ReleaseBatch {
+  const batch = toReleaseBatch(wire);
+  if (batch === null) {
+    throw new Error(
+      'A payout session could not be read, so none is shown: a session missing from the list is ' +
+        'one a family was told to attend.',
+    );
+  }
+  return batch;
+}
+
+function readWrittenBatch(wire: unknown): ReleaseBatch {
+  const batch = toReleaseBatch(wire);
+  if (batch === null) {
+    throw new Error(
+      'The server opened the session, but its answer could not be read. Read the sessions again ' +
+        'before opening another.',
+    );
+  }
+  return batch;
+}
+
+function readManifest(wire: unknown): ReleaseManifest {
+  const manifest = toReleaseManifest(wire);
+  if (manifest === null) {
+    throw new Error(
+      'The payout list could not be read whole, so none is shown: a list with somebody missing is ' +
+        'one a person is turned away from.',
+    );
+  }
+  return manifest;
 }

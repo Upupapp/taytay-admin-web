@@ -7225,3 +7225,129 @@ Phase 3 of the casework (`docs/integration/node-api-migration.md`). Backend `tay
 
 The backend's own test compares its case lifecycle, transition keys, categories, queues,
 thresholds, task kinds and event kinds with this console's domain files (11/11).
+
+## DL-180 — releases are served: payouts in centavos, sessions counted from their members, the request moving with them
+
+Phase 4 of the casework (`docs/integration/node-api-migration.md`). Backend `taytay-backend`
+`da22eec`; the spec vendored here is its.
+
+### What the server now decides
+
+- **It is not the treasury system** (`DL-89`). No ledger, journal, account code, bank or posting
+  date in the tables, the routes or the spec; a body carrying anything else is refused.
+  `funding_source_label` is a label and `approving_reference` a document reference.
+- **Money is integer centavos, and goods are counted, never valued** (`DL-93`). An integer column; a
+  decimal point is refused, never rounded. A money release has an amount and no goods; an in-kind
+  release has a description, method `in-kind` and no amount, and the table refuses either half
+  wrong. A session's progress and a payout list's total are of the money only, beside a count of
+  goods.
+- **A release follows approval.** It is prepared (`release.schedule`) only for an approved request,
+  one at a time — another only once the first is voided. Its person, barangay and approver are read
+  from the request, the approver from the request's own history (the last move into `approved`) and
+  kept on the release.
+- **Every act appends an event in the same transaction** (`DL-54`'s rule, applied to money). The
+  event's trigger alone moves the release, along the console's transitions; nothing is updated in
+  place or deleted, and a release without its `prepared` event, or a session with nobody in it, is
+  refused at commit. Each act is an `office_release.*` audit row.
+- **The request moves with its payout, through its own lifecycle.** Scheduling a release into a
+  session appends `approved → scheduled` to the request's history, and recording the hand-over
+  appends `scheduled → released` — never a write to its status. The request's own status route still
+  refuses both moves (409); completing the request stays its own move (`request.close`).
+- **A session has no status** (`DL-90`): a plan kept as opened, its progress counted from the
+  members on every read. Opening one schedules each member individually, and is **refused whole**
+  if any member cannot be scheduled — a session never quietly leaves somebody out.
+- **Deferred is the office's; unclaimed is nobody's** (`DL-94`): a deferral takes one of the fixed
+  office reasons and what happened; unclaimed is a status move with a reason and no guess.
+- **Self-release warns, never blocks** (`DL-91`): every read says whether the reader approved the
+  request (`would_self_release`); a hand-over by the approver is recorded (`self_release`) and
+  audited `office_release.self_released`, and goes ahead.
+- **The payout list is composed by the server** (`DL-92`): a name as the registry lists it to the
+  reader (surname and an initial for a protected person), the reference masked to its last four
+  characters, what is handed over, a blank acknowledgement column; voided releases left off;
+  composing it audited.
+- **Every money write carries `idempotency_key` in its body.** The same key and body replay the first
+  answer; the same key with anything else is 409. A refused or invalid write claims no key.
+
+### Decisions made here
+
+1. **The key travels in the body, not in an `Idempotency-Key` header.** `check:money` asked for the
+   API to "honour the key and allow it across origins"; allowing a fifth request header is widening
+   the CORS policy, which `CLAUDE.md` §2.5 forbids. In the body it needs no CORS change, and the
+   screens already hold one intent per act across retries. A replay answers the record **as it
+   stands now**, not a stored copy of the first response.
+2. **Preparing a release is its own act, with its own screen** (`/releases/prepare?request=`),
+   reached from an approved request's record by whoever holds `release.schedule`. Nothing in the
+   console created a release before (the mock was seeded), and approving records no granted amount
+   (`approvedAmount` is still not served), so the office states the amount or the goods here. The
+   port gains `prepare(draft, intent)`, a sixth money write.
+3. **What was prepared is kept as prepared.** A wrong amount, method or label is not edited: the
+   release is moved to `needs-correction` or voided, and a new one prepared once it is voided.
+4. **Back to `scheduled` keeps a release in its session** and is refused to one never in a session;
+   a deferred or unclaimed payout may instead be put into a **new** session, which moves it there.
+   A session's members are the releases in it now, so one moved on leaves the old session's count.
+5. **A request whose payout is under way can still be cancelled or expire** on its own route; the
+   release then refuses to be handed over (409) and is voided. The request route does not check for
+   an open release.
+6. **Payouts are refused to a caseload**, and read under the barangay scope of the request. No
+   social worker or barangay link holds a release key today.
+7. **A session is opened by the officer who will run it** — the API takes the officer from the
+   sign-in, as the console already said — and the API keeps **no close** of a session (`closedAt` is
+   always null): closing says nothing about who was paid.
+8. **Numbers**: releases `RL-YYYY-NNNNNN`, sessions `RB-YYYY-NNNN`, from the municipality's year.
+
+### What the console now does
+
+- `HttpReleaseRepository` serves every method of the port through `release.mapper.ts`; every money
+  write hands the screen's intent to its `toWire…` mapper, which writes `idempotency_key: intent.key`.
+  `release` leaves `UNSERVED_PORTS` (ten remain): **Releases is in the menu** against the API.
+- The port reads the list **a cursor page at a time** (no sort, no page numbers); the list page keeps
+  its buckets over what has been read, offers "Show more", and says that more exist and that the
+  groups count only what is shown. Search is reference numbers only, as the API searches.
+- `ReleaseBatch` carries `progress`, counted from its members — by the server over HTTP, by
+  `batchProgress` in the mock — and the session page says `describeBatch(batch.progress)` instead of
+  counting a page of releases it happened to hold. Its picker reads the queue whole (`DL-161`) and
+  offers only releases that can move to `scheduled`.
+- **Fixed:** the session page held one intent for its lifetime, so a second session opened on the
+  same visit would have sent the first one's key. It now takes a new intent once a session is
+  recorded.
+- The release record offers the remaining moves — unclaimed, needs correction, back on the schedule,
+  completed, voided — through `StatusTransition`, under the key each needs (`statusMovesFor`); the
+  hand-over, the receipt and a deferral stay their own acts. The request record no longer offers
+  `scheduled` or `released` (`PAYOUT_RECORDED_STATUSES`), says why, and links to preparing the
+  release.
+- The mock follows: cursor paging, `prepare` with the approver from the request's history and one
+  release per request, and sessions counted as read.
+- The platform audit trail words the nine `office_release*` codes.
+
+### For the owner
+
+- Decision 1 — the key in the body rather than a header (and a replay answering the record as it is
+  now).
+- Decision 2 — whether approval should record a **granted amount** that the release may not exceed;
+  today the release states it and nothing compares the two.
+- Decision 3 — whether a prepared release needs a **correction** act rather than void-and-prepare.
+- Decision 5 — whether cancelling or expiring a request should be **refused while its release is
+  open**.
+- Whether a session needs a **close** (decision 7), and whether completing a release should also
+  complete its request (it does not; `request.close` is the head's).
+- Programme **utilization** and the resident's **assistance history** can now be counted from
+  releases; neither is served yet, and both still say they are not connected.
+
+### The checks it had to satisfy
+
+| Check | Change | Result |
+| --- | --- | --- |
+| `check:money` | rule 1 restored for a served port: every money write takes its intent and hands it to the mapper, every money mapper writes `idempotency_key: intent.key`, no adapter mints one; `prepare` added. Planted regressions (a mapper without the key, an adapter minting one) both fail it | 6 writes |
+| `check:releases` | `prepare` held to the permission check in the mock | passed |
+| `check:contract-drift` | vendored `da22eec` | 188 operations (was 176) |
+| `check:routes` | unserved ceiling lowered 11 → 10 | 36 endpoints, 145 composed requests (was 34, 133); 10 of 33 ports unrouted |
+| `check:unserved` | `release` served; the prepare route guards `release` and `assistance-request` | 10 unserved, 66 routed screens |
+| `check:response-shape` | the release reads | 72/72 (was 64/64) |
+| `check:wire-adoption` | every release body through a `toWire…` | 84/84 (was 78/78) |
+| `check:port-adoption` | `listForRequest` reached by the prepare page; baseline rewritten | 8 of 227 unreached (was 9 of 226) |
+| `check:query-params` | the release list and queue filters | 71 reads (was 63) |
+| `check:consumer-contract` | regenerated | 128 interactions, 682 required fields (was 122, 668) |
+| `check:permission-parity` | the release routes' keys | 0 of 60 disagree |
+
+The backend's own test compares its release statuses, labels, transitions, methods, kinds, deferral
+reasons, receipt kinds and the manifest notice with this console's domain files.

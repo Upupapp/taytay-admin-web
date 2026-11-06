@@ -1,0 +1,38 @@
+{
+  "data": {
+    "batch_id": "d1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f01",
+    "batch_reference": "RB-2026-0003",
+    "title": "Tuesday payout",
+    "scheduled_for": "2026-11-10",
+    "venue": "Municipal hall, ground floor",
+    "officer_name": "Rodel Santos",
+    "lines": [
+      {
+        "position": 1,
+        "beneficiary_name": "Payout, S.",
+        "masked_reference": "••••0014",
+        "kind": "money",
+        "amount_centavos": 250000,
+        "goods": null,
+        "method": "cash",
+        "acknowledgement_kind": null
+      },
+      {
+        "position": 2,
+        "beneficiary_name": "Payout, Pack Reyes",
+        "masked_reference": "••••0016",
+        "kind": "in-kind",
+        "amount_centavos": null,
+        "goods": "Family food pack: 5 kg rice, canned goods, coffee",
+        "method": "in-kind",
+        "acknowledgement_kind": null
+      }
+    ],
+    "money_line_count": 1,
+    "in_kind_line_count": 1,
+    "money_total_centavos": 250000,
+    "prepared_at": "2026-11-09T23:00:00.000Z",
+    "handling_notice": "This list contains personal information protected under RA 10173. Keep it with the releasing officer, do not photograph or copy it, and return it to the MSWDO when the payout closes."
+  },
+  "meta": {}
+}

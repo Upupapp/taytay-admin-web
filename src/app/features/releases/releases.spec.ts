@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { firstValueFrom, of, type Observable } from 'rxjs';
@@ -10,8 +10,11 @@ import { MockReleaseRepository } from '@data/mock/mock-release.repository';
 import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
 import {
   ACCESS_CONTEXT,
+  ASSISTANCE_REQUEST_REPOSITORY,
   RELEASE_REPOSITORY,
   NOTIFICATION_REPOSITORY,
+  asIsoDateTime,
+  type AssistanceRequestId,
   STAFF_REPOSITORY,
   asId,
   emptyPage,
@@ -29,6 +32,9 @@ import type { AppEnvironment } from '@env/environment.model';
 import { PayoutSessionPage } from './payout-session-page';
 import { ReleaseDetailPage } from './release-detail-page';
 import { ReleaseListPage } from './release-list-page';
+import { ReleasePreparePage } from './release-prepare-page';
+import { RELEASES_COPY } from './releases.copy';
+import { MockAssistanceRequestStore } from '@data/mock/mock-assistance-request.store';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
   name: 'local-mock',
@@ -104,6 +110,15 @@ async function configure(user: StaffUser): Promise<void> {
       { provide: STAFF_REPOSITORY, useValue: staffRepository(user) },
       { provide: RELEASE_REPOSITORY, useClass: MockReleaseRepository },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
+      {
+        provide: ASSISTANCE_REQUEST_REPOSITORY,
+        useFactory: () => {
+          const store = inject(MockAssistanceRequestStore);
+          return {
+            getById: (id: string) => of(store.requests.find((entry) => entry.id === id) ?? null),
+          };
+        },
+      },
     ],
   });
   await firstValueFrom(TestBed.inject(SessionStore).load());
@@ -406,5 +421,65 @@ describe('an unclaimed payout', () => {
   it('stays open so somebody follows it up', async () => {
     const element = html(await openDetail(UNCLAIMED));
     expect(element.textContent).toContain('Social worker to follow up');
+  });
+});
+
+/* ── Preparing a release (DL-180) ─────────────────────────────────────────── */
+
+describe('preparing a release for an approved request', () => {
+  const APPROVED = 'req-9001';
+
+  async function openPrepare(requestId: string): Promise<ComponentFixture<ReleasePreparePage>> {
+    await configure(staffUser('release-officer'));
+    const store = TestBed.inject(MockAssistanceRequestStore);
+    const template = store.requests[0];
+    if (template !== undefined && !store.requests.some((entry) => entry.id === APPROVED)) {
+      store.requests = [
+        ...store.requests,
+        {
+          ...template,
+          id: asId<AssistanceRequestId>(APPROVED),
+          status: 'approved',
+          statusHistory: [
+            ...template.statusHistory,
+            {
+              from: 'endorsed',
+              to: 'approved',
+              reason: 'Within the ceiling.',
+              actorId: asId<StaffUserId>('staff-head'),
+              actorName: 'Head',
+              occurredAt: asIsoDateTime(new Date('2026-11-01T00:00:00.000Z')),
+            },
+          ],
+        },
+      ];
+    }
+    const fixture = TestBed.createComponent(ReleasePreparePage);
+    fixture.componentRef.setInput('request', requestId);
+    await fixture.whenStable();
+    return fixture;
+  }
+
+  it('records money as whole centavos, with the approver read from the request', async () => {
+    const fixture = await openPrepare(APPROVED);
+    const page = fixture.componentInstance as unknown as {
+      amountText: { set: (value: string) => void };
+      prepare: () => Promise<void>;
+    };
+    page.amountText.set('1,500.50');
+    await page.prepare();
+    const prepared = await firstValueFrom(
+      TestBed.inject(RELEASE_REPOSITORY).listForRequest(asId<AssistanceRequestId>(APPROVED)),
+    );
+    expect(prepared).toHaveLength(1);
+    expect(prepared[0]?.amount?.centavos).toBe(150_050);
+    expect(prepared[0]?.approvedBy).toBe('staff-head');
+    expect(prepared[0]?.status).toBe('for-release');
+  });
+
+  it('offers no second form for a request that already has a release', async () => {
+    const element = html(await openPrepare('req-0003'));
+    expect(element.textContent).toContain(RELEASES_COPY.prepare.existingHeading);
+    expect(element.querySelector('.btn--primary')).toBeNull();
   });
 });

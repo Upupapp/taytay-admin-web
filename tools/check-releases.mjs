@@ -369,6 +369,7 @@ for (const method of [
   'listBatches',
   'getBatch',
   'createBatch',
+  'prepare',
   'manifestFor',
   'markReleased',
   'acknowledge',

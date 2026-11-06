@@ -14,7 +14,6 @@ import {
   UnservedGovernanceRepository,
   UnservedNewsfeedRepository,
   UnservedReferralRepository,
-  UnservedReleaseRepository,
   UnservedReportRepository,
   UnservedSearchRepository,
   UnservedWorkRepository,
@@ -157,8 +156,7 @@ describe('the http adapter set', () => {
   const adapters = [
     UnservedBeneficiaryRepository,
     UnservedFieldVisitRepository,
-    UnservedReleaseRepository,
-    UnservedReferralRepository,
+      UnservedReferralRepository,
     UnservedWorkRepository,
     UnservedReportRepository,
     UnservedSearchRepository,

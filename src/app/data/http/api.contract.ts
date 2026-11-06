@@ -237,6 +237,16 @@ export const API_ENDPOINTS = {
    * the workspace. Redacted for the reader by the server.
    */
   officeCases: 'office/cases',
+  /**
+   * Releases (casework phase 4, `DL-180`): cursor-paged, newest prepared first, by `q` (part of a
+   * release or request reference), `status`, `kind`, `method`, `batch_id`, `resident_id`,
+   * `request_id`, `scheduled_from`, `scheduled_to`, `open_only`; `queue`, every open release whole;
+   * one by `{id}`; `POST` to prepare one; `{id}/release`, `{id}/acknowledgement`, `{id}/deferral`
+   * and `{id}/status`. Every write carries `idempotency_key` in its body.
+   */
+  officeReleases: 'office/releases',
+  /** Payout sessions (`DL-180`): whole, counted from their members; `POST` to open; `{id}/manifest`. */
+  officeReleaseBatches: 'office/release-batches',
   /** The open social-worker accounts a request can be assigned to (`DL-178`, `request.assess`). */
   officeSocialWorkers: 'office/social-workers',
   /** The published assessment forms, current versions, answered whole (`DL-178`). */

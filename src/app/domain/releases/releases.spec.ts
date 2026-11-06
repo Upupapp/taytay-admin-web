@@ -25,6 +25,11 @@ import {
   type ResidentId,
   type ResidentView,
   type StaffUserId,
+  RELEASE_OWN_ACTS,
+  releaseDraftProblems,
+  statusMovesFor,
+  type AssistanceRequestId,
+  type ReleaseBatchId,
 } from '@domain/index';
 
 const TODAY = asIsoDate('2026-08-01');
@@ -396,5 +401,47 @@ describe('a released payout cannot return to a payout list', () => {
     // the office nothing it legitimately does.
     expect(RELEASE_STATUS_TRANSITIONS.scheduled).toContain('unclaimed');
     expect(RELEASE_STATUS_TRANSITIONS.unclaimed).toContain('scheduled');
+  });
+});
+
+/* ── Preparing a release, and the moves a person may make (DL-180) ──────── */
+
+describe('a release prepared for an approved request', () => {
+  const draft = {
+    requestId: asId<AssistanceRequestId>('req-0001'),
+    kind: 'money' as const,
+    method: 'cash' as const,
+    amount: pesos(1500),
+    inKindDescription: null,
+    fundingSourceLabel: null,
+    approvingReference: null,
+    remarks: null,
+  };
+
+  it('takes money with an amount and goods with a description, never the other way round', () => {
+    expect(releaseDraftProblems(draft)).toEqual([]);
+    expect(releaseDraftProblems({ ...draft, amount: null })).toContain('money-needs-an-amount');
+    expect(
+      releaseDraftProblems({ ...draft, kind: 'in-kind', method: 'in-kind', amount: null, inKindDescription: 'Rice' }),
+    ).toEqual([]);
+    expect(
+      releaseDraftProblems({ ...draft, kind: 'in-kind', method: 'in-kind', inKindDescription: 'Rice' }),
+    ).toContain('goods-carry-no-amount');
+    expect(releaseDraftProblems({ ...draft, method: 'in-kind' })).toContain('method-does-not-match-kind');
+  });
+
+  it('offers no bare move into an act of its own, voids only with its key, reschedules only in a session', () => {
+    const scheduled = release({ status: 'scheduled', batchId: asId<ReleaseBatchId>('rbt-0001') });
+    const head = (permission: string) =>
+      ['release.view', 'release.schedule', 'release.void'].includes(permission);
+    const officer = (permission: string) =>
+      ['release.view', 'release.schedule', 'release.release'].includes(permission);
+    expect(statusMovesFor(scheduled, head)).toEqual(['unclaimed', 'needs-correction', 'voided']);
+    expect(statusMovesFor(scheduled, officer)).not.toContain('voided');
+    for (const own of RELEASE_OWN_ACTS) {
+      expect(statusMovesFor(scheduled, () => true)).not.toContain(own);
+    }
+    const corrected = { ...scheduled, status: 'needs-correction' as const, batchId: null };
+    expect(statusMovesFor(corrected, head)).not.toContain('scheduled');
   });
 });

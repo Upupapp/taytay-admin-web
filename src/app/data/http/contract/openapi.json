@@ -6951,6 +6951,1072 @@
           }
         }
       }
+    },
+    "/api/v1/office/releases": {
+      "get": {
+        "operationId": "listOfficeReleases",
+        "summary": "List releases",
+        "description": "Needs release.view, and is refused to a caseload. Newest prepared first, a page at a time; no total is sent.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "open_only",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "Leave out completed and voided releases."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 40
+            },
+            "description": "Part of the release’s or the request’s reference number. Nothing else is searched."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeReleaseStatus"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeReleaseKind"
+            }
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficePayoutMethod"
+            }
+          },
+          {
+            "name": "batch_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resident_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "scheduled_from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "scheduled_to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of releases.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReleaseListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or a caseload (assigned-cases), which payouts are refused to.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The query could not be validated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "prepareOfficeRelease",
+        "summary": "Prepare a release for an approved request",
+        "description": "Needs release.schedule. States what is handed over: a money release an amount in integer centavos and no goods, an in-kind release a description and no amount (goods are counted, never valued). The person, barangay and approver are read from the request; the approver is whoever last moved it to approved, kept for the self-release warning. One release per request at a time: another is prepared only once the first is voided. Nothing here posts to an account.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeReleasePrepare"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The release, for release. A replay answers the release the key first prepared.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReleaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or a caseload (assigned-cases), which payouts are refused to.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such request, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The request is not approved, already has a release that is not voided, or the key was used for something else.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/releases/queue": {
+      "get": {
+        "operationId": "listOfficeReleaseQueue",
+        "summary": "The release queue",
+        "description": "Needs release.view. Every open release, whole: what the office got wrong first (needs correction, deferred), then soonest scheduled.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 40
+            },
+            "description": "Part of the release’s or the request’s reference number. Nothing else is searched."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeReleaseStatus"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficeReleaseKind"
+            }
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OfficePayoutMethod"
+            }
+          },
+          {
+            "name": "batch_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resident_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "request_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "scheduled_from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "scheduled_to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every open release, in the order the office acts on them.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReleaseQueueEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or a caseload (assigned-cases), which payouts are refused to.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The query could not be validated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/releases/{id}": {
+      "get": {
+        "operationId": "getOfficeRelease",
+        "summary": "One release, with its history",
+        "description": "Needs release.view. Not found and not this reader’s read the same (404). Says who approved the request and whether this reader did (would_self_release), so the warning comes before the money moves.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The release.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReleaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or a caseload (assigned-cases), which payouts are refused to.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such release, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/releases/{id}/release": {
+      "post": {
+        "operationId": "releaseOfficeRelease",
+        "summary": "Record the hand-over",
+        "description": "Needs release.release. A scheduled release is recorded as handed over by the officer signed in, and the request behind it moves from scheduled to released in the same transaction. When that officer approved the request, the record says so (self_release) and the audit trail carries office_release.self_released; it is never refused (DL-91).",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeReleaseHandOver"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The release, released.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReleaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or a caseload (assigned-cases), which payouts are refused to.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such release, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The move is not on the release lifecycle, the request behind it is not where the act starts, or the idempotency key was used for something else. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/releases/{id}/acknowledgement": {
+      "post": {
+        "operationId": "acknowledgeOfficeRelease",
+        "summary": "Record the receipt",
+        "description": "Needs release.release. How the beneficiary’s receipt was evidenced. Somebody collecting for them presents their authority, which is required.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeReleaseAcknowledgement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The release, claimed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReleaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or a caseload (assigned-cases), which payouts are refused to.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such release, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The move is not on the release lifecycle, the request behind it is not where the act starts, or the idempotency key was used for something else. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/releases/{id}/deferral": {
+      "post": {
+        "operationId": "deferOfficeRelease",
+        "summary": "Record a deferral",
+        "description": "Needs release.release. The beneficiary came and the office could not release. The reason is from a fixed list, every entry the office’s own; a family that did not come is unclaimed, through the status move, with no reason guessed.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeReleaseDeferral"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The release, deferred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReleaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or a caseload (assigned-cases), which payouts are refused to.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such release, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The move is not on the release lifecycle, the request behind it is not where the act starts, or the idempotency key was used for something else. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/releases/{id}/status": {
+      "post": {
+        "operationId": "moveOfficeRelease",
+        "summary": "Move a release",
+        "description": "The key is the status moved into: voided needs release.void, every other move release.schedule. Handing over, a receipt and a deferral are their own acts and refused here (409). Moving back to scheduled keeps the release in its session and is refused to a release that was never in one. The reason is kept on the event and shown as the release’s remarks.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeReleaseStatusChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The release, moved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReleaseEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or a caseload (assigned-cases), which payouts are refused to.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such release, or not this reader’s to see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The move is not on the release lifecycle, the request behind it is not where the act starts, or the idempotency key was used for something else. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/release-batches": {
+      "get": {
+        "operationId": "listOfficeReleaseBatches",
+        "summary": "List payout sessions",
+        "description": "Needs release.view. Every session, newest date first, whole. A session has no status of its own: each carries counts of its members as they stand, derived on every read.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every payout session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReleaseBatchListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or a caseload (assigned-cases), which payouts are refused to.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "openOfficeReleaseBatch",
+        "summary": "Open a payout session",
+        "description": "Needs release.schedule. A date (today or later), a place and the releases planned for it; the officer is whoever opens it. Each member is scheduled individually and keeps its own status, and the request behind each moves from approved to scheduled in the same transaction. Refused whole when any member cannot be scheduled: a session never quietly leaves somebody out.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeReleaseBatchOpen"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The session, with its members counted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReleaseBatchEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or a caseload (assigned-cases), which payouts are refused to.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A named release does not exist or is not this reader’s.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A member is already on a session, cannot be scheduled from where it is, or its request is not approved; or the key was used for something else.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body could not be validated. Nothing was written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/release-batches/{id}": {
+      "get": {
+        "operationId": "getOfficeReleaseBatch",
+        "summary": "One payout session",
+        "description": "Needs release.view.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReleaseBatchEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or a caseload (assigned-cases), which payouts are refused to.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/release-batches/{id}/manifest": {
+      "get": {
+        "operationId": "getOfficeReleaseManifest",
+        "summary": "The payout list for a session",
+        "description": "Needs release.view. Composed here, because it leaves the building (DL-92): each line a name as the registry lists it to this reader (surname and an initial for a protected person), the release reference masked to its last four characters, what is handed over and a blank acknowledgement column. No birth date, address, sector, PhilSys digits or reason for the assistance. Voided releases are left off. Goods are counted, never valued: the total is of the money lines. Composing it is audited (office_release_batch.manifest_composed).",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The payout list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReleaseManifestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key, or a caseload (assigned-cases), which payouts are refused to.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -13272,6 +14338,961 @@
             "minLength": 8,
             "maxLength": 1000,
             "description": "Why, in 8 characters or more (the console’s CASE_REASON_MIN_LENGTH). Kept on the event."
+          }
+        }
+      },
+      "OfficeReleaseStatus": {
+        "type": "string",
+        "enum": [
+          "for-release",
+          "scheduled",
+          "released",
+          "claimed",
+          "unclaimed",
+          "deferred",
+          "needs-correction",
+          "completed",
+          "voided"
+        ]
+      },
+      "OfficeReleaseKind": {
+        "type": "string",
+        "enum": [
+          "money",
+          "in-kind"
+        ]
+      },
+      "OfficePayoutMethod": {
+        "type": "string",
+        "enum": [
+          "cash",
+          "check",
+          "e-wallet",
+          "bank-transfer",
+          "in-kind"
+        ]
+      },
+      "OfficeDeferralReason": {
+        "type": "string",
+        "enum": [
+          "funds-not-yet-released-to-office",
+          "approving-signature-missing",
+          "identification-mismatch",
+          "voucher-error",
+          "office-closed"
+        ],
+        "description": "Every reason is the office’s own."
+      },
+      "OfficeAcknowledgementKind": {
+        "type": "string",
+        "enum": [
+          "signature",
+          "thumbprint",
+          "representative",
+          "digital"
+        ]
+      },
+      "OfficeRelease": {
+        "type": "object",
+        "required": [
+          "id",
+          "reference_number",
+          "request_id",
+          "request_reference_number",
+          "request_status",
+          "resident_id",
+          "status",
+          "kind",
+          "method",
+          "amount_centavos",
+          "in_kind_description",
+          "funding_source_label",
+          "approving_reference",
+          "approved_by",
+          "approved_by_name",
+          "would_self_release",
+          "batch_id",
+          "scheduled_for",
+          "released_at",
+          "released_by",
+          "released_by_name",
+          "self_release",
+          "acknowledgement",
+          "deferral_reason",
+          "instrument_reference",
+          "remarks",
+          "created_at",
+          "created_by",
+          "updated_at",
+          "updated_by"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference_number": {
+            "type": "string",
+            "description": "RL-YYYY-NNNNNN, issued when the release is prepared."
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "request_reference_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "request_status": {
+            "type": "string",
+            "description": "Where the request behind it stands."
+          },
+          "resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OfficeReleaseStatus"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/OfficeReleaseKind"
+          },
+          "method": {
+            "$ref": "#/components/schemas/OfficePayoutMethod"
+          },
+          "amount_centavos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Integer centavos for money; null for goods, which are counted, never valued."
+          },
+          "in_kind_description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What the goods are; null for money."
+          },
+          "funding_source_label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A label the office was given. It posts to nothing."
+          },
+          "approving_reference": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A document reference, not a link."
+          },
+          "approved_by": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Who moved the request to approved, read from its history when the release was prepared."
+          },
+          "approved_by_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "would_self_release": {
+            "type": "boolean",
+            "description": "This reader approved the request: the warning before the money moves. Never a refusal."
+          },
+          "batch_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "scheduled_for": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "released_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "released_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "released_by_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "self_release": {
+            "type": "boolean",
+            "description": "Handed over by the person who approved the request."
+          },
+          "acknowledgement": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "required": [
+              "kind",
+              "acknowledged_at",
+              "collected_by",
+              "authority"
+            ],
+            "properties": {
+              "kind": {
+                "$ref": "#/components/schemas/OfficeAcknowledgementKind"
+              },
+              "acknowledged_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "collected_by": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "authority": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "deferral_reason": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OfficeDeferralReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "instrument_reference": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cheque number, e-wallet reference or acknowledgement receipt number."
+          },
+          "remarks": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeReleaseEvent"
+            },
+            "description": "On the single read only: every act, oldest first."
+          }
+        }
+      },
+      "OfficeReleaseEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "from_status",
+          "to_status",
+          "reason",
+          "batch_id",
+          "scheduled_for",
+          "deferral_reason",
+          "acknowledgement_kind",
+          "self_release",
+          "actor_id",
+          "actor_name",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "prepared",
+              "scheduled",
+              "released",
+              "acknowledged",
+              "deferred",
+              "status-changed"
+            ]
+          },
+          "from_status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "to_status": {
+            "$ref": "#/components/schemas/OfficeReleaseStatus"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "batch_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "scheduled_for": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "deferral_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "acknowledgement_kind": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "self_release": {
+            "type": "boolean"
+          },
+          "actor_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "actor_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OfficeReleaseEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeRelease"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeReleaseListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeRelease"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "pagination": {
+                "$ref": "#/components/schemas/Pagination"
+              }
+            }
+          }
+        }
+      },
+      "OfficeReleaseQueueEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeRelease"
+            },
+            "description": "Every open release, whole."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeReleasePrepare": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "kind",
+          "method",
+          "amount_centavos",
+          "in_kind_description",
+          "funding_source_label",
+          "approving_reference",
+          "remarks",
+          "idempotency_key"
+        ],
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/OfficeReleaseKind"
+          },
+          "method": {
+            "$ref": "#/components/schemas/OfficePayoutMethod"
+          },
+          "amount_centavos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 2000000000,
+            "description": "Integer centavos for money; a decimal point is refused, never rounded. Null for goods."
+          },
+          "in_kind_description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "What the goods are. Required for in-kind, null for money."
+          },
+          "funding_source_label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "A label the office was given. It posts to nothing."
+          },
+          "approving_reference": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "A document reference."
+          },
+          "remarks": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The intent behind this money write, minted where the officer committed and held across retries. The same key and body replay the first answer; the same key with anything else is 409. Sent in the body: the CORS policy allows four request headers and is not widened."
+          }
+        }
+      },
+      "OfficeReleaseHandOver": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "instrument_reference",
+          "remarks",
+          "idempotency_key"
+        ],
+        "properties": {
+          "instrument_reference": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "remarks": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The intent behind this money write, minted where the officer committed and held across retries. The same key and body replay the first answer; the same key with anything else is 409. Sent in the body: the CORS policy allows four request headers and is not widened."
+          }
+        }
+      },
+      "OfficeReleaseAcknowledgement": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "collected_by",
+          "authority",
+          "idempotency_key"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/OfficeAcknowledgementKind"
+          },
+          "collected_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 160,
+            "description": "Who collected it, when that was not the beneficiary."
+          },
+          "authority": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Required for a representative."
+          },
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The intent behind this money write, minted where the officer committed and held across retries. The same key and body replay the first answer; the same key with anything else is 409. Sent in the body: the CORS policy allows four request headers and is not widened."
+          }
+        }
+      },
+      "OfficeReleaseDeferral": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason",
+          "remarks",
+          "idempotency_key"
+        ],
+        "properties": {
+          "reason": {
+            "$ref": "#/components/schemas/OfficeDeferralReason"
+          },
+          "remarks": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "What happened when they came."
+          },
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The intent behind this money write, minted where the officer committed and held across retries. The same key and body replay the first answer; the same key with anything else is 409. Sent in the body: the CORS policy allows four request headers and is not widened."
+          }
+        }
+      },
+      "OfficeReleaseStatusChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "to",
+          "reason",
+          "idempotency_key"
+        ],
+        "properties": {
+          "to": {
+            "$ref": "#/components/schemas/OfficeReleaseStatus"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 1000
+          },
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The intent behind this money write, minted where the officer committed and held across retries. The same key and body replay the first answer; the same key with anything else is 409. Sent in the body: the CORS policy allows four request headers and is not widened."
+          }
+        }
+      },
+      "OfficeReleaseBatchProgress": {
+        "type": "object",
+        "required": [
+          "total",
+          "released",
+          "acknowledged",
+          "outstanding",
+          "deferred",
+          "needs_correction",
+          "released_total_centavos"
+        ],
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "released": {
+            "type": "integer",
+            "description": "Handed over: released, claimed or completed."
+          },
+          "acknowledged": {
+            "type": "integer"
+          },
+          "outstanding": {
+            "type": "integer",
+            "description": "For release or scheduled."
+          },
+          "deferred": {
+            "type": "integer",
+            "description": "Deferred or unclaimed."
+          },
+          "needs_correction": {
+            "type": "integer"
+          },
+          "released_total_centavos": {
+            "type": "integer",
+            "description": "Money handed over, in centavos. Goods add nothing."
+          }
+        }
+      },
+      "OfficeReleaseBatch": {
+        "type": "object",
+        "required": [
+          "id",
+          "reference_number",
+          "title",
+          "scheduled_for",
+          "venue",
+          "officer_id",
+          "officer_name",
+          "notes",
+          "release_ids",
+          "progress",
+          "created_at",
+          "created_by"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference_number": {
+            "type": "string",
+            "description": "RB-YYYY-NNNN."
+          },
+          "title": {
+            "type": "string"
+          },
+          "scheduled_for": {
+            "type": "string",
+            "format": "date"
+          },
+          "venue": {
+            "type": "string",
+            "description": "A place people go, not a coordinate."
+          },
+          "officer_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Whoever opened the session runs the table."
+          },
+          "officer_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "release_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "progress": {
+            "$ref": "#/components/schemas/OfficeReleaseBatchProgress"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "No status, ever (DL-90): what a session amounts to is counted from its members."
+      },
+      "OfficeReleaseBatchEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeReleaseBatch"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeReleaseBatchListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeReleaseBatch"
+            }
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeReleaseBatchOpen": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "scheduled_for",
+          "venue",
+          "notes",
+          "release_ids",
+          "idempotency_key"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "scheduled_for": {
+            "type": "string",
+            "format": "date",
+            "description": "Today or later, on the municipality’s calendar."
+          },
+          "venue": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "release_ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 200,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The intent behind this money write, minted where the officer committed and held across retries. The same key and body replay the first answer; the same key with anything else is 409. Sent in the body: the CORS policy allows four request headers and is not widened."
+          }
+        }
+      },
+      "OfficeReleaseManifestLine": {
+        "type": "object",
+        "required": [
+          "position",
+          "beneficiary_name",
+          "masked_reference",
+          "kind",
+          "amount_centavos",
+          "goods",
+          "method",
+          "acknowledgement_kind"
+        ],
+        "properties": {
+          "position": {
+            "type": "integer"
+          },
+          "beneficiary_name": {
+            "type": "string",
+            "description": "As the registry lists the person to this reader."
+          },
+          "masked_reference": {
+            "type": "string",
+            "description": "The release reference, its last four characters."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/OfficeReleaseKind"
+          },
+          "amount_centavos": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "goods": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "method": {
+            "$ref": "#/components/schemas/OfficePayoutMethod"
+          },
+          "acknowledgement_kind": {
+            "type": "null",
+            "description": "Always blank: pre-filling it is how a sheet comes back signed for somebody who was never there."
+          }
+        }
+      },
+      "OfficeReleaseManifest": {
+        "type": "object",
+        "required": [
+          "batch_id",
+          "batch_reference",
+          "title",
+          "scheduled_for",
+          "venue",
+          "officer_name",
+          "lines",
+          "money_line_count",
+          "in_kind_line_count",
+          "money_total_centavos",
+          "prepared_at",
+          "handling_notice"
+        ],
+        "properties": {
+          "batch_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "batch_reference": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "scheduled_for": {
+            "type": "string",
+            "format": "date"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "officer_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeReleaseManifestLine"
+            }
+          },
+          "money_line_count": {
+            "type": "integer"
+          },
+          "in_kind_line_count": {
+            "type": "integer"
+          },
+          "money_total_centavos": {
+            "type": "integer",
+            "description": "The money lines only. Goods are counted, never valued."
+          },
+          "prepared_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "handling_notice": {
+            "type": "string",
+            "description": "The RA 10173 handling rule, printed on the sheet."
+          }
+        }
+      },
+      "OfficeReleaseManifestEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeReleaseManifest"
+          },
+          "meta": {
+            "type": "object"
           }
         }
       }

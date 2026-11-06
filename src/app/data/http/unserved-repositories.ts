@@ -4,7 +4,6 @@ import { throwError, type Observable } from 'rxjs';
 import {
   type BeneficiaryRepository,
   type FieldVisitRepository,
-  type ReleaseRepository,
   type ReferralRepository,
   type WorkRepository,
   type ReportRepository,
@@ -140,63 +139,6 @@ export class UnservedFieldVisitRepository implements FieldVisitRepository {
 
   close(): Observable<never> {
     return unserved('field visits');
-  }
-}
-
-@Injectable()
-export class UnservedReleaseRepository implements ReleaseRepository {
-  static readonly port: DataPort = 'release';
-
-  list(): Observable<never> {
-    return unserved('releases and payouts');
-  }
-
-  getById(): Observable<never> {
-    return unserved('releases and payouts');
-  }
-
-  listForRequest(): Observable<never> {
-    return unserved('releases and payouts');
-  }
-
-  queue(): Observable<never> {
-    return unserved('releases and payouts');
-  }
-
-  approverFor(): Observable<never> {
-    return unserved('releases and payouts');
-  }
-
-  listBatches(): Observable<never> {
-    return unserved('releases and payouts');
-  }
-
-  getBatch(): Observable<never> {
-    return unserved('releases and payouts');
-  }
-
-  createBatch(): Observable<never> {
-    return unserved('releases and payouts');
-  }
-
-  manifestFor(): Observable<never> {
-    return unserved('releases and payouts');
-  }
-
-  markReleased(): Observable<never> {
-    return unserved('releases and payouts');
-  }
-
-  acknowledge(): Observable<never> {
-    return unserved('releases and payouts');
-  }
-
-  deferRelease(): Observable<never> {
-    return unserved('releases and payouts');
-  }
-
-  changeStatus(): Observable<never> {
-    return unserved('releases and payouts');
   }
 }
 
@@ -479,7 +421,6 @@ export class UnservedDashboardRepository implements DashboardRepository {
 export const UNSERVED_HTTP_PORTS: readonly DataPort[] = [
   UnservedBeneficiaryRepository.port,
   UnservedFieldVisitRepository.port,
-  UnservedReleaseRepository.port,
   UnservedReferralRepository.port,
   UnservedWorkRepository.port,
   UnservedReportRepository.port,

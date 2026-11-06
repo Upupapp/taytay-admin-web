@@ -5,7 +5,8 @@ import { firstValueFrom, switchMap } from 'rxjs';
 
 import {
   RELEASE_REPOSITORY,
-  batchProgress,
+  RELEASE_STATUS_TRANSITIONS,
+  canTransition,
   describeBatch,
   type Release,
   type ReleaseBatch,
@@ -73,15 +74,19 @@ export class PayoutSessionPage {
     { initialValue: null as ReleaseManifest | null },
   );
 
-  /** Every release in every session, so a card can count its own members. */
+  /**
+   * The open releases, whole, to choose a session's members from (`DL-161`): a picker missing a
+   * release is one an officer concludes is not waiting. Read again after a session opens, because
+   * its members have moved.
+   */
   private readonly releases = toSignal(
-    this.repository.list({}, { page: 1, pageSize: 300 }),
-    { initialValue: null },
+    toObservable(this.reloads).pipe(switchMap(() => this.repository.queue({}))),
+    { initialValue: [] as readonly Release[] },
   );
 
   /* ── opening a session ──────────────────────────────────────────────────── */
 
-  private readonly intent = new WriteIntent();
+  private intent = new WriteIntent();
 
   protected readonly draftTitle = signal('');
   protected readonly draftVenue = signal('');
@@ -104,8 +109,8 @@ export class PayoutSessionPage {
    * one nobody has approved, would put a name on a payout list that should not be there.
    */
   protected readonly schedulable = computed(() =>
-    (this.releases()?.items ?? []).filter(
-      (release: Release) => release.status === 'for-release' || release.status === 'scheduled',
+    this.releases().filter((release: Release) =>
+      canTransition(RELEASE_STATUS_TRANSITIONS, release.status, 'scheduled'),
     ),
   );
 
@@ -183,6 +188,8 @@ export class PayoutSessionPage {
       this.draftVenue.set('');
       this.draftDate.set('');
       this.draftMembers.set([]);
+      // The session is recorded, so the next one opened here is a new intent, not a retry of this.
+      this.intent = new WriteIntent();
       this.reloads.update((n) => n + 1);
     } catch (failure: unknown) {
       this.notifications.error(
@@ -193,12 +200,9 @@ export class PayoutSessionPage {
     }
   }
 
+  /** Counted from the members as they stand, by whoever holds them; never a state (`DL-90`). */
   protected progressFor(batch: ReleaseBatch): string {
-    const all = this.releases()?.items ?? [];
-    const members = all.filter((release: Release) =>
-      batch.releaseIds.includes(release.id),
-    );
-    return describeBatch(batchProgress(members));
+    return describeBatch(batch.progress);
   }
 
   protected openManifest(batch: ReleaseBatch): void {

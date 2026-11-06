@@ -200,6 +200,22 @@
             </section>
           }
         }
+
+        <!-- Unclaimed is recorded here with a reason, and never a guess at why they did not come. -->
+        @if (permittedMoves().length > 0) {
+          <section class="card release__panel" aria-labelledby="release-status-heading">
+            <app-status-transition
+              idPrefix="release-status"
+              [heading]="copy.moveHeading"
+              [catalog]="statusCatalog"
+              [transitions]="transitions"
+              [current]="release.status"
+              [permitted]="permittedMoves()"
+              [busy]="saving()"
+              (confirmed)="onTransition($event)"
+            />
+          </section>
+        }
       </div>
     }
   </ng-template>
