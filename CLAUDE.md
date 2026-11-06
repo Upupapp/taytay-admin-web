@@ -415,8 +415,10 @@ carries no `isComplete`, `isEligible` or percentage-as-verdict, and
 decision. This is the fourth surface where a checklist could quietly become an
 eligibility engine, and the one where the temptation is strongest.
 
-**Document numbers are masked to their last four characters** by default, and
-opening a file is a separate grant (`document.download`) obtained through the
+**Document numbers are held as their last four characters only** (`DL-183`,
+superseding the masked full number): the server truncates on write, the database
+refuses anything longer, and there is no full-number grant. The file itself is the
+full evidence, and opening it is a separate grant (`document.download`) obtained through the
 data layer rather than a URL on the model — with a warning shown first, composed
 from what the server said rather than from a client-side guess.
 
