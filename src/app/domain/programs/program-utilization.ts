@@ -68,8 +68,13 @@ export interface ProgramUtilization {
   readonly programId: ProgramId;
   /** Releases made under this programme. `null` when the cell was too small to report. */
   readonly releaseCount: number | null;
-  /** What actually reached somebody. The number a report should quote. */
+  /** What actually reached somebody, in money. The number a report should quote. */
   readonly releasedTotal: Money | null;
+  /**
+   * Of `releaseCount`, the releases of goods: counted, never valued, so never in `releasedTotal`
+   * (`DL-93`). `null` when the cell was too small to report.
+   */
+  readonly goodsCount: number | null;
   /** True when the office record withheld the figures rather than reporting them. */
   readonly isWithheld: boolean;
 }
@@ -92,6 +97,8 @@ export function summariseUtilization(input: UtilizationInput): ProgramUtilizatio
       (running, release) => addMoney(running, release.amount),
       ZERO_PESOS,
     ),
+    // `UtilizationRelease` carries an amount: the goods this function is given are none.
+    goodsCount: 0,
     isWithheld: false,
   };
 }
@@ -126,11 +133,13 @@ export type ProgramUtilizationSummary =
   | { readonly kind: 'unavailable'; readonly because: string };
 
 /**
- * Why utilization could not be read — in the domain, because the data layer decides the answer is
- * unavailable and the sentence has to travel with that decision, or the list and the record word
- * the absence differently.
+ * Why utilization is not shown to this reader — in the domain, because the data layer decides the
+ * answer is unavailable and the sentence has to travel with that decision, or the list and the
+ * record word the absence differently.
+ *
+ * The figures are payouts, and the release list keeps payouts from this role; the dashboard withholds
+ * its payout figures from the same readers (`DL-182`, `DL-187`). The API sends the same sentence.
  */
-export const PROGRAM_UTILIZATION_NOT_CONNECTED =
-  'How much this programme has been used — releases made and what reached somebody — is not ' +
-  'connected yet: the office’s API does not serve releases, so none of it was read. This is not a ' +
-  'statement that the programme was never used.';
+export const PROGRAM_UTILIZATION_NOT_YOURS =
+  'How much a programme has been used is counted from payouts, and your role does not read payouts, ' +
+  'so these figures are not shown to you. This is not a statement that the programme was never used.';

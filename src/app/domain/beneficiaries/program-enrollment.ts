@@ -104,6 +104,16 @@ export interface ProgramEnrollment {
   readonly audit: AuditStamp;
 }
 
+/**
+ * Why a person's programme membership is not shown. The office's API records no enrollment yet, so
+ * the console cannot say whether somebody is on a continuing programme — and "not enrolled" would
+ * be a finding about the person rather than about the system (`DL-187`, `DL-112`).
+ */
+export const PROGRAMME_MEMBERSHIP_NOT_RECORDED =
+  'Programme membership is not recorded by the office’s system yet, so nobody is shown as a ' +
+  'programme member and the registry cannot be filtered by programme. This is not a statement that ' +
+  'this person is on no programme.';
+
 export function isCurrentEnrollment(enrollment: ProgramEnrollment): boolean {
   return enrollment.status !== 'exited';
 }

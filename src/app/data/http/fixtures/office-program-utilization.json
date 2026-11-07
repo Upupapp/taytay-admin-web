@@ -1,0 +1,22 @@
+{
+  "data": {
+    "readable": true,
+    "rows": [
+      {
+        "program_id": "4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f01",
+        "release_count": 12,
+        "released_centavos": 3600000,
+        "goods_count": 0,
+        "withheld": false
+      },
+      {
+        "program_id": "4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f02",
+        "release_count": 40,
+        "released_centavos": 0,
+        "goods_count": 40,
+        "withheld": false
+      }
+    ]
+  },
+  "meta": {}
+}

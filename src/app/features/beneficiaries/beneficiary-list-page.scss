@@ -115,6 +115,26 @@
   color: var(--c-text-subtle);
 }
 
+.beneficiaries__goods {
+  display: block;
+  color: var(--c-text-subtle);
+  font-size: 12px;
+}
+
+.beneficiaries__more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-base);
+  padding: var(--space-base);
+}
+
+.beneficiaries__problem {
+  margin: 0;
+  padding: 0 var(--space-base);
+  font-size: 13px;
+}
+
 .standing {
   font-size: 13px;
 }

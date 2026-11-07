@@ -122,6 +122,8 @@ export const RESIDENTS_COPY = {
     noReferrals: 'This resident has not been referred to a partner office.',
 
     totalReleased: 'Total released',
+    goodsReceived: (count: number): string =>
+      `+ ${count} ${count === 1 ? 'release' : 'releases'} of goods, counted rather than valued`,
     openCases: 'Open requests',
     lastActivity: 'Last activity',
     caseCount: 'Requests on file',

@@ -273,7 +273,11 @@ export interface MergePreview {
   readonly movingRequestCount: number;
   readonly movingReleaseCount: number;
   readonly movingCaseCount: number;
-  readonly movingEnrollmentCount: number;
+  /**
+   * `null` where programme membership is not recorded by the system of record: a count of nothing
+   * recorded is not a zero (`DL-187`).
+   */
+  readonly movingEnrollmentCount: number | null;
   /**
    * Records that would end up attached to the canonical person twice — the same
    * assistance counted once under each identity. Named rather than resolved:

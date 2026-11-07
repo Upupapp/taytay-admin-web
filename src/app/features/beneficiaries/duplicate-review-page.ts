@@ -1,24 +1,29 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { firstValueFrom, switchMap } from 'rxjs';
+import { firstValueFrom, switchMap, tap } from 'rxjs';
 
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   BENEFICIARY_REPOSITORY,
-  DEFAULT_PAGE_REQUEST,
   DUPLICATE_STRENGTH_LABELS,
   IDENTITY_VERDICT_LABELS,
   MATCH_ATTRIBUTE_LABELS,
-  emptyPage,
   isResolutionInvalid,
   resolutionProblems,
+  type CursorPage,
   type DuplicateCandidate,
   type IdentityResolutionDraft,
   type IdentityVerdict,
   type MergePreview,
-  type Page,
   type ResidentId,
 } from '@domain/index';
 import { IdentityComparison } from '@shared/beneficiaries/identity-comparison';
@@ -28,6 +33,9 @@ import { Drawer } from '@shared/ui/drawer/drawer';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { BENEFICIARIES_COPY } from './beneficiaries.copy';
+
+/** One cursor page of pairs at a time; "Show more" follows the cursor (`DL-161`). */
+const PAGE_SIZE = 20;
 
 /**
  * The duplicate-review queue.
@@ -55,6 +63,7 @@ import { BENEFICIARIES_COPY } from './beneficiaries.copy';
 export class DuplicateReviewPage {
   private readonly repository = inject(BENEFICIARY_REPOSITORY);
   private readonly notifications = inject(NotificationStore);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly copy = BENEFICIARIES_COPY.duplicates;
   protected readonly strengthLabels = DUPLICATE_STRENGTH_LABELS;
@@ -63,17 +72,63 @@ export class DuplicateReviewPage {
   /** Bumped after a finding, so the answered pair actually leaves the queue. */
   private readonly reloadToken = signal(0);
 
+  /** Further pages of the reading the first page began; emptied whenever the queue is read again. */
+  private readonly further = signal<readonly CursorPage<DuplicateCandidate>[]>([]);
+  protected readonly loadingMore = signal(false);
+  protected readonly moreFailed = signal(false);
+
   protected readonly state = toSignal(
     toObservable(this.reloadToken).pipe(
-      switchMap(() => toViewState(this.repository.duplicateQueue(DEFAULT_PAGE_REQUEST))),
+      tap(() => {
+        this.further.set([]);
+        this.moreFailed.set(false);
+        this.loadingMore.set(false);
+      }),
+      switchMap(() =>
+        toViewState(this.repository.duplicateQueue({ limit: PAGE_SIZE, cursor: null })),
+      ),
     ),
-    { initialValue: LOADING as ViewState<Page<DuplicateCandidate>> },
+    { initialValue: LOADING as ViewState<CursorPage<DuplicateCandidate>> },
   );
 
-  protected readonly queue = computed(
-    () => valueOf(this.state()) ?? emptyPage<DuplicateCandidate>(),
+  protected readonly rows = computed<readonly DuplicateCandidate[]>(() => [
+    ...(valueOf(this.state())?.items ?? []),
+    ...this.further().flatMap((page) => page.items),
+  ]);
+  private readonly lastPage = computed(
+    () => this.further().at(-1) ?? valueOf(this.state()) ?? null,
   );
-  protected readonly rows = computed(() => this.queue().items);
+  protected readonly hasMore = computed(() => {
+    const last = this.lastPage();
+    return last !== null && last.hasMore && last.nextCursor !== null;
+  });
+
+  /** Follows the cursor one page further, for the reading the first page began. */
+  protected showMore(): void {
+    const cursor = this.lastPage()?.nextCursor ?? null;
+    if (cursor === null || this.loadingMore()) {
+      return;
+    }
+    const reading = this.reloadToken();
+    this.loadingMore.set(true);
+    this.moreFailed.set(false);
+    this.repository
+      .duplicateQueue({ limit: PAGE_SIZE, cursor })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (page) => {
+          // The queue was read again meanwhile: this page continues a reading nobody is looking at.
+          if (reading === this.reloadToken()) {
+            this.further.update((pages) => [...pages, page]);
+          }
+          this.loadingMore.set(false);
+        },
+        error: () => {
+          this.loadingMore.set(false);
+          this.moreFailed.set(true);
+        },
+      });
+  }
 
   /* ── the open review ────────────────────────────────────────────────────── */
 

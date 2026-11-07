@@ -1,15 +1,11 @@
 import {
   BENEFICIARY_ROLES,
-  DEFAULT_PAGE_SIZE,
   TAYTAY_BARANGAYS,
   asIsoDate,
   type BarangayId,
   type BeneficiaryFilter,
   type BeneficiaryRole,
-  type BeneficiarySortField,
-  type PageRequest,
   type ProgramId,
-  type SortDirection,
 } from '@domain/index';
 
 /**
@@ -19,25 +15,17 @@ import {
  * That matters more here than on most screens: a date this parser silently
  * misread would produce a shorter history, and a shorter history reads as "this
  * family has had less help than they have".
+ *
+ * There is no page and no sort in it: the list follows a cursor from its first
+ * page, in the registry's own order (`DL-161`, `DL-187`).
  */
 export interface BeneficiaryQuery {
   readonly filter: BeneficiaryFilter;
-  readonly page: PageRequest<BeneficiarySortField>;
 }
 
 export interface ParamReader {
   get(name: string): string | null;
 }
-
-const SORT_FIELDS: readonly BeneficiarySortField[] = [
-  'name',
-  'barangay',
-  'lastAssistanceAt',
-  'totalReleased',
-  'assistanceEventCount',
-];
-
-export const DEFAULT_BENEFICIARY_SORT = { field: 'name', direction: 'asc' } as const;
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -102,32 +90,13 @@ export function readBeneficiaryFilter(params: ParamReader): BeneficiaryFilter {
   return filter;
 }
 
-export function readBeneficiaryPage(params: ParamReader): PageRequest<BeneficiarySortField> {
-  const page = Number.parseInt(params.get('page') ?? '', 10);
-  const sortParam = params.get('sort');
-  const directionParam = params.get('direction');
-
-  const field: BeneficiarySortField =
-    sortParam && (SORT_FIELDS as readonly string[]).includes(sortParam)
-      ? (sortParam as BeneficiarySortField)
-      : DEFAULT_BENEFICIARY_SORT.field;
-  const direction: SortDirection = directionParam === 'desc' ? 'desc' : 'asc';
-
-  return {
-    page: Number.isInteger(page) && page > 0 ? page : 1,
-    pageSize: DEFAULT_PAGE_SIZE,
-    sort: { field, direction },
-  };
-}
-
 export function readBeneficiaryQuery(params: ParamReader): BeneficiaryQuery {
-  return { filter: readBeneficiaryFilter(params), page: readBeneficiaryPage(params) };
+  return { filter: readBeneficiaryFilter(params) };
 }
 
 /**
- * The filter as bare query params — what a saved view stores. Page and sort are
- * excluded: "recipients in Dolores this year" is a population, not a scroll
- * position.
+ * The filter as bare query params — what a saved view stores: "recipients in
+ * Dolores this year" is a population, not a scroll position.
  */
 export function beneficiaryFilterParams(filter: BeneficiaryFilter): Record<string, string> {
   const params: Record<string, string> = {};

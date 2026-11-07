@@ -12,7 +12,7 @@ import {
   ACCESS_CONTEXT,
   NOTIFICATION_REPOSITORY,
   PROGRAM_REPOSITORY,
-  PROGRAM_UTILIZATION_NOT_CONNECTED,
+  PROGRAM_UTILIZATION_NOT_YOURS,
   STAFF_REPOSITORY,
   asId,
   emptyPage,
@@ -90,14 +90,14 @@ function staffRepository(user: StaffUser): StaffRepository {
 @Component({ template: 'stub' })
 class StubPage {}
 
-/** The catalogue as the API serves it: programmes read, utilization not (`DL-176`). */
+/** A reader whose role does not read payouts: programmes read, utilization not (`DL-187`). */
 class UnconnectedUtilization extends MockProgramRepository {
   override utilizationFor(): Observable<ProgramUtilizationReading> {
-    return of({ kind: 'unavailable', because: PROGRAM_UTILIZATION_NOT_CONNECTED });
+    return of({ kind: 'unavailable', because: PROGRAM_UTILIZATION_NOT_YOURS });
   }
 
   override utilizationSummary(): Observable<ProgramUtilizationSummary> {
-    return of({ kind: 'unavailable', because: PROGRAM_UTILIZATION_NOT_CONNECTED });
+    return of({ kind: 'unavailable', because: PROGRAM_UTILIZATION_NOT_YOURS });
   }
 }
 
@@ -360,13 +360,13 @@ describe('the data layer refuses a misrepresentation the form hid', () => {
   });
 });
 
-/* ── Utilization the API cannot count (`DL-176`) ─────────────────────────── */
+/* ── Utilization a reader's role does not read (`DL-187`) ────────────────── */
 
-describe('where releases are not served, utilization says so and shows no figure', () => {
+describe('where payouts are not the reader’s, utilization says so and shows no figure', () => {
   it('drops the two utilization columns from the list and says why above it', async () => {
     const fixture = await openList('mswdo-head', UnconnectedUtilization);
     const element = html(fixture);
-    expect(element.textContent).toContain('not connected yet');
+    expect(element.textContent).toContain('your role does not read payouts');
     expect(element.textContent).toContain('not a statement that the programme was never used');
     const headers = [...element.querySelectorAll('th')].map((cell) => cell.textContent?.trim());
     expect(headers).not.toContain('Releases');
@@ -375,10 +375,19 @@ describe('where releases are not served, utilization says so and shows no figure
     expect(element.textContent).toContain('Medical Assistance');
   });
 
+  it('is withheld by the data layer from a role that does not read payouts', async () => {
+    const element = html(await openDetail(AICS_MEDICAL, 'intake-officer'));
+    const usage = element.querySelector('[aria-labelledby="usage-heading"]');
+    expect(usage?.querySelector('[role="note"]')?.textContent?.trim()).toBe(
+      PROGRAM_UTILIZATION_NOT_YOURS,
+    );
+    expect(usage?.querySelector('dl')).toBeNull();
+  });
+
   it('shows the sentence on the record in place of the figures, and no zero', async () => {
     const element = html(await openDetail(AICS_MEDICAL, 'mswdo-head', UnconnectedUtilization));
     const usage = element.querySelector('[aria-labelledby="usage-heading"]');
-    expect(usage?.textContent).toContain(PROGRAM_UTILIZATION_NOT_CONNECTED);
+    expect(usage?.textContent).toContain(PROGRAM_UTILIZATION_NOT_YOURS);
     expect(usage?.querySelector('dl')).toBeNull();
     expect(usage?.textContent).not.toContain('Nothing has been handed over');
   });

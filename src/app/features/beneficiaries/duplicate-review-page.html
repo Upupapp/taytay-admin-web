@@ -55,6 +55,24 @@
             }
           </tbody>
         </table>
+        <div class="review__more">
+          <p class="review__hint" role="status">
+            {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
+          </p>
+          @if (hasMore()) {
+            <button
+              type="button"
+              class="btn btn--secondary"
+              [disabled]="loadingMore()"
+              (click)="showMore()"
+            >
+              {{ loadingMore() ? copy.loadingMore : copy.showMore }}
+            </button>
+          }
+          @if (moreFailed()) {
+            <p class="review__problem" role="alert">{{ copy.moreFailed }}</p>
+          }
+        </div>
       }
     </ng-template>
   </app-async-content>
@@ -154,7 +172,8 @@
               </div>
               <div class="preview__item">
                 <dt>{{ copy.previewEnrollments }}</dt>
-                <dd>{{ summary.movingEnrollmentCount }}</dd>
+                <!-- Not recorded is not zero (`DL-187`). -->
+                <dd>{{ summary.movingEnrollmentCount ?? copy.previewNotRecorded }}</dd>
               </div>
             </dl>
 

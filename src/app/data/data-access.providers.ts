@@ -43,6 +43,7 @@ import {
 import {
   HttpAppAccountRepository,
   HttpCaseRepository,
+  HttpBeneficiaryRepository,
   HttpDashboardRepository,
   HttpReleaseRepository,
   HttpReferralRepository,
@@ -71,7 +72,6 @@ import {
 } from './http/http-repositories';
 import { identitySignInMethod } from './http/identity/identity.provider';
 import {
-  UnservedBeneficiaryRepository,
   UnservedEventRepository,
   UnservedGovernanceRepository,
   UnservedNewsfeedRepository,
@@ -113,7 +113,8 @@ import {
  * the office's resident registry (`DL-174`), its household register, families and saved views
  * (casework phase 1c), its programme catalogue (`DL-176`), assistance requests (`DL-177`,
  * `DL-178`), cases (`DL-179`), releases (`DL-180`), referrals and field visits (`DL-181`), the
- * dashboard (`DL-182`), and residents’ document requests with their catalogue (`DL-184`) — and
+ * dashboard (`DL-182`), residents’ document requests with their catalogue (`DL-184`), and the
+ * beneficiary registry (`DL-187`) — and
  * nothing else this console has a port for (`DL-164`). Every other port is bound to an `Unserved…` adapter that makes no request and
  * fails with a sentence saying so (`DL-165`). A port moves from that list to an `Http…` adapter
  * only when the API serves the thing the port names — not something with the same word on it.
@@ -151,7 +152,7 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: HOUSEHOLD_REPOSITORY, useClass: HttpHouseholdRepository },
     { provide: FAMILY_REPOSITORY, useClass: HttpFamilyRepository },
     { provide: CASE_REPOSITORY, useClass: HttpCaseRepository },
-    { provide: BENEFICIARY_REPOSITORY, useClass: UnservedBeneficiaryRepository },
+    { provide: BENEFICIARY_REPOSITORY, useClass: HttpBeneficiaryRepository },
     { provide: FIELD_VISIT_REPOSITORY, useClass: HttpFieldVisitRepository },
     { provide: ISSUANCE_REPOSITORY, useClass: HttpIssuanceRepository },
     // Which of the above make no request, said once for the navigation and the routes (`DL-167`):

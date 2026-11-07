@@ -63,8 +63,10 @@ export interface ResidentAssistanceHistory {
   readonly cases: readonly ResidentCaseSummary[];
   readonly payouts: readonly ResidentPayoutSummary[];
   readonly referrals: readonly ResidentReferralSummary[];
-  /** Sum of what was actually handed over — released or claimed, never merely approved. */
+  /** Sum of the money actually handed over — released or claimed, never merely approved. */
   readonly totalReleased: Money;
+  /** Releases of goods handed over: counted, never valued, so never in `totalReleased` (`DL-93`). */
+  readonly goodsReceivedCount: number;
   readonly openCaseCount: number;
   readonly lastActivityAt: IsoDateTime | null;
 }
@@ -98,14 +100,19 @@ export type AssistanceHistoryReading =
   | { readonly kind: 'unavailable'; readonly because: string };
 
 /**
- * Why the history could not be read — in the domain beside `HOUSEHOLD_COMPOSITION_UNREADABLE`, for
- * the same reason: the data layer decides the answer is unavailable, and the sentence has to travel
- * with that decision or a second screen words the absence differently.
+ * Why the history is not shown to this reader — in the domain beside
+ * `HOUSEHOLD_COMPOSITION_UNREADABLE`, for the same reason: the data layer decides the answer is
+ * unavailable, and the sentence has to travel with that decision or a second screen words the
+ * absence differently.
+ *
+ * The history is requests, payouts and referrals together, and reading it is `beneficiary.view`'s:
+ * a reader of the record without it (the release officer, the barangay link) is told so rather than
+ * shown an empty history (`DL-187`). The API sends the same sentence.
  */
-export const ASSISTANCE_HISTORY_NOT_CONNECTED =
-  'This resident’s assistance history — requests, payouts and referrals — is not connected yet: ' +
-  'the office’s API does not serve it, so none of it was read. This is not a statement that the ' +
-  'resident was never helped.';
+export const ASSISTANCE_HISTORY_NOT_YOURS =
+  'This person’s assistance history — requests, payouts and referrals — is read with the beneficiary ' +
+  'registry, which your role does not hold, so none of it is shown to you. This is not a statement ' +
+  'that the resident was never helped.';
 
 /**
  * What the office could establish about who else lives at this address.

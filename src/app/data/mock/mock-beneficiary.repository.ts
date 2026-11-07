@@ -4,14 +4,13 @@ import { throwError, type Observable } from 'rxjs';
 import {
   ACCESS_CONTEXT,
   asId,
-  barangayName,
   buildAssistanceTimeline,
   canReadRecord,
   deriveStanding,
   discloseResident,
   isCurrentEnrollment,
+  isReleased,
   isWithinBarangayScope,
-  paginate,
   PermissionDeniedError,
   ResolutionInvalidError,
   resolutionProblems,
@@ -20,19 +19,19 @@ import {
   type BeneficiaryDetail,
   type BeneficiaryFilter,
   type BeneficiaryRepository,
-  type BeneficiarySortField,
   type BeneficiarySummary,
+  type CursorPage,
+  type CursorRequest,
   type DuplicateCandidate,
   type Family,
   type Household,
   type IdentityResolution,
   type IdentityResolutionDraft,
   type MergePreview,
-  type Page,
-  type PageRequest,
   type Permission,
   type Resident,
   type DuplicatePairId,
+  type ResidentAssistanceHistory,
   type ResidentId,
   type ResidentView,
   type StaffUserId,
@@ -44,7 +43,7 @@ import { MockBeneficiaryStore } from './mock-beneficiary.store';
 import { MockFamilyStore } from './mock-family.store';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
-import { matchesSearch, sortItems } from './mock-query';
+import { matchesSearch } from './mock-query';
 import { MOCK_PROGRAMS } from './seed/programs.seed';
 import { historySummaryFor } from './mock-assistance-history';
 
@@ -75,12 +74,10 @@ export class MockBeneficiaryRepository implements BeneficiaryRepository {
   private readonly families = inject(MockFamilyStore);
   private readonly store = inject(MockBeneficiaryStore);
 
-  list(
-    filter: BeneficiaryFilter,
-    page: PageRequest<BeneficiarySortField>,
-  ): Observable<Page<BeneficiarySummary>> {
+  /** Alphabetical by the name as listed, then id — a total order, as a cursor needs (`DL-187`). */
+  list(filter: BeneficiaryFilter, page: CursorRequest): Observable<CursorPage<BeneficiarySummary>> {
     const user = this.access.currentUser();
-    const denied = denyUnless<Page<BeneficiarySummary>>(user, 'beneficiary.view');
+    const denied = denyUnless<CursorPage<BeneficiarySummary>>(user, 'beneficiary.view');
     if (denied) {
       return denied;
     }
@@ -96,13 +93,19 @@ export class MockBeneficiaryRepository implements BeneficiaryRepository {
           // its own entry once a reviewer has said whose record it is.
           !this.store.isSuperseded(resident.id),
       )
-      .map((resident) => this.summarise(resident, user))
-      .filter((summary) => matchesFilter(summary, filter));
+      .map((resident) => {
+        const history = historySummaryFor(resident.id);
+        return { summary: this.summarise(resident, user, history), history };
+      })
+      .filter(({ summary, history }) => matchesFilter(summary, history, filter))
+      .map(({ summary }) => summary)
+      .sort(
+        (a, b) =>
+          a.resident.listedName.localeCompare(b.resident.listedName) ||
+          a.residentId.localeCompare(b.residentId),
+      );
 
-    const sort = page.sort ?? { field: 'name' as const, direction: 'asc' as const };
-    const sorted = sortItems(rows, (row) => summarySortKey(row, sort.field), sort.direction);
-
-    return this.latency.respond(paginate(sorted, page));
+    return this.latency.respond(cursorPageOf(rows, page, (row) => row.residentId));
   }
 
   getByResidentId(id: ResidentId): Observable<BeneficiaryDetail | null> {
@@ -143,6 +146,7 @@ export class MockBeneficiaryRepository implements BeneficiaryRepository {
       payouts: history.payouts,
       referrals: history.referrals,
       totalReleased: history.totalReleased,
+      goodsReceivedCount: history.goodsReceivedCount,
       // Withheld in the data layer: a screen cannot leak a candidate it was
       // never handed.
       duplicateCandidates: userHasPermission(user, 'beneficiary.review-duplicates')
@@ -152,14 +156,19 @@ export class MockBeneficiaryRepository implements BeneficiaryRepository {
   }
 
 
-  duplicateQueue(page: PageRequest): Observable<Page<DuplicateCandidate>> {
+  duplicateQueue(page: CursorRequest): Observable<CursorPage<DuplicateCandidate>> {
     const user = this.access.currentUser();
-    const denied = denyUnless<Page<DuplicateCandidate>>(user, 'beneficiary.review-duplicates');
+    const denied = denyUnless<CursorPage<DuplicateCandidate>>(
+      user,
+      'beneficiary.review-duplicates',
+    );
     if (denied) {
       return denied;
     }
 
-    return this.latency.respond(paginate(this.openPairs(user), page));
+    return this.latency.respond(
+      cursorPageOf(this.openPairs(user), page, (candidate) => candidate.pairId),
+    );
   }
 
   /** Every open pair once, ordered so A-against-B and B-against-A are one row. */
@@ -298,8 +307,11 @@ export class MockBeneficiaryRepository implements BeneficiaryRepository {
 
   /* ── internals ──────────────────────────────────────────────────────────── */
 
-  private summarise(resident: Resident, user: AuthenticatedUser | null): BeneficiarySummary {
-    const history = historySummaryFor(resident.id);
+  private summarise(
+    resident: Resident,
+    user: AuthenticatedUser | null,
+    history: ResidentAssistanceHistory,
+  ): BeneficiarySummary {
     const enrollments = this.store.enrollmentsFor(resident.id);
     const timeline = buildAssistanceTimeline({
       requests: history.cases,
@@ -324,6 +336,7 @@ export class MockBeneficiaryRepository implements BeneficiaryRepository {
       assistanceEventCount: timeline.length,
       lastAssistanceAt: timeline[0]?.occurredAt ?? null,
       totalReleased: history.totalReleased,
+      goodsReceivedCount: history.goodsReceivedCount,
       openCaseCount: history.openCaseCount,
       // A flag, never the candidate. The list must not disclose one person to
       // everybody scrolling past another (`DL-73`).
@@ -383,7 +396,25 @@ function orderedKey(a: ResidentId, b: ResidentId): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`;
 }
 
-function matchesFilter(summary: BeneficiarySummary, filter: BeneficiaryFilter): boolean {
+/** The id of the last row read stands in for the server's opaque cursor. */
+function cursorPageOf<TItem>(
+  rows: readonly TItem[],
+  page: CursorRequest,
+  idOf: (row: TItem) => string,
+): CursorPage<TItem> {
+  const after = page.cursor ? rows.findIndex((row) => idOf(row) === page.cursor) : -1;
+  const rest = rows.slice(after + 1);
+  const items = rest.slice(0, Math.max(1, page.limit));
+  const hasMore = rest.length > items.length;
+  const last = items[items.length - 1];
+  return { items, hasMore, nextCursor: hasMore && last !== undefined ? idOf(last) : null };
+}
+
+function matchesFilter(
+  summary: BeneficiarySummary,
+  history: ResidentAssistanceHistory,
+  filter: BeneficiaryFilter,
+): boolean {
   if (filter.barangayId && summary.barangayId !== filter.barangayId) {
     return false;
   }
@@ -395,42 +426,36 @@ function matchesFilter(summary: BeneficiarySummary, filter: BeneficiaryFilter): 
   }
   if (filter.programId) {
     const programName = MOCK_PROGRAMS.find((program) => program.id === filter.programId)?.name;
-    if (programName === undefined || !summary.currentProgramNames.includes(programName)) {
+    if (
+      programName === undefined ||
+      summary.currentProgramNames === null ||
+      !summary.currentProgramNames.includes(programName)
+    ) {
       return false;
     }
   }
-  if (filter.receivedFrom && (summary.lastAssistanceAt ?? '') < filter.receivedFrom) {
-    return false;
-  }
-  // Compared against the date only, so a `to` bound includes the whole day
-  // rather than cutting it off at midnight.
-  if (filter.receivedTo && (summary.lastAssistanceAt ?? '').slice(0, 10) > filter.receivedTo) {
+  if ((filter.receivedFrom || filter.receivedTo) && !receivedWithin(history, filter)) {
     return false;
   }
 
-  return matchesSearch(
-    [
-      summary.resident.listedName,
-      barangayName(summary.barangayId),
-      ...summary.currentProgramNames,
-    ],
-    filter.search,
-  );
+  // Names only, as the API searches (`DL-187`). The name is the one already disclosed for this
+  // reader, so a protected person cannot be found by the name the list withholds (`DL-38`).
+  return matchesSearch([summary.resident.listedName], filter.search);
 }
 
-function summarySortKey(summary: BeneficiarySummary, field: BeneficiarySortField): string {
-  switch (field) {
-    case 'name':
-      return summary.resident.listedName;
-    case 'barangay':
-      return barangayName(summary.barangayId);
-    case 'lastAssistanceAt':
-      return summary.lastAssistanceAt ?? '';
-    case 'totalReleased':
-      // Padded so string ordering matches numeric ordering — the shared sort
-      // helper compares strings, and 900 must not sort above 1000.
-      return String(summary.totalReleased.centavos).padStart(12, '0');
-    case 'assistanceEventCount':
-      return String(summary.assistanceEventCount).padStart(6, '0');
-  }
+/**
+ * A payout actually handed over within the period. Compared on the date only, so a `to` bound
+ * includes the whole day rather than cutting it off at midnight.
+ */
+function receivedWithin(history: ResidentAssistanceHistory, filter: BeneficiaryFilter): boolean {
+  return history.payouts.some((payout) => {
+    if (!isReleased(payout.status) || payout.releasedAt === null) {
+      return false;
+    }
+    const day = payout.releasedAt.slice(0, 10);
+    return (
+      (!filter.receivedFrom || day >= filter.receivedFrom) &&
+      (!filter.receivedTo || day <= filter.receivedTo)
+    );
+  });
 }

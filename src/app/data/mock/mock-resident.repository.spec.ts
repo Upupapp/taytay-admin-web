@@ -5,6 +5,8 @@ import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import {
   ACCESS_CONTEXT,
   asId,
+  ASSISTANCE_HISTORY_NOT_YOURS,
+  isReleased,
   membersOf,
   type HouseholdComposition,
   type HouseholdMemberView,
@@ -257,7 +259,7 @@ describe('the registry is large enough to need paging', () => {
  */
 const EMPTY_COMPOSITION: HouseholdComposition = { kind: 'read', members: [] };
 
-/** The mock holds every record, so it always reads the history; `null` here is a defect. */
+/** The mock holds every record, so a `beneficiary.view` reader always reads the history. */
 function historyOf(profile: ResidentProfile | null): ResidentAssistanceHistory | null {
   if (profile === null) {
     return null;
@@ -314,6 +316,21 @@ describe('one call answers "who is this, and what have we done for them?"', () =
     expect(historyOf(profile)?.totalReleased.centavos).toBe(
       handedOver.reduce((total, payout) => total + (payout.amount?.centavos ?? 0), 0),
     );
+    // Goods reached the family too: counted beside the total, never valued into it.
+    expect(historyOf(profile)?.goodsReceivedCount).toBe(
+      (historyOf(profile)?.payouts ?? []).filter(
+        (payout) => isReleased(payout.status) && payout.amount === null,
+      ).length,
+    );
+  });
+
+  it('tells a reader without the registry that the history is not theirs, rather than empty', async () => {
+    signedInAs(authenticated('release-officer'));
+    const profile = await firstValueFrom(repo().getProfile(FAMILY_HEAD));
+    expect(profile?.history).toEqual({
+      kind: 'unavailable',
+      because: ASSISTANCE_HISTORY_NOT_YOURS,
+    });
   });
 
   it('reports an out-of-scope profile as absent, exactly like a missing one', async () => {

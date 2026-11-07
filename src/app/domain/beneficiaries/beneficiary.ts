@@ -39,13 +39,19 @@ export interface BeneficiarySummary {
   readonly householdId: HouseholdId | null;
   readonly barangayId: BarangayId;
   readonly standing: BeneficiaryStanding;
-  /** Programmes the person is currently on, name only, for the list column. */
-  readonly currentProgramNames: readonly string[];
+  /**
+   * Programmes the person is currently on, name only, for the list column. `null` where programme
+   * membership is not recorded by the system of record — never an empty list, which would say the
+   * person is on no programme (`DL-187`).
+   */
+  readonly currentProgramNames: readonly string[] | null;
   /** Every timeline event ever recorded for them. The "total events" column. */
   readonly assistanceEventCount: number;
   readonly lastAssistanceAt: IsoDateTime | null;
-  /** Actually handed over — released or claimed, never merely approved. */
+  /** Actually handed over — released or claimed, never merely approved. Money only. */
   readonly totalReleased: Money;
+  /** Releases of goods handed over: counted, never valued (`DL-93`). */
+  readonly goodsReceivedCount: number;
   readonly openCaseCount: number;
   /**
    * Whether a duplicate candidate is waiting on this record. A flag, not the
@@ -72,12 +78,18 @@ export interface BeneficiaryDetail {
   /** Every family this person belongs to. Plural: people overlap (`DL-47`). */
   readonly families: readonly Family[];
   readonly standing: BeneficiaryStanding;
-  readonly enrollments: readonly ProgramEnrollment[];
+  /**
+   * `null` where programme membership is not recorded by the system of record: the screen says so
+   * rather than "not enrolled in any programme" (`DL-187`).
+   */
+  readonly enrollments: readonly ProgramEnrollment[] | null;
   readonly timeline: readonly AssistanceTimelineEntry[];
   readonly requests: readonly ResidentCaseSummary[];
   readonly payouts: readonly ResidentPayoutSummary[];
   readonly referrals: readonly ResidentReferralSummary[];
   readonly totalReleased: Money;
+  /** Releases of goods handed over: counted, never valued (`DL-93`). */
+  readonly goodsReceivedCount: number;
   /**
    * Duplicate candidates for this person. Empty for a viewer without
    * `beneficiary.review-duplicates` — withheld in the data layer, so a screen
@@ -113,13 +125,6 @@ export function isBeneficiaryFilterActive(filter: BeneficiaryFilter): boolean {
     filter.withOpenDuplicateReview === true
   );
 }
-
-export type BeneficiarySortField =
-  | 'name'
-  | 'barangay'
-  | 'lastAssistanceAt'
-  | 'totalReleased'
-  | 'assistanceEventCount';
 
 /**
  * A period bounded on both sides, or on neither, is coherent. One bound alone is

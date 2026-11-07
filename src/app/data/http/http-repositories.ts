@@ -99,8 +99,21 @@ import {
   type ResidentRepository,
   type ResidentView,
   type VulnerabilitySector,
-  ASSISTANCE_HISTORY_NOT_CONNECTED,
-  PROGRAM_UTILIZATION_NOT_CONNECTED,
+  PROGRAMME_MEMBERSHIP_NOT_RECORDED,
+  ResolutionInvalidError,
+  buildAssistanceTimeline,
+  isPeriodReversed,
+  resolutionProblems,
+  type AssistanceHistoryReading,
+  type BeneficiaryDetail,
+  type BeneficiaryFilter,
+  type BeneficiaryRepository,
+  type BeneficiarySummary,
+  type DuplicateCandidate,
+  type DuplicatePairId,
+  type IdentityResolution,
+  type IdentityResolutionDraft,
+  type MergePreview,
   STATUS_MOVE_NEEDS_REASON,
   APPROVAL_IS_ITS_OWN_ACT,
   APPROVAL_NEEDS_WHAT,
@@ -270,6 +283,18 @@ import { IdentityProvider } from './identity/identity.provider';
 import { invalidCredentials, signInUnavailable } from './identity/sign-in-messages';
 import { toServerIdentity } from './mappers/me.mapper';
 import { toDashboardSummary } from './mappers/dashboard.mapper';
+import {
+  toAssistanceHistoryReading,
+  toBeneficiaryRecordParts,
+  toBeneficiarySummary,
+  toDuplicateCandidate,
+  toIdentityResolution,
+  toMergePreview,
+  toOpenPairCount,
+  toProgramUtilizationReading,
+  toProgramUtilizationSummary,
+  toWireIdentityDecision,
+} from './mappers/beneficiary.mapper';
 import {
   RELEASE_REASON_MIN_LENGTH,
   toRelease,
@@ -1487,9 +1512,8 @@ function readAuditEntry(wire: unknown): PlatformAuditEntry {
  * `TAYTAY_BARANGAYS`; `GET barangays` is read once per adapter to join the two, and a failed read is
  * not kept, so the next call asks again.
  *
- * `getProfile` makes no request: a profile is a resident **with** their household, families and
- * assistance history, and the API serves none of those yet. An empty history would say the office
- * never helped them (`DL-112`), so it refuses in words; every screen that reads it is withheld.
+ * `getProfile` reads the resident **with** their household and assistance history: the record,
+ * the household register, and the history the server assembles once (`DL-187`).
  */
 @Injectable()
 export class HttpResidentRepository implements ResidentRepository {
@@ -1551,9 +1575,10 @@ export class HttpResidentRepository implements ResidentRepository {
    * then `office/households?resident_id=` (a person is in one household at most) and that
    * household. `null` for "not found **or** not yours", as `getById` answers.
    *
-   * The assistance history is **unavailable**, never empty: the API does not serve requests,
-   * payouts or referrals yet, and an empty history would say the office never helped this person
-   * (`DL-112`).
+   * The assistance history is read from `office/residents/{id}/assistance-history`, the server's
+   * one assembly (`DL-187`). A reader without the beneficiary registry is answered with a sentence,
+   * kept as `unavailable` — never an empty history, which would say the office never helped this
+   * person (`DL-112`).
    */
   getProfile(id: ResidentId): Observable<ResidentProfile | null> {
     return this.barangays().pipe(
@@ -1564,9 +1589,9 @@ export class HttpResidentRepository implements ResidentRepository {
               return of(null);
             }
             const view = readResidentView(wire, barangays);
-            return this.householdOf(id, barangays).pipe(
+            return forkJoin([this.householdOf(id, barangays), this.historyOf(id)]).pipe(
               map(
-                (detail): ResidentProfile => ({
+                ([detail, history]): ResidentProfile => ({
                   view:
                     detail === null
                       ? view
@@ -1580,7 +1605,7 @@ export class HttpResidentRepository implements ResidentRepository {
                         ? []
                         : detail.members.filter((member) => member.view.resident.id !== id),
                   },
-                  history: { kind: 'unavailable', because: ASSISTANCE_HISTORY_NOT_CONNECTED },
+                  history,
                 }),
               ),
             );
@@ -1588,6 +1613,13 @@ export class HttpResidentRepository implements ResidentRepository {
         ),
       ),
     );
+  }
+
+  /** The person's assistance history, or the server's sentence for a reader not shown it. */
+  private historyOf(id: ResidentId): Observable<AssistanceHistoryReading> {
+    return this.api
+      .item(`${API_ENDPOINTS.officeResidents}/${id}/assistance-history`)
+      .pipe(map((wire) => readHistoryReading(wire)));
   }
 
   /** The one household this person is in, or `null` when the register places them in none. */
@@ -2233,9 +2265,9 @@ function readSavedView(wire: unknown): SavedView {
  * that would misdescribe the office (`DL-65`) with the console's own rule names, and this adapter
  * neither repeats nor second-guesses that refusal.
  *
- * Utilization is not asked for. It is counted from releases, which the API does not serve, so both
- * reads answer that it could not be read — never a zero, which would say the programme delivered
- * nothing (`DL-105`, `DL-112`).
+ * Utilization is counted by the server from releases handed over (`DL-187`). A reader who does not
+ * read payouts is answered with a sentence, kept as `unavailable` — never a zero, which would say
+ * the programme delivered nothing (`DL-105`, `DL-112`).
  */
 @Injectable()
 export class HttpProgramRepository implements ProgramRepository {
@@ -2324,13 +2356,37 @@ export class HttpProgramRepository implements ProgramRepository {
       .pipe(map(readRequirementTemplate));
   }
 
-  utilizationFor(): Observable<ProgramUtilizationReading> {
-    return of({ kind: 'unavailable', because: PROGRAM_UTILIZATION_NOT_CONNECTED });
+  utilizationFor(id: ProgramId): Observable<ProgramUtilizationReading> {
+    return this.api
+      .item(`${API_ENDPOINTS.officeProgramUtilization}/${id}`)
+      .pipe(map((wire) => readOrRefuse(toProgramUtilizationReading(wire), UTILIZATION_UNREADABLE)));
   }
 
   utilizationSummary(): Observable<ProgramUtilizationSummary> {
-    return of({ kind: 'unavailable', because: PROGRAM_UTILIZATION_NOT_CONNECTED });
+    return this.api
+      .item(API_ENDPOINTS.officeProgramUtilization)
+      .pipe(map((wire) => readOrRefuse(toProgramUtilizationSummary(wire), UTILIZATION_UNREADABLE)));
   }
+}
+
+const UTILIZATION_UNREADABLE =
+  'How much the programmes have been used could not be read, so no figure is shown rather than ' +
+  'some: a programme missing from the figures would read as one nobody used.';
+
+/** The mapped answer, or an error in words: never a partial figure standing in for the whole. */
+function readOrRefuse<T>(value: T | null, because: string): T {
+  if (value === null) {
+    throw new Error(because);
+  }
+  return value;
+}
+
+function readHistoryReading(wire: unknown): AssistanceHistoryReading {
+  return readOrRefuse(
+    toAssistanceHistoryReading(wire),
+    'This person’s assistance history could not be read, so none of it is shown: a request or a ' +
+      'payout left out would read as one the office never made.',
+  );
 }
 
 function readProgram(wire: unknown): AssistanceProgram {
@@ -4037,6 +4093,216 @@ function readDashboard(wire: unknown, barangays: BarangayIndex): DashboardSummar
  * **Opening a file is two acts**, as for an assistance request's documents (`DL-178`): a grant with
  * the server's warning, then — only after the reader confirms — the bytes, with the handle in a body.
  */
+/**
+ * The beneficiary registry, served by the Node API (`DL-187`): a projection over the resident
+ * registry, keyed on the resident's id — there is no beneficiary id to send (`DL-71`).
+ *
+ * **The server decides and the adapter says.** Scope, redaction, the standing and whether a reader
+ * sees duplicate candidates are all the server's; the mappers keep what it sent. The household and
+ * the families on a record are read from their own registers, so their redaction stays theirs.
+ *
+ * **What the API cannot answer is refused in words, without a request.** Programme membership is
+ * not recorded by it, so a programme filter or the `enrollee` standing would come back with nobody
+ * every time — the absence of a record read as the absence of a person (`DL-112`).
+ *
+ * **There is no merge** (`DL-74`). `resolveIdentity` records a finding about a pair the office is
+ * holding; the same finding again answers with the one recorded, and a different one is refused by
+ * the server.
+ */
+@Injectable()
+export class HttpBeneficiaryRepository implements BeneficiaryRepository {
+  private readonly api = inject(ApiClient);
+  private readonly barangayJoin = new BarangayJoin();
+
+  list(filter: BeneficiaryFilter, page: CursorRequest): Observable<CursorPage<BeneficiarySummary>> {
+    const search = filter.search?.trim() ?? '';
+    if (search.length === 1) {
+      return throwError(() => new Error('Type at least two letters of a name to search the registry.'));
+    }
+    if (filter.programId !== undefined || filter.role === 'enrollee') {
+      return throwError(() => new Error(PROGRAMME_MEMBERSHIP_NOT_RECORDED));
+    }
+    if (isPeriodReversed(filter)) {
+      return throwError(
+        () => new Error('The "from" date is after the "to" date, so nothing can match. Swap them.'),
+      );
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) => {
+        const barangayId =
+          filter.barangayId === undefined ? undefined : barangays.toApi(filter.barangayId);
+        if (barangayId === null) {
+          return throwError(() => unknownBarangay());
+        }
+        return this.api
+          .cursorPage(API_ENDPOINTS.officeBeneficiaries, page, {
+            q: search === '' ? undefined : search,
+            barangay_id: barangayId,
+            role: filter.role,
+            received_from: filter.receivedFrom,
+            received_to: filter.receivedTo,
+            with_open_duplicate_review: filter.withOpenDuplicateReview === true ? 'true' : undefined,
+          })
+          .pipe(
+            map((answer) => ({
+              ...answer,
+              items: answer.items.map((wire) =>
+                readOrRefuse(toBeneficiarySummary(wire, barangays), PERSON_UNREADABLE),
+              ),
+            })),
+          );
+      }),
+    );
+  }
+
+  /** `null` for "not found **or** not yours" — the server answers both with a 404 (`DL-31`). */
+  getByResidentId(id: ResidentId): Observable<BeneficiaryDetail | null> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api.optionalItem(`${API_ENDPOINTS.officeBeneficiaries}/${id}`).pipe(
+          switchMap((wire) => {
+            if (wire === null) {
+              return of(null);
+            }
+            const parts = readOrRefuse(toBeneficiaryRecordParts(wire, barangays), RECORD_UNREADABLE);
+            const household =
+              parts.householdId === null
+                ? of(null)
+                : this.api
+                    .optionalItem(`${API_ENDPOINTS.officeHouseholds}/${parts.householdId}`)
+                    .pipe(
+                      map((detail) => (detail === null ? null : readHouseholdDetail(detail, barangays))),
+                    );
+            const families = this.api
+              .list(`${API_ENDPOINTS.officeResidents}/${id}/families`)
+              .pipe(map((rows) => rows.map((row) => readFamilySummary(row, barangays).family)));
+            return forkJoin([household, families]).pipe(
+              map(([detail, familyList]): BeneficiaryDetail => {
+                const history = parts.history;
+                const head = detail?.members.find((member) => member.isHead) ?? null;
+                return {
+                  residentId: parts.residentId,
+                  resident: parts.resident,
+                  household: detail?.household ?? null,
+                  householdHeadName: head === null ? null : head.view.fullName,
+                  families: familyList,
+                  standing: parts.standing,
+                  // Programme membership is not recorded by the API: `null`, never `[]` (DL-187).
+                  enrollments: null,
+                  timeline: buildAssistanceTimeline({
+                    requests: history.cases,
+                    payouts: history.payouts,
+                    referrals: history.referrals,
+                    enrollments: [],
+                  }),
+                  requests: history.cases,
+                  payouts: history.payouts,
+                  referrals: history.referrals,
+                  totalReleased: history.totalReleased,
+                  goodsReceivedCount: history.goodsReceivedCount,
+                  duplicateCandidates: parts.duplicateCandidates,
+                };
+              }),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  duplicateQueue(page: CursorRequest): Observable<CursorPage<DuplicateCandidate>> {
+    return this.api.cursorPage(API_ENDPOINTS.officeDuplicatePairs, page).pipe(
+      map((answer) => ({
+        ...answer,
+        items: answer.items.map((wire) => readOrRefuse(toDuplicateCandidate(wire), PAIR_UNREADABLE)),
+      })),
+    );
+  }
+
+  duplicatesFor(id: ResidentId): Observable<readonly DuplicateCandidate[]> {
+    return this.api
+      .list(`${API_ENDPOINTS.officeBeneficiaries}/${id}/duplicates`)
+      .pipe(
+        map((rows) => rows.map((wire) => readOrRefuse(toDuplicateCandidate(wire), PAIR_UNREADABLE))),
+      );
+  }
+
+  previewResolution(
+    pairId: DuplicatePairId,
+    canonicalResidentId: ResidentId,
+    supersededResidentId: ResidentId,
+  ): Observable<MergePreview> {
+    return this.api
+      .item(`${API_ENDPOINTS.officeDuplicatePairs}/${pairId}/preview`, {
+        canonical_resident_id: canonicalResidentId,
+      })
+      .pipe(
+        map((wire) => {
+          const preview = readOrRefuse(toMergePreview(wire), PREVIEW_UNREADABLE);
+          // The server names the other record of the pair; a different one means the screen and the
+          // pair disagree, and a preview of the wrong record is worse than none.
+          if (preview.supersededResidentId !== supersededResidentId) {
+            throw new Error('That record is not the other one of this pair. Open the pair again.');
+          }
+          return preview;
+        }),
+      );
+  }
+
+  detectDuplicates(): Observable<number> {
+    return this.api
+      // The route takes no body, and the server reads none: `{}`, as `send` on a referral is.
+      .post(`${API_ENDPOINTS.officeDuplicatePairs}/detect`, {})
+      .pipe(map((wire) => readOrRefuse(toOpenPairCount(wire), DETECTION_UNREADABLE)));
+  }
+
+  resolveIdentity(draft: IdentityResolutionDraft): Observable<IdentityResolution> {
+    const problems = resolutionProblems(draft);
+    if (problems.length > 0) {
+      return throwError(() => new ResolutionInvalidError(problems));
+    }
+    return this.api
+      .post(
+        `${API_ENDPOINTS.officeDuplicatePairs}/${draft.pairId}/decide`,
+        toWireIdentityDecision(draft),
+      )
+      .pipe(map((wire) => readOrRefuse(toIdentityResolution(wire), FINDING_ANSWER_UNREADABLE)));
+  }
+
+  resolutionsFor(id: ResidentId): Observable<readonly IdentityResolution[]> {
+    return this.api
+      .list(`${API_ENDPOINTS.officeBeneficiaries}/${id}/findings`)
+      .pipe(
+        map((rows) => rows.map((wire) => readOrRefuse(toIdentityResolution(wire), FINDING_UNREADABLE))),
+      );
+  }
+}
+
+const PERSON_UNREADABLE =
+  'A person from the registry could not be read, so none is shown rather than some: a person left ' +
+  'out is one an officer concludes the office never served.';
+
+const RECORD_UNREADABLE =
+  'This record could not be read, so none of it is shown: a request, a payout or a candidate left ' +
+  'out would read as not being there.';
+
+const PAIR_UNREADABLE =
+  'A pair from the duplicate queue could not be read, so none is shown rather than some: a reviewer ' +
+  'shown part of the queue would clear it believing it was all.';
+
+const PREVIEW_UNREADABLE =
+  'What this finding would carry across could not be read, so nothing is shown.';
+
+const DETECTION_UNREADABLE =
+  'The detection ran, but its answer could not be read. Open the queue to see the pairs.';
+
+const FINDING_ANSWER_UNREADABLE =
+  'The finding was recorded, but its answer could not be read. Open the record to see it before ' +
+  'recording anything twice.';
+
+const FINDING_UNREADABLE =
+  'A finding about this record could not be read, so none is shown rather than some.';
+
 @Injectable()
 export class HttpIssuanceRepository implements IssuanceRepository {
   private readonly api = inject(ApiClient);

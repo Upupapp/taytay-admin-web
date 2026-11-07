@@ -113,16 +113,33 @@
     [rows]="rows()"
     [rowKey]="rowKey"
     [loading]="isLoading()"
-    [page]="page()"
-    [sort]="sort()"
     [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
     [emptyHeading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
     [emptyMessage]="hasFilters() ? copy.noResultsMessage : copy.emptyMessage"
     [emptyActionLabel]="hasFilters() ? copy.clear : null"
-    (sortChanged)="onSortChanged($event)"
-    (pageChanged)="onPageChanged($event)"
     (emptyActionSelected)="clearFilters()"
   />
+
+  @if (rows().length > 0) {
+    <div class="beneficiaries__more">
+      <p class="filters__hint" role="status">
+        {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
+      </p>
+      @if (hasMore()) {
+        <button
+          type="button"
+          class="btn btn--secondary"
+          [disabled]="loadingMore()"
+          (click)="showMore()"
+        >
+          {{ loadingMore() ? copy.loadingMore : copy.showMore }}
+        </button>
+      }
+      @if (moreFailed()) {
+        <p class="beneficiaries__problem" role="alert">{{ copy.moreFailed }}</p>
+      }
+    </div>
+  }
 </div>
 
 <ng-template #personCell let-row>
@@ -143,19 +160,35 @@
   <span class="standing">{{ standingOf(row) }}</span>
 </ng-template>
 
+<!-- "Not enrolled" is a finding about the person; where membership is not
+     recorded at all, the cell says that instead (`DL-187`). -->
 <ng-template #programmesCell let-row>
   <span class="programmes">
-    @for (name of row.currentProgramNames; track name) {
-      <span class="programmes__chip">{{ name }}</span>
-    } @empty {
-      <span class="programmes__none">{{ copy.noProgrammes }}</span>
+    @if (row.currentProgramNames === null) {
+      <span class="programmes__none" [title]="copy.programmesNotRecordedHint">
+        {{ copy.programmesNotRecorded }}
+      </span>
+    } @else {
+      @for (name of row.currentProgramNames; track name) {
+        <span class="programmes__chip">{{ name }}</span>
+      } @empty {
+        <span class="programmes__none">{{ copy.noProgrammes }}</span>
+      }
     }
   </span>
 </ng-template>
 
+<!-- Goods are counted beside the money, never valued into it (`DL-93`). -->
 <ng-template #receivedCell let-row>
-  @if (row.totalReleased.centavos > 0) {
-    <span class="beneficiaries__amount">{{ row.totalReleased | peso }}</span>
+  @if (row.totalReleased.centavos > 0 || row.goodsReceivedCount > 0) {
+    @if (row.totalReleased.centavos > 0) {
+      <span class="beneficiaries__amount">{{ row.totalReleased | peso }}</span>
+    }
+    @if (row.goodsReceivedCount > 0) {
+      <span class="beneficiaries__goods">{{
+        copy.goodsReceived(row.goodsReceivedCount, row.totalReleased.centavos > 0)
+      }}</span>
+    }
   } @else {
     <span class="beneficiaries__none">{{ copy.none }}</span>
   }

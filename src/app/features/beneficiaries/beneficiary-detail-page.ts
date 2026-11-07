@@ -9,6 +9,7 @@ import {
   BENEFICIARY_ROLE_LABELS,
   ENROLLMENT_EXIT_REASON_LABELS,
   ENROLLMENT_STATUS_CATALOG,
+  PROGRAMME_MEMBERSHIP_NOT_RECORDED,
   asId,
   barangayName,
   byEnrollmentRecency,
@@ -58,6 +59,7 @@ export class BeneficiaryDetailPage {
 
   protected readonly copy = BENEFICIARIES_COPY.detail;
   protected readonly enrollmentStatuses = ENROLLMENT_STATUS_CATALOG;
+  protected readonly membershipNotRecorded = PROGRAMME_MEMBERSHIP_NOT_RECORDED;
 
   protected readonly state = toSignal(
     toObservable(computed(() => asId<ResidentId>(this.id()))).pipe(
@@ -67,6 +69,12 @@ export class BeneficiaryDetailPage {
   );
 
   protected readonly record = computed(() => valueOf(this.state()) ?? null);
+
+  /**
+   * Whether the system of record holds programme membership at all. Where it does not, the panel
+   * says so rather than "not enrolled", which would be a finding about the person (`DL-187`).
+   */
+  protected readonly membershipRecorded = computed(() => this.record()?.enrollments !== null);
 
   /** Standing enrollments first, then most recent — past ones are kept, not hidden. */
   protected readonly enrollments = computed(() =>

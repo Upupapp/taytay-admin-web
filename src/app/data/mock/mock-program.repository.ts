@@ -11,6 +11,7 @@ import {
   isCatalogueReason,
   PermissionDeniedError,
   programProblems,
+  PROGRAM_UTILIZATION_NOT_YOURS,
   summariseUtilization,
   TEMPLATE_CAP,
   CATALOGUE_CODE_PATTERN,
@@ -19,6 +20,7 @@ import {
   TEMPLATE_NAME_MAX_LENGTH,
   TEMPLATE_NAME_MIN_LENGTH,
   templateProblems,
+  userHasPermission,
   type AssistanceProgram,
   type CursorPage,
   type CursorRequest,
@@ -340,6 +342,13 @@ export class MockProgramRepository implements ProgramRepository {
     if (!this.programs.some((program) => program.id === id)) {
       return throwError(() => new PermissionDeniedError('program.view'));
     }
+    // The figures are payouts, which this reader's role does not read (`DL-182`, `DL-187`).
+    if (!userHasPermission(user, 'release.view')) {
+      return this.latency.respond<ProgramUtilizationReading>({
+        kind: 'unavailable',
+        because: PROGRAM_UTILIZATION_NOT_YOURS,
+      });
+    }
     return this.latency.respond<ProgramUtilizationReading>({
       kind: 'read',
       utilization: this.utilization(id),
@@ -351,6 +360,12 @@ export class MockProgramRepository implements ProgramRepository {
     const denied = denyUnless<ProgramUtilizationSummary>(user, 'program.view');
     if (denied) {
       return denied;
+    }
+    if (!userHasPermission(user, 'release.view')) {
+      return this.latency.respond<ProgramUtilizationSummary>({
+        kind: 'unavailable',
+        because: PROGRAM_UTILIZATION_NOT_YOURS,
+      });
     }
     return this.latency.respond<ProgramUtilizationSummary>({
       kind: 'read',

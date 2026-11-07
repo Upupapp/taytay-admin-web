@@ -3,6 +3,7 @@ import { throwError, type Observable } from 'rxjs';
 
 import {
   ACCESS_CONTEXT,
+  ASSISTANCE_HISTORY_NOT_YOURS,
   canReadRecord,
   discloseHousehold,
   discloseMember,
@@ -180,8 +181,11 @@ export class MockResidentRepository implements ResidentRepository {
         kind: 'read',
         members: this.householdMembersOf(resident, household, user, isProtected),
       },
-      // The mock holds every request, payout and referral, so it can always answer.
-      history: { kind: 'read', history: historySummaryFor(resident.id) },
+      // The mock holds every request, payout and referral; whether this reader is shown them is
+      // `beneficiary.view`'s, as the API decides it (`DL-187`).
+      history: userHasPermission(user, 'beneficiary.view')
+        ? { kind: 'read', history: historySummaryFor(resident.id) }
+        : { kind: 'unavailable', because: ASSISTANCE_HISTORY_NOT_YOURS },
     });
   }
 

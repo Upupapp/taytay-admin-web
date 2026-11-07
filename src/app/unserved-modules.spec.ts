@@ -7,7 +7,6 @@ import { SessionStore } from '@core/auth/session.store';
 import { NAVIGATION } from '@core/navigation/navigation';
 import { provideDataAccess } from '@data/data-access.providers.mock';
 import {
-  UnservedBeneficiaryRepository,
   UnservedEventRepository,
   UnservedGovernanceRepository,
   UnservedNewsfeedRepository,
@@ -151,8 +150,7 @@ const OFFERED = MENU.filter((item) => !WITHHELD.includes(item)).map((item) => it
 
 describe('the http adapter set', () => {
   const adapters = [
-    UnservedBeneficiaryRepository,
-          UnservedWorkRepository,
+    UnservedWorkRepository,
     UnservedReportRepository,
     UnservedSearchRepository,
     UnservedGovernanceRepository,

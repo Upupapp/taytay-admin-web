@@ -121,7 +121,7 @@ async function signedInAs(
   await firstValueFrom(TestBed.inject(SessionStore).load());
 }
 
-const PAGE = { page: 1, pageSize: 500 } as const;
+const PAGE = { limit: 500, cursor: null } as const;
 /** The registry pages by cursor since `DL-174`; one large page reads the seeded set whole. */
 const RESIDENTS = { limit: 500, cursor: null } as const;
 

@@ -343,7 +343,13 @@ describe('programme utilization', () => {
    */
   it('does not call a withheld programme unused', () => {
     expect(
-      isUnused({ programId: MEDICAL, releaseCount: null, releasedTotal: null, isWithheld: true }),
+      isUnused({
+        programId: MEDICAL,
+        releaseCount: null,
+        releasedTotal: null,
+        goodsCount: null,
+        isWithheld: true,
+      }),
     ).toBe(false);
   });
 

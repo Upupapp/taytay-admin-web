@@ -1,0 +1,67 @@
+{
+  "data": [
+    {
+      "pair_id": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c01",
+      "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+      "other_resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c09",
+      "resident_label": "Dela Cruz, M.",
+      "other_label": "Dela Cruz, M.",
+      "strength": "strong",
+      "signals": [
+        {
+          "attribute": "surname",
+          "outcome": "same",
+          "rule": "Surnames compared, ignoring case and accents."
+        },
+        {
+          "attribute": "given-name",
+          "outcome": "similar",
+          "rule": "Given names compared, allowing one letter of difference."
+        },
+        {
+          "attribute": "birth-date",
+          "outcome": "same",
+          "rule": "Dates of birth compared exactly."
+        },
+        {
+          "attribute": "sex",
+          "outcome": "same",
+          "rule": "Recorded sex compared."
+        },
+        {
+          "attribute": "philsys-last-four",
+          "outcome": "not-comparable",
+          "rule": "Last four PhilSys digits compared. The digits themselves are never shown here."
+        },
+        {
+          "attribute": "barangay",
+          "outcome": "same",
+          "rule": "Barangay compared."
+        },
+        {
+          "attribute": "street-address",
+          "outcome": "differs",
+          "rule": "Street addresses compared, allowing one character of difference."
+        },
+        {
+          "attribute": "mobile",
+          "outcome": "not-comparable",
+          "rule": "Mobile numbers compared as digits only, so formatting does not matter."
+        },
+        {
+          "attribute": "household",
+          "outcome": "not-comparable",
+          "rule": "Household linkage compared."
+        }
+      ],
+      "holds_sensitive_record": false,
+      "detected_at": "2026-11-07T01:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "has_more": false,
+      "next_cursor": null
+    }
+  }
+}

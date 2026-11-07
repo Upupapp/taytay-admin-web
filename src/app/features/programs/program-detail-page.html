@@ -168,7 +168,7 @@
           <h2 class="program__heading" id="usage-heading">{{ shared.utilization.heading }}</h2>
           <p class="program__note">{{ shared.utilization.description }}</p>
           @if (view.utilization.kind === 'unavailable') {
-            <!-- Releases are not served: no figure is shown, and the sentence says why (DL-176). -->
+            <!-- Payouts are not this reader's: no figure is shown, and the sentence says why (DL-187). -->
             <p class="program__note" role="note">{{ view.utilization.because }}</p>
           } @else {
             @let usage = view.utilization.utilization;
@@ -185,6 +185,12 @@
                     ? shared.utilization.withheldValue
                     : usage.releaseCount
                 }}
+                <!-- Goods are counted among the payouts, never valued into the total (`DL-93`). -->
+                @if (usage.goodsCount !== null && usage.goodsCount > 0) {
+                  <span class="program__goods">{{
+                    shared.utilization.goodsCount(usage.goodsCount)
+                  }}</span>
+                }
               </dd>
               <dt>{{ shared.utilization.releasedTotal }}</dt>
               <dd>

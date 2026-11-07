@@ -312,6 +312,22 @@ links should see payout figures (they no longer do: the release list refuses the
 dashboard follows the list); whether the residents' app figures should be narrowed by the barangay
 a resident declared in the app (they are not: it is self-declared, and not the office's registry);
 and whether "residents served" should go on counting people who received only goods (it does).
+
+**Phase 6b done** (`DL-187`, `taytay-backend` `4ae9941`, `fbb86fe`, migration `0038`): the
+beneficiary registry is served — a projection over the resident registry with no beneficiary table or
+id, every standing derived on read, one history assembled once on the server for the list, the record
+and the resident profile (filed requests, every release, sent referrals; goods counted, never
+valued), duplicate pairs held by a detection run with signals that carry no value, and findings with
+a reason that supersede without moving or deleting anything (append-only; read across, never
+re-pointed). Programme utilization is counted from releases handed over, for readers of payouts. Six
+ports remain unserved: work, reports, search, governance, the newsfeed and events.
+
+**For the owner, from phase 6b** (`DL-187`): whether the office should record programme membership
+(it is not recorded, and the screens say so rather than "not enrolled"); whether a barangay link
+should see the requests of residents in their barangay (the history is `beneficiary.view`'s, and
+they are told so); whether social workers should review duplicates among their own clients (the
+review spans the registry and is refused to a caseload); and whether the intake advisory should now
+read payouts and cases, which the API holds.
 **Next: phase 6 — the work queues, reports, search and events.**
 
 ## Decided 2026-11-06: the owner's decisions round (`DL-183`)

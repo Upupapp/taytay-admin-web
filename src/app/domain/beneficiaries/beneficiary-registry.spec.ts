@@ -200,6 +200,22 @@ describe('beneficiary standing', () => {
     expect(hasStanding(standing, 'enrollee')).toBe(true);
   });
 
+  it('derives no membership, and counts none, where membership is not recorded', () => {
+    const standing = deriveStanding({
+      requestStatuses: ['submitted'],
+      releaseStatuses: ['released'],
+      enrollments: null,
+    });
+
+    expect(hasStanding(standing, 'enrollee')).toBe(false);
+    // Not recorded is not zero (`DL-187`).
+    expect(standing.evidence.currentEnrollmentCount).toBeNull();
+    expect(standing.evidence.pastEnrollmentCount).toBeNull();
+    // The rest of the standing is still derived from what was recorded.
+    expect(hasStanding(standing, 'applicant')).toBe(true);
+    expect(hasStanding(standing, 'beneficiary')).toBe(true);
+  });
+
   it('every role in the vocabulary is reachable', () => {
     const standing = deriveStanding({
       requestStatuses: ['submitted'],

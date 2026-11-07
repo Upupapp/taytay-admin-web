@@ -16,9 +16,8 @@ export const BENEFICIARIES_COPY = {
     reviewDuplicates: 'Review possible duplicates',
 
     search: 'Search',
-    searchPlaceholder: 'Name, barangay or programme',
-    searchHint:
-      'Searches names, barangays and current programmes. Results stay within the barangays you may see.',
+    searchPlaceholder: 'Name',
+    searchHint: 'Searches names. Results stay within the barangays you may see.',
     barangay: 'Barangay',
     allBarangays: 'All barangays',
     programme: 'Programme',
@@ -42,6 +41,12 @@ export const BENEFICIARIES_COPY = {
 
     none: '—',
     noProgrammes: 'Not enrolled',
+    programmesNotRecorded: 'Not recorded',
+    programmesNotRecordedHint:
+      'Programme membership is not recorded by the office’s system yet. This does not mean the person is on no programme.',
+    /** Goods are counted, never valued (`DL-93`); "+" only when it sits beside a peso total. */
+    goodsReceived: (count: number, besideMoney: boolean): string =>
+      `${besideMoney ? '+ ' : ''}${count} ${count === 1 ? 'release' : 'releases'} of goods`,
     neverAssisted: 'No assistance yet',
     restricted: 'Restricted record',
     duplicateFlag: 'Possible duplicate',
@@ -51,6 +56,14 @@ export const BENEFICIARIES_COPY = {
     emptyMessage: 'Once requests are filed and assistance is released, the people served appear here.',
     noResultsHeading: 'No one matches those filters',
     noResultsMessage: 'Try a wider period, or clear the filters to see everyone.',
+
+    shown: (count: number) => `${count} shown.`,
+    moreAvailable: 'More are available.',
+    noMore: 'That is everyone matching these filters.',
+    showMore: 'Show more',
+    loadingMore: 'Loading more…',
+    moreFailed:
+      'The next beneficiaries could not be loaded. The ones above are still correct; try again.',
   },
 
   detail: {
@@ -78,6 +91,8 @@ export const BENEFICIARIES_COPY = {
 
     totalsHeading: 'Totals',
     totalReceived: 'Total received',
+    goodsReceived: (count: number): string =>
+      `+ ${count} ${count === 1 ? 'release' : 'releases'} of goods, counted rather than valued`,
     totalReceivedHint: 'Counts only assistance actually handed over — never what was merely approved.',
     eventCount: 'Recorded events',
     openCases: 'Open cases',
@@ -98,6 +113,12 @@ export const BENEFICIARIES_COPY = {
     back: 'Back to beneficiaries',
 
     caption: 'Pairs of records awaiting an identity decision',
+    shown: (count: number) => `${count} ${count === 1 ? 'pair' : 'pairs'} shown.`,
+    moreAvailable: 'More are waiting.',
+    noMore: 'That is every open pair.',
+    showMore: 'Show more',
+    loadingMore: 'Loading more…',
+    moreFailed: 'The next pairs could not be loaded. The ones above are still correct; try again.',
     columnRecords: 'Records',
     columnStrength: 'Resemblance',
     columnAgreement: 'What agrees',
@@ -151,6 +172,7 @@ export const BENEFICIARIES_COPY = {
     previewReleases: 'Releases',
     previewCases: 'Open cases',
     previewEnrollments: 'Programme enrollments',
+    previewNotRecorded: 'Not recorded',
     previewOverlap: 'Recorded under both records',
     previewOverlapHint:
       'The same programme appears on both. Check whether it is one episode recorded twice before you decide.',

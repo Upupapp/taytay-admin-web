@@ -1260,6 +1260,73 @@
     },
     {
       "method": "GET",
+      "path": "office/beneficiaries",
+      "consumer": "beneficiary.mapper.ts#toBeneficiarySummary",
+      "required": [],
+      "optional": [
+        "assistance_event_count",
+        "barangay_id",
+        "current_program_names",
+        "goods_received_count",
+        "has_open_duplicate_review",
+        "household_id",
+        "last_assistance_at",
+        "open_request_count",
+        "released_centavos",
+        "resident",
+        "resident_id",
+        "standing"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/beneficiaries/{residentId}",
+      "consumer": "beneficiary.mapper.ts#toBeneficiaryRecordParts",
+      "required": [],
+      "optional": [
+        "duplicate_candidates",
+        "history",
+        "household_id",
+        "resident",
+        "resident_id",
+        "standing"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/beneficiaries/{residentId}/duplicates",
+      "consumer": "beneficiary.mapper.ts#toDuplicateCandidate",
+      "required": [
+        "other_label",
+        "other_resident_id",
+        "pair_id",
+        "resident_id",
+        "resident_label",
+        "signals",
+        "strength"
+      ],
+      "optional": [
+        "holds_sensitive_record"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/beneficiaries/{residentId}/findings",
+      "consumer": "beneficiary.mapper.ts#toIdentityResolution",
+      "required": [],
+      "optional": [
+        "canonical_resident_id",
+        "decided_at",
+        "decided_by",
+        "id",
+        "pair",
+        "reason",
+        "superseded_resident_id",
+        "verdict"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "office/cases",
       "consumer": "case.mapper.ts#toCaseSummary",
       "required": [
@@ -1446,6 +1513,63 @@
         "payouts",
         "requests",
         "resident_app"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/duplicate-pairs",
+      "consumer": "beneficiary.mapper.ts#toDuplicateCandidate",
+      "required": [
+        "other_label",
+        "other_resident_id",
+        "pair_id",
+        "resident_id",
+        "resident_label",
+        "signals",
+        "strength"
+      ],
+      "optional": [
+        "holds_sensitive_record"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/duplicate-pairs/{id}/decide",
+      "consumer": "beneficiary.mapper.ts#toIdentityResolution",
+      "required": [],
+      "optional": [
+        "canonical_resident_id",
+        "decided_at",
+        "decided_by",
+        "id",
+        "pair",
+        "reason",
+        "superseded_resident_id",
+        "verdict"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/duplicate-pairs/{id}/preview",
+      "consumer": "beneficiary.mapper.ts#toMergePreview",
+      "required": [],
+      "optional": [
+        "canonical_resident_id",
+        "moving_case_count",
+        "moving_enrollment_count",
+        "moving_release_count",
+        "moving_request_count",
+        "overlapping_program_names",
+        "superseded_resident_id"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/duplicate-pairs/detect",
+      "consumer": "beneficiary.mapper.ts#toOpenPairCount",
+      "required": [],
+      "optional": [
+        "open_pairs"
       ]
     },
     {
@@ -1732,6 +1856,28 @@
         "processing_days",
         "requirements",
         "retired_at"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/program-utilization",
+      "consumer": "beneficiary.mapper.ts#toProgramUtilizationSummary",
+      "required": [],
+      "optional": [
+        "because",
+        "readable",
+        "rows"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/program-utilization/{programId}",
+      "consumer": "beneficiary.mapper.ts#toProgramUtilizationReading",
+      "required": [],
+      "optional": [
+        "because",
+        "readable",
+        "utilization"
       ]
     },
     {
@@ -2273,6 +2419,16 @@
       "optional": [
         "given_name_masked",
         "is_protected"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/residents/{id}/assistance-history",
+      "consumer": "beneficiary.mapper.ts#toAssistanceHistoryReading",
+      "required": [],
+      "optional": [
+        "because",
+        "readable"
       ]
     },
     {

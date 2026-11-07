@@ -5,7 +5,6 @@ import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import {
   ACCESS_CONTEXT,
   asId,
-  DEFAULT_PAGE_REQUEST,
   isResolutionInvalid,
   PermissionDeniedError,
   ROLE_DEFINITIONS,
@@ -83,28 +82,48 @@ function resolution(overrides: Partial<IdentityResolutionDraft> = {}): IdentityR
   };
 }
 
+const FIRST_PAGE = { limit: 20, cursor: null };
+
 describe('MockBeneficiaryRepository — permission', () => {
   it('refuses the registry to a role without beneficiary.view', () => {
     const repository = signedInAs(authenticated('release-officer'));
 
-    return expect(
-      firstValueFrom(repository.list({}, DEFAULT_PAGE_REQUEST)),
-    ).rejects.toBeInstanceOf(PermissionDeniedError);
+    return expect(firstValueFrom(repository.list({}, FIRST_PAGE))).rejects.toBeInstanceOf(
+      PermissionDeniedError,
+    );
   });
 
   it('refuses the registry to an anonymous caller', () => {
     const repository = signedInAs(null);
 
-    return expect(
-      firstValueFrom(repository.list({}, DEFAULT_PAGE_REQUEST)),
-    ).rejects.toBeInstanceOf(PermissionDeniedError);
+    return expect(firstValueFrom(repository.list({}, FIRST_PAGE))).rejects.toBeInstanceOf(
+      PermissionDeniedError,
+    );
   });
 
   it('opens the registry to intake, who ask at the counter', async () => {
     const repository = signedInAs(authenticated('intake-officer'));
-    const page = await firstValueFrom(repository.list({}, DEFAULT_PAGE_REQUEST));
+    const page = await firstValueFrom(repository.list({}, FIRST_PAGE));
 
-    expect(page.totalItems).toBeGreaterThan(0);
+    expect(page.items.length).toBeGreaterThan(0);
+  });
+
+  it('pages alphabetically by cursor, without repeating or skipping anybody', async () => {
+    const repository = signedInAs(authenticated('mswdo-head'));
+    const all = await firstValueFrom(repository.list({}, { limit: 500, cursor: null }));
+    const first = await firstValueFrom(repository.list({}, { limit: 3, cursor: null }));
+    const second = await firstValueFrom(
+      repository.list({}, { limit: 3, cursor: first.nextCursor }),
+    );
+
+    expect(first.hasMore).toBe(true);
+    expect([...first.items, ...second.items].map((row) => row.residentId)).toEqual(
+      all.items.slice(0, 6).map((row) => row.residentId),
+    );
+    const names = all.items.map((row) => row.resident.listedName);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
+    expect(all.hasMore).toBe(false);
+    expect(all.nextCursor).toBeNull();
   });
 
   it('reports a record as absent rather than refused when it is out of reach', async () => {
@@ -130,9 +149,9 @@ describe('MockBeneficiaryRepository — the duplicate queue discloses agreement,
   it('refuses the queue to a role without the review permission', () => {
     const repository = signedInAs(authenticated('intake-officer'));
 
-    return expect(
-      firstValueFrom(repository.duplicateQueue(DEFAULT_PAGE_REQUEST)),
-    ).rejects.toBeInstanceOf(PermissionDeniedError);
+    return expect(firstValueFrom(repository.duplicateQueue(FIRST_PAGE))).rejects.toBeInstanceOf(
+      PermissionDeniedError,
+    );
   });
 
   it('finds the second registration of one person', async () => {
@@ -161,7 +180,7 @@ describe('MockBeneficiaryRepository — the duplicate queue discloses agreement,
 
   it('asks about a pair once, not once from each side', async () => {
     const repository = signedInAs(authenticated('mswdo-head'));
-    const queue = await firstValueFrom(repository.duplicateQueue(DEFAULT_PAGE_REQUEST));
+    const queue = await firstValueFrom(repository.duplicateQueue(FIRST_PAGE));
 
     const keys = queue.items.map((candidate) =>
       [candidate.residentId, candidate.otherResidentId].sort().join('|'),
@@ -196,12 +215,12 @@ describe('MockBeneficiaryRepository — resolving an identity is a finding, not 
   it('stops listing the superseded record as a person of its own', async () => {
     const repository = signedInAs(authenticated('mswdo-head'));
 
-    const before = await firstValueFrom(repository.list({}, { page: 1, pageSize: 500 }));
+    const before = await firstValueFrom(repository.list({}, { limit: 500, cursor: null }));
     expect(before.items.some((row) => row.residentId === AURORA_AGAIN)).toBe(true);
 
     await firstValueFrom(repository.resolveIdentity(resolution()));
 
-    const after = await firstValueFrom(repository.list({}, { page: 1, pageSize: 500 }));
+    const after = await firstValueFrom(repository.list({}, { limit: 500, cursor: null }));
     expect(after.items.some((row) => row.residentId === AURORA_AGAIN)).toBe(false);
     expect(after.items.some((row) => row.residentId === AURORA)).toBe(true);
   });
@@ -285,7 +304,7 @@ describe('MockBeneficiaryRepository — the record it assembles', () => {
 
     expect(detail?.standing.roles).toContain('constituent');
     expect(detail?.standing.roles).toContain('enrollee');
-    expect(detail?.enrollments.length).toBeGreaterThan(0);
+    expect(detail?.enrollments?.length).toBeGreaterThan(0);
   });
 
   it('keeps a past enrollment beside the current one for somebody who returned', async () => {
@@ -330,9 +349,9 @@ describe('MockBeneficiaryRepository — the record it assembles', () => {
     // A barangay encoder keeps the registry current and files requests; the
     // whole assistance history of their neighbours is not theirs to read, and
     // proximity is the reason to be stricter rather than looser.
-    return expect(
-      firstValueFrom(repository.list({}, DEFAULT_PAGE_REQUEST)),
-    ).rejects.toBeInstanceOf(PermissionDeniedError);
+    return expect(firstValueFrom(repository.list({}, FIRST_PAGE))).rejects.toBeInstanceOf(
+      PermissionDeniedError,
+    );
   });
 
   it('counts only what was handed over toward the total released', async () => {

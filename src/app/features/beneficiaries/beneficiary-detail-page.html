@@ -35,6 +35,10 @@
             <div class="totals__item">
               <dt>{{ copy.totalReceived }}</dt>
               <dd class="totals__amount">{{ record.totalReleased | peso }}</dd>
+              <!-- Goods are counted beside the money, never valued into it (`DL-93`). -->
+              @if (record.goodsReceivedCount > 0) {
+                <dd class="totals__goods">{{ copy.goodsReceived(record.goodsReceivedCount) }}</dd>
+              }
               <dd class="totals__hint">{{ copy.totalReceivedHint }}</dd>
             </div>
             <div class="totals__item">
@@ -85,7 +89,9 @@
             {{ copy.enrollmentsHeading }}
           </h2>
 
-          @if (enrollments().length === 0) {
+          @if (!membershipRecorded()) {
+            <p class="beneficiary__empty" role="note">{{ membershipNotRecorded }}</p>
+          } @else if (enrollments().length === 0) {
             <p class="beneficiary__empty">{{ copy.enrollmentsNone }}</p>
           } @else {
             <ul class="enrollments">

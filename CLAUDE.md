@@ -264,10 +264,12 @@ master command names as having shipped once already. `check:environments` now fa
 it, and `check:bundle` inspects the built artefact for seed data, because a tree-shaking assumption
 is not a guarantee. The seam is two files swapped by `angular.json` rather than a runtime `if`, so
 a production build cannot reach the mock: it never imports it (`DL-136`). The API is the Node
-service (`DL-164`), and `data/http/api.contract.ts` describes what its `/api/v1` actually serves. In
-the `http` set two ports are served — staff identity and notifications — and the other eighteen are
-bound to **unserved** adapters that make no request and say, in a sentence, that this part of the
-console has no server yet (`DL-165`). Mock data never stands in for a missing server.
+service (`DL-164`), and `data/http/api.contract.ts` describes what its `/api/v1` actually serves. At
+the move two ports were served — staff identity and notifications — and eighteen were not (`DL-165`);
+the casework phases have served the rest since (`DL-173` to `DL-187`), and **six** remain — work,
+reports, search, governance, the newsfeed and events — bound to **unserved** adapters that make no
+request and say, in a sentence, that this part of the console has no server yet. Mock data never
+stands in for a missing server.
 
 `data/http` and `core/http` are the **transport seam**: the only two places
 allowed to name a `snake_case` wire field. Adapters map wire shapes into the

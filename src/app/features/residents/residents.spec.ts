@@ -25,7 +25,7 @@ import { HttpFamilyRepository } from '@data/http/http-repositories';
 import {
   ACCESS_CONTEXT,
   asId,
-  ASSISTANCE_HISTORY_NOT_CONNECTED,
+  ASSISTANCE_HISTORY_NOT_YOURS,
   emptyPage,
   notConnectedSentence,
   NOTIFICATION_REPOSITORY,
@@ -118,7 +118,7 @@ class HistoryNotConnectedRepository extends MockResidentRepository {
           ? null
           : {
               ...profile,
-              history: { kind: 'unavailable', because: ASSISTANCE_HISTORY_NOT_CONNECTED },
+              history: { kind: 'unavailable', because: ASSISTANCE_HISTORY_NOT_YOURS },
             },
       ),
     );
@@ -493,7 +493,7 @@ describe('a record whose secondary panels are not connected', () => {
 
     const section = element.querySelector('#history-heading')?.closest('section');
     expect(section?.querySelector('[role="note"]')?.textContent?.trim()).toBe(
-      ASSISTANCE_HISTORY_NOT_CONNECTED,
+      ASSISTANCE_HISTORY_NOT_YOURS,
     );
     expect(element.querySelector('#cases-heading')).toBeNull();
     expect(element.querySelectorAll('table.history')).toHaveLength(0);

@@ -295,6 +295,12 @@
                 <div>
                   <dt>{{ copy.totalReleased }}</dt>
                   <dd>{{ history.totalReleased | peso }}</dd>
+                  <!-- Goods are counted beside the money, never valued into it (`DL-93`). -->
+                  @if (history.goodsReceivedCount > 0) {
+                    <dd class="totals__goods">
+                      {{ copy.goodsReceived(history.goodsReceivedCount) }}
+                    </dd>
+                  }
                 </div>
                 <div>
                   <dt>{{ copy.lastActivity }}</dt>

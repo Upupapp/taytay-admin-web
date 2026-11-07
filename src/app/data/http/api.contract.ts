@@ -273,6 +273,24 @@ export const API_ENDPOINTS = {
    * the reader's lists would refuse — payouts, the residents' app — is null, never zero.
    */
   officeDashboard: 'office/dashboard',
+  /**
+   * The beneficiary registry (`DL-187`): a projection over the resident registry, keyed on the
+   * resident's id. Cursor-paged and alphabetical, by `q`, `barangay_id`, `role`, `received_from`,
+   * `received_to` and `with_open_duplicate_review`; one record by `{residentId}`, with
+   * `{residentId}/duplicates` and `{residentId}/findings` answered whole.
+   */
+  officeBeneficiaries: 'office/beneficiaries',
+  /**
+   * The duplicate-review queue (`DL-148`, `DL-187`): cursor-paged; `detect` runs a detection pass;
+   * `{id}/preview?canonical_resident_id=` and `{id}/decide` act on one pair. There is no merge.
+   */
+  officeDuplicatePairs: 'office/duplicate-pairs',
+  /**
+   * How much each programme has been used, counted from releases handed over (`DL-187`); one
+   * programme by `{programId}`. A reader who does not read payouts is answered `readable: false`
+   * with a sentence, never a zero.
+   */
+  officeProgramUtilization: 'office/program-utilization',
   /** The open social-worker accounts a request can be assigned to (`DL-178`, `request.assess`). */
   officeSocialWorkers: 'office/social-workers',
   /** The published assessment forms, current versions, answered whole (`DL-178`). */

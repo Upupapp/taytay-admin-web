@@ -69,6 +69,15 @@ import OFFICE_VISITS_PAGE from './office-visits-page.json';
 import OFFICE_VISIT from './office-visit.json';
 import OFFICE_DASHBOARD from './office-dashboard.json';
 import OFFICE_DASHBOARD_INTAKE from './office-dashboard-intake.json';
+import OFFICE_BENEFICIARIES_PAGE from './office-beneficiaries-page.json';
+import OFFICE_BENEFICIARY from './office-beneficiary.json';
+import OFFICE_DUPLICATE_PAIRS_PAGE from './office-duplicate-pairs-page.json';
+import OFFICE_IDENTITY_FINDING from './office-identity-finding.json';
+import OFFICE_IDENTITY_PREVIEW from './office-identity-preview.json';
+import OFFICE_ASSISTANCE_HISTORY from './office-assistance-history.json';
+import OFFICE_ASSISTANCE_HISTORY_WITHHELD from './office-assistance-history-withheld.json';
+import OFFICE_PROGRAM_UTILIZATION from './office-program-utilization.json';
+import OFFICE_PROGRAM_UTILIZATION_WITHHELD from './office-program-utilization-withheld.json';
 import OFFICE_DOCUMENT_GRANT from './office-document-grant.json';
 import ISSUANCE_TYPES from './issuance-types.json';
 import OFFICE_ISSUANCE_TYPE_RETIRED from './office-issuance-type-retired.json';
@@ -328,6 +337,35 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['office-visit', OFFICE_VISIT, 'OfficeVisitEnvelope'],
     ['office-dashboard', OFFICE_DASHBOARD, 'OfficeDashboardEnvelope'],
     ['office-dashboard-intake', OFFICE_DASHBOARD_INTAKE, 'OfficeDashboardEnvelope'],
+    ['office-beneficiaries-page', OFFICE_BENEFICIARIES_PAGE, 'OfficeBeneficiaryListEnvelope'],
+    ['office-beneficiary', OFFICE_BENEFICIARY, 'OfficeBeneficiaryEnvelope'],
+    [
+      'office-duplicate-pairs-page',
+      OFFICE_DUPLICATE_PAIRS_PAGE,
+      'OfficeDuplicateCandidateListEnvelope',
+    ],
+    ['office-identity-finding', OFFICE_IDENTITY_FINDING, 'OfficeIdentityFindingEnvelope'],
+    ['office-identity-preview', OFFICE_IDENTITY_PREVIEW, 'OfficeIdentityPreviewEnvelope'],
+    [
+      'office-assistance-history',
+      OFFICE_ASSISTANCE_HISTORY,
+      'OfficeAssistanceHistoryReadingEnvelope',
+    ],
+    [
+      'office-assistance-history-withheld',
+      OFFICE_ASSISTANCE_HISTORY_WITHHELD,
+      'OfficeAssistanceHistoryReadingEnvelope',
+    ],
+    [
+      'office-program-utilization',
+      OFFICE_PROGRAM_UTILIZATION,
+      'OfficeProgramUtilizationListEnvelope',
+    ],
+    [
+      'office-program-utilization-withheld',
+      OFFICE_PROGRAM_UTILIZATION_WITHHELD,
+      'OfficeProgramUtilizationListEnvelope',
+    ],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
     ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],

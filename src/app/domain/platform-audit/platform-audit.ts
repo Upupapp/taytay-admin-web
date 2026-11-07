@@ -94,6 +94,10 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'office_case.request_linked': 'Named an assistance request as part of a case, with a reason',
   'office_case.request_unlinked':
     'Ended an assistance request’s link to a case, with a reason; the link stays in its history',
+  'office_duplicate_pair.detection_run':
+    'Ran a search for possible duplicate records; each pair found waits for a person',
+  'office_identity_finding.recorded':
+    'Recorded whether two records are one person, with a reason; nothing was merged',
   'office_referral.drafted': 'Drafted a referral to another office; nothing was disclosed',
   'office_referral.basis_recorded': 'Recorded the lawful basis for a referral, with its reason',
   'office_referral.field_shared': 'Chose one more field for a referral to carry, with the need for it',

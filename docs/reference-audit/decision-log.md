@@ -7971,3 +7971,102 @@ programme detail, reports, search and the work queues. Fixed once, in the shared
 
 Not run against a live API or the staging server; every request shape is held to the vendored spec
 by the contract checks and the HTTP specs.
+
+## DL-187 — the beneficiary registry is served: a projection over the resident registry, one history for every screen, utilization counted from releases, and no merge
+
+`taytay-backend` `4ae9941` (migration `0038_office_beneficiaries`) and `fbb86fe` (the spec's named
+envelopes) serve `BENEFICIARY_REPOSITORY`, a resident's assistance history and programme
+utilization. The spec vendored here is `fbb86fe`'s (239 operations). Casework phase 6b; the
+dashboard was 6a (`DL-182`). **Six ports remain unserved**: work, reports, search, governance, the
+newsfeed and events.
+
+### What the server holds, and what it never holds
+
+There is **no beneficiary table and no beneficiary id** (`DL-71`, now true on the server). The
+registry is a projection over `office_residents`, keyed on the resident's id, with the registry's
+own scope and redaction (`personReadable`, `disclose`): `beneficiary.view` reads it; a caseload
+(`assigned-cases`) is refused the list and reads its own clients' records (`DL-183`); a protected
+record's given name is masked and not matched for a reader not shown it. The standing is **derived on
+every read** — `applicant` from a filed request in an open status, `beneficiary` ("Recipient") from a
+release handed over — and none of it is stored. The only two tables written are the pairs a
+detection run holds and the findings people record, both append-only by trigger.
+
+### One assembly, on the server
+
+`assistanceHistory` (backend `office-beneficiaries/history.ts`) is the one assembly: filed requests
+(a draft is not a request, `DL-63`), every release, and sent referrals (a draft referral was never
+made). The list's figures, the beneficiary record and `GET office/residents/{id}/assistance-history`
+all read it, so the resident profile and the beneficiary record cannot disagree about what a family
+received. In this console `historySummaryFor` stays the mock's single assembly; the HTTP adapters
+read the server's and assemble nothing. The timeline is still built here, by `buildAssistanceTimeline`,
+from that one history; the list's "events" count is the server counting the same lines.
+
+**Goods are counted, never valued** (`DL-93`): the history, the list and utilization carry money as
+integer centavos and goods as a count, and `ResidentAssistanceHistory`, `BeneficiarySummary`,
+`BeneficiaryDetail` and `ProgramUtilization` gained the count, so a screen never shows "₱0" for a
+family that received rice.
+
+### Decisions taken (the owner may overturn any; each is the easiest to reverse)
+
+1. **Programme membership is not recorded by the API, and is said to be so.** No enrollment table was
+   invented: no screen records one, and a table nothing fills would make "not a programme member" a
+   false finding. On the wire `current_program_names`, `enrollments`, the enrollment evidence counts
+   and the preview's `moving_enrollment_count` are `null`; in the domain those fields became nullable
+   and the screens say `PROGRAMME_MEMBERSHIP_NOT_RECORDED` or "Not recorded" — never "Not enrolled".
+   The `enrollee` standing is never derived, and a programme filter or the `enrollee` filter is
+   refused in words by the adapter without a request (and by the server, 422). *For the owner:*
+   should the office record programme membership (enrol, suspend, exit with a reason), and from which
+   screen?
+2. **A resident's history is `beneficiary.view`'s.** A reader of the record without it — the release
+   officer and the barangay link — is answered `readable: false` with a sentence
+   (`ASSISTANCE_HISTORY_NOT_YOURS`), with a 200, so the profile still opens. One key rather than a key
+   per section, because the history is one picture and the role table already says who reads it
+   (TAB 13's mock showed it to every reader of the record; the mock now follows the server). *For the
+   owner:* should a barangay link see the requests (not the payouts) of residents in their barangay?
+3. **A same-person finding is read across, never re-pointed.** Superseding moves nothing: the
+   superseded record's requests, releases and referrals stay its own, and are read under the record
+   kept — in the list's figures, the record and the history — each line still citing its own record.
+   The superseded record leaves the list, stays readable by id (`superseded_by` on the wire), and is
+   superseded once at most (the database refuses a second finding naming it). The preview counts what
+   stays attached to the superseded record (filed requests, releases, cases about it) and names the
+   programmes both records applied to.
+4. **The duplicate review is refused to a caseload.** A social worker holds
+   `beneficiary.review-duplicates`, but the queue, a detection run and a record's candidates span the
+   registry, which `DL-183` keeps from a caseload; so a social worker sees no candidates, and the
+   review is the MSWDO head's and the administrator's. Intake and the auditor are withheld it as
+   before (`DL-74`). *For the owner:* should social workers review duplicates among their own clients?
+5. **A pair holds the signals it was found on.** Detection compares every active record nobody
+   superseded, holds each `strong` or `moderate` pair once (`weak` is not held, as the mock's matcher
+   drops it), and records the signals as found — an attribute, an outcome and a rule; the database
+   refuses a signal with any other key. A later correction to a record does not rewrite a pair already
+   held; the reviewer opens both records. Re-running detection adds only new pairs.
+6. **The finding's verdict travels in this console's words.** `distinct-people`, not the retired
+   API's `different-person`: the Node API was written to the console's vocabulary, so `DL-148`'s
+   translation is gone, and the server records which record is kept (`canonical_resident_id`) — the
+   gap `DL-148` recorded is closed.
+7. **Utilization is counted from releases handed over and nothing else**, and only for readers of
+   payouts (`release.view`, not a caseload), as the dashboard withholds its payout group (`DL-182`);
+   anybody else is answered `readable: false` with `PROGRAM_UTILIZATION_NOT_YOURS`. Per programme:
+   releases handed over (money and goods), the money in centavos, and the goods counted. Figures the
+   releases cannot give — filed, open, completed, rejected, approved totals, a remaining balance — are
+   not served (`DL-159`, `DL-69`). `withheld` is the server's small-cell flag and is `false`: the
+   figures go only to readers who can already list every release behind them, so a small cell hides
+   nothing from them (`DL-105` is for counts of people that leave the office).
+8. **The received period means a release handed over on those dates** (Manila), not the last activity
+   of any kind as the mock used to read it; the mock now reads it the same way.
+9. **The list is alphabetical, a cursor at a time** (`DL-161`): `BeneficiaryRepository.list` and
+   `duplicateQueue` take a `CursorRequest` and the screens say "more available", never "page 1 of N";
+   `BeneficiarySortField` is gone, because the contract sends no `sort`.
+
+### What the console changed
+
+`HttpBeneficiaryRepository` with `beneficiary.mapper.ts` (explicit `toWireIdentityDecision`; every
+read whole or refused in words — a row, a line of history or a candidate left out would read as not
+being there); `HttpResidentRepository.getProfile` reads the history; `HttpProgramRepository` reads
+utilization; `UnservedBeneficiaryRepository` is gone and `check:routes`' unserved ceiling went from 7
+to **6**. Two audit codes are labelled (`office_duplicate_pair.detection_run`,
+`office_identity_finding.recorded`). Fixtures for every new envelope are held to the vendored spec.
+
+**Still open:** the intake advisory on the server still says payouts and cases are not read
+(`office-requests/advisory.ts`, `NOT_READ`); it could now read releases and cases, which is the next
+natural step for `DL-60` and was not in this phase.

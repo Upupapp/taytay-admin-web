@@ -11934,6 +11934,848 @@
           }
         }
       }
+    },
+    "/api/v1/office/beneficiaries": {
+      "get": {
+        "operationId": "listOfficeBeneficiaries",
+        "summary": "The beneficiary registry",
+        "description": "Needs beneficiary.view; refused to a caseload (assigned-cases). A projection over the resident registry, alphabetical, one entry per record nobody superseded. Every figure is read across the records superseded into it, from the same history the record is read from. No programme filter and no enrollee standing: programme membership is not recorded here.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "barangay_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "constituent",
+                "applicant",
+                "beneficiary"
+              ]
+            }
+          },
+          {
+            "name": "received_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "A release handed over on or after this Manila date."
+          },
+          {
+            "name": "received_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "A release handed over on or before this Manila date."
+          },
+          {
+            "name": "with_open_duplicate_review",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeBeneficiaryListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key, a caseload, or the duplicate filter without beneficiary.review-duplicates.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A filter it does not know, or a reversed period.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/beneficiaries/{residentId}": {
+      "get": {
+        "operationId": "getOfficeBeneficiary",
+        "summary": "One person’s beneficiary record",
+        "description": "Needs beneficiary.view. A caseload reads its own clients (DL-183). Out of scope answers 404, exactly as absent. Duplicate candidates only for a reviewer outside a caseload.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "residentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The record.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeBeneficiaryEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not this reader’s.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/beneficiaries/{residentId}/duplicates": {
+      "get": {
+        "operationId": "listOfficeBeneficiaryDuplicates",
+        "summary": "The open pairs one record is in",
+        "description": "Needs beneficiary.review-duplicates; refused to a caseload. Answered whole.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "residentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every open pair, strongest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeDuplicateCandidateSetEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key, or a caseload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not this reader’s.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/beneficiaries/{residentId}/findings": {
+      "get": {
+        "operationId": "listOfficeBeneficiaryFindings",
+        "summary": "The findings naming one record",
+        "description": "Needs beneficiary.view. Newest first. Answered whole.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "residentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every finding.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeIdentityFindingListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not this reader’s.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/duplicate-pairs": {
+      "get": {
+        "operationId": "listOfficeDuplicatePairs",
+        "summary": "The duplicate-review queue",
+        "description": "Needs beneficiary.review-duplicates; refused to a caseload. Open pairs only — no finding, both records active and neither superseded — strongest first, then the longest waiting. Reading computes nothing: a detection run fills it.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeDuplicateCandidateListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key, or a caseload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter it does not know.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/duplicate-pairs/detect": {
+      "post": {
+        "operationId": "detectOfficeDuplicatePairs",
+        "summary": "Run a detection pass",
+        "description": "Needs beneficiary.review-duplicates; refused to a caseload. Compares every active record nobody superseded and holds each strong or moderate pair not already held. Resolves nothing.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "How many pairs are open, and how many this run added.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeDuplicateDetectionEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key, or a caseload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/duplicate-pairs/{id}/preview": {
+      "get": {
+        "operationId": "previewOfficeIdentityFinding",
+        "summary": "What a same-person finding would carry across",
+        "description": "Needs beneficiary.review-duplicates. Counts what stays attached to the record that would be superseded, to be read under the record kept. Records nothing and moves nothing.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "canonical_resident_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The preview.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeIdentityPreviewEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key, or a caseload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such pair.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The record kept is not one of the pair.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/duplicate-pairs/{id}/decide": {
+      "post": {
+        "operationId": "decideOfficeDuplicatePair",
+        "summary": "Record a finding about one pair",
+        "description": "Needs beneficiary.review-duplicates; refused to a caseload. A reason is required. Idempotent on the pair: the same finding again answers 200 with the one recorded; a different one is 409. same-person supersedes one record without deleting it; nothing is merged.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeIdentityDecide"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The finding already recorded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeIdentityFindingEnvelope"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "The finding, recorded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeIdentityFindingEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key, or a caseload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such pair.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A different finding is recorded, or a record of the pair is already superseded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No reason, or a record kept from outside the pair.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/residents/{id}/assistance-history": {
+      "get": {
+        "operationId": "getOfficeResidentAssistanceHistory",
+        "summary": "A resident’s assistance history",
+        "description": "Needs resident.view; a caseload reads its own clients. The history itself is beneficiary.view’s: a reader without it is told so with readable: false and a sentence, never an empty history.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The history, or why it is not shown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeAssistanceHistoryReadingEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not this reader’s.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/program-utilization": {
+      "get": {
+        "operationId": "listOfficeProgramUtilization",
+        "summary": "How much each programme has been used",
+        "description": "Needs program.view. Counted from releases handed over and nothing else; every programme, unused ones at zero. The figures are payouts: a reader without release.view, or a caseload, is told so with readable: false and a sentence.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every programme’s figures, or why they are not shown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeProgramUtilizationListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter it does not know.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/program-utilization/{programId}": {
+      "get": {
+        "operationId": "getOfficeProgramUtilization",
+        "summary": "How much one programme has been used",
+        "description": "As the list, for one programme.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "programId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The programme’s figures, or why they are not shown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeProgramUtilizationEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such programme.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -22367,6 +23209,1255 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/IssuanceFileGrant"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeAssistanceHistory": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "requests",
+          "releases",
+          "referrals",
+          "released_centavos",
+          "goods_received_count",
+          "open_request_count",
+          "last_activity_at"
+        ],
+        "properties": {
+          "requests": {
+            "type": "array",
+            "description": "Filed requests, latest change first. A draft is not a request and is not listed.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "reference_number",
+                "program_id",
+                "program_name",
+                "status",
+                "requested_amount_centavos",
+                "approved_amount_centavos",
+                "submitted_at",
+                "updated_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "reference_number": {
+                  "type": "string"
+                },
+                "program_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "program_name": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "draft",
+                    "submitted",
+                    "intake-review",
+                    "assessment",
+                    "endorsed",
+                    "approved",
+                    "scheduled",
+                    "released",
+                    "completed",
+                    "returned",
+                    "rejected",
+                    "cancelled",
+                    "expired"
+                  ]
+                },
+                "requested_amount_centavos": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "description": "Integer centavos."
+                },
+                "approved_amount_centavos": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "description": "What the latest approval recorded, integer centavos; null for goods or before approval."
+                },
+                "submitted_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "releases": {
+            "type": "array",
+            "description": "Every release prepared for this person, handed over first, latest first.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "request_id",
+                "reference_number",
+                "status",
+                "method",
+                "kind",
+                "amount_centavos",
+                "scheduled_for",
+                "released_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "request_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "reference_number": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "for-release",
+                    "scheduled",
+                    "released",
+                    "claimed",
+                    "unclaimed",
+                    "deferred",
+                    "needs-correction",
+                    "completed",
+                    "voided"
+                  ]
+                },
+                "method": {
+                  "type": "string",
+                  "enum": [
+                    "cash",
+                    "check",
+                    "e-wallet",
+                    "bank-transfer",
+                    "in-kind"
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "money",
+                    "in-kind"
+                  ]
+                },
+                "amount_centavos": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "description": "Integer centavos for money; null for goods, which are never valued."
+                },
+                "scheduled_for": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date"
+                },
+                "released_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "referrals": {
+            "type": "array",
+            "description": "Referrals sent to another organisation, latest first. A draft was never made and is not listed.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "reference_number",
+                "destination",
+                "destination_name",
+                "status",
+                "referred_at",
+                "responded_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "reference_number": {
+                  "type": "string"
+                },
+                "destination": {
+                  "type": "string",
+                  "enum": [
+                    "dswd-field-office",
+                    "hospital-msw",
+                    "philhealth",
+                    "peso",
+                    "barangay-vaw-desk",
+                    "women-and-children-protection-desk",
+                    "other-lgu-office",
+                    "ngo-partner"
+                  ]
+                },
+                "destination_name": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "draft",
+                    "sent",
+                    "acknowledged",
+                    "in-progress",
+                    "waiting-requirements",
+                    "served",
+                    "declined",
+                    "closed"
+                  ]
+                },
+                "referred_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "responded_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "released_centavos": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Money handed over (released, claimed, completed), integer centavos. Goods add nothing."
+          },
+          "goods_received_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Releases of goods handed over: counted, never valued."
+          },
+          "open_request_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Filed requests not in a terminal status."
+          },
+          "last_activity_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "One person’s assistance history, assembled once. Read across every record a same-person finding superseded into this one; nothing is re-pointed."
+      },
+      "OfficeBeneficiaryStanding": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "roles",
+          "evidence"
+        ],
+        "properties": {
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "constituent",
+                "applicant",
+                "beneficiary",
+                "enrollee"
+              ]
+            },
+            "description": "Every standing held, derived on read and never stored. `enrollee` is never derived: programme membership is not recorded here."
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "open_request_count",
+              "settled_request_count",
+              "received_release_count",
+              "current_enrollment_count",
+              "past_enrollment_count"
+            ],
+            "properties": {
+              "open_request_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "settled_request_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "received_release_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "current_enrollment_count": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "null: programme membership is not recorded."
+              },
+              "past_enrollment_count": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "null: programme membership is not recorded."
+              }
+            }
+          }
+        },
+        "description": "The four standings, derived from filed requests, handed-over releases and enrollments (DL-71)."
+      },
+      "OfficeDuplicateCandidate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "pair_id",
+          "resident_id",
+          "other_resident_id",
+          "resident_label",
+          "other_label",
+          "strength",
+          "signals",
+          "holds_sensitive_record",
+          "detected_at"
+        ],
+        "properties": {
+          "pair_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "other_resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resident_label": {
+            "type": "string",
+            "description": "Surname and a given initial."
+          },
+          "other_label": {
+            "type": "string",
+            "description": "Surname and a given initial."
+          },
+          "strength": {
+            "type": "string",
+            "enum": [
+              "strong",
+              "moderate",
+              "weak"
+            ],
+            "description": "Orders the queue; decides nothing."
+          },
+          "signals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "attribute",
+                "outcome",
+                "rule"
+              ],
+              "properties": {
+                "attribute": {
+                  "type": "string",
+                  "enum": [
+                    "surname",
+                    "given-name",
+                    "birth-date",
+                    "sex",
+                    "barangay",
+                    "street-address",
+                    "mobile",
+                    "philsys-last-four",
+                    "household"
+                  ]
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "same",
+                    "similar",
+                    "differs",
+                    "not-comparable"
+                  ]
+                },
+                "rule": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "An attribute, an outcome and the rule applied — never a value (DL-73)."
+          },
+          "holds_sensitive_record": {
+            "type": "boolean"
+          },
+          "detected_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "A pair the office is holding for review, as found by a detection run."
+      },
+      "OfficeIdentityFinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "pair_id",
+          "verdict",
+          "canonical_resident_id",
+          "superseded_resident_id",
+          "pair",
+          "reason",
+          "decided_by",
+          "decided_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pair_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "same-person",
+              "distinct-people"
+            ]
+          },
+          "canonical_resident_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "superseded_resident_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "pair": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "reason": {
+            "type": "string"
+          },
+          "decided_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "decided_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "A reviewer’s finding about one pair. Append-only. There is no merge."
+      },
+      "OfficeBeneficiarySummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "resident_id",
+          "resident",
+          "household_id",
+          "barangay_id",
+          "standing",
+          "current_program_names",
+          "assistance_event_count",
+          "last_assistance_at",
+          "released_centavos",
+          "goods_received_count",
+          "open_request_count",
+          "has_open_duplicate_review"
+        ],
+        "properties": {
+          "resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resident": {
+            "$ref": "#/components/schemas/OfficeResident"
+          },
+          "household_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "barangay_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "standing": {
+            "$ref": "#/components/schemas/OfficeBeneficiaryStanding"
+          },
+          "current_program_names": {
+            "type": "null",
+            "description": "Programme membership is not recorded here: null, never an empty list."
+          },
+          "assistance_event_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "last_assistance_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "released_centavos": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Money handed over, integer centavos."
+          },
+          "goods_received_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "open_request_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "has_open_duplicate_review": {
+            "type": "boolean",
+            "description": "A flag, never the candidate. False for a reader who does not review duplicates."
+          }
+        }
+      },
+      "OfficeBeneficiaryDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "resident_id",
+          "resident",
+          "household_id",
+          "barangay_id",
+          "superseded_by",
+          "standing",
+          "enrollments",
+          "history",
+          "duplicate_candidates"
+        ],
+        "properties": {
+          "resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resident": {
+            "$ref": "#/components/schemas/OfficeResident"
+          },
+          "household_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "barangay_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "superseded_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The record a same-person finding keeps in this one’s place, if any."
+          },
+          "standing": {
+            "$ref": "#/components/schemas/OfficeBeneficiaryStanding"
+          },
+          "enrollments": {
+            "type": "null",
+            "description": "Programme membership is not recorded here: null, never an empty list."
+          },
+          "history": {
+            "$ref": "#/components/schemas/OfficeAssistanceHistory"
+          },
+          "duplicate_candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeDuplicateCandidate"
+            },
+            "description": "Empty for a reader who does not review duplicates."
+          }
+        }
+      },
+      "OfficeIdentityPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "pair_id",
+          "canonical_resident_id",
+          "superseded_resident_id",
+          "moving_request_count",
+          "moving_release_count",
+          "moving_case_count",
+          "moving_enrollment_count",
+          "overlapping_program_names"
+        ],
+        "properties": {
+          "pair_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "canonical_resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "superseded_resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "moving_request_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "moving_release_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "moving_case_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "moving_enrollment_count": {
+            "type": "null",
+            "description": "Programme membership is not recorded here."
+          },
+          "overlapping_program_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "OfficeIdentityDecide": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "verdict",
+          "canonical_resident_id",
+          "reason"
+        ],
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "same-person",
+              "distinct-people"
+            ]
+          },
+          "canonical_resident_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The record kept: required for same-person, null for distinct-people."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        }
+      },
+      "OfficeProgramUtilization": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "program_id",
+          "release_count",
+          "released_centavos",
+          "goods_count",
+          "withheld"
+        ],
+        "properties": {
+          "program_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "release_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Releases handed over under the programme, money and goods alike."
+          },
+          "released_centavos": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Money handed over, integer centavos."
+          },
+          "goods_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Of release_count, releases of goods: counted, never valued."
+          },
+          "withheld": {
+            "type": "boolean",
+            "description": "True when the server withholds a small cell. Never true today."
+          }
+        }
+      },
+      "OfficeBeneficiaryListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeBeneficiarySummary"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "pagination": {
+                "$ref": "#/components/schemas/Pagination"
+              }
+            }
+          }
+        }
+      },
+      "OfficeBeneficiaryEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeBeneficiaryDetail"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeDuplicateCandidateListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeDuplicateCandidate"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "pagination": {
+                "$ref": "#/components/schemas/Pagination"
+              }
+            }
+          }
+        }
+      },
+      "OfficeDuplicateCandidateSetEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeDuplicateCandidate"
+            },
+            "description": "Every open pair, answered whole."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeDuplicateDetectionEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "open_pairs",
+              "new_pairs"
+            ],
+            "properties": {
+              "open_pairs": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "new_pairs": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeIdentityPreviewEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeIdentityPreview"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeIdentityFindingEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeIdentityFinding"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeIdentityFindingListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeIdentityFinding"
+            },
+            "description": "Every finding, newest first."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeAssistanceHistoryReadingEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "readable"
+            ],
+            "properties": {
+              "readable": {
+                "type": "boolean",
+                "description": "false: the reader is not shown these figures, and `because` says why."
+              },
+              "because": {
+                "type": "string",
+                "description": "Only when readable is false: why, in a sentence."
+              },
+              "requests": {
+                "type": "array",
+                "description": "Filed requests, latest change first. A draft is not a request and is not listed.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "reference_number",
+                    "program_id",
+                    "program_name",
+                    "status",
+                    "requested_amount_centavos",
+                    "approved_amount_centavos",
+                    "submitted_at",
+                    "updated_at"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "reference_number": {
+                      "type": "string"
+                    },
+                    "program_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "program_name": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "submitted",
+                        "intake-review",
+                        "assessment",
+                        "endorsed",
+                        "approved",
+                        "scheduled",
+                        "released",
+                        "completed",
+                        "returned",
+                        "rejected",
+                        "cancelled",
+                        "expired"
+                      ]
+                    },
+                    "requested_amount_centavos": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "description": "Integer centavos."
+                    },
+                    "approved_amount_centavos": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "description": "What the latest approval recorded, integer centavos; null for goods or before approval."
+                    },
+                    "submitted_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              },
+              "releases": {
+                "type": "array",
+                "description": "Every release prepared for this person, handed over first, latest first.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "request_id",
+                    "reference_number",
+                    "status",
+                    "method",
+                    "kind",
+                    "amount_centavos",
+                    "scheduled_for",
+                    "released_at"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "reference_number": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "for-release",
+                        "scheduled",
+                        "released",
+                        "claimed",
+                        "unclaimed",
+                        "deferred",
+                        "needs-correction",
+                        "completed",
+                        "voided"
+                      ]
+                    },
+                    "method": {
+                      "type": "string",
+                      "enum": [
+                        "cash",
+                        "check",
+                        "e-wallet",
+                        "bank-transfer",
+                        "in-kind"
+                      ]
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "money",
+                        "in-kind"
+                      ]
+                    },
+                    "amount_centavos": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "description": "Integer centavos for money; null for goods, which are never valued."
+                    },
+                    "scheduled_for": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date"
+                    },
+                    "released_at": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    }
+                  }
+                }
+              },
+              "referrals": {
+                "type": "array",
+                "description": "Referrals sent to another organisation, latest first. A draft was never made and is not listed.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "reference_number",
+                    "destination",
+                    "destination_name",
+                    "status",
+                    "referred_at",
+                    "responded_at"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "reference_number": {
+                      "type": "string"
+                    },
+                    "destination": {
+                      "type": "string",
+                      "enum": [
+                        "dswd-field-office",
+                        "hospital-msw",
+                        "philhealth",
+                        "peso",
+                        "barangay-vaw-desk",
+                        "women-and-children-protection-desk",
+                        "other-lgu-office",
+                        "ngo-partner"
+                      ]
+                    },
+                    "destination_name": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "sent",
+                        "acknowledged",
+                        "in-progress",
+                        "waiting-requirements",
+                        "served",
+                        "declined",
+                        "closed"
+                      ]
+                    },
+                    "referred_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "responded_at": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    }
+                  }
+                }
+              },
+              "released_centavos": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Money handed over (released, claimed, completed), integer centavos. Goods add nothing."
+              },
+              "goods_received_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Releases of goods handed over: counted, never valued."
+              },
+              "open_request_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Filed requests not in a terminal status."
+              },
+              "last_activity_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              }
+            },
+            "description": "When readable is true, the history (OfficeAssistanceHistory) at the top level; when false, only `because`."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeProgramUtilizationListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "readable"
+            ],
+            "properties": {
+              "readable": {
+                "type": "boolean",
+                "description": "false: the reader is not shown these figures, and `because` says why."
+              },
+              "because": {
+                "type": "string",
+                "description": "Only when readable is false: why, in a sentence."
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/OfficeProgramUtilization"
+                },
+                "description": "Only when readable is true."
+              }
+            }
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeProgramUtilizationEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "readable"
+            ],
+            "properties": {
+              "readable": {
+                "type": "boolean",
+                "description": "false: the reader is not shown these figures, and `because` says why."
+              },
+              "because": {
+                "type": "string",
+                "description": "Only when readable is false: why, in a sentence."
+              },
+              "utilization": {
+                "$ref": "#/components/schemas/OfficeProgramUtilization",
+                "description": "Only when readable is true."
+              }
+            }
           },
           "meta": {
             "type": "object"

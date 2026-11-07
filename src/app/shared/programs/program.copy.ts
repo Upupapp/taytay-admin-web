@@ -107,6 +107,9 @@ export const PROGRAM_COPY = {
     description:
       'A description of what has happened, not a budget position. This front end does not hold the appropriation and does not compute a remaining balance.',
     releaseCount: 'Payouts',
+    /** Of the payouts, the releases of goods: counted, never valued (`DL-93`). */
+    goodsCount: (count: number): string =>
+      `— ${count} of them ${count === 1 ? 'was' : 'were'} goods, counted rather than valued`,
     releasedTotal: 'Handed over',
     unused: 'Nothing has been handed over under this programme yet.',
     withheldValue: 'Withheld',

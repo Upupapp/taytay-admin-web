@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, type Type } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, of, type Observable } from 'rxjs';
+import { firstValueFrom, map, of, throwError, type Observable } from 'rxjs';
 
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
@@ -15,13 +15,21 @@ import {
   BENEFICIARY_REPOSITORY,
   NOTIFICATION_REPOSITORY,
   PROGRAM_REPOSITORY,
+  PROGRAMME_MEMBERSHIP_NOT_RECORDED,
   SAVED_VIEW_REPOSITORY,
   STAFF_REPOSITORY,
   asId,
   emptyPage,
   toAuthenticatedUser,
   type AuthenticatedUser,
+  type BeneficiaryDetail,
+  type BeneficiaryFilter,
+  type BeneficiaryRepository,
+  type BeneficiarySummary,
+  type CursorPage,
+  type CursorRequest,
   type Page,
+  type ResidentId,
   type StaffRepository,
   type StaffRole,
   type StaffUser,
@@ -84,7 +92,51 @@ function staffRepository(user: StaffUser): StaffRepository {
 @Component({ template: 'stub' })
 class StubPage {}
 
-async function configure(role: StaffRole): Promise<void> {
+/** The registry read two at a time, so "Show more" has a further page to follow. */
+class TwoAtATime extends MockBeneficiaryRepository {
+  override list(
+    filter: BeneficiaryFilter,
+    page: CursorRequest,
+  ): Observable<CursorPage<BeneficiarySummary>> {
+    return super.list(filter, { ...page, limit: 2 });
+  }
+}
+
+/** The first page arrives; the next one does not. */
+class SecondPageFails extends TwoAtATime {
+  override list(
+    filter: BeneficiaryFilter,
+    page: CursorRequest,
+  ): Observable<CursorPage<BeneficiarySummary>> {
+    return page.cursor ? throwError(() => new Error('offline')) : super.list(filter, page);
+  }
+}
+
+/** As the API answers today: programme membership is not recorded anywhere (`DL-187`). */
+class MembershipNotRecorded extends MockBeneficiaryRepository {
+  override list(
+    filter: BeneficiaryFilter,
+    page: CursorRequest,
+  ): Observable<CursorPage<BeneficiarySummary>> {
+    return super.list(filter, page).pipe(
+      map((result) => ({
+        ...result,
+        items: result.items.map((row) => ({ ...row, currentProgramNames: null })),
+      })),
+    );
+  }
+
+  override getByResidentId(id: ResidentId): Observable<BeneficiaryDetail | null> {
+    return super
+      .getByResidentId(id)
+      .pipe(map((detail) => (detail === null ? null : { ...detail, enrollments: null })));
+  }
+}
+
+async function configure(
+  role: StaffRole,
+  beneficiaries: Type<BeneficiaryRepository> = MockBeneficiaryRepository,
+): Promise<void> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -97,7 +149,7 @@ async function configure(role: StaffRole): Promise<void> {
       { provide: APP_ENVIRONMENT, useValue: TEST_ENVIRONMENT },
       { provide: ACCESS_CONTEXT, useExisting: SessionState },
       { provide: STAFF_REPOSITORY, useValue: staffRepository(staffUser(role)) },
-      { provide: BENEFICIARY_REPOSITORY, useClass: MockBeneficiaryRepository },
+      { provide: BENEFICIARY_REPOSITORY, useClass: beneficiaries },
       { provide: PROGRAM_REPOSITORY, useClass: MockProgramRepository },
       { provide: SAVED_VIEW_REPOSITORY, useClass: MockSavedViewRepository },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
@@ -108,8 +160,9 @@ async function configure(role: StaffRole): Promise<void> {
 
 async function openList(
   role: StaffRole = 'mswdo-head',
+  beneficiaries?: Type<BeneficiaryRepository>,
 ): Promise<ComponentFixture<BeneficiaryListPage>> {
-  await configure(role);
+  await configure(role, beneficiaries);
   await TestBed.inject(Router).navigateByUrl('/beneficiaries');
   const fixture = TestBed.createComponent(BeneficiaryListPage);
   await fixture.whenStable();
@@ -119,8 +172,9 @@ async function openList(
 async function openDetail(
   id: string,
   role: StaffRole = 'mswdo-head',
+  beneficiaries?: Type<BeneficiaryRepository>,
 ): Promise<ComponentFixture<BeneficiaryDetailPage>> {
-  await configure(role);
+  await configure(role, beneficiaries);
   await TestBed.inject(Router).navigateByUrl(`/beneficiaries/${id}`);
   const fixture = TestBed.createComponent(BeneficiaryDetailPage);
   fixture.componentRef.setInput('id', id);
@@ -169,6 +223,57 @@ describe('the beneficiary filter lives in the URL', () => {
     // 31 February reads as a valid shape and would otherwise roll forward into
     // March, quietly shortening the history the screen reports.
     expect(readBeneficiaryQuery(params({ from: '2026-02-31' })).filter.receivedFrom).toBeUndefined();
+  });
+});
+
+/* ── The list reads a cursor page at a time ───────────────────────────────── */
+
+describe('the beneficiary list', () => {
+  const showMore = (element: HTMLElement) =>
+    Array.from(element.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Show more',
+    );
+
+  it('follows the cursor on "Show more", keeping the rows shown and never counting pages', async () => {
+    const fixture = await openList('mswdo-head', TwoAtATime);
+    const element = html(fixture);
+    const status = () => element.querySelector('.beneficiaries__more [role="status"]');
+
+    expect(element.querySelectorAll('tbody tr')).toHaveLength(2);
+    expect(status()?.textContent).toContain('2 shown.');
+    expect(status()?.textContent).toContain('More are available.');
+
+    showMore(element)?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(element.querySelectorAll('tbody tr')).toHaveLength(4);
+    expect(status()?.textContent).toContain('4 shown.');
+    expect(element.textContent).not.toMatch(/page \d+ of/i);
+  });
+
+  it('says so when the next page fails, and keeps the rows already shown', async () => {
+    const fixture = await openList('mswdo-head', SecondPageFails);
+    const element = html(fixture);
+
+    showMore(element)?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(element.querySelectorAll('tbody tr')).toHaveLength(2);
+    expect(element.querySelector('.beneficiaries__more [role="alert"]')?.textContent).toContain(
+      'could not be loaded',
+    );
+  });
+
+  it('says programme membership is not recorded rather than that nobody is enrolled', async () => {
+    const element = html(await openList('mswdo-head', MembershipNotRecorded));
+    const cells = Array.from(element.querySelectorAll('.programmes')).map((cell) =>
+      cell.textContent?.trim(),
+    );
+
+    expect(cells.length).toBeGreaterThan(0);
+    expect(cells.every((text) => text === 'Not recorded')).toBe(true);
   });
 });
 
@@ -221,6 +326,17 @@ describe('the assistance history', () => {
     for (const reference of references) {
       expect((reference.textContent ?? '').trim().length).toBeGreaterThan(0);
     }
+  });
+
+  it('says programme membership is not recorded, rather than "not enrolled"', async () => {
+    const element = html(await openDetail(AURORA, 'mswdo-head', MembershipNotRecorded));
+    const panel = element.querySelector('[aria-labelledby="programmes-heading"]');
+
+    expect(panel?.querySelector('[role="note"]')?.textContent?.trim()).toBe(
+      PROGRAMME_MEMBERSHIP_NOT_RECORDED,
+    );
+    expect(panel?.textContent).not.toContain('Not enrolled in any continuing programme.');
+    expect(panel?.querySelector('.enrollments')).toBeNull();
   });
 
   it('keeps an exited enrollment on the record rather than dropping it', async () => {

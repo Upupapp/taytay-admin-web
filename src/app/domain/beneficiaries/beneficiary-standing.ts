@@ -89,8 +89,9 @@ export interface StandingEvidence {
   readonly openRequestCount: number;
   readonly settledRequestCount: number;
   readonly receivedReleaseCount: number;
-  readonly currentEnrollmentCount: number;
-  readonly pastEnrollmentCount: number;
+  /** `null` where programme membership is not recorded: an absence of a record, not a zero (`DL-187`). */
+  readonly currentEnrollmentCount: number | null;
+  readonly pastEnrollmentCount: number | null;
 }
 
 export interface BeneficiaryStanding {
@@ -102,7 +103,8 @@ export interface BeneficiaryStanding {
 export interface StandingInput {
   readonly requestStatuses: readonly AssistanceRequestStatus[];
   readonly releaseStatuses: readonly ReleaseStatus[];
-  readonly enrollments: readonly ProgramEnrollment[];
+  /** `null` where programme membership is not recorded: `enrollee` is then never derived. */
+  readonly enrollments: readonly ProgramEnrollment[] | null;
 }
 
 /**
@@ -122,8 +124,12 @@ export function deriveStanding(input: StandingInput): BeneficiaryStanding {
   const receivedReleaseCount = input.releaseStatuses.filter(
     isReceivedReleaseStatus,
   ).length;
-  const currentEnrollmentCount = input.enrollments.filter(isCurrentEnrollment).length;
-  const pastEnrollmentCount = input.enrollments.length - currentEnrollmentCount;
+  const currentEnrollmentCount =
+    input.enrollments === null ? null : input.enrollments.filter(isCurrentEnrollment).length;
+  const pastEnrollmentCount =
+    input.enrollments === null || currentEnrollmentCount === null
+      ? null
+      : input.enrollments.length - currentEnrollmentCount;
 
   const roles: BeneficiaryRole[] = ['constituent'];
   if (openRequestCount > 0) {
@@ -132,7 +138,7 @@ export function deriveStanding(input: StandingInput): BeneficiaryStanding {
   if (receivedReleaseCount > 0) {
     roles.push('beneficiary');
   }
-  if (currentEnrollmentCount > 0) {
+  if (currentEnrollmentCount !== null && currentEnrollmentCount > 0) {
     roles.push('enrollee');
   }
 

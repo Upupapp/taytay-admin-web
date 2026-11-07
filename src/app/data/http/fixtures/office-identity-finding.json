@@ -1,0 +1,17 @@
+{
+  "data": {
+    "id": "d1e2f3a4-b5c6-4d7e-8f9a-0b1c2d3e4f01",
+    "pair_id": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c01",
+    "verdict": "same-person",
+    "canonical_resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+    "superseded_resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c09",
+    "pair": [
+      "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+      "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c09"
+    ],
+    "reason": "Same birth date and barangay; the second record was typed at a satellite desk.",
+    "decided_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+    "decided_at": "2026-11-07T02:00:00.000Z"
+  },
+  "meta": {}
+}

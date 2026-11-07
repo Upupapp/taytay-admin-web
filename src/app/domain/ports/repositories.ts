@@ -56,7 +56,6 @@ import type {
 import type {
   BeneficiaryDetail,
   BeneficiaryFilter,
-  BeneficiarySortField,
   BeneficiarySummary,
 } from '../beneficiaries/beneficiary';
 import type {
@@ -930,10 +929,11 @@ export const ASSISTANCE_REQUEST_REPOSITORY = new InjectionToken<AssistanceReques
  * rather than candidates it is expected to hide.
  */
 export interface BeneficiaryRepository {
-  list(
-    filter: BeneficiaryFilter,
-    page: PageRequest<BeneficiarySortField>,
-  ): Observable<Page<BeneficiarySummary>>;
+  /**
+   * One cursor page, alphabetical. A list somebody browses: the screen says more exist, never "page 1
+   * of N" (`DL-161`). There is no sort — the order is the registry's (`DL-187`).
+   */
+  list(filter: BeneficiaryFilter, page: CursorRequest): Observable<CursorPage<BeneficiarySummary>>;
   /** `null` for "not found *or* not yours", deliberately indistinguishable (`DL-31`). */
   getByResidentId(id: ResidentId): Observable<BeneficiaryDetail | null>;
 
@@ -943,7 +943,7 @@ export interface BeneficiaryRepository {
    * never the field values, so a queue can be worked without disclosing one
    * person's details to somebody who came to look at another's (`DL-73`).
    */
-  duplicateQueue(page: PageRequest): Observable<Page<DuplicateCandidate>>;
+  duplicateQueue(page: CursorRequest): Observable<CursorPage<DuplicateCandidate>>;
   duplicatesFor(id: ResidentId): Observable<readonly DuplicateCandidate[]>;
 
   /**

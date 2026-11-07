@@ -1,0 +1,61 @@
+{
+  "data": [
+    {
+      "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+      "resident": {
+        "id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03",
+        "first_name": "Maria",
+        "middle_name": "Santos",
+        "last_name": "Dela Cruz",
+        "suffix": null,
+        "sex": "female",
+        "birth_date": "1990-04-02",
+        "civil_status": "married",
+        "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+        "purok_or_sitio": "Purok 3",
+        "street_address": "12 Rizal Ave.",
+        "mobile": "09170000103",
+        "email": "maria.delacruz@example.invalid",
+        "sectors": [],
+        "philsys_last_four": "1290",
+        "monthly_income_centavos": 850050,
+        "is_active": true,
+        "is_protected": false,
+        "given_name_masked": false,
+        "withheld": [],
+        "created_at": "2026-11-06T02:00:00.000Z",
+        "created_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
+        "updated_at": "2026-11-06T02:00:00.000Z",
+        "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101"
+      },
+      "household_id": "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e01",
+      "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+      "standing": {
+        "roles": [
+          "constituent",
+          "beneficiary"
+        ],
+        "evidence": {
+          "open_request_count": 0,
+          "settled_request_count": 2,
+          "received_release_count": 2,
+          "current_enrollment_count": null,
+          "past_enrollment_count": null
+        }
+      },
+      "current_program_names": null,
+      "assistance_event_count": 6,
+      "last_assistance_at": "2026-10-20T03:00:00.000Z",
+      "released_centavos": 250000,
+      "goods_received_count": 1,
+      "open_request_count": 2,
+      "has_open_duplicate_review": true
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "has_more": true,
+      "next_cursor": "YmVuZWZpY2lhcnl8N2QxYzJiM2EtNGU1Zi00YTZiLThjN2QtOGU5ZjBhMWIyYzAz"
+    }
+  }
+}

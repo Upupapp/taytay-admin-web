@@ -192,3 +192,20 @@
   color: var(--tone-warning-fg);
   font-size: 12px;
 }
+
+.review__more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-base);
+  padding: var(--space-base) 0;
+}
+
+.review__more .review__hint {
+  margin: 0;
+}
+
+.review__problem {
+  margin: 0;
+  font-size: 13px;
+}

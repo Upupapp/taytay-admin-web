@@ -8,7 +8,7 @@ import {
   TemplateRef,
   viewChild,
 } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map, switchMap, tap } from 'rxjs';
 
@@ -22,14 +22,13 @@ import {
   TAYTAY_BARANGAYS,
   barangayName,
   describeStanding,
-  emptyPage,
   isBeneficiaryFilterActive,
   isPeriodReversed,
   type AssistanceProgram,
+  type BeneficiaryFilter,
   type BeneficiaryRole,
   type BeneficiarySummary,
-  type Page,
-  type SortSpec,
+  type CursorPage,
 } from '@domain/index';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
@@ -43,6 +42,8 @@ import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { BENEFICIARIES_COPY } from './beneficiaries.copy';
 import { beneficiaryFilterParams, readBeneficiaryQuery } from './beneficiary-query';
 
+/** One page at a time from the server, as on the resident registry. */
+const PAGE_SIZE = 20;
 
 /**
  * The beneficiary registry list.
@@ -56,6 +57,12 @@ import { beneficiaryFilterParams, readBeneficiaryQuery } from './beneficiary-que
  * resembles is not on this screen and is not in the payload that built it — a
  * list everybody scrolls past is the wrong place to disclose one person to
  * somebody looking for another (`DL-73`).
+ *
+ * It reads one cursor page at a time and "Show more" follows the cursor, as the
+ * resident registry does: the screen says how many are shown and whether more
+ * are available, never "page 1 of N", because the server sends no total
+ * (`DL-161`). There is no sort — the order is the registry's, alphabetical
+ * (`DL-187`).
  */
 @Component({
   selector: 'app-beneficiary-list-page',
@@ -78,6 +85,7 @@ export class BeneficiaryListPage {
   private readonly session = inject(SessionStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly copy = BENEFICIARIES_COPY.list;
   protected readonly barangays = TAYTAY_BARANGAYS;
@@ -101,12 +109,24 @@ export class BeneficiaryListPage {
 
   protected readonly searchText = signal(this.query().filter.search ?? '');
 
+  /** Further pages of the reading the first page began; emptied whenever the filter changes. */
+  private readonly further = signal<readonly CursorPage<BeneficiarySummary>[]>([]);
+  protected readonly loadingMore = signal(false);
+  protected readonly moreFailed = signal(false);
+
   protected readonly state = toSignal(
     toObservable(this.query).pipe(
-      tap((query) => this.searchText.set(query.filter.search ?? '')),
-      switchMap((query) => toViewState(this.repository.list(query.filter, query.page))),
+      tap((query) => {
+        this.searchText.set(query.filter.search ?? '');
+        this.further.set([]);
+        this.moreFailed.set(false);
+        this.loadingMore.set(false);
+      }),
+      switchMap((query) =>
+        toViewState(this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null })),
+      ),
     ),
-    { initialValue: LOADING as ViewState<Page<BeneficiarySummary>> },
+    { initialValue: LOADING as ViewState<CursorPage<BeneficiarySummary>> },
   );
 
   /** Only to populate the programme filter; the list itself never needs it. */
@@ -115,12 +135,18 @@ export class BeneficiaryListPage {
   });
 
   protected readonly isLoading = computed(() => this.state().kind === 'loading');
-  protected readonly page = computed(
-    () => valueOf(this.state()) ?? emptyPage<BeneficiarySummary>(),
+  protected readonly rows = computed<readonly BeneficiarySummary[]>(() => [
+    ...(valueOf(this.state())?.items ?? []),
+    ...this.further().flatMap((page) => page.items),
+  ]);
+  private readonly lastPage = computed(
+    () => this.further().at(-1) ?? valueOf(this.state()) ?? null,
   );
-  protected readonly rows = computed(() => this.page().items);
+  protected readonly hasMore = computed(() => {
+    const last = this.lastPage();
+    return last !== null && last.hasMore && last.nextCursor !== null;
+  });
   protected readonly filter = computed(() => this.query().filter);
-  protected readonly sort = computed<SortSpec | null>(() => this.query().page.sort ?? null);
   protected readonly hasFilters = computed(() => isBeneficiaryFilterActive(this.filter()));
   protected readonly filterParams = computed(() => beneficiaryFilterParams(this.filter()));
   protected readonly currentUserId = computed(() => this.session.user()?.id ?? null);
@@ -130,11 +156,10 @@ export class BeneficiaryListPage {
   protected readonly rowKey = (row: BeneficiarySummary): string => row.residentId;
 
   protected readonly columns = computed<readonly TableColumn<BeneficiarySummary>[]>(() => [
-    { key: 'person', header: this.copy.columnPerson, sortField: 'name', cell: this.personCell() },
+    { key: 'person', header: this.copy.columnPerson, cell: this.personCell() },
     {
       key: 'barangay',
       header: this.copy.columnBarangay,
-      sortField: 'barangay',
       value: (row) => barangayName(row.barangayId),
     },
     { key: 'standing', header: this.copy.columnStanding, cell: this.standingCell() },
@@ -142,7 +167,6 @@ export class BeneficiaryListPage {
     {
       key: 'events',
       header: this.copy.columnEvents,
-      sortField: 'assistanceEventCount',
       align: 'end',
       width: '90px',
       value: (row) => String(row.assistanceEventCount),
@@ -150,16 +174,10 @@ export class BeneficiaryListPage {
     {
       key: 'received',
       header: this.copy.columnReceived,
-      sortField: 'totalReleased',
       align: 'end',
       cell: this.receivedCell(),
     },
-    {
-      key: 'last',
-      header: this.copy.columnLast,
-      sortField: 'lastAssistanceAt',
-      cell: this.lastCell(),
-    },
+    { key: 'last', header: this.copy.columnLast, cell: this.lastCell() },
   ]);
 
   protected detailLink(row: BeneficiarySummary): string {
@@ -179,7 +197,7 @@ export class BeneficiaryListPage {
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => {
+    this.destroyRef.onDestroy(() => {
       if (this.searchTimer !== null) {
         clearTimeout(this.searchTimer);
       }
@@ -226,22 +244,38 @@ export class BeneficiaryListPage {
     void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
   }
 
-  protected onSortChanged(sort: SortSpec): void {
-    this.patch({ sort: sort.field, direction: sort.direction, page: null });
+  /** Follows the cursor one page further, for the filter the first page was read with. */
+  protected showMore(): void {
+    const cursor = this.lastPage()?.nextCursor ?? null;
+    if (cursor === null || this.loadingMore()) {
+      return;
+    }
+    const filter: BeneficiaryFilter = this.filter();
+    this.loadingMore.set(true);
+    this.moreFailed.set(false);
+    this.repository
+      .list(filter, { limit: PAGE_SIZE, cursor })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (page) => {
+          // The filter changed meanwhile: this page continues a list nobody is looking at.
+          if (filter === this.filter()) {
+            this.further.update((pages) => [...pages, page]);
+          }
+          this.loadingMore.set(false);
+        },
+        error: () => {
+          this.loadingMore.set(false);
+          this.moreFailed.set(true);
+        },
+      });
   }
 
-  protected onPageChanged(page: number): void {
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { page: page > 1 ? String(page) : null },
-      queryParamsHandling: 'merge',
-    });
-  }
-
+  /** A filter change starts the reading again from the first page. */
   private patch(changes: Readonly<Record<string, string | null>>): void {
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { ...changes, page: null },
+      queryParams: changes,
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });

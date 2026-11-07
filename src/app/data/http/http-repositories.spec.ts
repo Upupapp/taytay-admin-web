@@ -9,7 +9,7 @@ import { AuthTokenHolder } from '@core/auth/auth-token.holder';
 import { readApiError } from '@core/http/api-failure';
 import { apiHeadersInterceptor } from '@core/http/api.interceptors';
 import {
-  ASSISTANCE_HISTORY_NOT_CONNECTED,
+  ASSISTANCE_HISTORY_NOT_YOURS,
   asId,
   asIsoDate,
   centavos,
@@ -21,7 +21,6 @@ import {
   isTransferRefused,
   VULNERABILITY_FACTOR_CODES,
   PERMISSIONS,
-  PROGRAM_UTILIZATION_NOT_CONNECTED,
   SignInError,
   toProgramDraft,
   type AppAccountId,
@@ -1824,6 +1823,9 @@ describe('the Node adapters', () => {
       http
         .expectOne({ method: 'GET', url: `${BASE}/office/households/${householdId}` })
         .flush(OFFICE_HOUSEHOLD);
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/office/residents/${HEAD}/assistance-history` })
+        .flush({ data: { readable: false, because: ASSISTANCE_HISTORY_NOT_YOURS }, meta: {} });
 
       const answer = await profile;
       expect(answer?.household?.id).toBe(householdId);
@@ -1834,10 +1836,10 @@ describe('the Node adapters', () => {
           CHILD,
         ]);
       }
-      // Never an empty history: the API does not serve it, and empty would say "never helped".
+      // Never an empty history: a reader not shown it is told so, and empty would say "never helped".
       expect(answer?.history).toEqual({
         kind: 'unavailable',
-        because: ASSISTANCE_HISTORY_NOT_CONNECTED,
+        because: ASSISTANCE_HISTORY_NOT_YOURS,
       });
     });
 
@@ -1848,6 +1850,9 @@ describe('the Node adapters', () => {
       http
         .expectOne((r) => r.url === `${BASE}/office/households`)
         .flush({ data: [], meta: { pagination: { has_more: false, next_cursor: null } } });
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/office/residents/${HEAD}/assistance-history` })
+        .flush({ data: { readable: false, because: ASSISTANCE_HISTORY_NOT_YOURS }, meta: {} });
 
       const answer = await profile;
       expect(answer?.household).toBeNull();
@@ -2145,12 +2150,12 @@ describe('the Node adapters', () => {
       }
     });
 
-    it('says utilization is not connected, and asks the API nothing for it', async () => {
-      const one = await firstValueFrom(programs.utilizationFor());
-      const all = await firstValueFrom(programs.utilizationSummary());
-      expect(one).toEqual({ kind: 'unavailable', because: PROGRAM_UTILIZATION_NOT_CONNECTED });
-      expect(all).toEqual({ kind: 'unavailable', because: PROGRAM_UTILIZATION_NOT_CONNECTED });
-      http.verify();
+    it('refuses utilization it cannot read whole, rather than showing part of it', async () => {
+      const all = firstValueFrom(programs.utilizationSummary());
+      http
+        .expectOne(`${BASE}/office/program-utilization`)
+        .flush({ data: { readable: true, rows: [{ program_id: 'x', withheld: false }] }, meta: {} });
+      await expect(all).rejects.toThrow(/a programme missing from the figures/);
     });
   });
 

@@ -1,5 +1,6 @@
 import {
   byMostRecent,
+  isReleased,
   isTerminalAssistanceStatus,
   sumMoney,
   ZERO_PESOS,
@@ -83,13 +84,8 @@ export function historySummaryFor(residentId: ResidentId): ResidentAssistanceHis
   // unclaimed or was voided never reached the family. An in-kind release reached
   // the family but contributes no peso figure — inventing one would put a
   // number nobody counted into every total downstream (`DL-93`).
-  const handedOver = payouts.filter(
-    (payout) =>
-      (payout.status === 'released' ||
-        payout.status === 'claimed' ||
-        payout.status === 'completed') &&
-      payout.amount !== null,
-  );
+  const reachedTheFamily = payouts.filter((payout) => isReleased(payout.status));
+  const handedOver = reachedTheFamily.filter((payout) => payout.amount !== null);
 
   return {
     cases,
@@ -99,6 +95,8 @@ export function historySummaryFor(residentId: ResidentId): ResidentAssistanceHis
       handedOver.length > 0
         ? sumMoney(handedOver.map((payout) => payout.amount as Money))
         : ZERO_PESOS,
+    // Goods reached the family too, and are counted rather than valued (`DL-93`).
+    goodsReceivedCount: reachedTheFamily.filter((payout) => payout.amount === null).length,
     openCaseCount: cases.filter((entry) => !isTerminalAssistanceStatus(entry.status)).length,
     lastActivityAt: cases[0]?.updatedAt ?? null,
   };
