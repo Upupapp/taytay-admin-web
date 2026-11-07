@@ -13,7 +13,10 @@ export const environment: AppEnvironment = {
   appName: 'Taytay Social Welfare (staging)',
   apiBaseUrl: 'https://taytay-api.139-162-51-165.sslip.io/api/v1',
   dataSource: 'http',
-  // The staging Firebase project's key, never production's. None has been supplied yet.
+  // The browser API key of the staging Firebase project `taytay-lgu-ids-staging`, never
+  // production's (`DL-169`). It is public client configuration, not a secret: it ships in every
+  // browser that loads the console, and what protects an account is Firebase's own checks plus the
+  // API verifying each ID token.
   firebaseWebApiKey: 'AIzaSyDY7x3dvT_R6bAEG-Xd1-L8YpeumYIORZk',
   mockLatencyMs: 0,
   // On in staging on purpose: this is where a developer needs the detail a caseworker must never

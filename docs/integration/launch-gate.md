@@ -41,7 +41,7 @@ be *decided*, and it has been, deliberately and on the record. It does not ask t
 What that decision costs is stated in D-00-01 rather than here: the two controls written as
 temporary — the secret scan as a pre-push gate, and no real value in any environment file, fixture
 or seed — **become permanent**, because they are now the whole of the compensating mitigation. The
-honest limit is recorded there too: `npm run verify` does not run the secret scanner, so that half
+honest limit is recorded there too: `npm run verify` does not run the secret scanner (`npm run scan:secrets`, run by hand before a push), so that half
 is discipline rather than machinery. `check:bundle` covers the built artefact, not the source and
 not the history.
 
@@ -128,8 +128,16 @@ Requires the DPO's signature, and there is no DPO.
 
 ### 13 — CSP and companion headers verified on the deployed origins by inspection
 **NO-GO.** The policy is correct and checked mechanically, including the `style-src` omission that
-would have rendered the console unstyled. **"On the deployed origins by inspection" cannot be done
-— nothing is deployed.**
+would have rendered the console unstyled. ~~"On the deployed origins by inspection" cannot be done
+— nothing is deployed.~~
+
+**Update 2026-11-07: staging is deployed; production is not.** Since 5 November 2026 the API and
+the console run on staging, on a Linode shared with three other systems (taytay-backend
+`deploy/staging-shared-linode/`). The first real host showed the console unstyled under its CSP,
+and a per-request style nonce fixed it, checked in a browser with zero CSP violations (`DL-172`).
+That is one browser check of the staging console, not the recorded inspection of every origin this
+line asks for. **Production origins do not exist**, so the line cannot be met yet; the
+production console host still has no way to mint a nonce (`DL-172`, GL-14).
 
 ### 14 — DPO appointed and reading the trail; retention approved and applied; access request answerable
 **NO-GO. Release-gate blocker 1.** No DPO is appointed. No retention schedule exists — every period
@@ -151,8 +159,22 @@ API. Adversarial refusals are server-side. **No CI** — there is no Actions cre
 sign-offs**, which need six members of staff on office hardware with the trainer silent.
 
 ### 18 — Pipelines in place; backup restored with observed figures; rollback rehearsed and timed
-**NO-GO. Release-gate blocker 3.** No pipeline, no backup, no restore, no rollback rehearsal.
+**NO-GO. Release-gate blocker 3.** ~~No pipeline, no backup, no restore, no rollback rehearsal.~~
 *"A backup that has never been restored is a hypothesis."*
+
+**Update 2026-11-07, for staging only.** The staging database has been dumped every night since
+6 November 2026 (`pg_dump`, kept seven days, on the same server), and one dump was restored into a
+scratch database and checked on 2026-11-06. The script, its cron file, the restore test and the
+rollback steps are now in taytay-backend `deploy/staging-shared-linode/`, and
+[rollback.md](rollback.md) describes the staging rollback. What still keeps this line NO-GO:
+
+- **No pipeline.** There is no CI (no Actions credit); the gates run by hand before a push.
+- **The backups are not off the machine.** Losing the server loses them with the database.
+- **The restore has no observed figures**: it was not timed, and no recovery point or recovery
+  time objective has been agreed.
+- **No rollback has been rehearsed or timed**, on staging or anywhere else.
+- **Production does not exist**, so nothing about its backups, restore or rollback can be measured
+  (GL-5).
 
 ---
 
@@ -201,7 +223,8 @@ what it does *not* cover.
    case surface, and TAB 05's remainder cannot be finished without it.
 2. **A staging deployment** — which is what turns lines 02, 13, 16 and 17 from unprovable into
    testable, and is the only thing that would make "green against a mock" stop being the caveat on
-   every engineering line.
+   every engineering line. *(Done 2026-11-05: staging runs on the shared Linode. The
+   lines it unblocks are now testable there; none is yet tested and signed.)*
 3. **The DPO appointment** (line 14) — start it now; it gates the launch and nothing engineering
    does shortens it.
 4. **A PostgreSQL instance** — the smallest item on this list and the one blocking two separate

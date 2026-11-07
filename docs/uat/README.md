@@ -5,7 +5,12 @@ resident testers use it to test the platform on the staging site and sign it off
 
 - [uat-test-scripts.md](uat-test-scripts.md): 151 test cases in 14 areas.
 - [uat-signoff.md](uat-signoff.md): the sign-off sheets, the defect summary and the acceptance.
-- "Taytay - UAT test scripts (staging).xlsx": the same cases, with columns to record each result.
+- The workbook, "Taytay - UAT test scripts (staging).xlsx": the same cases, with columns to record
+  each result and a "Defects" tab. It is **not kept in this repository**. It is generated from these
+  Markdown files and handed out with the pack.
+
+**The Markdown files are the source.** A change to a case is made here first, and the workbook is
+generated again before the next round, so the two never disagree. If they do, these files win.
 
 The staff website is https://taytay.139-162-51-165.sslip.io. The residents' app is the staging build
 of the Taytay app for Android, supplied by the developer.
