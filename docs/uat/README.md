@@ -3,7 +3,7 @@
 This pack is deliverable D6, "Testing and LGU UAT" (item 7 on the project tracker). Office staff and
 resident testers use it to test the platform on the staging site and sign it off before production.
 
-- [uat-test-scripts.md](uat-test-scripts.md): 181 test cases in 18 areas.
+- [uat-test-scripts.md](uat-test-scripts.md): 192 test cases in 19 areas.
 - [uat-signoff.md](uat-signoff.md): the sign-off sheets, the defect summary and the acceptance.
 - The workbook, "Taytay - UAT test scripts (staging).xlsx": the same cases, with columns to record
   each result and a "Defects" tab. It is **not kept in this repository**. It is generated from these
@@ -17,17 +17,17 @@ of the Taytay app for Android, supplied by the developer.
 
 ## Who tests what
 
-| Code        | Test account                         | Areas and cases                                                                                                                                           |
-| ----------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ADMIN       | System administrator                 | ACC-01 to 03, REG-09 to 11, ID-04 to 07, DIR-05 to 12, DSH-07, NFR-04, GOV-01, 05, 07, 08                                                                 |
-| HEAD        | MSWDO head                           | DSH, REQ-02, 07, 16 to 19, CAS-09, 11, REL-10, REF-01 to 08, NEWS-01 to 03, DOC-01, 02, SRCH-01, 02, WRK-04 to 06, RPT-02, 04 to 06, 08, 09, GOV-02 to 04 |
-| SW1, SW2    | Two social workers                   | REQ-08, 09, 13, 15, CAS-03 to 08, REF-09 to 12, WRK-01, 02, GOV-06 (SW1), 08 (SW2)                                                                        |
-| INTAKE      | Intake officer                       | ROS, REQ-01, 03 to 06, 10 to 14, CAS-01, 02, 07, NEWS-05, 06, DOC-05 to 09, 11, 14, NFR, SRCH-03, RPT-10                                                  |
-| RELEASE     | Release officer                      | REL-01 to 08, ACC-07, DOC-08                                                                                                                              |
-| BLINK       | Barangay link, working in San Juan   | ROS-05, ID-08, ACC-05, ACC-10, DOC-14                                                                                                                     |
-| AUDITOR     | Auditor                              | AUD, ACC-08, DOC-13, 14, RPT-03, 07, GOV-02, 03                                                                                                           |
-| RES-A, B, C | Resident testers with Android phones | REG, ID-01, DIR-01 to 04, NEWS-05, DOC-03, 04, 07 to 12                                                                                                   |
-| GUEST       | The app, not signed in               | REG-01, DIR-01 to 04, NEWS-04, DOC-01 to 03                                                                                                               |
+| Code        | Test account                         | Areas and cases                                                                                                                                                                         |
+| ----------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ADMIN       | System administrator                 | ACC-01 to 03, REG-09 to 11, ID-04 to 07, DIR-05 to 12, DSH-07, NFR-04, GOV-01, 05, 07, 08, EVT-05 (set-up)                                                                              |
+| HEAD        | MSWDO head                           | DSH, REQ-02, 07, 16 to 19, CAS-09, 11, REL-10, REF-01 to 08, NEWS-01 to 03, DOC-01, 02, SRCH-01, 02, WRK-04 to 06, RPT-02, 04 to 06, 08, 09, GOV-02 to 04, EVT-01, 02, 04, 05, 07 to 11 |
+| SW1, SW2    | Two social workers                   | REQ-08, 09, 13, 15, CAS-03 to 08, REF-09 to 12, WRK-01, 02, GOV-06 (SW1), 08 (SW2), EVT-06 (SW1)                                                                                        |
+| INTAKE      | Intake officer                       | ROS, REQ-01, 03 to 06, 10 to 14, CAS-01, 02, 07, NEWS-05, 06, DOC-05 to 09, 11, 14, NFR, SRCH-03, RPT-10                                                                                |
+| RELEASE     | Release officer                      | REL-01 to 08, ACC-07, DOC-08                                                                                                                                                            |
+| BLINK       | Barangay link, working in San Juan   | ROS-05, ID-08, ACC-05, ACC-10, DOC-14                                                                                                                                                   |
+| AUDITOR     | Auditor                              | AUD, ACC-08, DOC-13, 14, RPT-03, 07, GOV-02, 03, EVT-06, 10                                                                                                                             |
+| RES-A, B, C | Resident testers with Android phones | REG, ID-01, DIR-01 to 04, NEWS-05, DOC-03, 04, 07 to 12, EVT-03 to 05, 08, 09, 11                                                                                                       |
+| GUEST       | The app, not signed in               | REG-01, DIR-01 to 04, NEWS-04, DOC-01 to 03, EVT-02                                                                                                                                     |
 
 Cases that name several roles (ROS-12, DSH-05, SRCH-04, WRK-03, RPT-01, GOV-02, ACC-04, AUD-06,
 DOC-14) are run by each of those accounts.
@@ -65,10 +65,12 @@ DOC-14) are run by each of those accounts.
    a Blocked case needs the reason in Notes.
 
 Run the areas in this order, because later cases use the records of earlier ones: ACC-01 and
-ACC-02, ROS, REG, ID, DIR, DOC, REQ, CAS, REL, REF, NEWS, DSH, SRCH, WRK, RPT, GOV, AUD, then NFR.
-REQ-19 runs after REL-01 and before REL-06. The set-up of NFR-06 (Carmen Halimbawa, "VAWC
-survivor", with a case) is done before SRCH, WRK and RPT, which use her record. GOV-08 runs last in
-GOV: it switches SW2's account off and back on, so tell SW2 before it starts.
+ACC-02, ROS, REG, ID, DIR, DOC, REQ, CAS, REL, REF, NEWS, EVT, DSH, SRCH, WRK, RPT, GOV, AUD, then
+NFR. REQ-19 runs after REL-01 and before REL-06. The set-up of NFR-06 (Carmen Halimbawa, "VAWC
+survivor", with a case) is done before SRCH, WRK and RPT, which use her record. In EVT, the second
+test event starts 45 minutes after it is created and ends an hour later (EVT-08, EVT-09), and
+EVT-11 runs last: it cancels the first one, and RES-B and RES-C are told in the app. GOV-08 runs
+last in GOV: it switches SW2's account off and back on, so tell SW2 before it starts.
 
 **Staging needs at least one document type before the DOC cases run.** The head or an
 administrator creates it with case DOC-01 ("UAT Certificate of Indigency (test)"). Until it exists,
@@ -79,6 +81,12 @@ residents have nothing to request and the DOC cases cannot start.
 - **No email.** Staging sends no email, so the 6-digit codes never arrive. REG-04 to REG-07 and
   REG-12 are **Blocked until email sending is set up** (requirements GL-3). Until then REG-08 puts
   an ID in the review queue, so the staff review cases can still run.
+- **Events in the app need a new build.** The resident steps of EVT need a staging build of the
+  app that includes events (decision D-191 in the app's decision log). Until the developer
+  supplies one, EVT-03 to EVT-05, EVT-08, EVT-09, EVT-11 and step 8 of EVT-02 are Blocked.
+- **The registrant list file.** An event's page announces an export of its registrants but does
+  not yet offer the file to save, so the file's contents cannot be checked. EVT-07 is Blocked until
+  it does.
 - **Android only.** No iOS build exists yet.
 - **A reload signs you out of the staff website.** This is by design (NFR-03). Move around with the
   menu and the links.
@@ -120,9 +128,11 @@ owner. Nothing in the sheets is signed in advance.
 
 Not built yet, or not served by the API (the website lists these under "Not connected yet"):
 
-- Newsfeed and events (FR-STAFF-26). Governance, the rest of FR-STAFF-26, is served by the API
-  since 8 November 2026 (`DL-191`) and has its scripts since version 1.3 (GOV, AUD-07). Capturing
-  a correction request is not built, and the governance page says so (GOV-05).
+- The newsfeed (FR-STAFF-26), which waits for OD-4. Events, served by the API since 8 November
+  2026 (`DL-192`), have their scripts since version 1.4 (EVT). Governance, the rest of
+  FR-STAFF-26, is served since 8 November 2026 (`DL-191`) and has its scripts since version 1.3
+  (GOV, AUD-07). Capturing a correction request is not built, and the governance page says so
+  (GOV-05).
 - Served by the API since 7 November 2026, but with no test script in this round yet:
   beneficiaries and duplicate review (FR-STAFF-12) and programme use counted from releases on the
   programme pages (FR-STAFF-14) (`DL-187`). Reports, My work and search have their scripts since
@@ -132,8 +142,9 @@ Not built yet, or not served by the API (the website lists these under "Not conn
 - Changing every office detail after creation, and the list of hidden Tulong pages (FR-STAFF-4).
 - Images in staff replies (FR-STAFF-8), push notifications (FR-API-3) and staff two-factor sign-in
   (FR-STAFF-29).
-- Residents applying for assistance in the app (FR-RES-14), events and Balita reactions
-  (FR-RES-9), and emergency alerts (FR-STAFF-33, FR-RES-16).
+- Residents applying for assistance in the app (FR-RES-14), Balita reactions (FR-RES-9), and
+  emergency alerts (FR-STAFF-33, FR-RES-16). Registering for events in the app is in the round
+  (EVT), once the app build that includes it is supplied.
 - My Account details and the household screen in the app (FR-RES-11, FR-RES-12), still in progress.
 - Checks made straight against the API: rate limits, size caps, CORS and the security policy
   (FR-API-5, FR-API-6, NFR-SEC-3, NFR-SEC-5). The developer runs these.

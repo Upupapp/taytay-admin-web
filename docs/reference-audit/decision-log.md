@@ -8557,6 +8557,12 @@ where the API's console says "Not recorded".
 
 ## DL-192 — events are served: the office runs them, residents register in their own app, and the last place is the server's to give
 
+> **UAT scripts since 2026-11-08.** The closing "no UAT script covers events yet" no longer holds:
+> EVT-01 to EVT-11 cover them (`docs/uat/uat-test-scripts.md`, version 1.4). Their resident steps
+> wait for an app build that includes events (D-191 in the app's decision log). Writing them found
+> that an event's page announces an export of its registrants but offers no way to save the file,
+> so the handling notice inside it cannot be read; EVT-07 is Blocked until it can.
+
 `taytay-backend` `580acbb` serves `EVENT_REPOSITORY`, and the residents' side the Flutter app will
 be wired to. The spec vendored here is that commit's (277 operations). Casework phase 6f, after
 governance (6e, `DL-191`). **Migration `0042`, additive:** `office_events`,

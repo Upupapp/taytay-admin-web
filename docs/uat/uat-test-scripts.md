@@ -1,9 +1,12 @@
 # UAT test scripts: Taytay, Rizal LGU platform (staging)
 
-Version 1.3, 8 November 2026 (replaces 1.2 of 7 November): adds Staff and roles, the office's audit
-trail and data governance (GOV-01 to GOV-08), served by the API since 8 November (DL-191), and AUD-07
-(switching a staff account off and on, on the app audit trail), and adds Staff and roles, Audit trail
-and Settings to the menus in ACC-04. Version 1.2 added search (SRCH-01 to SRCH-04), My work, the
+Version 1.4, 8 November 2026 (replaces 1.3 of the same day): adds events (EVT-01 to EVT-11), served
+by the API since 8 November (DL-192), whose resident steps need an app build that includes events
+(decision D-191 in the app's decision log), and adds Events to the menus in ACC-04. Version 1.3
+added Staff and roles, the office's audit trail and data governance (GOV-01 to GOV-08), served by
+the API since 8 November (DL-191), and AUD-07 (switching a staff account off and on, on the app
+audit trail), and added Staff and roles, Audit trail and Settings to the menus in ACC-04. Version
+1.2 added search (SRCH-01 to SRCH-04), My work, the
 team's work and office alerts (WRK-01 to WRK-06), and reports and their exports (RPT-01 to RPT-10),
 served since 7 November (DL-189, DL-190), and added My work, Beneficiaries and Reports to the menus
 in ACC-04. Version 1.1 added the DOC area, residents' document requests (DOC-01 to DOC-14), their
@@ -47,8 +50,9 @@ and how to record a result or a defect.
 | ACC: Accounts, roles and access                       | ACC-01 to ACC-10   | 10      |
 | AUD: App audit trail                                  | AUD-01 to AUD-07   | 7       |
 | NEWS: Balita and the office inbox                     | NEWS-01 to NEWS-06 | 6       |
+| EVT: Events                                           | EVT-01 to EVT-11   | 11      |
 | NFR: Privacy, security and accessibility              | NFR-01 to NFR-10   | 10      |
-| **Total**                                             |                    | **181** |
+| **Total**                                             |                    | **192** |
 
 ## REG: Resident registration and ID review
 
@@ -2909,9 +2913,9 @@ permission again: a hidden button is never the only protection.
   1. Sign in as each role and list the menu entries. Read the footer under the menu.
 - **Expected result:**
   - ADMIN: Dashboard, My work, Cases, Assistance requests, Residents, Beneficiaries, Households,
-    Families, Field visits, Referrals, Programs, Releases, Reports, ID verification, Office inbox,
-    Resident document requests, Users and roles, App directory, Home screen, App settings, Digital
-    IDs, Balita, App audit trail, Staff and roles, Audit trail, Settings.
+    Families, Field visits, Referrals, Programs, Releases, Reports, Events, ID verification, Office
+    inbox, Resident document requests, Users and roles, App directory, Home screen, App settings,
+    Digital IDs, Balita, App audit trail, Staff and roles, Audit trail, Settings.
   - HEAD: the same, without ID verification, Users and roles, App directory, Home screen, App
     settings and Settings.
   - SW1: Dashboard, My work, Cases, Assistance requests, Residents, Beneficiaries, Households,
@@ -2923,8 +2927,8 @@ permission again: a hidden button is never the only protection.
   - BLINK: Dashboard, My work, Assistance requests, Residents, Households, Families, Referrals,
     Programs, Digital IDs.
   - AUDITOR: Dashboard, My work, Cases, Assistance requests, Residents, Beneficiaries, Households,
-    Families, Field visits, Referrals, Programs, Releases, Reports, Digital IDs, App audit trail,
-    Staff and roles, Audit trail.
+    Families, Field visits, Referrals, Programs, Releases, Reports, Events, Digital IDs, App audit
+    trail, Staff and roles, Audit trail.
   - Every menu may end with "Not connected yet". The footer shows the name, role and scope ("All
     barangays", "Assigned cases" or "Barangay San Juan"), and "Sign out".
 
@@ -3203,6 +3207,370 @@ earlier or later value and no reason; the reasons live in each record's own hist
   - The dialog "Close this conversation?" lists what closing does and asks for no reason.
   - Step 3 shows "Closed. Nobody can write in this conversation again.". The app shows "This
     conversation is closed.".
+
+## EVT: Events
+
+"Events", under "Community" in the menu, is where the office runs its events, served by the API
+since 8 November 2026 (DL-192). The head (and the administrator) create, publish, cancel and
+complete events, and move registrations; the auditor reads them; the other roles have no Events.
+Residents register in the Taytay app, never on the website. The cases follow three test events:
+"E0", a draft made to be refused; "E1", "UAT Livelihood seminar (test)", with one place and a
+waitlist; and "E2", "UAT Feeding programme (test)", which starts and ends during the round.
+
+**Needs an app build with events.** The resident steps (EVT-02 step 8, EVT-03 to EVT-05, EVT-08,
+EVT-09 and EVT-11) need a staging build of the app that includes events (decision D-191 in the
+app's decision log). Until the developer supplies one, those cases are Blocked.
+
+**Timing.** E2 starts 45 minutes after it is created and ends an hour later. EVT-08 runs before it
+starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11 runs last in EVT.
+
+### EVT-01 · A draft is saved only with its start and end
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-26 · Should · T-16
+- **Set up first:** ACC-04 done.
+- **Steps:**
+  1. Open "Events", under "Community" in the menu. Read the page.
+  2. Click "Create an event". Read the hints under "When" and "Registration", and the box above
+     "Save draft".
+  3. Type "UAT incomplete event (test)" in "Event title".
+  4. Fill "Starts" with tomorrow at 10:00 and "Ends" with tomorrow at 09:00.
+  5. Change "Ends" to tomorrow at 12:00. Read the box.
+  6. In "Image", type the staff website address followed by /favicon.ico. Type "UAT: the
+     website's logo." in "Describe the image", then delete it again.
+  7. Click "Save draft".
+  8. Click "Back to events", then "Drafts".
+- **Expected result:**
+  - Step 1 shows "Events" with "Municipal activities, registrations and attendance." and "Create
+    an event", and the tabs "Upcoming", "Drafts", "Published", "Past", "Cancelled" and "Archived".
+  - In step 2 "When" reads "Philippine Standard Time (Asia/Manila)" and "Registration" reads
+    "Residents register in the mobile app. Nobody is registered from this console — the office
+    manages what arrives." The box "Before this can be published" lists "An event needs a name.",
+    "Choose when it starts." and "Choose when it ends.", and "Save draft" is greyed out.
+  - Step 3 removes "An event needs a name.", but "Save draft" stays greyed out: a draft is not
+    saved without its start and end (DL-192).
+  - Step 4 shows "It cannot end before it starts.", and "Save draft" stays greyed out.
+  - In step 5 the box lists only what publishing will need: "Write the one line residents see in
+    the list.", "Name the venue.", "Give the full address. "Covered court" is not findable by
+    somebody new." and "Name somebody residents can ask.". "Save draft" can now be clicked.
+  - In step 6 "Describe the cover image before publishing. A resident using a screen reader gets
+    nothing from a poster with no description." appears once the address is typed, goes while a
+    description is there, and comes back when it is deleted. "Describe the image" sits right under
+    "Image", with "Required before publishing. …".
+  - Step 7 shows "Draft saved." and opens the event's page, marked "Draft".
+  - In step 8 E0 is listed under "Drafts", marked "Draft", with "Registration" "No registration
+    needed" and "Registered" "0 / no limit". It is not under "Upcoming" or "Published".
+
+### EVT-02 · Publishing waits for a venue, an address, a contact and an image description, and needs a reason
+
+- **Role:** HEAD, then GUEST
+- **Checks:** FR-STAFF-26, FR-RES-9 · Should · T-16
+- **Set up first:** EVT-01 done. Open E0 from "Drafts". Step 8 needs an app build that includes
+  events (D-191).
+- **Steps:**
+  1. On E0's page read "Actions". Leave "Why" empty and look at "Publish".
+  2. Type "UAT: EVT-02, a draft with no venue." in "Why" and click "Publish".
+  3. Replace "Why" with "UAT: EVT-02, the incomplete draft is filed away." and click "Archive".
+  4. Click "Back to events", then "Create an event". Fill "Event title" with "UAT Livelihood
+     seminar (test)", "One-line summary" with "UAT test event, please ignore.", "Category" with
+     "Livelihood training", "Starts" with seven days from today at 09:00 and "Ends" with the same
+     day at 12:00. Leave "Image" empty. Read the box above "Save draft".
+  5. Fill "Venue name" with "UAT Test Hall", then "Complete address" with "UAT 1 Test Street",
+     then "Contact person" with "UAT Contact (test)" and "Office" with "MSWDO", reading the box
+     after each.
+  6. Tick "Residents need to register for this", then "Keep a waitlist once it is full". Then type
+     1 in "Capacity". Leave "Registration opens" and "Registration closes" empty, and click "Save
+     draft".
+  7. On E1's page, read the line above "Publish". Type "UAT: EVT-02, test event for the UAT
+     round." in "Why" and click "Publish".
+  8. GUEST: open the app's list of events.
+- **Expected result:**
+  - Step 1 shows "Why", with "Recorded in the trail against your name. Required.", and above
+    "Publish" "Publishing puts this in the resident app and opens registration on the dates you
+    set. People will make plans around it.". "Publish" and "Archive" stay greyed out while "Why" is
+    empty.
+  - Step 2 shows "That could not be saved." and E0 stays "Draft": the server checks the rules
+    again before publishing and refuses a draft with no summary, venue, address, contact or image
+    description. This page does not repeat which; the box in the composer does.
+  - Step 3 shows "Saved." E0 reads "Archived" and is listed under "Archived" only. Its "Actions"
+    offer no button: nothing publishes it again.
+  - Step 4 lists "Name the venue.", "Give the full address. …" and "Name somebody residents can
+    ask.". "Save draft" can already be clicked: these stop publishing, not saving.
+  - In step 5 each line goes as its field is filled. Once the contact is named, the box is gone.
+  - In step 6 ticking the waitlist while "Capacity" is empty shows "A waitlist needs a capacity —
+    otherwise nobody ever joins it." and greys out "Save draft"; typing 1 clears both. "Who this is
+    for" reads "Guidance for residents reading the listing. It does not stop anybody registering.".
+    The save shows "Draft saved." and opens E1's page.
+  - Step 7 shows "Saved.". E1 reads "Published", "Publication" gives "Published" with the date and
+    time, and "Actions" offers "Cancel event" and "Archive", with no "Publish" and no "Mark
+    completed".
+  - In step 8 E1 is listed with its summary, date and venue. E0 is not.
+
+### EVT-03 · Only a verified resident can register
+
+- **Role:** RES-A (not verified), then HEAD
+- **Checks:** FR-RES-9, FR-STAFF-26 · Should · T-16
+- **Set up first:** EVT-02 done. REG-03 done for RES-A, whose account is not verified. An app
+  build that includes events (D-191).
+- **Steps:**
+  1. RES-A: open E1 in the app's list of events and tap "Register for this event".
+  2. Tap "Verify my identity".
+  3. HEAD: open E1 from "Events". Read "Registration" and "Registrants".
+- **Expected result:**
+  - Step 1 shows "This event needs a verified account", with "Verify my identity". Nothing is
+    registered.
+  - Step 2 opens the verification screen.
+  - In step 3 the counts still give 0 of 1 registered, and "Registrants" reads "Nobody has
+    registered yet.".
+  - The server refuses a registration from an account that is not verified (VERIFICATION_REQUIRED),
+    whatever the app shows; the developer checks this against the API. Every event is for verified
+    residents only, and the website has no setting to change that (DL-192).
+
+### EVT-04 · A resident registers in the app; the office sees the reference, and when the counts were taken
+
+- **Role:** HEAD, then RES-B, then HEAD
+- **Checks:** FR-STAFF-26, FR-RES-9 · Should · T-16
+- **Set up first:** EVT-03 done. RES-B is verified (REG-10). An app build that includes events
+  (D-191).
+- **Steps:**
+  1. HEAD: open E1 from "Events" and leave the page open. Read the "Registration" panel and note
+     the time in "Counted at".
+  2. RES-B: open E1 in the app, tap "Register for this event" and complete the registration. Read
+     the event's page.
+  3. HEAD: on the page left open, read "Registration" and "Registrants" again.
+  4. Open "Events" from the menu and open E1 again. Read "Registration" and "Registrants".
+  5. Type RES-B's reference in "Search registrants". Then clear it.
+- **Expected result:**
+  - Step 1 shows "Registration" "Open", "Places left" "1", and "Counted at" with the date and the
+    time to the second, followed by "These numbers were true when this screen last asked.
+    Residents are registering in the app while you read them, and the system of record decides
+    who gets the last place.". Under "Attendance": "Attendance is still open. Anybody not marked is
+    simply not marked — it does not mean they did not come.". "Registrants" reads "Residents
+    register in the mobile app. Nobody is added from here.".
+  - In step 2 the app takes the registration and shows RES-B's reference, which starts "ER-".
+  - In step 3 nothing has changed: the same counts and the same "Counted at". The page says what
+    was true when it asked; it does not claim to be live.
+  - In step 4 the counts give 1 of 1 registered, "Registration" reads "Full", "Places left" reads
+    "0", and "Counted at" is later. "Registrants" has one row: "Reference" as in the app, "Name" as
+    RES-B's app account gives it, "Barangay" RES-B's barangay, "Registered" today's date, "Status"
+    "Registered" and "Attendance" "Not checked in".
+  - The table has those six columns and "Actions", and nothing else: no address, birth date, phone
+    number, email or ID number.
+  - Step 5 leaves RES-B's row only; clearing the search brings the list back.
+
+### EVT-05 · One place and a waitlist: the head moves a resident up past the warning, and the resident is told
+
+- **Role:** RES-C, then HEAD, then RES-C
+- **Checks:** FR-STAFF-26, FR-RES-9 · Should · T-16
+- **Set up first:** EVT-04 done. RES-C is verified: ADMIN approves RES-C's corrected request from
+  REG-11 (step 7) as in REG-10, steps 1 to 5. An app build that includes events (D-191).
+- **Steps:**
+  1. RES-C: open E1 in the app and register as in EVT-04, step 2. Read the event's page.
+  2. HEAD: open E1 from "Events". Read "Registration", "Registrants" and the line under the table.
+     Hover over RES-C's "Waitlisted".
+  3. With "Why" empty, look at "Move to registered" on RES-C's row.
+  4. Type "UAT: EVT-05, a second place is made for the test." in "Why" and click "Move to
+     registered".
+  5. RES-C: open "Notifications" from the bell on "Home", then open E1.
+- **Expected result:**
+  - In step 1 the app takes RES-C onto the waitlist, says so, and shows RES-C's reference.
+  - In step 2 the counts give 1 of 1 registered and 1 waitlisted. RES-C's row reads "Waitlisted",
+    with "Move to registered" and "Cancel"; RES-B's offers "Cancel" and no "Move to registered".
+    Under the table: "Your figures say this event is full. The backend decides — if a place has
+    opened since this screen loaded, this will go through.". The tooltip reads "Waiting for a
+    place. Moved up by the office, never automatically.".
+  - Step 3: "Move to registered" is offered although the figures say full, and stays greyed out
+    while "Why" is empty.
+  - Step 4 shows "Saved.". RES-C's row reads "Registered", the counts give 2 of 1 registered, and
+    "Places left" reads "0", never a negative number. The office may go past its own figure; a
+    resident's own registration cannot (DL-192).
+  - In step 5 a notification says RES-C now has a place at E1. It does not show the head's
+    reason. E1 shows RES-C registered.
+
+### EVT-06 · The auditor reads events and acts on none, and a social worker has no Events
+
+- **Role:** AUDITOR, then SW1
+- **Checks:** FR-STAFF-26, NFR-SEC-4 · Must · T-16
+- **Set up first:** EVT-05 done.
+- **Steps:**
+  1. AUDITOR: open "Events", under "Community" in the menu.
+  2. Open E1 and read every panel.
+  3. Type the website address followed by /events/new.
+  4. SW1: look for "Events" in the menu. Type the website address followed by /events.
+- **Expected result:**
+  - Step 1 shows the list of events, with no "Create an event".
+  - In step 2 the auditor reads "What residents see", "Publication", "Registration" (the counts,
+    "Counted at" and "These numbers were true when this screen last asked. …"), "Registrants"
+    with the rows of RES-B and RES-C, and "What the office did" with its reasons.
+  - "Actions" shows the "Why" field and no button: no "Publish", "Cancel event", "Mark completed"
+    or "Archive". "Registrants" has no "Actions" column, no "Export the list" and no line about the
+    file; no row offers "Attended", "No-show", "Move to registered", "Cancel" or "Restore".
+  - Step 3 shows "You do not have access to that section".
+  - SW1's menu has no "Events", and the address shows "You do not have access to that section" and
+    "Back to dashboard", with no event shown.
+  - The server refuses every event act from these two roles; the developer checks this against the
+    API (NFR-SEC-4).
+
+### EVT-07 · Exporting the registrant list: a warning first, and a file that carries its handling rule
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-26 · Should · T-16
+- **Set up first:** EVT-05 done (E1 has two registrants).
+- **Steps:**
+  1. Open E1. Before clicking anything, read the line under the filters in "Registrants".
+  2. Click "Export the list".
+  3. Save the file the website offers and open it in Notepad.
+  4. Delete the file.
+- **Expected result:**
+  - Step 1 shows "The file names residents. It carries its handling rule inside it; keep it in the
+    office and delete it once attendance is recorded.".
+  - Step 2 shows "Exported." followed by the file's name, which starts "registrants-" with today's
+    date and ends ".csv".
+  - The file opens with lines starting "Event" (E1's title), "Category", "Starts", "Venue",
+    "Generated at", "Generated by" (with HEAD's name), "Registrants" (2) and "Handling", which reads
+    "This file lists residents who registered for a municipal event. It is held by the MSWDO of
+    Taytay, Rizal and protected under RA 10173. Take it to the venue if you need it there, keep it
+    within the office otherwise, and delete it once attendance has been recorded."
+  - Then one table with exactly the columns "Reference", "Name", "Barangay", "Registered", "Status"
+    and "Attendance", and a row each for RES-B and RES-C. No address, birth date, phone number,
+    email or ID number.
+- **Status:** Blocked until the website offers the file. Step 2 announces the export, but the page
+  gives no link to save the file, so steps 3 and 4 cannot run. Run steps 1 and 2 now and note what
+  they showed (EVT-10 needs step 2); run the whole case once the link exists.
+
+### EVT-08 · A resident gives up their own place until the event starts, and the office can restore it
+
+- **Role:** HEAD, RES-B and RES-C
+- **Checks:** FR-RES-9, FR-STAFF-26 · Should · T-16
+- **Set up first:** RES-B and RES-C are verified (REG-10, EVT-05). An app build that includes
+  events (D-191). HEAD creates and publishes E2 as in EVT-02, steps 4 to 7: "UAT Feeding programme
+  (test)", category "Feeding programme", starting 45 minutes from now and ending one hour after it
+  starts, with "Residents need to register for this" ticked, "Capacity" empty and no waitlist.
+  RES-B and RES-C each register for E2 in the app. Steps 1 to 5 run before E2 starts.
+- **Steps:**
+  1. RES-B: open E2 in the app and tap "Give up my place". Read the confirmation and tap "Keep my
+     place".
+  2. Tap "Give up my place" again and confirm.
+  3. HEAD: open E2 from "Events". Read "Registration", "Registrants" and "What the office did".
+     Hover over the "Cancelled" mark on RES-B's row.
+  4. Type "UAT: EVT-08, RES-B can come after all." in "Why" and click "Restore" on RES-B's row.
+  5. RES-B: open "Notifications" from the bell on "Home", then open E2.
+  6. After E2's start time, RES-B and RES-C each open E2 in the app.
+- **Expected result:**
+  - Step 1 shows the confirmation "Give up your place?" with "Keep my place", which changes
+    nothing.
+  - In step 2 the app says RES-B's place has been given up, and E2 no longer shows RES-B as
+    registered.
+  - In step 3 RES-B's row reads "Cancelled", with "Restore" and with no "Attended" or "No-show";
+    RES-C's reads "Registered". The counts give 1 registered with no capacity set, and 1 cancelled.
+    The tooltip reads "Withdrawn, by the resident or by the office. Can be restored.".
+  - "What the office did" has no row for either registration or for RES-B giving up the place: it
+    lists the office's own acts only.
+  - Step 4 shows "Saved." and RES-B's row reads "Registered" again: one person's place can be
+    restored, unlike a cancelled event.
+  - In step 5 a notification says RES-B has a place at E2. It does not show the head's reason. E2
+    shows RES-B registered.
+  - In step 6 the app no longer offers "Give up my place" to either of them. The server also
+    refuses to let a resident give up a place once the event has started; the developer checks
+    this against the API.
+
+### EVT-09 · Attendance is marked by hand, completion waits for the end, and nobody unmarked becomes a no-show
+
+- **Role:** HEAD, then RES-B and RES-C
+- **Checks:** FR-STAFF-26, FR-RES-9 · Should · T-16
+- **Set up first:** EVT-08 done, and E2 has started.
+- **Steps:**
+  1. HEAD: open E2 from "Events". Look at "Actions", and read "Attendance" in the "Registration"
+     panel.
+  2. On RES-C's row click "No-show", then "Attended".
+  3. Leave RES-B unmarked. Hover over RES-B's "Not checked in".
+  4. After E2's end time, open "Events" from the menu, click "Past" and open E2.
+  5. Read the line above "Mark completed". Type "UAT: EVT-09, attendance taken at the venue." in
+     "Why" and click "Mark completed".
+  6. Click "Attended" on RES-B's row.
+  7. RES-B and RES-C: open E2 in the app.
+- **Expected result:**
+  - In step 1 there is no "Mark completed" while E2 has not ended, and "Attendance" reads
+    "Attendance is still open. Anybody not marked is simply not marked — it does not mean they did
+    not come.". The server also refuses to complete an event that has not started; the developer
+    checks this against the API.
+  - Each click in step 2 shows "Saved." and asks for no reason. RES-C's row reads "No-show", then
+    "Attended", and the attendance line gives 1 attended, 0 no-shows and 1 not yet marked.
+  - The tooltip in step 3 reads "Nothing recorded. This is not the same as saying they did not
+    come.".
+  - In step 4 E2 is under "Past", still "Published", and "Mark completed" is now offered.
+  - Step 5 shows, above the button, "This declares attendance final. Anybody still unmarked stays
+    unmarked — nobody is turned into a no-show by this.". Then "Saved."; E2 reads "Completed",
+    "Attendance" reads "Attendance is final for this event.", RES-B still reads "Not checked in",
+    the attendance line still gives 1 not yet marked, and "Mark completed" is gone.
+  - Step 6 is refused with "Request failed" and "Attendance for this event was declared final when
+    it was completed.", then "That could not be saved.". RES-B stays "Not checked in".
+  - In step 7 RES-C's app says the office recorded RES-C as attending. RES-B's says attendance was
+    not recorded, never that RES-B did not come.
+
+### EVT-10 · Each office act is kept with its reason, a registration by its reference, and no resident's name
+
+- **Role:** HEAD, then AUDITOR
+- **Checks:** FR-STAFF-26 · Should · T-16
+- **Set up first:** EVT-05, EVT-07 step 2 and EVT-09 done.
+- **Steps:**
+  1. HEAD: open E1 from "Events" and read "What the office did".
+  2. Click "Back to events", then "Past". Open E2 and read "What the office did".
+  3. AUDITOR: open "Audit trail" under "Administration" and type "event" in "Search".
+- **Expected result:**
+  - In step 1 the newest act comes first, each with its kind, the date and time, what was done in
+    words and the name of the account that did it: "Exported" ("Registrant list exported as a
+    file, its handling notice inside it."), "Registration changed" for moving RES-C up,
+    "Published" ("Event published to the residents’ app.") and "Created" ("Event created as a
+    draft."). The reasons typed in EVT-05 and EVT-02 appear under their rows.
+  - The "Registration changed" row names the registration by its reference, as "Registrants" shows
+    it, and says the resident was told in the app. No row names a resident, and the residents' own
+    registrations are not listed.
+  - Step 2 shows "Status changed" ("Event completed. Attendance declared final; nobody unmarked
+    became a no-show.") with the reason from EVT-09, two "Attendance changed" rows for RES-C's
+    reference with no reason, "Registration changed" for restoring RES-B with the reason from
+    EVT-08, "Published" and "Created". The refused mark of EVT-09 step 6 added no row.
+  - Step 3 shows, among others, "Created an event as a draft", "Published an event to the
+    residents’ app, with a reason", "Archived an event, with a reason", "Moved a resident’s
+    registration for an event, with a reason; the resident was told in the app", "Recorded whether
+    a registrant came to an event", "Completed an event, declaring its attendance final, with a
+    reason" and "Exported an event’s registrant list as a file, its handling notice inside it",
+    each with the account's name and "From" followed by "API". No row shows a reason or a
+    resident's name: the reason is kept in the event's own history (DL-191).
+
+### EVT-11 · Cancelling an event is one-way, and the residents holding a place are told
+
+- **Role:** HEAD, then RES-B and RES-C
+- **Checks:** FR-STAFF-26, FR-RES-9 · Should · T-16
+- **Set up first:** EVT-10 done. Run this case **last in EVT**: it calls E1 off, and RES-B and RES-C
+  are told in the app. An app build that includes events (D-191).
+- **Steps:**
+  1. HEAD: open E1 from "Events". Read the line above "Cancel event". With "Why" empty, look at
+     "Cancel event".
+  2. Type "UAT: EVT-11, the test event is called off." in "Why" and click "Cancel event". Read the
+     dialog and click "Keep it".
+  3. Click "Cancel event" again, then "Cancel the event".
+  4. Read the page. Hover over the "Cancelled" mark under "What residents see".
+  5. Click "Back to events" and look under "Upcoming", then "Cancelled".
+  6. RES-B and RES-C: open "Notifications" from the bell on "Home", then open E1 in the app.
+- **Expected result:**
+  - Step 1 shows "Cancelling tells everybody registered that it is off, and it cannot be undone. If
+    the event goes ahead later it is a new event.". "Cancel event" is greyed out while "Why" is
+    empty.
+  - Step 2 shows the dialog "Cancel this event?" with "Everybody registered is told it is off. This
+    cannot be reversed — an event that is back on is created fresh, naming this one.", "Keep it"
+    and "Cancel the event". "Keep it" closes it, and E1 still reads "Published".
+  - Step 3 shows "Saved.". E1 reads "Cancelled", and "Publication" gives "Cancelled" with the date
+    and time, and "Why it was cancelled" with the reason typed.
+  - "Actions" offers only "Archive": no "Publish" and no "Cancel event". Nothing on the page puts
+    the event back on.
+  - The tooltip in step 4 reads "Called off, and everybody registered has been told. It cannot be
+    un-cancelled — an event that is back on is a new event.". "What the office did" gains
+    "Cancelled" ("Event cancelled. Everybody holding a place or a waitlist place was told in the
+    residents’ app.") with the reason.
+  - In step 5 E1 is under "Cancelled" and not under "Upcoming".
+  - In step 6 each has a notification that E1 is called off. It does not show the head's reason.
+    The app shows E1 as cancelled.
 
 ## NFR: Privacy, security and accessibility
 

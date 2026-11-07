@@ -254,6 +254,20 @@ Decision: [ ] Accepted [ ] Accepted with open items: ................ [ ] Not ac
 | Tested by                  |      |      |           |      |
 | Accepted for the office by |      |      |           |      |
 
+## EVT: Events (EVT-01 to EVT-11)
+
+| Cases run | Passed | Failed | Blocked | Open defects (ids) |
+| --------- | ------ | ------ | ------- | ------------------ |
+|           |        |        |         |                    |
+
+Decision: [ ] Accepted [ ] Accepted with open items: ................ [ ] Not accepted
+
+|                            | Name | Role | Signature | Date |
+| -------------------------- | ---- | ---- | --------- | ---- |
+| Tested by                  |      |      |           |      |
+| Tested by                  |      |      |           |      |
+| Accepted for the office by |      |      |           |      |
+
 ## NFR: Privacy, security and accessibility (NFR-01 to NFR-10)
 
 | Cases run | Passed | Failed | Blocked | Open defects (ids) |
