@@ -194,7 +194,10 @@ export const EVENTS_COPY = {
     exportWarning:
       'The file names residents. It carries its handling rule inside it; keep it in the office ' +
       'and delete it once attendance is recorded.',
-    exported: 'Exported.',
+    exported: 'Export ready.',
+    fileReady:
+      'The file is ready. It carries the event, the filter, who produced it and how to handle it.',
+    saveFile: (filename: string) => `Save ${filename}`,
 
     historyHeading: 'What the office did',
     noHistory: 'Nothing recorded for this event in this session.',

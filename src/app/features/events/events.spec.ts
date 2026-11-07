@@ -275,7 +275,14 @@ describe('the registrant table', () => {
     );
 
     expect(headers).toEqual(
-      expect.arrayContaining(['Reference', 'Name', 'Barangay', 'Registered', 'Status', 'Attendance']),
+      expect.arrayContaining([
+        'Reference',
+        'Name',
+        'Barangay',
+        'Registered',
+        'Status',
+        'Attendance',
+      ]),
     );
     for (const forbidden of ['Address', 'Birth date', 'PhilSys', 'Income', 'Sector', 'Household']) {
       expect(headers).not.toContain(forbidden);
@@ -340,6 +347,66 @@ describe('the read-only executive', () => {
 
     expect(text(fixture)).toContain('What residents see');
     expect(text(fixture)).toContain('Registration');
+  });
+});
+
+describe('the registrant export', () => {
+  const made: string[] = [];
+  const revoked: string[] = [];
+  const originals = {
+    create: Object.getOwnPropertyDescriptor(URL, 'createObjectURL'),
+    revoke: Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL'),
+  };
+
+  beforeEach(() => {
+    made.length = 0;
+    revoked.length = 0;
+    // jsdom has no object URLs; these stand in and record what the page makes and gives back.
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      writable: true,
+      value: () => {
+        const url = `blob:test/${made.length + 1}`;
+        made.push(url);
+        return url;
+      },
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      writable: true,
+      value: (url: string) => revoked.push(url),
+    });
+  });
+
+  afterEach(() => {
+    for (const [name, descriptor] of [
+      ['createObjectURL', originals.create],
+      ['revokeObjectURL', originals.revoke],
+    ] as const) {
+      if (descriptor === undefined) {
+        Reflect.deleteProperty(URL, name);
+      } else {
+        Object.defineProperty(URL, name, descriptor);
+      }
+    }
+  });
+
+  it('hands over a file to save, named, and gives its address back when the page goes', async () => {
+    const fixture = await openEvent('event-0003');
+    const exportButton = [...html(fixture).querySelectorAll('button')].find(
+      (b) => (b.textContent ?? '').trim() === 'Export the list',
+    );
+    exportButton?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const link = html(fixture).querySelector<HTMLAnchorElement>('a[download]');
+    expect(link?.getAttribute('href')).toBe('blob:test/1');
+    expect(link?.textContent?.trim()).toBe(`Save ${link?.getAttribute('download') ?? ''}`);
+    expect(text(fixture)).toContain('The file is ready.');
+
+    fixture.destroy();
+    expect(revoked).toEqual(['blob:test/1']);
   });
 });
 
@@ -507,7 +574,9 @@ describe('"Try again" on the event list', () => {
     vi.spyOn(repository, 'list').mockImplementation((...args) =>
       defer(() => {
         reads += 1;
-        return reads === 1 ? throwError(() => new Error('The server did not answer.')) : real(...args);
+        return reads === 1
+          ? throwError(() => new Error('The server did not answer.'))
+          : real(...args);
       }),
     );
     await TestBed.inject(Router).navigateByUrl('/events');

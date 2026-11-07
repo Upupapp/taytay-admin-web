@@ -8561,7 +8561,9 @@ where the API's console says "Not recorded".
 > EVT-01 to EVT-11 cover them (`docs/uat/uat-test-scripts.md`, version 1.4). Their resident steps
 > wait for an app build that includes events (D-191 in the app's decision log). Writing them found
 > that an event's page announces an export of its registrants but offers no way to save the file,
-> so the handling notice inside it cannot be read; EVT-07 is Blocked until it can.
+> so the handling notice inside it cannot be read; EVT-07 is Blocked until it can. Fixed the same
+> day: the page offers the file as a link to save, made from the text the data layer composed and
+> given back when the page closes, as a report's export is (`DL-190`); EVT-07 runs whole.
 
 `taytay-backend` `580acbb` serves `EVENT_REPOSITORY`, and the residents' side the Flutter app will
 be wired to. The spec vendored here is that commit's (277 operations). Casework phase 6f, after

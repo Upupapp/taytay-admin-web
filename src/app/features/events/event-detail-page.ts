@@ -1,5 +1,14 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom, switchMap, type Observable } from 'rxjs';
@@ -35,6 +44,7 @@ import {
   type RegistrationAction,
   type RegistrationStatus,
 } from '@domain/index';
+import { ObjectUrls } from '@shared/media/object-urls';
 import { debouncedTerm } from '@shared/state/debounced';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -89,19 +99,27 @@ export class EventDetailPage {
   private readonly reloads = signal(0);
   protected readonly saving = signal(false);
 
+  private readonly objectUrls = new ObjectUrls();
+  /** The last export, offered to save; another event's page starts without one. */
+  protected readonly fileReady = linkedSignal<string, { url: string; filename: string } | null>({
+    source: this.id,
+    computation: () => null,
+  });
+
+  constructor() {
+    // The file names residents: its address is given back when the page goes.
+    inject(DestroyRef).onDestroy(() => this.objectUrls.revokeAll());
+  }
+
   protected readonly canPublish = computed(() => this.permissions.has('event.publish'));
   protected readonly canCancel = computed(() => this.permissions.has('event.cancel'));
   protected readonly canArchive = computed(() => this.permissions.has('event.archive'));
   protected readonly canEdit = computed(() => this.permissions.has('event.edit'));
-  protected readonly canManage = computed(() =>
-    this.permissions.has('event.manage-registrations'),
-  );
+  protected readonly canManage = computed(() => this.permissions.has('event.manage-registrations'));
   protected readonly canMarkAttendance = computed(() =>
     this.permissions.has('event.mark-attendance'),
   );
-  protected readonly canExport = computed(() =>
-    this.permissions.has('event.export-registrants'),
-  );
+  protected readonly canExport = computed(() => this.permissions.has('event.export-registrants'));
 
   private readonly key = computed(() => ({ id: this.id(), nonce: this.reloads() }));
 
@@ -252,9 +270,7 @@ export class EventDetailPage {
     this.attendanceFilter.set(value === '' ? null : (value as AttendanceStatus));
   }
 
-  protected readonly canAct = computed(
-    () => this.reason().trim().length > 0 && !this.saving(),
-  );
+  protected readonly canAct = computed(() => this.reason().trim().length > 0 && !this.saving());
 
   protected async publish(event: LguEvent): Promise<void> {
     await this.act(this.repository.publish(asId<LguEventId>(event.id), this.reason().trim()));
@@ -321,8 +337,13 @@ export class EventDetailPage {
       const file = await firstValueFrom(
         this.repository.exportRegistrants(asId<LguEventId>(event.id)),
       );
-      // Announced rather than silently downloaded: the office should know a
-      // file naming residents now exists.
+      // Offered as a link to save rather than downloaded unasked: the office
+      // should know a file naming residents now exists, and choose to keep it.
+      this.objectUrls.revokeAll();
+      this.fileReady.set({
+        url: this.objectUrls.makeText(file.content, 'text/csv;charset=utf-8'),
+        filename: file.filename,
+      });
       this.notifications.success(`${this.copy.exported} ${file.filename}`);
     } catch {
       this.notifications.error(this.copy.failed);

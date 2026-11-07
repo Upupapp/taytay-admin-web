@@ -84,9 +84,6 @@ residents have nothing to request and the DOC cases cannot start.
 - **Events in the app need a new build.** The resident steps of EVT need a staging build of the
   app that includes events (decision D-191 in the app's decision log). Until the developer
   supplies one, EVT-03 to EVT-05, EVT-08, EVT-09, EVT-11 and step 8 of EVT-02 are Blocked.
-- **The registrant list file.** An event's page announces an export of its registrants but does
-  not yet offer the file to save, so the file's contents cannot be checked. EVT-07 is Blocked until
-  it does.
 - **Android only.** No iOS build exists yet.
 - **A reload signs you out of the staff website.** This is by design (NFR-03). Move around with the
   menu and the links.

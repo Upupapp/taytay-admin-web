@@ -246,6 +246,12 @@
 
           @if (canExport()) {
             <p class="event__hint">{{ copy.exportWarning }}</p>
+            @if (fileReady(); as file) {
+              <p class="event__hint" role="status">
+                {{ copy.fileReady }}
+                <a [href]="file.url" [attr.download]="file.filename">{{ copy.saveFile(file.filename) }}</a>
+              </p>
+            }
           }
 
           <app-async-content
