@@ -278,11 +278,10 @@ Use only the fictional Halimbawa residents. Every reason starts with _UAT:_.
 Exercises 13 to 16 need requests and releases on staging. Run them after the trainer has prepared
 some, or after the UAT rounds REQ and REL.
 
-**Note for DSH-04 and DSH-07.** These two UAT cases were written before the dashboard was changed on
-7 November 2026. Today, "Released" opens the releases "Handed over (released, claimed or
+**Note for DSH-04 and DSH-07.** "Released" opens the releases "Handed over (released, claimed or
 completed)", and the "Waiting for an ID review" row opens "Users and roles" narrowed to those
-accounts (the ID review queue is opened by "ID reviews waiting"). Follow this module, and note the
-difference on the UAT sheet.
+accounts (the ID review queue is opened by "ID reviews waiting"). UAT version 1.1 expects exactly
+this.
 
 ## 5. What the system deliberately does not do
 

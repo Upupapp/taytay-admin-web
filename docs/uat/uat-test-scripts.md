@@ -685,10 +685,12 @@ list of app accounts, which is "Users and roles" (ADMIN only).
 - **Set up first:** REL-04 and REL-06 done (scheduled and released payouts exist).
 - **Steps:**
   1. Note the number under "Scheduled payouts" and click it. Count the releases shown.
-  2. Go back. Click "Released" and count the released ones.
+  2. Go back. Click "Released" and count the releases shown.
 - **Expected result:**
-  - Each list opens filtered to its status ("Scheduled", "Released"), and the counts match the
-    figures.
+  - "Scheduled payouts" opens the releases filtered to "Scheduled". "Released" opens the releases
+    filtered to "Handed over (released, claimed or completed)", within the dashboard's period:
+    every release that reached the family, not only those still marked "Released" (DL-186).
+  - Each count matches its figure.
 
 ### DSH-05 · Each role sees the figures of its own scope
 
@@ -734,7 +736,9 @@ list of app accounts, which is "Users and roles" (ADMIN only).
 - **Expected result:**
   - "ID reviews waiting" equals the "Awaiting review" count. "Resident accounts" opens "Users and
     roles"; "Digital IDs in force" opens "Digital IDs".
-  - Step 4 opens the ID review queue.
+  - Step 4 opens "Users and roles" filtered to "Waiting for an ID review", and the number of
+    accounts shown equals the row's figure. The row counts accounts, not reviews: the review queue
+    is the "ID reviews waiting" figure (DL-186).
   - HEAD does not see the section "The residents’ app".
 
 ## DIR: Directory, home screen and app settings
