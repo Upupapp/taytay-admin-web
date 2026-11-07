@@ -348,8 +348,8 @@ newsfeed and events.
 
 **For the owner, from phase 6c** (`DL-189`): whether the team queue should show every open item
 rather than only what the supervisor could act on (the head sees no "release and record the
-receipt" there, as the mock built it); whether search should match without accents ("Pena" finding
-"Peña"), which needs `unaccent` on the server; and whether an endorsed request belongs in the
+receipt" there, as the mock built it); search now matches without accents ("Pena" finding "Peña", folded
+with `translate()` on the server in backend `6e2215b`, so not a question any more); and whether an endorsed request belongs in the
 approvers' pool (the choice made) rather than on its assessor's list (the mock).
 **Phase 6d done** (`DL-190`, `taytay-backend` `9d81454`, no migration): reports are served. The
 server counts every figure in SQL under the scope of the list behind it — a social worker over

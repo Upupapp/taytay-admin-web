@@ -8180,6 +8180,12 @@ does for `type_id`, `purpose` and `note`.
 > **UAT scripts since 2026-11-07 (noted 2026-11-08).** The closing "No UAT script covers My work,
 > the team's queue or search yet" no longer holds: SRCH-01 to SRCH-04 and WRK-01 to WRK-06 cover
 > them (`docs/uat/uat-test-scripts.md`, version 1.2, `80755ea`).
+>
+> **Accents since 2026-11-08.** The owner question in decision 1 is settled without `unaccent`:
+> `taytay-backend` `6e2215b` folds accents and ñ with `translate()` on both sides of
+> `visibleNameMatch`, the one rule behind the registry list, global search and the request and case
+> searches, so "Pena" finds "Peña" and the reverse. It needs no extension a managed database might
+> refuse, and it matches what the mock's `normaliseForSearch` already did.
 
 `taytay-backend` `e76c715` serves `SEARCH_REPOSITORY` and `WORK_REPOSITORY`. The spec vendored
 here is that commit's (243 operations). Casework phase 6c, after the dashboard (6a, `DL-182`)
