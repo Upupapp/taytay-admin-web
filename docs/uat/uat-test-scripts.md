@@ -1,7 +1,10 @@
 # UAT test scripts: Taytay, Rizal LGU platform (staging)
 
-Version 1.1, 7 November 2026 (replaces 1.0 of 6 November): adds the DOC area, residents' document
-requests (DOC-01 to DOC-14), their menu entry in ACC-04, and DIR-13 (residents accept new Terms of Use).
+Version 1.2, 7 November 2026 (replaces 1.1 of the same day): adds search (SRCH-01 to SRCH-04), My
+work, the team's work and office alerts (WRK-01 to WRK-06), and reports and their exports (RPT-01 to
+RPT-10), all served by the API since 7 November (DL-189, DL-190), and adds My work, Beneficiaries and
+Reports to the menus in ACC-04. Version 1.1 added the DOC area, residents' document requests (DOC-01
+to DOC-14), their menu entry in ACC-04, and DIR-13 (residents accept new Terms of Use).
 
 These scripts are deliverable D6, "Testing and LGU UAT" (item 7 on the project tracker). Read [README.md](README.md) first: it names the test accounts, the test-data rules
 and how to record a result or a defect.
@@ -22,23 +25,26 @@ and how to record a result or a defect.
 - Use only fictional test data (README, "Test data"). Every reason you type starts with "UAT:".
 - Record Pass, Fail or Blocked for every case, with your name and the date. A Fail needs a defect id.
 
-| Area                                          | Cases              | Count   |
-| --------------------------------------------- | ------------------ | ------- |
-| REG: Resident registration and ID review      | REG-01 to REG-13   | 13      |
-| ID: Digital ID                                | ID-01 to ID-08     | 8       |
-| ROS: Residents registry, households, families | ROS-01 to ROS-12   | 12      |
-| DSH: Dashboard                                | DSH-01 to DSH-07   | 7       |
-| DIR: Directory, home screen and app settings  | DIR-01 to DIR-13   | 13      |
-| DOC: Resident document requests               | DOC-01 to DOC-14   | 14      |
-| REQ: Assistance requests                      | REQ-01 to REQ-19   | 19      |
-| CAS: Cases                                    | CAS-01 to CAS-12   | 12      |
-| REL: Releases and payout sessions             | REL-01 to REL-10   | 10      |
-| REF: Referrals and field visits               | REF-01 to REF-12   | 12      |
-| ACC: Accounts, roles and access               | ACC-01 to ACC-10   | 10      |
-| AUD: App audit trail                          | AUD-01 to AUD-06   | 6       |
-| NEWS: Balita and the office inbox             | NEWS-01 to NEWS-06 | 6       |
-| NFR: Privacy, security and accessibility      | NFR-01 to NFR-10   | 10      |
-| **Total**                                     |                    | **152** |
+| Area                                            | Cases              | Count   |
+| ----------------------------------------------- | ------------------ | ------- |
+| REG: Resident registration and ID review        | REG-01 to REG-13   | 13      |
+| ID: Digital ID                                  | ID-01 to ID-08     | 8       |
+| ROS: Residents registry, households, families   | ROS-01 to ROS-12   | 12      |
+| DSH: Dashboard                                  | DSH-01 to DSH-07   | 7       |
+| DIR: Directory, home screen and app settings    | DIR-01 to DIR-13   | 13      |
+| DOC: Resident document requests                 | DOC-01 to DOC-14   | 14      |
+| REQ: Assistance requests                        | REQ-01 to REQ-19   | 19      |
+| CAS: Cases                                      | CAS-01 to CAS-12   | 12      |
+| REL: Releases and payout sessions               | REL-01 to REL-10   | 10      |
+| REF: Referrals and field visits                 | REF-01 to REF-12   | 12      |
+| SRCH: Search                                    | SRCH-01 to SRCH-04 | 4       |
+| WRK: My work, the team's work and office alerts | WRK-01 to WRK-06   | 6       |
+| RPT: Reports and exports                        | RPT-01 to RPT-10   | 10      |
+| ACC: Accounts, roles and access                 | ACC-01 to ACC-10   | 10      |
+| AUD: App audit trail                            | AUD-01 to AUD-06   | 6       |
+| NEWS: Balita and the office inbox               | NEWS-01 to NEWS-06 | 6       |
+| NFR: Privacy, security and accessibility        | NFR-01 to NFR-10   | 10      |
+| **Total**                                       |                    | **172** |
 
 ## REG: Resident registration and ID review
 
@@ -2151,6 +2157,479 @@ it shares. A visit record says whose claim each line is, and records no location
   - "Visit closed." The page says "This visit is closed. Its record cannot be changed." and offers
     no entry form.
 
+## SRCH: Search
+
+Search looks through six kinds of record, each through its own list, so it finds only what the
+account may open there. It matches names, reference numbers, barangay and status, and nothing else.
+Nothing typed into it is kept.
+
+### SRCH-01 · Search finds residents, requests and cases, and shows little about each
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-25 · Should · Casework
+- **Set up first:** ROS-01, REQ-04 and CAS-01 done (Ana Halimbawa, her request R1 and her case).
+  Note R1's control number.
+- **Steps:**
+  1. Click "Search residents, requests, programmes…" at the top of the page (or press Ctrl and K).
+  2. Read the notice under the search box. Type "H" and click "Search".
+  3. Type "Halimbawa" and click "Search".
+  4. Type R1's control number, click "Search", and click R1 in the results.
+  5. If a box ends with "See all (…)", which it does when more than five records match, click it.
+- **Expected result:**
+  - The page is "Search", "Residents, households, families, cases, requests and programmes.". The
+    notice reads "Results show a name, a reference, a barangay and a status. Case notes and
+    assessments are never searched and never shown here."
+  - Step 2 searches nothing: one letter is too short, and the page still shows "Search across the
+    office".
+  - Step 3 shows "Results for Halimbawa:" with how many of each kind matched, then one box per kind
+    ("Residents", "Assistance requests", "Cases", …) with its count. Each result shows a name or a
+    title and, where it has them, a reference, a barangay and a status. No birth date, address,
+    sector, note or reason appears.
+  - Step 4 lists R1 under "Assistance requests", and the click opens R1.
+  - Step 5 opens that list (for example "Residents") already searched for "Halimbawa".
+
+### SRCH-02 · Words from a note or a street find nothing
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-25 · Should · Casework
+- **Set up first:** CAS-01 and ROS-06 done (Ana's case, and her household at "UAT 1 Test Street").
+- **Steps:**
+  1. Open Ana's case and click "Add a note". Fill "What happened?" with "UAT: the word marmalade
+     appears only in this note.", choose "Routine note" in "How closely is this held?", fill "Why
+     is this being recorded?" and click "Save the note".
+  2. Open "Search" and search "marmalade".
+  3. Search "Test Street".
+- **Expected result:**
+  - Both searches show "Results for …: Nothing matched." and "Nothing matched", with "Try a
+    surname, a control number, or part of a reference.".
+  - The case is not found by the words of its note, and the household is not found by its street.
+
+### SRCH-03 · Recent searches stay in this tab, and the term never enters the address bar
+
+- **Role:** INTAKE
+- **Checks:** FR-STAFF-25 · Should · Casework
+- **Set up first:** ROS-01 done.
+- **Steps:**
+  1. Open "Search". Search "Halimbawa", then "Ana".
+  2. Read the address bar, and the list "Recent in this tab".
+  3. Click "Halimbawa" in that list.
+  4. Click "Clear".
+  5. Search "Halimbawa" again. Reload the page, sign in again and open "Search".
+- **Expected result:**
+  - The address bar ends in /search and never shows a search term.
+  - "Recent in this tab" lists both terms, with "Recent searches are kept for this tab only and are
+    never saved to this device.".
+  - Step 3 runs that search again. Step 4 empties the list, and the section goes.
+  - In step 5 the reload signs you out (by design, NFR-03). After signing in, "Search" shows "Search
+    across the office" and no recent list.
+
+### SRCH-04 · Each role is told which kinds of record were not searched
+
+- **Role:** RELEASE, SW1, BLINK, INTAKE, then HEAD
+- **Checks:** FR-STAFF-25, FR-API-4, NFR-PRIV-3 · Must · Casework
+- **Set up first:** CAS-02 and ROS-05 done (Ana's case is assigned to SW1; Dante Halimbawa lives in
+  Dolores). The set-up of NFR-06 done (Carmen Halimbawa of San Juan, "VAWC survivor").
+- **Steps:**
+  1. RELEASE, SW1, BLINK and INTAKE: search "Halimbawa" and read the line under "Results for
+     Halimbawa:".
+  2. BLINK: look for Dante in the results.
+  3. INTAKE: find Carmen in the results. Then search "Carmen".
+  4. HEAD: search "Carmen".
+- **Expected result:**
+  - RELEASE and BLINK see "Not searched" and "Your account does not cover cases, so those were not
+    searched.".
+  - SW1 sees "Not searched" and "Your account does not cover residents, households and families, so
+    those were not searched.". SW1's "Cases" and "Assistance requests" hold only those assigned to
+    SW1.
+  - INTAKE has no "Not searched" line.
+  - BLINK's results are all in San Juan. Dante is not among them.
+  - INTAKE finds Carmen under "Residents" only as "Halimbawa, C.", and the search "Carmen" shows
+    "Nothing matched": a protected person's given name is matched only for a role cleared to see it.
+  - HEAD's search "Carmen" finds her.
+
+## WRK: My work, the team's work and office alerts
+
+"My work" lists what each person owes, read again from cases, requests, visits, referrals and
+releases every time it opens. Only a case task can be marked done or moved from here; everything
+else is done on its own record. Office alerts describe the state of the records: they are not jobs.
+
+### WRK-01 · My work lists what you owe, grouped by when, with lateness in words
+
+- **Role:** SW1
+- **Checks:** FR-STAFF-23 · Should · T-18
+- **Set up first:** CAS-02 done (Ana's case is assigned to SW1). On that case SW1 adds two tasks
+  owed by SW1, as in CAS-04 step 2: one with yesterday's date in "Due by", one due in a few days. A
+  filed request is in "Assessment", assigned to SW1 (as in REQ-07; file a new one if R1 has moved
+  on).
+- **Steps:**
+  1. Open "My work".
+  2. Read the line under the title, each heading and its rows.
+- **Expected result:**
+  - The page is "My work", "What you owe today, drawn from cases, requests, visits, referrals and
+    releases.".
+  - The line reads "What is owed:", the counts in words (for example "1 late, …") and "As of" with
+    today's date.
+  - The first heading is "Late", with "Somebody set a date and it has passed. These come first.".
+    Yesterday's task is there and reads "Late by 1 day".
+  - The other task is under a later heading ("Due this week" or "Later") and reads "Due in … days"
+    or "Due tomorrow".
+  - The request is under "No date set", with "These have no deadline because the office has not
+    adopted a service standard for them. They are ordered by who has waited longest.". It reads
+    "Complete the assessment" and "Waiting … days" (or "Since today"), never "late".
+  - Every row says where it comes from ("Task" or "Assistance request"), its priority, the person
+    it is about, and who holds it after "With:".
+
+### WRK-02 · Only a case task is done or moved from My work, and each act keeps its words
+
+- **Role:** SW1
+- **Checks:** FR-STAFF-23, FR-STAFF-18, NFR-REC-1 · Must · T-18
+- **Set up first:** WRK-01 done.
+- **Steps:**
+  1. On the late task click "Mark done". Look at the "Mark done" button under "What happened"
+     while the box is empty.
+  2. Under "Move the date" pick a "New date" and leave "Why" empty. Look at the "Move the date"
+     button. Fill "Why" with "UAT: moved from My work." and click "Move the date".
+  3. On the same task click "Mark done" (again, if the panel has closed). Fill "What happened" with
+     "UAT: done from My work." and click the "Mark done" button under it.
+  4. Read the request's row.
+  5. Open Ana's case and read "What has happened".
+- **Expected result:**
+  - Step 1 opens a panel with "What happened" and "Recorded against your name as the outcome.
+    Required.". Its "Mark done" stays greyed out until something is typed.
+  - In step 2 "Move the date" stays greyed out until both "New date" and "Why" are filled. Then
+    "The date was moved, and the reason recorded." shows, and the task moves under the heading for
+    its new date.
+  - Step 3 shows "Recorded as done." and the task leaves the list.
+  - The request's row has no "Mark done". It reads "Only a task can be handed over or rescheduled.
+    Everything else is the state of a record — act on the record." and offers "Open the request".
+  - "What has happened" lists "Task date moved", with its reason, and "Task completed", both with
+    SW1's name. The task reads "Done" with "Outcome: UAT: done from My work.".
+
+### WRK-03 · Each step of a request waits on the list of whoever can take it
+
+- **Role:** INTAKE, SW1, HEAD, RELEASE
+- **Checks:** FR-STAFF-23, FR-API-4 · Must · T-18
+- **Set up first:** Filed test requests are waiting in "Submitted", in "Assessment" (assigned to
+  SW1) and in "Endorsed", and a release is in "Scheduled". Move test requests on as in REQ-04 to
+  REQ-15, and schedule a release as in REL-04.
+- **Steps:**
+  1. Sign in as each role, open "My work" and read the title of each "Assistance request" and
+     "Release" row.
+- **Expected result:**
+  - INTAKE has the submitted request as "Review a submitted intake".
+  - SW1 has the request in assessment as "Complete the assessment", and not the endorsed request.
+  - HEAD has the endorsed request as "Review an endorsed recommendation".
+  - RELEASE has the scheduled release as "Release and record the receipt", and no "Assistance
+    request" row at all.
+  - Of the four, only RELEASE has "Release and record the receipt": the head approves and does not
+    pay out (NFR-SOD-1).
+
+### WRK-04 · The team's work: by person, most late first, unclaimed work last
+
+- **Role:** HEAD, then SW1
+- **Checks:** FR-STAFF-23, FR-API-4 · Must · T-18
+- **Set up first:** SW1 owes an open task whose "Due by" date has passed (add one as in WRK-01). On
+  a case, one open task is owed by nobody ("Owed by" "Nobody yet", as in CAS-05 step 2).
+- **Steps:**
+  1. HEAD: open "My work" and click "The team’s work".
+  2. Read the order of the blocks, their counts and the last block.
+  3. Click "Back to my work".
+  4. SW1: open "My work". Then type the website address followed by /work/team.
+- **Expected result:**
+  - The page is "The team’s work", "Who is carrying what, and where it is late.". There is one
+    block per person, each with "… in hand" and, when something is late, "… late". The person with
+    the most late items comes first.
+  - SW1's block lists the late task with "Late by … days" (or "Late by 1 day").
+  - The last block is "Nobody has picked these up", with "Work with no name against it. This is the
+    office’s most common failure, so it is a column rather than an omission.", and holds the task
+    owed by nobody.
+  - No item reads "Release and record the receipt".
+  - Step 3 returns to "My work".
+  - SW1's "My work" has no "The team’s work" button, and the address shows "You do not have access
+    to that section".
+
+### WRK-05 · Office alerts say how they were worked out, and nobody ticks them off
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-23 · Should · T-18
+- **Set up first:** At least one filed request is in "Returned" (move one there with a reason, as
+  in REQ-06 step 4).
+- **Steps:**
+  1. Open "My work" and scroll to "Things worth a look".
+  2. Read each alert.
+  3. Open "Assistance requests", set "Status" to "Returned" and count the requests.
+  4. Go back and click the link under one alert.
+- **Expected result:**
+  - The box reads "Conditions of the records, not jobs. Nobody ticks these off — fix the record and
+    they go.", then a line counting the alerts by severity.
+  - Each alert has a badge ("Notice", "Needs attention" or "Risk"), a sentence, "How this was
+    worked out:" with the rule it applied, and a link such as "Open assistance requests" or "Open
+    the release queue". None has a button to complete or dismiss it.
+  - One alert reads "… waiting on the applicant.", with "Read every filed request returned to the
+    applicant for more information.", and its number equals the count in step 3.
+  - If nobody has run a duplicate check on staging, one alert reads "The registry has not been
+    checked for duplicate records yet.", marked "Notice", and its explanation ends "which is not the
+    same as finding none.". Otherwise that alert says how many pairs of records may be the same
+    person, and on which day the check last ran.
+  - Step 4 opens the list the link names.
+
+### WRK-06 · A task on a protected case keeps its words from a role not cleared for it
+
+- **Role:** HEAD, then INTAKE
+- **Checks:** FR-STAFF-23, NFR-PRIV-3 · Must · T-18
+- **Set up first:** The set-up of NFR-06 done (Carmen Halimbawa, "VAWC survivor", has an open
+  case).
+- **Steps:**
+  1. HEAD: open Carmen's case and click "Add a task". Fill "What has to be done?" with "UAT: call
+     the shelter about the hearing", choose "Kind" "Home visit", pick a date in "Due by", choose
+     "Nobody yet" in "Owed by", fill "Why is this needed?" and click "Add the task".
+  2. HEAD: open "My work" and find the task.
+  3. INTAKE: open "My work" and find the task. Click "Open the case".
+- **Expected result:**
+  - HEAD sees the task's own words, about Carmen by her full name, with "With: Nobody yet".
+  - INTAKE sees a "Task" row reading "A task on a protected case. Its words are withheld from your
+    role.", about "Halimbawa, C.", with "With: Nobody yet". The words typed in step 1 appear nowhere
+    on INTAKE's page.
+  - "Open the case" opens the case, which shows "Withheld from your account" as in NFR-06.
+
+## RPT: Reports and exports
+
+The API counts every report when it is opened, under the scope of the account reading it. A count
+of people or households from 1 to 4 is withheld, and every exported file carries its own
+conditions. Only the head, the auditor and the administrator can export.
+
+### RPT-01 · Each role is offered the reports its work needs
+
+- **Role:** HEAD, AUDITOR, SW1, RELEASE, INTAKE
+- **Checks:** FR-STAFF-24, FR-API-4, NFR-SEC-4 · Must · T-18
+- **Set up first:** None.
+- **Steps:**
+  1. Sign in as each role and open "Reports". Count the reports under each heading.
+  2. SW1: open "Social welfare caseload" and read "Covers". Then type the website address followed
+     by /reports/release-status.
+  3. RELEASE: open any report and read "Export".
+  4. INTAKE: look for "Reports" in the menu. Then type the address followed by /reports.
+- **Expected result:**
+  - The page reads "Every report here is a count unless it says otherwise. Figures small enough to
+    identify somebody are withheld rather than shown.".
+  - HEAD and AUDITOR see 14 reports: 5 under "Casework and workload", 3 under "Assistance
+    delivered", 4 under "Who the office reaches" and 2 under "Data quality and completeness". Only
+    "Data completeness and verification" is marked "Names people", with "This report lists
+    individual residents and needs the export permission.".
+  - SW1 sees 6: "Social welfare caseload", "Assistance pipeline", "Case aging and turnaround",
+    "Field visit workload", "Referral outcomes" and "Requirements bottlenecks". In step 2 "Covers"
+    includes "Your caseload: the cases, requests, visits and referrals assigned to you", and the
+    typed address shows "That report is not available" and "It may not exist, or your account may
+    not cover it.".
+  - RELEASE sees 11: all but "Staff workload", "Referral outcomes" and "Data completeness and
+    verification". "Export" reads "Your account can read this report but cannot export it.", with
+    no download button.
+  - INTAKE has no "Reports" in the menu, and the address shows "You do not have access to that
+    section".
+
+### RPT-02 · A small count of people is withheld, and the total is counted before
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-24 · Should · T-18
+- **Set up first:** REL-06 done (Ana of San Juan has been handed a release). On staging's test data
+  San Juan's figure is then between 1 and 4, and most barangays have none. If more test releases
+  exist, any barangay where 1 to 4 people were handed a release behaves the same way.
+- **Steps:**
+  1. Open "Reports", then "Beneficiaries by barangay".
+  2. Read the table "People served, by barangay", the box above it, the "Total" line and "Why
+     figures are withheld".
+  3. Add up the figures shown.
+- **Expected result:**
+  - San Juan reads "Withheld": not a number, not blank, and not left out. A barangay where nobody
+    was handed a release reads 0.
+  - Rows with a figure come first, largest first; then the "Withheld" rows, by name; then the
+    zeros.
+  - Above the table, "Some figures are withheld" and a sentence saying how many, ending "The column
+    total below therefore does not add up to the sum of the rows shown.".
+  - "Total:" is followed by "Counted before anything was withheld, so it does not always match the
+    rows above.". The total is larger than the sum from step 3.
+  - "Why figures are withheld" reads "A count below 5 can identify a person in a barangay of this
+    size, so it is withheld rather than shown. …".
+
+### RPT-03 · The auditor is not given the protected sectors at all
+
+- **Role:** AUDITOR, then HEAD
+- **Checks:** FR-STAFF-24, NFR-PRIV-3 · Must · T-18
+- **Set up first:** The set-up of NFR-06 done (Carmen Halimbawa is a "VAWC survivor"). REL-06 and
+  ROS-06 done.
+- **Steps:**
+  1. AUDITOR: open "Demographic service reach". Read the table "People served, by sector", the box
+     above it and "What this report cannot count".
+  2. AUDITOR: open "Household vulnerability indicators" and read the same.
+  3. HEAD: open "Demographic service reach".
+- **Expected result:**
+  - In steps 1 and 2 the rows "VAWC survivor" and "Child in conflict with the law" are always
+    there, and read "Withheld" whatever their figure, even none.
+  - The box above the table says these sectors are "protected by law (RA 9262, RA 9344) and not
+    counted for your account at all, whatever the figure; the total leaves them out."
+  - In step 1 "What this report cannot count" reads "The office holds no count of how many people
+    in each sector live in Taytay, so this shows who was reached and cannot show who was missed.".
+  - HEAD's page has no sentence about protected sectors: the head is cleared to see them.
+
+### RPT-04 · Filters change the "Covers" line, and another report starts unfiltered
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-24 · Should · T-18
+- **Set up first:** Some requests have been filed (the REQ cases have run).
+- **Steps:**
+  1. Open "Assistance pipeline". Read "Covers" and "Generated".
+  2. Under "Narrow the figures" set "Period" to "Last 90 days".
+  3. Set "Barangay" to "San Juan".
+  4. Click "Clear filters".
+  5. Set "Period" to "Last 30 days". Click "All reports" and open "Programme utilisation".
+  6. Click "All reports" and open "Staff workload". Read "Narrow the figures".
+- **Expected result:**
+  - In step 1 "Covers" reads "All time", "Generated" gives the date and time, and there is no
+    "Clear filters".
+  - In step 2 "Covers" reads "Last 90 days, by the day each request was filed", and the figures
+    are counted again.
+  - In step 3 it reads "Last 90 days, by the day each request was filed · Barangay: San Juan", and
+    the figures change.
+  - Step 4 brings back "All time" and the first figures.
+  - In step 5 "Programme utilisation" opens with "Covers" "All time", "Period" "All time" and
+    "Barangay" "All barangays".
+  - In step 6 "Staff workload" offers "Barangay" and no "Period": a filter a report does not
+    honour is never offered.
+
+### RPT-05 · Exporting a count: the file carries its own conditions
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-24 · Should · T-18
+- **Set up first:** RPT-02 done.
+- **Steps:**
+  1. Open "Beneficiaries by barangay". Under "Export" read the hint and click "Download as CSV".
+  2. Click the link that starts "Save" and save the file.
+  3. Open the file in Notepad and read the lines above the first table, then the table.
+  4. Delete the file.
+- **Expected result:**
+  - The hint reads "The file carries the report name, the filter applied, and who generated it.".
+    No warning is shown, because the report names nobody.
+  - Step 1 shows "Export ready." and "The file is ready. It carries the report, the filter and who
+    produced it.", with the link to save it. The file is named after the report and today's date.
+  - The file opens with lines starting "Report", "Question", "Filter applied", "Generated at",
+    "Generated by" (with HEAD's name), "Rows" and "Names individuals" (with "No"), then "Withheld
+    figures", "Why figures are withheld" and "Handling". The "Handling" line reads "This export
+    contains information held by the Municipal Social Welfare and Development Office of Taytay,
+    Rizal and is protected under RA 10173. Keep it within the office, do not forward it, and delete
+    it when the work it was produced for is finished."
+  - In the table San Juan reads "Withheld", and the last line is "Total, counted before anything
+    was withheld".
+
+### RPT-06 · The report that names people: a warning first, and both acts in the trail
+
+- **Role:** HEAD, then AUDITOR
+- **Checks:** FR-STAFF-24, FR-STAFF-27 · Must · T-18
+- **Set up first:** RPT-05 done.
+- **Steps:**
+  1. HEAD: open "Data completeness and verification". Read the box under "What this answers".
+  2. Under "Export" click "Download as CSV". Read the warning, then click "Cancel".
+  3. Click "Download as CSV" again, then "I understand — export it". Save the file and open it in
+     Notepad.
+  4. Delete the file.
+  5. AUDITOR: open "App audit trail" and find HEAD's rows for steps 1 to 3 and for RPT-05.
+- **Expected result:**
+  - Step 1 shows "Read this first" with "This report names people, because it exists to be
+    corrected record by record. Do not circulate it outside the office.", and "This report names
+    people" with "This export names individual residents. Person-level data leaves the office the
+    moment the file does, and nothing can be recalled. Export it only if the work genuinely cannot
+    be done from the aggregate figures."
+  - Step 2 shows "Before you export" with the same warning, "I understand — export it" and
+    "Cancel", before any file exists. "Cancel" produces no file and no "Export ready.".
+  - Step 3 shows "Export ready.". In the file, "Names individuals" reads "Yes", and the "Handling"
+    line comes before the first name.
+  - The trail has, each with HEAD's account and the time: "Opened the report that names
+    residents", one "Exported the report that names residents, as a file" (none for the cancelled
+    try), and "Exported a report as a file, its conditions written inside it" from RPT-05.
+
+### RPT-07 · Data completeness for the auditor: protected names shortened, no PhilSys gaps
+
+- **Role:** AUDITOR, then HEAD
+- **Checks:** FR-STAFF-24, NFR-PRIV-3 · Must · T-18
+- **Set up first:** The set-up of NFR-06 done. Carmen Halimbawa belongs to no household and has no
+  PhilSys digits recorded.
+- **Steps:**
+  1. AUDITOR: open "Data completeness and verification". Find Carmen in "Records missing
+     something", and read the "What is missing" column on every row.
+  2. Read "What this report cannot count".
+  3. HEAD: open the same report and find Carmen.
+- **Expected result:**
+  - AUDITOR sees Carmen only as "Halimbawa, C.". No row says "PhilSys last four", and Carmen's row
+    does not say "mobile number".
+  - "What this report cannot count" reads "A missing PhilSys number is not looked for: your account
+    does not read PhilSys digits." and "A missing mobile number is not looked for on a record under
+    a protected sector: your account does not read their contact details."
+  - HEAD sees Carmen by her full name, with "PhilSys last four" and "household" among what is
+    missing, and no "What this report cannot count" section.
+
+### RPT-08 · Programme utilisation: money in pesos, goods counted and never valued
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-24, NFR-MON-1 · Must · T-18
+- **Set up first:** REL-06 done (R1's ₱3,000.50 was handed over). For the goods check, R2's goods
+  release (REL-02) has also been recorded as released, as in REL-06 step 1.
+- **Steps:**
+  1. Open "Programme utilisation".
+  2. Read both tables, the sentence above each, their totals and "What this report cannot count".
+- **Expected result:**
+  - "Releases handed over, by programme" counts releases of money and of goods alike, under
+    "Releases".
+  - "Money handed over, by programme" shows "Amount" in pesos, with ₱ and two decimals (R1's
+    ₱3,000.50 counts under its programme), and its "Total:" is in pesos too.
+  - The sentence above the money table says how many releases were goods, "counted in the table
+    above and never valued". If no goods release has been handed over, it says "No goods were
+    handed over under this filter." instead. No goods release has a peso figure anywhere.
+  - "What this report cannot count" reads "Programme membership is not recorded on this server, so
+    how many people are enrolled in a programme is not counted: only what was handed over under it.
+    A programme with nothing handed over may still have members."
+
+### RPT-09 · Staff workload lists people by name and ranks nobody
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-24 · Should · T-18
+- **Set up first:** WRK-04 done (an open task owed by SW1, and one owed by nobody).
+- **Steps:**
+  1. Open "Staff workload". Read "Read this first", the three tables and "What this report cannot
+     count".
+- **Expected result:**
+  - "Read this first" reads "This counts what each person is carrying so work can be moved. It is
+    not a productivity measure and must not be read as one: …".
+  - The tables are "Open case tasks each officer is carrying", "Requests in assessment, by who is
+    assessing them" and "Visits still scheduled, by who will make them", with the column
+    "Officer".
+  - Each table lists people in alphabetical order, not by the size of their figure. The first two
+    end with "Not assigned to anybody", which counts the task owed by nobody.
+  - The sentence above each table ends "Nobody is ranked." and names nobody as the largest. No
+    rate, score, rank or percentage appears.
+  - "What this report cannot count" reads "Only work with a named holder on file is counted: open
+    case tasks, requests assigned for assessment, and visits still scheduled. A referral or a
+    release has no holder on file, so neither is counted here."
+
+### RPT-10 · A name that starts with "=" stays text when the file is opened in a spreadsheet
+
+- **Role:** INTAKE, then HEAD
+- **Checks:** FR-STAFF-24 · Should · T-18
+- **Set up first:** Excel or LibreOffice Calc on HEAD's computer. This case registers one test
+  record whose last name starts with "=" on purpose; HEAD retires it at the end.
+- **Steps:**
+  1. INTAKE: register a resident as in ROS-01, with "First name" "Fe" and "Last name" "=Halimbawa",
+     in "San Juan", with "PhilSys — last four digits only" left empty and in no household.
+  2. HEAD: open "Data completeness and verification", find Fe, and export the report as in RPT-06
+     step 3.
+  3. Open the file in Notepad and find Fe's line. Then open the same file in the spreadsheet.
+  4. Delete the file. HEAD: retire Fe's record as in ROS-04, with the reason "UAT: formula test
+     record, not a person.".
+- **Expected result:**
+  - Step 2 lists Fe as "=Halimbawa, Fe", with what is missing.
+  - In Notepad Fe's line starts with `"'=Halimbawa, Fe"`: the apostrophe before the "=" is what
+    stops a spreadsheet from running it.
+  - In the spreadsheet the cell shows the name as text, "=Halimbawa, Fe" (some programs show the
+    apostrophe too). It never shows "#NAME?" or any other result of a calculation.
+
 ## ACC: Accounts, roles and access
 
 Staff accounts are created by the administrator outside the website. On the website the
@@ -2212,19 +2691,22 @@ permission again: a hidden button is never the only protection.
 - **Steps:**
   1. Sign in as each role and list the menu entries. Read the footer under the menu.
 - **Expected result:**
-  - ADMIN: Dashboard, Cases, Assistance requests, Residents, Households, Families, Field visits,
-    Referrals, Programs, Releases, ID verification, Office inbox, Resident document requests, Users
-    and roles, App directory, Home screen, App settings, Digital IDs, Balita, App audit trail.
+  - ADMIN: Dashboard, My work, Cases, Assistance requests, Residents, Beneficiaries, Households,
+    Families, Field visits, Referrals, Programs, Releases, Reports, ID verification, Office inbox,
+    Resident document requests, Users and roles, App directory, Home screen, App settings, Digital
+    IDs, Balita, App audit trail.
   - HEAD: the same, without ID verification, Users and roles, App directory, Home screen and App
     settings.
-  - SW1 and INTAKE: Dashboard, Cases, Assistance requests, Residents, Households, Families, Field
-    visits, Referrals, Programs, Office inbox, Resident document requests, Digital IDs, Balita.
-  - RELEASE: Dashboard, Assistance requests, Residents, Households, Families, Programs, Releases,
-    Office inbox, Resident document requests, Digital IDs, Balita.
-  - BLINK: Dashboard, Assistance requests, Residents, Households, Families, Referrals, Programs,
-    Digital IDs.
-  - AUDITOR: Dashboard, Cases, Assistance requests, Residents, Households, Families, Field visits,
-    Referrals, Programs, Releases, Digital IDs, App audit trail.
+  - SW1: Dashboard, My work, Cases, Assistance requests, Residents, Beneficiaries, Households,
+    Families, Field visits, Referrals, Programs, Reports, Office inbox, Resident document requests,
+    Digital IDs, Balita.
+  - INTAKE: the same as SW1, without Reports.
+  - RELEASE: Dashboard, My work, Assistance requests, Residents, Households, Families, Programs,
+    Releases, Reports, Office inbox, Resident document requests, Digital IDs, Balita.
+  - BLINK: Dashboard, My work, Assistance requests, Residents, Households, Families, Referrals,
+    Programs, Digital IDs.
+  - AUDITOR: Dashboard, My work, Cases, Assistance requests, Residents, Beneficiaries, Households,
+    Families, Field visits, Referrals, Programs, Releases, Reports, Digital IDs, App audit trail.
   - Every menu may end with "Not connected yet". The footer shows the name, role and scope ("All
     barangays", "Assigned cases" or "Barangay San Juan"), and "Sign out".
 

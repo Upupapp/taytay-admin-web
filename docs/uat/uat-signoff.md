@@ -156,6 +156,48 @@ Decision: [ ] Accepted [ ] Accepted with open items: ................ [ ] Not ac
 | Tested by                  |      |      |           |      |
 | Accepted for the office by |      |      |           |      |
 
+## SRCH: Search (SRCH-01 to SRCH-04)
+
+| Cases run | Passed | Failed | Blocked | Open defects (ids) |
+| --------- | ------ | ------ | ------- | ------------------ |
+|           |        |        |         |                    |
+
+Decision: [ ] Accepted [ ] Accepted with open items: ................ [ ] Not accepted
+
+|                            | Name | Role | Signature | Date |
+| -------------------------- | ---- | ---- | --------- | ---- |
+| Tested by                  |      |      |           |      |
+| Tested by                  |      |      |           |      |
+| Accepted for the office by |      |      |           |      |
+
+## WRK: My work, the team's work and office alerts (WRK-01 to WRK-06)
+
+| Cases run | Passed | Failed | Blocked | Open defects (ids) |
+| --------- | ------ | ------ | ------- | ------------------ |
+|           |        |        |         |                    |
+
+Decision: [ ] Accepted [ ] Accepted with open items: ................ [ ] Not accepted
+
+|                            | Name | Role | Signature | Date |
+| -------------------------- | ---- | ---- | --------- | ---- |
+| Tested by                  |      |      |           |      |
+| Tested by                  |      |      |           |      |
+| Accepted for the office by |      |      |           |      |
+
+## RPT: Reports and exports (RPT-01 to RPT-10)
+
+| Cases run | Passed | Failed | Blocked | Open defects (ids) |
+| --------- | ------ | ------ | ------- | ------------------ |
+|           |        |        |         |                    |
+
+Decision: [ ] Accepted [ ] Accepted with open items: ................ [ ] Not accepted
+
+|                            | Name | Role | Signature | Date |
+| -------------------------- | ---- | ---- | --------- | ---- |
+| Tested by                  |      |      |           |      |
+| Tested by                  |      |      |           |      |
+| Accepted for the office by |      |      |           |      |
+
 ## ACC: Accounts, roles and access (ACC-01 to ACC-10)
 
 | Cases run | Passed | Failed | Blocked | Open defects (ids) |
