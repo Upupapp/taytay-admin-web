@@ -20,20 +20,17 @@ As of 2026-11-07. Each item names its source so it can be checked and closed. Id
 
 ## 2. Console modules the API does not serve
 
-Seven of the console's 33 data ports are bound to "unserved" adapters in the staging and
+Four of the console's 33 data ports are bound to "unserved" adapters in the staging and
 production builds (`UNSERVED_HTTP_PORTS`, `src/app/data/http/unserved-repositories.ts`). Their
 screens make no request: they are hidden from the menu and named on the console's "Not connected
 yet" page, and they show sample data only in the `local-mock` configuration.
 
-| Module (port)                                                 | What staff cannot do yet                                                           | Plan                         |
-| ------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------- |
-| The beneficiary registry and duplicate review (`beneficiary`) | See who has received what across programmes; review possible duplicate records     | Phase 6b (FR-STAFF-12)       |
-| Work queues (`work`)                                          | See "my work" and the team's queue of tasks and waiting items                      | Phase 6b (FR-STAFF-23)       |
-| Reports (`report`)                                            | Run the fourteen office reports and exports                                        | Phase 6b (FR-STAFF-24, -31)  |
-| Search (`search`)                                             | Search across residents, requests and cases from one box                           | Phase 6b (FR-STAFF-25)       |
-| Governance (`governance`)                                     | Retention settings, correction requests, and the auditor's view of recorded values | Phase 6b (FR-STAFF-26, -27)  |
-| The newsfeed (`newsfeed`)                                     | Posts with reaction and comment counts, and comment moderation                     | Waits for OD-4 (FR-STAFF-34) |
-| Events (`event`)                                              | Create events and manage registrations                                             | Waits for OD-4               |
+| Module (port)             | What staff cannot do yet                                                           | Plan                         |
+| ------------------------- | ---------------------------------------------------------------------------------- | ---------------------------- |
+| Reports (`report`)        | Run the fourteen office reports and exports                                        | Phase 6b (FR-STAFF-24, -31)  |
+| Governance (`governance`) | Retention settings, correction requests, and the auditor's view of recorded values | Phase 6b (FR-STAFF-26, -27)  |
+| The newsfeed (`newsfeed`) | Posts with reaction and comment counts, and comment moderation                     | Waits for OD-4 (FR-STAFF-34) |
+| Events (`event`)          | Create events and manage registrations                                             | Waits for OD-4               |
 
 ## 3. Other things not built or not finished
 
@@ -139,18 +136,18 @@ Recorded by the developer and **not re-run for this package**.
 The requirements document traces the Terms of Reference (TOR) through the developer's brief of
 4 November 2026, not through the TOR itself (§3.2, R-10). Its phases 6 to 8 hold what is not built:
 
-| TOR feature                                                     | Status on 7 Nov 2026                                                                                         | Phase                                                              |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| T-10 Beneficiary records, fund tracking, duplicate-claim checks | Partly built: releases in centavos and the intake duplicate advisory. Registry and duplicate review unserved | 6b                                                                 |
-| T-12 Audit trails                                               | Partly built: the app's audit trail and casework histories. Governance unserved                              | 6b                                                                 |
-| T-18 Analytics and reports, dashboards, exports                 | Partly built: the dashboard. Reports, search and work queues unserved                                        | 6b                                                                 |
-| T-16 Event and program postings                                 | Deferred; events unserved                                                                                    | 6b, after OD-4                                                     |
-| T-17 Engagement monitoring                                      | Deferred; newsfeed unserved                                                                                  | 6b, after OD-4                                                     |
-| T-9 Tulong applications from the app                            | The staff side is built; applying from the app is not offered                                                | After OD-4                                                         |
-| T-11 Barangay validation and endorsement                        | Not started                                                                                                  | 8, after OD-12                                                     |
-| T-15 Emergency alerts                                           | Partly built: hotlines and Balita advisories. No alert feature                                               | 8, if OD-11 adopts it                                              |
-| T-14 Push notifications                                         | Partly built: in-app only                                                                                    | Needs a sender, the app plugin and the production Firebase project |
-| T-5 Document Request (phase 7)                                  | **Built on staging** on 7 Nov 2026 (API, console and app); UAT still to run                                  | 7 (done)                                                           |
+| TOR feature                                                     | Status on 7 Nov 2026                                                                                                 | Phase                                                              |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| T-10 Beneficiary records, fund tracking, duplicate-claim checks | Built (`DL-187`): the registry, duplicate review and utilization from releases. Programme membership is not recorded | 6b                                                                 |
+| T-12 Audit trails                                               | Partly built: the app's audit trail and casework histories. Governance unserved                                      | 6b                                                                 |
+| T-18 Analytics and reports, dashboards, exports                 | Partly built: the dashboard, search and the work queues (`DL-189`). Reports unserved                                 | 6b                                                                 |
+| T-16 Event and program postings                                 | Deferred; events unserved                                                                                            | 6b, after OD-4                                                     |
+| T-17 Engagement monitoring                                      | Deferred; newsfeed unserved                                                                                          | 6b, after OD-4                                                     |
+| T-9 Tulong applications from the app                            | The staff side is built; applying from the app is not offered                                                        | After OD-4                                                         |
+| T-11 Barangay validation and endorsement                        | Not started                                                                                                          | 8, after OD-12                                                     |
+| T-15 Emergency alerts                                           | Partly built: hotlines and Balita advisories. No alert feature                                                       | 8, if OD-11 adopts it                                              |
+| T-14 Push notifications                                         | Partly built: in-app only                                                                                            | Needs a sender, the app plugin and the production Firebase project |
+| T-5 Document Request (phase 7)                                  | **Built on staging** on 7 Nov 2026 (API, console and app); UAT still to run                                          | 7 (done)                                                           |
 
 ## 9. Gaps and inconsistencies in the documentation
 
@@ -162,8 +159,6 @@ key note in the backend, the staging environment comment, the PHP secret scanner
 mobile repository; see the register) and the backup script, which is now in the backend
 repository. What remains is for the developer or the owner:
 
-- **The console's `CLAUDE.md` counts unserved ports from the move:** "the other eighteen are bound
-  to unserved adapters". Today seven of 33 ports are unserved.
 - **The backend's `CLAUDE.md` calls Paul "repository owner"**; the requirements document names
   Michaela Angela E. Cailing as the project owner who approves.
 - **The secret scan is clean** (`npm run scan:secrets`, 7 November 2026: 5 accepted, 0 findings).

@@ -216,6 +216,14 @@ import {
   type CaseTaskId,
   type CaseWorkspace,
   type IsoDate,
+  type OfficeAlert,
+  type SearchRepository,
+  type SearchResults,
+  type TeamQueue,
+  type WorkQueue,
+  type WorkRepository,
+  buildTeamQueue,
+  isSearchable,
   type DeferralReason,
   type Release,
   type ReleaseAcknowledgementDraft,
@@ -460,6 +468,8 @@ import {
   toWireIssuanceTypeRetire,
   toWireIssuanceTypeUpdate,
 } from './mappers/issuance.mapper';
+import { toSearchResults } from './mappers/search.mapper';
+import { toOfficeAlerts, toTeamWork, toWorkQueue } from './mappers/work.mapper';
 import { list } from './mappers/wire';
 import { unserved } from './unserved-repositories';
 
@@ -4080,6 +4090,100 @@ function readDashboard(wire: unknown, barangays: BarangayIndex): DashboardSummar
     );
   }
   return summary;
+}
+
+/**
+ * Global search (`DL-189`): one term to `GET office/search`, and nothing else (`DL-109`).
+ *
+ * The server searches each record type through its own list's scope and names every type it did
+ * not search (`DL-112`); the answer is read whole or refused. A term too short to search is answered
+ * here without a request, as the mock adapter answers it: two characters against a registry is a
+ * directory dump, and the screen asks for a search on its first render with an empty term.
+ *
+ * The term goes in the request's query string, where every registry list's `q` already goes. It is
+ * never put in the address bar (`DL-137`), and the API's request log records the path without it.
+ */
+@Injectable()
+export class HttpSearchRepository implements SearchRepository {
+  private readonly api = inject(ApiClient);
+  private readonly barangayJoin = new BarangayJoin();
+
+  search(term: string): Observable<SearchResults> {
+    const trimmed = term.trim();
+    if (!isSearchable(trimmed)) {
+      return of({ term: trimmed, groups: [], total: 0, withheldTypes: [] });
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .item(API_ENDPOINTS.officeSearch, { q: trimmed })
+          .pipe(map((wire) => readSearch(wire, barangays))),
+      ),
+    );
+  }
+}
+
+function readSearch(wire: unknown, barangays: BarangayIndex): SearchResults {
+  const results = toSearchResults(wire, barangays);
+  if (results === null) {
+    throw new Error(
+      'The search results could not be read, so none is shown rather than some: a search that ' +
+        'quietly loses a group says nothing matched, and an officer believes it.',
+    );
+  }
+  return results;
+}
+
+/**
+ * Work queues and office alerts (`DL-189`). **Read-only, and that is the design** (`DL-97`): three
+ * reads and no write. Acting on a case task goes to `CaseRepository`, with a reason; every other
+ * item is the state of a record, acted on where it lives.
+ *
+ * The server assembles each queue from case tasks and the live state of requests, visits, referrals
+ * and releases under each list's own scope, and lists only what this reader could act on. A queue
+ * is read whole or refused: one row short is a late item nobody saw.
+ */
+@Injectable()
+export class HttpWorkRepository implements WorkRepository {
+  private readonly api = inject(ApiClient);
+
+  myQueue(asOf: IsoDate): Observable<WorkQueue> {
+    return this.api
+      .item(API_ENDPOINTS.officeWorkMine, { as_of: asOf })
+      .pipe(map((wire) => readWork(toWorkQueue(wire))));
+  }
+
+  /** Everybody's and nobody's, grouped by person here exactly as the mock adapter groups it. */
+  teamQueue(asOf: IsoDate): Observable<TeamQueue> {
+    return this.api.item(API_ENDPOINTS.officeWorkTeam, { as_of: asOf }).pipe(
+      map((wire) => {
+        const team = readWork(toTeamWork(wire));
+        const names = new Map<string, string>();
+        for (const item of team.items) {
+          if (item.assignedTo !== null && item.assignedToName !== null) {
+            names.set(item.assignedTo, item.assignedToName);
+          }
+        }
+        return buildTeamQueue(team.items, names, team.asOf, 'Nobody yet');
+      }),
+    );
+  }
+
+  alerts(): Observable<readonly OfficeAlert[]> {
+    return this.api
+      .list(API_ENDPOINTS.officeWorkAlerts)
+      .pipe(map((rows) => readWork(toOfficeAlerts(rows))));
+  }
+}
+
+function readWork<T>(read: T | null): T {
+  if (read === null) {
+    throw new Error(
+      'The work list could not be read, so none of it is shown rather than some: a queue one row ' +
+        'short is a late item nobody saw.',
+    );
+  }
+  return read;
 }
 
 /**

@@ -78,6 +78,11 @@ import OFFICE_ASSISTANCE_HISTORY from './office-assistance-history.json';
 import OFFICE_ASSISTANCE_HISTORY_WITHHELD from './office-assistance-history-withheld.json';
 import OFFICE_PROGRAM_UTILIZATION from './office-program-utilization.json';
 import OFFICE_PROGRAM_UTILIZATION_WITHHELD from './office-program-utilization-withheld.json';
+import OFFICE_SEARCH_RESULTS from './office-search-results.json';
+import OFFICE_SEARCH_RESULTS_CASELOAD from './office-search-results-caseload.json';
+import OFFICE_WORK_MINE from './office-work-mine.json';
+import OFFICE_WORK_TEAM from './office-work-team.json';
+import OFFICE_WORK_ALERTS from './office-work-alerts.json';
 import OFFICE_DOCUMENT_GRANT from './office-document-grant.json';
 import ISSUANCE_TYPES from './issuance-types.json';
 import OFFICE_ISSUANCE_TYPE_RETIRED from './office-issuance-type-retired.json';
@@ -366,6 +371,15 @@ describe('the Node fixtures, held to the vendored spec', () => {
       OFFICE_PROGRAM_UTILIZATION_WITHHELD,
       'OfficeProgramUtilizationListEnvelope',
     ],
+    ['office-search-results', OFFICE_SEARCH_RESULTS, 'OfficeSearchResultsEnvelope'],
+    [
+      'office-search-results-caseload',
+      OFFICE_SEARCH_RESULTS_CASELOAD,
+      'OfficeSearchResultsEnvelope',
+    ],
+    ['office-work-mine', OFFICE_WORK_MINE, 'OfficeWorkQueueEnvelope'],
+    ['office-work-team', OFFICE_WORK_TEAM, 'OfficeTeamWorkEnvelope'],
+    ['office-work-alerts', OFFICE_WORK_ALERTS, 'OfficeAlertListEnvelope'],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
     ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],

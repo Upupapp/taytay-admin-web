@@ -11,8 +11,6 @@ import {
   UnservedGovernanceRepository,
   UnservedNewsfeedRepository,
   UnservedReportRepository,
-  UnservedSearchRepository,
-  UnservedWorkRepository,
   UNSERVED_HTTP_PORTS,
 } from '@data/http/unserved-repositories';
 import {
@@ -150,9 +148,7 @@ const OFFERED = MENU.filter((item) => !WITHHELD.includes(item)).map((item) => it
 
 describe('the http adapter set', () => {
   const adapters = [
-    UnservedWorkRepository,
     UnservedReportRepository,
-    UnservedSearchRepository,
     UnservedGovernanceRepository,
     UnservedNewsfeedRepository,
     UnservedEventRepository,
@@ -212,11 +208,10 @@ describe('the http adapter set', () => {
       '/app-audit',
       '/cases',
       '/resident-documents',
+      '/work',
     ]) {
       expect(links, `${route} is served`).toContain(route);
     }
-    // The work queue (phase 6) stays unserved and out of the menu: it is not half-served.
-    expect(links).not.toContain('/work');
   });
 
   it('offers the resident registry when only its secondary panels are unserved (DL-175)', async () => {

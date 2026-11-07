@@ -435,6 +435,55 @@ if (listBody === '') {
 }
 notes.push('access: queues filtered by permission and scope, notifications by recipient');
 
+/* ── 9. The served adapter is read-only too (DL-189) ─────────────────────── */
+
+/*
+ * Since `DL-189` the API serves the queues, and the rules above hold the mock. The served adapter is
+ * held to the same line: the port's three reads and no other method, no write verb on the wire, and
+ * `isManageable` derived from the source in the mapper rather than taken on trust — a queue that
+ * offered to complete a referral would be a second task system arriving through the transport.
+ */
+const httpRepositories = read('src/app/data/http/http-repositories.ts');
+const httpWork = /export class HttpWorkRepository[\s\S]*?\n\}/.exec(httpRepositories)?.[0] ?? '';
+if (httpWork === '') {
+  problems.push('HttpWorkRepository has gone.');
+} else {
+  const methods = [...httpWork.matchAll(/\n  (?:private |protected )?(\w+)\s*\(/g)].map((m) => m[1]);
+  const extra = methods.filter((method) => !['myQueue', 'teamQueue', 'alerts'].includes(method));
+  if (extra.length > 0) {
+    problems.push(
+      `HttpWorkRepository declares ${extra.join(', ')}. The work adapter is the port's three reads ` +
+        'and nothing else (DL-97).',
+    );
+  }
+  if (/\.\s*(post|patch|put|delete|postBlob)\s*[<(]/.test(httpWork)) {
+    problems.push(
+      'HttpWorkRepository sends a write. A queue is a view; acting on an item goes to the ' +
+        'repository that owns the record, with its reason and its audit trail (DL-55, DL-97).',
+    );
+  }
+}
+const workMapperPath = 'src/app/data/http/mappers/work.mapper.ts';
+if (!existsSync(join(root, workMapperPath))) {
+  problems.push(`${workMapperPath} has gone, and the served queues with it.`);
+} else {
+  const workMapper = read(workMapperPath);
+  if (!/isManageable:\s*source === 'case-task'/.test(workMapper)) {
+    problems.push(
+      'The work mapper no longer derives isManageable from the source. Only a case task has a task ' +
+        'record behind it; anything else offered as manageable would be a control that does nothing ' +
+        '(DL-97).',
+    );
+  }
+  if (!/basis\s*\.\s*trim\s*\(\s*\)\s*===\s*''/.test(workMapper)) {
+    problems.push(
+      'The work mapper accepts an alert that states no basis. An alert nobody can check is one an ' +
+        'office learns to dismiss (DL-98).',
+    );
+  }
+}
+notes.push('served: three reads, no write verb, manageability and basis held in the mapper');
+
 /* ── Report ──────────────────────────────────────────────────────────────── */
 
 for (const note of notes) console.log(`  ${note}`);

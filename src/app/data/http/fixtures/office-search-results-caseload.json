@@ -1,0 +1,45 @@
+{
+  "data": {
+    "term": "mercado",
+    "groups": [
+      {
+        "type": "assistance-request",
+        "total": 0,
+        "hits": []
+      },
+      {
+        "type": "case",
+        "total": 1,
+        "hits": [
+          {
+            "id": "8e9f0a1b-2c3d-4e4f-8a5b-6c7d8e9f0a22",
+            "title": "Mercado, Ana",
+            "reference": "CASE-2026-000013",
+            "barangay_id": null,
+            "status": "assessment"
+          }
+        ]
+      },
+      {
+        "type": "program",
+        "total": 0,
+        "hits": []
+      }
+    ],
+    "not_searched": [
+      {
+        "type": "resident",
+        "why": "caseload"
+      },
+      {
+        "type": "household",
+        "why": "caseload"
+      },
+      {
+        "type": "family",
+        "why": "caseload"
+      }
+    ]
+  },
+  "meta": {}
+}

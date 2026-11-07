@@ -1,0 +1,61 @@
+{
+  "data": {
+    "as_of": "2026-11-07",
+    "owner_id": "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02",
+    "owner_name": "Joy Social Worker",
+    "items": [
+      {
+        "id": "case-task:9f0a1b2c-3d4e-4f5a-8b6c-7d8e9f0a1b01",
+        "source": "case-task",
+        "source_id": "9f0a1b2c-3d4e-4f5a-8b6c-7d8e9f0a1b01",
+        "kind": "conduct-visit",
+        "priority": "important",
+        "title": "Visit the family at the evacuation centre",
+        "subject": "Pangilinan, Marites",
+        "preview": "Case CASE-2026-000014",
+        "due_on": "2026-11-05",
+        "waiting_since": null,
+        "assigned_to": "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02",
+        "assigned_to_name": "Joy Social Worker",
+        "permission": "case.manage",
+        "case_id": "8e9f0a1b-2c3d-4e4f-8a5b-6c7d8e9f0a23",
+        "is_manageable": true
+      },
+      {
+        "id": "assistance-request:5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a11",
+        "source": "assistance-request",
+        "source_id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a11",
+        "kind": "complete-assessment",
+        "priority": "important",
+        "title": "Complete the assessment",
+        "subject": "Pangilinan, Marites",
+        "preview": "AICS-2026-000051",
+        "due_on": null,
+        "waiting_since": "2026-10-29",
+        "assigned_to": "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02",
+        "assigned_to_name": "Joy Social Worker",
+        "permission": "request.assess",
+        "case_id": null,
+        "is_manageable": false
+      },
+      {
+        "id": "field-visit:0a1b2c3d-4e5f-4a6b-8c7d-8e9f0a1b2c31",
+        "source": "field-visit",
+        "source_id": "0a1b2c3d-4e5f-4a6b-8c7d-8e9f0a1b2c31",
+        "kind": "conduct-visit",
+        "priority": "important",
+        "title": "Conduct the scheduled visit",
+        "subject": "Pangilinan, Marites",
+        "preview": "HV-2026-000007",
+        "due_on": "2026-11-09",
+        "waiting_since": null,
+        "assigned_to": "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d02",
+        "assigned_to_name": "Joy Social Worker",
+        "permission": "visit.manage",
+        "case_id": null,
+        "is_manageable": false
+      }
+    ]
+  },
+  "meta": {}
+}

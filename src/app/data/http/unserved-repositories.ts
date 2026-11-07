@@ -2,9 +2,7 @@ import { Injectable } from '@angular/core';
 import { throwError, type Observable } from 'rxjs';
 
 import {
-  type WorkRepository,
   type ReportRepository,
-  type SearchRepository,
   type GovernanceRepository,
   type NewsfeedRepository,
   type EventRepository,
@@ -17,8 +15,8 @@ import {
  * The Node API that replaced the Laravel one on 2026-10-20 began as the back office of the
  * residents' app (`DL-164`, `docs/integration/node-api-gap-map.md`). The casework has moved onto it
  * a phase at a time since — the registry, programmes, requests, cases, releases, referrals, visits
- * the dashboard and the beneficiary registry (`DL-174` to `DL-187`). What is left has no route
- * yet: the work queues, reports, search, governance, the newsfeed and events. In the `http`
+ * the dashboard, the beneficiary registry, search and the work queues (`DL-174` to `DL-189`). What
+ * is left has no route yet: reports, governance, the newsfeed and events. In the `http`
  * configuration each of those ports is bound to a class here.
  *
  * ## What an unserved adapter does
@@ -66,23 +64,6 @@ export function unserved(module: string): Observable<never> {
 }
 
 @Injectable()
-export class UnservedWorkRepository implements WorkRepository {
-  static readonly port: DataPort = 'work';
-
-  myQueue(): Observable<never> {
-    return unserved('work queues');
-  }
-
-  teamQueue(): Observable<never> {
-    return unserved('work queues');
-  }
-
-  alerts(): Observable<never> {
-    return unserved('work queues');
-  }
-}
-
-@Injectable()
 export class UnservedReportRepository implements ReportRepository {
   static readonly port: DataPort = 'report';
 
@@ -96,15 +77,6 @@ export class UnservedReportRepository implements ReportRepository {
 
   export(): Observable<never> {
     return unserved('reports');
-  }
-}
-
-@Injectable()
-export class UnservedSearchRepository implements SearchRepository {
-  static readonly port: DataPort = 'search';
-
-  search(): Observable<never> {
-    return unserved('search');
   }
 }
 
@@ -268,9 +240,7 @@ export class UnservedEventRepository implements EventRepository {
  * mock one: a spec can import this list, and could not import the binding.
  */
 export const UNSERVED_HTTP_PORTS: readonly DataPort[] = [
-  UnservedWorkRepository.port,
   UnservedReportRepository.port,
-  UnservedSearchRepository.port,
   UnservedGovernanceRepository.port,
   UnservedNewsfeedRepository.port,
   UnservedEventRepository.port,

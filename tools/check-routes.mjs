@@ -289,12 +289,13 @@ for (const [pattern, what] of [
  * serving cases (casework phase 3, `DL-179`), and to ten when it began serving releases (phase 4,
  * `DL-180`), and to eight when it began serving referrals and field visits (phase 5, `DL-181`), and
  * to seven when it began serving the dashboard (`DL-182`), and to six on 7 November 2026, when it
- * began serving the beneficiary registry (`DL-187`).
+ * began serving the beneficiary registry (`DL-187`), and to four the same day, when it began
+ * serving search and the work queues (`DL-189`).
  * LOWER THIS as a port is served (or retired by
  * the owner); never raise it. Raising it means
  * a screen that worked against the API has stopped.
  */
-const UNSERVED_CEILING = 6;
+const UNSERVED_CEILING = 4;
 
 if (unservedBindings.length > UNSERVED_CEILING) {
   failures.push(

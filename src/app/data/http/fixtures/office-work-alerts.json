@@ -1,0 +1,32 @@
+{
+  "data": [
+    {
+      "id": "alert-voucher-mismatch",
+      "kind": "voucher-mismatch",
+      "severity": "risk",
+      "summary": "1 voucher does not match the registry and cannot be released.",
+      "basis": "Read every release held for correction. Somebody is waiting on the office.",
+      "permission": "release.view",
+      "count": 1
+    },
+    {
+      "id": "alert-possible-duplicates",
+      "kind": "possible-duplicate",
+      "severity": "attention",
+      "summary": "3 pairs of records may each be the same person.",
+      "basis": "Counted the pairs the review queue holds open: found by the detection pass last run on 2026-11-06 (2 strong and 1 moderate resemblances), with no finding recorded. Records added since that pass have not been compared. Nothing is decided here.",
+      "permission": "beneficiary.review-duplicates",
+      "count": 3
+    },
+    {
+      "id": "alert-stalled-requests",
+      "kind": "stalled-request",
+      "severity": "notice",
+      "summary": "2 requests are waiting on the applicant.",
+      "basis": "Read every filed request returned to the applicant for more information.",
+      "permission": "request.view",
+      "count": 2
+    }
+  ],
+  "meta": {}
+}

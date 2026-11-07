@@ -1,0 +1,98 @@
+{
+  "data": {
+    "term": "mercado",
+    "groups": [
+      {
+        "type": "resident",
+        "total": 2,
+        "hits": [
+          {
+            "id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c11",
+            "title": "Mercado, Liza",
+            "reference": null,
+            "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+            "status": "active"
+          },
+          {
+            "id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c12",
+            "title": "Mercado, R.",
+            "reference": null,
+            "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+            "status": "inactive"
+          }
+        ]
+      },
+      {
+        "type": "assistance-request",
+        "total": 7,
+        "hits": [
+          {
+            "id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01",
+            "title": "Mercado, Liza",
+            "reference": "AICS-2026-000041",
+            "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+            "status": "assessment"
+          },
+          {
+            "id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a02",
+            "title": "Mercado, Liza",
+            "reference": "AICS-2026-000042",
+            "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+            "status": "submitted"
+          },
+          {
+            "id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a03",
+            "title": "Mercado, Liza",
+            "reference": "AICS-2026-000043",
+            "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+            "status": "submitted"
+          },
+          {
+            "id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a04",
+            "title": "Mercado, Liza",
+            "reference": "AICS-2026-000044",
+            "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+            "status": "submitted"
+          },
+          {
+            "id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a05",
+            "title": "Mercado, Liza",
+            "reference": "AICS-2026-000045",
+            "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+            "status": "submitted"
+          }
+        ]
+      },
+      {
+        "type": "case",
+        "total": 1,
+        "hits": [
+          {
+            "id": "8e9f0a1b-2c3d-4e4f-8a5b-6c7d8e9f0a21",
+            "title": "Mercado, Liza",
+            "reference": "CASE-2026-000012",
+            "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01",
+            "status": "intake"
+          }
+        ]
+      },
+      {
+        "type": "household",
+        "total": 0,
+        "hits": []
+      },
+      {
+        "type": "program",
+        "total": 0,
+        "hits": []
+      }
+    ],
+    "not_searched": [
+      {
+        "type": "family",
+        "why": "not-permitted"
+      }
+    ]
+  },
+  "meta": {}
+}

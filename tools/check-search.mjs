@@ -291,6 +291,62 @@ if (existsSync(join(root, searchPage))) {
 }
 notes.push('term: held in the tab and never in the URL, short queries refused');
 
+/* ── 7. The served adapter holds the same line (DL-189) ──────────────────── */
+
+/*
+ * Since `DL-189` the API answers search, and the rules above hold the mock. The server's answer is
+ * read by one mapper and asked for by one adapter, so the same line is drawn there: the mapper
+ * reads none of the never-searched fields, in either spelling, and refuses an answer that does not
+ * account for every type; the adapter sends the term and nothing else.
+ */
+const httpMapper = 'src/app/data/http/mappers/search.mapper.ts';
+const httpRepositories = 'src/app/data/http/http-repositories.ts';
+if (!existsSync(join(root, httpMapper))) {
+  problems.push(`${httpMapper} has gone, and the served search with it.`);
+} else {
+  const mapper = read(httpMapper);
+  const snake = (name) => name.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+  for (const [index, line] of mapper.split(/\r?\n/).entries()) {
+    if (isComment(line)) continue;
+    for (const name of forbidden) {
+      for (const spelling of new Set([name, snake(name)])) {
+        if (new RegExp(`'${spelling}'|\\.${spelling}\\b`).test(line)) {
+          problems.push(
+            `${httpMapper}:${index + 1} reads ${spelling}. A field search may not show is a field ` +
+              'it may not read either, on the wire as in the mock (DL-109).',
+          );
+        }
+      }
+    }
+  }
+  if (!/'not_searched'/.test(mapper) || !/SEARCH_ENTITY_ORDER\s*\.\s*some\s*\(/.test(mapper)) {
+    problems.push(
+      'The search mapper no longer refuses an answer that leaves a record type unaccounted for. ' +
+        'A type neither searched nor named reads as "nothing matched" (DL-112).',
+    );
+  }
+}
+const httpSearch =
+  /export class HttpSearchRepository[\s\S]*?\n\}/.exec(read(httpRepositories))?.[0] ?? '';
+if (httpSearch === '') {
+  problems.push('HttpSearchRepository has gone.');
+} else {
+  const calls = [...httpSearch.matchAll(/\s*\.\s*item\s*\(\s*API_ENDPOINTS\s*\.\s*officeSearch\s*,\s*(\{[^}]*\})/g)];
+  if (calls.length !== 1 || !/^\{\s*q: trimmed\s*\}$/.test(calls[0]?.[1] ?? '')) {
+    problems.push(
+      'HttpSearchRepository no longer sends one term and nothing else. A second parameter is a way ' +
+        'to ask search to read something a result may not show (DL-109).',
+    );
+  }
+  if (!/isSearchable\(/.test(httpSearch)) {
+    problems.push('HttpSearchRepository sends a term too short to search (MIN_SEARCH_LENGTH).');
+  }
+  if (STORAGE.test(httpSearch)) {
+    problems.push('HttpSearchRepository writes a search to the device (DL-110).');
+  }
+}
+notes.push('served: the mapper reads no never-searched field and accounts for every type; one term sent');
+
 /* ── Report ──────────────────────────────────────────────────────────────── */
 
 for (const note of notes) console.log(`  ${note}`);

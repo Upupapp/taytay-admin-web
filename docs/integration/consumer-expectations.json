@@ -2585,6 +2585,18 @@
     },
     {
       "method": "GET",
+      "path": "office/search",
+      "consumer": "search.mapper.ts#toSearchResults",
+      "required": [
+        "term"
+      ],
+      "optional": [
+        "groups",
+        "not_searched"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "office/service-providers",
       "consumer": "referral.mapper.ts#toServiceProvider",
       "required": [],
@@ -2701,6 +2713,44 @@
         "service_needs",
         "updated_by"
       ]
+    },
+    {
+      "method": "GET",
+      "path": "office/work/alerts",
+      "consumer": "work.mapper.ts#toOfficeAlert",
+      "required": [
+        "basis",
+        "count",
+        "id",
+        "kind",
+        "permission",
+        "severity",
+        "summary"
+      ],
+      "optional": []
+    },
+    {
+      "method": "GET",
+      "path": "office/work/mine",
+      "consumer": "work.mapper.ts#toWorkQueue",
+      "required": [
+        "as_of",
+        "items",
+        "owner_id"
+      ],
+      "optional": [
+        "owner_name"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/work/team",
+      "consumer": "work.mapper.ts#toTeamWork",
+      "required": [
+        "as_of",
+        "items"
+      ],
+      "optional": []
     },
     {
       "method": "GET",

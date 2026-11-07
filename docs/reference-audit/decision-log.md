@@ -8174,3 +8174,109 @@ does for `type_id`, `purpose` and `note`.
    caution), and under which key, given that it tells an encoder about other people's assistance?
 5. **Message keys are per sender**, as document-request keys are per resident; a key is never
    shared between a resident and the office.
+
+## DL-189 — search and the work queues are served: each record type searched through its own list, every type answered for, and a queue that is a view
+
+`taytay-backend` `e76c715` serves `SEARCH_REPOSITORY` and `WORK_REPOSITORY`. The spec vendored
+here is that commit's (243 operations). Casework phase 6c, after the dashboard (6a, `DL-182`)
+and the beneficiary registry (6b, `DL-187`). **No migration.** **Four ports remain unserved**:
+reports, governance, the newsfeed and events.
+
+### Search: the doctrine is the server's now
+
+`GET office/search?q=` takes one term and nothing else — any other parameter is a 422 — so a caller
+still cannot ask search to read something a result may not show (`DL-109`). The server searches each
+record type **through that list's own repository, filter and scope** — the request list's filed-only
+rule and caseload, the case list's caseload, the family list's barangay rule — and counts each
+group's total with **the same where-builder as the page**, so a group and the list it opens cannot
+disagree about who may be seen. The registry's lists gained a `count` beside `list` for this, and no
+second, looser query was written.
+
+**It matches only what a hit shows**, on the server: residents by the names the reader is shown (a
+protected person's given names only with `request.view-sensitive`, through the registry list's own
+rule, now one function both use); filed requests and cases by reference or their person's shown
+names; households by reference; families by name or reference; programmes by name or code. The
+lists' own `q` reads more on some lists — a household's street and head's surname, a programme's
+description — and search does not: those lists gained a flag that narrows the words to the closed
+set. No note, finding, remark, outcome, reason for a request, PhilSys digits, income, sector, birth
+date, address or contact is matched or returned: the backend's tests plant a reason for a request,
+a case summary, a programme description, a street, PhilSys digits, a birth date and an income, and
+find none of them.
+
+**Every type is answered for** (`DL-112`): searched, with its total and at most five hits, or named in
+`not_searched` with why — `not-permitted` without the list's key, `caseload` for a social worker and
+the registry's three types, which `DL-183` keeps from a caseload. The console's mapper refuses an
+answer that leaves a type out, rather than reading it as "nothing matched".
+
+**Nothing is kept or logged.** The API's request log records the path and never the query string;
+the staging proxy's site block in the backend repository declares no access log; there is no recent-search store on the server (`DL-110`). The
+term travels in the request's query string as every registry list's `q` already does, and never in
+the address bar (`DL-137`).
+
+### The work queues: a view, assembled on every read
+
+`GET office/work/mine` and `…/team` (`staff.view`) answer a queue whole; `GET office/work/alerts` a
+bare list. There is no write anywhere in the module (`DL-97`). Each source is read **through its own
+list's repository and scope** — open case tasks (a new read on the case repository, under the case
+list's where-builder), filed requests by status, scheduled visits, the referral follow-up queue, the
+open release queue — and an item is listed only to a reader holding the key that acts on it and the
+list's key. A source with more than 5000 open records in scope is refused (503), never cut short.
+Only a case task is manageable, and its acts stay the case routes', each with a reason. A request
+carries **no due date and the day it was filed** (`DL-101`). A task's title on a protected case is
+withheld from a reader not cleared for it, and every person is named as the registry names them to
+that reader (the payout table's `listedName`, moved to the registry's disclosure module and shared).
+
+Every item kind and alert the mock adapter derives has its source on the server, so none needed a
+not-connected answer (`DL-175`).
+
+### Decisions taken (the owner may overturn any; each is the easiest to reverse)
+
+1. **No migration, and no `pg_trgm`.** The term is matched with `lower(…) LIKE '%word%'`, as every
+   registry list's `q` already is; a leading wildcard cannot use a btree index, and `pg_trgm` is
+   neither loaded in the test database (PGlite) nor used anywhere. At one municipality's registry a
+   scan under the lists' own filters is enough. *For the owner:* accent-insensitive matching
+   ("Pena" finding "Peña") would need `unaccent` on the server; the lists do not have it either.
+2. **Inactive residents are found, and said to be inactive**; dissolved families are not, as on
+   the family list (a family hit carries no status to say so).
+3. **A request in `assessment` is owed by its assessor; every other request step by the pool of
+   whoever holds its key.** The mock put every request on its assignee's list, which left an endorsed
+   request on the social worker who endorsed it — where they cannot approve it and the head never sees
+   it in "My work". Releases are the release pool's, a visit the worker sent, a referral whoever made
+   it, a task its assignee.
+4. **The keys that act**: a visit needs `visit.manage` (the mock asked `case.view`, from before visits
+   had keys of their own), a referral follow-up `referral.manage` (the mock asked `referral.view`);
+   the rest are the mock's.
+5. **A referral's preview is its reference, not the service requested** — the mock showed the latter,
+   a sentence about the client on a list read by everybody who holds the key.
+6. **A case task's kind**: `home-visit`, `document`, `assessment` and `referral` map to the queue's
+   kinds; `follow-up` and `review` keep the mock's fallback (`close-case`). The kind is shown on no
+   screen; the task's own title is.
+7. **The team queue is the work the reader could act on**, as the mock assembled it: the head, who
+   approves and does not pay out, sees no "release and record the receipt" items on it. *For the
+   owner:* should supervision show every open item regardless of who could act on it?
+8. **`missing-requirement` is served as an alert** (the mock derived none; the dashboard counts the
+   same condition), with the dashboard's own basis.
+9. **The duplicate alert says when the registry has never been checked.** Pairs exist only after
+   somebody runs a detection pass, so "no pairs" before the first pass would be a false all-clear; the
+   alert is then a notice that no check has run, with a count of 0. Once a pass has run it counts the
+   open pairs, strong and moderate, says when the pass ran, and that records added since have not
+   been compared.
+10. **`as_of` is echoed and decides only whether a passed chase date reads as urgent**; it widens
+    nobody's access. `alerts()` takes no parameter and reads Manila today.
+
+### What the console changed
+
+`HttpSearchRepository` with `search.mapper.ts` and `HttpWorkRepository` with `work.mapper.ts`, each
+read whole or refused in words; a term too short to search is answered without a request, as the
+mock answers it. The team queue is grouped here by `buildTeamQueue`, exactly as the mock groups it.
+`UnservedSearchRepository` and `UnservedWorkRepository` are gone and `check:routes`' unserved ceiling
+went from 6 to **4**. `/work` is in the menu again for the roles that hold `dashboard.view`.
+`check:search` and `check:work` now hold the served adapters to the same line as the mock — the
+mapper reads no never-searched field in either spelling and accounts for every type, one term is
+sent, the work adapter has the port's three reads and no write verb, manageability is derived from
+the source, and an alert without a basis is refused — each validated against a planted regression.
+
+**Still open:** the mock adapter was left as it was, so `local-mock` still differs from the server on
+decisions 3 to 5 (an endorsed request on its assessor's list, a visit behind `case.view`, a
+referral's service requested as its preview); bringing it into line touches `check:work`'s rules on
+the mock and was not in this phase. No UAT script covers My work, the team's queue or search yet.

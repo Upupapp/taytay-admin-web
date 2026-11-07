@@ -274,6 +274,18 @@ export const API_ENDPOINTS = {
    */
   officeDashboard: 'office/dashboard',
   /**
+   * Global search (`DL-189`): `?q=` and nothing else, answered whole — every type searched with its
+   * total and at most five hits, and every type not searched named with why (`DL-112`).
+   */
+  officeSearch: 'office/search',
+  /**
+   * The work queues (`DL-189`), read-only: `mine` and `team` (`staff.view`) by `?as_of=`, answered
+   * whole; `alerts` a bare list with no parameters.
+   */
+  officeWorkMine: 'office/work/mine',
+  officeWorkTeam: 'office/work/team',
+  officeWorkAlerts: 'office/work/alerts',
+  /**
    * The beneficiary registry (`DL-187`): a projection over the resident registry, keyed on the
    * resident's id. Cursor-paged and alphabetical, by `q`, `barangay_id`, `role`, `received_from`,
    * `received_to` and `with_open_duplicate_review`; one record by `{residentId}`, with

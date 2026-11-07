@@ -12779,6 +12779,279 @@
           }
         }
       }
+    },
+    "/api/v1/office/search": {
+      "get": {
+        "operationId": "searchOffice",
+        "summary": "Search the office’s records",
+        "description": "Needs at least one of resident.view, request.view, case.view, household.view, family.view and program.view. One term and nothing else. Each record type is searched only if the reader holds its list’s key, through that list’s own scope (a barangay link’s barangay; a social worker’s own cases and filed requests), and counted by the same where-builder. The registry’s types — residents, households, families — are refused to a caseload (DL-183). A type not searched is named in `not_searched` with why, never left out. Matching reads only what a hit shows: residents by the names this reader is shown (a protected person’s given names only for request.view-sensitive, and shown as surname and initial otherwise); filed requests and cases by reference or their person’s shown names; households by reference; families by name or reference; programmes by name or code. No note, finding, remark, outcome, reason, PhilSys digits, income, sector, birth date, address or contact detail is matched or returned. Every group a type searched is answered, its total counted in full beside at most five hits. Nothing is logged or kept.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 100
+            },
+            "description": "The term: words, every one of which must match. Two characters at least."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every type searched, and every type not searched, named.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeSearchResultsEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Holding none of the six keys.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No term, or one shorter than two characters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/work/mine": {
+      "get": {
+        "operationId": "getOfficeMyWork",
+        "summary": "What the signed-in account owes",
+        "description": "Needs dashboard.view. Read-only: a queue is a view assembled on this read from open case tasks and the live state of filed requests, scheduled visits, sent referrals with a chase date and open releases; nothing is stored and nothing here acts. Each source is read under its own list’s scope and listed only to a reader holding the key that acts on it (`permission`). Mine is what is with this account and what is with nobody yet. Only a case task is manageable, through the case routes. A request carries no due date (no service standard was adopted) and the day it was filed instead. A source with more than 5000 open records in scope is refused, never cut short.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "The date the priorities are worked out against, echoed back. Defaults to today in Asia/Manila. It changes no one’s access: only whether an overdue chase date reads as urgent."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The account’s queue.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeWorkQueueEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The query could not be validated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A source holds more open records than one queue can show whole.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/work/team": {
+      "get": {
+        "operationId": "getOfficeTeamWork",
+        "summary": "What the office owes, by whoever carries it",
+        "description": "Needs staff.view. Every item the reader could act on under their scope, whoever it is with and with nobody; the console groups it by person. Read-only, as `/mine`.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "The date the priorities are worked out against, echoed back. Defaults to today in Asia/Manila. It changes no one’s access: only whether an overdue chase date reads as urgent."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The office’s queue.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeTeamWorkEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The query could not be validated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A source holds more open records than one queue can show whole.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/work/alerts": {
+      "get": {
+        "operationId": "listOfficeWorkAlerts",
+        "summary": "Conditions of the data worth a look",
+        "description": "Needs dashboard.view. Each alert is a condition of the records, counted on this read under the scope of the list it concerns and shown only to a reader holding its key: open duplicate pairs (one line with a count, never a row per pair, and said plainly when no detection pass has ever run), open requests owing a document, releases with no payout session, vouchers held for correction, referrals past their chase date unanswered, requests returned to the applicant. Nobody completes one; it gates nothing; each states its basis. Most severe first. Never stored.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The alerts, the whole list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeAlertListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing the key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter was sent; there are none.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -24465,6 +24738,435 @@
                 "description": "Only when readable is true."
               }
             }
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeSearchType": {
+        "type": "string",
+        "enum": [
+          "resident",
+          "assistance-request",
+          "case",
+          "household",
+          "family",
+          "program"
+        ],
+        "description": "The console’s SearchEntityType, in its order."
+      },
+      "OfficeSearchHit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "reference",
+          "barangay_id",
+          "status"
+        ],
+        "description": "A closed shape: no snippet, excerpt, context or matched text, and no free text of any kind.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "description": "A name as this reader is shown it, a household’s reference, a family’s or a programme’s name."
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A control number, case or family reference, or programme code."
+          },
+          "barangay_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The record’s status value in its own vocabulary (`active`/`inactive` for a resident); null where a type has none."
+          }
+        }
+      },
+      "OfficeSearchGroup": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "total",
+          "hits"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/OfficeSearchType"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Every match in scope, counted in full."
+          },
+          "hits": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "$ref": "#/components/schemas/OfficeSearchHit"
+            }
+          }
+        }
+      },
+      "OfficeSearchNotSearched": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "why"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/OfficeSearchType"
+          },
+          "why": {
+            "type": "string",
+            "enum": [
+              "not-permitted",
+              "caseload"
+            ],
+            "description": "`not-permitted`: the reader lacks the type’s key. `caseload`: the registry’s search is refused to a social worker’s caseload."
+          }
+        }
+      },
+      "OfficeSearchResults": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "term",
+          "groups",
+          "not_searched"
+        ],
+        "properties": {
+          "term": {
+            "type": "string",
+            "description": "The term searched, trimmed, echoed so a screen cannot show results beside another."
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeSearchGroup"
+            },
+            "description": "Every type searched, a zero total included, in the console’s order."
+          },
+          "not_searched": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeSearchNotSearched"
+            }
+          }
+        }
+      },
+      "OfficeSearchResultsEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeSearchResults"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeWorkItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "source",
+          "source_id",
+          "kind",
+          "priority",
+          "title",
+          "subject",
+          "preview",
+          "due_on",
+          "waiting_since",
+          "assigned_to",
+          "assigned_to_name",
+          "permission",
+          "case_id",
+          "is_manageable"
+        ],
+        "description": "Something a named person must do, pointing at the record that owns it.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "`source:source_id`, composed: the item is a view of a record, not a record."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "case-task",
+              "assistance-request",
+              "field-visit",
+              "referral",
+              "release"
+            ]
+          },
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "review-intake",
+              "verify-household",
+              "request-requirements",
+              "complete-assessment",
+              "follow-up-referral",
+              "conduct-visit",
+              "review-recommendation",
+              "prepare-release",
+              "confirm-release",
+              "close-case",
+              "resolve-data-quality"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "routine",
+              "important",
+              "urgent"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "description": "What to do. A task’s own title, or a sentence saying it is withheld on a protected case."
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The person, named as the registry names them to this reader."
+          },
+          "preview": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A reference number; never words written about a family."
+          },
+          "due_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "A date somebody set. Null for a request: no service standard was adopted."
+          },
+          "waiting_since": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "When the clock started, for work with no due date."
+          },
+          "assigned_to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "assigned_to_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "permission": {
+            "type": "string",
+            "description": "The key that acts on the item."
+          },
+          "case_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The case a task is on; null for every other source."
+          },
+          "is_manageable": {
+            "type": "boolean",
+            "description": "True only for a case task."
+          }
+        }
+      },
+      "OfficeWorkQueue": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "as_of",
+          "owner_id",
+          "owner_name",
+          "items"
+        ],
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "owner_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeWorkItem"
+            }
+          }
+        }
+      },
+      "OfficeWorkQueueEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeWorkQueue"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeTeamWork": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "as_of",
+          "items"
+        ],
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeWorkItem"
+            }
+          }
+        }
+      },
+      "OfficeTeamWorkEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeTeamWork"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeAlert": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "severity",
+          "summary",
+          "basis",
+          "permission",
+          "count"
+        ],
+        "description": "A condition of the data: no assignee, no date, no done state, and it gates nothing.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "possible-duplicate",
+              "missing-requirement",
+              "unscheduled-approval",
+              "voucher-mismatch",
+              "stalled-request",
+              "unanswered-referral"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "notice",
+              "attention",
+              "risk"
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "basis": {
+            "type": "string",
+            "description": "The rule applied and what it read."
+          },
+          "permission": {
+            "type": "string",
+            "description": "The key that acts on what the alert concerns."
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "What it counted; 0 only for the alert that says no duplicate check has run."
+          }
+        }
+      },
+      "OfficeAlertListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeAlert"
+            },
+            "description": "Most severe first. The whole list."
           },
           "meta": {
             "type": "object"

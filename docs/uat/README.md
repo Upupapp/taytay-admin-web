@@ -118,9 +118,10 @@ owner. Nothing in the sheets is signed in advance.
 
 Not built yet, or not served by the API (the website lists these under "Not connected yet"):
 
-- My work (FR-STAFF-23), reports (FR-STAFF-24), search (FR-STAFF-25), newsfeed and events,
-  governance (FR-STAFF-26), beneficiaries and duplicate review (FR-STAFF-12), programme use
-  counted from releases (FR-STAFF-14).
+- Reports (FR-STAFF-24), newsfeed and events, and governance (FR-STAFF-26).
+- Served by the API since 7 November 2026, but with no test script in this round yet: My work and
+  the team's queue (FR-STAFF-23) and search (FR-STAFF-25) (`DL-189`); beneficiaries and duplicate
+  review (FR-STAFF-12) and programme use counted from releases (FR-STAFF-14) (`DL-187`).
 - Ending a relationship (FR-STAFF-10), a resident's sector history (FR-STAFF-9) and a programme's
   change history (FR-STAFF-13): the records exist, but no screen offers them yet.
 - Changing every office detail after creation, and the list of hidden Tulong pages (FR-STAFF-4).

@@ -69,6 +69,8 @@ import {
   HttpStaffRepository,
   HttpVerificationRepository,
   HttpIssuanceRepository,
+  HttpSearchRepository,
+  HttpWorkRepository,
 } from './http/http-repositories';
 import { identitySignInMethod } from './http/identity/identity.provider';
 import {
@@ -76,8 +78,6 @@ import {
   UnservedGovernanceRepository,
   UnservedNewsfeedRepository,
   UnservedReportRepository,
-  UnservedSearchRepository,
-  UnservedWorkRepository,
   UNSERVED_HTTP_PORTS,
 } from './http/unserved-repositories';
 /**
@@ -104,7 +104,7 @@ import {
  * names no mock class at all, and `angular.json` swaps in `data-access.providers.mock.ts` for the
  * one configuration that wants them.
  *
- * ## Twenty-six ports served, seven unserved
+ * ## Twenty-nine ports served, four unserved
  *
  * The Node API serves the signed-in account, its inbox, residents' ID verification review
  * (`DL-167`), the office inbox, the office directory and app accounts with their roles (`DL-168`),
@@ -113,8 +113,8 @@ import {
  * the office's resident registry (`DL-174`), its household register, families and saved views
  * (casework phase 1c), its programme catalogue (`DL-176`), assistance requests (`DL-177`,
  * `DL-178`), cases (`DL-179`), releases (`DL-180`), referrals and field visits (`DL-181`), the
- * dashboard (`DL-182`), residents’ document requests with their catalogue (`DL-184`), and the
- * beneficiary registry (`DL-187`) — and
+ * dashboard (`DL-182`), residents’ document requests with their catalogue (`DL-184`), the
+ * beneficiary registry (`DL-187`), and search and the work queues (`DL-189`) — and
  * nothing else this console has a port for (`DL-164`). Every other port is bound to an `Unserved…` adapter that makes no request and
  * fails with a sentence saying so (`DL-165`). A port moves from that list to an `Http…` adapter
  * only when the API serves the thing the port names — not something with the same word on it.
@@ -142,9 +142,9 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: BALITA_REPOSITORY, useClass: HttpBalitaRepository },
     { provide: PLATFORM_AUDIT_REPOSITORY, useClass: HttpPlatformAuditRepository },
     { provide: DASHBOARD_REPOSITORY, useClass: HttpDashboardRepository },
-    { provide: WORK_REPOSITORY, useClass: UnservedWorkRepository },
+    { provide: WORK_REPOSITORY, useClass: HttpWorkRepository },
     { provide: REPORT_REPOSITORY, useClass: UnservedReportRepository },
-    { provide: SEARCH_REPOSITORY, useClass: UnservedSearchRepository },
+    { provide: SEARCH_REPOSITORY, useClass: HttpSearchRepository },
     { provide: GOVERNANCE_REPOSITORY, useClass: UnservedGovernanceRepository },
     { provide: NEWSFEED_REPOSITORY, useClass: UnservedNewsfeedRepository },
     { provide: EVENT_REPOSITORY, useClass: UnservedEventRepository },
