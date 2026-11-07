@@ -292,12 +292,13 @@ for (const [pattern, what] of [
  * began serving the beneficiary registry (`DL-187`), and to four the same day, when it began
  * serving search and the work queues (`DL-189`), and to three the same day, when it began serving
  * reports (`DL-190`), and to two the same day, when it began serving governance — staff
- * accounts, the office's audit trail and data policy (`DL-191`).
+ * accounts, the office's audit trail and data policy (`DL-191`), and to one on 8 November 2026,
+ * when it began serving events — the office's side of the residents' registrations (`DL-192`).
  * LOWER THIS as a port is served (or retired by
  * the owner); never raise it. Raising it means
  * a screen that worked against the API has stopped.
  */
-const UNSERVED_CEILING = 2;
+const UNSERVED_CEILING = 1;
 
 if (unservedBindings.length > UNSERVED_CEILING) {
   failures.push(

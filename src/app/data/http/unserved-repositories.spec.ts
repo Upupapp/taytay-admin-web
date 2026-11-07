@@ -1,18 +1,14 @@
 import { firstValueFrom, isObservable } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
-import {
-  UnservedError,
-  UnservedEventRepository,
-  UnservedNewsfeedRepository,
-} from './unserved-repositories';
+import { UnservedError, UnservedNewsfeedRepository } from './unserved-repositories';
 
 /*
  * Constructed directly rather than through `provideDataAccess()`: the test build swaps that file
  * for the mock one, exactly as `local-mock` does. Which port is bound to which class is checked
  * statically instead, by `check:routes`.
  */
-const UNSERVED = [new UnservedNewsfeedRepository(), new UnservedEventRepository()] as const;
+const UNSERVED = [new UnservedNewsfeedRepository()] as const;
 
 /** Every method an adapter's class declares, called with nothing. */
 function everyCall(adapter: object): readonly { name: string; result: unknown }[] {
@@ -40,7 +36,7 @@ function everyCall(adapter: object): readonly { name: string; result: unknown }[
  * `new`, outside any injector, is the proof.
  */
 describe('the ports the API does not serve', () => {
-  it('covers two ports and every method each declares', () => {
+  it('covers one port and every method it declares', () => {
     // The resident registry left this list in casework phase 1b (`DL-174`); the household register,
     // saved views and families in phase 1c; programmes in phase 1d (`DL-176`), taking seven methods;
     // assistance requests in phase 2a (`DL-177`), taking nineteen — their phase 2b methods refuse
@@ -49,9 +45,9 @@ describe('the ports the API does not serve', () => {
     // referrals and field visits in phase 5 (`DL-181`), taking fifteen and eight; and the dashboard
     // (`DL-182`), taking one; and the beneficiary registry (`DL-187`), taking eight; and search and
     // the work queues (`DL-189`), taking one and three; and reports (`DL-190`), taking three; and
-    // governance (`DL-191`), taking eight.
-    expect(UNSERVED).toHaveLength(2);
-    expect(UNSERVED.flatMap((adapter) => everyCall(adapter))).toHaveLength(25);
+    // governance (`DL-191`), taking eight; and events (`DL-192`), taking fourteen.
+    expect(UNSERVED).toHaveLength(1);
+    expect(UNSERVED.flatMap((adapter) => everyCall(adapter))).toHaveLength(11);
   });
 
   it.each(UNSERVED.map((adapter) => [adapter.constructor.name, adapter] as const))(

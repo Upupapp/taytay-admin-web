@@ -6,11 +6,7 @@ import type { ServedGuard } from '@core/access/served-ports';
 import { SessionStore } from '@core/auth/session.store';
 import { NAVIGATION } from '@core/navigation/navigation';
 import { provideDataAccess } from '@data/data-access.providers.mock';
-import {
-  UnservedEventRepository,
-  UnservedNewsfeedRepository,
-  UNSERVED_HTTP_PORTS,
-} from '@data/http/unserved-repositories';
+import { UnservedNewsfeedRepository, UNSERVED_HTTP_PORTS } from '@data/http/unserved-repositories';
 import {
   asId,
   DATA_PORT_HOLDINGS,
@@ -147,7 +143,6 @@ const OFFERED = MENU.filter((item) => !WITHHELD.includes(item)).map((item) => it
 describe('the http adapter set', () => {
   const adapters = [
     UnservedNewsfeedRepository,
-    UnservedEventRepository,
     ] as const;
 
   it('declares exactly the ports its unserved adapters stand in for, once each', () => {

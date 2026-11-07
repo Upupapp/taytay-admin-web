@@ -239,15 +239,18 @@ describe('the resident contract', () => {
       endsAt: null,
       venue: 'Covered court',
       barangayLabel: 'San Juan',
-      isRegistrationOpen: true,
-      capacityRemaining: 12,
+      capacity: 40,
+      registrationState: 'open',
+      registrationWords: 'Registration is open.',
       isRegistered: false,
     };
 
     // A low count on a sensitive service is disclosive in a municipality this
-    // size. "Places left" answers the question a resident actually has.
+    // size, and capacity minus a count is the same count (DL-192): where
+    // registration stands is a state, never a places-left number.
     expect(event as unknown as Record<string, unknown>).not.toHaveProperty('registrationCount');
-    expect(event.capacityRemaining).toBe(12);
+    expect(event as unknown as Record<string, unknown>).not.toHaveProperty('capacityRemaining');
+    expect(event.registrationState).toBe('open');
   });
 
   it('offers a resident no way to publish, moderate or see a registration list', () => {

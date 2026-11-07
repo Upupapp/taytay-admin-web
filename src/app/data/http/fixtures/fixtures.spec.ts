@@ -91,6 +91,14 @@ import OFFICE_AUDIT_DETAIL from './office-audit-detail.json';
 import OFFICE_CLASSIFICATIONS from './office-governance-classifications.json';
 import OFFICE_RETENTION from './office-governance-retention.json';
 import OFFICE_CORRECTIONS from './office-governance-corrections.json';
+import OFFICE_EVENTS from './office-events.json';
+import OFFICE_EVENT from './office-event.json';
+import OFFICE_EVENT_CAPACITY from './office-event-capacity.json';
+import OFFICE_EVENT_METRICS from './office-event-metrics.json';
+import OFFICE_EVENT_REGISTRANTS from './office-event-registrants.json';
+import OFFICE_EVENT_REGISTRANT from './office-event-registrant.json';
+import OFFICE_EVENT_EXPORT from './office-event-export.json';
+import OFFICE_EVENT_HISTORY from './office-event-history.json';
 import OFFICE_REPORT_COMPLETENESS from './office-report-data-completeness.json';
 import OFFICE_REPORT_EXPORT from './office-report-export.json';
 import OFFICE_REPORT_PROGRAMS from './office-report-program-utilisation.json';
@@ -412,6 +420,14 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ],
     ['office-governance-retention', OFFICE_RETENTION, 'OfficeRetentionRuleListEnvelope'],
     ['office-governance-corrections', OFFICE_CORRECTIONS, 'OfficeCorrectionRequestListEnvelope'],
+    ['office-events', OFFICE_EVENTS, 'OfficeEventListEnvelope'],
+    ['office-event', OFFICE_EVENT, 'OfficeEventEnvelope'],
+    ['office-event-capacity', OFFICE_EVENT_CAPACITY, 'OfficeEventCapacityEnvelope'],
+    ['office-event-metrics', OFFICE_EVENT_METRICS, 'OfficeEventMetricsEnvelope'],
+    ['office-event-registrants', OFFICE_EVENT_REGISTRANTS, 'OfficeEventRegistrantListEnvelope'],
+    ['office-event-registrant', OFFICE_EVENT_REGISTRANT, 'OfficeEventRegistrantEnvelope'],
+    ['office-event-export', OFFICE_EVENT_EXPORT, 'OfficeEventRegistrantExportEnvelope'],
+    ['office-event-history', OFFICE_EVENT_HISTORY, 'OfficeEventHistoryListEnvelope'],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
     ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],

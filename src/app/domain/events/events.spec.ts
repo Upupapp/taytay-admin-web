@@ -309,6 +309,10 @@ describe('what residents can see', () => {
     expect(isVisibleToResidents(event({ status: 'cancelled' }))).toBe(true);
   });
 
+  it('keeps a completed event, so a resident can read their own attendance (DL-192)', () => {
+    expect(isVisibleToResidents(event({ status: 'completed' }))).toBe(true);
+  });
+
   it('shows nothing of a draft or an archived event', () => {
     expect(isVisibleToResidents(event({ status: 'draft' }))).toBe(false);
     expect(isVisibleToResidents(event({ status: 'archived' }))).toBe(false);
@@ -342,6 +346,12 @@ describe('publishing rules', () => {
     });
 
     expect(eventProblems(bare, NOW, 'save')).toEqual([]);
+  });
+
+  it('asks for both dates even on a draft, because a saved event has them (DL-192)', () => {
+    const dateless = draft({ startsAt: null, endsAt: null });
+
+    expect(eventProblems(dateless, NOW, 'save')).toEqual(['starts-required', 'ends-required']);
   });
 
   it('refuses an end before its start, draft or not', () => {

@@ -20,7 +20,7 @@ As of 2026-11-07. Each item names its source so it can be checked and closed. Id
 
 ## 2. Console modules the API does not serve
 
-Two of the console's 33 data ports are bound to "unserved" adapters in the staging and
+One of the console's 33 data ports is bound to an "unserved" adapter in the staging and
 production builds (`UNSERVED_HTTP_PORTS`, `src/app/data/http/unserved-repositories.ts`). Their
 screens make no request: they are hidden from the menu and named on the console's "Not connected
 yet" page, and they show sample data only in the `local-mock` configuration.
@@ -28,7 +28,6 @@ yet" page, and they show sample data only in the `local-mock` configuration.
 | Module (port)             | What staff cannot do yet                                                           | Plan                         |
 | ------------------------- | ---------------------------------------------------------------------------------- | ---------------------------- |
 | The newsfeed (`newsfeed`) | Posts with reaction and comment counts, and comment moderation                     | Waits for OD-4 (FR-STAFF-34) |
-| Events (`event`)          | Create events and manage registrations                                             | Waits for OD-4               |
 
 ## 3. Other things not built or not finished
 
@@ -48,8 +47,11 @@ From `docs/uat/README.md` ("Not in this UAT round") and the requirements documen
 - **Staff two-factor sign-in** is off (FR-STAFF-29, NFR-SEC-7; decision OD-3 below).
 - **Push notifications:** the API has only a mock sender and the app has no push plugin
   (FR-API-3, T-14). In-app notifications work.
-- **Residents' app:** applying for assistance from the app (FR-RES-14, waits for OD-4); events and
-  Balita reactions (FR-RES-9); My Account details and the household screen (FR-RES-11, FR-RES-12,
+- **Events** (`DL-192`): served to the console and to the residents' app's routes, but the app
+  is not yet wired to them. A published event cannot be corrected; a registrant's name is the one on
+  their app account; residents are told of a cancellation or a moved place in the app only.
+- **Residents' app:** applying for assistance from the app (FR-RES-14, waits for OD-4); events
+  (served, not yet wired, `DL-192`) and Balita reactions (FR-RES-9); My Account details and the household screen (FR-RES-11, FR-RES-12,
   in progress); emergency alerts (FR-RES-16, proposed). **No iOS build exists**, and iOS cannot
   sign in until an iOS app is registered in Firebase.
 - **App sprints awaiting approval:** S2 Sign-in, S6 Balita and S8 My Account are in review; S7
@@ -144,7 +146,7 @@ The requirements document traces the Terms of Reference (TOR) through the develo
 | T-10 Beneficiary records, fund tracking, duplicate-claim checks | Built (`DL-187`): the registry, duplicate review and utilization from releases. Programme membership is not recorded | 6b                                                                 |
 | T-12 Audit trails                                               | Built (`DL-191`): the office's trail in words and the app's by id. No field, value or reason is recorded             | 6b                                                                 |
 | T-18 Analytics and reports, dashboards, exports                 | Built: the dashboard, search, the work queues (`DL-189`) and the fourteen reports with their exports (`DL-190`)      | 6b                                                                 |
-| T-16 Event and program postings                                 | Deferred; events unserved                                                                                            | 6b, after OD-4                                                     |
+| T-16 Event and program postings                                 | Built for the office and on the API (`DL-192`); the residents' app is not yet wired to it                            | 6b, after OD-4                                                     |
 | T-17 Engagement monitoring                                      | Deferred; newsfeed unserved                                                                                          | 6b, after OD-4                                                     |
 | T-9 Tulong applications from the app                            | The staff side is built; applying from the app is not offered                                                        | After OD-4                                                         |
 | T-11 Barangay validation and endorsement                        | Not started                                                                                                          | 8, after OD-12                                                     |

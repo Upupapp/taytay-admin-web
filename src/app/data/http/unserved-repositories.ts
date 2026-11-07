@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { throwError, type Observable } from 'rxjs';
 
-import { type NewsfeedRepository, type EventRepository, type DataPort } from '@domain/index';
+import { type NewsfeedRepository, type DataPort } from '@domain/index';
 
 /**
  * THE PORTS THE API DOES NOT SERVE, AND WHAT THEY SAY INSTEAD.
@@ -9,9 +9,9 @@ import { type NewsfeedRepository, type EventRepository, type DataPort } from '@d
  * The Node API that replaced the Laravel one on 2026-10-20 began as the back office of the
  * residents' app (`DL-164`, `docs/integration/node-api-gap-map.md`). The casework has moved onto it
  * a phase at a time since — the registry, programmes, requests, cases, releases, referrals, visits
- * the dashboard, the beneficiary registry, search, the work queues, reports and governance
- * (`DL-174` to `DL-191`). What is left has no route yet: the newsfeed and events. In the `http`
- * configuration each of those ports is bound to a class here.
+ * the dashboard, the beneficiary registry, search, the work queues, reports, governance and events
+ * (`DL-174` to `DL-192`). What is left has no route yet: the newsfeed. In the `http` configuration
+ * its port is bound to the class here.
  *
  * ## What an unserved adapter does
  *
@@ -106,67 +106,6 @@ export class UnservedNewsfeedRepository implements NewsfeedRepository {
   }
 }
 
-@Injectable()
-export class UnservedEventRepository implements EventRepository {
-  static readonly port: DataPort = 'event';
-
-  list(): Observable<never> {
-    return unserved('events');
-  }
-
-  getById(): Observable<never> {
-    return unserved('events');
-  }
-
-  saveDraft(): Observable<never> {
-    return unserved('events');
-  }
-
-  publish(): Observable<never> {
-    return unserved('events');
-  }
-
-  cancel(): Observable<never> {
-    return unserved('events');
-  }
-
-  complete(): Observable<never> {
-    return unserved('events');
-  }
-
-  archive(): Observable<never> {
-    return unserved('events');
-  }
-
-  registrants(): Observable<never> {
-    return unserved('events');
-  }
-
-  capacity(): Observable<never> {
-    return unserved('events');
-  }
-
-  metrics(): Observable<never> {
-    return unserved('events');
-  }
-
-  actOnRegistration(): Observable<never> {
-    return unserved('events');
-  }
-
-  markAttendance(): Observable<never> {
-    return unserved('events');
-  }
-
-  exportRegistrants(): Observable<never> {
-    return unserved('events');
-  }
-
-  history(): Observable<never> {
-    return unserved('events');
-  }
-}
-
 /**
  * The ports this adapter set says it cannot serve, bound to `UNSERVED_PORTS` by
  * `data-access.providers.ts` (`DL-167`).
@@ -179,7 +118,4 @@ export class UnservedEventRepository implements EventRepository {
  * Here rather than in `data-access.providers.ts` because the test build swaps that file for the
  * mock one: a spec can import this list, and could not import the binding.
  */
-export const UNSERVED_HTTP_PORTS: readonly DataPort[] = [
-  UnservedNewsfeedRepository.port,
-  UnservedEventRepository.port,
-];
+export const UNSERVED_HTTP_PORTS: readonly DataPort[] = [UnservedNewsfeedRepository.port];

@@ -14090,6 +14090,2018 @@
           }
         }
       }
+    },
+    "/api/v1/office/events": {
+      "get": {
+        "operationId": "listOfficeEvents",
+        "summary": "The office’s events, one view, read whole",
+        "description": "Needs event.view (the MSWDO head, the auditor, administrators). One of the console’s six views, derived from the status and the clock on this read: upcoming (published and not yet ended), drafts, published, past (ended and neither cancelled nor a draft), cancelled, archived. Soonest first. Each event carries registered_count and waitlisted_count as this read counted them (DL-129). The whole view or a refusal (503) past 2000 — never a truncated list (DL-161).",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "view",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "upcoming",
+                "drafts",
+                "published",
+                "past",
+                "cancelled",
+                "archived"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "description": "Up to six words, each matched in the title, the summary or the venue."
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "medical-mission",
+                "feeding-programme",
+                "livelihood-training",
+                "payout",
+                "assembly",
+                "relief-distribution",
+                "seminar"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Starting at or after."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Starting at or before."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The view, soonest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without event.view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No view, or a filter that is not one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "More events than this list reads whole.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createOfficeEvent",
+        "summary": "Save a new event as a draft",
+        "description": "Needs event.create. Every field is sent. Lenient as a draft is (DL-125) — a summary, venue, address or contact may be empty until publication — except for what makes a draft wrong rather than unfinished: an end before its start, a registration window that closes before it opens or after the event, a waitlist with no capacity, and a cover image without its description field. Both dates are required: a placeholder date would be one nobody chose (DL-192). No ticketing, pricing, recurrence or seat field exists to send. Audited as office_event.created.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeEventWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The draft.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without event.create.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A field missing, malformed or not one of these.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/events/{id}": {
+      "get": {
+        "operationId": "getOfficeEvent",
+        "summary": "One event, as the office reads it",
+        "description": "Needs event.view. Any status.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without event.view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "editOfficeEventDraft",
+        "summary": "Replace a draft’s content",
+        "description": "Needs event.edit. Every field is sent, as for a new draft. Only a draft (409 otherwise): residents have read a published event and made plans around it, and the database keeps it as it was published. Audited as office_event.updated.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeEventWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The draft.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without event.edit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not a draft.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A field missing, malformed or not one of these.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/events/{id}/publish": {
+      "post": {
+        "operationId": "publishOfficeEvent",
+        "summary": "Publish an event to the residents’ app",
+        "description": "Needs event.publish. Re-runs the publication rules on the server (DL-125): a one-line summary, a venue, an address, somebody residents can ask, and a description for a cover image. Each missing one is a key of the 422’s details, with its words. Only a draft publishes (409 otherwise). Audited as office_event.published; the reason is kept in the event’s history.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeEventReason"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The event, moved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the permission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not a move this event can make from its status, or (complete) it has not started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No reason; or (publish) what publication asks for is missing, each by its code.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/events/{id}/cancel": {
+      "post": {
+        "operationId": "cancelOfficeEvent",
+        "summary": "Cancel a published event",
+        "description": "Needs event.cancel. One-way: a cancelled event leads only to archived, and an event that is back on is a new event (DL-131). Everybody holding a place or a waitlist place is told in the residents’ app (an in-app notification, event_registration_updated; never pushed). Their registrations are kept as they stand. Audited as office_event.cancelled.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeEventReason"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The event, moved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the permission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not a move this event can make from its status, or (complete) it has not started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No reason; or (publish) what publication asks for is missing, each by its code.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/events/{id}/complete": {
+      "post": {
+        "operationId": "completeOfficeEvent",
+        "summary": "Declare a published event’s attendance final",
+        "description": "Needs event.edit. Refused (409) before the event has started. Terminal but for archiving. Nothing is swept: whoever is not-checked-in stays not-checked-in, and is never made a no-show (DL-131). Residents then see their own attendance (attended, absent, not_recorded). Audited as office_event.completed.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeEventReason"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The event, moved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the permission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not a move this event can make from its status, or (complete) it has not started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No reason; or (publish) what publication asks for is missing, each by its code.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/events/{id}/archive": {
+      "post": {
+        "operationId": "archiveOfficeEvent",
+        "summary": "Archive an event",
+        "description": "Needs event.archive. From draft, published, cancelled or completed. Out of the residents’ app from then on; the record stays. Audited as office_event.archived.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeEventReason"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The event, moved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without the permission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not a move this event can make from its status, or (complete) it has not started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No reason; or (publish) what publication asks for is missing, each by its code.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/events/{id}/capacity": {
+      "get": {
+        "operationId": "getOfficeEventCapacity",
+        "summary": "How full the event is, and when that was counted",
+        "description": "Needs event.view. Counts and the moment the server counted them (as_of), and no verdict: whether a place exists is decided when somebody asks for one, inside the event’s row lock (DL-129). Attendance counts leave out cancelled registrations.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The counts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventCapacityEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without event.view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/events/{id}/metrics": {
+      "get": {
+        "operationId": "getOfficeEventMetrics",
+        "summary": "What the office learns about an event, in counts",
+        "description": "Needs event.view-insights. Counts over its own registrations and nothing about which residents did what. attendance_final is true once the event is completed; a rate is the console’s to compute, and only then.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The counts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventMetricsEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without event.view-insights.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/events/{id}/registrants": {
+      "get": {
+        "operationId": "listOfficeEventRegistrants",
+        "summary": "Who signed up, as a composed list",
+        "description": "Needs event.view. The closed set the console’s RegistrantView holds (DL-130): reference, the name on the resident’s app account, its barangay, when they signed up, status and attendance. No account id, contact, birth date or address, and no office notes — the API keeps none. A registrant is an app account; the API holds no link to the office’s resident registry, so the registry’s protected-sector rule has nothing to apply to (DL-192). Oldest sign-up first; the whole list or a refusal (503) past 5000.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "description": "Up to six words, each matched in the reference or the name."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "registered",
+                "waitlisted",
+                "cancelled"
+              ]
+            }
+          },
+          {
+            "name": "attendance",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "not-checked-in",
+                "attended",
+                "no-show"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The registrants.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventRegistrantListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without event.view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A filter that is not one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "More registrations than this list reads whole.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/events/{id}/registrants/export": {
+      "get": {
+        "operationId": "exportOfficeEventRegistrants",
+        "summary": "The registrant list as a file, its conditions inside it",
+        "description": "Needs event.view and event.export-registrants. The same columns the list shows and nothing wider, as CSV text with the event, who generated it and when, the row count and the RA 10173 handling notice written into the file itself (DL-106); the manifest repeats them. Cells a spreadsheet would evaluate are prefixed with an apostrophe. Recorded in the event’s history and audited as office_event.registrants_exported.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file, as text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventRegistrantExportEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without event.view or event.export-registrants.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "More registrations than one file holds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/events/{id}/history": {
+      "get": {
+        "operationId": "listOfficeEventHistory",
+        "summary": "What the office did to an event, with the reasons given",
+        "description": "Needs event.view. Newest first: created, edited, published, cancelled, completed, archived, exported, each registration moved and each attendance marked — each with the console’s kind of act (category), words that name a registration by its reference and never by a resident’s name (DL-114), the reason where the act takes one, and who acted. A resident’s own sign-up or withdrawal is in the registrant list, not here. Read whole or refused (503) past 5000.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The history.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventHistoryListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without event.view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A history longer than this list reads whole.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/events/{id}/registrations/{registration_id}/cancel": {
+      "post": {
+        "operationId": "cancelOfficeEventRegistration",
+        "summary": "Cancel a registration",
+        "description": "Needs event.manage-registrations. registered or waitlisted → cancelled. Only while the event is published (409 otherwise, and for a move the registration cannot make). The reason is kept in the event’s history; audited as office_event.registration_moved. The resident is told in the app (event_registration_updated, never pushed), without the reason.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          },
+          {
+            "name": "registration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "One registration for that event."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeEventReason"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The registration as the list shows it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventRegistrantEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without event.manage-registrations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such registration for this event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The event is not published, or the move is not one this registration can make.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No reason.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/events/{id}/registrations/{registration_id}/restore": {
+      "post": {
+        "operationId": "restoreOfficeEventRegistration",
+        "summary": "Restore a registration",
+        "description": "Needs event.manage-registrations. cancelled → registered. Only while the event is published (409 otherwise, and for a move the registration cannot make). The reason is kept in the event’s history; audited as office_event.registration_moved. The resident is told in the app (event_registration_updated, never pushed), without the reason.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          },
+          {
+            "name": "registration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "One registration for that event."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeEventReason"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The registration as the list shows it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventRegistrantEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without event.manage-registrations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such registration for this event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The event is not published, or the move is not one this registration can make.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No reason.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/events/{id}/registrations/{registration_id}/promote": {
+      "post": {
+        "operationId": "promoteOfficeEventRegistration",
+        "summary": "Move a registration off the waitlist",
+        "description": "Needs event.manage-registrations. waitlisted (or cancelled) → registered. Not capped by the event’s capacity: the office’s stated figure is the office’s to exceed, with a reason, after the console has warned (DL-129, DL-91). A resident’s own registration is capped, inside the event’s row lock. Only while the event is published (409 otherwise, and for a move the registration cannot make). The reason is kept in the event’s history; audited as office_event.registration_moved. The resident is told in the app (event_registration_updated, never pushed), without the reason.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          },
+          {
+            "name": "registration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "One registration for that event."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeEventReason"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The registration as the list shows it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventRegistrantEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without event.manage-registrations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such registration for this event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The event is not published, or the move is not one this registration can make.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No reason.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/events/{id}/registrations/{registration_id}/waitlist": {
+      "post": {
+        "operationId": "waitlistOfficeEventRegistration",
+        "summary": "Move a registration to the waitlist",
+        "description": "Needs event.manage-registrations. registered or cancelled → waitlisted. Only while the event is published (409 otherwise, and for a move the registration cannot make). The reason is kept in the event’s history; audited as office_event.registration_moved. The resident is told in the app (event_registration_updated, never pushed), without the reason.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          },
+          {
+            "name": "registration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "One registration for that event."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeEventReason"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The registration as the list shows it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventRegistrantEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without event.manage-registrations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such registration for this event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The event is not published, or the move is not one this registration can make.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No reason.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/events/{id}/registrations/{registration_id}/attendance": {
+      "post": {
+        "operationId": "markOfficeEventAttendance",
+        "summary": "Record whether a registrant came",
+        "description": "Needs event.mark-attendance. By hand, while the event is published; a completed event’s attendance is final (409), and a cancelled registration has none to record (409). not-checked-in undoes a mark. Recorded in the event’s history; audited as office_event.attendance_marked.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          },
+          {
+            "name": "registration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "One registration for that event."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeEventAttendance"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The registration as the list shows it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeEventRegistrantEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Without event.mark-attendance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such registration for this event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The event is not published, or the registration was cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Not one of the three.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events": {
+      "get": {
+        "operationId": "listResidentEvents",
+        "summary": "Events, as residents read them",
+        "description": "Public. upcoming: published or cancelled and not yet ended, soonest first — a cancelled event stays visible until it passes, so somebody who registered sees it is off. past: published or completed and ended, newest first (cancelled ones did not happen). registered: needs a resident’s account (401 for a guest, 403 for a staff account); every visible event the resident holds a place or a waitlist place for, newest first. No count of who signed up appears anywhere, and no places-left number: availability is a state with the office’s words. my_registration is filled for a signed-in resident.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "upcoming",
+                "registered",
+                "past"
+              ],
+              "default": "upcoming"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResidentEventListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "registered, without a token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "registered, with a staff account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A scope, limit or cursor that is not one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events/{id}": {
+      "get": {
+        "operationId": "getResidentEvent",
+        "summary": "One event, as residents read it, with what registering asks",
+        "description": "Public. Published, cancelled and completed events; a draft or an archived one is 404. Carries registration_form: no fields and no consents (the office asks nothing beyond who you are, DL-130), allows_unverified_residents false (DL-192), and can_cancel true — a resident may give up a place until the event starts.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResidentEventEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event a resident may see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events/{id}/registrations": {
+      "post": {
+        "operationId": "registerForEvent",
+        "summary": "Ask for a place",
+        "description": "A resident’s account (401 without; 403 for a staff account). A place already held is reported first (200, outcome registered or waitlisted). Then: an unverified account is refused with VERIFICATION_REQUIRED (403). The place is decided inside a lock on the event’s row, so of two residents reaching the last place one is registered and the other waitlisted (where the event keeps a waitlist) or told full — never both. registered or waitlisted is 201 when a place was taken now; full or closed is an ordinary outcome in a 200, with registration null (or the resident’s earlier, cancelled one) and nothing taken. An event that takes no registration, or whose registration has not opened, is refused (409). idempotency_key is required and travels in the body (the console’s CORS allows four request headers): a retry with the same key is answered with what the first attempt came to, and registers nobody twice; the same key for another event is 409. An attempt that took nothing claims no key. answers and consent_keys are accepted only empty: the office asks for neither.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResidentEventRegister"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Already held, a retry, or full or closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResidentEventRegistrationOutcomeEnvelope"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "A place or a waitlist place, taken now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResidentEventRegistrationOutcomeEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "VERIFICATION_REQUIRED for an unverified account; FORBIDDEN for a staff account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event a resident may see.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No registration for this event, not open yet, or a key used for something else.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No key, or answers or consents the office did not ask for.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events/{id}/registrations/{registration_id}/cancel": {
+      "post": {
+        "operationId": "cancelOwnEventRegistration",
+        "summary": "Give up one’s own place",
+        "description": "A resident’s account, and only their own registration (404 for anybody else’s). Allowed while the event is published and has not started (409 after). Cancelling a cancelled registration answers with it unchanged. The waitlist is not moved up: the office does that. idempotency_key is optional; with one, a late retry answers with the registration as it stands and does not take away a place taken again since.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The event."
+          },
+          {
+            "name": "registration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "One registration for that event."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResidentEventCancel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The registration.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResidentEventRegistrationEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A staff account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such registration of this resident’s.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Too late to cancel from the app, or a key used for something else.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A field that is not idempotency_key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -15481,7 +17493,7 @@
         "required": ["id", "type", "title", "body", "created_at"],
         "properties": {
           "id": { "type": "string", "format": "uuid" },
-          "type": { "type": "string", "enum": ["verification_decided", "message_received", "issuance_request_updated"] },
+          "type": { "type": "string", "enum": ["verification_decided", "message_received", "issuance_request_updated", "event_registration_updated"] },
           "title": { "type": "string" },
           "body": { "type": "string" },
           "subject_id": { "type": ["string", "null"], "format": "uuid" },
@@ -27289,6 +29301,1361 @@
               "$ref": "#/components/schemas/OfficeCorrectionRequest"
             },
             "description": "Newest first, the whole list."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeEventWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "summary",
+          "details",
+          "category",
+          "image_url",
+          "image_alt_text",
+          "starts_at",
+          "ends_at",
+          "venue_name",
+          "venue_address",
+          "venue_map_url",
+          "venue_barangay_id",
+          "contact_name",
+          "contact_office",
+          "contact_phone",
+          "registration_required",
+          "registration_opens_at",
+          "registration_closes_at",
+          "capacity",
+          "waitlist_enabled",
+          "participation_note",
+          "reminders"
+        ],
+        "description": "Everything the composer collects, flat, every field sent.",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "May be empty on a draft; publication asks for it."
+          },
+          "details": {
+            "type": "string",
+            "maxLength": 8000
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "medical-mission",
+              "feeding-programme",
+              "livelihood-training",
+              "payout",
+              "assembly",
+              "relief-distribution",
+              "seminar"
+            ]
+          },
+          "image_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "description": "http(s) only."
+          },
+          "image_alt_text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300,
+            "description": "Sent with image_url. May be empty on a draft; publication asks for it (DL-125)."
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "venue_name": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "venue_address": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "venue_map_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "description": "A link to a map, never coordinates (DL-86)."
+          },
+          "venue_barangay_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "contact_name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "contact_office": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "contact_phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 40
+          },
+          "registration_required": {
+            "type": "boolean"
+          },
+          "registration_opens_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "registration_closes_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "capacity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 100000
+          },
+          "waitlist_enabled": {
+            "type": "boolean"
+          },
+          "participation_note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000,
+            "description": "Who it is for, in words. Guidance, never a gate."
+          },
+          "reminders": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          }
+        }
+      },
+      "OfficeEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "summary",
+          "details",
+          "category",
+          "image_url",
+          "image_alt_text",
+          "starts_at",
+          "ends_at",
+          "venue_name",
+          "venue_address",
+          "venue_map_url",
+          "venue_barangay_id",
+          "contact_name",
+          "contact_office",
+          "contact_phone",
+          "registration_required",
+          "registration_opens_at",
+          "registration_closes_at",
+          "capacity",
+          "waitlist_enabled",
+          "participation_note",
+          "reminders",
+          "status",
+          "published_at",
+          "published_by",
+          "cancelled_at",
+          "cancellation_reason",
+          "registered_count",
+          "waitlisted_count",
+          "created_at",
+          "created_by",
+          "updated_at",
+          "updated_by"
+        ],
+        "description": "An event as the office reads it.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "May be empty on a draft; publication asks for it."
+          },
+          "details": {
+            "type": "string",
+            "maxLength": 8000
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "medical-mission",
+              "feeding-programme",
+              "livelihood-training",
+              "payout",
+              "assembly",
+              "relief-distribution",
+              "seminar"
+            ]
+          },
+          "image_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "description": "http(s) only."
+          },
+          "image_alt_text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300,
+            "description": "Sent with image_url. May be empty on a draft; publication asks for it (DL-125)."
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "venue_name": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "venue_address": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "venue_map_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "description": "A link to a map, never coordinates (DL-86)."
+          },
+          "venue_barangay_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "contact_name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "contact_office": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "contact_phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 40
+          },
+          "registration_required": {
+            "type": "boolean"
+          },
+          "registration_opens_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "registration_closes_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "capacity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 100000
+          },
+          "waitlist_enabled": {
+            "type": "boolean"
+          },
+          "participation_note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000,
+            "description": "Who it is for, in words. Guidance, never a gate."
+          },
+          "reminders": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "cancelled",
+              "completed",
+              "archived"
+            ]
+          },
+          "published_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "published_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "cancelled_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "cancellation_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "registered_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "As this read counted them (DL-129)."
+          },
+          "waitlisted_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_by": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "OfficeEventEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeEvent"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeEventListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeEvent"
+            },
+            "description": "The whole view, soonest first."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeEventReason": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "description": "Why, kept in the event’s history.",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
+      },
+      "OfficeEventAttendance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "attendance"
+        ],
+        "properties": {
+          "attendance": {
+            "type": "string",
+            "enum": [
+              "not-checked-in",
+              "attended",
+              "no-show"
+            ]
+          }
+        }
+      },
+      "OfficeEventCapacity": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "capacity",
+          "registered_count",
+          "waitlisted_count",
+          "cancelled_count",
+          "attended_count",
+          "no_show_count",
+          "as_of"
+        ],
+        "description": "Counts and when they were taken. No verdict on whether a place is left.",
+        "properties": {
+          "capacity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "registered_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "waitlisted_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cancelled_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "attended_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "no_show_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the server counted."
+          }
+        }
+      },
+      "OfficeEventCapacityEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeEventCapacity"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeEventMetrics": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "registered_count",
+          "waitlisted_count",
+          "cancelled_count",
+          "attended_count",
+          "no_show_count",
+          "unmarked_count",
+          "attendance_final",
+          "as_of"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "registered_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "waitlisted_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cancelled_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "attended_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "no_show_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unmarked_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "attendance_final": {
+            "type": "boolean"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OfficeEventMetricsEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeEventMetrics"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeEventRegistrant": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "reference",
+          "display_name",
+          "barangay_id",
+          "registered_at",
+          "status",
+          "attendance"
+        ],
+        "description": "One registration, composed (DL-130).",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string",
+            "pattern": "^ER-[0-9]{4}-[0-9]{6,}$"
+          },
+          "display_name": {
+            "type": "string",
+            "description": "The name on the resident’s app account as they gave it; \"No name recorded on the account\" or \"An account since closed\" otherwise."
+          },
+          "barangay_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "registered_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "registered",
+              "waitlisted",
+              "cancelled"
+            ]
+          },
+          "attendance": {
+            "type": "string",
+            "enum": [
+              "not-checked-in",
+              "attended",
+              "no-show"
+            ]
+          }
+        }
+      },
+      "OfficeEventRegistrantEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeEventRegistrant"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeEventRegistrantListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeEventRegistrant"
+            },
+            "description": "Oldest sign-up first, the whole list."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeEventRegistrantExport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "manifest",
+          "filename",
+          "content"
+        ],
+        "properties": {
+          "manifest": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "event_id",
+              "event_title",
+              "event_starts_at",
+              "applied_filter_description",
+              "generated_at",
+              "generated_by",
+              "row_count",
+              "handling_notice"
+            ],
+            "properties": {
+              "event_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "event_title": {
+                "type": "string"
+              },
+              "event_starts_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "applied_filter_description": {
+                "type": "string"
+              },
+              "generated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "generated_by": {
+                "type": "string"
+              },
+              "row_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "handling_notice": {
+                "type": "string"
+              }
+            }
+          },
+          "filename": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string",
+            "description": "CSV, CRLF line ends, the conditions in its first lines."
+          }
+        }
+      },
+      "OfficeEventRegistrantExportEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeEventRegistrantExport"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeEventHistoryEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "event_id",
+          "act",
+          "category",
+          "summary",
+          "reason",
+          "actor_id",
+          "actor_name",
+          "occurred_at"
+        ],
+        "description": "One act of the office’s on an event.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "act": {
+            "type": "string",
+            "enum": [
+              "created",
+              "edited",
+              "published",
+              "cancelled",
+              "completed",
+              "archived",
+              "registrants-exported",
+              "registration-cancelled",
+              "registration-restored",
+              "registration-promoted",
+              "registration-waitlisted",
+              "attendance-marked"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "created",
+              "updated",
+              "published",
+              "cancelled",
+              "status-changed",
+              "archived",
+              "exported",
+              "registration-changed",
+              "attendance-changed"
+            ],
+            "description": "The console’s AuditAction."
+          },
+          "summary": {
+            "type": "string",
+            "description": "The act in words; a registration by its reference, never a name."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "actor_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "actor_name": {
+            "type": "string"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OfficeEventHistoryListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeEventHistoryEntry"
+            },
+            "description": "Newest first, the whole history."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "ResidentEventRegistration": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "event_id",
+          "reference",
+          "state",
+          "registered_at",
+          "attendance",
+          "can_cancel",
+          "instructions"
+        ],
+        "description": "The resident’s own registration. No waitlist position: that is a statement about other people.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string",
+            "description": "What the resident quotes at the door."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "registered",
+              "waitlisted",
+              "cancelled"
+            ]
+          },
+          "registered_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "attendance": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "attended",
+              "absent",
+              "not_recorded",
+              null
+            ],
+            "description": "Only once the office has completed the event; null before. not_recorded is not absent."
+          },
+          "can_cancel": {
+            "type": "boolean",
+            "description": "Whether this place can still be given up from the app."
+          },
+          "instructions": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What to bring, as the office wrote it."
+          }
+        }
+      },
+      "ResidentEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "summary",
+          "description",
+          "category",
+          "category_label",
+          "status",
+          "starts_at",
+          "ends_at",
+          "venue",
+          "organiser",
+          "contact",
+          "cover_image",
+          "capacity",
+          "what_to_bring",
+          "registration",
+          "my_registration"
+        ],
+        "description": "An event as residents read it. No count of who registered; no seats-left number.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "medical-mission",
+              "feeding-programme",
+              "livelihood-training",
+              "payout",
+              "assembly",
+              "relief-distribution",
+              "seminar"
+            ]
+          },
+          "category_label": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "published",
+              "cancelled",
+              "completed"
+            ]
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "venue": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "address",
+              "map_url",
+              "barangay_id",
+              "barangay_name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "address": {
+                "type": "string"
+              },
+              "map_url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "A link the office gave. Never composed by a client."
+              },
+              "barangay_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "barangay_name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "organiser": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contact": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "office",
+              "phone"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "office": {
+                "type": "string"
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "cover_image": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "url",
+              "alt_text"
+            ],
+            "properties": {
+              "url": {
+                "type": "string"
+              },
+              "alt_text": {
+                "type": "string"
+              }
+            }
+          },
+          "capacity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The published total. Never what is left of it."
+          },
+          "what_to_bring": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "registration": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "required",
+              "opens_at",
+              "closes_at",
+              "availability",
+              "joins_waitlist",
+              "state",
+              "words",
+              "rules"
+            ],
+            "properties": {
+              "required": {
+                "type": "boolean"
+              },
+              "opens_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "closes_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "availability": {
+                "type": "string",
+                "enum": [
+                  "not_required",
+                  "not_open",
+                  "open",
+                  "full",
+                  "closed"
+                ],
+                "description": "Derived on this read from the plan, the clock and the count. Never stored."
+              },
+              "joins_waitlist": {
+                "type": "boolean",
+                "description": "Every place is taken and registering now would join the waitlist."
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "not_required",
+                  "not_open",
+                  "open",
+                  "full",
+                  "closed",
+                  "registered",
+                  "waitlisted"
+                ],
+                "description": "Where this reader stands: registered or waitlisted for a resident holding one at a published event; otherwise what registering now would come to. A full event with a waitlist is open. The app offers its register button on open alone."
+              },
+              "words": {
+                "type": "string",
+                "description": "The office’s sentence for the state."
+              },
+              "rules": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Who it is for, in the office’s words."
+              }
+            }
+          },
+          "my_registration": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ResidentEventRegistration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "registration_form": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fields",
+              "consents",
+              "allows_unverified_residents",
+              "can_cancel",
+              "notice"
+            ],
+            "properties": {
+              "fields": {
+                "type": "array",
+                "maxItems": 0,
+                "items": {}
+              },
+              "consents": {
+                "type": "array",
+                "maxItems": 0,
+                "items": {}
+              },
+              "allows_unverified_residents": {
+                "type": "boolean"
+              },
+              "can_cancel": {
+                "type": "boolean"
+              },
+              "notice": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "description": "On GET /events/{id} only."
+          }
+        }
+      },
+      "ResidentEventEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ResidentEvent"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "ResidentEventListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResidentEvent"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "required": [
+              "pagination"
+            ],
+            "properties": {
+              "pagination": {
+                "$ref": "#/components/schemas/Pagination"
+              }
+            }
+          }
+        }
+      },
+      "ResidentEventRegister": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "idempotency_key"
+        ],
+        "properties": {
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "answers": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {},
+            "description": "Empty: the office asks nothing."
+          },
+          "consent_keys": {
+            "type": "array",
+            "maxItems": 0,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ResidentEventCancel": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ResidentEventRegistrationOutcome": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "outcome",
+          "words",
+          "registration"
+        ],
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "registered",
+              "waitlisted",
+              "full",
+              "closed"
+            ]
+          },
+          "words": {
+            "type": "string"
+          },
+          "registration": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ResidentEventRegistration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ResidentEventRegistrationOutcomeEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ResidentEventRegistrationOutcome"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "ResidentEventRegistrationEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ResidentEventRegistration"
           },
           "meta": {
             "type": "object"

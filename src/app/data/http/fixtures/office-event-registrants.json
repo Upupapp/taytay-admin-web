@@ -1,0 +1,41 @@
+{
+  "data": [
+    {
+      "id": "6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b01",
+      "reference": "ER-2026-000001",
+      "display_name": "Ana Reyes",
+      "barangay_id": "0b1c2d3e-4f50-4a61-8b72-3c4d5e6f7a01",
+      "registered_at": "2026-11-03T03:00:00.000Z",
+      "status": "registered",
+      "attendance": "not-checked-in"
+    },
+    {
+      "id": "6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b02",
+      "reference": "ER-2026-000002",
+      "display_name": "No name recorded on the account",
+      "barangay_id": null,
+      "registered_at": "2026-11-04T03:00:00.000Z",
+      "status": "registered",
+      "attendance": "not-checked-in"
+    },
+    {
+      "id": "6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b03",
+      "reference": "ER-2026-000003",
+      "display_name": "Ben Cruz",
+      "barangay_id": "0b1c2d3e-4f50-4a61-8b72-3c4d5e6f7a01",
+      "registered_at": "2026-11-05T03:00:00.000Z",
+      "status": "waitlisted",
+      "attendance": "not-checked-in"
+    },
+    {
+      "id": "6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b04",
+      "reference": "ER-2026-000004",
+      "display_name": "An account since closed",
+      "barangay_id": null,
+      "registered_at": "2026-11-06T03:00:00.000Z",
+      "status": "cancelled",
+      "attendance": "not-checked-in"
+    }
+  ],
+  "meta": {}
+}

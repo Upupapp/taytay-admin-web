@@ -416,15 +416,34 @@ describe('what the composer refuses', () => {
     const fixture = await openComposer();
     const page = fixture.componentInstance as unknown as {
       title: { set: (value: string) => void };
+      startsAt: { set: (value: string) => void };
+      endsAt: { set: (value: string) => void };
       canSave: () => boolean;
       publishProblems: () => readonly string[];
     };
     page.title.set('Medical mission — Dolores');
+    // The dates are the one thing a draft is asked for: a saved event has them (`DL-192`).
+    page.startsAt.set('2026-09-20T09:00');
+    page.endsAt.set('2026-09-20T12:00');
     await fixture.whenStable();
 
     expect(page.canSave()).toBe(true);
     // …while still naming everything that would stop it going out.
     expect(page.publishProblems().length).toBeGreaterThan(0);
+  });
+
+  it('will not save a draft with no dates, and says which', async () => {
+    const fixture = await openComposer();
+    const page = fixture.componentInstance as unknown as {
+      title: { set: (value: string) => void };
+      canSave: () => boolean;
+      blockingProblems: () => readonly string[];
+    };
+    page.title.set('Medical mission — Dolores');
+    await fixture.whenStable();
+
+    expect(page.canSave()).toBe(false);
+    expect(page.blockingProblems().join(' ')).toContain('Choose when it starts.');
   });
 });
 

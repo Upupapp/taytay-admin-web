@@ -1,0 +1,352 @@
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
+import { firstValueFrom } from 'rxjs';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
+import { AuthTokenHolder } from '@core/auth/auth-token.holder';
+import { apiHeadersInterceptor } from '@core/http/api.interceptors';
+import {
+  REGISTRANT_EXPORT_NOTICE,
+  asId,
+  asIsoDateTime,
+  type BarangayId,
+  type EventDraft,
+  type EventRegistrationId,
+  type LguEventId,
+} from '@domain/index';
+
+import OFFICE_EVENT from './fixtures/office-event.json';
+import OFFICE_EVENT_CAPACITY from './fixtures/office-event-capacity.json';
+import OFFICE_EVENT_EXPORT from './fixtures/office-event-export.json';
+import OFFICE_EVENT_HISTORY from './fixtures/office-event-history.json';
+import OFFICE_EVENT_METRICS from './fixtures/office-event-metrics.json';
+import OFFICE_EVENT_REGISTRANT from './fixtures/office-event-registrant.json';
+import OFFICE_EVENT_REGISTRANTS from './fixtures/office-event-registrants.json';
+import OFFICE_EVENTS from './fixtures/office-events.json';
+import { HttpEventRepository } from './http-repositories';
+
+const BASE = 'https://api.example.gov.ph/api/v1';
+const DOLORES_API = '0b1c2d3e-4f50-4a61-8b72-3c4d5e6f7a01';
+/** `GET barangays`: the API knows each barangay by its own id, joined to the console’s by name. */
+const BARANGAYS = {
+  data: [
+    { id: DOLORES_API, code: 'dolores', name: 'Dolores' },
+    { id: '0b1c2d3e-4f50-4a61-8b72-3c4d5e6f7a02', code: 'muzon', name: 'Muzon' },
+  ],
+  meta: {},
+};
+const MISSION = asId<LguEventId>('5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01');
+const WAITLISTED = asId<EventRegistrationId>('6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b03');
+const EVENTS = `${BASE}/office/events`;
+
+const providers = [
+  provideHttpClient(withInterceptors([apiHeadersInterceptor])),
+  provideHttpClientTesting(),
+  {
+    provide: APP_ENVIRONMENT,
+    useValue: { apiBaseUrl: BASE, dataSource: 'http', firebaseWebApiKey: 'test-web-api-key' },
+  },
+  HttpEventRepository,
+];
+
+/** A deep copy of a fixture, to plant one thing in. */
+const copy = <T>(value: T): T => structuredClone(value);
+
+function draft(overrides: Partial<EventDraft> = {}): EventDraft {
+  return {
+    title: 'Feeding programme — Dolores',
+    summary: '',
+    details: '',
+    category: 'feeding-programme',
+    image: null,
+    startsAt: asIsoDateTime('2026-12-01T01:00:00.000Z'),
+    endsAt: asIsoDateTime('2026-12-01T04:00:00.000Z'),
+    venue: { name: '', address: '', mapUrl: null, barangayId: asId<BarangayId>('brgy-dolores') },
+    contact: { name: '', office: '', phone: null },
+    registration: {
+      isRequired: true,
+      opensAt: null,
+      closesAt: null,
+      capacity: 40,
+      waitlistEnabled: true,
+      participationNote: null,
+    },
+    reminders: null,
+    ...overrides,
+  };
+}
+
+/**
+ * Events over the API (`DL-192`). The server keeps the events, takes residents' registrations in
+ * its own row lock and stamps its own counts; the adapter asks with named keys, refuses an empty
+ * reason without a request, and the mapper holds a registrant to the closed set.
+ */
+describe('events over the API (DL-192)', () => {
+  let http: HttpTestingController;
+  let repository: HttpEventRepository;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers });
+    http = TestBed.inject(HttpTestingController);
+    TestBed.inject(AuthTokenHolder).hold('fixture-token', null);
+    repository = TestBed.inject(HttpEventRepository);
+  });
+
+  afterEach(() => http.verify());
+
+  const barangays = () => {
+    for (const pending of http.match(`${BASE}/barangays`)) {
+      pending.flush(BARANGAYS);
+    }
+  };
+
+  describe('reading', () => {
+    it('asks for one view with named keys, and places a venue by the console’s barangay', async () => {
+      const read = firstValueFrom(
+        repository.list('upcoming', { search: '  mission ', category: 'medical-mission' }),
+      );
+      barangays();
+      const request = http.expectOne((candidate) => candidate.url === EVENTS);
+      expect(request.request.method).toBe('GET');
+      expect(request.request.params.get('view')).toBe('upcoming');
+      expect(request.request.params.get('q')).toBe('mission');
+      expect(request.request.params.get('category')).toBe('medical-mission');
+      expect(request.request.params.has('from')).toBe(false);
+      request.flush(OFFICE_EVENTS);
+      const events = await read;
+
+      expect(events).toHaveLength(3);
+      const [mission, calledOff, unfinished] = events;
+      expect(mission?.venue.barangayId).toBe('brgy-dolores');
+      expect(mission?.registeredCount).toBe(2);
+      expect(mission?.image?.altText).toContain('poster');
+      // Nothing records that one event replaces another, so nothing is invented.
+      expect(mission?.replacesEventId).toBeNull();
+      expect(calledOff?.cancellationReason).toContain('supplies');
+      expect(unfinished?.summary).toBe('');
+      expect(unfinished?.publishedBy).toBeNull();
+    });
+
+    it('sends no search for a blank one, and reads a missing event as none', async () => {
+      const listed = firstValueFrom(repository.list('drafts', { search: '   ' }));
+      barangays();
+      const request = http.expectOne((candidate) => candidate.url === EVENTS);
+      expect(request.request.params.has('q')).toBe(false);
+      request.flush({ data: [], meta: {} });
+      expect(await listed).toEqual([]);
+
+      const found = firstValueFrom(repository.getById(MISSION));
+      barangays();
+      http
+        .expectOne(`${EVENTS}/${MISSION}`)
+        .flush(
+          { error: { code: 'NOT_FOUND', message: 'There is no such event.' } },
+          { status: 404, statusText: 'Not Found' },
+        );
+      expect(await found).toBeNull();
+    });
+
+    it('refuses the whole list when one row cannot be read, rather than showing one fewer', async () => {
+      const broken = copy(OFFICE_EVENTS);
+      (broken.data[1] as Record<string, unknown>)['registered_count'] = 'two';
+      const read = firstValueFrom(repository.list('upcoming', {}));
+      barangays();
+      http.expectOne((candidate) => candidate.url === EVENTS).flush(broken);
+      await expect(read).rejects.toThrow(/could not be read whole/);
+    });
+
+    it('takes the moment from the server, and gives a rate only once attendance is final', async () => {
+      const capacity = firstValueFrom(repository.capacity(MISSION));
+      http.expectOne(`${EVENTS}/${MISSION}/capacity`).flush(OFFICE_EVENT_CAPACITY);
+      const summary = await capacity;
+      expect(summary.asOf).toBe('2026-11-08T02:00:00.000Z');
+      expect(summary.cancelledCount).toBe(1);
+      expect(Object.keys(summary)).not.toContain('hasRoom');
+
+      const open = firstValueFrom(repository.metrics(MISSION));
+      http.expectOne(`${EVENTS}/${MISSION}/metrics`).flush(OFFICE_EVENT_METRICS);
+      expect((await open).attendanceRate).toBeNull();
+
+      const final = copy(OFFICE_EVENT_METRICS);
+      final.data.attendance_final = true;
+      const closed = firstValueFrom(repository.metrics(MISSION));
+      http.expectOne(`${EVENTS}/${MISSION}/metrics`).flush(final);
+      expect((await closed).attendanceRate).toBe(0.5);
+    });
+  });
+
+  describe('registrants', () => {
+    it('reads the closed set, with no notes and nobody’s account id', async () => {
+      const read = firstValueFrom(
+        repository.registrants(MISSION, { status: 'waitlisted', search: 'Cruz' }),
+      );
+      barangays();
+      const request = http.expectOne(
+        (candidate) => candidate.url === `${EVENTS}/${MISSION}/registrants`,
+      );
+      expect(request.request.params.get('status')).toBe('waitlisted');
+      expect(request.request.params.get('q')).toBe('Cruz');
+      request.flush(OFFICE_EVENT_REGISTRANTS);
+      const rows = await read;
+
+      expect(rows).toHaveLength(4);
+      expect(rows[0]?.barangayId).toBe('brgy-dolores');
+      for (const row of rows) {
+        expect(row.notes).toBeNull();
+        expect(Object.keys(row).sort()).toEqual([
+          'attendance',
+          'barangayId',
+          'displayName',
+          'id',
+          'notes',
+          'reference',
+          'registeredAt',
+          'status',
+        ]);
+      }
+    });
+
+    it('refuses a row that carries more than the closed set, rather than trimming it', async () => {
+      const wider = copy(OFFICE_EVENT_REGISTRANTS);
+      (wider.data[0] as Record<string, unknown>)['resident_id'] =
+        '9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c09';
+      const read = firstValueFrom(repository.registrants(MISSION, {}));
+      barangays();
+      http
+        .expectOne((candidate) => candidate.url === `${EVENTS}/${MISSION}/registrants`)
+        .flush(wider);
+      await expect(read).rejects.toThrow(/could not be read whole/);
+    });
+
+    it('moves a place with its reason and reads back what the server made of it', async () => {
+      const moved = firstValueFrom(
+        repository.actOnRegistration(
+          MISSION,
+          WAITLISTED,
+          'promote',
+          '  A family travelled two hours. ',
+        ),
+      );
+      barangays();
+      const request = http.expectOne(`${EVENTS}/${MISSION}/registrations/${WAITLISTED}/promote`);
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual({ reason: 'A family travelled two hours.' });
+      request.flush({ data: { ...OFFICE_EVENT_REGISTRANT.data, status: 'registered' }, meta: {} });
+      expect((await moved).status).toBe('registered');
+    });
+
+    it('marks attendance by hand, with nothing else in the body', async () => {
+      const marked = firstValueFrom(repository.markAttendance(MISSION, WAITLISTED, 'attended'));
+      barangays();
+      const request = http.expectOne(`${EVENTS}/${MISSION}/registrations/${WAITLISTED}/attendance`);
+      expect(request.request.body).toEqual({ attendance: 'attended' });
+      request.flush({
+        data: { ...OFFICE_EVENT_REGISTRANT.data, attendance: 'attended' },
+        meta: {},
+      });
+      expect((await marked).attendance).toBe('attended');
+    });
+
+    it('takes the file the server composed, and refuses one without its conditions', async () => {
+      const exported = firstValueFrom(repository.exportRegistrants(MISSION));
+      http.expectOne(`${EVENTS}/${MISSION}/registrants/export`).flush(OFFICE_EVENT_EXPORT);
+      const file = await exported;
+      expect(file.manifest.handlingNotice).toBe(REGISTRANT_EXPORT_NOTICE);
+      expect(file.manifest.rowCount).toBe(4);
+      expect(file.content).toContain(REGISTRANT_EXPORT_NOTICE);
+
+      const bare = copy(OFFICE_EVENT_EXPORT);
+      bare.data.content = bare.data.content.replace(REGISTRANT_EXPORT_NOTICE, 'Handle with care.');
+      const refused = firstValueFrom(repository.exportRegistrants(MISSION));
+      http.expectOne(`${EVENTS}/${MISSION}/registrants/export`).flush(bare);
+      await expect(refused).rejects.toThrow(/could not be read whole/);
+    });
+  });
+
+  describe('acting', () => {
+    it('saves a draft whole, the venue by the API’s barangay, and edits one by PATCH', async () => {
+      const created = firstValueFrom(repository.saveDraft(draft(), null));
+      barangays();
+      const post = http.expectOne(EVENTS);
+      expect(post.request.method).toBe('POST');
+      expect(post.request.body).toMatchObject({
+        title: 'Feeding programme — Dolores',
+        venue_barangay_id: DOLORES_API,
+        starts_at: '2026-12-01T01:00:00.000Z',
+        capacity: 40,
+        waitlist_enabled: true,
+        image_url: null,
+        venue_map_url: null,
+      });
+      expect(Object.keys(post.request.body as object)).toHaveLength(22);
+      post.flush(OFFICE_EVENT);
+      expect((await created).id).toBe(MISSION);
+
+      const edited = firstValueFrom(
+        repository.saveDraft(draft({ title: 'Feeding programme' }), MISSION),
+      );
+      barangays();
+      const patch = http.expectOne(`${EVENTS}/${MISSION}`);
+      expect(patch.request.method).toBe('PATCH');
+      patch.flush(OFFICE_EVENT);
+      await edited;
+    });
+
+    it('sends nothing for a draft with no dates or a barangay the API does not know', async () => {
+      await expect(
+        firstValueFrom(repository.saveDraft(draft({ startsAt: null, endsAt: null }), null)),
+      ).rejects.toThrow('Choose when it starts.');
+
+      const unknown = firstValueFrom(
+        repository.saveDraft(
+          draft({
+            venue: {
+              name: '',
+              address: '',
+              mapUrl: null,
+              barangayId: asId<BarangayId>('brgy-atlantis'),
+            },
+          }),
+          null,
+        ),
+      );
+      barangays();
+      await expect(unknown).rejects.toThrow(/barangay/);
+    });
+
+    it('sends every move with its reason, and refuses an empty one without a request', async () => {
+      for (const act of ['publish', 'cancel', 'complete', 'archive'] as const) {
+        await expect(firstValueFrom(repository[act](MISSION, '   '))).rejects.toThrow(
+          /needs a reason/,
+        );
+        const moved = firstValueFrom(repository[act](MISSION, ` Approved at the ${act} meeting. `));
+        barangays();
+        const request = http.expectOne(`${EVENTS}/${MISSION}/${act}`);
+        expect(request.request.body).toEqual({ reason: `Approved at the ${act} meeting.` });
+        request.flush(OFFICE_EVENT);
+        await moved;
+      }
+      await expect(
+        firstValueFrom(repository.actOnRegistration(MISSION, WAITLISTED, 'cancel', '')),
+      ).rejects.toThrow(/needs a reason/);
+    });
+  });
+
+  it('reads the history as the office’s acts, each with its reason and no recorded fields', async () => {
+    const read = firstValueFrom(repository.history(MISSION));
+    http.expectOne(`${EVENTS}/${MISSION}/history`).flush(OFFICE_EVENT_HISTORY);
+    const rows = await read;
+
+    expect(rows.map((row) => row.action)).toEqual(['registration-changed', 'published', 'created']);
+    expect(rows[0]?.reason).toContain('travelled two hours');
+    expect(rows[0]?.summary).not.toContain('Ben');
+    expect(rows[2]?.reason).toBeNull();
+    for (const row of rows) {
+      expect(row.entityId).toBe(MISSION);
+      expect(row.fieldsRecorded).toBe(false);
+      expect(row.source).toBe('api');
+    }
+  });
+});

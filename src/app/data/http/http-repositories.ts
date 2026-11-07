@@ -300,6 +300,23 @@ import {
   type IssuanceTypeId,
   ISSUANCE_REFERENCE_INCOMPLETE,
   wholeIssuanceReference,
+  EVENT_PROBLEM_MESSAGES,
+  asIsoDateTime,
+  eventProblems,
+  type AttendanceStatus,
+  type EventCapacitySummary,
+  type EventDraft,
+  type EventFilter,
+  type EventMetrics,
+  type EventRegistrationId,
+  type EventRepository,
+  type EventView,
+  type LguEvent,
+  type LguEventId,
+  type RegistrantExport,
+  type RegistrantFilter,
+  type RegistrantView,
+  type RegistrationAction,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -497,6 +514,17 @@ import {
   toStaffAccount,
   toWireAccountSwitch,
 } from './mappers/governance.mapper';
+import {
+  toEventCapacity,
+  toEventHistoryRow,
+  toEventMetrics,
+  toLguEvent,
+  toRegistrantExport,
+  toRegistrantView,
+  toWireEventAttendance,
+  toWireEventDraft,
+  toWireEventReason,
+} from './mappers/event.mapper';
 import { toOfficeAlerts, toTeamWork, toWorkQueue } from './mappers/work.mapper';
 import { list } from './mappers/wire';
 import { unserved } from './unserved-repositories';
@@ -4800,6 +4828,264 @@ function readGovernance<T>(read: T | null): T {
     throw new Error(
       'An answer from the server could not be read whole, so none of it is shown: a staff list ' +
         'or an audit trail with a row quietly missing cannot be trusted about the others.',
+    );
+  }
+  return read;
+}
+
+/**
+ * Events, served by the Node API (`DL-192`): the office's side of somebody else's workflow.
+ *
+ * **Residents register in their own app.** This adapter creates and runs events and manages what
+ * arrives; it has no method that signs anybody up, and calls none of the residents' routes
+ * (`DL-123`).
+ *
+ * **The client counts; the server decides** (`DL-129`). A capacity summary is the server's counts
+ * with the server's moment on them. A promotion from the waitlist is sent and its answer read back:
+ * the server takes it (the office's own figure is the office's to exceed, after the screen's
+ * warning), and a resident's own registration is capped there, inside the event's row lock.
+ *
+ * **A registrant list is the closed set** (`DL-130`): composed by the server and refused here if a
+ * row carries more. The name is the one on the resident's app account; the API holds no link from it
+ * to the office's resident registry, so the registry's protected-sector rule has nothing to apply to,
+ * and no office notes exist to withhold.
+ *
+ * **Every list is read whole or refused**, never cut short (`DL-161`): an events list missing an
+ * event reads as no event, and a registrant list missing a family is a meal short at the door.
+ */
+@Injectable()
+export class HttpEventRepository implements EventRepository {
+  private readonly api = inject(ApiClient);
+  // A venue's and a registrant's barangay are the API's ids; the console knows them by its own.
+  private readonly barangayJoin = new BarangayJoin();
+
+  list(view: EventView, filter: EventFilter): Observable<readonly LguEvent[]> {
+    const search = filter.search?.trim();
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .list(API_ENDPOINTS.officeEvents, {
+            view,
+            q: search === undefined || search === '' ? undefined : search,
+            category: filter.category,
+            from: filter.from,
+            to: filter.to,
+          })
+          .pipe(map((rows) => rows.map((row) => readEvents(toLguEvent(row, barangays))))),
+      ),
+    );
+  }
+
+  getById(id: LguEventId): Observable<LguEvent | null> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .optionalItem(`${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}`)
+          .pipe(map((wire) => (wire === null ? null : readEvents(toLguEvent(wire, barangays))))),
+      ),
+    );
+  }
+
+  /**
+   * A new draft, or a draft replaced whole. Refused here, with no request, on what the domain refuses
+   * to save — the server would refuse it too, in words this screen would not show.
+   */
+  saveDraft(draft: EventDraft, id: LguEventId | null): Observable<LguEvent> {
+    const problems = eventProblems(draft, asIsoDateTime(new Date()), 'save');
+    const { startsAt, endsAt } = draft;
+    if (problems.length > 0 || startsAt === null || endsAt === null) {
+      const said = problems.map((problem) => EVENT_PROBLEM_MESSAGES[problem]);
+      return throwError(() => new Error(said.length > 0 ? said.join(' ') : EVENT_PROBLEM_MESSAGES['starts-required']));
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) => {
+        const venue = draft.venue.barangayId;
+        const venueBarangayId = venue === null ? null : barangays.toApi(venue);
+        if (venue !== null && venueBarangayId === null) {
+          return throwError(() => unknownBarangay());
+        }
+        const saved =
+          id === null
+            ? this.api.post(
+                API_ENDPOINTS.officeEvents,
+                toWireEventDraft(draft, { startsAt, endsAt }, venueBarangayId),
+              )
+            : this.api.patch(
+                `${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}`,
+                toWireEventDraft(draft, { startsAt, endsAt }, venueBarangayId),
+              );
+        return saved.pipe(map((wire) => readEvents(toLguEvent(wire, barangays))));
+      }),
+    );
+  }
+
+  publish(id: LguEventId, reason: string): Observable<LguEvent> {
+    if (reason.trim().length === 0) {
+      return throwError(() => new Error(EVENT_REASON_REQUIRED));
+    }
+    return this.moved(
+      this.api.post(
+        `${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}/publish`,
+        toWireEventReason(reason),
+      ),
+    );
+  }
+
+  cancel(id: LguEventId, reason: string): Observable<LguEvent> {
+    if (reason.trim().length === 0) {
+      return throwError(() => new Error(EVENT_REASON_REQUIRED));
+    }
+    return this.moved(
+      this.api.post(
+        `${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}/cancel`,
+        toWireEventReason(reason),
+      ),
+    );
+  }
+
+  /** Declares attendance final on the server, which sweeps nobody into a no-show (`DL-131`). */
+  complete(id: LguEventId, reason: string): Observable<LguEvent> {
+    if (reason.trim().length === 0) {
+      return throwError(() => new Error(EVENT_REASON_REQUIRED));
+    }
+    return this.moved(
+      this.api.post(
+        `${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}/complete`,
+        toWireEventReason(reason),
+      ),
+    );
+  }
+
+  archive(id: LguEventId, reason: string): Observable<LguEvent> {
+    if (reason.trim().length === 0) {
+      return throwError(() => new Error(EVENT_REASON_REQUIRED));
+    }
+    return this.moved(
+      this.api.post(
+        `${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}/archive`,
+        toWireEventReason(reason),
+      ),
+    );
+  }
+
+  registrants(id: LguEventId, filter: RegistrantFilter): Observable<readonly RegistrantView[]> {
+    const search = filter.search?.trim();
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .list(`${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}/registrants`, {
+            q: search === undefined || search === '' ? undefined : search,
+            status: filter.status,
+            attendance: filter.attendance,
+          })
+          .pipe(map((rows) => rows.map((row) => readEvents(toRegistrantView(row, barangays))))),
+      ),
+    );
+  }
+
+  capacity(id: LguEventId): Observable<EventCapacitySummary> {
+    return this.api
+      .item(`${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}/capacity`)
+      .pipe(map((wire) => readEvents(toEventCapacity(wire))));
+  }
+
+  metrics(id: LguEventId): Observable<EventMetrics> {
+    return this.api
+      .item(`${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}/metrics`)
+      .pipe(map((wire) => readEvents(toEventMetrics(wire))));
+  }
+
+  /**
+   * One registration moved, with a reason, and what the server made of it read back — a promotion
+   * is attempted, never predicted (`DL-129`).
+   */
+  actOnRegistration(
+    eventId: LguEventId,
+    registrationId: EventRegistrationId,
+    action: RegistrationAction,
+    reason: string,
+  ): Observable<RegistrantView> {
+    if (reason.trim().length === 0) {
+      return throwError(() => new Error(EVENT_REASON_REQUIRED));
+    }
+    const event = encodeURIComponent(eventId);
+    const registration = encodeURIComponent(registrationId);
+    const sent = (() => {
+      switch (action) {
+        case 'cancel':
+          return this.api.post(
+            `${API_ENDPOINTS.officeEvents}/${event}/registrations/${registration}/cancel`,
+            toWireEventReason(reason),
+          );
+        case 'restore':
+          return this.api.post(
+            `${API_ENDPOINTS.officeEvents}/${event}/registrations/${registration}/restore`,
+            toWireEventReason(reason),
+          );
+        case 'promote':
+          return this.api.post(
+            `${API_ENDPOINTS.officeEvents}/${event}/registrations/${registration}/promote`,
+            toWireEventReason(reason),
+          );
+        case 'waitlist':
+          return this.api.post(
+            `${API_ENDPOINTS.officeEvents}/${event}/registrations/${registration}/waitlist`,
+            toWireEventReason(reason),
+          );
+      }
+    })();
+    return this.registrant(sent);
+  }
+
+  markAttendance(
+    eventId: LguEventId,
+    registrationId: EventRegistrationId,
+    attendance: AttendanceStatus,
+  ): Observable<RegistrantView> {
+    return this.registrant(
+      this.api.post(
+        `${API_ENDPOINTS.officeEvents}/${encodeURIComponent(eventId)}/registrations/${encodeURIComponent(registrationId)}/attendance`,
+        toWireEventAttendance(attendance),
+      ),
+    );
+  }
+
+  /** Composed by the server with its conditions inside it (`DL-106`); refused here without them. */
+  exportRegistrants(id: LguEventId): Observable<RegistrantExport> {
+    return this.api
+      .item(`${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}/registrants/export`)
+      .pipe(map((wire) => readEvents(toRegistrantExport(wire))));
+  }
+
+  history(id: LguEventId): Observable<readonly AuditRow[]> {
+    return this.api
+      .list(`${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}/history`)
+      .pipe(map((rows) => rows.map((row) => readEvents(toEventHistoryRow(row)))));
+  }
+
+  private moved(sent: Observable<unknown>): Observable<LguEvent> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) => sent.pipe(map((wire) => readEvents(toLguEvent(wire, barangays))))),
+    );
+  }
+
+  private registrant(sent: Observable<unknown>): Observable<RegistrantView> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        sent.pipe(map((wire) => readEvents(toRegistrantView(wire, barangays)))),
+      ),
+    );
+  }
+}
+
+const EVENT_REASON_REQUIRED =
+  'That needs a reason. It is recorded against your name, and the resident can ask.';
+
+function readEvents<T>(read: T | null): T {
+  if (read === null) {
+    throw new Error(
+      'An answer from the server could not be read whole, so none of it is shown: an events list ' +
+        'or a registrant list with a row quietly missing cannot be trusted about the others.',
     );
   }
   return read;

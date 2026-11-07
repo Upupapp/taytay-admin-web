@@ -8548,3 +8548,104 @@ and roles does for a role (`DL-168`).
 **Still open:** no UAT script covers governance yet (`docs/uat/` was left to the agent writing it).
 The mock still records sign-ins and profiles the API does not, so `local-mock` shows a unit and an ID
 where the API's console says "Not recorded".
+
+## DL-192 — events are served: the office runs them, residents register in their own app, and the last place is the server's to give
+
+`taytay-backend` `580acbb` serves `EVENT_REPOSITORY`, and the residents' side the Flutter app will
+be wired to. The spec vendored here is that commit's (277 operations). Casework phase 6f, after
+governance (6e, `DL-191`). **Migration `0042`, additive:** `office_events`,
+`office_event_registrations`, the append-only `office_event_acts` (every act, with its reason),
+`office_event_registration_intents`, a reference sequence, and the `event_registration_updated`
+notification type. **One port remains unserved: the newsfeed**, whose future is the owner's
+(OD-4). Events were built on Ella's instruction of 8 November 2026, ahead of OD-4 being recorded
+as decided for them.
+
+### What is served
+
+| Route | Grant | What it answers |
+| --- | --- | --- |
+| `GET office/events?view=&q=&category=&from=&to=` | `event.view` | One of the six views, derived from the status and the clock, soonest first, the whole view (503 past 2,000); each event carries the counts that read took |
+| `POST office/events`, `PATCH office/events/{id}` | `event.create` / `event.edit` | A draft saved whole; PATCH only while it is a draft |
+| `POST office/events/{id}/publish\|cancel\|complete\|archive` | `event.publish`, `.cancel`, `.edit`, `.archive` | With `{ reason }`, kept in `office_event_acts`; publication rules re-run on the server |
+| `GET office/events/{id}/capacity` / `…/metrics` | `event.view` / `event.view-insights` | Counts with the server's `as_of`, no verdict |
+| `GET office/events/{id}/registrants`, `…/registrants/export` | `event.view` (+ `event.export-registrants`) | The closed set; the same as a file with its conditions inside it |
+| `POST office/events/{id}/registrations/{id}/cancel\|restore\|promote\|waitlist`, `…/attendance` | `event.manage-registrations` / `event.mark-attendance` | One registration moved with a reason, or attendance marked by hand |
+| `GET office/events/{id}/history` | `event.view` | The office's acts on the event, each with its reason |
+| `GET events`, `GET events/{id}`, `POST events/{id}/registrations`, `POST events/{id}/registrations/{id}/cancel` | public / a resident's account | The residents' side: read, register, give up one's own place. **This console calls none of them** (`DL-123`) |
+
+The permission keys were already on the server (`casework.ts`) and in `check:permission-parity`;
+nothing was added to either.
+
+### Decisions taken (the owner may overturn any; each is the easiest to reverse)
+
+1. **A draft is saved with its dates** — superseding, for the dates alone, the leniency `DL-125`
+   gives a draft. A saved event is an `LguEvent`, which has a start and an end; the mock held a
+   dateless draft by stamping "now", and the API will not hold a date nobody chose. `eventProblems`
+   asks for both on `save`; the composer says so before its save button.
+2. **Only a draft is edited.** A trigger (`guard_office_event`) keeps a published event as it was
+   published and holds the lifecycle; an event that has changed is a new event (`DL-131`). No screen
+   edits an event yet, so nothing was lost.
+3. **Completion waits for the event to start** (409 before) and sweeps nobody into a no-show; a
+   completed event's attendance is final, so marking after it is refused.
+4. **The office's moves are not capped by capacity.** A resident's own registration is, inside the
+   event's row lock. An officer promoting or restoring somebody past the stated figure is a
+   reasoned decision the screen warns about first (`promotionExceedsCapacity`), as a self-release is
+   (`DL-91`); refusing it would leave the office no way to admit a family at the door, because a
+   published event's capacity cannot be edited.
+5. **A registrant is an app account, named as they named it.** The API holds no link from an app
+   account to the office's resident registry, so `discloseResident`'s protected-sector rule
+   (`DL-38`) has nothing to apply to, and none is pretended. The row is the closed set (`DL-130`);
+   `toRegistrantView` **refuses** a wider row rather than trimming it.
+6. **No office notes on a registration.** Nothing in the port writes one, so the API keeps none and
+   `notes` is always null. Likewise `replacesEventId`: nothing records it.
+7. **Residents are told in the app**: when an event they hold a place for is called off, and when
+   the office moves their place — an in-app notification (`event_registration_updated`), never
+   pushed, never carrying the officer's reason. The cancelled badge's "everybody registered has been
+   told" is true on the API, not only in the mock.
+8. **A completed event stays visible to residents** (`isVisibleToResidents` gained `completed`),
+   because completion is when a resident may read their own attendance — `attended`, `absent` or
+   `not_recorded`, and nothing before it.
+9. **Verified residents only, for every event** (`allows_unverified_residents: false`).
+   Admitting an unverified account and refusing it later cannot be undone; the reverse can. The
+   console has no per-event setting for it.
+10. **A resident may give up their own place until the event starts**, from the app; the waitlist
+    is never moved up automatically (`REGISTRATION_STATUS_CATALOG.waitlisted`).
+11. **No places-left number anywhere a resident reads.** Availability is a state with the office's
+    words; a full event with a waitlist reads `open`, because the app offers its register button on
+    `open` alone. `ResidentEventView` in this repository's resident contract lost
+    `capacityRemaining` for `registrationState` and the published `capacity` — capacity minus a
+    count is the same count.
+12. **Full and closed are ordinary outcomes** of a registration (a 200 with nothing taken), not
+    errors; `idempotency_key` is required and travels in the body, as a message's does (`0040`),
+    because the API's CORS allows four request headers.
+13. **Lists are read whole or refused** (`DL-161`): the views, the registrants and the history are
+    bare lists with ceilings (2,000, 5,000, 5,000), not pages — the port returns whole lists and the
+    screens were built for them.
+
+### What the console changed
+
+`HttpEventRepository` with `event.mapper.ts`; `UnservedEventRepository` is gone and
+`check:routes`' unserved ceiling went from 2 to **1**. `check:events` gained section 9 for the served
+adapter — bound in the http set, nobody signed up from here, an empty reason refused before any
+request, no client-side verdict on a place, completion sending no attendance, the registrant closed
+set refused wider, notes never filled, the server's `as_of`, the rate only through
+`attendanceRateOf`, the office's notice in the manifest and the file, the reason kept in the
+history — each rule validated against a planted regression (17 of 17 caught). The app's audit trail
+words the nine new `office_event` codes, the same words the office's trail uses.
+`EventMetrics`' comments now say the Node API stamps its counts and reports cancellations.
+
+### For the owner
+
+- Whether a published event's details (date, venue, capacity) may be corrected, and how residents
+  who registered are told (decision 2).
+- Whether the office may exceed an event's stated capacity, or the server should refuse (decision 4).
+- Whether an events clerk should see a registrant's full name, or initials only, given that the
+  registry's protected-sector rule cannot reach an app account (decision 5).
+- Whether an unverified resident may register for some events (decision 9), which would need a
+  per-event setting in the composer.
+- Whether the office wants notes on a registration, and who may read them.
+- OD-4 for the newsfeed, which stays unserved.
+
+**Still open:** no UAT script covers events yet (`docs/uat/` was left to the agent writing it). The
+residents' app is not yet wired to `GET events` and the registration routes; the brief for that is
+recorded with phase 6f.

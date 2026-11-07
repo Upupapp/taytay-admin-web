@@ -49,8 +49,10 @@ sign-in only, hosted on Linode.
 | 21 | Casework phase 6c: search and the work queues | backend + console | done (`DL-189`): `taytay-backend` `e76c715`, no migration — `GET /api/v1/office/search?q=` searches each record type with its list's key through that list's repository, filter and scope, counts each group with the same where-builder, matches only names as shown and reference numbers, and names every type not searched; `GET /api/v1/office/work/mine`, `…/team` (`staff.view`) and `…/alerts` assemble the queues on every read and write nothing. Console: `HttpSearchRepository` and `HttpWorkRepository`, whole or refused; `check:search` and `check:work` hold the served adapters too. Four ports remain unserved. |
 | 22 | Casework phase 6d: reports | backend + console | done (`DL-190`): `taytay-backend` `9d81454`, no migration — `GET /api/v1/office/reports` (the catalogue this account opens), `…/{id}` (one report, counted in SQL under each list's scope, people and households suppressed below 5 with the total taken before, the protected sectors not counted for a reader without `request.view-sensitive`, a filter the report does not honour refused, what cannot be counted said in `limits`) and `…/{id}/export` (`report.export-person-level`; the CSV composed on the server with its conditions inside it). Strict query schemas: nothing returns the figures before suppression. Exporting, and opening the report that names people, are audited. Console: `HttpReportRepository`, refusing an answer that shows what it should have withheld; the screen shows the limits and offers the file to save. Three ports remain unserved. |
 | 23 | Casework phase 6e: governance | backend + console | done (`DL-191`): `taytay-backend` `3a7947c`, migration `0041_office_governance.sql` (additive) — `GET /api/v1/office/staff` and `…/{id}` (the staff directory: the `users` table Users and roles reads, narrowed to staff and admin accounts; name, office role, scope, on or off), `POST …/{id}/deactivate` and `…/reactivate` (`staff.manage`, a reason kept in `account_status_changes`; the account is refused with 401 at its next request; never the caller's own), `GET /api/v1/office/audit` (the office's trail in words, a cursor page; `fields_recorded: false` on every row, no sensitive filter) and `…/{id}` (`audit.view-detail`: no value was stored, audited), `GET /api/v1/office/governance/classifications`, `…/retention` (every period null) and `…/corrections` (`settings.manage`). Console: `HttpGovernanceRepository`, `governance.mapper.ts`, `auditRows` paged, the unserved ceiling 2 |
+| 24 | Casework phase 6f: events, the office's side and the residents' | backend + console | done (`DL-192`): `taytay-backend` `580acbb`, migration `0042_office_events.sql` (additive) — `GET /api/v1/office/events?view=` (one of the six views, read whole), a draft created by `POST` and replaced by `PATCH` while it is one, `…/{id}/publish`, `…/cancel`, `…/complete`, `…/archive` with a reason kept in `office_event_acts`, `…/capacity` (the server's `as_of`), `…/metrics`, `…/registrants` (the closed set) and `…/registrants/export`, `…/history`, a registration moved or attendance marked by hand; and for the residents' app `GET /api/v1/events`, `GET /api/v1/events/{id}`, `POST /api/v1/events/{id}/registrations` (the last place given inside the event's row lock, `idempotency_key` in the body) and `…/registrations/{id}/cancel`. `HttpEventRepository` bound; one port remains unserved |
 
-**Next:** the newsfeed and events wait for OD-4; nothing else in the console is unserved.
+**Next:** the newsfeed waits for OD-4; nothing else in the console is unserved. The residents' app
+is wired to the events routes in a follow-up.
 
 ## For the owner to decide
 
@@ -389,7 +391,23 @@ row can say what moved and how sensitive it was); the record types the server ho
 classification list does not name (cases, home visits, families, ID-verification images, inbox
 messages, digital IDs, staff accounts); the office's records disposition schedule under RA 9470;
 and when capturing a correction request is to be built.
-**Next: the newsfeed and events wait for OD-4.**
+**Phase 6f done** (`DL-192`, `taytay-backend` `580acbb`, migration `0042`): events are served, the
+office's side and the residents'. The office runs events through a lifecycle a trigger holds
+(cancelled and completed lead only to archived; a published event is kept as it was published),
+each move with a reason kept beside it; reads capacity as the server's counts with the server's
+moment and no verdict; and reads registrants as the closed set — an app account's name, its
+barangay, when, two statuses — refused rather than trimmed if a row carries more. Residents read
+events publicly with availability as a state and the office's words, never a places-left number;
+a verified resident registers inside the event's row lock, full and closed are ordinary outcomes,
+and a retry with the same key registers nobody twice. One port remains unserved: the newsfeed.
+
+**For the owner, from phase 6f** (`DL-192`): whether a published event's details may be corrected,
+and how its registrants are told; whether the office may exceed an event's stated capacity (the
+choice made is yes, with a reason, after the screen's warning); whether an events clerk should see
+a registrant's full name or initials only, since the registry's protected-sector rule cannot reach
+an app account; whether unverified residents may register for some events (the choice made is no,
+for every event); whether the office wants notes on a registration.
+**Next: the newsfeed waits for OD-4. The residents' app is wired to the events routes next.**
 
 ## Decided 2026-11-06: the owner's decisions round (`DL-183`)
 

@@ -220,6 +220,11 @@ export type EventIntent = 'save' | 'publish';
  * **both** are the ones where the draft itself would be wrong — an end before
  * a start, a registration window that closes before it opens — because saving
  * those means saving something that can never become correct by adding to it.
+ *
+ * The dates are the exception to the leniency, and asked for on both (`DL-192`).
+ * A saved event is an `LguEvent`, which has a start and an end; a draft with
+ * neither could only be held with a date nobody chose, and the office's list
+ * would order it by that fabrication.
  */
 export function eventProblems(
   draft: EventDraft,
@@ -234,10 +239,10 @@ export function eventProblems(
   if (intent === 'publish' && draft.summary.trim().length === 0) {
     problems.push('summary-required');
   }
-  if (intent === 'publish' && draft.startsAt === null) {
+  if (draft.startsAt === null) {
     problems.push('starts-required');
   }
-  if (intent === 'publish' && draft.endsAt === null) {
+  if (draft.endsAt === null) {
     problems.push('ends-required');
   }
   // Checked whenever both are present, draft or not: an end before its start is
@@ -313,9 +318,13 @@ export const EVENT_PROBLEM_MESSAGES: Readonly<Record<EventProblem, string>> = {
  *
  * Derived, like a post's visibility (`DL-126`), rather than stored: a flag
  * needs a job to stay true and is wrong from the moment the clock passes it.
+ *
+ * A completed event stays visible (`DL-192`): completion is the office saying
+ * attendance is final, and it is only then that a resident may read their own.
+ * Only a draft and an archived event are out of the resident app.
  */
 export function isVisibleToResidents(event: LguEvent): boolean {
-  return event.status === 'published' || event.status === 'cancelled';
+  return event.status === 'published' || event.status === 'cancelled' || event.status === 'completed';
 }
 
 /**

@@ -1,0 +1,14 @@
+{
+  "data": {
+    "event_id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01",
+    "registered_count": 2,
+    "waitlisted_count": 1,
+    "cancelled_count": 1,
+    "attended_count": 1,
+    "no_show_count": 0,
+    "unmarked_count": 1,
+    "attendance_final": false,
+    "as_of": "2026-11-08T02:00:00.000Z"
+  },
+  "meta": {}
+}

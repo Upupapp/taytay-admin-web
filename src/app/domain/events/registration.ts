@@ -309,10 +309,10 @@ export interface EventMetrics {
   /**
    * Cancellations, or `null` where the office record does not report them.
    *
-   * Nullable rather than zero. `registration-summary` publishes registered, waitlisted and the
-   * three attendance states, and nothing about cancellations — and a `0` there is a claim that
-   * nobody withdrew, which is precisely the kind of positive statement `DL-146` refuses to make
-   * from data nobody sent. A screen shows the absence; it does not report a quiet nought.
+   * Nullable rather than zero: a `0` from a record that does not count cancellations is a claim
+   * that nobody withdrew, which is precisely the kind of positive statement `DL-146` refuses to
+   * make from data nobody sent. The Node API counts them (`DL-192`); the type stays nullable so an
+   * adapter that cannot never has to invent one.
    */
   readonly cancelledCount: number | null;
   readonly attendedCount: number;
@@ -320,15 +320,12 @@ export interface EventMetrics {
   readonly unmarkedCount: number;
   readonly attendanceRate: number | null;
   /**
-   * When this console **read** the counts — not when the office record computed them.
+   * When the counts were taken.
    *
    * `DL-129` requires the moment to travel with the numbers, because "38 registered" without a
-   * timestamp is a claim about now that was true at some point. The server does not stamp its own
-   * summary, so the closest true statement this console can make is when it asked, and every
-   * screen must word it that way: *read at*, never *as of*. The difference is small and it is the
-   * whole difference between reporting a fact and inheriting one.
-   *
-   * The gap is recorded rather than closed here: only the server can say when it counted.
+   * timestamp is a claim about now that was true at some point. The Node API stamps its own
+   * counts (`as_of`, `DL-192`), so this is the server's moment; an adapter whose source does not
+   * stamp them must say when it *read* them instead, and a screen must then word it that way.
    */
   readonly asOf: IsoDateTime;
 }

@@ -687,6 +687,184 @@ if (/registeredCount:\s*\d/.test(seed)) {
 }
 notes.push('seam: no data imports, no resident screen, routes guarded and ordered');
 
+/* ── 9. The served adapter holds the same lines (`DL-192`) ────────────────── */
+
+/*
+ * Sections 1–8 read the domain, the port, the mock and the screens. Since the Node API serves
+ * events, the http adapter and its mapper are what an office actually runs against, and each rule
+ * below is one the mock was held to, restated for the code that talks to a server. Every rule was
+ * validated against a planted regression.
+ */
+const providers = read('src/app/data/data-access.providers.ts');
+const adapterSource = read('src/app/data/http/http-repositories.ts');
+const mapperPath = 'src/app/data/http/mappers/event.mapper.ts';
+const eventMapper = existsSync(join(root, mapperPath)) ? read(mapperPath) : '';
+const mapperCode = code(eventMapper);
+
+/** The class body, from its declaration to the next top-level declaration. */
+const httpClass = (() => {
+  const start = adapterSource.indexOf('export class HttpEventRepository');
+  if (start < 0) return '';
+  const rest = adapterSource.slice(start);
+  const end = rest.search(/\n\}\n/);
+  return end < 0 ? rest : rest.slice(0, end + 2);
+})();
+const httpCode = code(httpClass);
+
+/** One method's body out of the class, up to the next member. */
+const httpMethod = (name) => {
+  const start = httpCode.indexOf(`\n  ${name}(`);
+  if (start < 0) return '';
+  const rest = httpCode.slice(start + 1);
+  const next = rest.search(/\n  (?:private |protected )?[a-zA-Z]+\(/);
+  return next < 0 ? rest : rest.slice(0, next);
+};
+
+/** A mapper function's body. */
+const mapperFn = (name) => fn(eventMapper, name);
+
+if (httpClass === '') {
+  problems.push('`HttpEventRepository` has gone, so the http configuration has no events adapter.');
+} else {
+  if (!/provide:\s*EVENT_REPOSITORY,\s*useClass:\s*HttpEventRepository/.test(providers)) {
+    problems.push(
+      '`EVENT_REPOSITORY` is not bound to `HttpEventRepository` in the http set. The API serves ' +
+        'events; an unserved or mock binding tells an office it has no events, or shows it sample ' +
+        'ones (`DL-136`, `DL-192`).',
+    );
+  }
+
+  // Nobody is registered from this console (`DL-123`): no POST to a registrations collection and no
+  // idempotency key, which only a resident's own sign-up carries.
+  if (/registrations`/.test(httpCode) || /idempotency_key/.test(httpCode + mapperCode)) {
+    problems.push(
+      '`HttpEventRepository` reaches a registrations collection or sends an idempotency key. Those ' +
+        'are the resident\'s own sign-up; an office that can register somebody has taken the one ' +
+        'capability the resident contract reserves (`DL-123`).',
+    );
+  }
+  if (/API_ENDPOINTS\s*\.\s*(?!officeEvents\b)\w*[Ee]vent/.test(httpCode)) {
+    problems.push(
+      '`HttpEventRepository` names an events endpoint other than `officeEvents`. The residents\' ' +
+        'routes are the app\'s; this console reads the office\'s.',
+    );
+  }
+
+  // Reasoned before anything is sent: an empty reason is refused here, with no request.
+  for (const mutator of ['publish', 'cancel', 'complete', 'archive', 'actOnRegistration']) {
+    const body = httpMethod(mutator);
+    const guard = body.search(/reason\s*\.\s*trim\s*\(\s*\)\s*\.\s*length\s*===\s*0/);
+    const request = body.search(/this\s*\.\s*(?:api|moved|registrant)\b/);
+    if (body === '' || guard < 0 || (request >= 0 && request < guard)) {
+      problems.push(
+        `\`HttpEventRepository.${mutator}\` no longer refuses an empty reason before it sends. ` +
+          'Every act residents can see is one the office may be asked to justify.',
+      );
+    }
+  }
+
+  // The client counts; the server decides (`DL-129`). The adapter never decides a place is free.
+  for (const verdict of ['registrationAvailability', 'placesRemaining', 'promotionExceedsCapacity']) {
+    if (new RegExp(`\\b${verdict}\\b`).test(httpCode)) {
+      problems.push(
+        `\`HttpEventRepository\` calls \`${verdict}\`. A promotion is attempted and its answer ` +
+          'read back; a client-side verdict is the concurrency guarantee the command says not to ' +
+          'invent (`DL-129`).',
+      );
+    }
+  }
+  if (/this\s*\.\s*capacity\s*\(/.test(httpMethod('actOnRegistration'))) {
+    problems.push(
+      '`HttpEventRepository.actOnRegistration` consults the capacity before it sends. The office\'s ' +
+        'figure is a snapshot; the server answers the move (`DL-129`).',
+    );
+  }
+
+  // Completion sweeps nobody (`DL-131`).
+  if (/no-show|attendance/.test(httpMethod('complete'))) {
+    problems.push(
+      '`HttpEventRepository.complete` sends attendance. Completing declares the register final; it ' +
+        'never turns an unmarked registrant into a no-show (`DL-131`).',
+    );
+  }
+
+  for (const [token, what] of COMMERCIAL) {
+    if (new RegExp(`\\b${token}`, 'i').test(httpCode + mapperCode)) {
+      problems.push(`The events adapter or its mapper has ${what}. Nothing in this module is sold.`);
+    }
+  }
+}
+
+if (eventMapper === '') {
+  problems.push(`${mapperPath} has gone; the served adapter cannot read an answer without it.`);
+} else {
+  // The closed set, refused wider (`DL-130`).
+  const closedSet = /const REGISTRANT_FIELDS = \[([\s\S]*?)\]/.exec(eventMapper)?.[1] ?? '';
+  const fields = [...closedSet.matchAll(/'([a-z_]+)'/g)].map((match) => match[1]);
+  const EXPECTED = ['id', 'reference', 'display_name', 'barangay_id', 'registered_at', 'status', 'attendance'];
+  if (fields.length !== EXPECTED.length || EXPECTED.some((name) => !fields.includes(name))) {
+    problems.push(
+      `The registrant mapper's closed set is [${fields.join(', ')}]. It is the seven fields a ` +
+        'RegistrantView is made from and no other — an account id or a contact on that list is a ' +
+        'wider read than the screen (`DL-130`).',
+    );
+  }
+  const registrantFn = mapperFn('toRegistrantView');
+  if (!/REGISTRANT_FIELDS[\s\S]{0,40}\.includes\(key\)/.test(registrantFn)) {
+    problems.push(
+      '`toRegistrantView` no longer refuses a row that carries more than the closed set. A server ' +
+        'that widens what it discloses must be refused, not trimmed quietly (`DL-130`).',
+    );
+  }
+  if (!/notes:\s*null/.test(code(registrantFn))) {
+    problems.push(
+      '`toRegistrantView` fills `notes` from somewhere. The API keeps no office notes on a ' +
+        'registration; a value there came from a field nobody is meant to read (`DL-192`).',
+    );
+  }
+
+  // The moment is the server's (`DL-129`).
+  for (const name of ['toEventCapacity', 'toEventMetrics']) {
+    const body = code(mapperFn(name));
+    if (!/field\(\s*wire\s*,\s*'as_of'\s*\)/.test(body) || /new Date\(|Date\s*\.\s*now/.test(body)) {
+      problems.push(
+        `\`${name}\` no longer takes \`as_of\` from the server, or stamps its own. The count and ` +
+          'the moment it was counted travel together, and only the server knows when it counted ' +
+          '(`DL-129`).',
+      );
+    }
+  }
+  const metricsBody = code(mapperFn('toEventMetrics'));
+  if (!/attendanceRateOf\(/.test(metricsBody)) {
+    problems.push(
+      '`toEventMetrics` computes a rate without `attendanceRateOf`. A rate taken before attendance ' +
+        'is final reads as a poor turnout and is really a half-marked list.',
+    );
+  }
+
+  // The file carries its conditions (`DL-106`), and the office's notice word for word.
+  const exportBody = mapperFn('toRegistrantExport');
+  if (
+    !/handlingNotice\s*!==\s*REGISTRANT_EXPORT_NOTICE/.test(exportBody) ||
+    !/content\s*\.\s*includes\(\s*REGISTRANT_EXPORT_NOTICE\s*\)/.test(exportBody)
+  ) {
+    problems.push(
+      '`toRegistrantExport` accepts a file whose handling notice is not the office\'s, in the ' +
+        'manifest or in the file itself. The conditions travel inside the file (`DL-106`).',
+    );
+  }
+
+  // A history row is the office's act with its reason, and claims no recorded fields.
+  const historyBody = code(mapperFn('toEventHistoryRow'));
+  if (!/field\(\s*wire\s*,\s*'reason'\s*\)/.test(historyBody) || !/null,\s*false,?\s*\)/.test(historyBody)) {
+    problems.push(
+      '`toEventHistoryRow` drops the reason or claims recorded fields. The history is the office\'s ' +
+        'acts with the reason each was given, and records no field names (`DL-54`, `DL-191`).',
+    );
+  }
+}
+notes.push('served adapter: bound, nobody signed up, reasoned before sending, closed set, server stamp');
+
 /* ── Report ──────────────────────────────────────────────────────────────── */
 
 for (const note of notes) console.log(`  ${note}`);

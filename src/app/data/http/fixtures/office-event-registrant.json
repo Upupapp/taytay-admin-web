@@ -1,0 +1,12 @@
+{
+  "data": {
+    "id": "6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b03",
+    "reference": "ER-2026-000003",
+    "display_name": "Ben Cruz",
+    "barangay_id": "0b1c2d3e-4f50-4a61-8b72-3c4d5e6f7a01",
+    "registered_at": "2026-11-05T03:00:00.000Z",
+    "status": "registered",
+    "attendance": "not-checked-in"
+  },
+  "meta": {}
+}

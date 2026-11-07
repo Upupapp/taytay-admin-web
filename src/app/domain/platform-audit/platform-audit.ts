@@ -121,6 +121,19 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'office_report.exported': 'Exported a report as a file, its conditions written inside it',
   'office_report.person_level_read': 'Opened the report that names residents',
   'office_report.person_level_exported': 'Exported the report that names residents, as a file',
+  // Events (DL-192): each reason is kept beside the act, in office_event_acts.
+  'office_event.created': 'Created an event as a draft',
+  'office_event.updated': 'Edited a draft event',
+  'office_event.published': 'Published an event to the residents’ app, with a reason',
+  'office_event.cancelled':
+    'Cancelled an event, with a reason; everybody holding a place was told in the residents’ app',
+  'office_event.completed': 'Completed an event, declaring its attendance final, with a reason',
+  'office_event.archived': 'Archived an event, with a reason',
+  'office_event.registration_moved':
+    'Moved a resident’s registration for an event, with a reason; the resident was told in the app',
+  'office_event.attendance_marked': 'Recorded whether a registrant came to an event',
+  'office_event.registrants_exported':
+    'Exported an event’s registrant list as a file, its handling notice inside it',
   // Governance (DL-191): opening what the trail recorded about one entry is itself recorded.
   'office_audit.detail_read': 'Opened what the trail records about one entry',
   'office_program.created': 'Recorded a programme in the office catalogue',

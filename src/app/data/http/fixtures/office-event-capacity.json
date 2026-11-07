@@ -1,0 +1,12 @@
+{
+  "data": {
+    "capacity": 2,
+    "registered_count": 2,
+    "waitlisted_count": 1,
+    "cancelled_count": 1,
+    "attended_count": 0,
+    "no_show_count": 0,
+    "as_of": "2026-11-08T02:00:00.000Z"
+  },
+  "meta": {}
+}

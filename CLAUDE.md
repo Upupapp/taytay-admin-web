@@ -160,8 +160,8 @@ the move (`DL-165`) they are hard rules: the Laravel-era debt they used to count
 adapters that carried it.
 
 - `check:routes` resolves every composed request path against the spec at its verb. It also counts
-  the ports bound to an **unserved** adapter in the `http` set — 18 of 20 at the move, 2 since
-  governance was served (`DL-191`) — and fails if that number grows.
+  the ports bound to an **unserved** adapter in the `http` set — 18 of 20 at the move, 1 since
+  events were served (`DL-192`) — and fails if that number grows.
 - `check:wire-adoption` requires every write body to go through an explicit `toWire…` mapper whose
   literal keys the operation's `requestBody` declares. The API validates `snake_case` and the domain
   is camelCase and differently shaped, which is why the generic converter this file forbids could
@@ -266,9 +266,9 @@ is not a guarantee. The seam is two files swapped by `angular.json` rather than 
 a production build cannot reach the mock: it never imports it (`DL-136`). The API is the Node
 service (`DL-164`), and `data/http/api.contract.ts` describes what its `/api/v1` actually serves. At
 the move two ports were served — staff identity and notifications — and eighteen were not (`DL-165`);
-the casework phases have served the rest since (`DL-173` to `DL-191`), and **two** remain —
-the newsfeed and events — bound to **unserved** adapters that make no
-request and say, in a sentence, that this part of the console has no server yet. Mock data never
+the casework phases have served the rest since (`DL-173` to `DL-192`), and **one** remains —
+the newsfeed — bound to an **unserved** adapter that makes no
+request and says, in a sentence, that this part of the console has no server yet. Mock data never
 stands in for a missing server.
 
 `data/http` and `core/http` are the **transport seam**: the only two places

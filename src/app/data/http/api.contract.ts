@@ -305,6 +305,17 @@ export const API_ENDPOINTS = {
   officeGovernanceRetention: 'office/governance/retention',
   officeGovernanceCorrections: 'office/governance/corrections',
   /**
+   * Events (`DL-192`). `office/events?view=` one of the six views, a bare list read whole
+   * (`event.view`); a draft is created by `POST` and replaced by `PATCH {id}` while it is one;
+   * `{id}/publish|cancel|complete|archive` with `{ reason }`; `{id}/capacity` counts stamped by the
+   * server; `{id}/metrics` (`event.view-insights`); `{id}/registrants` the composed list and
+   * `{id}/registrants/export` the same as a file; `{id}/history` the office's acts with their
+   * reasons; `{id}/registrations/{registrationId}/cancel|restore|promote|waitlist` with
+   * `{ reason }` and `…/attendance` with `{ attendance }`. Residents register in their own app, on
+   * routes this console never calls (`DL-123`).
+   */
+  officeEvents: 'office/events',
+  /**
    * The beneficiary registry (`DL-187`): a projection over the resident registry, keyed on the
    * resident's id. Cursor-paged and alphabetical, by `q`, `barangay_id`, `role`, `received_from`,
    * `received_to` and `with_open_duplicate_review`; one record by `{residentId}`, with

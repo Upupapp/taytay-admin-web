@@ -1,0 +1,38 @@
+{
+  "data": [
+    {
+      "id": "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c03",
+      "event_id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01",
+      "act": "registration-promoted",
+      "category": "registration-changed",
+      "summary": "Registration ER-2026-000003 moved from waitlisted to registered. The resident was told in the app.",
+      "reason": "A family travelled two hours; a place opened at the door.",
+      "actor_id": "9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c01",
+      "actor_name": "Herminia Bautista",
+      "occurred_at": "2026-11-08T01:30:00.000Z"
+    },
+    {
+      "id": "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c02",
+      "event_id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01",
+      "act": "published",
+      "category": "published",
+      "summary": "Event published to the residents’ app.",
+      "reason": "Approved by the MSWDO head.",
+      "actor_id": "9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c01",
+      "actor_name": "Herminia Bautista",
+      "occurred_at": "2026-11-02T01:00:00.000Z"
+    },
+    {
+      "id": "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c01",
+      "event_id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01",
+      "act": "created",
+      "category": "created",
+      "summary": "Event created as a draft.",
+      "reason": null,
+      "actor_id": "9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c01",
+      "actor_name": "Herminia Bautista",
+      "occurred_at": "2026-11-01T08:00:00.000Z"
+    }
+  ],
+  "meta": {}
+}

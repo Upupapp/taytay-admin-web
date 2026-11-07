@@ -199,8 +199,8 @@ export class MockEventRepository implements EventRepository {
       category: draft.category,
       status: existing?.status ?? 'draft',
       image: draft.image,
-      // A draft may be saved without dates; the composer refuses to publish
-      // one, and the placeholder never reaches a resident.
+      // A draft is saved with its dates (`DL-192`); the fallback only narrows
+      // the type, and the placeholder never reaches a resident.
       startsAt: draft.startsAt ?? existing?.startsAt ?? now,
       endsAt: draft.endsAt ?? existing?.endsAt ?? now,
       venue: draft.venue,

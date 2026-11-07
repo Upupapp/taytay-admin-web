@@ -127,12 +127,31 @@ export interface ResidentCommentView {
 }
 
 /**
+ * Where registration stands for the resident reading an event — a state, never a number.
+ *
+ * As the Node API serves it (`GET events`, `DL-192`): derived on every read from the plan, the clock
+ * and the count, with the office's sentence beside it. A full event that keeps a waitlist is `open`.
+ */
+export type ResidentRegistrationState =
+  | 'not_required'
+  | 'not_open'
+  | 'open'
+  | 'full'
+  | 'closed'
+  | 'registered'
+  | 'waitlisted';
+
+/**
  * An event as a resident sees it.
  *
  * `registrationCount` is deliberately absent: a resident deciding whether to
  * attend does not need to know how many neighbours already have, and in a
  * municipality this size a low count on a sensitive service is disclosive.
- * `capacityRemaining` answers the question they actually have.
+ * So is a places-left number (`DL-192`, superseding the `capacityRemaining`
+ * this type carried): capacity minus a count is the same count, and a remaining
+ * figure read off a stale page sends somebody to a covered court for a place
+ * that went an hour ago. The published total is a fact about the event; where
+ * registration stands is a state the server words.
  */
 export interface ResidentEventView {
   readonly id: string;
@@ -142,9 +161,11 @@ export interface ResidentEventView {
   readonly endsAt: IsoDateTime | null;
   readonly venue: string;
   readonly barangayLabel: string | null;
-  readonly isRegistrationOpen: boolean;
-  /** `null` where the event is uncapped. Never a count of who has signed up. */
-  readonly capacityRemaining: number | null;
+  /** The published total, or `null` where the event is uncapped. Never what is left of it. */
+  readonly capacity: number | null;
+  readonly registrationState: ResidentRegistrationState;
+  /** The office's sentence for that state. */
+  readonly registrationWords: string;
   readonly isRegistered: boolean;
 }
 
