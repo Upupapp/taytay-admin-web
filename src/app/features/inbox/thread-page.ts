@@ -31,6 +31,7 @@ import {
   type OfficeThread,
   type OfficeThreadId,
   type ThreadMessage,
+  WriteIntent,
 } from '@domain/index';
 import { ObjectUrls } from '@shared/media/object-urls';
 import { officeDirectory } from '@shared/offices/office-directory';
@@ -189,6 +190,12 @@ export class ThreadPage {
 
   protected readonly draft = signal('');
   protected readonly attempted = signal(false);
+  /**
+   * The press of Send, held while the same words are sent again (`WriteIntent`): a retry after a
+   * timeout carries the same key, so the server answers with the reply already posted instead of
+   * posting it twice. Changed words are a new send, with a new key.
+   */
+  private sending: { readonly words: string; readonly intent: WriteIntent } | null = null;
   protected readonly draftProblem = computed(() => replyProblem(this.draft()));
   protected readonly draftLength = computed(() => this.draft().trim().length);
 
@@ -207,6 +214,7 @@ export class ThreadPage {
         this.outcome.set('');
         this.draft.set('');
         this.attempted.set(false);
+        this.sending = null;
       });
     });
     this.destroyRef.onDestroy(() => this.discardImages());
@@ -265,9 +273,13 @@ export class ThreadPage {
     if (this.draftProblem() !== null || this.busy()) {
       return;
     }
-    this.act(this.repository.reply(this.id(), this.draft()), this.copy.sent, () => {
+    const words = this.draft();
+    const intent = this.sending?.words === words ? this.sending.intent : new WriteIntent();
+    this.sending = { words, intent };
+    this.act(this.repository.reply(this.id(), words, intent), this.copy.sent, () => {
       this.draft.set('');
       this.attempted.set(false);
+      this.sending = null;
     });
   }
 

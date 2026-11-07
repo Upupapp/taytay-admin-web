@@ -140,3 +140,12 @@ describe('the words for every case act the API audits (DL-183, DL-185)', () => {
     expect(PLATFORM_AUDIT_ACTIONS['office_case.request_unlinked']).toContain('history');
   });
 });
+
+describe('the words for the first-administrator command (DL-188)', () => {
+  it('says the server’s bootstrap command did it, since the row names no account', () => {
+    // taytay-backend src/ops/grant-administrator.ts BOOTSTRAP_GRANT_ACTION.
+    const words = PLATFORM_AUDIT_ACTIONS['user.role_granted_by_bootstrap_command'];
+    expect(words).toContain('administrator');
+    expect(words).toContain('bootstrap command');
+  });
+});

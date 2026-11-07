@@ -55,6 +55,7 @@
       "get": {
         "operationId": "listBarangays",
         "summary": "List barangays",
+        "description": "Taytay, Rizal's five barangays, inserted as reference data by migration 0039 in every database (PSA PSGC 0405813001–0405813005): Dolores, Muzon, San Isidro, San Juan, Santa Ana, ordered by name. No route adds or changes one.",
         "security": [],
         "responses": {
           "200": {
@@ -1649,7 +1650,7 @@
       "post": {
         "operationId": "startThread",
         "summary": "Start or continue a thread with an office",
-        "description": "Verified residents only. subject is stored when the thread is created. An open thread for the same resident and office is reused and keeps its original subject. A closed thread starts a new one.",
+        "description": "Verified residents only. subject is stored when the thread is created. An open thread for the same resident and office is reused and keeps its original subject. A closed thread starts a new one. An optional idempotency_key (a UUID, in the body; a multipart field with a file) makes a retry safe: the same key with the same office, subject, words and image answers with the message the first send made and the thread as it stands, with the status the first send had (201 when that message opened the thread, 200 otherwise), before anything else is read or stored and without telling the office again. Keys are kept per sender in message_intents (0040), append-only. A send with no key behaves as before.",
         "security": [{ "firebaseIdToken": [] }],
         "requestBody": {
           "required": true,
@@ -1659,8 +1660,9 @@
           }
         },
         "responses": {
-          "201": { "description": "New thread.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ThreadMessageEnvelope" } } } },
-          "200": { "description": "Message added to the open thread.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ThreadMessageEnvelope" } } } }
+          "201": { "description": "New thread, or a retry of the send that opened it.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ThreadMessageEnvelope" } } } },
+          "200": { "description": "Message added to the open thread, or a retry of that send.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ThreadMessageEnvelope" } } } },
+          "409": { "description": "The thread was opened by a concurrent send (send again), or an idempotency_key first used for another act or other words.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
         }
       }
     },
@@ -1695,6 +1697,7 @@
       "post": {
         "operationId": "replyToThread",
         "summary": "Reply in a thread",
+        "description": "The resident on their own thread, or an account that answers the office's inbox. An optional idempotency_key (a UUID, in the body; a multipart field with a file): the same key with the same thread, words and image answers 201 with the message the first send made and the thread as it stands — even after the thread was closed — before anything else is stored, and without telling anybody again. A send with no key behaves as before.",
         "security": [{ "firebaseIdToken": [] }],
         "parameters": [
           { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
@@ -1707,8 +1710,8 @@
           }
         },
         "responses": {
-          "201": { "description": "Reply stored.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ThreadMessageEnvelope" } } } },
-          "409": { "description": "Thread is closed.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+          "201": { "description": "Reply stored, or a retry of that send.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ThreadMessageEnvelope" } } } },
+          "409": { "description": "Thread is closed, or an idempotency_key first used for another act or other words.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
         }
       }
     },
@@ -4274,7 +4277,7 @@
       "get": {
         "operationId": "getOfficeIntakeAdvisory",
         "summary": "The duplicate check before a request exists",
-        "description": "Needs request.create. For the person (in scope) and, when chosen, the programme. Decides nothing (DL-60). Refused to a caseload (assigned-cases): it reads beyond the requests assigned to it.",
+        "description": "Needs request.create. For the person (in scope) and, when chosen, the programme: their filed requests and — under the keys that read them — their releases handed over and their cases. Decides nothing (DL-60). Refused to a caseload (assigned-cases): it reads beyond the requests assigned to it.",
         "security": [
           {
             "firebaseIdToken": []
@@ -4712,7 +4715,7 @@
       "get": {
         "operationId": "getOfficeRequestAdvisory",
         "summary": "The duplicate check for a filed request",
-        "description": "Needs request.create. Reads the person’s other filed requests. Decides nothing (DL-60). A social worker (assigned-cases) reads it for a request assigned to them — their own client’s previous assistance — and any other request answers as not found (DL-183). The check before filing stays refused to them.",
+        "description": "Needs request.create. Reads the person’s other filed requests, and — under the keys that read them — their releases handed over and their cases. Decides nothing (DL-60). A social worker (assigned-cases) reads it for a request assigned to them — their own client’s previous assistance — and any other request answers as not found (DL-183). The check before filing stays refused to them.",
         "security": [
           {
             "firebaseIdToken": []
@@ -14408,7 +14411,8 @@
           "office_id": { "type": "string", "format": "uuid" },
           "subject": { "type": "string" },
           "body": { "type": "string" },
-          "media_id": { "type": "string", "format": "uuid" }
+          "media_id": { "type": "string", "format": "uuid" },
+          "idempotency_key": { "type": "string", "format": "uuid", "description": "Optional. Minted where the person presses send and held across retries of that send. A retry under the same key, from the same sender, with the same words and image answers with the message the first send made; the same key with another act or other words is 409." }
         }
       },
       "ThreadStartFile": {
@@ -14419,7 +14423,8 @@
           "subject": { "type": "string" },
           "body": { "type": "string" },
           "file": { "type": "string", "format": "binary" },
-          "media_id": { "type": "string", "format": "uuid" }
+          "media_id": { "type": "string", "format": "uuid" },
+          "idempotency_key": { "type": "string", "format": "uuid", "description": "Optional. Minted where the person presses send and held across retries of that send. A retry under the same key, from the same sender, with the same words and image answers with the message the first send made; the same key with another act or other words is 409." }
         }
       },
       "ThreadReply": {
@@ -14427,7 +14432,8 @@
         "required": ["body"],
         "properties": {
           "body": { "type": "string" },
-          "media_id": { "type": "string", "format": "uuid" }
+          "media_id": { "type": "string", "format": "uuid" },
+          "idempotency_key": { "type": "string", "format": "uuid", "description": "Optional. Minted where the person presses send and held across retries of that send. A retry under the same key, from the same sender, with the same words and image answers with the message the first send made; the same key with another act or other words is 409." }
         }
       },
       "ThreadReplyFile": {
@@ -14435,7 +14441,8 @@
         "required": ["body"],
         "properties": {
           "body": { "type": "string" },
-          "file": { "type": "string", "format": "binary" }
+          "file": { "type": "string", "format": "binary" },
+          "idempotency_key": { "type": "string", "format": "uuid", "description": "Optional. Minted where the person presses send and held across retries of that send. A retry under the same key, from the same sender, with the same words and image answers with the message the first send made; the same key with another act or other words is 409." }
         }
       },
       "ServiceContact": {
@@ -17022,7 +17029,7 @@
       "OfficeRequestAdvisory": {
         "type": "object",
         "additionalProperties": false,
-        "description": "The duplicate and previous-assistance check (DL-60). Decides nothing: no score, no total, no eligible, no recommendation. Reads filed requests only — a draft is not a request.",
+        "description": "The duplicate and previous-assistance check (DL-60). Decides nothing: no score, no total, no eligible, no recommendation. Reads filed requests only — a draft is not a request. With beneficiary.view it also reads the releases handed over to the person (released, claimed or completed; through the assistance history, across same-person findings) and states those within the twelve-month review window as assistance-within-lookback; with case.view it reads the cases about the person that the case list would show the reader, and states the open ones as open-case. Both are notes: neither asks for a sentence at filing. A line names a reference and a date, never an amount, a reason or a name. household-assisted-recently is not raised: payouts to other people at the address are not read.",
         "required": [
           "signals",
           "computed_at",
@@ -17087,7 +17094,7 @@
           },
           "not_read": {
             "type": "array",
-            "description": "Sources the check could not read, and why — so silence is not read as a finding.",
+            "description": "Sources the check could not read, and why — so silence is not read as a finding. At most one entry per source: releases when the reader lacks beneficiary.view, or otherwise for the payouts to other people at the address, which the check does not read; cases when the reader lacks case.view, or when a caseload read only the cases assigned to it.",
             "items": {
               "type": "object",
               "additionalProperties": false,

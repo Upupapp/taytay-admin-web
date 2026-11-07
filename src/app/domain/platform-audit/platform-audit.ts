@@ -164,6 +164,9 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'user.office_assigned': 'Changed a staff account’s office',
   'user.office_role_changed': 'Changed a staff account’s office role',
   'user.role_changed': 'Changed an account’s role',
+  // No account acts here, so the row has no actor: the command run on the server did it (DL-188).
+  'user.role_granted_by_bootstrap_command':
+    'Made an account an administrator, by the bootstrap command run on the server',
   'verification.approved': 'Approved a resident’s ID verification',
   'verification.rejected': 'Rejected a resident’s ID verification',
 };

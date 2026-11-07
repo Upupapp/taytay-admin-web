@@ -8070,3 +8070,107 @@ to **6**. Two audit codes are labelled (`office_duplicate_pair.detection_run`,
 **Still open:** the intake advisory on the server still says payouts and cases are not read
 (`office-requests/advisory.ts`, `NOT_READ`); it could now read releases and cases, which is the next
 natural step for `DL-60` and was not in this phase.
+
+## DL-188 — production readiness: barangays are reference data, the first administrator comes from a committed command, the advisory reads payouts and cases, and a retried message posts once
+
+`taytay-backend` `a7a1884` (migrations `0039_taytay_barangays` and `0040_message_intents`).
+The spec vendored here is that commit's (239 operations; the operation count is unchanged
+because no route was added, only bodies and descriptions). No port changed served/unserved state.
+It closes the item `DL-187` left open: the server's advisory reads payouts and cases.
+
+### Barangays exist in every database
+
+Until `0039` the five barangays came only from `npm run seed`, which refuses production, and no route
+adds one: a production database would have had none, so no resident could name where they live and
+no barangay link could be scoped. The migration inserts them as **reference data**, with the seed's
+exact codes and names, and skips any row whose code or name is already held (`ON CONFLICT DO
+NOTHING`), so staging's seeded rows are untouched.
+
+The names were checked against the PSA's PSGC page for the Municipality of Taytay (10-digit code
+`0405813000`), `https://psa.gov.ph/classification/psgc/barangays/0405813000`, read on 2026-11-07:
+"There are 5 barangays as of 31 July 2025" — Dolores `0405813001`, Muzon `0405813002`, San Isidro
+`0405813003`, San Juan `0405813004`, Santa Ana `0405813005`. **The seed and the PSGC agree** letter
+for letter; none of the 2026 PSGC update releases names a Taytay barangay. `code` is the API's slug
+(`dolores`, …, `santa-ana`), not the PSGC code; the table has no PSGC column and none was added. The
+console reads the list as before (`GET /barangays`) and needed no change.
+
+### The first administrator: `npm run admin:grant -- --email …` (GL-13)
+
+A committed command (`src/ops/`), run inside `taytay-api` so the Firebase key never leaves the
+server. It finds the Firebase account by e-mail and refuses one that does not exist, is disabled, or
+whose API account was closed; it creates the row a first sign-in would create, as `admin`, or raises
+an existing row the way the role route does (office role cleared and recorded, current card
+revoked); and it writes one audit row, `user.role_granted_by_bootstrap_command`, **with no actor**,
+because no account did it. This console words that code — "Made an account an administrator, by the
+bootstrap command run on the server" — and shows the actor as "No account recorded", as it does for
+any row without one (`DL-171`). Running it twice changes nothing and writes nothing. **Not
+rehearsed**: the staging README keeps "never run unrehearsed in production".
+
+There is **no `admin:revoke`**: demotion stays in "Users and roles", audited under the administrator
+who did it and refused on one's own account. A server command would be a second way to take a role
+away that names nobody. The break-glass case — the only administrator is unavailable or compromised —
+is Firebase "Disable account" (the API checks revocation on every token), `admin:grant` for a new
+administrator, and a demotion in the console.
+
+### The intake advisory reads payouts and cases (`DL-60`, `DL-177`)
+
+`DL-177` recorded that the server's previous-assistance check could not read payouts or cases, and
+named both in `not_read`. Since casework phase 6b it can, and now does, **under the keys that already
+read them**: releases handed over to the applicant (through the one history assembly, `DL-71`, across
+same-person findings, `DL-74`) with `beneficiary.view`; cases about the applicant that the case list
+would show the reader with `case.view`. Two of the console's existing codes are now raised by the
+server — `assistance-within-lookback` (twelve-month window) and `open-case` — both `note`s, so filing
+asks no sentence for them and nothing is refused (`DL-60`). A line names a reference and a date or a
+case reference; **no amount and no total**, unlike the mock's sentence, which still totals payouts —
+the server's finding is the record's count, and the amount is the history's to show to a reader of
+it.
+
+`not_read` keeps at most one entry per source, so the panel's list (tracked by source) never repeats
+one: `releases` for a role without `beneficiary.view` (the barangay link), or otherwise for payouts to
+**other people at the address**, which the check does not read — so `household-assisted-recently`
+is never raised yet, and the panel says why; `cases` for a role without `case.view`, or for a
+caseload, which looked only among the cases assigned to it. The console's mapper, domain and panel
+render all of this unchanged: the codes and sources were already in its vocabulary, and the
+sentences are the server's.
+
+### A retried office message posts once
+
+The residents' app retries a send after a timeout, and nothing told a retry from a new message: the
+office read the same plea twice. `POST threads` and `POST threads/{id}/messages` now take an optional
+`idempotency_key` in the body (a multipart field with a file), exactly as document requests do
+(`0036`, the CORS policy is not widened for a header): the same key, sender, act, words and image
+replays the first send's message — before anything is read or stored, without notifying anybody
+again, even after the thread closed — and the same key with other words or another act is `409`.
+
+This console's staff reply now carries one. `OfficeInboxRepository.reply` takes a `WriteIntent`
+(`domain/shared/write-intent.ts`), minted by the thread page when Send is pressed and **held while
+the same words are sent again**; new words are a new send with a new key, and the key is dropped on
+success and when another conversation opens. The mock replays by key as the API does.
+
+**The residents' app is not changed** by this round. To use it, it would: add a required
+`idempotencyKey` to `send()` and `reply()` in
+`lib/features/messaging/data/office_messaging_gap_repository.dart` and put
+`'idempotency_key': idempotencyKey` in the body map (it travels as a multipart field when a file is
+attached, as on document requests); mint the key with `generateIdempotencyKey()` where the resident
+presses Send and hold it across every retry of that same message, minting a new one for new words or
+a new image; accept the replay's status (`201`, or `200` for a message added to an already-open
+thread — as now); and treat a `409` naming the key as a fault in the app, not something to retry.
+
+### A requirement may not be coded `idempotency_key`
+
+The document catalogue editor's `RESERVED_REQUIREMENT_CODES` lacked `idempotency_key`, which the API
+reserves (`RESERVED_FIELD_NAMES`) and refuses: the editor now says so in words before the save, as it
+does for `type_id`, `purpose` and `note`.
+
+### Decisions taken (the owner may overturn any; each is the easiest to reverse)
+
+1. **The barangay rows keep the seed's slugs as `code`, and no PSGC column is added.** The PSGC code
+   is cited in the migration beside each row. Adding a `psgc_code` column later is additive.
+2. **The bootstrap audit row has no actor and its own code** rather than `user.role_changed` with an
+   invented actor. *For the owner:* should the audit table gain a `source` column instead?
+3. **No `admin:revoke`** (above). Adding one later is a small command beside `admin:grant`.
+4. **The advisory states no amounts** for payouts, and reads only the applicant's own. *For the
+   owner:* should the household's payouts be read (the console's `household-assisted-recently`
+   caution), and under which key, given that it tells an encoder about other people's assistance?
+5. **Message keys are per sender**, as document-request keys are per resident; a key is never
+   shared between a resident and the office.

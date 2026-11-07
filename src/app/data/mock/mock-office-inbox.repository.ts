@@ -17,6 +17,7 @@ import {
   type OfficeThreadId,
   type ThreadMessage,
   type ThreadMessageId,
+  type WriteIntent,
 } from '@domain/index';
 
 import { denyUnless } from './mock-access';
@@ -60,6 +61,8 @@ export class MockOfficeInboxRepository implements OfficeInboxRepository {
 
   private threads: readonly OfficeThread[] = MOCK_OFFICE_THREADS;
   private messageList: readonly ThreadMessage[] = MOCK_THREAD_MESSAGES;
+  /** Each reply by the key it was sent under, so a retry is answered as the API answers it. */
+  private readonly sentUnder = new Map<string, ThreadMessage>();
 
   list(page: CursorRequest): Observable<InboxListing> {
     const denied = denyUnless<InboxListing>(this.access.currentUser(), KEY);
@@ -102,11 +105,21 @@ export class MockOfficeInboxRepository implements OfficeInboxRepository {
     return this.latency.respond(pageOf(newestFirst, page));
   }
 
-  reply(id: OfficeThreadId, body: string): Observable<ThreadMessage> {
+  reply(id: OfficeThreadId, body: string, intent: WriteIntent): Observable<ThreadMessage> {
     const user = this.access.currentUser();
     const denied = denyUnless<ThreadMessage>(user, KEY);
     if (denied) {
       return denied;
+    }
+    // As the API does (0040): the same key with the same words is the same send, answered with the
+    // message it made — even after the conversation closed; with other words it is refused.
+    const earlier = this.sentUnder.get(intent.key);
+    if (earlier !== undefined) {
+      return earlier.threadId === id && earlier.body === body.trim()
+        ? this.latency.respond(earlier)
+        : throwError(
+            () => new Error('That idempotency key was already used for a different message.'),
+          );
     }
     if (user === null || replyProblem(body) !== null) {
       return throwError(() => new Error('A reply needs words, up to 4,000 characters.'));
@@ -129,6 +142,7 @@ export class MockOfficeInboxRepository implements OfficeInboxRepository {
       sentAt: now,
     };
     this.messageList = [...this.messageList, message];
+    this.sentUnder.set(intent.key, message);
     this.replace({ ...thread, lastMessageAt: now, updatedAt: now });
 
     return this.latency.respond(message);

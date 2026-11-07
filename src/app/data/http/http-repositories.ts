@@ -799,10 +799,14 @@ export class HttpOfficeInboxRepository implements OfficeInboxRepository {
       .pipe(map((answer) => ({ ...answer, items: answer.items.map(readMessage) })));
   }
 
-  /** The words as typed; the server trims them and refuses a closed conversation with `409`. */
-  reply(id: OfficeThreadId, body: string): Observable<ThreadMessage> {
+  /**
+   * The words as typed; the server trims them and refuses a closed conversation with `409`. The key
+   * is the screen's, in the body (the CORS policy is not widened for a header): a retry under it is
+   * answered with the message already sent, never a second one.
+   */
+  reply(id: OfficeThreadId, body: string, intent: WriteIntent): Observable<ThreadMessage> {
     return this.api
-      .post(`${API_ENDPOINTS.threads}/${id}/messages`, { body })
+      .post(`${API_ENDPOINTS.threads}/${id}/messages`, { body, idempotency_key: intent.key })
       .pipe(map(readPosted));
   }
 

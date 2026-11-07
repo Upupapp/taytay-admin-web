@@ -44,6 +44,7 @@ import {
   type OfficeThreadId,
   type QuickLinkId,
   type VerificationRequestId,
+  WriteIntent,
 } from '@domain/index';
 
 import ME_ADMIN from './fixtures/me-admin.json';
@@ -716,15 +717,18 @@ describe('the Node adapters', () => {
       expect(page.items.map((message) => message.attachments.length)).toEqual([1, 0]);
     });
 
-    it('sends a reply as the body the API reads, and nothing else', async () => {
+    it('sends a reply as the body the API reads, with the screen’s key, and nothing else', async () => {
       const words = 'Please bring the death certificate and a valid ID.';
-      const sent = firstValueFrom(inbox.reply(threadId, words));
+      const intent = new WriteIntent();
+      const sent = firstValueFrom(inbox.reply(threadId, words, intent));
 
       const request = http.expectOne({
         method: 'POST',
         url: `${BASE}/threads/${threadId}/messages`,
       });
-      expect(request.request.body).toEqual({ body: words });
+      // In the body, never a header: the CORS policy allows four request headers (DL-188).
+      expect(request.request.body).toEqual({ body: words, idempotency_key: intent.key });
+      expect(request.request.headers.has('Idempotency-Key')).toBe(false);
       request.flush(THREAD_REPLY, { status: 201, statusText: 'Created' });
 
       expect((await sent).body).toBe(words);

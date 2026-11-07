@@ -2,9 +2,9 @@
   "$comment": "Provenance for openapi.json. Written by tools/vendor-openapi.mjs — do not edit by hand. check:contract-drift recomputes the sha256 and the operation count on every build.",
   "artefact": "openapi/openapi.json",
   "repository": "Upupapp/taytay-backend",
-  "commit": "fbb86feb943424d000f781def12e2a52ef62bcd3",
-  "commitShort": "fbb86fe",
-  "sha256": "2ebae3c6b4b691ad682f5a50b27b964eb148c9bfca0e902b78e9f4f58db8da0b",
+  "commit": "a7a1884bcf95ce533793f99ca111d87c71140c0d",
+  "commitShort": "a7a1884",
+  "sha256": "28c538ab1ab69a5185ded629bde48cfbdb8b9ac5d627cba4f4ec721072446460",
   "operationCount": 239,
   "openapi": "3.1.0",
   "vendoredOn": "2026-11-07"

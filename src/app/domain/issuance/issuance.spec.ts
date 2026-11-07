@@ -31,6 +31,7 @@ import {
   issuanceTypeChanges,
   issuanceTypeProblems,
   readFeeEntry,
+  RESERVED_REQUIREMENT_CODES,
   suggestRequirementCode,
   type IssuanceTypeFields,
 } from './issuance-type';
@@ -240,6 +241,18 @@ describe('the catalogue (DL-184)', () => {
     expect(problems.join(' ')).toMatch(/“purpose” is used by the app/);
     expect(problems.join(' ')).toMatch(/Requirement 3: the label/);
     expect(problems.join(' ')).toMatch(/“cedula” is used twice/);
+  });
+
+  it('refuses every field name the API reserves, the retry key included', () => {
+    // The API's RESERVED_FIELD_NAMES (taytay-backend src/modules/issuance/schemas.ts), in its order.
+    expect(RESERVED_REQUIREMENT_CODES).toEqual(['type_id', 'purpose', 'note', 'idempotency_key']);
+    const problems = issuanceTypeProblems({
+      ...fields,
+      requirements: [{ code: 'idempotency_key', label: 'Retry key', required: true, hint: null }],
+    });
+    expect(problems).toEqual([
+      'Requirement 1: the code “idempotency_key” is used by the app for something else.',
+    ]);
   });
 
   it('sends only the fields that moved, and nothing when none did', () => {

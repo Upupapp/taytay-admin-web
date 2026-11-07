@@ -58,10 +58,6 @@ From `docs/uat/README.md` ("Not in this UAT round") and the requirements documen
 - **API fixes before production** (GL-11): `trust proxy` behind the proxy (otherwise every client
   shares one rate limit), exposing `Retry-After`, and answering an unexpected upload field with a
   4xx rather than a 500. None of these is in the backend yet.
-- **No way to create barangays in production.** No migration inserts the five barangays,
-  `npm run seed` refuses `NODE_ENV=production`, and the API has no route that adds a barangay.
-  Offices can be added in the console (`POST /api/v1/admin/offices`); barangays cannot. This must
-  be solved before go-live.
 
 ## 4. Decisions waiting on the owner or the LGU
 
@@ -175,9 +171,16 @@ repository. What remains is for the developer or the owner:
   its reason: sign-in fixtures in three `*.spec.ts` files that no account uses, and the staging
   Firebase browser key, which is public configuration (`DL-169`). The key still needs its
   HTTP-referrer restriction (GL-6, above).
-- **No committed command creates the first administrator** (GL-13). Staging's was made with a
-  one-off script that is not in any repository; the staging README now gives the steps and an
-  unrehearsed command, and there is no procedure at all for production
+- **The first-administrator command is committed but not rehearsed** (GL-13, `DL-188`):
+  `npm run admin:grant -- --email …`, run inside `taytay-api`. It must be tried once on staging,
+  and the rehearsal signed off by the owner, before it is run in production
   ([operations-runbook.md](operations-runbook.md), section 8).
+- **The intake advisory does not read payouts to other people at the applicant's address**
+  (`DL-188`). It reads the applicant's own payouts and open cases, and says in the panel that the
+  household's were not read, so "Someone else at this address received assistance" is never
+  raised yet.
+- **The residents' app does not send `idempotency_key` with an office message** (`DL-188`). The API
+  accepts it and the console sends it with every reply; until the app sends one, a resident's retry
+  after a timeout can still post a message twice.
 - **Rollback, restore and key rotation are written down but not rehearsed or timed** on staging
   (launch gate line 18).

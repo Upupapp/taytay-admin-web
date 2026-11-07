@@ -90,6 +90,9 @@ Sources: `taytay-backend/deploy/staging-shared-linode/Dockerfile` and README;
   staging, on 2026-11-05: `docker compose exec taytay-api npm run seed`. It refuses production.
   Running it again on staging adds sample document types, each named "(sample)", which are not an
   office's catalogue.
+- The five barangays do not need the seed any more: migration `0039_taytay_barangays` inserts them
+  as reference data in every database, production included (PSA PSGC 0405813001–0405813005), and
+  leaves staging's seeded rows as they are (`DL-188`).
 
 ## 4. Redeploy the staff console
 
@@ -224,31 +227,54 @@ mounted read-only into the `taytay-api` container at `/run/secrets/firebase-admi
 In production, the key may instead be given as `FIREBASE_CLIENT_EMAIL` and `FIREBASE_PRIVATE_KEY`
 in the environment file (`docs/deploy-linode.md`); the same steps apply to those values.
 
+### The database password and the digital-ID signing key
+
+Source: staging README, "Rotate the database password" and "Rotate the digital-ID signing key", which
+hold the commands. **Neither is rehearsed yet.** Both keep the value in one shell on the server and
+never print it.
+
+- **Database password.** The live password is the `taytay` role's, inside the database: the
+  `POSTGRES_PASSWORD` in `/opt/taytay/.env` is read by the `postgres` image only when its volume is
+  first created. So the role is changed with `ALTER ROLE`, then `.env` and the `DATABASE_URL` in
+  `.env.api` are rewritten, and `taytay-api` is recreated (a plain `restart` keeps the old
+  environment). Backups and every `psql` command use the container's local socket and are not
+  affected.
+- **Digital-ID signing key** (`DIGITAL_ID_SIGNING_KEY` in `.env.api`). Rotating it **does not
+  invalidate issued cards**: a card is a database row, and its QR code is signed afresh each time the
+  app opens the card and lasts two minutes. Only a code already on a screen at the restart is
+  refused as "not valid"; the resident reopens the card. Without the variable (staging runs in
+  development mode), the API makes a new random key at every start, so every restart already
+  rotates it; production refuses to start without one.
+
 ## 8. Create the first administrator
 
 Source: staging README, "Create the first administrator". It is go-live item GL-13 and requirement
-FR-API-7.
+FR-API-7, closed by a committed command (`DL-188`): **`npm run admin:grant -- --email …`**, in
+`taytay-backend` `src/ops/`. **Not yet rehearsed: try it once on staging before relying on it, and
+never run it unrehearsed in production.**
 
-**How it works.** The API creates a user row the first time an account calls it, taking the role
-from the Firebase token's `role` custom claim (`registered`, `verified`, `staff` or `admin`). From
-then on the database role wins and the claim is ignored. So the claim must be set **before the
-account's first sign-in**. There is no provisioning endpoint and no committed command; on
-2026-11-05 staging's administrator (the owner's account) was made with a one-off Firebase Admin SDK
-script on the developer's machine that is not in any repository.
+**How it works.** It runs inside `taytay-api`, where the Firebase key already is, so the key never
+leaves the server. It finds the Firebase account by its e-mail and refuses when there is none, when
+it is disabled, or when its API account was closed. Otherwise it creates the user row the account's
+first sign-in would create, as `admin`, or raises an existing row to `admin` the way the role
+route does (an office role is cleared and recorded; a current digital ID is revoked). It writes one
+audit row, which the console's audit trail shows as "Made an account an administrator, by the
+bootstrap command run on the server", with no account as actor. It prints one line and never a
+token or key. Running it twice changes nothing the second time. Order no longer matters: the person
+may have signed in before or not.
 
-**On staging**, the staging README gives these steps, with the Admin SDK call run inside
-`taytay-api` so the key never leaves the server. **That command has not been run in that form;
-try it once before relying on it.**
+1. The person has a Firebase account: they sign up, or Firebase console → Authentication → Users →
+   **Add user**, with their work e-mail and a throwaway password.
+2. `ssh ebpco-linode 'cd /opt/taytay && docker compose exec -T taytay-api npm run --silent admin:grant -- --email person@example.gov.ph'`
+   prints `granted administrator to person@example.gov.ph`, or `refused: …` and why.
+3. If step 1 used **Add user**: Firebase console → the user's menu → **Reset password**, so the
+   person sets their own password.
+4. The person signs in to the console, which shows **Users and roles**.
 
-1. Firebase console → Authentication → Users → **Add user**, with the person's work e-mail and a
-   throwaway password. Nobody signs in with it yet.
-2. Set the `admin` claim with the command in the staging README.
-3. Firebase console → the user's menu → **Reset password**, so the person sets their own password.
-4. The person signs in to the console; the API creates their row as `admin`, and the console shows
-   **Users and roles**.
-5. If the account had already called the API before step 2, the claim changes nothing; the README
-   gives the database edit for that case, which bypasses the app's audit trail and must be
-   recorded by hand.
+There is **no `admin:revoke`**, on purpose: an administrator is demoted in the console by another
+administrator, audited under that person's name. If the only administrator is unavailable or
+compromised: disable the account in the Firebase console (it stops working on its next call), grant
+a new administrator with `admin:grant`, and demote the old account in the console.
 
 Once one administrator exists, every other role is given in the console under **Users and roles**
 (`/users`), which calls `PATCH /api/v1/admin/users/{id}/role`: admin only, never on one's own
@@ -257,9 +283,9 @@ so on) is given there too, with the account's office. There is **no invite or pa
 form** in the console, by design: accounts are provisioned by an administrator outside the console
 (`DL-32`).
 
-**Production has no procedure.** No production Firebase project or host exists, and the production
-recipe (`docs/deploy-linode.md`) runs the API without Docker. A reviewed, committed command, tried
-once on an empty database, is work for the developer before go-live (GL-13).
+**Production** has no Firebase project or host yet, and its recipe (`docs/deploy-linode.md`) runs
+the API without Docker; the same command runs there where the API runs, once the staging rehearsal
+is signed off.
 
 ## 9. Read the logs
 
@@ -322,13 +348,15 @@ at once. The breach procedure is go-live item GL-16 and is not written yet.
 
 Closed on 7 November 2026 (backend `9f42f49`): the console copy command, the staging rollback, the
 backup script and cron file in the repository, the restore-test commands, the log commands, the
-Firebase key rotation and the staging first-administrator steps. Still open:
+Firebase key rotation and the staging first-administrator steps. Closed by `DL-188` (backend
+production-readiness round): a committed first-administrator command (GL-13), and the rotation of the
+database password and the digital-ID signing key. Still open:
 
 | Gap                                                                           | Where it belongs                          |
 | ----------------------------------------------------------------------------- | ----------------------------------------- |
 | Rollback, restore and key rotation not rehearsed or timed                     | Staging, then launch gate line 18         |
-| No committed first-administrator command; none for production (GL-13)         | `taytay-backend`; `docs/deploy-linode.md` |
-| No rotation procedure for the database password or the digital-ID signing key | Staging README; `docs/deploy-linode.md`   |
+| `npm run admin:grant` not rehearsed on staging (GL-13)                        | Staging, signed off by the owner          |
+| Database-password rotation for the managed production database not detailed  | `docs/deploy-linode.md`, when it exists   |
 | Backups only on the same server                                               | GL-5                                      |
 | No production runbook for the chosen host (GL-14), including its rollback     | When production exists                    |
 | No breach procedure (GL-16), no alerting to a named person (GL-12)            | LGU, with the developer                   |

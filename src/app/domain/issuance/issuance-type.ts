@@ -69,8 +69,17 @@ export const ISSUANCE_TYPE_LIMITS = {
 /** Lowercase letters and digits, joined by single `-` or `_` — as the API validates a code. */
 export const REQUIREMENT_CODE_PATTERN = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
 
-/** Field names the residents' app sends beside the files, so no requirement may take one. */
-export const RESERVED_REQUIREMENT_CODES: readonly string[] = ['type_id', 'purpose', 'note'];
+/**
+ * Field names the residents' app sends beside the files, so no requirement may take one — the API's
+ * `RESERVED_FIELD_NAMES` (`src/modules/issuance/schemas.ts`), which refuses each of them. A
+ * requirement coded `idempotency_key` would have its file read as the retry key and lost.
+ */
+export const RESERVED_REQUIREMENT_CODES: readonly string[] = [
+  'type_id',
+  'purpose',
+  'note',
+  'idempotency_key',
+];
 
 /**
  * A code suggested from a label — `Barangay clearance` → `barangay-clearance` — offered while the

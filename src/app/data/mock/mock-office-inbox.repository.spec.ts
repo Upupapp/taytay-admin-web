@@ -15,6 +15,7 @@ import {
   type Permission,
   type StaffRole,
   type StaffUserId,
+  WriteIntent,
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
 
@@ -101,12 +102,28 @@ describe('MockOfficeInboxRepository (DL-168)', () => {
     const repository = signedInAs('social-worker');
     const thread = await firstOpen(repository);
 
-    const sent = await firstValueFrom(repository.reply(thread.id, '  We can help. Come on Monday. '));
+    const intent = new WriteIntent();
+    const sent = await firstValueFrom(
+      repository.reply(thread.id, '  We can help. Come on Monday. ', intent),
+    );
     expect(sent.body).toBe('We can help. Come on Monday.');
     expect(String(sent.senderId)).toBe('staff-x');
 
+    // A retry under the same key is the same send: answered with the message, never a second one.
+    const again = await firstValueFrom(
+      repository.reply(thread.id, 'We can help. Come on Monday.', intent),
+    );
+    expect(again.id).toBe(sent.id);
+    const listed = await firstValueFrom(repository.messages(thread.id, { limit: 50 }));
+    expect(listed.items.filter((message) => message.body === sent.body)).toHaveLength(1);
+    await expect(
+      firstValueFrom(repository.reply(thread.id, 'Other words entirely.', intent)),
+    ).rejects.toThrow(/different message/);
+
     await firstValueFrom(repository.close(thread.id));
-    await expect(firstValueFrom(repository.reply(thread.id, 'Again'))).rejects.toThrow(/closed/);
+    await expect(
+      firstValueFrom(repository.reply(thread.id, 'Again', new WriteIntent())),
+    ).rejects.toThrow(/closed/);
     await expect(firstValueFrom(repository.close(thread.id))).rejects.toThrow(/already closed/);
   });
 
@@ -114,7 +131,9 @@ describe('MockOfficeInboxRepository (DL-168)', () => {
     const repository = signedInAs('social-worker');
     const thread = await firstOpen(repository);
 
-    await expect(firstValueFrom(repository.reply(thread.id, '   '))).rejects.toThrow(/words/);
+    await expect(
+      firstValueFrom(repository.reply(thread.id, '   ', new WriteIntent())),
+    ).rejects.toThrow(/words/);
   });
 
   it('marks read for the office as one count', async () => {

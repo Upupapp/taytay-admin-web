@@ -1625,8 +1625,14 @@ export interface OfficeInboxRepository {
   /** One cursor page of its messages, newest first as the server orders them. */
   messages(id: OfficeThreadId, page: CursorRequest): Observable<CursorPage<ThreadMessage>>;
 
-  /** Sends the office's reply. Refused by the server once the conversation is closed. */
-  reply(id: OfficeThreadId, body: string): Observable<ThreadMessage>;
+  /**
+   * Sends the office's reply. Refused by the server once the conversation is closed.
+   *
+   * The `intent` is the press of Send (`WriteIntent`), held by the screen across retries of the same
+   * words: the API answers a retry under the same key with the message the first send made, rather
+   * than posting the reply twice to a resident (backend `0040_message_intents`).
+   */
+  reply(id: OfficeThreadId, body: string, intent: WriteIntent): Observable<ThreadMessage>;
 
   /** Marks it read for **the whole office** — one mark, shared (`THREAD_READ_EFFECT`). */
   markRead(id: OfficeThreadId): Observable<OfficeThread>;

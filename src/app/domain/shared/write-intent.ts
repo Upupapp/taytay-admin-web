@@ -18,13 +18,13 @@
  *
  * `TAB 08` requires it on every money write.
  *
- * ## What carries it today: nothing
+ * ## What carries it today
  *
- * The replay behaviour above was the retired Laravel API's. The Node API that replaced it
- * implements no idempotency key and its CORS policy would refuse the header, so the transport sends
- * none and no money write is served over HTTP (`DL-165`, enforced by `check:money`). Screens still
- * hold an intent across retries: it is what they owe whichever server takes those writes next, and
- * a screen that minted a key per press would be wrong again the day one does.
+ * The replay behaviour above was first the retired Laravel API's, in a header. The Node API's CORS
+ * policy allows four request headers and is not widened for a fifth, so the key travels **in the
+ * body** as `idempotency_key`: on every money write since `DL-180` (enforced by `check:money`), and
+ * on the office's reply to a resident since `DL-188`, where a retry after a timeout would otherwise
+ * post the same reply twice into somebody's conversation with the office.
  */
 export class WriteIntent {
   readonly key: string;

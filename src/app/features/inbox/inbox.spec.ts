@@ -24,6 +24,7 @@ import {
   type OfficeThreadId,
   type ThreadMessage,
   type ThreadMessageId,
+  type WriteIntent,
 } from '@domain/index';
 
 import { InboxPage } from './inbox-page';
@@ -66,6 +67,8 @@ class RecordingInbox implements OfficeInboxRepository {
   readonly listed: CursorRequest[] = [];
   readonly opened: MediaId[] = [];
   readonly replies: string[] = [];
+  /** The key each send carried, refused or not. */
+  readonly keys: string[] = [];
   readonly acts: string[] = [];
   answer: 'threads' | 'no-office' | 'empty' = 'threads';
   current: OfficeThread = thread(1);
@@ -104,7 +107,8 @@ class RecordingInbox implements OfficeInboxRepository {
     );
   }
 
-  reply(_id: OfficeThreadId, body: string): Observable<ThreadMessage> {
+  reply(_id: OfficeThreadId, body: string, intent: WriteIntent): Observable<ThreadMessage> {
+    this.keys.push(intent.key);
     if (this.failWith !== null) {
       const failure = this.failWith;
       return throwError(() => failure);
@@ -381,6 +385,36 @@ describe('ThreadPage (DL-168)', () => {
     const live = element.querySelector('[role="status"][aria-live="polite"]')?.textContent ?? '';
     expect(live).toContain('That was not done. That thread is closed.');
     expect(live).not.toContain('A private sentence.');
+  });
+
+  it('sends a retry of the same words under the same key, and new words under a new one', async () => {
+    const { fixture, element, repository } = await openThread((stub) => {
+      stub.failWith = { message: 'The connection was lost.' };
+    });
+    const box = element.querySelector<HTMLTextAreaElement>('#thread-reply-body');
+    if (box === null) throw new Error('no reply box');
+    const type = (words: string) => {
+      box.value = words;
+      box.dispatchEvent(new Event('input'));
+    };
+
+    type('Please bring the death certificate.');
+    buttonNamed(element, INBOX_COPY.thread.send)?.click();
+    await settle(fixture);
+    // The same words again: the same press of Send, so the server can answer with the first reply.
+    repository.failWith = null;
+    buttonNamed(element, INBOX_COPY.thread.send)?.click();
+    await settle(fixture);
+    expect(repository.keys).toHaveLength(2);
+    expect(repository.keys[1]).toBe(repository.keys[0]);
+
+    // Sent: the next reply is a new send, with a key of its own.
+    type('And a valid ID.');
+    buttonNamed(element, INBOX_COPY.thread.send)?.click();
+    await settle(fixture);
+    expect(repository.keys).toHaveLength(3);
+    expect(repository.keys[2]).not.toBe(repository.keys[0]);
+    expect(repository.replies).toEqual(['Please bring the death certificate.', 'And a valid ID.']);
   });
 
   it('marks read for the whole office, and says so before the button', async () => {
