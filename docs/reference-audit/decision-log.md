@@ -8177,6 +8177,10 @@ does for `type_id`, `purpose` and `note`.
 
 ## DL-189 — search and the work queues are served: each record type searched through its own list, every type answered for, and a queue that is a view
 
+> **UAT scripts since 2026-11-07 (noted 2026-11-08).** The closing "No UAT script covers My work,
+> the team's queue or search yet" no longer holds: SRCH-01 to SRCH-04 and WRK-01 to WRK-06 cover
+> them (`docs/uat/uat-test-scripts.md`, version 1.2, `80755ea`).
+
 `taytay-backend` `e76c715` serves `SEARCH_REPOSITORY` and `WORK_REPOSITORY`. The spec vendored
 here is that commit's (243 operations). Casework phase 6c, after the dashboard (6a, `DL-182`)
 and the beneficiary registry (6b, `DL-187`). **No migration.** **Four ports remain unserved**:
@@ -8282,6 +8286,10 @@ referral's service requested as its preview); bringing it into line touches `che
 the mock and was not in this phase. No UAT script covers My work, the team's queue or search yet.
 
 ## DL-190 — reports are served: counted on the server under each reader's scope, small counts of people withheld there, and a file that carries its own conditions
+
+> **UAT scripts since 2026-11-07 (noted 2026-11-08).** The closing "No UAT script covers reports
+> yet" no longer holds: RPT-01 to RPT-10 cover them (`docs/uat/uat-test-scripts.md`, version 1.2,
+> `80755ea`).
 
 `taytay-backend` `9d81454` serves `REPORT_REPOSITORY`. The spec vendored here is that commit's (246
 operations). Casework phase 6d, after search and the work queues (6c, `DL-189`). **No migration.**
@@ -8417,6 +8425,9 @@ programme filters, counts drafts and shows the protected sectors to every reader
 covers reports yet.
 
 ## DL-191 — governance is served: one account store, a switch that ends the session at its next request, and a trail that says what it does not record
+
+> **UAT scripts since 2026-11-08.** The closing "no UAT script covers governance yet" no longer
+> holds: GOV-01 to GOV-08 and AUD-07 cover it (`docs/uat/uat-test-scripts.md`, version 1.3).
 
 `taytay-backend` `3a7947c` serves `GOVERNANCE_REPOSITORY`. The spec vendored here is that commit's
 (255 operations). Casework phase 6e, after reports (6d, `DL-190`). **Migration `0041`, additive:**

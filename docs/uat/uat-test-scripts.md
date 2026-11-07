@@ -1,10 +1,13 @@
 # UAT test scripts: Taytay, Rizal LGU platform (staging)
 
-Version 1.2, 7 November 2026 (replaces 1.1 of the same day): adds search (SRCH-01 to SRCH-04), My
-work, the team's work and office alerts (WRK-01 to WRK-06), and reports and their exports (RPT-01 to
-RPT-10), all served by the API since 7 November (DL-189, DL-190), and adds My work, Beneficiaries and
-Reports to the menus in ACC-04. Version 1.1 added the DOC area, residents' document requests (DOC-01
-to DOC-14), their menu entry in ACC-04, and DIR-13 (residents accept new Terms of Use).
+Version 1.3, 8 November 2026 (replaces 1.2 of 7 November): adds Staff and roles, the office's audit
+trail and data governance (GOV-01 to GOV-08), served by the API since 8 November (DL-191), and AUD-07
+(switching a staff account off and on, on the app audit trail), and adds Staff and roles, Audit trail
+and Settings to the menus in ACC-04. Version 1.2 added search (SRCH-01 to SRCH-04), My work, the
+team's work and office alerts (WRK-01 to WRK-06), and reports and their exports (RPT-01 to RPT-10),
+served since 7 November (DL-189, DL-190), and added My work, Beneficiaries and Reports to the menus
+in ACC-04. Version 1.1 added the DOC area, residents' document requests (DOC-01 to DOC-14), their
+menu entry in ACC-04, and DIR-13 (residents accept new Terms of Use).
 
 These scripts are deliverable D6, "Testing and LGU UAT" (item 7 on the project tracker). Read [README.md](README.md) first: it names the test accounts, the test-data rules
 and how to record a result or a defect.
@@ -25,26 +28,27 @@ and how to record a result or a defect.
 - Use only fictional test data (README, "Test data"). Every reason you type starts with "UAT:".
 - Record Pass, Fail or Blocked for every case, with your name and the date. A Fail needs a defect id.
 
-| Area                                            | Cases              | Count   |
-| ----------------------------------------------- | ------------------ | ------- |
-| REG: Resident registration and ID review        | REG-01 to REG-13   | 13      |
-| ID: Digital ID                                  | ID-01 to ID-08     | 8       |
-| ROS: Residents registry, households, families   | ROS-01 to ROS-12   | 12      |
-| DSH: Dashboard                                  | DSH-01 to DSH-07   | 7       |
-| DIR: Directory, home screen and app settings    | DIR-01 to DIR-13   | 13      |
-| DOC: Resident document requests                 | DOC-01 to DOC-14   | 14      |
-| REQ: Assistance requests                        | REQ-01 to REQ-19   | 19      |
-| CAS: Cases                                      | CAS-01 to CAS-12   | 12      |
-| REL: Releases and payout sessions               | REL-01 to REL-10   | 10      |
-| REF: Referrals and field visits                 | REF-01 to REF-12   | 12      |
-| SRCH: Search                                    | SRCH-01 to SRCH-04 | 4       |
-| WRK: My work, the team's work and office alerts | WRK-01 to WRK-06   | 6       |
-| RPT: Reports and exports                        | RPT-01 to RPT-10   | 10      |
-| ACC: Accounts, roles and access                 | ACC-01 to ACC-10   | 10      |
-| AUD: App audit trail                            | AUD-01 to AUD-06   | 6       |
-| NEWS: Balita and the office inbox               | NEWS-01 to NEWS-06 | 6       |
-| NFR: Privacy, security and accessibility        | NFR-01 to NFR-10   | 10      |
-| **Total**                                       |                    | **172** |
+| Area                                                  | Cases              | Count   |
+| ----------------------------------------------------- | ------------------ | ------- |
+| REG: Resident registration and ID review              | REG-01 to REG-13   | 13      |
+| ID: Digital ID                                        | ID-01 to ID-08     | 8       |
+| ROS: Residents registry, households, families         | ROS-01 to ROS-12   | 12      |
+| DSH: Dashboard                                        | DSH-01 to DSH-07   | 7       |
+| DIR: Directory, home screen and app settings          | DIR-01 to DIR-13   | 13      |
+| DOC: Resident document requests                       | DOC-01 to DOC-14   | 14      |
+| REQ: Assistance requests                              | REQ-01 to REQ-19   | 19      |
+| CAS: Cases                                            | CAS-01 to CAS-12   | 12      |
+| REL: Releases and payout sessions                     | REL-01 to REL-10   | 10      |
+| REF: Referrals and field visits                       | REF-01 to REF-12   | 12      |
+| SRCH: Search                                          | SRCH-01 to SRCH-04 | 4       |
+| WRK: My work, the team's work and office alerts       | WRK-01 to WRK-06   | 6       |
+| RPT: Reports and exports                              | RPT-01 to RPT-10   | 10      |
+| GOV: Staff and roles, audit trail and data governance | GOV-01 to GOV-08   | 8       |
+| ACC: Accounts, roles and access                       | ACC-01 to ACC-10   | 10      |
+| AUD: App audit trail                                  | AUD-01 to AUD-07   | 7       |
+| NEWS: Balita and the office inbox                     | NEWS-01 to NEWS-06 | 6       |
+| NFR: Privacy, security and accessibility              | NFR-01 to NFR-10   | 10      |
+| **Total**                                             |                    | **181** |
 
 ## REG: Resident registration and ID review
 
@@ -2630,6 +2634,217 @@ conditions. Only the head, the auditor and the administrator can export.
   - In the spreadsheet the cell shows the name as text, "=Halimbawa, Fe" (some programs show the
     apostrophe too). It never shows "#NAME?" or any other result of a calculation.
 
+## GOV: Staff and roles, audit trail and data governance
+
+The three pages under "Administration" in the menu. "Staff and roles" lists the staff and
+administrator accounts that "Users and roles" holds, and is where the administrator switches an
+account off or on, with a reason. "Audit trail" is the office's own trail, in words; "App audit
+trail" (AUD) is the app's, by ID. The API records who did what, to which record and when: not which
+fields changed, their values or the reason. "Settings" opens the data governance page, for the
+administrator only. The head and the auditor read the first two and change nothing.
+
+### GOV-01 · Staff and roles lists staff accounts only, and says what is not recorded
+
+- **Role:** ADMIN
+- **Checks:** FR-STAFF-26, FR-API-4 · Must · T-2
+- **Set up first:** ACC-04 done (every test account has its role). This case takes SW2's office role
+  away for a moment and gives it back in step 6.
+- **Steps:**
+  1. Open "Staff and roles", under "Administration" in the menu. Read the page and every card.
+  2. Read "Role", "Unit", "ID", "Covers" and "Last signed in" on the cards of INTAKE, BLINK and your
+     own account.
+  3. Type INTAKE's name, as its card shows it, in "Search". Then replace it with "UAT nobody".
+  4. Clear "Search". Open "Users and roles" and click "Manage" on SW2. Choose "No office role" in
+     "Give the account the office role", fill "Why (required)" with "UAT: GOV-01, given back in step
+     6." and click "Take the office role away".
+  5. Open "Staff and roles" again and find SW2.
+  6. In "Users and roles", click "Manage" on SW2. Choose "Social worker" in "Give the account the
+     office role", fill "Why (required)" with "UAT: GOV-01 done." and click the button "Give the
+     office role …", which names Social worker.
+- **Expected result:**
+  - The page reads "Who holds an account, what it covers, and whether it is active.", with "Audit
+    trail" and "Permission matrix" at the top and "Data governance" at the foot.
+  - ADMIN and every staff test account are listed, each marked "Active". No resident tester (RES-A,
+    RES-B, RES-C) is listed.
+  - INTAKE's "Role" reads "Intake officer", BLINK's "Covers" reads "San Juan", and your own "Role"
+    reads "System administrator". On every card "Unit", "ID" and "Last signed in" read "Not
+    recorded": never "Never" and never a blank.
+  - Step 3 leaves INTAKE's card only. "UAT nobody" shows "No accounts match" and "Try a wider
+    search, or include deactivated accounts.".
+  - Step 4 shows "The office role was taken away.". In step 5 SW2 is still listed, and its "Role"
+    reads "No office role yet".
+  - Below the cards, "Adding an account" reads "Accounts are created by the system administrator
+    directly, and this console cannot yet do it. …" and "Resetting access" reads "Resetting access
+    is not built here. …". No form adds an account or resets a password.
+  - Step 6 shows "Office role changed to …", naming Social worker, and SW2's card reads "Social
+    worker" again.
+
+### GOV-02 · The head and the auditor read the staff list and switch nothing
+
+- **Role:** HEAD, AUDITOR
+- **Checks:** FR-STAFF-26, NFR-SEC-4 · Must · T-2
+- **Set up first:** GOV-01 done.
+- **Steps:**
+  1. Look under "Administration" in the menu.
+  2. Open "Staff and roles" and read the cards.
+  3. Type the website address followed by /administration/settings.
+- **Expected result:**
+  - The menu has "Staff and roles" and "Audit trail" under "Administration", and no "Settings".
+  - The same accounts as in GOV-01 are listed, each "Active", with "Not recorded" for "Unit", "ID"
+    and "Last signed in". The top of the page offers "Audit trail" and "Permission matrix".
+  - No card offers "Deactivate" or "Reactivate", and there is no "Data governance" at the foot.
+  - Step 3 shows "You do not have access to that section".
+
+### GOV-03 · The office audit trail: each act in words, fields not recorded, a page at a time
+
+- **Role:** HEAD, then AUDITOR
+- **Checks:** FR-STAFF-26 · Must · T-12
+- **Set up first:** The REQ, CAS, REL, REF and RPT cases and GOV-01 have run.
+- **Steps:**
+  1. HEAD: open "Audit trail" under "Administration". Read the sentence at the top, the line above
+     the rows, and the rows.
+  2. Find the row for filing R1 (REQ-04) and the rows for SW2's office role (GOV-01).
+  3. If "Show older entries" is offered at the bottom, click it.
+  4. AUDITOR: open "Audit trail" and read the rows.
+- **Expected result:**
+  - The page reads "Who accessed or changed a record, and when.". The sentence at the top reads
+    "Rows say what was done and, where the trail records it, which fields changed and how sensitive
+    they were — never what it changed to. Opening the recorded values is a separate permission, and
+    doing so is itself recorded."
+  - The newest act comes first. Each row gives the kind of act (such as "Created" or "Status
+    changed"), the kind of record, the date and time, what was done in words, the name of the
+    account that did it, "From" followed by "API", and "Which fields changed, and their values
+    before and after, were not recorded."
+  - Step 2 finds "Filed an assistance request and issued its control number" with INTAKE's name,
+    and "Changed a staff account’s office role" twice with ADMIN's name.
+  - No row shows an earlier or later value, a "Reason given" line or a "Sensitive" mark. Rows about
+    ID reviews, the directory or Balita are not here: they are on "App audit trail" (AUD-02,
+    AUD-03).
+  - With more than 50 entries, the line above the rows reads "Everything recorded", then says it
+    shows the newest 50 entries and ends "under this filter. More are available.". Step 3 adds
+    older rows below the first 50, and the count grows; no total is given. Once nothing older remains, the button goes,
+    and the line gives the number of events and ends "Which fields each changed was not recorded."
+  - AUDITOR sees the same rows. Neither HEAD nor AUDITOR is offered "Show recorded values" on any
+    row: the trail stored no values (DL-191).
+
+### GOV-04 · Search and the action filter narrow the trail, and "only sensitive" is refused in words
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-26 · Should · T-12
+- **Set up first:** RPT-05 and RPT-06 done.
+- **Steps:**
+  1. Open "Audit trail". Type "report" in "Search".
+  2. Replace it with SW1's name, as "Staff and roles" shows it.
+  3. Click "Clear filters". Choose "Exported" in "Action".
+  4. Click "Clear filters". Tick "Only entries touching sensitive information".
+  5. Click "Clear filters".
+- **Expected result:**
+  - Step 1 leaves rows about reports, among them "Exported a report as a file, its conditions
+    written inside it", "Opened the report that names residents" and "Exported the report that names
+    residents, as a file", with HEAD's name. "Clear filters" appears.
+  - Step 2 leaves only rows by SW1.
+  - Step 3 leaves only rows whose act is "Exported", among them the exports of RPT-05 and RPT-06,
+    and the line above the rows names that filter in place of "Everything recorded".
+  - Step 4 shows no rows. It shows "Could not load this section" and "This audit trail does not
+    record which fields an action changed, so it cannot be narrowed to changes that touched
+    sensitive information. Nothing was asked of the server; clear that filter to read the trail."
+    It never shows "Nothing recorded under this filter": an empty list would read as "nothing
+    sensitive was touched".
+  - Step 5 brings every row back, with "Everything recorded" above them.
+
+### GOV-05 · Data governance: ten record types, no retention schedule, no correction requests
+
+- **Role:** ADMIN
+- **Checks:** FR-STAFF-26, NFR-PRIV-11, NFR-PRIV-12 · Must · T-12
+- **Set up first:** None.
+- **Steps:**
+  1. Open "Settings" under "Administration" (or "Data governance" at the foot of "Staff and
+     roles").
+  2. Read "What the office holds", its table and "Statutory basis".
+  3. Read "Retention and disposal".
+  4. Read "Correction requests".
+- **Expected result:**
+  - The page is "Data governance", with "What the office holds, how sensitive it is, and what it
+    has not yet decided.".
+  - "What the office holds" reads "Labels follow RA 10173. Sensitive personal information is
+    restricted by statute, not by office preference." The table has the columns "Record type",
+    "Classification" and "What is kept", and 10 rows: "Resident registry", "Protection sectors",
+    "Household record", "Case notes", "Assistance requests", "Supporting documents", "Releases",
+    "Referrals", "Programme catalogue" and "Audit trail".
+  - "Protection sectors", "Case notes", "Supporting documents" and "Referrals" are "Sensitive
+    personal information"; "Programme catalogue" is "Internal"; the other five are "Personal
+    information". "Statutory basis" explains those three labels, the sensitive one ending "RA 9262
+    (VAWC) and RA 9344 (CICL) records fall here."
+  - "Retention and disposal" reads "No records disposition schedule has been supplied to this
+    application. Nothing here deletes anything, and no period below is a recommendation. …", then
+    a line saying 10 "record types have no schedule recorded". Each of the ten reads "No schedule recorded":
+    never a number of years, a zero or a blank.
+  - "Correction requests" reads "A correction is raised, considered and answered — never applied
+    silently. …", then "No correction requests on file.", then "Not built yet" with "The form for
+    raising a correction request is not built. …". There is no form and no button to raise one.
+
+### GOV-06 · A social worker reaches none of the three pages
+
+- **Role:** SW1
+- **Checks:** FR-API-4, NFR-SEC-4 · Must · T-2
+- **Set up first:** None.
+- **Steps:**
+  1. Look for "Staff and roles", "Audit trail" and "Settings" in the menu.
+  2. Type the website address followed by /administration/staff, then /administration/audit, then
+     /administration/settings.
+- **Expected result:**
+  - The menu has none of the three.
+  - Each address shows "You do not have access to that section" and "Back to dashboard". No data is
+    shown.
+
+### GOV-07 · A switch needs a reason, and your own account offers none
+
+- **Role:** ADMIN
+- **Checks:** FR-STAFF-26 · Must · T-2
+- **Set up first:** GOV-01 done.
+- **Steps:**
+  1. Open "Staff and roles" and find your own card.
+  2. On SW2's card click "Deactivate". Leave "Why" empty. Then type only a few spaces in it.
+  3. Click "Cancel".
+- **Expected result:**
+  - Your own card reads "This is your own account. You cannot switch it off or on; another
+    administrator can." and offers no "Deactivate".
+  - Step 2 shows "Why", with "Recorded in the audit trail against your name. Required.", and
+    "Save". "Save" stays greyed out while "Why" is empty or holds only spaces.
+  - Step 3 closes the box, and SW2 still reads "Active".
+
+### GOV-08 · Switching SW2 off ends its session at its next click, and switching it on lets SW2 back
+
+- **Role:** ADMIN in browser A, SW2 in browser B (for example Edge and Chrome)
+- **Checks:** FR-STAFF-26, FR-STAFF-28 · Must · T-2
+- **Set up first:** Run this case **last in the GOV area**, and tell SW2 before it starts. SW2 is
+  signed in on browser B. SW2 must be switched back on at the end of this case (step 5), even if a
+  step fails: until then SW2 cannot sign in.
+- **Steps:**
+  1. ADMIN: open "Staff and roles" and click "Deactivate" on SW2's card. Type "UAT: GOV-08, switched
+     back on at the end of this case." in "Why" and click "Save".
+  2. ADMIN: tick "Include deactivated accounts" and find SW2.
+  3. SW2, in browser B: click "My work" in the menu.
+  4. SW2: sign in again with the right password.
+  5. ADMIN: click "Reactivate" on SW2's card. Type "UAT: GOV-08 done." in "Why" and click "Save".
+  6. SW2: sign in again.
+  7. ADMIN: open "Audit trail" and type "switched" in "Search".
+- **Expected result:**
+  - Step 1 shows "Account updated.", and SW2's card leaves the list: deactivated accounts are shown
+    only when asked for.
+  - Step 2 shows SW2 marked "Deactivated", with "Reactivate".
+  - Step 3 sends SW2 to the sign-in page at that click, with no data shown, although SW2 never
+    signed out.
+  - Step 4 is refused with "Those sign-in details were not recognised. Check the email address and
+    password, then try again.", as a wrong password is (NFR-01). The page does not say the account
+    is switched off.
+  - Step 5 shows "Account updated.", and SW2 reads "Active" again.
+  - Step 6 signs SW2 in, with SW2's menu and work as before.
+  - Step 7 shows two rows, newest first: "Switched a staff account back on, with a reason" and
+    "Switched a staff account off, with a reason; its session stops at its next request", each with
+    ADMIN's name and "From" followed by "API". Neither shows the reason typed: the trail keeps no reason, and the
+    API keeps it with the account (DL-191).
+
 ## ACC: Accounts, roles and access
 
 Staff accounts are created by the administrator outside the website. On the website the
@@ -2694,9 +2909,9 @@ permission again: a hidden button is never the only protection.
   - ADMIN: Dashboard, My work, Cases, Assistance requests, Residents, Beneficiaries, Households,
     Families, Field visits, Referrals, Programs, Releases, Reports, ID verification, Office inbox,
     Resident document requests, Users and roles, App directory, Home screen, App settings, Digital
-    IDs, Balita, App audit trail.
-  - HEAD: the same, without ID verification, Users and roles, App directory, Home screen and App
-    settings.
+    IDs, Balita, App audit trail, Staff and roles, Audit trail, Settings.
+  - HEAD: the same, without ID verification, Users and roles, App directory, Home screen, App
+    settings and Settings.
   - SW1: Dashboard, My work, Cases, Assistance requests, Residents, Beneficiaries, Households,
     Families, Field visits, Referrals, Programs, Reports, Office inbox, Resident document requests,
     Digital IDs, Balita.
@@ -2706,7 +2921,8 @@ permission again: a hidden button is never the only protection.
   - BLINK: Dashboard, My work, Assistance requests, Residents, Households, Families, Referrals,
     Programs, Digital IDs.
   - AUDITOR: Dashboard, My work, Cases, Assistance requests, Residents, Beneficiaries, Households,
-    Families, Field visits, Referrals, Programs, Releases, Reports, Digital IDs, App audit trail.
+    Families, Field visits, Referrals, Programs, Releases, Reports, Digital IDs, App audit trail,
+    Staff and roles, Audit trail.
   - Every menu may end with "Not connected yet". The footer shows the name, role and scope ("All
     barangays", "Assigned cases" or "Barangay San Juan"), and "Sign out".
 
@@ -2876,6 +3092,19 @@ earlier or later value and no reason; the reasons live in each record's own hist
 - **Expected result:**
   - The first three have the entry and can read the trail.
   - INTAKE gets "You do not have access to that section".
+
+### AUD-07 · Switching a staff account off and on appears
+
+- **Role:** AUDITOR
+- **Checks:** FR-STAFF-27 · Must · T-12
+- **Set up first:** GOV-01 and GOV-08 done.
+- **Steps:**
+  1. Open "App audit trail" and find the rows for GOV-08 and GOV-01.
+- **Expected result:**
+  - Rows read "Switched a staff account off, with a reason; its session stops at its next request"
+    and "Switched a staff account back on, with a reason" for GOV-08, and "Changed a staff
+    account’s office role" twice for GOV-01, each with the time and the acting account.
+  - No row shows the reason typed in GOV-01 or GOV-08.
 
 ## NEWS: Balita and the office inbox
 

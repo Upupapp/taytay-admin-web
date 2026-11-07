@@ -3,7 +3,7 @@
 This pack is deliverable D6, "Testing and LGU UAT" (item 7 on the project tracker). Office staff and
 resident testers use it to test the platform on the staging site and sign it off before production.
 
-- [uat-test-scripts.md](uat-test-scripts.md): 172 test cases in 17 areas.
+- [uat-test-scripts.md](uat-test-scripts.md): 181 test cases in 18 areas.
 - [uat-signoff.md](uat-signoff.md): the sign-off sheets, the defect summary and the acceptance.
 - The workbook, "Taytay - UAT test scripts (staging).xlsx": the same cases, with columns to record
   each result and a "Defects" tab. It is **not kept in this repository**. It is generated from these
@@ -17,20 +17,20 @@ of the Taytay app for Android, supplied by the developer.
 
 ## Who tests what
 
-| Code        | Test account                         | Areas and cases                                                                                                                             |
-| ----------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| ADMIN       | System administrator                 | ACC-01 to 03, REG-09 to 11, ID-04 to 07, DIR-05 to 12, DSH-07, NFR-04                                                                       |
-| HEAD        | MSWDO head                           | DSH, REQ-02, 07, 16 to 19, CAS-09, 11, REL-10, REF-01 to 08, NEWS-01 to 03, DOC-01, 02, SRCH-01, 02, WRK-04 to 06, RPT-02, 04 to 06, 08, 09 |
-| SW1, SW2    | Two social workers                   | REQ-08, 09, 13, 15, CAS-03 to 08, REF-09 to 12, WRK-01, 02                                                                                  |
-| INTAKE      | Intake officer                       | ROS, REQ-01, 03 to 06, 10 to 14, CAS-01, 02, 07, NEWS-05, 06, DOC-05 to 09, 11, 14, NFR, SRCH-03, RPT-10                                    |
-| RELEASE     | Release officer                      | REL-01 to 08, ACC-07, DOC-08                                                                                                                |
-| BLINK       | Barangay link, working in San Juan   | ROS-05, ID-08, ACC-05, ACC-10, DOC-14                                                                                                       |
-| AUDITOR     | Auditor                              | AUD, ACC-08, DOC-13, 14, RPT-03, 07                                                                                                         |
-| RES-A, B, C | Resident testers with Android phones | REG, ID-01, DIR-01 to 04, NEWS-05, DOC-03, 04, 07 to 12                                                                                     |
-| GUEST       | The app, not signed in               | REG-01, DIR-01 to 04, NEWS-04, DOC-01 to 03                                                                                                 |
+| Code        | Test account                         | Areas and cases                                                                                                                                           |
+| ----------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ADMIN       | System administrator                 | ACC-01 to 03, REG-09 to 11, ID-04 to 07, DIR-05 to 12, DSH-07, NFR-04, GOV-01, 05, 07, 08                                                                 |
+| HEAD        | MSWDO head                           | DSH, REQ-02, 07, 16 to 19, CAS-09, 11, REL-10, REF-01 to 08, NEWS-01 to 03, DOC-01, 02, SRCH-01, 02, WRK-04 to 06, RPT-02, 04 to 06, 08, 09, GOV-02 to 04 |
+| SW1, SW2    | Two social workers                   | REQ-08, 09, 13, 15, CAS-03 to 08, REF-09 to 12, WRK-01, 02, GOV-06 (SW1), 08 (SW2)                                                                        |
+| INTAKE      | Intake officer                       | ROS, REQ-01, 03 to 06, 10 to 14, CAS-01, 02, 07, NEWS-05, 06, DOC-05 to 09, 11, 14, NFR, SRCH-03, RPT-10                                                  |
+| RELEASE     | Release officer                      | REL-01 to 08, ACC-07, DOC-08                                                                                                                              |
+| BLINK       | Barangay link, working in San Juan   | ROS-05, ID-08, ACC-05, ACC-10, DOC-14                                                                                                                     |
+| AUDITOR     | Auditor                              | AUD, ACC-08, DOC-13, 14, RPT-03, 07, GOV-02, 03                                                                                                           |
+| RES-A, B, C | Resident testers with Android phones | REG, ID-01, DIR-01 to 04, NEWS-05, DOC-03, 04, 07 to 12                                                                                                   |
+| GUEST       | The app, not signed in               | REG-01, DIR-01 to 04, NEWS-04, DOC-01 to 03                                                                                                               |
 
-Cases that name several roles (ROS-12, DSH-05, SRCH-04, WRK-03, RPT-01, ACC-04, AUD-06, DOC-14) are
-run by each of those accounts.
+Cases that name several roles (ROS-12, DSH-05, SRCH-04, WRK-03, RPT-01, GOV-02, ACC-04, AUD-06,
+DOC-14) are run by each of those accounts.
 
 ## Test accounts
 
@@ -65,9 +65,10 @@ run by each of those accounts.
    a Blocked case needs the reason in Notes.
 
 Run the areas in this order, because later cases use the records of earlier ones: ACC-01 and
-ACC-02, ROS, REG, ID, DIR, DOC, REQ, CAS, REL, REF, NEWS, DSH, SRCH, WRK, RPT, AUD, then NFR.
+ACC-02, ROS, REG, ID, DIR, DOC, REQ, CAS, REL, REF, NEWS, DSH, SRCH, WRK, RPT, GOV, AUD, then NFR.
 REQ-19 runs after REL-01 and before REL-06. The set-up of NFR-06 (Carmen Halimbawa, "VAWC
-survivor", with a case) is done before SRCH, WRK and RPT, which use her record.
+survivor", with a case) is done before SRCH, WRK and RPT, which use her record. GOV-08 runs last in
+GOV: it switches SW2's account off and back on, so tell SW2 before it starts.
 
 **Staging needs at least one document type before the DOC cases run.** The head or an
 administrator creates it with case DOC-01 ("UAT Certificate of Indigency (test)"). Until it exists,
@@ -119,7 +120,9 @@ owner. Nothing in the sheets is signed in advance.
 
 Not built yet, or not served by the API (the website lists these under "Not connected yet"):
 
-- Newsfeed and events, and governance (FR-STAFF-26).
+- Newsfeed and events (FR-STAFF-26). Governance, the rest of FR-STAFF-26, is served by the API
+  since 8 November 2026 (`DL-191`) and has its scripts since version 1.3 (GOV, AUD-07). Capturing
+  a correction request is not built, and the governance page says so (GOV-05).
 - Served by the API since 7 November 2026, but with no test script in this round yet:
   beneficiaries and duplicate review (FR-STAFF-12) and programme use counted from releases on the
   programme pages (FR-STAFF-14) (`DL-187`). Reports, My work and search have their scripts since

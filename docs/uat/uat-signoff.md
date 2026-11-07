@@ -198,6 +198,20 @@ Decision: [ ] Accepted [ ] Accepted with open items: ................ [ ] Not ac
 | Tested by                  |      |      |           |      |
 | Accepted for the office by |      |      |           |      |
 
+## GOV: Staff and roles, audit trail and data governance (GOV-01 to GOV-08)
+
+| Cases run | Passed | Failed | Blocked | Open defects (ids) |
+| --------- | ------ | ------ | ------- | ------------------ |
+|           |        |        |         |                    |
+
+Decision: [ ] Accepted [ ] Accepted with open items: ................ [ ] Not accepted
+
+|                            | Name | Role | Signature | Date |
+| -------------------------- | ---- | ---- | --------- | ---- |
+| Tested by                  |      |      |           |      |
+| Tested by                  |      |      |           |      |
+| Accepted for the office by |      |      |           |      |
+
 ## ACC: Accounts, roles and access (ACC-01 to ACC-10)
 
 | Cases run | Passed | Failed | Blocked | Open defects (ids) |
@@ -212,7 +226,7 @@ Decision: [ ] Accepted [ ] Accepted with open items: ................ [ ] Not ac
 | Tested by                  |      |      |           |      |
 | Accepted for the office by |      |      |           |      |
 
-## AUD: App audit trail (AUD-01 to AUD-06)
+## AUD: App audit trail (AUD-01 to AUD-07)
 
 | Cases run | Passed | Failed | Blocked | Open defects (ids) |
 | --------- | ------ | ------ | ------- | ------------------ |
