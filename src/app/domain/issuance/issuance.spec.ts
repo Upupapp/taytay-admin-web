@@ -21,6 +21,7 @@ import {
   officeMovesFrom,
   oldestWaitingFirst,
   waitingOn,
+  wholeIssuanceReference,
   type IssuanceRequestSummary,
   type IssuanceStatus,
 } from './issuance-request';
@@ -265,5 +266,25 @@ describe('the catalogue (DL-184)', () => {
       'barangay-clearance-original',
     );
     expect(suggestRequirementCode('  ID  ')).toBe('id');
+  });
+});
+
+describe('wholeIssuanceReference (DL-186)', () => {
+  it('reads a whole number as the API matches it: trimmed, any case', () => {
+    expect(wholeIssuanceReference('  dr-2026-000123 ')).toBe('DR-2026-000123');
+    expect(wholeIssuanceReference('DR-2026-1234567')).toBe('DR-2026-1234567');
+  });
+
+  it('refuses part of a number, so no fragment is ever searched', () => {
+    for (const partial of [
+      '',
+      'DR-2026',
+      '000123',
+      'DR-2026-12345',
+      'RL-2026-000123',
+      'DR-26-000123',
+    ]) {
+      expect(wholeIssuanceReference(partial), partial).toBeNull();
+    }
   });
 });

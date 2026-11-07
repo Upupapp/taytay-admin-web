@@ -109,9 +109,31 @@
       }
     }
 
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.category }}</span>
+      <select class="filters__input" (change)="onCategory($event)">
+        <option value="" [selected]="!filter().category">{{ copy.anyCategory }}</option>
+        @for (category of categories; track category) {
+          <option [value]="category" [selected]="filter().category === category">
+            {{ categoryLabels[category] }}
+          </option>
+        }
+      </select>
+    </label>
+
     <label class="filters__check">
       <input type="checkbox" [checked]="filter().openOnly === true" (change)="onOpenOnly($event)" />
       <span>{{ copy.openOnly }}</span>
+    </label>
+
+    <label class="filters__check">
+      <input
+        type="checkbox"
+        aria-describedby="request-owing-hint"
+        [checked]="filter().owingDocument === true"
+        (change)="onOwing($event)"
+      />
+      <span>{{ copy.owingDocument }}</span>
     </label>
 
     @if (hasFilters()) {
@@ -120,10 +142,7 @@
   </div>
 
   <p class="requests__hint" id="request-search-hint">{{ copy.searchHint }} {{ copy.order }}</p>
-
-  @if (notNarrowed().length > 0) {
-    <p class="requests__hint" role="note">{{ copy.notNarrowed(notNarrowed()) }}</p>
-  }
+  <p class="requests__hint" id="request-owing-hint">{{ copy.owingDocumentHint }}</p>
 
   @if (failure(); as message) {
     <div class="requests__problem" role="alert">

@@ -362,12 +362,39 @@ export function oldestWaitingFirst(
 export interface IssuanceQueueFilter {
   readonly status: IssuanceStatus | null;
   readonly typeId: IssuanceTypeId | null;
+  /** One resident's requests — the app account that filed them (`resident_id`, `DL-186`). */
+  readonly residentAccountId?: AppAccountId;
 }
 
-/** A browse of one ended status, a page at a time, newest filed first as the server orders it. */
+/**
+ * A browse a page at a time, newest filed first as the server orders it: one ended status, or —
+ * with `status: null` — every status, which is how a request is found by its whole reference.
+ */
 export interface IssuanceListFilter {
-  readonly status: IssuanceStatus;
+  readonly status: IssuanceStatus | null;
   readonly typeId: IssuanceTypeId | null;
+  /** The whole reference number, as `wholeIssuanceReference` gives it (`DL-186`). */
+  readonly reference?: string;
+  readonly residentAccountId?: AppAccountId;
+}
+
+/** Said instead of a search, when what was typed is not a whole reference. */
+export const ISSUANCE_REFERENCE_INCOMPLETE =
+  'Type the whole reference number, such as DR-2026-000123. Part of one finds nothing, so nothing ' +
+  'was searched.';
+
+/** `DR-<year>-<six or more digits>`, as the API matches it. */
+const ISSUANCE_REFERENCE = /^DR-[0-9]{4}-[0-9]{6,}$/;
+
+/**
+ * A reference as typed, made whole — trimmed and upper-cased, as the server reads it — or `null`
+ * when it is not a whole one. The API finds a request only by its whole number and refuses part of
+ * one (`DL-186`), so part of one is said on the screen and never sent: a search that matched
+ * fragments of a number would be a search of every resident's requests by guesswork.
+ */
+export function wholeIssuanceReference(typed: string): string | null {
+  const reference = typed.trim().toUpperCase();
+  return ISSUANCE_REFERENCE.test(reference) ? reference : null;
 }
 
 /**

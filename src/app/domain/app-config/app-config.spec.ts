@@ -7,6 +7,8 @@ import {
   appConfigProblems,
   asksEveryResident,
   compareAppVersions,
+  isPlaceholderText,
+  legalTextDraftFrom,
   type AppConfig,
 } from './app-config';
 
@@ -17,7 +19,16 @@ const CONFIG: AppConfig = {
   termsVersion: '2026-01',
   minimumAppVersion: '1.4.0',
   featureFlags: [{ key: 'show_digital_id', value: 'true' }],
-  privacyNotice: { version: '2026-01', updatedAt: asIsoDateTime('2026-01-01T00:00:00.000Z') },
+  privacyNotice: {
+    version: '2026-01',
+    updatedAt: asIsoDateTime('2026-01-01T00:00:00.000Z'),
+    bodyMarkdown: 'The privacy notice as the LGU published it.',
+  },
+  terms: {
+    version: '2026-01',
+    updatedAt: asIsoDateTime('2026-01-01T00:00:00.000Z'),
+    bodyMarkdown: 'The Terms of Use as the LGU published them.',
+  },
   updatedAt: asIsoDateTime('2026-10-01T00:00:00.000Z'),
 };
 
@@ -79,5 +90,73 @@ describe('the app’s settings (DL-170)', () => {
       'The API serves privacy notice version 2026-01, not 2026-11',
     );
     expect(effects.join(' ')).toContain('text does not change here');
+  });
+});
+
+describe('the texts residents accept (DL-186)', () => {
+  const PLACEHOLDER = {
+    version: 'placeholder',
+    updatedAt: asIsoDateTime('2026-01-01T00:00:00.000Z'),
+    bodyMarkdown: 'This is a placeholder for the Terms of Use.',
+  };
+
+  it('starts the editor from the published text, and from nothing while it is the placeholder', () => {
+    expect(legalTextDraftFrom(CONFIG.terms)).toEqual({
+      version: '2026-01',
+      bodyMarkdown: 'The Terms of Use as the LGU published them.',
+    });
+    // The placeholder's sentence is not legal text, and nothing is invented in its place.
+    expect(legalTextDraftFrom(PLACEHOLDER)).toEqual({ version: '', bodyMarkdown: '' });
+    expect(isPlaceholderText({ version: ' Placeholder ' })).toBe(true);
+  });
+
+  it('refuses what the API refuses: no version, the placeholder’s, no text, or two versions', () => {
+    const fields = (changes: Parameters<typeof appConfigProblems>[0]) =>
+      appConfigProblems(changes).map((problem) => problem.field);
+
+    expect(fields({ terms: { version: ' ', bodyMarkdown: 'Text.' } })).toEqual(['terms']);
+    expect(fields({ terms: { version: 'PLACEHOLDER', bodyMarkdown: 'Text.' } })).toEqual(['terms']);
+    expect(fields({ privacyNotice: { version: '2026-11', bodyMarkdown: '  ' } })).toEqual([
+      'privacyNotice',
+    ]);
+    expect(fields({ terms: { version: '2026-11', bodyMarkdown: 'x'.repeat(20001) } })).toEqual([
+      'terms',
+    ]);
+    expect(
+      fields({ terms: { version: '2026-11', bodyMarkdown: 'Text.' }, termsVersion: '2026-12' }),
+    ).toEqual(['terms']);
+    expect(
+      fields({ terms: { version: '2026-11', bodyMarkdown: 'Text.' }, termsVersion: '2026-11' }),
+    ).toEqual([]);
+  });
+
+  it('asks every resident to accept again for a new version, and not for the same one', () => {
+    expect(
+      asksEveryResident(CONFIG, { terms: { version: '2026-11', bodyMarkdown: 'New text.' } }),
+    ).toBe(true);
+    expect(
+      asksEveryResident(CONFIG, { privacyNotice: { version: '2026-11', bodyMarkdown: 'New.' } }),
+    ).toBe(true);
+    expect(
+      asksEveryResident(CONFIG, { terms: { version: '2026-01', bodyMarkdown: 'Corrected.' } }),
+    ).toBe(false);
+  });
+
+  it('says plainly what a new version does, and what keeping the version does', () => {
+    const renewed = appConfigEffects(CONFIG, {
+      terms: { version: '2026-11', bodyMarkdown: 'New text.' },
+    }).join(' ');
+    expect(renewed).toContain(
+      'This is a new version, 2026-11, so it makes every resident accept the Terms of Use again in the app',
+    );
+    expect(renewed).toContain('Nothing in this console writes, suggests or fills in legal text.');
+
+    const corrected = appConfigEffects(CONFIG, {
+      privacyNotice: { version: '2026-01', bodyMarkdown: 'Corrected.' },
+    }).join(' ');
+    expect(corrected).toContain(
+      'The version stays 2026-01, so the text changes without asking anyone to accept again',
+    );
+    expect(corrected).not.toContain('accept the privacy notice again in the app');
   });
 });

@@ -1,3 +1,5 @@
+import type { AccountVerificationStatus } from '@domain/index';
+
 /**
  * Copy for users and roles (`DL-168`, `DL-23`).
  *
@@ -30,6 +32,18 @@ export const ACCOUNTS_COPY = {
     officesUnnamed:
       'The office directory could not be loaded, so offices are shown by their identifier and none ' +
       'can be assigned until it loads.',
+    verification: 'Verification',
+    everyAccount: 'Every account, residents and staff',
+    verificationLabels: {
+      unverified: 'Not verified',
+      pending: 'Waiting for an ID review',
+      verified: 'Verified',
+      rejected: 'Not accepted',
+    } satisfies Record<AccountVerificationStatus, string>,
+    verificationNote: (status: string): string =>
+      `Showing residents’ app accounts that are not closed and whose verification is “${status}” — ` +
+      'the accounts the dashboard counts under it. Staff accounts are not listed while a ' +
+      'verification is chosen.',
     emptyHeading: 'No accounts',
     emptyMessage: 'The server returned no accounts.',
     shown: (count: number): string =>

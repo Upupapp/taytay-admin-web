@@ -10,6 +10,8 @@ import { apiHeadersInterceptor } from '@core/http/api.interceptors';
 import {
   asId,
   ISSUANCE_OPEN_STATUSES,
+  ISSUANCE_REFERENCE_INCOMPLETE,
+  type AppAccountId,
   type IssuanceAttachmentId,
   type IssuanceRepository,
   type IssuanceRequestId,
@@ -100,6 +102,42 @@ describe('residents’ document requests over the API (DL-184)', () => {
     const answer = await page;
     expect(answer.items).toHaveLength(2);
     expect(answer.hasMore).toBe(true);
+  });
+
+  it('finds a request by its whole reference in every status, and one resident’s by account (DL-186)', async () => {
+    const found = firstValueFrom(
+      repository.list(
+        { status: null, typeId: null, reference: 'DR-2026-000012' },
+        { limit: 20, cursor: null },
+      ),
+    );
+    const byReference = http.expectOne((r) => r.url === REQUESTS);
+    expect(byReference.request.params.get('reference')).toBe('DR-2026-000012');
+    expect(byReference.request.params.has('status')).toBe(false);
+    byReference.flush(LAST_PAGE);
+    expect((await found).items.length).toBeGreaterThan(0);
+
+    const resident = asId<AppAccountId>('5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e');
+    const theirs = firstValueFrom(
+      repository.waiting({ status: 'submitted', typeId: null, residentAccountId: resident }),
+    );
+    const byResident = http.expectOne((r) => r.url === REQUESTS);
+    expect(byResident.request.params.get('resident_id')).toBe(resident);
+    expect(byResident.request.params.get('status')).toBe('submitted');
+    byResident.flush(LAST_PAGE);
+    await theirs;
+  });
+
+  it('never sends part of a reference: the API would refuse it, so it is said here (DL-186)', async () => {
+    await expect(
+      firstValueFrom(
+        repository.list(
+          { status: null, typeId: null, reference: 'DR-2026-12' },
+          { limit: 20, cursor: null },
+        ),
+      ),
+    ).rejects.toThrow(ISSUANCE_REFERENCE_INCOMPLETE);
+    http.expectNone((r) => r.url === REQUESTS);
   });
 
   it('moves a request with the words the resident reads, and claim details only to mark it ready', async () => {

@@ -45,6 +45,7 @@ import {
   type AccountBarangay,
   type AccountRole,
   type AppAccount,
+  type AppAccountFilter,
   type AppAccountId,
   type AppAccountRepository,
   type OfficeId,
@@ -258,6 +259,8 @@ import {
   type IssuanceTypeChanges,
   type IssuanceTypeDraft,
   type IssuanceTypeId,
+  ISSUANCE_REFERENCE_INCOMPLETE,
+  wholeIssuanceReference,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -819,9 +822,12 @@ export class HttpAppAccountRepository implements AppAccountRepository {
   private readonly api = inject(ApiClient);
 
   /** One page, read whole or not at all: an account the mapper cannot read refuses the page. */
-  list(page: CursorRequest): Observable<CursorPage<AppAccount>> {
+  list(page: CursorRequest, filter: AppAccountFilter = {}): Observable<CursorPage<AppAccount>> {
     return this.api
-      .cursorPage(API_ENDPOINTS.adminUsers, page)
+      .cursorPage(API_ENDPOINTS.adminUsers, page, {
+        // The open residents' accounts with this status, as the dashboard counts them (`DL-186`).
+        verification_status: filter.verificationStatus,
+      })
       .pipe(map((answer) => ({ ...answer, items: answer.items.map(readAccount) })));
   }
 
@@ -2404,6 +2410,9 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
             // A caseload always reads its own assignments, whatever is sent here (`DL-178`).
             assigned_to: filter.assignedTo,
             open_only: filter.openOnly === true ? 'true' : undefined,
+            // The dashboard's own narrowings, counted by the server with the same SQL (`DL-186`).
+            category: filter.category,
+            owing_document: filter.owingDocument === true ? 'true' : undefined,
           })
           .pipe(
             map((answer) => ({
@@ -3313,24 +3322,35 @@ function readCaseAssignee(wire: unknown): SocialWorker {
 export class HttpReleaseRepository implements ReleaseRepository {
   private readonly api = inject(ApiClient);
 
+  /** The barangay join, read only when a barangay is asked for (`DL-186`). */
+  private readonly barangayJoin = new BarangayJoin();
+
   list(filter: ReleaseFilter, page: CursorRequest): Observable<CursorPage<Release>> {
     const refusal = releaseSearchProblem(filter);
     if (refusal !== null) {
       return throwError(() => refusal);
     }
-    return this.api
-      .cursorPage(API_ENDPOINTS.officeReleases, page, {
-        q: releaseSearchOf(filter),
-        status: filter.status,
-        kind: filter.kind,
-        method: filter.method,
-        batch_id: filter.batchId,
-        resident_id: filter.residentId,
-        scheduled_from: filter.scheduledFrom,
-        scheduled_to: filter.scheduledTo,
-        open_only: filter.openOnly === true ? 'true' : undefined,
-      })
-      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readRelease) })));
+    return this.barangayOf(filter).pipe(
+      switchMap((barangayId) =>
+        this.api.cursorPage(API_ENDPOINTS.officeReleases, page, {
+          q: releaseSearchOf(filter),
+          status: filter.status,
+          kind: filter.kind,
+          method: filter.method,
+          batch_id: filter.batchId,
+          resident_id: filter.residentId,
+          scheduled_from: filter.scheduledFrom,
+          scheduled_to: filter.scheduledTo,
+          open_only: filter.openOnly === true ? 'true' : undefined,
+          // The dashboard's payout narrowings, so a figure opens what it counted (`DL-186`).
+          barangay_id: barangayId,
+          category: filter.category,
+          status_group: filter.statusGroup,
+          period: periodOf(filter),
+        }),
+      ),
+      map((answer) => ({ ...answer, items: answer.items.map(readRelease) })),
+    );
   }
 
   /** `null` for "not found **or** not yours": the server answers both with a 404 (`DL-31`). */
@@ -3353,18 +3373,43 @@ export class HttpReleaseRepository implements ReleaseRepository {
     if (refusal !== null) {
       return throwError(() => refusal);
     }
-    return this.api
-      .list(`${API_ENDPOINTS.officeReleases}/queue`, {
-        q: releaseSearchOf(filter),
-        status: filter.status,
-        kind: filter.kind,
-        method: filter.method,
-        batch_id: filter.batchId,
-        resident_id: filter.residentId,
-        scheduled_from: filter.scheduledFrom,
-        scheduled_to: filter.scheduledTo,
-      })
-      .pipe(map((rows) => rows.map(readRelease)));
+    return this.barangayOf(filter).pipe(
+      switchMap((barangayId) =>
+        this.api.list(`${API_ENDPOINTS.officeReleases}/queue`, {
+          q: releaseSearchOf(filter),
+          status: filter.status,
+          kind: filter.kind,
+          method: filter.method,
+          batch_id: filter.batchId,
+          resident_id: filter.residentId,
+          scheduled_from: filter.scheduledFrom,
+          scheduled_to: filter.scheduledTo,
+          barangay_id: barangayId,
+          category: filter.category,
+          status_group: filter.statusGroup,
+          period: periodOf(filter),
+        }),
+      ),
+      map((rows) => rows.map(readRelease)),
+    );
+  }
+
+  /**
+   * The API's id for the barangay asked for, or `undefined` when none is — without reading the
+   * barangay list at all, so an unnarrowed read is still one request. A barangay the API does not
+   * know by the same name sends nothing (`DL-186`).
+   */
+  private barangayOf(filter: ReleaseFilter): Observable<string | undefined> {
+    const wanted = filter.barangayId;
+    if (wanted === undefined) {
+      return of(undefined);
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) => {
+        const id = barangays.toApi(wanted);
+        return id === null ? throwError(() => unknownBarangay()) : of(id);
+      }),
+    );
   }
 
   /** Read from the server's record of the request's approval, kept on the release (`DL-91`). */
@@ -3479,6 +3524,11 @@ export class HttpReleaseRepository implements ReleaseRepository {
 function releaseSearchOf(filter: ReleaseFilter): string | undefined {
   const search = filter.search?.trim() ?? '';
   return search === '' ? undefined : search;
+}
+
+/** `all-time` narrows nothing, so it is not sent (`DL-186`). */
+function periodOf(filter: ReleaseFilter): string | undefined {
+  return filter.period === undefined || filter.period === 'all-time' ? undefined : filter.period;
 }
 
 function releaseSearchProblem(filter: ReleaseFilter): Error | null {
@@ -4029,6 +4079,7 @@ export class HttpIssuanceRepository implements IssuanceRepository {
           .everyPage(API_ENDPOINTS.officeIssuanceRequests, {
             status,
             type_id: filter.typeId ?? undefined,
+            resident_id: filter.residentAccountId,
           })
           .pipe(map((items) => items.map(readIssuanceSummary))),
       ),
@@ -4039,10 +4090,16 @@ export class HttpIssuanceRepository implements IssuanceRepository {
     filter: IssuanceListFilter,
     page: CursorRequest,
   ): Observable<CursorPage<IssuanceRequestSummary>> {
+    if (filter.reference !== undefined && wholeIssuanceReference(filter.reference) === null) {
+      return throwError(() => new Error(ISSUANCE_REFERENCE_INCOMPLETE));
+    }
     return this.api
       .cursorPage(API_ENDPOINTS.officeIssuanceRequests, page, {
-        status: filter.status,
+        // `null` is every status: how a request is found by its whole reference (`DL-186`).
+        status: filter.status ?? undefined,
         type_id: filter.typeId ?? undefined,
+        reference: filter.reference,
+        resident_id: filter.residentAccountId,
       })
       .pipe(map((answer) => ({ ...answer, items: answer.items.map(readIssuanceSummary) })));
   }

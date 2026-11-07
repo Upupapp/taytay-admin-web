@@ -171,6 +171,13 @@ export const httpErrorInterceptor: HttpInterceptorFn = (request, next) => {
         void router.navigate(['/forbidden']);
         break;
 
+      // A resident who has not finished verifying, refused a document request (`DL-186`). Only a
+      // resident's app is ever sent it; should it reach this console it is a 403 that is not about
+      // the account's grants, so it is said in the server's words rather than sent to /forbidden.
+      case 'VERIFICATION_REQUIRED':
+        notifications.error('Request refused', describeFailure(failure));
+        break;
+
       case 'VALIDATION_FAILED':
         // The form owns this one: it renders `details` beside the fields.
         // A toast as well would say the same thing twice, less usefully.

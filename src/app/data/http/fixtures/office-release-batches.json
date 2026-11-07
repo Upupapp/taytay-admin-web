@@ -20,6 +20,8 @@
         "acknowledged": 0,
         "outstanding": 1,
         "deferred": 1,
+        "deferred_only": 0,
+        "unclaimed": 1,
         "needs_correction": 0,
         "released_total_centavos": 250000
       },

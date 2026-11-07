@@ -1,4 +1,5 @@
 import type { StaffRole } from '../access/permission';
+import type { AccountVerificationStatus } from '../dashboard/dashboard-summary';
 import type { AppAccountId, BarangayId, OfficeId } from '../shared/ids';
 import type { StatusCatalog, StatusTransitions } from '../shared/status';
 
@@ -33,6 +34,16 @@ export interface AppAccount {
    * lives — the API's home `barangay_id` is not read (CLAUDE.md §6.1).
    */
   readonly scopeBarangayId: BarangayId | null;
+}
+
+/**
+ * What the account list can be narrowed to (`DL-186`). With a verification status it holds the open
+ * residents' app accounts — role `registered` or `verified`, not closed — with that status: exactly
+ * those the dashboard counts by verification. Staff and closed accounts are not listed by it. The
+ * status narrows the list; it is not read onto a row, which carries the minimum (`DL-168`).
+ */
+export interface AppAccountFilter {
+  readonly verificationStatus?: AccountVerificationStatus;
 }
 
 /* ── roles, defined once (rule 7) ────────────────────────────────────────── */

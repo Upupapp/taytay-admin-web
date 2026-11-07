@@ -7863,3 +7863,111 @@ Document Request.
 - **Session progress**: `unclaimed` counted apart, `deferred` holding deferred only.
 - The `issuance_request.*` audit actions belong to the Document Request work (`DL-184`), not yet
   committed in the backend, and are left to it.
+
+## DL-186 — the follow-up round: every dashboard figure opens exactly what it counted, a session counts the unclaimed apart, the texts residents accept are published here, and "Try again" always does something
+
+The backend served what `DL-185` said the API would need: `taytay-backend` `0d1cb14` (issuance: a
+request found by its whole reference, `resident_id`, `VERIFICATION_REQUIRED`, an idempotency key on
+the resident's sends), `77da0b2` and `0f1ffec` (the Terms of Use and the privacy notice readable and
+published by an administrator), and `84c7159` (the dashboard's filters on the lists it links to, and
+`deferred_only` and `unclaimed` on a session's progress). The spec vendored here is `0f1ffec`'s (228
+operations).
+
+### Every dashboard figure opens a list filtered to exactly that figure
+
+- **Requests.** The list reads `category` and `missingRequirements` from the URL and sends them as
+  `category` and `owing_document` — the server counts "missing requirements" with the same SQL. A
+  programme type box and a "still owing a document" box are offered to every reader: neither is a
+  matter of data scope. `DL-185`'s notice that the list could not narrow that way is gone.
+- **Releases** (list and queue). `barangay`, `category`, `group=handed-over` and `period` are read
+  from the URL and sent as `barangay_id`, `category`, `status_group` and `period` (`all-time` is
+  not sent: it narrows nothing). The barangay box is offered to an office-wide reader only; an
+  own-barangay reader's link still carries its barangay and the server decides (another is 403). The
+  released-amount figure and each programme row of the money table now open **everything handed
+  over in the period** — released, claimed or completed. They used to open `status=released`, which
+  left out what had been claimed or completed: a wrong list, not only an unapplied filter. Payouts
+  due and unclaimed open by status, with no period, as they are counted. Notice gone.
+- **App accounts.** `?verification=` narrows the list to the open residents' accounts with that
+  status, sent as `verification_status`. Each verification row opens its own — including "waiting
+  for an ID review", which `DL-185` sent to the review queue: that row counts **accounts**, the
+  queue counts **reviews**, and the queue keeps its own headline figure. The status narrows the list
+  and is not read onto a row, which still carries the minimum (`DL-168`).
+- **The whole path is tested**, link by link: the drill-down's query parameters, read by the list
+  the link opens, reach the request its HTTP adapter sends (`dashboard-links.spec.ts`). The mock
+  adapters apply the same narrowings, and one function reads a mock account's verification for both
+  the dashboard's figures and the list.
+
+**Still not exact, and what the API would need:** the referral list reads no barangay and no
+programme type, though "referrals waiting for an answer" is counted by both — the list now says so
+when a figure carries them, as `DL-185` did for the other two lists, rather than dropping them; and
+the accounts headline ("registered", "new in the period") opens the whole account list, because the
+list has no "open residents' accounts" narrowing without a status and no period.
+
+### A session counts the unclaimed apart (`DL-94`)
+
+The mapper reads `deferred_only` and `unclaimed`, never the folded `deferred` the API keeps for
+older clients, so a session says "1 deferred, 2 unclaimed". `BatchProgress.unclaimed` is a number
+on every source and the "deferred or unclaimed" sentence `DL-185` needed is gone. `check:releases`
+is stricter for it: it fails if `unclaimed` may be `null` again, if `describeBatch` says the two as
+one, or if `toReleaseBatch` reads `deferred` or stops reading either count — each rule tried against
+a planted regression.
+
+### A resident's document request is found by its number
+
+- **A reference box** on the queue finds one request by its **whole** number, in whatever status,
+  inside the offices the account reads. The API refuses part of one (422), so part of one is refused
+  before it is sent (`wholeIssuanceReference`), in words, by the page, the HTTP adapter and the mock.
+  While a number is looked up the status and document filters stand aside, and the screen says so.
+- **One resident's requests:** `?resident=` (the app account, `resident_id`), linked from the request
+  page as "This resident's other requests".
+- **`VERIFICATION_REQUIRED`** joins the error vocabulary (`check:contract-drift`). Only a resident's
+  app is sent it; should it reach the console it is said as a refusal in the server's words and is
+  not taken for a missing grant (no `/forbidden`).
+- **The idempotency key** on submit, cancel and resubmit is the resident's app's, and changes nothing
+  here.
+
+### The Terms of Use and the privacy notice are published here
+
+**Supersedes `DL-170`'s "the privacy notice's text is the API's own and no route changes it"**, and
+with it the half of `check:app-settings`'s rule 5 that kept the mapper from reading the text.
+
+- **The legal texts are editable by an administrator** (`app-config.manage`) in the App settings
+  screen, **each with an explicit version the administrator chooses**. The API never derives or
+  bumps a version; publishing a text sets the version residents are asked to accept to its own.
+- **A version change asks every resident to accept the text again** in the app. The confirmation —
+  the existing one, effects before the button — says so plainly, and a new version needs the
+  administrator's acknowledgement, like a newer oldest app version. **The same version changes the
+  text without asking anyone to accept again**, and the confirmation says that too, with the advice
+  to keep a version only to correct a mistake that does not change what residents agree to.
+- **No legal text is invented or pre-filled.** While a text's version is `placeholder` the screen
+  says no text has been written yet, the placeholder's own sentence is not shown as the text, and
+  the editor starts empty; otherwise it starts from the published text. `placeholder` is refused as
+  a version, as the API refuses it. The mock serves both texts as the API's placeholders.
+- **Shown as text, never rendered.** The current text is shown as written, its formatting marks
+  visible; the app lays them out. No HTML is made from it.
+- The old version fields stay. A different version typed there beside a published text is refused
+  before it is sent (the API answers 422); the same one says nothing more and is folded away.
+
+`check:app-settings` gained rule 8 for the two texts — acknowledgement for a new version of either,
+the effects for a new and a kept version and for writing no legal text, the placeholder said to have
+no text, the editor started only from the published text, the placeholder's version refused, no
+HTML, each text read whole and sent with its version, no invented text in the mock — and was tried
+against ten planted regressions, each caught.
+
+### "Try again" re-runs the load everywhere
+
+Eighteen pages (24 panels) showed the shared error panel's "Try again" with nobody listening to it — events,
+newsfeed, households, the resident record and form, the administration pages, beneficiaries,
+programme detail, reports, search and the work queues. Fixed once, in the shared pattern:
+
+- a failure from `toViewState` carries `retry`, which subscribes to the same read again on the same
+  stream (the stream now stays open after a failure, waiting to be asked; after a value it completes
+  as before, and a retry asked after the screen has gone sends nothing);
+- `AsyncContent` tells a page that listens to `retryRequested` — that page owns its reload, and the
+  read is not run twice — and otherwise runs the failure's own `retry`;
+- a failure with neither gets **no button**, so no page can ship a "Try again" that does nothing.
+
+### Not verified
+
+Not run against a live API or the staging server; every request shape is held to the vendored spec
+by the contract checks and the HTTP specs.

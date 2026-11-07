@@ -102,6 +102,85 @@
           </div>
         </fieldset>
 
+        <!-- DL-186: the texts residents accept, shown as text and published with their version. -->
+        <fieldset class="settings__group">
+          <legend>{{ copy.legalHeading }}</legend>
+          <p class="settings__note">{{ copy.legalLead }}</p>
+
+          @for (kind of legalKinds; track kind) {
+            @let published = current[kind];
+            @let words = copy.legal[kind];
+            <section
+              class="settings__legal"
+              [attr.aria-labelledby]="'settings-' + kind + '-heading'"
+            >
+              <h3 class="settings__legal-heading" [id]="'settings-' + kind + '-heading'">
+                {{ words.heading }}
+              </h3>
+              @if (isPlaceholder(published)) {
+                <p class="settings__note" role="note">{{ words.noText }}</p>
+              } @else {
+                <p class="settings__note">
+                  {{
+                    copy.legalCurrent(
+                      published.version,
+                      (published.updatedAt | date: 'medium') ?? ''
+                    )
+                  }}
+                </p>
+                <details class="settings__legal-current">
+                  <summary>{{ words.read }}</summary>
+                  <p class="settings__note">{{ copy.legalAsWritten }}</p>
+                  <div class="settings__legal-text">{{ published.bodyMarkdown }}</div>
+                </details>
+              }
+
+              @if (isEditing(kind)) {
+                <div class="field field--narrow">
+                  <label class="field__label" [for]="'settings-' + kind + '-version'">
+                    {{ words.version }}
+                  </label>
+                  <p class="field__hint" [id]="'settings-' + kind + '-version-hint'">
+                    {{ copy.legalVersionHint }}
+                  </p>
+                  <input
+                    class="field__input"
+                    autocomplete="off"
+                    spellcheck="false"
+                    [id]="'settings-' + kind + '-version'"
+                    [attr.aria-describedby]="'settings-' + kind + '-version-hint'"
+                    [value]="draftVersion()[kind]"
+                    (input)="setDraftVersion(kind, text($event))"
+                  />
+                </div>
+                <div class="field">
+                  <label class="field__label" [for]="'settings-' + kind + '-body'">
+                    {{ words.body }}
+                  </label>
+                  <p class="field__hint" [id]="'settings-' + kind + '-body-hint'">
+                    {{ copy.legalBodyHint }}
+                  </p>
+                  <textarea
+                    class="field__input settings__legal-input"
+                    rows="14"
+                    [id]="'settings-' + kind + '-body'"
+                    [attr.aria-describedby]="'settings-' + kind + '-body-hint'"
+                    [value]="draftBody()[kind]"
+                    (input)="setDraftBody(kind, text($event))"
+                  ></textarea>
+                </div>
+                <button type="button" class="btn btn--secondary" (click)="stopEditing(kind)">
+                  {{ copy.legalPutAway }}
+                </button>
+              } @else {
+                <button type="button" class="btn btn--secondary" (click)="startEditing(kind)">
+                  {{ isPlaceholder(published) ? words.write : words.edit }}
+                </button>
+              }
+            </section>
+          }
+        </fieldset>
+
         <fieldset class="settings__group">
           <legend>{{ copy.flagsHeading }}</legend>
           <p class="settings__note">{{ copy.flagsLead }}</p>

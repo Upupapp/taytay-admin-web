@@ -215,6 +215,10 @@
 
   <p class="filters__hint" id="referral-search-hint">{{ copy.searchHint }}</p>
 
+  @if (notNarrowed().length > 0) {
+    <p class="referrals__hint" role="note">{{ copy.notNarrowed(notNarrowed()) }}</p>
+  }
+
   <app-data-table
     [caption]="copy.caption"
     [columns]="columns()"

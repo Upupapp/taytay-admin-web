@@ -18,6 +18,10 @@
     "fee_centavos": 5000,
     "processing_days": 3,
     "claim_instructions": "Claim at the MSWDO counter, weekdays 8:00 to 17:00.",
+    "accepts": {
+      "mime_types": ["application/pdf", "image/jpeg", "image/png"],
+      "max_bytes": 10485760
+    },
     "requirements": [
       { "code": "valid-id", "label": "A valid government ID", "required": true, "hint": null },
       {

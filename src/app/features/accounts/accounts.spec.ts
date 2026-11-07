@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { of, throwError, type Observable } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
@@ -19,6 +19,7 @@ import {
   type AccountBarangay,
   type AccountRole,
   type AppAccount,
+  type AppAccountFilter,
   type AppAccountId,
   type AppAccountRepository,
   type BarangayId,
@@ -77,14 +78,16 @@ function account(
 /** Records every call, so a test can say what was — and was not — asked of the data layer. */
 class RecordingAccounts implements AppAccountRepository {
   readonly listed: CursorRequest[] = [];
+  readonly filters: (AppAccountFilter | undefined)[] = [];
   readonly roleChanges: { id: string; role: AccountRole }[] = [];
   readonly assignments: { id: string; office: OfficeId | null }[] = [];
   readonly officeRoles: { id: string; change: OfficeRoleChange }[] = [];
   barangayReads = 0;
   failWith: unknown = null;
 
-  list(page: CursorRequest): Observable<CursorPage<AppAccount>> {
+  list(page: CursorRequest, filter?: AppAccountFilter): Observable<CursorPage<AppAccount>> {
     this.listed.push(page);
+    this.filters.push(filter);
     return of(
       page.cursor
         ? { items: [account('c', 'registered')], hasMore: false, nextCursor: null }
@@ -236,6 +239,36 @@ function chooseRole(element: HTMLElement, role: AccountRole): void {
 function liveRegion(element: HTMLElement): string {
   return element.querySelector('[role="status"][aria-live="polite"]')?.textContent?.trim() ?? '';
 }
+
+describe('AccountsPage — narrowed to one verification, as a dashboard row opens it (DL-186)', () => {
+  it('reads the accounts with the status the address names, and says what that list holds', async () => {
+    const repository = configure();
+    await TestBed.inject(Router).navigateByUrl('/?verification=pending');
+    const fixture = TestBed.createComponent(AccountsPage);
+    const element = await settle(fixture);
+
+    expect(repository.filters[0]).toEqual({ verificationStatus: 'pending' });
+    expect(element.querySelector<HTMLSelectElement>('#accounts-verification')?.value).toBe(
+      'pending',
+    );
+    expect(element.textContent).toContain(
+      'Staff accounts are not listed while a verification is chosen.',
+    );
+    // A narrowing, not a column: the rows still show the minimum.
+    expect(element.querySelectorAll('thead th')).toHaveLength(5);
+
+    buttonNamed(element, 'Show more')?.click();
+    await settle(fixture);
+    expect(repository.filters[1]).toEqual({ verificationStatus: 'pending' });
+  });
+
+  it('reads every account when the address names no status, or one it does not know', async () => {
+    const repository = configure();
+    await TestBed.inject(Router).navigateByUrl('/?verification=maybe');
+    await settle(TestBed.createComponent(AccountsPage));
+    expect(repository.filters[0]).toEqual({});
+  });
+});
 
 describe('AccountPanel (DL-168)', () => {
   it('offers no button until a role is chosen, then says what the server does before it', async () => {

@@ -9,16 +9,20 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { switchMap, tap } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { map, switchMap, tap } from 'rxjs';
 
 import { SessionStore } from '@core/auth/session.store';
 import {
   ACCOUNT_ROLE_CATALOG,
+  ACCOUNT_VERIFICATION_STATUSES,
   APP_ACCOUNT_REPOSITORY,
   isOwnAccount,
   OFFICE_REPOSITORY,
   takesAnOffice,
+  type AccountVerificationStatus,
   type AppAccount,
+  type AppAccountFilter,
   type CursorPage,
 } from '@domain/index';
 import { officeDirectory } from '@shared/offices/office-directory';
@@ -60,8 +64,25 @@ export class AccountsPage {
   private readonly repository = inject(APP_ACCOUNT_REPOSITORY);
   private readonly session = inject(SessionStore);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   protected readonly copy = ACCOUNTS_COPY.list;
+  protected readonly verificationStatuses = ACCOUNT_VERIFICATION_STATUSES;
+
+  /**
+   * `?verification=` — a dashboard row, or the box below. The URL is the filter (`DL-36`), so each
+   * verification figure opens exactly the accounts it counted (`DL-186`).
+   */
+  protected readonly filter = toSignal(this.route.queryParamMap.pipe(map(readAccountFilter)), {
+    initialValue: readAccountFilter(this.route.snapshot.queryParamMap),
+  });
+
+  /**
+   * The verification the list is narrowed to, or `null`. A narrowing of the list, never a column:
+   * a row still shows name, email, role and office only (`DL-168`).
+   */
+  protected readonly narrowedTo = computed(() => this.filter().verificationStatus ?? null);
   protected readonly catalog = ACCOUNT_ROLE_CATALOG;
   protected readonly directory = officeDirectory(inject(OFFICE_REPOSITORY).list());
 
@@ -79,13 +100,15 @@ export class AccountsPage {
   protected readonly moreFailed = signal(false);
 
   protected readonly first = toSignal(
-    toObservable(this.generation).pipe(
+    toObservable(computed(() => ({ generation: this.generation(), filter: this.filter() }))).pipe(
       tap(() => {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
       }),
-      switchMap(() => toViewState(this.repository.list({ limit: PAGE_SIZE, cursor: null }))),
+      switchMap(({ filter }) =>
+        toViewState(this.repository.list({ limit: PAGE_SIZE, cursor: null }, filter)),
+      ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<AppAccount>> },
   );
@@ -153,16 +176,17 @@ export class AccountsPage {
       return;
     }
     const generation = this.generation();
+    const filter = this.filter();
     this.loadingMore.set(true);
     this.moreFailed.set(false);
 
     this.repository
-      .list({ limit: PAGE_SIZE, cursor })
+      .list({ limit: PAGE_SIZE, cursor }, filter)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (page) => {
           // Read again meanwhile: this page continues a list nobody is looking at.
-          if (generation === this.generation()) {
+          if (generation === this.generation() && filter === this.filter()) {
             this.further.update((pages) => [...pages, page]);
           }
           this.loadingMore.set(false);
@@ -172,6 +196,16 @@ export class AccountsPage {
           this.moreFailed.set(true);
         },
       });
+  }
+
+  protected onVerification(event: Event): void {
+    const value = event.target instanceof HTMLSelectElement ? event.target.value : '';
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { verification: value === '' ? null : value },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   protected open(account: AppAccount): void {
@@ -187,4 +221,12 @@ export class AccountsPage {
     this.selected.set(account);
     this.reload();
   }
+}
+
+/** `?verification=` read as one of the four statuses; anything else narrows nothing. */
+export function readAccountFilter(params: { get(name: string): string | null }): AppAccountFilter {
+  const status: AccountVerificationStatus | undefined = ACCOUNT_VERIFICATION_STATUSES.find(
+    (value) => value === params.get('verification'),
+  );
+  return status === undefined ? {} : { verificationStatus: status };
 }

@@ -19,18 +19,23 @@ import {
   describeProcessingStandard,
   ISSUANCE_BOUNDARIES,
   ISSUANCE_OPEN_STATUSES,
+  ISSUANCE_REFERENCE_INCOMPLETE,
   ISSUANCE_REPOSITORY,
   ISSUANCE_STATUS_CATALOG,
   ISSUANCE_STATUSES,
   ISSUANCE_TERMINAL_STATUSES,
   isOpenIssuanceStatus,
   oldestWaitingFirst,
+  wholeIssuanceReference,
+  type AppAccountId,
   type CursorPage,
+  type IssuanceListFilter,
   type IssuanceQueueFilter,
   type IssuanceRequestSummary,
   type IssuanceType,
   type IssuanceTypeId,
 } from '@domain/index';
+import { readText } from '@shared/forms/form-values';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
@@ -52,11 +57,47 @@ interface QueueAnswer {
   readonly page: CursorPage<IssuanceRequestSummary> | null;
 }
 
-/** `?status=` absent is every open status; `?type=` absent is every document. */
-function readFilter(params: ParamMap): IssuanceQueueFilter {
+/**
+ * What the URL asks the queue for. `?status=` absent is every open status; `?type=` absent is every
+ * document; `?resident=` is one resident's requests. `?reference=` finds one request by its whole
+ * number in whatever status it is, and the other narrowings stand aside while it does (`DL-186`).
+ */
+export interface IssuanceQueueQuery {
+  readonly filter: IssuanceQueueFilter;
+  /** As given in the URL; part of a number is refused by the read, never matched. */
+  readonly reference: string | null;
+}
+
+export function readIssuanceQueueQuery(params: ParamMap): IssuanceQueueQuery {
   const status = ISSUANCE_STATUSES.find((candidate) => candidate === params.get('status')) ?? null;
   const type = params.get('type');
-  return { status, typeId: type === null || type === '' ? null : asId<IssuanceTypeId>(type) };
+  const resident = params.get('resident')?.trim() ?? '';
+  const reference = params.get('reference')?.trim() ?? '';
+  const filter: IssuanceQueueFilter = {
+    status,
+    typeId: type === null || type === '' ? null : asId<IssuanceTypeId>(type),
+    ...(resident === '' ? {} : { residentAccountId: asId<AppAccountId>(resident) }),
+  };
+  return { filter, reference: reference === '' ? null : reference };
+}
+
+/**
+ * The filter a read pages through, or `null` when the open requests are read whole: a reference in
+ * every status, or one ended status.
+ */
+function pagedFilter(query: IssuanceQueueQuery): IssuanceListFilter | null {
+  if (query.reference !== null) {
+    return { status: null, typeId: null, reference: query.reference };
+  }
+  const { status, typeId, residentAccountId } = query.filter;
+  if (status === null || isOpenIssuanceStatus(status)) {
+    return null;
+  }
+  return {
+    status,
+    typeId,
+    ...(residentAccountId === undefined ? {} : { residentAccountId }),
+  };
 }
 
 /**
@@ -70,6 +111,11 @@ function readFilter(params: ParamMap): IssuanceQueueFilter {
  *
  * **Ended requests only grow**, so a status that has ended is browsed a page at a time in the
  * server's order, and the screen says more exist rather than a total nobody computed.
+ *
+ * **Found by its whole number** (`DL-186`). A resident quotes the reference at the counter; the box
+ * finds that one request in whatever status, inside the offices this account reads. Part of a number
+ * is refused before it is sent, as the API refuses it. `?resident=` narrows the queue to one
+ * resident's requests, which the request page links to.
  *
  * **No deadline is invented** (`DL-101`). The waiting time is in calendar days; the office's own
  * standard is in working days, from its Citizen's Charter, and is shown beside it — never
@@ -104,15 +150,24 @@ export class IssuanceQueuePage {
   private readonly statusCell =
     viewChild.required<TemplateRef<{ $implicit: IssuanceRequestSummary }>>('statusCell');
 
-  protected readonly filter = toSignal(this.route.queryParamMap.pipe(map(readFilter)), {
-    initialValue: readFilter(this.route.snapshot.queryParamMap),
+  private readonly query = toSignal(this.route.queryParamMap.pipe(map(readIssuanceQueueQuery)), {
+    initialValue: readIssuanceQueueQuery(this.route.snapshot.queryParamMap),
   });
+
+  protected readonly filter = computed(() => this.query().filter);
+  /** The whole number being looked up, or `null` for the queue (`DL-186`). */
+  protected readonly reference = computed(() => this.query().reference);
+  protected readonly forResident = computed(() => this.filter().residentAccountId !== undefined);
+
+  /** The box as typed; the URL takes it only once it is a whole number. */
+  protected readonly referenceText = signal(this.query().reference ?? '');
+  protected readonly referenceProblem = signal<string | null>(null);
 
   protected readonly statusValue = computed(() => this.filter().status ?? 'open');
   protected readonly typeValue = computed(() => this.filter().typeId ?? '');
   protected readonly ended = computed(() => {
     const status = this.filter().status;
-    return status !== null && !isOpenIssuanceStatus(status);
+    return this.reference() !== null || (status !== null && !isOpenIssuanceStatus(status));
   });
 
   /** The catalogue residents choose from — every office's active types — for the type filter. */
@@ -133,13 +188,14 @@ export class IssuanceQueuePage {
   protected readonly moreFailed = signal(false);
 
   protected readonly first = toSignal(
-    toObservable(computed(() => ({ filter: this.filter(), generation: this.generation() }))).pipe(
-      tap(() => {
+    toObservable(computed(() => ({ query: this.query(), generation: this.generation() }))).pipe(
+      tap(({ query }) => {
+        this.referenceText.set(query.reference ?? '');
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
       }),
-      switchMap(({ filter }) => toViewState(this.read(filter))),
+      switchMap(({ query }) => toViewState(this.read(query))),
     ),
     { initialValue: LOADING as ViewState<QueueAnswer> },
   );
@@ -165,9 +221,12 @@ export class IssuanceQueuePage {
     return last !== null && last.hasMore && last.nextCursor !== null;
   });
 
-  protected readonly emptyMessage = computed(() =>
-    this.filter().status === null ? this.copy.emptyOpen : this.copy.emptyOther,
-  );
+  protected readonly emptyMessage = computed(() => {
+    if (this.reference() !== null) {
+      return this.copy.emptyReference;
+    }
+    return this.filter().status === null ? this.copy.emptyOpen : this.copy.emptyOther;
+  });
 
   protected readonly rowKey = (request: IssuanceRequestSummary): string => request.id;
 
@@ -206,25 +265,54 @@ export class IssuanceQueuePage {
     this.generation.update((n) => n + 1);
   }
 
+  protected onReferenceInput(event: Event): void {
+    this.referenceText.set(readText(event));
+  }
+
+  /**
+   * Looks a request up by its whole number, in any status. Part of one is said here and never sent:
+   * the API matches the whole number only (`DL-186`).
+   */
+  protected findReference(): void {
+    const reference = wholeIssuanceReference(this.referenceText());
+    if (reference === null) {
+      this.referenceProblem.set(ISSUANCE_REFERENCE_INCOMPLETE);
+      return;
+    }
+    this.referenceProblem.set(null);
+    this.referenceText.set(reference);
+    this.navigate({ reference });
+  }
+
+  protected clearReference(): void {
+    this.referenceText.set('');
+    this.referenceProblem.set(null);
+    this.navigate({ reference: null });
+  }
+
+  protected clearResident(): void {
+    this.navigate({ resident: null });
+  }
+
   protected showMore(): void {
     const cursor = this.lastPage()?.nextCursor ?? null;
-    const status = this.filter().status;
-    if (cursor === null || status === null || this.loadingMore()) {
+    const query = this.query();
+    const paged = pagedFilter(query);
+    if (cursor === null || paged === null || this.loadingMore()) {
       return;
     }
 
     const generation = this.generation();
-    const filter = this.filter();
     this.loadingMore.set(true);
     this.moreFailed.set(false);
 
     this.repository
-      .list({ status, typeId: filter.typeId }, { limit: PAGE_SIZE, cursor })
+      .list(paged, { limit: PAGE_SIZE, cursor })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (page) => {
           // The list was read again meanwhile; this page continues one nobody is looking at.
-          if (generation === this.generation() && filter === this.filter()) {
+          if (generation === this.generation() && query === this.query()) {
             this.further.update((pages) => [...pages, page]);
           }
           this.loadingMore.set(false);
@@ -247,15 +335,15 @@ export class IssuanceQueuePage {
       : '—';
   }
 
-  private read(filter: IssuanceQueueFilter): Observable<QueueAnswer> {
-    const status = filter.status;
-    if (status !== null && !isOpenIssuanceStatus(status)) {
+  private read(query: IssuanceQueueQuery): Observable<QueueAnswer> {
+    const paged = pagedFilter(query);
+    if (paged !== null) {
       return this.repository
-        .list({ status, typeId: filter.typeId }, { limit: PAGE_SIZE, cursor: null })
+        .list(paged, { limit: PAGE_SIZE, cursor: null })
         .pipe(map((page) => ({ rows: page.items, page })));
     }
     return this.repository
-      .waiting(filter)
+      .waiting(query.filter)
       .pipe(map((rows) => ({ rows: oldestWaitingFirst(rows), page: null })));
   }
 

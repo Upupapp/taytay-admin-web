@@ -253,15 +253,33 @@ describe('every metric traces back to filtered records', () => {
     // `open`, the list's own key — the figure used to send `openOnly`, which nothing read.
     expect(query.filter).toEqual({ openOnly: true, barangayId: 'brgy-dolores' });
 
+    // Applied now, not merely named: the API reads both (`DL-186`).
     const missing = attentionDrillDown('missing-requirements', {});
-    expect(readRequestQuery(reader(missing.queryParams)).filter).toEqual({ openOnly: true });
-    expect(readRequestQuery(reader(missing.queryParams)).notNarrowed).toEqual([
-      'missing-requirements',
-    ]);
+    expect(readRequestQuery(reader(missing.queryParams)).filter).toEqual({
+      openOnly: true,
+      owingDocument: true,
+    });
 
     const due = attentionDrillDown('payout-due', { barangayId: SAN_JUAN });
-    expect(readReleaseQuery(reader(due.queryParams)).filter).toEqual({ status: 'scheduled' });
-    expect(readReleaseQuery(reader(due.queryParams)).notNarrowed).toEqual(['barangay']);
+    expect(readReleaseQuery(reader(due.queryParams)).filter).toEqual({
+      status: 'scheduled',
+      barangayId: SAN_JUAN,
+    });
+  });
+
+  it('opens the released figure as everything handed over in the period, not only "released" (DL-186)', async () => {
+    const element = html(
+      await setUp('mswdo-head', null, '/dashboard?period=last-90-days&category=medical-assistance'),
+    );
+    const disbursed = Array.from(
+      element.querySelectorAll<HTMLAnchorElement>('a.metric[href^="/releases"]'),
+    ).find((link) => link.textContent?.includes(DASHBOARD_COPY.disbursed));
+    const href = new URL(disbursed?.getAttribute('href') ?? '', 'http://console.test');
+    expect(readReleaseQuery({ get: (name) => href.searchParams.get(name) }).filter).toEqual({
+      statusGroup: 'handed-over',
+      period: 'last-90-days',
+      category: 'medical-assistance',
+    });
   });
 
   it('states the rule each signal counted by, as the counter gave it (DL-98)', async () => {
@@ -520,16 +538,18 @@ describe('payouts and the residents’ app are absent for a reader who cannot op
     expect(section?.querySelector('table')).not.toBeNull();
   });
 
-  it('opens the ID review queue from "Waiting for an ID review" (DL-185)', async () => {
+  it('opens each verification row as the accounts with that status, which it counted (DL-186)', async () => {
     const element = html(await setUp('system-administrator'));
     const rows = Array.from(element.querySelectorAll<HTMLAnchorElement>('.app-figures table a'));
-    const waiting = rows.find((link) =>
-      link.textContent?.includes(DASHBOARD_COPY.verificationStatus.pending),
-    );
-    expect(waiting?.getAttribute('href')).toBe('/verification');
-    const verified = rows.find((link) =>
-      link.textContent?.includes(DASHBOARD_COPY.verificationStatus.verified),
-    );
-    expect(verified?.getAttribute('href')).toBe('/users');
+    for (const status of ['unverified', 'pending', 'verified', 'rejected'] as const) {
+      const row = rows.find((link) =>
+        link.textContent?.includes(DASHBOARD_COPY.verificationStatus[status]),
+      );
+      expect(row?.getAttribute('href'), status).toBe(`/users?verification=${status}`);
+    }
+    // The review queue keeps its own figure, which counts reviews rather than accounts.
+    expect(
+      element.querySelector<HTMLAnchorElement>('.app-figures a.metric[href="/verification"]'),
+    ).not.toBeNull();
   });
 });

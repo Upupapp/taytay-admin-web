@@ -335,6 +335,67 @@ describe('IssuanceQueuePage (DL-184)', () => {
   });
 });
 
+describe('IssuanceQueuePage — by reference and by resident (DL-186)', () => {
+  it('finds one request by its whole number, in every status, and nothing else narrows it', async () => {
+    const repository = configure();
+    await TestBed.inject(Router).navigateByUrl('/?reference=DR-2026-000004&status=approved');
+    const element = await settle(TestBed.createComponent(IssuanceQueuePage));
+
+    expect(repository.waited).toHaveLength(0);
+    expect(repository.listed[0]).toEqual({
+      filter: { status: null, typeId: null, reference: 'DR-2026-000004' },
+      page: { limit: 20, cursor: null },
+    });
+    expect(element.textContent).toContain(ISSUANCE_COPY.queue.referenceShown('DR-2026-000004'));
+    // The status and document filters stand aside while a number is looked up.
+    expect(element.querySelector('#issuance-status')).toBeNull();
+  });
+
+  it('sends a whole number as the API reads it, and never part of one', async () => {
+    const repository = configure();
+    const fixture = TestBed.createComponent(IssuanceQueuePage);
+    const element = await settle(fixture);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const box = element.querySelector<HTMLInputElement>('#issuance-reference');
+
+    type(box, 'DR-2026-0001');
+    buttonNamed(element, ISSUANCE_COPY.queue.find)?.click();
+    await settle(fixture);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain('whole reference');
+
+    type(box, '  dr-2026-000123 ');
+    buttonNamed(element, ISSUANCE_COPY.queue.find)?.click();
+    expect(navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({ queryParams: { reference: 'DR-2026-000123' } }),
+    );
+    expect(repository.listed.some((call) => call.filter.reference === 'DR-2026-0001')).toBe(false);
+  });
+
+  it('narrows the queue to one resident when the address names one', async () => {
+    const repository = configure();
+    await TestBed.inject(Router).navigateByUrl('/?resident=account-1');
+    const element = await settle(TestBed.createComponent(IssuanceQueuePage));
+
+    expect(repository.waited[0]).toEqual({
+      status: null,
+      typeId: null,
+      residentAccountId: 'account-1',
+    });
+    expect(element.textContent).toContain(ISSUANCE_COPY.queue.residentShown);
+
+    await TestBed.inject(Router).navigateByUrl('/?resident=account-1&status=released');
+    const ended = TestBed.createComponent(IssuanceQueuePage);
+    await settle(ended);
+    expect(repository.listed.at(-1)?.filter).toEqual({
+      status: 'released',
+      typeId: null,
+      residentAccountId: 'account-1',
+    });
+  });
+});
+
 /* ── one request ─────────────────────────────────────────────────────────── */
 
 describe('IssuanceRequestPage (DL-184)', () => {

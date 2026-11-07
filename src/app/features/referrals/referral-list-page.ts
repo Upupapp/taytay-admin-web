@@ -427,7 +427,11 @@ export class ReferralListPage {
     ...this.further().flatMap((page) => page.items),
   ]);
   protected readonly filter = computed(() => this.query().filter);
-  protected readonly hasFilters = computed(() => isReferralFilterActive(this.filter()));
+  /** What a dashboard figure asked for that this list cannot narrow by, said rather than dropped. */
+  protected readonly notNarrowed = computed(() => this.query().notNarrowed);
+  protected readonly hasFilters = computed(
+    () => isReferralFilterActive(this.filter()) || this.notNarrowed().length > 0,
+  );
   protected readonly failure = computed(() => {
     const state = this.state();
     return state.kind === 'error' ? state.message : null;

@@ -18,10 +18,59 @@
     <label class="filters__field">
       <span class="filters__label">{{ copy.status }}</span>
       <select class="filters__input" (change)="onStatus($event)">
-        <option value="" [selected]="!filter().status">{{ copy.allStatuses }}</option>
+        <option value="" [selected]="!filter().status && !filter().statusGroup">
+          {{ copy.allStatuses }}
+        </option>
+        <option
+          [value]="handedOverOption"
+          [selected]="!filter().status && filter().statusGroup === 'handed-over'"
+        >
+          {{ groupLabels['handed-over'] }}
+        </option>
         @for (value of statuses; track value) {
           <option [value]="value" [selected]="filter().status === value">
             {{ statusLabel(value) }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.periodField }}</span>
+      <select
+        class="filters__input"
+        aria-describedby="release-period-hint"
+        (change)="onPeriod($event)"
+      >
+        @for (value of periods; track value) {
+          <option [value]="value" [selected]="(filter().period ?? 'all-time') === value">
+            {{ periodLabel(value) }}
+          </option>
+        }
+      </select>
+    </label>
+
+    @if (filtersByBarangay()) {
+      <label class="filters__field">
+        <span class="filters__label">{{ copy.barangay }}</span>
+        <select class="filters__input" (change)="onBarangay($event)">
+          <option value="" [selected]="!filter().barangayId">{{ copy.anyBarangay }}</option>
+          @for (barangay of barangays; track barangay.id) {
+            <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
+              {{ barangay.name }}
+            </option>
+          }
+        </select>
+      </label>
+    }
+
+    <label class="filters__field">
+      <span class="filters__label">{{ copy.category }}</span>
+      <select class="filters__input" (change)="onCategory($event)">
+        <option value="" [selected]="!filter().category">{{ copy.anyCategory }}</option>
+        @for (value of categories; track value) {
+          <option [value]="value" [selected]="filter().category === value">
+            {{ categoryLabels[value] }}
           </option>
         }
       </select>
@@ -49,9 +98,7 @@
     }
   </div>
 
-  @if (notNarrowed().length > 0) {
-    <p class="releases__hint" role="note">{{ copy.notNarrowed(notNarrowed()) }}</p>
-  }
+  <p class="releases__hint" id="release-period-hint">{{ copy.periodHint }}</p>
 
   <app-async-content
     [state]="state()"

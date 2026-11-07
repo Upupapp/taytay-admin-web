@@ -34,11 +34,13 @@ import {
   attentionDrillDown,
   barangayDrillDown,
   categoryDrillDown,
+  handedOverDrillDown,
   RECORD_REQUEST,
   SCHEDULE_PAYOUTS,
   releasesDrillDown,
   requestsDrillDown,
   statusDrillDown,
+  verificationDrillDown,
   type DrillDown,
 } from './dashboard-drill-down';
 
@@ -204,25 +206,26 @@ export class DashboardPage {
   });
 
   /**
-   * The app's accounts by verification standing. "Waiting for an ID review" opens the review queue,
-   * which lists exactly those, to a reader who may open it (`DL-185`); every other row opens the
-   * accounts list — the list these figures count — unfiltered, because the API's account list takes
-   * no verification filter and the app's figures are not narrowed by the dashboard filter.
+   * The app's accounts by verification standing. Each row opens the accounts list narrowed to its
+   * own status — the open residents' accounts with it, exactly what the row counted (`DL-186`).
+   * "Waiting for an ID review" counts accounts, not reviews: the review queue is the headline figure
+   * beside it, and it keeps its own link.
    */
   protected readonly verificationRows = computed<readonly ChartRow[]>(() => {
     const accounts = valueOf(this.state())?.residentApp?.accounts;
     if (!accounts) {
       return [];
     }
-    return ACCOUNT_VERIFICATION_STATUSES.map((status) => ({
-      key: status,
-      label: this.copy.verificationStatus[status],
-      value: accounts.byVerification[status],
-      routerLink:
-        status === 'pending' && this.permissions.has('verification.review')
-          ? '/verification'
-          : '/users',
-    }));
+    return ACCOUNT_VERIFICATION_STATUSES.map((status) => {
+      const drill = verificationDrillDown(status);
+      return {
+        key: status,
+        label: this.copy.verificationStatus[status],
+        value: accounts.byVerification[status],
+        routerLink: drill.route,
+        queryParams: drill.queryParams,
+      };
+    });
   });
 
   /* ── drill-down targets for the headline figures ────────────────────────── */
@@ -239,8 +242,9 @@ export class DashboardPage {
     return releasesDrillDown(summary.appliedFilter, { status: 'scheduled' });
   }
 
+  /** Released, claimed or completed within the period: what the amount and its hint counted. */
   protected disbursedLink(summary: DashboardSummary): DrillDown {
-    return releasesDrillDown(summary.appliedFilter, { status: 'released' });
+    return handedOverDrillDown(summary.appliedFilter);
   }
 
   /** "12 new in the last 30 days", or nothing when the period is every record. */

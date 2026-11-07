@@ -20,7 +20,17 @@ const CONFIG: AppConfig = {
   termsVersion: '2026-01',
   minimumAppVersion: '1.4.0',
   featureFlags: [{ key: 'show_digital_id', value: 'true' }],
-  privacyNotice: { version: '2026-01', updatedAt: asIsoDateTime('2026-01-01T00:00:00.000Z') },
+  privacyNotice: {
+    version: '2026-01',
+    updatedAt: asIsoDateTime('2026-01-01T00:00:00.000Z'),
+    bodyMarkdown: 'The privacy notice the LGU published, as **written**.',
+  },
+  // Still the API's placeholder: no text has been written for it yet.
+  terms: {
+    version: 'placeholder',
+    updatedAt: asIsoDateTime('2026-01-01T00:00:00.000Z'),
+    bodyMarkdown: 'This is a placeholder for the Terms of Use.',
+  },
   updatedAt: asIsoDateTime('2026-10-01T00:00:00.000Z'),
 };
 
@@ -62,7 +72,7 @@ async function settle<T>(fixture: ComponentFixture<T>): Promise<HTMLElement> {
 }
 
 function type(selector: string, value: string): void {
-  const input = document.querySelector<HTMLInputElement>(selector);
+  const input = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(selector);
   if (input === null) throw new Error(`No ${selector}.`);
   input.value = value;
   input.dispatchEvent(new Event('input'));
@@ -212,5 +222,132 @@ describe('AppSettingsPage (DL-170)', () => {
     expect(document.querySelector('[role="dialog"] [role="alert"]')?.textContent).toContain(
       'Not saved. The request could not be validated.',
     );
+  });
+});
+
+describe('AppSettingsPage — the Terms of Use and the privacy notice (DL-186)', () => {
+  it('shows each text with its version, and says when none has been written', async () => {
+    configure();
+    const element = await settle(TestBed.createComponent(AppSettingsPage));
+    const notice = element.querySelector('#settings-privacyNotice-heading')?.closest('section');
+    const terms = element.querySelector('#settings-terms-heading')?.closest('section');
+
+    expect(notice?.textContent).toContain('Version 2026-01, published');
+    // As text, never rendered: the marks stay as typed, and no element is made of them.
+    expect(notice?.querySelector('.settings__legal-text')?.textContent).toBe(
+      'The privacy notice the LGU published, as **written**.',
+    );
+    expect(notice?.querySelector('.settings__legal-text strong')).toBeNull();
+    expect(terms?.textContent).toContain('No text has been written yet.');
+    // The placeholder's own sentence is not shown as if it were the Terms of Use.
+    expect(terms?.textContent).not.toContain('This is a placeholder for the Terms of Use.');
+  });
+
+  it('starts the editor empty for the placeholder, and from the published text otherwise', async () => {
+    configure();
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+
+    buttonNamed('Write the Terms of Use')?.click();
+    buttonNamed('Change the privacy notice')?.click();
+    await settle(fixture);
+
+    const value = (selector: string) =>
+      document.querySelector<HTMLInputElement | HTMLTextAreaElement>(selector)?.value;
+    expect(value('#settings-terms-version')).toBe('');
+    expect(value('#settings-terms-body')).toBe('');
+    expect(value('#settings-privacyNotice-version')).toBe('2026-01');
+    expect(value('#settings-privacyNotice-body')).toBe(
+      'The privacy notice the LGU published, as **written**.',
+    );
+    // Opening an editor changes nothing by itself.
+    expect(fixture.nativeElement.textContent).toContain('Nothing has changed yet.');
+  });
+
+  it('says before the button that a new version makes every resident accept again, and waits for the acknowledgement', async () => {
+    const repository = configure();
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+
+    buttonNamed('Write the Terms of Use')?.click();
+    await settle(fixture);
+    type('#settings-terms-version', ' 2026-11 ');
+    type('#settings-terms-body', 'The Terms of Use the LGU approved.');
+    await settle(fixture);
+    const dialog = await review(fixture);
+
+    const said = dialog?.textContent ?? '';
+    expect(said).toContain(
+      'This is a new version, 2026-11, so it makes every resident accept the Terms of Use again in the app',
+    );
+    const effect = [...(dialog?.querySelectorAll('li') ?? [])].find((item) =>
+      item.textContent?.includes('makes every resident accept'),
+    );
+    const save = buttonNamed('Save the settings');
+    expect(effect === undefined || save === null).toBe(false);
+    if (effect !== undefined && save !== null) {
+      // The sentence comes before the button in the document, not after it.
+      expect(effect.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    expect(save?.disabled).toBe(true);
+    save?.click();
+    await settle(fixture);
+    expect(repository.changes).toEqual([]);
+
+    const box = dialog?.querySelector<HTMLInputElement>('input[type="checkbox"]');
+    if (box === null || box === undefined) throw new Error('No acknowledgement.');
+    box.checked = true;
+    box.dispatchEvent(new Event('change'));
+    await settle(fixture);
+    buttonNamed('Save the settings')?.click();
+    await settle(fixture);
+
+    expect(repository.changes).toEqual([
+      { terms: { version: '2026-11', bodyMarkdown: 'The Terms of Use the LGU approved.' } },
+    ]);
+  });
+
+  it('says the same version changes the text without asking anyone to accept again', async () => {
+    const repository = configure();
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+
+    buttonNamed('Change the privacy notice')?.click();
+    await settle(fixture);
+    type('#settings-privacyNotice-body', 'The privacy notice, with a typing mistake corrected.');
+    await settle(fixture);
+    const dialog = await review(fixture);
+
+    expect(dialog?.textContent).toContain(
+      'The version stays 2026-01, so the text changes without asking anyone to accept again',
+    );
+    expect(dialog?.querySelector('input[type="checkbox"]')).toBeNull();
+    buttonNamed('Save the settings')?.click();
+    await settle(fixture);
+    expect(repository.changes).toEqual([
+      {
+        privacyNotice: {
+          version: '2026-01',
+          bodyMarkdown: 'The privacy notice, with a typing mistake corrected.',
+        },
+      },
+    ]);
+  });
+
+  it('refuses the placeholder’s version and an empty text before anything is sent', async () => {
+    const repository = configure();
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+
+    buttonNamed('Write the Terms of Use')?.click();
+    await settle(fixture);
+    type('#settings-terms-version', 'Placeholder');
+    await settle(fixture);
+
+    expect(await review(fixture)).toBeNull();
+    const problems = document.querySelector('.settings__problems')?.textContent ?? '';
+    expect(problems).toContain('marks the text that ships until the approved one is written');
+    expect(problems).toContain('Nothing is written for the Terms of Use.');
+    expect(repository.changes).toEqual([]);
   });
 });

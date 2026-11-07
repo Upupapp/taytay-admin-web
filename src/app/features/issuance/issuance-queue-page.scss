@@ -47,3 +47,15 @@
   gap: var(--space-snug);
   margin-block-start: var(--space-snug);
 }
+
+.queue__find,
+.queue__narrowed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-snug);
+}
+
+.queue__find .queue__problem {
+  flex-basis: 100%;
+}

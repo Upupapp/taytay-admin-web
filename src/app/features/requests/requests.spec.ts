@@ -187,7 +187,6 @@ describe('the request list filter lives in the URL', () => {
   it('keeps the filter and nothing else — the server orders and pages the list (DL-36)', () => {
     expect(readRequestQuery(params({ page: '2', sort: 'status', direction: 'asc' }))).toEqual({
       filter: {},
-      notNarrowed: [],
     });
   });
 
@@ -199,12 +198,17 @@ describe('the request list filter lives in the URL', () => {
     expect(readRequestQuery(params({ barangay: 'atlantis' })).filter).toEqual({});
   });
 
-  it('names what a dashboard figure narrowed by that the list cannot (DL-185)', () => {
+  it('applies the programme type and "still owing a document" a dashboard figure opens with (DL-186)', () => {
     const query = readRequestQuery(
-      params({ category: 'medical', missingRequirements: 'true', open: 'true' }),
+      params({ category: 'medical-assistance', missingRequirements: 'true', open: 'true' }),
     );
-    expect(query.filter).toEqual({ openOnly: true });
-    expect(query.notNarrowed).toEqual(['category', 'missing-requirements']);
+    expect(query.filter).toEqual({
+      openOnly: true,
+      category: 'medical-assistance',
+      owingDocument: true,
+    });
+    // A programme type Taytay's catalogue does not have narrows nothing rather than everything.
+    expect(readRequestQuery(params({ category: 'medical' })).filter).toEqual({});
   });
 
   it('never filters the table to drafts, which are read above it', () => {

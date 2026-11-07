@@ -83,3 +83,40 @@
   margin: 0 0 var(--space-2);
   padding-inline-start: var(--space-5);
 }
+
+/* DL-186: the texts residents accept, read and published here. */
+.settings__legal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-snug);
+  padding-block: var(--space-snug);
+  border-block-start: 1px solid var(--c-border);
+}
+
+.settings__legal-heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.settings__legal-current {
+  align-self: stretch;
+}
+
+/* As written: the text is shown, never rendered as markup. */
+.settings__legal-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: var(--space-snug);
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+}
+
+.settings__legal-input {
+  min-block-size: 16rem;
+  font-family: inherit;
+}
+
+.settings__legal .field {
+  align-self: stretch;
+}

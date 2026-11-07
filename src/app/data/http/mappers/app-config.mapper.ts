@@ -1,4 +1,10 @@
-import type { AppConfig, AppConfigChanges, FeatureFlag } from '@domain/index';
+import type {
+  AppConfig,
+  AppConfigChanges,
+  FeatureFlag,
+  LegalText,
+  LegalTextDraft,
+} from '@domain/index';
 
 import { dateTime, field, str } from './wire';
 
@@ -23,14 +29,27 @@ function flagsOf(value: unknown): readonly FeatureFlag[] | null {
 }
 
 /**
+ * A text residents accept, read whole or not at all: a text shown without its version could be
+ * edited and republished under the wrong one (`DL-186`). The text is read exactly as sent.
+ */
+function legalTextOf(value: unknown): LegalText | null {
+  const version = str(field(value, 'version'));
+  const updatedAt = dateTime(field(value, 'updated_at'));
+  const bodyMarkdown = str(field(value, 'body_markdown'));
+  return version === null || updatedAt === null || bodyMarkdown === null
+    ? null
+    : { version, updatedAt, bodyMarkdown };
+}
+
+/**
  * `AppConfig` → `AppConfig` (`DL-170`).
  *
  * Every setting is required by the spec, nullable, and read as it is: a setting the console could
  * not read would be shown as "not set" and saved as such by the next change, so an unreadable one
  * makes the whole configuration unreadable instead.
  *
- * **Not read**: `privacy_notice.body_markdown`, the notice's text — the API keeps it and no route
- * changes it, so this screen shows its version and date and nothing else.
+ * The privacy notice and the Terms of Use are read with their text (`DL-186`), because an
+ * administrator now publishes both here, and the screen shows what residents are shown.
  *
  * @consumes GET app/config
  * @consumes PATCH admin/app/config
@@ -42,9 +61,8 @@ export function toAppConfig(wire: unknown): AppConfig | null {
   const termsVersion = setting(field(wire, 'terms_version'));
   const minimumAppVersion = setting(field(wire, 'minimum_app_version'));
   const featureFlags = flagsOf(field(wire, 'feature_flags'));
-  const notice = field(wire, 'privacy_notice');
-  const noticeVersion = str(field(notice, 'version'));
-  const noticeUpdatedAt = dateTime(field(notice, 'updated_at'));
+  const privacyNotice = legalTextOf(field(wire, 'privacy_notice'));
+  const terms = legalTextOf(field(wire, 'terms'));
   const updatedAt = dateTime(field(wire, 'updated_at'));
 
   if (
@@ -54,8 +72,8 @@ export function toAppConfig(wire: unknown): AppConfig | null {
     termsVersion === undefined ||
     minimumAppVersion === undefined ||
     featureFlags === null ||
-    noticeVersion === null ||
-    noticeUpdatedAt === null ||
+    privacyNotice === null ||
+    terms === null ||
     updatedAt === null
   ) {
     return null;
@@ -68,7 +86,8 @@ export function toAppConfig(wire: unknown): AppConfig | null {
     termsVersion,
     minimumAppVersion,
     featureFlags,
-    privacyNotice: { version: noticeVersion, updatedAt: noticeUpdatedAt },
+    privacyNotice,
+    terms,
     updatedAt,
   };
 }
@@ -81,6 +100,20 @@ export interface AppConfigPatchWire {
   readonly terms_version: string | null | undefined;
   readonly minimum_app_version: string | null | undefined;
   readonly feature_flags: Readonly<Record<string, string | null>> | undefined;
+  readonly terms: LegalTextWire | undefined;
+  readonly privacy_notice: LegalTextWire | undefined;
+}
+
+/** `TermsOfUseWrite` and `PrivacyNoticeWrite`: the text and its version, always together. */
+export interface LegalTextWire {
+  readonly version: string;
+  readonly body_markdown: string;
+}
+
+function toWireLegalText(draft: LegalTextDraft | undefined): LegalTextWire | undefined {
+  return draft === undefined
+    ? undefined
+    : { version: draft.version.trim(), body_markdown: draft.bodyMarkdown.trim() };
 }
 
 export function toWireAppConfigChanges(changes: AppConfigChanges): AppConfigPatchWire {
@@ -94,5 +127,7 @@ export function toWireAppConfigChanges(changes: AppConfigChanges): AppConfigPatc
       changes.featureFlags === undefined || changes.featureFlags.length === 0
         ? undefined
         : Object.fromEntries(changes.featureFlags.map((flag) => [flag.key, flag.value])),
+    terms: toWireLegalText(changes.terms),
+    privacy_notice: toWireLegalText(changes.privacyNotice),
   };
 }

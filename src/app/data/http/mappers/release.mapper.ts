@@ -169,7 +169,9 @@ export function toReleaseBatch(wire: unknown): ReleaseBatch | null {
     released: int(field(progress, 'released')),
     acknowledged: int(field(progress, 'acknowledged')),
     outstanding: int(field(progress, 'outstanding')),
-    deferred: int(field(progress, 'deferred')),
+    // `deferred` on the wire still holds both, for older clients; these are the two apart (`DL-186`).
+    deferredOnly: int(field(progress, 'deferred_only')),
+    unclaimed: int(field(progress, 'unclaimed')),
     needsCorrection: int(field(progress, 'needs_correction')),
     releasedTotal: int(field(progress, 'released_total_centavos')),
   };
@@ -186,7 +188,8 @@ export function toReleaseBatch(wire: unknown): ReleaseBatch | null {
     counts.released === null ||
     counts.acknowledged === null ||
     counts.outstanding === null ||
-    counts.deferred === null ||
+    counts.deferredOnly === null ||
+    counts.unclaimed === null ||
     counts.needsCorrection === null ||
     counts.releasedTotal === null
   ) {
@@ -206,10 +209,9 @@ export function toReleaseBatch(wire: unknown): ReleaseBatch | null {
       released: counts.released,
       acknowledged: counts.acknowledged,
       outstanding: counts.outstanding,
-      // The API counts unclaimed into `deferred` ("deferred or unclaimed"), so the two cannot be told
-      // apart here; `null` makes the screen say both rather than blame either (`DL-94`, `DL-185`).
-      deferred: counts.deferred,
-      unclaimed: null,
+      // The office's failing and nobody's, counted apart by the server (`DL-94`, `DL-186`).
+      deferred: counts.deferredOnly,
+      unclaimed: counts.unclaimed,
       needsCorrection: counts.needsCorrection,
       totalReleased: centavos(counts.releasedTotal),
     },

@@ -8,12 +8,13 @@
       "consumer": "app-config.mapper.ts#toAppConfig",
       "required": [
         "feature_flags",
+        "privacy_notice",
+        "terms",
         "updated_at"
       ],
       "optional": [
         "contact_line",
         "minimum_app_version",
-        "privacy_notice",
         "privacy_version",
         "support_email",
         "terms_version"
@@ -507,12 +508,13 @@
       "consumer": "app-config.mapper.ts#toAppConfig",
       "required": [
         "feature_flags",
+        "privacy_notice",
+        "terms",
         "updated_at"
       ],
       "optional": [
         "contact_line",
         "minimum_app_version",
-        "privacy_notice",
         "privacy_version",
         "support_email",
         "terms_version"

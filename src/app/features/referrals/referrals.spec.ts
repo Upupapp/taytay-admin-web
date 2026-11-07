@@ -173,6 +173,15 @@ describe('the referral filter lives in the URL', () => {
       {},
     );
   });
+
+  it('names a dashboard narrowing the referral list cannot apply rather than dropping it (DL-186)', () => {
+    const query = readReferralQuery(
+      params({ status: 'sent', barangay: 'brgy-dolores', category: 'medical-assistance' }),
+    );
+    expect(query.filter).toEqual({ status: 'sent' });
+    expect(query.notNarrowed).toEqual(['barangay', 'category']);
+    expect(readReferralQuery(params({ status: 'sent' })).notNarrowed).toEqual([]);
+  });
 });
 
 /* ── Criterion: overdue referrals surface ─────────────────────────────────── */

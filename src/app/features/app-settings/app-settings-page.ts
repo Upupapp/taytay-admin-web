@@ -17,8 +17,12 @@ import {
   appConfigEffects,
   appConfigProblems,
   asksEveryResident,
+  isPlaceholderText,
+  legalTextDraftFrom,
   type AppConfig,
   type AppConfigChanges,
+  type LegalText,
+  type LegalTextDraft,
 } from '@domain/index';
 import { blankToNull, readChecked, readText } from '@shared/forms/form-values';
 import { failureReason } from '@shared/state/failure-reason';
@@ -36,6 +40,9 @@ interface NewFlag {
   readonly value: string;
 }
 
+/** The two texts residents accept, by the key `AppConfig` holds each under (`DL-186`). */
+export type LegalTextKind = 'terms' | 'privacyNotice';
+
 /**
  * The residents' app's settings (`DL-170`): `GET app/config`, changed through
  * `PATCH admin/app/config` under `app-config.manage`.
@@ -50,6 +57,15 @@ interface NewFlag {
  *
  * After a save the settings are read again from the server, never patched, so what is shown is what
  * every resident's app is given.
+ *
+ * ## The texts residents accept (`DL-186`)
+ *
+ * The Terms of Use and the privacy notice are shown with their version, and published here with a
+ * version the administrator chooses — through the same review, effects before the button. A new
+ * version makes every resident accept the text again, and asks for the acknowledgement; the same
+ * version changes the text without asking anyone, and the review says so. Nothing here writes legal
+ * text: the editor starts from the published text, or from nothing while the API still serves its
+ * placeholder, which the screen says has no text yet. The text is shown as text, never rendered.
  */
 @Component({
   selector: 'app-app-settings-page',
@@ -81,6 +97,19 @@ export class AppSettingsPage {
   protected readonly deletedFlags = signal<ReadonlySet<string>>(new Set());
   protected readonly newFlags = signal<readonly NewFlag[]>([]);
 
+  /** Each text's editor: closed until asked for, and started from `legalTextDraftFrom` only. */
+  protected readonly editing = signal<ReadonlySet<LegalTextKind>>(new Set());
+  protected readonly draftVersion = signal<Readonly<Record<LegalTextKind, string>>>({
+    terms: '',
+    privacyNotice: '',
+  });
+  protected readonly draftBody = signal<Readonly<Record<LegalTextKind, string>>>({
+    terms: '',
+    privacyNotice: '',
+  });
+  protected readonly isPlaceholder = isPlaceholderText;
+  protected readonly legalKinds: readonly LegalTextKind[] = ['terms', 'privacyNotice'];
+
   protected readonly attempted = signal(false);
   protected readonly reviewing = signal(false);
   protected readonly acknowledged = signal(false);
@@ -102,8 +131,19 @@ export class AppSettingsPage {
     };
     const contactLine = changed(this.contactLine(), config.contactLine);
     const supportEmail = changed(this.supportEmail(), config.supportEmail);
-    const termsVersion = changed(this.termsVersion(), config.termsVersion);
-    const privacyVersion = changed(this.privacyVersion(), config.privacyVersion);
+    const terms = this.publishing('terms', config.terms);
+    const privacyNotice = this.publishing('privacyNotice', config.privacyNotice);
+    if (terms !== undefined) changes.terms = terms;
+    if (privacyNotice !== undefined) changes.privacyNotice = privacyNotice;
+    // Publishing a text sets the version residents accept to its own; the same one typed above as
+    // well says nothing more, and a different one is refused before anything is sent.
+    const alongside = (typed: string | null | undefined, text: LegalTextDraft | undefined) =>
+      typed !== undefined && text !== undefined && typed === text.version ? undefined : typed;
+    const termsVersion = alongside(changed(this.termsVersion(), config.termsVersion), terms);
+    const privacyVersion = alongside(
+      changed(this.privacyVersion(), config.privacyVersion),
+      privacyNotice,
+    );
     const minimumAppVersion = changed(this.minimumAppVersion(), config.minimumAppVersion);
     if (contactLine !== undefined) changes.contactLine = contactLine;
     if (supportEmail !== undefined) changes.supportEmail = supportEmail;
@@ -206,6 +246,62 @@ export class AppSettingsPage {
     this.newFlags.update((flags) => flags.filter((_, at) => at !== index));
   }
 
+  protected isEditing(kind: LegalTextKind): boolean {
+    return this.editing().has(kind);
+  }
+
+  /**
+   * Opens a text's editor, started from the published text and its version — or empty while the API
+   * serves the placeholder. Never from anything this console wrote (`DL-186`).
+   */
+  protected startEditing(kind: LegalTextKind): void {
+    const config = this.config();
+    if (config === null) {
+      return;
+    }
+    const draft = legalTextDraftFrom(config[kind]);
+    this.draftVersion.update((drafts) => ({ ...drafts, [kind]: draft.version }));
+    this.draftBody.update((drafts) => ({ ...drafts, [kind]: draft.bodyMarkdown }));
+    this.editing.update((kinds) => new Set([...kinds, kind]));
+  }
+
+  /** Puts the editor away; what was typed in it is not kept. */
+  protected stopEditing(kind: LegalTextKind): void {
+    this.editing.update((kinds) => new Set([...kinds].filter((open) => open !== kind)));
+    this.draftVersion.update((drafts) => ({ ...drafts, [kind]: '' }));
+    this.draftBody.update((drafts) => ({ ...drafts, [kind]: '' }));
+  }
+
+  protected setDraftVersion(kind: LegalTextKind, value: string): void {
+    this.draftVersion.update((drafts) => ({ ...drafts, [kind]: value }));
+  }
+
+  protected setDraftBody(kind: LegalTextKind, value: string): void {
+    this.draftBody.update((drafts) => ({ ...drafts, [kind]: value }));
+  }
+
+  /**
+   * The text to publish, or `undefined` when its editor is closed, nothing is written in it yet, or
+   * it holds exactly what is published.
+   */
+  private publishing(kind: LegalTextKind, current: LegalText): LegalTextDraft | undefined {
+    if (!this.editing().has(kind)) {
+      return undefined;
+    }
+    const draft = {
+      version: this.draftVersion()[kind].trim(),
+      bodyMarkdown: this.draftBody()[kind].trim(),
+    };
+    if (draft.version === '' && draft.bodyMarkdown === '') {
+      return undefined;
+    }
+    const unchanged =
+      !isPlaceholderText(current) &&
+      draft.version === current.version.trim() &&
+      draft.bodyMarkdown === current.bodyMarkdown.trim();
+    return unchanged ? undefined : draft;
+  }
+
   /** Opens the confirmation; nothing is sent from here. */
   protected review(): void {
     this.attempted.set(true);
@@ -260,6 +356,9 @@ export class AppSettingsPage {
     this.flagValues.set(new Map());
     this.deletedFlags.set(new Set());
     this.newFlags.set([]);
+    this.editing.set(new Set());
+    this.draftVersion.set({ terms: '', privacyNotice: '' });
+    this.draftBody.set({ terms: '', privacyNotice: '' });
     this.attempted.set(false);
   }
 }

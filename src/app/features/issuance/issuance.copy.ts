@@ -50,6 +50,19 @@ export const ISSUANCE_COPY = {
     emptyHeading: 'Nothing here',
     emptyOpen: 'No request from a resident is waiting.',
     emptyOther: 'No request has this status.',
+    emptyReference:
+      'No request has that number in the offices you work for. Check it with the resident: another ' +
+      'office’s request is not found here.',
+    findLabel: 'Find a request by its reference number',
+    referenceLabel: 'Reference number',
+    referenceHint: 'The whole number the resident quotes, such as DR-2026-000123.',
+    find: 'Find',
+    referenceShown: (reference: string): string =>
+      `Showing the request numbered ${reference}, whatever its status. The other filters do not ` +
+      'apply while a number is looked up.',
+    backToQueue: 'Back to the queue',
+    residentShown: 'Showing one resident’s requests.',
+    everyResident: 'Show every resident’s',
     shownAll: (count: number): string =>
       count === 1 ? 'Showing 1 request — all of them.' : `Showing all ${count} requests.`,
     shown: (count: number): string =>
@@ -73,6 +86,7 @@ export const ISSUANCE_COPY = {
     residentNote:
       'The resident’s app account, verified against a government ID. Not a record in the office’s ' +
       'resident registry.',
+    residentRequests: 'This resident’s other requests',
     noName: 'No name on the account',
     document: 'Document',
     office: 'Issuing office',

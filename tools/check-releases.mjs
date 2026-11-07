@@ -170,15 +170,41 @@ for (const counted of ['progress.deferred', 'progress.needsCorrection', 'progres
   }
 }
 // Unclaimed is counted apart from deferred (DL-94, DL-185): one count would pin the office's missing
-// countersignature on a family that never came, or the reverse.
-if (!/readonly unclaimed: number \| null;/.test(progressBlock) || !describeBody.includes('progress.unclaimed')) {
+// countersignature on a family that never came, or the reverse. Since DL-186 the API sends the two
+// apart, so the count is a number on every source — `null`, the folded fallback, is gone — and no
+// sentence says them as one.
+if (!/readonly unclaimed: number;/.test(progressBlock) || !describeBody.includes('progress.unclaimed')) {
   problems.push(
-    'BatchProgress no longer counts unclaimed apart from deferred, or describeBatch no longer says ' +
-      'it. "2 deferred" for two families who never came blames the office for nobody (DL-94, DL-185).',
+    'BatchProgress no longer counts unclaimed apart from deferred as a number of its own, or ' +
+      'describeBatch no longer says it. "2 deferred" for two families who never came blames the ' +
+      'office for nobody (DL-94, DL-185, DL-186).',
   );
 }
 if (/\[\s*'deferred',\s*'unclaimed'\s*\]/.test(batch)) {
   problems.push('release-batch.ts counts deferred and unclaimed as one list again (DL-94, DL-185).');
+}
+if (/deferred or unclaimed|unclaimed or deferred/i.test(describeBody)) {
+  problems.push('describeBatch says deferred and unclaimed as one count again (DL-94, DL-186).');
+}
+// The wire keeps `deferred` folded for older clients; the session mapper must read the two apart.
+const releaseMapper = existsSync(join(root, 'src/app/data/http/mappers/release.mapper.ts'))
+  ? read('src/app/data/http/mappers/release.mapper.ts')
+  : '';
+const sessionMapper = /export function toReleaseBatch[\s\S]*?\n\}/.exec(releaseMapper)?.[0] ?? '';
+if (
+  !/field\(\s*progress\s*,\s*'deferred_only'\s*\)/.test(sessionMapper) ||
+  !/field\(\s*progress\s*,\s*'unclaimed'\s*\)/.test(sessionMapper)
+) {
+  problems.push(
+    "toReleaseBatch no longer reads 'deferred_only' and 'unclaimed' apart from the session progress " +
+      '(DL-94, DL-186).',
+  );
+}
+if (/field\(\s*progress\s*,\s*'deferred'\s*\)/.test(sessionMapper)) {
+  problems.push(
+    "toReleaseBatch reads 'deferred', which the API still folds with unclaimed for older clients. " +
+      "Read 'deferred_only' and 'unclaimed' (DL-94, DL-186).",
+  );
 }
 
 // And the counts have to reach a screen.

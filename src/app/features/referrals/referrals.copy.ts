@@ -62,6 +62,10 @@ export const REFERRALS_COPY = {
     overdueOnly: 'Only ones we said we would chase by now',
     openOnly: 'Only open referrals',
     clear: 'Clear filters',
+    notNarrowed: (what: readonly ('barangay' | 'category')[]) =>
+      `Opened from a dashboard figure narrowed by ${what
+        .map((entry) => (entry === 'barangay' ? 'barangay' : 'programme type'))
+        .join(' and ')}. The referral list cannot be narrowed that way, so it may hold more referrals than the figure counted.`,
 
     caption: 'Referrals, with their status and follow-up date',
     columnReference: 'Reference',

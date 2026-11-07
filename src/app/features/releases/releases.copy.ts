@@ -22,10 +22,18 @@ export const RELEASES_COPY = {
     allKinds: 'Money and goods',
     openOnly: 'Only what is still to settle',
     clear: 'Clear filters',
-    notNarrowed: (what: readonly ('barangay' | 'category')[]) =>
-      `Opened from a dashboard figure narrowed by ${what
-        .map((entry) => (entry === 'barangay' ? 'barangay' : 'programme type'))
-        .join(' and ')}. This list cannot be narrowed that way yet, so it may hold more releases than the figure counted.`,
+    periodField: 'Handed over',
+    period: {
+      'all-time': 'Any time',
+      'last-30-days': 'In the last 30 days',
+      'last-90-days': 'In the last 90 days',
+    },
+    periodHint:
+      'A period narrows to releases handed over in it, by the date they were handed over; one not yet handed over is in no period.',
+    barangay: 'Barangay',
+    anyBarangay: 'Any barangay',
+    category: 'Programme type',
+    anyCategory: 'Any programme type',
 
     needsOffice: 'The office must act on these',
     needsOfficeHint:

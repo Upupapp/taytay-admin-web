@@ -270,10 +270,11 @@ describe('a batch is a plan, not a unit', () => {
     expect(describeBatch(progress)).toBe('1 of 4 released, 1 deferred, 2 unclaimed.');
   });
 
-  it('says "deferred or unclaimed" when the source did not tell them apart', () => {
-    const progress = { ...batchProgress([]), total: 3, released: 1, deferred: 2, unclaimed: null };
+  it('never says the two as one sentence again (DL-186)', () => {
+    const progress = { ...batchProgress([]), total: 3, released: 1, deferred: 1, unclaimed: 1 };
 
-    expect(describeBatch(progress)).toBe('1 of 3 released, 2 deferred or unclaimed.');
+    expect(describeBatch(progress)).toBe('1 of 3 released, 1 deferred, 1 unclaimed.');
+    expect(describeBatch(progress)).not.toContain('or unclaimed');
   });
 
   it('totals only what was handed over, never what was scheduled', () => {

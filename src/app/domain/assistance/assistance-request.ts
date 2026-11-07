@@ -14,6 +14,7 @@ import type {
 } from '../shared/ids';
 import type { Money } from '../shared/money';
 import type { RequirementDocument } from '../requirements/requirement-document';
+import type { ProgramCategory } from '../programs/program';
 import type { UploadPolicy } from '../requirements/upload-policy';
 import type {
   ConditionalApplicability,
@@ -564,6 +565,14 @@ export interface AssistanceRequestFilter {
   /** The requests about one person — how a case names the requests it covers (`DL-179`). */
   readonly residentId?: ResidentId;
   readonly openOnly?: boolean;
+  /** The programme type of the request's programme, as the dashboard counts it (`DL-186`). */
+  readonly category?: ProgramCategory;
+  /**
+   * Open and still owed a document — one required, or conditional and ruled to apply, neither
+   * verified nor waived (`outstandingRequirements`): the dashboard's "missing requirements" figure,
+   * counted by the server with the same rule (`DL-186`). An undecided conditional is not owed.
+   */
+  readonly owingDocument?: boolean;
 }
 
 /**

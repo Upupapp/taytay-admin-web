@@ -7,10 +7,12 @@ import {
   asIsoDateTime,
   catalogueReasonProblem,
   ISSUANCE_OPEN_STATUSES,
+  ISSUANCE_REFERENCE_INCOMPLETE,
   ISSUANCE_STATUS_CATALOG,
   issuanceMoveProblem,
   issuanceTypeProblems,
   officeMovesFrom,
+  wholeIssuanceReference,
   type CursorPage,
   type CursorRequest,
   type IssuanceAttachmentId,
@@ -204,7 +206,9 @@ export class MockIssuanceRepository implements IssuanceRepository {
         .filter(
           (request) =>
             statuses.includes(request.status) &&
-            (filter.typeId === null || request.type.id === filter.typeId),
+            (filter.typeId === null || request.type.id === filter.typeId) &&
+            (filter.residentAccountId === undefined ||
+              request.resident.accountId === filter.residentAccountId),
         )
         .map(summaryOf),
     );
@@ -218,11 +222,20 @@ export class MockIssuanceRepository implements IssuanceRepository {
     if (denied) {
       return denied;
     }
+    // The whole number or nothing, as the API answers part of one with a 422 (`DL-186`).
+    const reference =
+      filter.reference === undefined ? undefined : wholeIssuanceReference(filter.reference);
+    if (reference === null) {
+      return throwError(() => new Error(ISSUANCE_REFERENCE_INCOMPLETE));
+    }
     const matching = this.requests
       .filter(
         (request) =>
-          request.status === filter.status &&
-          (filter.typeId === null || request.type.id === filter.typeId),
+          (filter.status === null || request.status === filter.status) &&
+          (filter.typeId === null || request.type.id === filter.typeId) &&
+          (reference === undefined || request.referenceNumber === reference) &&
+          (filter.residentAccountId === undefined ||
+            request.resident.accountId === filter.residentAccountId),
       )
       .slice()
       .sort((a, b) => b.filedAt.localeCompare(a.filedAt));

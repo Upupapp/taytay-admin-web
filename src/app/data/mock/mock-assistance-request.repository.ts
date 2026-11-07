@@ -35,6 +35,7 @@ import {
   type CursorRequest,
   isCaseOpen,
   isTerminalAssistanceStatus,
+  outstandingRequirements,
   isValidAcknowledgement,
   isValidFindings,
   isWithinBarangayScope,
@@ -178,6 +179,21 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
         return false;
       }
       if (filter.openOnly && isTerminalAssistanceStatus(request.status)) {
+        return false;
+      }
+      // The dashboard's own narrowings, counted by the same rules it counts with (`DL-186`).
+      if (
+        filter.category &&
+        MOCK_PROGRAMS.find((program) => program.id === request.programId)?.category !==
+          filter.category
+      ) {
+        return false;
+      }
+      if (
+        filter.owingDocument &&
+        (isTerminalAssistanceStatus(request.status) ||
+          outstandingRequirements(request).length === 0)
+      ) {
         return false;
       }
       // Part of a control number and nothing else: a match on the reason would say what is in

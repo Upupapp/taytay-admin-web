@@ -22,7 +22,15 @@ import {
  */
 export interface ReferralQuery {
   readonly filter: ReferralFilter;
+  /**
+   * A dashboard narrowing the referral list cannot apply: the API's list reads no barangay and no
+   * programme type, though the dashboard counts unanswered referrals by both (`DL-186`). Said on the
+   * screen rather than dropped, so a longer list never reads as the figure's own referrals.
+   */
+  readonly notNarrowed: readonly ReferralNarrowingNotApplied[];
 }
+
+export type ReferralNarrowingNotApplied = 'barangay' | 'category';
 
 export interface ParamReader {
   get(name: string): string | null;
@@ -69,5 +77,12 @@ export function readReferralFilter(params: ParamReader): ReferralFilter {
 }
 
 export function readReferralQuery(params: ParamReader): ReferralQuery {
-  return { filter: readReferralFilter(params) };
+  const notNarrowed: ReferralNarrowingNotApplied[] = [];
+  if (params.get('barangay')) {
+    notNarrowed.push('barangay');
+  }
+  if (params.get('category')) {
+    notNarrowed.push('category');
+  }
+  return { filter: readReferralFilter(params), notNarrowed };
 }

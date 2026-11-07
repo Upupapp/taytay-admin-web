@@ -158,6 +158,7 @@ import type {
   AccountBarangay,
   AccountRole,
   AppAccount,
+  AppAccountFilter,
   OfficeRoleChange,
 } from '../accounts/app-account';
 import type { DirectoryOffice, OfficeChanges, OfficeDraft } from '../directory/directory-office';
@@ -1666,8 +1667,11 @@ export const OFFICE_REPOSITORY = new InjectionToken<OfficeRepository>('OfficeRep
  * alone, on the server.
  */
 export interface AppAccountRepository {
-  /** One cursor page, newest first as the server orders it. No total (`DL-161`). */
-  list(page: CursorRequest): Observable<CursorPage<AppAccount>>;
+  /**
+   * One cursor page, newest first as the server orders it. No total (`DL-161`). With a verification
+   * status, the open residents' accounts with it — the ones the dashboard counts (`DL-186`).
+   */
+  list(page: CursorRequest, filter?: AppAccountFilter): Observable<CursorPage<AppAccount>>;
 
   /**
    * Changes the role. Refused by the server for the caller's own account. No reason is taken: the

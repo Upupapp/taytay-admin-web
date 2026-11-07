@@ -27,3 +27,11 @@
   gap: var(--space-snug);
   margin-block-start: var(--space-snug);
 }
+
+.accounts__filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-snug);
+  margin-block-end: var(--space-base);
+}

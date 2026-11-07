@@ -20,6 +20,13 @@ export const DASHBOARD_PERIODS: readonly DashboardPeriod[] = [
   'last-90-days',
 ];
 
+/** How many days back each period reaches; `null` reaches every record. */
+export const DASHBOARD_PERIOD_DAYS: Readonly<Record<DashboardPeriod, number | null>> = {
+  'all-time': null,
+  'last-30-days': 30,
+  'last-90-days': 90,
+};
+
 /**
  * The dashboard's drill-down state.
  *

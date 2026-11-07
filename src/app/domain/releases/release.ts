@@ -1,6 +1,7 @@
 import type { AuditStamp } from '../shared/audit';
 import type {
   AssistanceRequestId,
+  BarangayId,
   ReleaseId,
   IsoDate,
   IsoDateTime,
@@ -8,6 +9,8 @@ import type {
   ResidentId,
   StaffUserId,
 } from '../shared/ids';
+import type { DashboardPeriod } from '../dashboard/dashboard-summary';
+import type { ProgramCategory } from '../programs/program';
 import { sumMoney, ZERO_PESOS, type Money } from '../shared/money';
 import type { Permission } from '../access/permission';
 import { nextStatuses, type StatusCatalog, type StatusTransitions } from '../shared/status';
@@ -386,7 +389,24 @@ export interface ReleaseFilter {
   readonly scheduledFrom?: IsoDate;
   readonly scheduledTo?: IsoDate;
   readonly openOnly?: boolean;
+  /**
+   * The dashboard's own narrowings, so each payout figure opens exactly the releases it counted
+   * (`DL-186`). The release's barangay; the programme type of the request it pays; `handed-over`
+   * (released, claimed or completed — the statuses that carry a release date); and a period by
+   * that date, in which a release not yet handed over falls in none but `all-time`.
+   */
+  readonly barangayId?: BarangayId;
+  readonly category?: ProgramCategory;
+  readonly statusGroup?: ReleaseStatusGroup;
+  readonly period?: DashboardPeriod;
 }
+
+/** The one group of statuses a payout figure counts together (`DL-186`). */
+export type ReleaseStatusGroup = 'handed-over';
+
+export const RELEASE_STATUS_GROUP_LABELS: Readonly<Record<ReleaseStatusGroup, string>> = {
+  'handed-over': 'Handed over (released, claimed or completed)',
+};
 
 export const EMPTY_RELEASE_FILTER: ReleaseFilter = {};
 
@@ -400,7 +420,11 @@ export function isReleaseFilterActive(filter: ReleaseFilter): boolean {
     filter.residentId !== undefined ||
     filter.scheduledFrom !== undefined ||
     filter.scheduledTo !== undefined ||
-    filter.openOnly === true
+    filter.openOnly === true ||
+    filter.barangayId !== undefined ||
+    filter.category !== undefined ||
+    filter.statusGroup !== undefined ||
+    (filter.period !== undefined && filter.period !== 'all-time')
   );
 }
 

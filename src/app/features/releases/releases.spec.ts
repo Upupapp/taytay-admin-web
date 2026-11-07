@@ -366,12 +366,31 @@ describe('the release list reads its filters from the URL (DL-185)', () => {
     expect(readReleaseQuery(params({ status: 'pending' })).filter).toEqual({});
   });
 
-  it('names a dashboard narrowing it cannot apply rather than dropping it', () => {
-    expect(readReleaseQuery(params({ barangay: 'brgy-dolores', category: 'medical' })).notNarrowed)
-      .toEqual(['barangay', 'category']);
+  it('applies the dashboard’s payout narrowings: barangay, programme type, handed over, period (DL-186)', () => {
+    expect(
+      readReleaseQuery(
+        params({
+          barangay: 'brgy-dolores',
+          category: 'medical-assistance',
+          group: 'handed-over',
+          period: 'last-30-days',
+        }),
+      ).filter,
+    ).toEqual({
+      barangayId: 'brgy-dolores',
+      category: 'medical-assistance',
+      statusGroup: 'handed-over',
+      period: 'last-30-days',
+    });
+    // Junk narrows nothing; `all-time` narrows nothing and is not carried.
+    expect(
+      readReleaseQuery(
+        params({ barangay: 'atlantis', category: 'medical', group: 'gone', period: 'all-time' }),
+      ).filter,
+    ).toEqual({});
   });
 
-  it('opens on the filter the URL names, and says what it could not narrow by', async () => {
+  it('opens on the filter the URL names, with no notice that it could not (DL-186)', async () => {
     await configure(staffUser('release-officer'));
     await TestBed.inject(Router).navigateByUrl('/releases?status=deferred&barangay=brgy-dolores');
     const fixture = TestBed.createComponent(ReleaseListPage);
@@ -381,8 +400,7 @@ describe('the release list reads its filters from the URL (DL-185)', () => {
 
     const status = element.querySelector<HTMLSelectElement>('.filters select');
     expect(status?.value).toBe('deferred');
-    expect(element.textContent).toContain('cannot be narrowed that way yet');
-    expect(element.textContent).not.toContain('DV-2026-00391');
+    expect(element.textContent).not.toContain('cannot be narrowed');
   });
 });
 

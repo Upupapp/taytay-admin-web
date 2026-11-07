@@ -30,7 +30,7 @@ Read from the backend at `2736e28` (`src/modules/app-config/routes.ts`, `schemas
 | | |
 | --- | --- |
 | Enforcement | **None on the server.** Nothing refuses an old app, and nothing compares a resident's accepted version (`POST me/consents`) with these. The app is given the values and decides — the console says what a change **can** make it do, because it cannot see what the app does. |
-| The privacy notice | Served by the API from its own record (version, date, text) and **changed by no route**. The screen shows its version and date beside the privacy version, says its text is not changed here, and warns when residents would be asked to accept a version other than the one the API serves — a notice they cannot read. |
+| The Terms of Use and the privacy notice | Since `DL-186` (backend `0f1ffec`), each is served with its version, date and text, and **published by an administrator** through `terms` and `privacy_notice` — the text and a version the administrator chooses, always together; the API never bumps a version, and publishing sets `terms_version` or `privacy_version` to it (a different one beside it is 422). See section 4. The old version fields stay, and still warn when residents would be asked to accept a version whose text the API does not serve. |
 | Clearing | An emptied field is sent as `null`, which clears the setting; a deleted flag is sent as `null`, which deletes it. Only what changed is sent. |
 | Audit | One entry, `app.config_updated`, saying a change was made and by whom — **not which setting**, and no reason, so none is asked for. |
 | Limits | Contact line as a hotline number; email up to 200; terms and privacy versions up to 32 characters; the oldest version as two to four dot-joined numbers, **up to 20 characters** (the column's check — a longer one passes the API's pattern and fails in the database); flag names `^[a-z][a-z0-9_]{0,39}$`, values 1–200 characters, at most 50 flag changes at once. All checked before the review opens. |
@@ -39,6 +39,21 @@ Read from the backend at `2736e28` (`src/modules/app-config/routes.ts`, `schemas
 
 `GET app/config` is public, so the screen says so above the flags: never put a password or a key in
 one. What each flag does is the app's, which this console cannot see; the effects say that much.
+
+### 4. The Terms of Use and the privacy notice (`DL-186`)
+
+Each is shown with its version and when it was published, and its text as written — formatting marks
+visible, never rendered as HTML. While its version is `placeholder` the screen says **no text has
+been written yet**, and the placeholder's sentence is not shown as the text.
+
+"Write" or "Change" opens an editor for the text and its version: empty for the placeholder, the
+published text otherwise. Nothing in the console writes, suggests or fills in legal text, and
+`placeholder` is refused as a version. Publishing goes through the same review as every other change:
+
+- **a new version** makes every resident accept the text again in the app — said plainly before the
+  button, and the save waits for the acknowledgement;
+- **the same version** changes the text without asking anyone to accept again — said too, with the
+  advice to keep a version only for a correction that does not change what residents agree to.
 
 ## After a save
 
@@ -57,15 +72,18 @@ administrator's alone, named by no role, mutating. The route and the menu entry 
 nothing; the confirmation lists the effects and the acknowledgement before its button, which is
 disabled until the box is ticked; the effects still say a newer version can force an update and a new
 version can make residents accept again, the notice's text is not changed here and the server records
-no setting; `asksEveryResident` covers all three; the flags said not secret and the notice's text
-never read; nothing logged or stored; the key the administrator's. Fifteen planted regressions, each
-caught, every file restored byte for byte.
+no setting; `asksEveryResident` covers all three; the flags said not secret; nothing logged or
+stored; the key the administrator's. Fifteen planted regressions, each caught, every file restored
+byte for byte. Rule 8 (`DL-186`) replaces "the notice's text never read": a new version of either text
+is acknowledged; the effects say what a new and a kept version do and that no legal text is written
+here; the placeholder is said to have no text; the editor starts only from the published text; the
+placeholder's version is refused; nothing is rendered as HTML; each text is read whole and sent with
+its version; the mock invents no text. Ten more planted regressions, each caught.
 
 ## Known gaps
 
-- **The privacy notice's text cannot be changed through the API.** It is a placeholder until somebody
-  edits the database; changing the privacy version alone asks residents to accept a notice whose text
-  did not change.
+- **Changing a version field alone** (above the texts) still asks residents to accept a text that did
+  not change; the effects say so. Publishing the text with its version is the way to change both.
 - **The audit entry names no setting**, so the trail cannot say who raised the oldest version.
 - **A minimum version longer than 20 characters** passes the API's validation and fails the column's check.
 - **Not run against a live API.** Built and tested against the vendored spec and composed fixtures.

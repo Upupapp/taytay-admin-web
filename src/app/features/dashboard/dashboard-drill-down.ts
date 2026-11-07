@@ -1,4 +1,5 @@
 import type {
+  AccountVerificationStatus,
   AssistanceRequestStatus,
   AttentionKind,
   BarangayId,
@@ -57,11 +58,38 @@ export function barangayDrillDown(filter: DashboardFilter, barangayId: BarangayI
   };
 }
 
+/**
+ * The releases behind the period's payout figures — the amount, the goods and the residents served:
+ * handed over (released, claimed or completed) within the period, by the date they were handed over
+ * (`DL-186`). Until then this opened `status=released` and dropped claimed and completed ones.
+ */
+function handedOver(filter: DashboardFilter): Record<string, string> {
+  const params: Record<string, string> = { ...base(filter), group: 'handed-over' };
+  if (filter.period !== undefined && filter.period !== 'all-time') {
+    params['period'] = filter.period;
+  }
+  return params;
+}
+
+export function handedOverDrillDown(filter: DashboardFilter): DrillDown {
+  return { route: '/releases', queryParams: handedOver(filter) };
+}
+
+/** One row of the money-by-programme table: the handed-over releases of that programme type. */
 export function categoryDrillDown(filter: DashboardFilter, category: ProgramCategory): DrillDown {
   return {
     route: '/releases',
-    queryParams: { ...base(filter), category },
+    queryParams: { ...handedOver(filter), category },
   };
+}
+
+/**
+ * One row of the accounts-by-verification table: the open residents' accounts with that status,
+ * which is exactly what the row counted (`DL-186`). The app's figures are not narrowed by the
+ * dashboard filter, so none of it is carried.
+ */
+export function verificationDrillDown(status: AccountVerificationStatus): DrillDown {
+  return { route: '/users', queryParams: { verification: status } };
 }
 
 /** Where a payout is planned: releases approved and waiting for a session (`DL-185`). */
@@ -88,13 +116,16 @@ export function attentionDrillDown(kind: AttentionKind, filter: DashboardFilter)
     case 'returned-to-applicant':
       return statusDrillDown(filter, 'returned');
     case 'missing-requirements':
-      // `open` is the request list's own key for its "open requests only" box (`DL-185`).
+      // `open` is the request list's own key for its "open requests only" box (`DL-185`); the list
+      // sends `missingRequirements` as `owing_document`, the figure's own rule (`DL-186`).
       return requestsDrillDown(filter, { open: 'true', missingRequirements: 'true' });
     case 'payout-due':
       return releasesDrillDown(filter, { status: 'scheduled' });
     case 'unclaimed-payout':
       return releasesDrillDown(filter, { status: 'unclaimed' });
     case 'referral-unanswered':
+      // The referral list reads no barangay or programme type; it says so rather than dropping
+      // them (`DL-186`).
       return { route: '/referrals', queryParams: { ...base(filter), status: 'sent' } };
   }
 }

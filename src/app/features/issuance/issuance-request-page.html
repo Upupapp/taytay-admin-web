@@ -40,6 +40,13 @@
                 <dd>
                   {{ request.resident.name ?? copy.noName }}
                   <span class="request__aside">{{ copy.residentNote }}</span>
+                  <a
+                    class="request__aside"
+                    routerLink="/resident-documents"
+                    [queryParams]="{ resident: request.resident.accountId }"
+                  >
+                    {{ copy.residentRequests }}
+                  </a>
                 </dd>
               </div>
               <div>

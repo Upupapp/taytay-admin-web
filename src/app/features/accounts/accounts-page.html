@@ -8,6 +8,28 @@
     <p class="accounts__note" role="status">{{ copy.officesUnnamed }}</p>
   }
 
+  <div class="accounts__filter">
+    <label class="field__label" for="accounts-verification">{{ copy.verification }}</label>
+    <select
+      id="accounts-verification"
+      class="field__input"
+      [attr.aria-describedby]="narrowedTo() ? 'accounts-verification-note' : null"
+      (change)="onVerification($event)"
+    >
+      <option value="" [selected]="!narrowedTo()">{{ copy.everyAccount }}</option>
+      @for (status of verificationStatuses; track status) {
+        <option [value]="status" [selected]="narrowedTo() === status">
+          {{ copy.verificationLabels[status] }}
+        </option>
+      }
+    </select>
+    @if (narrowedTo(); as status) {
+      <p id="accounts-verification-note" class="accounts__note" role="status">
+        {{ copy.verificationNote(copy.verificationLabels[status]) }}
+      </p>
+    }
+  </div>
+
   <app-async-content
     [state]="first()"
     [content]="accountsContent"

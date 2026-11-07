@@ -1,12 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-  output,
-  TemplateRef,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, TemplateRef } from '@angular/core';
+import { outputFromObservable } from '@angular/core/rxjs-interop';
+import { Subject } from 'rxjs';
 
 import type { ViewState } from '@shared/state/view-state';
 
@@ -24,6 +19,11 @@ import { Skeleton } from '../loading/skeleton';
  *
  * Screens get consistent loading and failure behaviour without repeating it,
  * and cannot accidentally read a value that has not arrived.
+ *
+ * **"Try again" always does something, or is not offered** (`DL-186`). A screen that listens to
+ * `retryRequested` owns its reload and is told; otherwise the failure's own `retry` — which every
+ * state from `toViewState` carries — asks the same question again. A failure with neither gets no
+ * button. Before this, eighteen pages showed a "Try again" that nobody was listening to.
  */
 @Component({
   selector: 'app-async-content',
@@ -49,8 +49,8 @@ import { Skeleton } from '../loading/skeleton';
           variant="error"
           [heading]="errorHeading()"
           [message]="current.message"
-          [actionLabel]="retryLabel()"
-          (actionSelected)="retryRequested.emit()"
+          [actionLabel]="canRetry(current) ? retryLabel() : null"
+          (actionSelected)="retry(current)"
         />
       }
       @case ('loading') {
@@ -76,11 +76,29 @@ export class AsyncContent<TValue> {
   /** Set to 0 to show a spinner instead of skeleton lines. */
   readonly skeletonLines = input(4);
 
-  readonly retryRequested = output<void>();
+  /**
+   * A subject rather than a plain output, so the panel can tell whether the screen listens: binding
+   * `(retryRequested)` subscribes to it, and a screen that does owns its reload.
+   */
+  private readonly retries = new Subject<void>();
+  readonly retryRequested = outputFromObservable(this.retries);
 
   /** Idle counts as busy: data has been asked for and has not arrived. */
   protected readonly isBusy = computed(() => {
     const kind = this.state().kind;
     return kind === 'loading' || kind === 'idle';
   });
+
+  protected canRetry(failure: { readonly retry?: () => void }): boolean {
+    return this.retries.observed || failure.retry !== undefined;
+  }
+
+  /** The screen's own reload when it has one, else the failed read asked again — never both. */
+  protected retry(failure: { readonly retry?: () => void }): void {
+    if (this.retries.observed) {
+      this.retries.next();
+      return;
+    }
+    failure.retry?.();
+  }
 }

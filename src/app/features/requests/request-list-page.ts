@@ -19,12 +19,14 @@ import {
   ASSISTANCE_STATUS_CATALOG,
   asId,
   isWithheldFromReader,
+  PROGRAM_CATEGORY_LABELS,
   TAYTAY_BARANGAYS,
   type AssistanceRequest,
   type AssistanceRequestFilter,
   type AssistanceRequestStatus,
   type BarangayId,
   type CursorPage,
+  type ProgramCategory,
   type SocialWorker,
   type StaffUserId,
 } from '@domain/index';
@@ -56,6 +58,9 @@ const STATUSES: readonly AssistanceRequestStatus[] = [
   'cancelled',
   'expired',
 ];
+
+/** Every programme type, as the dashboard counts them. */
+const PROGRAM_CATEGORIES = Object.keys(PROGRAM_CATEGORY_LABELS) as readonly ProgramCategory[];
 
 const PAGE_SIZE = 20;
 /** The most drafts read at once — the API's largest page. More is said in words, never hidden. */
@@ -132,6 +137,9 @@ export class RequestListPage {
     () => this.permissions.scope() === 'all-barangays',
   );
   protected readonly barangays = TAYTAY_BARANGAYS;
+  /** Programme types narrow every reader's list alike: they are not a matter of data scope. */
+  protected readonly categories = PROGRAM_CATEGORIES;
+  protected readonly categoryLabels = PROGRAM_CATEGORY_LABELS;
 
   protected readonly copy = REQUESTS_COPY.list;
   protected readonly statusCatalog = ASSISTANCE_STATUS_CATALOG;
@@ -214,8 +222,6 @@ export class RequestListPage {
     return last !== null && last.hasMore && last.nextCursor !== null;
   });
   protected readonly filter = computed(() => this.query().filter);
-  /** What a dashboard figure asked for that this list cannot narrow by, said rather than dropped. */
-  protected readonly notNarrowed = computed(() => this.query().notNarrowed);
   protected readonly hasFilters = computed(
     () =>
       (this.filter().search ?? '').length > 0 ||
@@ -223,7 +229,8 @@ export class RequestListPage {
       this.filter().barangayId !== undefined ||
       this.filter().assignedTo !== undefined ||
       this.filter().openOnly === true ||
-      this.notNarrowed().length > 0,
+      this.filter().category !== undefined ||
+      this.filter().owingDocument === true,
   );
 
   protected readonly rowKey = (request: AssistanceRequest): string => request.id;
@@ -300,6 +307,16 @@ export class RequestListPage {
     this.patch({ open: (event.target as HTMLInputElement).checked ? 'true' : null });
   }
 
+  protected onCategory(event: Event): void {
+    this.patch({ category: (event.target as HTMLSelectElement).value || null });
+  }
+
+  protected onOwing(event: Event): void {
+    this.patch({
+      missingRequirements: (event.target as HTMLInputElement).checked ? 'true' : null,
+    });
+  }
+
   protected clearFilters(): void {
     this.searchText.set('');
     void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
@@ -353,16 +370,13 @@ interface ParamReader {
 }
 
 /**
- * A narrowing a dashboard figure carries that the request list cannot apply: the API's list reads no
- * programme type and no "still owing a document" (`DL-185`). Said on the screen, so a list that
- * holds more than the figure counted never reads as the figure's own records.
+ * The filter, and nothing else: the server orders the list and pages it by cursor. A dashboard
+ * figure's narrowings — programme type and "still owing a document" (`missingRequirements`) — are
+ * applied like any other since the API reads them (`DL-186`), so the list holds exactly what the
+ * figure counted.
  */
-export type RequestNarrowingNotApplied = 'category' | 'missing-requirements';
-
-/** The filter, and nothing else: the server orders the list and pages it by cursor. */
 export function readRequestQuery(params: ParamReader): {
   readonly filter: AssistanceRequestFilter;
-  readonly notNarrowed: readonly RequestNarrowingNotApplied[];
 } {
   const filter: {
     search?: string;
@@ -370,6 +384,8 @@ export function readRequestQuery(params: ParamReader): {
     barangayId?: BarangayId;
     assignedTo?: StaffUserId;
     openOnly?: boolean;
+    category?: ProgramCategory;
+    owingDocument?: boolean;
   } = {};
 
   const search = params.get('q')?.trim();
@@ -393,12 +409,12 @@ export function readRequestQuery(params: ParamReader): {
   if (params.get('open') === 'true') {
     filter.openOnly = true;
   }
-  const notNarrowed: RequestNarrowingNotApplied[] = [];
-  if (params.get('category')) {
-    notNarrowed.push('category');
+  const category = PROGRAM_CATEGORIES.find((value) => value === params.get('category'));
+  if (category !== undefined) {
+    filter.category = category;
   }
   if (params.get('missingRequirements') === 'true') {
-    notNarrowed.push('missing-requirements');
+    filter.owingDocument = true;
   }
-  return { filter, notNarrowed };
+  return { filter };
 }

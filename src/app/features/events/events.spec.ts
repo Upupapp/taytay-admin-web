@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, of, type Observable } from 'rxjs';
+import { defer, firstValueFrom, of, throwError, type Observable } from 'rxjs';
 
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
@@ -473,5 +473,40 @@ describe('the events list', () => {
     await fixture.whenStable();
 
     expect(page.events().every((row) => row.status !== 'cancelled')).toBe(true);
+  });
+});
+
+/* ── "Try again" re-reads (DL-186) ────────────────────────────────────────── */
+
+describe('"Try again" on the event list', () => {
+  it('reads the events again after a failure, though the page wires no reload of its own', async () => {
+    await configure(staffUser('mswdo-head', 'staff-head'));
+    const repository = TestBed.inject(EVENT_REPOSITORY);
+    const real = repository.list.bind(repository);
+    let reads = 0;
+    // Counted when the read is made, as an HTTP request is, not when it is asked for.
+    vi.spyOn(repository, 'list').mockImplementation((...args) =>
+      defer(() => {
+        reads += 1;
+        return reads === 1 ? throwError(() => new Error('The server did not answer.')) : real(...args);
+      }),
+    );
+    await TestBed.inject(Router).navigateByUrl('/events');
+    const fixture = TestBed.createComponent(EventListPage);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.textContent).toContain('The server did not answer.');
+
+    const again = [...element.querySelectorAll('button')].find((button) =>
+      button.textContent?.includes('Try again'),
+    );
+    expect(again).toBeDefined();
+    again?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(reads).toBe(2);
+    expect(element.textContent).not.toContain('The server did not answer.');
   });
 });

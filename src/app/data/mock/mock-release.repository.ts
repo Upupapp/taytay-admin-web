@@ -14,6 +14,8 @@ import {
   releaseProblems,
   discloseResident,
   isReleaseOpen,
+  isReleased,
+  DASHBOARD_PERIOD_DAYS,
   isWithinBarangayScope,
   PermissionDeniedError,
   releaseDraftProblems,
@@ -45,6 +47,7 @@ import { MockAssistanceRequestStore } from './mock-assistance-request.store';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
 import { matchesSearch } from './mock-query';
+import { MOCK_PROGRAMS } from './seed/programs.seed';
 import {
   MOCK_DISBURSEMENTS,
   MOCK_RELEASE_APPROVERS,
@@ -101,7 +104,7 @@ export class MockReleaseRepository implements ReleaseRepository {
     }
 
     const sorted = this.releases
-      .filter((release) => this.isReadable(release, user) && matchesFilter(release, filter))
+      .filter((release) => this.isReadable(release, user) && this.matches(release, filter))
       .sort(
         (a, b) =>
           b.audit.createdAt.localeCompare(a.audit.createdAt) || b.id.localeCompare(a.id),
@@ -156,7 +159,7 @@ export class MockReleaseRepository implements ReleaseRepository {
       (release) =>
         this.isReadable(release, user) &&
         isReleaseOpen(release.status) &&
-        matchesFilter(release, filter),
+        this.matches(release, filter),
     );
 
     // Ordered by what the office must act on first: things it got wrong, then
@@ -519,6 +522,40 @@ export class MockReleaseRepository implements ReleaseRepository {
       (release) => batch.releaseIds.includes(release.id) && this.isReadable(release, user),
     );
     return { ...batch, progress: batchProgress(members) };
+  }
+
+  /**
+   * The list's filter, and the dashboard's narrowings read as the API reads them (`DL-186`): the
+   * barangay and programme type of the request a release pays, `handed-over`, and a period by the
+   * release date in which nothing not yet handed over falls.
+   */
+  private matches(release: Release, filter: ReleaseFilter): boolean {
+    if (!matchesFilter(release, filter)) {
+      return false;
+    }
+    if (filter.statusGroup === 'handed-over' && !isReleased(release.status)) {
+      return false;
+    }
+    const days = filter.period === undefined ? null : DASHBOARD_PERIOD_DAYS[filter.period];
+    if (days !== null) {
+      const since = Date.now() - days * 24 * 60 * 60 * 1000;
+      if (
+        !isReleased(release.status) ||
+        release.releasedAt === null ||
+        Date.parse(release.releasedAt) < since
+      ) {
+        return false;
+      }
+    }
+    if (filter.barangayId === undefined && filter.category === undefined) {
+      return true;
+    }
+    const request = this.requests.requests.find((entry) => entry.id === release.requestId);
+    if (filter.barangayId !== undefined && request?.barangayId !== filter.barangayId) {
+      return false;
+    }
+    const category = MOCK_PROGRAMS.find((program) => program.id === request?.programId)?.category;
+    return filter.category === undefined || category === filter.category;
   }
 
   private isReadable(release: Release, user: AuthenticatedUser | null): boolean {

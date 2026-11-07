@@ -59,17 +59,14 @@ export interface BatchProgress {
   readonly released: number;
   readonly acknowledged: number;
   readonly outstanding: number;
-  /**
-   * The office could not pay (`DL-94`). Counted apart from `unclaimed` — unless `unclaimed` is
-   * `null`, when the source did not tell the two apart and this holds both.
-   */
+  /** The office could not pay (`DL-94`): deferred only, never holding the unclaimed. */
   readonly deferred: number;
   /**
-   * Nobody came, and the screen does not guess why (`DL-94`). `null` when the count came from a
-   * source that folds it into `deferred` — the API's session progress today (`DL-180`) — so the
-   * sentence says "deferred or unclaimed" rather than pinning either count on the other (`DL-185`).
+   * Nobody came, and the screen does not guess why (`DL-94`). Always its own count: the API sends
+   * it apart since `DL-186`, so the "deferred or unclaimed" sentence `DL-185` needed while the two
+   * arrived folded together is gone.
    */
-  readonly unclaimed: number | null;
+  readonly unclaimed: number;
   readonly needsCorrection: number;
   /** Handed over, not planned. Never the sum of what was scheduled. */
   readonly totalReleased: Money;
@@ -102,17 +99,11 @@ export function describeBatch(progress: BatchProgress): string {
     return 'Nothing scheduled in this batch yet.';
   }
   const parts = [`${progress.released} of ${progress.total} released`];
-  if (progress.unclaimed === null) {
-    if (progress.deferred > 0) {
-      parts.push(`${progress.deferred} deferred or unclaimed`);
-    }
-  } else {
-    if (progress.deferred > 0) {
-      parts.push(`${progress.deferred} deferred`);
-    }
-    if (progress.unclaimed > 0) {
-      parts.push(`${progress.unclaimed} unclaimed`);
-    }
+  if (progress.deferred > 0) {
+    parts.push(`${progress.deferred} deferred`);
+  }
+  if (progress.unclaimed > 0) {
+    parts.push(`${progress.unclaimed} unclaimed`);
   }
   if (progress.needsCorrection > 0) {
     parts.push(`${progress.needsCorrection} needing correction`);

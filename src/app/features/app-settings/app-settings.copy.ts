@@ -23,10 +23,50 @@ export const APP_SETTINGS_COPY = {
   privacyVersion: 'Privacy notice version',
   privacyVersionHint: 'Empty for none.',
   noticeServed: (version: string, when: string) =>
-    `The API serves privacy notice version ${version}, last changed ${when}. Its text is kept by the ` +
-    'API and is not changed here.',
+    `The API serves privacy notice version ${version}, last changed ${when}. Its text is published ` +
+    'under “Privacy notice” below, with its own version.',
   minimumAppVersion: 'Oldest app version allowed',
   minimumAppVersionHint: 'Numbers joined by dots, such as 1.4 or 1.4.2. Empty for none.',
+
+  legalHeading: 'Terms of Use and privacy notice',
+  legalLead:
+    'The texts residents are asked to accept in the app. They are the LGU’s to write: this console ' +
+    'never writes, suggests or fills in legal text. Each is published with a version you choose, and ' +
+    'a new version makes every resident accept the text again in the app.',
+  legalCurrent: (version: string, when: string) => `Version ${version}, published ${when}.`,
+  legalAsWritten:
+    'Shown exactly as written. Formatting marks such as # or ** appear here as typed; the app lays ' +
+    'them out.',
+  legalVersionHint:
+    'Your choice, up to 32 characters, such as 2026-11 — never “placeholder”. A new version makes ' +
+    'every resident accept the text again in the app; the same version changes the text without ' +
+    'asking anyone to accept again.',
+  legalBodyHint: 'The approved text, exactly as it should be shown, up to 20,000 characters.',
+  legalPutAway: 'Put the editor away',
+  legal: {
+    terms: {
+      heading: 'Terms of Use',
+      noText:
+        'No text has been written yet. Until the LGU’s approved Terms of Use are published here, ' +
+        'the app shows a placeholder that says so, under the version “placeholder”.',
+      read: 'Read the Terms of Use residents are shown',
+      write: 'Write the Terms of Use',
+      edit: 'Change the Terms of Use',
+      version: 'Version of the Terms of Use',
+      body: 'Text of the Terms of Use',
+    },
+    privacyNotice: {
+      heading: 'Privacy notice',
+      noText:
+        'No text has been written yet. Until the LGU’s approved privacy notice is published here, ' +
+        'the app shows a placeholder that says so, under the version “placeholder”.',
+      read: 'Read the privacy notice residents are shown',
+      write: 'Write the privacy notice',
+      edit: 'Change the privacy notice',
+      version: 'Version of the privacy notice',
+      body: 'Text of the privacy notice',
+    },
+  },
 
   flagsHeading: 'Feature flags',
   flagsLead:

@@ -19,6 +19,7 @@ import {
   type CategoryTotal,
   type DashboardFilter,
   type DashboardPayouts,
+  DASHBOARD_PERIOD_DAYS,
   type DashboardPeriod,
   type DashboardRepository,
   type DashboardSummary,
@@ -36,14 +37,11 @@ import { MOCK_PROGRAMS } from './seed/programs.seed';
 import { MOCK_REFERRALS } from './seed/referrals.seed';
 import { MOCK_VERIFICATION_REQUESTS } from './seed/verification-requests.seed';
 import { MOCK_SEED_DIGITAL_IDS } from './mock-digital-id.repository';
+import { mockVerificationOf } from './mock-account-verification';
 import { denyUnless } from './mock-access';
 import { MockLatency } from './mock-latency';
 
-const PERIOD_DAYS: Readonly<Record<DashboardPeriod, number | null>> = {
-  'all-time': null,
-  'last-30-days': 30,
-  'last-90-days': 90,
-};
+const PERIOD_DAYS = DASHBOARD_PERIOD_DAYS;
 
 /** A release handed over: the statuses that carry a release date, and that nothing goes back from. */
 const HANDED_OVER: readonly Release['status'][] = ['released', 'claimed', 'completed'];
@@ -205,7 +203,7 @@ function residentAppFor(
     rejected: 0,
   };
   for (const account of residents) {
-    byVerification[verificationOf(account.id, account.role)] += 1;
+    byVerification[mockVerificationOf(account.id, account.role)] += 1;
   }
   const now = Date.now();
 
@@ -226,29 +224,6 @@ function residentAppFor(
         ).length
       : null,
   };
-}
-
-/** A verified account is verified; otherwise its latest ID review says, and none means unverified. */
-function verificationOf(
-  accountId: (typeof MOCK_APP_ACCOUNTS)[number]['id'],
-  role: (typeof MOCK_APP_ACCOUNTS)[number]['role'],
-): AccountVerificationStatus {
-  if (role === 'verified') {
-    return 'verified';
-  }
-  const latest = MOCK_VERIFICATION_REQUESTS.filter((request) => request.accountId === accountId)
-    .slice()
-    .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))[0];
-  switch (latest?.status) {
-    case 'pending':
-      return 'pending';
-    case 'rejected':
-      return 'rejected';
-    case 'approved':
-      return 'verified';
-    case undefined:
-      return 'unverified';
-  }
 }
 
 /* ── attention signals ────────────────────────────────────────────────────── */

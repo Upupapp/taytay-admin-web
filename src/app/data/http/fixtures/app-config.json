@@ -11,6 +11,11 @@
       "updated_at": "2026-01-01T00:00:00.000Z",
       "body_markdown": "This is a placeholder privacy notice. The approved notice will replace this text."
     },
+    "terms": {
+      "version": "placeholder",
+      "updated_at": "2026-01-01T00:00:00.000Z",
+      "body_markdown": "This is a placeholder for the Terms of Use. The approved Terms of Use will replace this text."
+    },
     "updated_at": "2026-10-01T00:00:00.000Z"
   },
   "meta": {}

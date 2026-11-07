@@ -11,17 +11,27 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map, switchMap, tap } from 'rxjs';
 
+import { PermissionService } from '@core/access/permission.service';
 import {
+  asId,
+  DASHBOARD_PERIODS,
+  PROGRAM_CATEGORY_LABELS,
   RELEASE_REPOSITORY,
   RELEASE_STATUS_CATALOG,
+  RELEASE_STATUS_GROUP_LABELS,
   RELEASE_KIND_LABELS,
+  TAYTAY_BARANGAYS,
   isReleaseFilterActive,
   isReleaseOpen,
   isReleased,
+  type BarangayId,
   type CursorPage,
+  type DashboardPeriod,
+  type ProgramCategory,
   type Release,
   type ReleaseFilter,
   type ReleaseStatus,
+  type ReleaseStatusGroup,
   type ReleaseKind,
 } from '@domain/index';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
@@ -39,6 +49,11 @@ import { RELEASES_COPY } from './releases.copy';
  * as complete.
  */
 const PAGE_SIZE = 50;
+
+const PROGRAM_CATEGORIES = Object.keys(PROGRAM_CATEGORY_LABELS) as readonly ProgramCategory[];
+
+/** The status box's value for the handed-over group; no status is spelt like it. */
+const HANDED_OVER_OPTION = 'group:handed-over';
 
 /**
  * The release queue.
@@ -61,11 +76,26 @@ export class ReleaseListPage {
   private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly permissions = inject(PermissionService);
 
   protected readonly copy = RELEASES_COPY.list;
   protected readonly statusCatalog = RELEASE_STATUS_CATALOG;
   protected readonly statuses = Object.keys(RELEASE_STATUS_CATALOG) as ReleaseStatus[];
   protected readonly kinds: readonly ReleaseKind[] = ['money', 'in-kind'];
+  protected readonly groupLabels = RELEASE_STATUS_GROUP_LABELS;
+  protected readonly categories = PROGRAM_CATEGORIES;
+  protected readonly categoryLabels = PROGRAM_CATEGORY_LABELS;
+  protected readonly periods = DASHBOARD_PERIODS;
+  protected readonly barangays = TAYTAY_BARANGAYS;
+
+  /**
+   * A barangay is offered only to an office-wide reader: an own-barangay reader's list is already
+   * its barangay, and any other is refused (403). One in the URL — a dashboard figure — is still
+   * read, and the server decides (`CLAUDE.md` §5, data scope; `DL-186`).
+   */
+  protected readonly filtersByBarangay = computed(
+    () => this.permissions.scope() === 'all-barangays',
+  );
 
   /**
    * The URL is the filter (`DL-36`), so a dashboard figure, a bookmark and the back button all open
@@ -77,8 +107,6 @@ export class ReleaseListPage {
   );
 
   protected readonly filter = computed<ReleaseFilter>(() => this.url().filter);
-  /** What a dashboard figure asked for that this list cannot narrow by, said rather than dropped. */
-  protected readonly notNarrowed = computed(() => this.url().notNarrowed);
 
   /** The box as typed; the URL takes it once typing settles (`DL-119`). */
   protected readonly searchText = signal(this.url().filter.search ?? '');
@@ -168,9 +196,7 @@ export class ReleaseListPage {
   );
 
   protected readonly hasAny = computed(() => this.releases().length > 0);
-  protected readonly hasFilters = computed(
-    () => isReleaseFilterActive(this.filter()) || this.notNarrowed().length > 0,
-  );
+  protected readonly hasFilters = computed(() => isReleaseFilterActive(this.filter()));
 
   protected detailLink(release: Release): string {
     return `/releases/${release.id}`;
@@ -217,8 +243,33 @@ export class ReleaseListPage {
     );
   }
 
+  /** A status, or the handed-over group — one choice, so the two never narrow against each other. */
   protected onStatus(event: Event): void {
-    this.patch({ status: (event.target as HTMLSelectElement).value || null });
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === HANDED_OVER_OPTION) {
+      this.patch({ status: null, group: 'handed-over' });
+      return;
+    }
+    this.patch({ status: value || null, group: null });
+  }
+
+  protected onBarangay(event: Event): void {
+    this.patch({ barangay: (event.target as HTMLSelectElement).value || null });
+  }
+
+  protected onCategory(event: Event): void {
+    this.patch({ category: (event.target as HTMLSelectElement).value || null });
+  }
+
+  protected onPeriod(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.patch({ period: value === 'all-time' || value === '' ? null : value });
+  }
+
+  protected readonly handedOverOption = HANDED_OVER_OPTION;
+
+  protected periodLabel(period: DashboardPeriod): string {
+    return this.copy.period[period];
   }
 
   protected onKind(event: Event): void {
@@ -250,26 +301,27 @@ interface ParamReader {
   get(name: string): string | null;
 }
 
-/**
- * A narrowing a dashboard figure carries that the release list cannot apply: the API's list reads
- * no barangay and no programme type (`DL-185`). Said on the screen rather than dropped, so a list
- * holding more than the figure counted never reads as the figure's own records.
- */
-export type ReleaseNarrowingNotApplied = 'barangay' | 'category';
-
 const RELEASE_STATUSES = Object.keys(RELEASE_STATUS_CATALOG) as readonly ReleaseStatus[];
 const RELEASE_KINDS: readonly ReleaseKind[] = ['money', 'in-kind'];
+const RELEASE_GROUPS = Object.keys(RELEASE_STATUS_GROUP_LABELS) as readonly ReleaseStatusGroup[];
 
-/** The filter the list reads, from `q`, `status`, `kind` and `open`; anything else is not a filter. */
+/**
+ * The filter the list reads, from `q`, `status`, `kind` and `open`, and the dashboard's own
+ * narrowings — `barangay`, `category`, `group` and `period` — which the API reads since
+ * `DL-186`, so a payout figure opens exactly the releases it counted. Anything else is not a filter.
+ */
 export function readReleaseQuery(params: ParamReader): {
   readonly filter: ReleaseFilter;
-  readonly notNarrowed: readonly ReleaseNarrowingNotApplied[];
 } {
   const filter: {
     search?: string;
     status?: ReleaseStatus;
     kind?: ReleaseKind;
     openOnly?: boolean;
+    barangayId?: BarangayId;
+    category?: ProgramCategory;
+    statusGroup?: ReleaseStatusGroup;
+    period?: DashboardPeriod;
   } = {};
 
   const search = params.get('q')?.trim();
@@ -287,12 +339,21 @@ export function readReleaseQuery(params: ParamReader): {
   if (params.get('open') === 'true') {
     filter.openOnly = true;
   }
-  const notNarrowed: ReleaseNarrowingNotApplied[] = [];
-  if (params.get('barangay')) {
-    notNarrowed.push('barangay');
+  const barangay = params.get('barangay');
+  if (barangay && TAYTAY_BARANGAYS.some((entry) => entry.id === barangay)) {
+    filter.barangayId = asId<BarangayId>(barangay);
   }
-  if (params.get('category')) {
-    notNarrowed.push('category');
+  const category = PROGRAM_CATEGORIES.find((value) => value === params.get('category'));
+  if (category !== undefined) {
+    filter.category = category;
   }
-  return { filter, notNarrowed };
+  const group = RELEASE_GROUPS.find((value) => value === params.get('group'));
+  if (group !== undefined) {
+    filter.statusGroup = group;
+  }
+  const period = DASHBOARD_PERIODS.find((value) => value === params.get('period'));
+  if (period !== undefined && period !== 'all-time') {
+    filter.period = period;
+  }
+  return { filter };
 }

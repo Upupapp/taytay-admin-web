@@ -18,11 +18,65 @@ export interface AppConfig {
   readonly minimumAppVersion: string | null;
   readonly featureFlags: readonly FeatureFlag[];
   /**
-   * The privacy notice the API serves, said by version and date only. Its text is kept by the API
-   * and no route changes it, so this console neither reads nor offers it.
+   * The privacy notice residents are asked to accept, with its text. An administrator publishes it
+   * with its version (`DL-186`, superseding `DL-170`'s "no route changes it").
    */
-  readonly privacyNotice: { readonly version: string; readonly updatedAt: IsoDateTime };
+  readonly privacyNotice: LegalText;
+  /** The Terms of Use residents are asked to accept, the same shape and the same rules (`DL-186`). */
+  readonly terms: LegalText;
   readonly updatedAt: IsoDateTime;
+}
+
+/* ── the texts residents accept (`DL-186`) ───────────────────────────────── */
+
+/**
+ * A text residents are asked to accept — the Terms of Use or the privacy notice — as the API serves
+ * it. The text is the LGU's, written by an administrator; this console never writes, suggests or
+ * fills in legal text, and shows the text as text, never as markup it renders.
+ */
+export interface LegalText {
+  readonly version: string;
+  readonly updatedAt: IsoDateTime;
+  readonly bodyMarkdown: string;
+}
+
+/**
+ * A text as an administrator publishes it: the text and the version residents accept it under,
+ * always together, so the version a resident accepted names the text they were shown. The version
+ * is the administrator's own choice — the API never derives or bumps it — because changing it is
+ * what asks every resident to accept again.
+ */
+export interface LegalTextDraft {
+  readonly version: string;
+  readonly bodyMarkdown: string;
+}
+
+/** The version a text ships with until the approved one is written. Never a published version. */
+export const LEGAL_TEXT_PLACEHOLDER_VERSION = 'placeholder';
+
+/** Whether this is still the placeholder the API ships, whose text says only that it is one. */
+export function isPlaceholderText(text: { readonly version: string }): boolean {
+  return text.version.trim().toLowerCase() === LEGAL_TEXT_PLACEHOLDER_VERSION;
+}
+
+/**
+ * What the editor starts from: the published text and its version — or nothing at all while it is
+ * the placeholder. The placeholder's sentence is not legal text, and no text is ever invented to
+ * stand in for the LGU's (`DL-186`).
+ */
+export function legalTextDraftFrom(text: LegalText): LegalTextDraft {
+  return isPlaceholderText(text)
+    ? { version: '', bodyMarkdown: '' }
+    : { version: text.version, bodyMarkdown: text.bodyMarkdown };
+}
+
+/**
+ * Whether publishing under `version` asks every resident to accept again: the app compares the
+ * version each resident accepted with the version it is given, which publishing sets — so any
+ * version other than the one residents are asked for now is a new one.
+ */
+export function isNewLegalVersion(version: string, askedNow: string | null): boolean {
+  return version.trim() !== (askedNow ?? '').trim();
 }
 
 export interface FeatureFlag {
@@ -41,12 +95,20 @@ export interface AppConfigChanges {
   readonly termsVersion?: string | null;
   readonly minimumAppVersion?: string | null;
   readonly featureFlags?: readonly { readonly key: string; readonly value: string | null }[];
+  /** Publishes the Terms of Use: the text and its version together (`DL-186`). */
+  readonly terms?: LegalTextDraft;
+  /** Publishes the privacy notice, the same way. */
+  readonly privacyNotice?: LegalTextDraft;
 }
 
-/** Read from `src/modules/app-config/schemas.ts`, `repository.ts` and `0010_screen_coverage.sql` at `2736e28`. */
+/**
+ * Read from `src/modules/app-config/schemas.ts`, `repository.ts` and `0010_screen_coverage.sql` at
+ * `2736e28`, and the texts from `schemas.ts` and `0037_terms_text.sql` at `0f1ffec`.
+ */
 export const APP_CONFIG_LIMITS = {
   email: 200,
   version: 32,
+  legalText: 20000,
   /** The pattern allows longer; the column's check allows twenty, and a longer one fails there. */
   minimumAppVersion: 20,
   flagValue: 200,
@@ -117,6 +179,28 @@ export function appConfigProblems(
         `${APP_CONFIG_LIMITS.minimumAppVersion} characters.`,
     });
   }
+  for (const [field, draft, name, alongside, alongsideName] of [
+    ['terms', changes.terms, 'Terms of Use', termsVersion, 'terms version'],
+    [
+      'privacyNotice',
+      changes.privacyNotice,
+      'privacy notice',
+      privacyVersion,
+      'privacy notice version',
+    ],
+  ] as const) {
+    if (draft === undefined) continue;
+    problems.push(...legalTextProblems(field, draft, name));
+    // The API sets the version residents accept to the text's own; a different one beside it is 422.
+    if (alongside !== undefined && alongside !== draft.version.trim()) {
+      problems.push({
+        field,
+        message:
+          `Publishing the ${name} sets the ${alongsideName} to its own version, ${draft.version.trim() || '(none given)'}. ` +
+          `Change the version in one place: leave the ${alongsideName} above as it was.`,
+      });
+    }
+  }
   const flags = changes.featureFlags ?? [];
   if (flags.length > APP_CONFIG_LIMITS.flagsPerChange) {
     problems.push({
@@ -150,16 +234,63 @@ export function appConfigProblems(
   return problems;
 }
 
+/** What the API would refuse in a published text, said before anything is sent (`DL-186`). */
+function legalTextProblems(
+  field: 'terms' | 'privacyNotice',
+  draft: LegalTextDraft,
+  name: string,
+): readonly FieldProblem<AppConfigField>[] {
+  const problems: FieldProblem<AppConfigField>[] = [];
+  const version = draft.version.trim();
+  if (version === '') {
+    problems.push({
+      field,
+      message: `Give the ${name} a version — the one residents accept it under.`,
+    });
+  } else if (version.length > APP_CONFIG_LIMITS.version) {
+    problems.push({
+      field,
+      message: `The ${name} version is at most ${APP_CONFIG_LIMITS.version} characters.`,
+    });
+  } else if (isPlaceholderText({ version })) {
+    problems.push({
+      field,
+      message:
+        `“${LEGAL_TEXT_PLACEHOLDER_VERSION}” marks the text that ships until the approved one is ` +
+        `written. Give the approved ${name} a version of its own.`,
+    });
+  }
+  const body = draft.bodyMarkdown.trim();
+  if (body === '') {
+    problems.push({
+      field,
+      message: `Nothing is written for the ${name}. Write the approved text, or put the editor away.`,
+    });
+  } else if (body.length > APP_CONFIG_LIMITS.legalText) {
+    problems.push({
+      field,
+      message: `The text of the ${name} is at most ${APP_CONFIG_LIMITS.legalText} characters.`,
+    });
+  }
+  return problems;
+}
+
 /**
  * What a change to the app's settings does, shown **before** the confirmation (`DL-170`).
  *
  * Read from `taytay-backend` `2736e28`: `src/modules/app-config/routes.ts` (one audit entry,
  * `app.config_updated`, naming no setting and keeping no reason; the read is public),
- * `repository.ts` (a `null` flag deletes it; the privacy notice's text is the API's own and no route
- * changes it), and `src/modules/users/routes.ts` (a resident's acceptance is recorded by version
- * through `POST me/consents`; nothing on the server compares it with these versions, and nothing
- * refuses an old app). What the app does with each setting is the app's, which this console cannot
- * see — so the sentences say what the app is given and what that **can** make it do.
+ * `repository.ts` (a `null` flag deletes it), and `src/modules/users/routes.ts` (a resident's
+ * acceptance is recorded by version through `POST me/consents`; nothing on the server compares it
+ * with these versions, and nothing refuses an old app). What the app does with each setting is the
+ * app's, which this console cannot see — so the sentences say what the app is given and what that
+ * **can** make it do.
+ *
+ * The texts (`DL-186`), from `0f1ffec`: `privacy_notice` and `terms` publish a text and its version
+ * together and set the version residents are asked to accept to it; the API never bumps a version.
+ * The residents' app asks a resident to accept again when the version it is given differs from the
+ * one they accepted (`taytay-mobile-app`, `auth_api_repository.dart`), so a new version **makes**
+ * every resident accept again — said plainly, before the button.
  */
 export const APP_CONFIG_EFFECTS = {
   minimumRaised: (version: string) => [
@@ -182,12 +313,45 @@ export const APP_CONFIG_EFFECTS = {
       ? 'The app is given no privacy notice version, so it has none to ask residents to accept.'
       : `This can make every resident accept the privacy notice again: the app is given ${version} ` +
         'to compare with the version each resident accepted. The API does not compare them itself.',
-    'The notice’s text does not change here. The API serves its own, and no route changes it — a ' +
-      'new version number on an unchanged notice asks residents to accept what they already did.',
+    'The notice’s text does not change here, only the version number residents are asked to ' +
+      'accept — a new number on an unchanged notice asks residents to accept what they already ' +
+      'did. To change the text, publish it under “Privacy notice” below.',
   ],
   privacyMismatch: (served: string, version: string) => [
     `The API serves privacy notice version ${served}, not ${version}. Residents may be asked to ` +
       'accept a version whose text the app cannot show them.',
+  ],
+  termsMismatch: (served: string, version: string) => [
+    `The API serves the Terms of Use as version ${served}, not ${version}. Residents may be asked ` +
+      'to accept a version whose text the app cannot show them.',
+  ],
+  termsPublished: (version: string, isNew: boolean) =>
+    isNew
+      ? [
+          `This is a new version, ${version}, so it makes every resident accept the Terms of Use ` +
+            'again in the app before going on using it.',
+        ]
+      : [
+          `The version stays ${version}, so the text changes without asking anyone to accept ` +
+            `again: a resident who accepted version ${version} is not shown the new Terms of Use ` +
+            'to accept. Keep the version only to correct a mistake that does not change what ' +
+            'residents agree to.',
+        ],
+  noticePublished: (version: string, isNew: boolean) =>
+    isNew
+      ? [
+          `This is a new version, ${version}, so it makes every resident accept the privacy ` +
+            'notice again in the app before going on using it.',
+        ]
+      : [
+          `The version stays ${version}, so the text changes without asking anyone to accept ` +
+            `again: a resident who accepted version ${version} is not shown the new privacy ` +
+            'notice to accept. Keep the version only to correct a mistake that does not change ' +
+            'what residents agree to.',
+        ],
+  asWritten: [
+    'The text is published exactly as written here, and the app shows it as written. Nothing in ' +
+      'this console writes, suggests or fills in legal text.',
   ],
   contact: ['Residents see the new contact details in the app.'],
   flags: [
@@ -212,13 +376,40 @@ export function asksEveryResident(current: AppConfig, changes: AppConfigChanges)
   return (
     raised ||
     (changes.termsVersion !== undefined && changes.termsVersion !== null) ||
-    (changes.privacyVersion !== undefined && changes.privacyVersion !== null)
+    (changes.privacyVersion !== undefined && changes.privacyVersion !== null) ||
+    // A text published under a new version asks every resident to accept it (`DL-186`).
+    (changes.terms !== undefined &&
+      isNewLegalVersion(changes.terms.version, current.termsVersion)) ||
+    (changes.privacyNotice !== undefined &&
+      isNewLegalVersion(changes.privacyNotice.version, current.privacyVersion))
   );
 }
 
 /** Every consequence of saving this change, the ones that reach every resident first. */
 export function appConfigEffects(current: AppConfig, changes: AppConfigChanges): readonly string[] {
   const effects: string[] = [];
+  // The texts first: a new version reaches every resident before they can go on (`DL-186`).
+  if (changes.terms !== undefined) {
+    const version = changes.terms.version.trim();
+    effects.push(
+      ...APP_CONFIG_EFFECTS.termsPublished(
+        version,
+        isNewLegalVersion(version, current.termsVersion),
+      ),
+    );
+  }
+  if (changes.privacyNotice !== undefined) {
+    const version = changes.privacyNotice.version.trim();
+    effects.push(
+      ...APP_CONFIG_EFFECTS.noticePublished(
+        version,
+        isNewLegalVersion(version, current.privacyVersion),
+      ),
+    );
+  }
+  if (changes.terms !== undefined || changes.privacyNotice !== undefined) {
+    effects.push(...APP_CONFIG_EFFECTS.asWritten);
+  }
   const minimum = changes.minimumAppVersion;
   if (minimum !== undefined) {
     const raised =
@@ -233,10 +424,20 @@ export function appConfigEffects(current: AppConfig, changes: AppConfigChanges):
   }
   if (changes.termsVersion !== undefined) {
     effects.push(...APP_CONFIG_EFFECTS.termsChanged(changes.termsVersion));
+    if (
+      changes.terms === undefined &&
+      changes.termsVersion !== null &&
+      changes.termsVersion !== current.terms.version
+    ) {
+      effects.push(
+        ...APP_CONFIG_EFFECTS.termsMismatch(current.terms.version, changes.termsVersion),
+      );
+    }
   }
   if (changes.privacyVersion !== undefined) {
     effects.push(...APP_CONFIG_EFFECTS.privacyChanged(changes.privacyVersion));
     if (
+      changes.privacyNotice === undefined &&
       changes.privacyVersion !== null &&
       changes.privacyVersion !== current.privacyNotice.version
     ) {

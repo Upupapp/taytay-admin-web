@@ -121,10 +121,12 @@ describe('releases over the API (DL-180)', () => {
     const [session] = await batches;
     expect(session?.progress.total).toBe(3);
     expect(session?.progress.totalReleased).toEqual(centavos(250_000));
-    // The server counts unclaimed into `deferred`, so the sentence says both (`DL-94`, `DL-185`).
-    expect(session?.progress.unclaimed).toBeNull();
+    // `deferred_only` and `unclaimed`, never the folded `deferred` the wire keeps for old clients
+    // (`DL-94`, `DL-186`): the fixture's one deferral-or-no-show is a family that never came.
+    expect(session?.progress.deferred).toBe(0);
+    expect(session?.progress.unclaimed).toBe(1);
     expect(describeBatch(session?.progress ?? batchProgress([]))).toBe(
-      '1 of 3 released, 1 deferred or unclaimed, 1 still to release.',
+      '1 of 3 released, 1 unclaimed, 1 still to release.',
     );
     expect(Object.keys(session ?? {})).not.toContain('status');
   });

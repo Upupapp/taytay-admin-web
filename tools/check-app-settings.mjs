@@ -14,10 +14,21 @@
  *   4. The effects say a newer version can force every resident to update, a new terms or privacy
  *      version can make every resident accept again, the notice's text is not changed here, and the
  *      server keeps no record of which setting changed; `asksEveryResident` covers the three.
- *   5. The flags are said not to be secret, and the mapper never reads the privacy notice's text.
+ *   5. The flags are said not to be secret. (Until `DL-186` this rule also kept the mapper from
+ *      reading the privacy notice's text, which no route changed; rule 8 replaces that half, because
+ *      the text is now published here and must be read whole.)
  *   6. No `console`, web storage or cookie in the module.
  *   7. `app-config.manage` is in `PERMISSIONS`, named by no role, not read-only, and asked for by the
  *      route and the menu entry.
+ *   8. The Terms of Use and the privacy notice (`DL-186`): a new version asks for the acknowledgement
+ *      (`asksEveryResident` covers both texts); the effects say, for each, that a new version makes
+ *      every resident accept it again in the app, that the same version changes the text without
+ *      asking anyone, and that this console writes no legal text — and `appConfigEffects` lists them;
+ *      the placeholder is said to have no text, on the page, for both; the editor starts only from
+ *      `legalTextDraftFrom`, which gives nothing for the placeholder, and no draft is set to words
+ *      written in the code; the placeholder's version is refused; the texts are shown as text, never
+ *      rendered as HTML; the mapper reads each text whole and sends each with its version; and the
+ *      mock invents no legal text.
  *
  * Each rule was validated against a planted regression before being trusted.
  */
@@ -143,14 +154,128 @@ const asks = block(domain, domain.indexOf('export function asksEveryResident'));
 for (const field of ['minimumAppVersion', 'termsVersion', 'privacyVersion']) {
   if (!asks.includes(field)) failures.push(`asksEveryResident no longer covers ${field}.`);
 }
+// A text published under a new version asks every resident too (DL-186). Matched on the version
+// compared, because `changes.terms` alone is also the start of `changes.termsVersion`.
+for (const text of ['terms', 'privacyNotice']) {
+  if (!new RegExp(`isNewLegalVersion\\s*\\(\\s*changes\\s*\\.\\s*${text}\\s*\\.\\s*version`).test(asks)) {
+    failures.push(`asksEveryResident no longer covers a new version of ${text} (DL-186).`);
+  }
+}
 
 /* ── 5. not secret, and not the notice's text ────────────────────────────── */
 
 if (!/Not secret/.test(readFileSync(COPY, 'utf8')) || !/\{\{\s*copy\s*\.\s*flagsLead\s*\}\}/.test(template)) {
   failures.push('The flags are no longer said not to be secret.');
 }
-if (/body_markdown/.test(code(readFileSync(MAPPER, 'utf8')))) {
-  failures.push("The settings mapper reads the privacy notice's text, which this screen neither shows nor changes.");
+
+/* ── 8. the texts residents accept (DL-186) ──────────────────────────────── */
+
+for (const [pattern, said] of [
+  [
+    /makes every resident accept the Terms of Use[\s\S]{0,30}again in the app/,
+    'a new Terms of Use version makes every resident accept them again in the app',
+  ],
+  [
+    /makes every resident accept the privacy[\s\S]{0,30}notice again in the app/,
+    'a new privacy notice version makes every resident accept it again in the app',
+  ],
+  [/writes, suggests or fills in legal text/, 'this console writes no legal text'],
+]) {
+  if (!pattern.test(effectsText)) failures.push(`APP_CONFIG_EFFECTS no longer says ${said} (DL-186).`);
+}
+if ([...effectsText.matchAll(/text changes without asking anyone to accept[\s\S]{0,20}again/g)].length < 2) {
+  failures.push(
+    'APP_CONFIG_EFFECTS no longer says, for both texts, that the same version changes the text ' +
+      'without asking anyone to accept again (DL-186).',
+  );
+}
+const listed = block(domain, domain.indexOf('export function appConfigEffects'));
+for (const effect of [
+  'APP_CONFIG_EFFECTS.termsPublished',
+  'APP_CONFIG_EFFECTS.noticePublished',
+  'APP_CONFIG_EFFECTS.asWritten',
+]) {
+  if (!listed.includes(effect)) {
+    failures.push(`appConfigEffects no longer lists ${effect}, so the confirmation would not say it (DL-186).`);
+  }
+}
+
+// The placeholder has no text, and the page says so for both.
+const copyText = readFileSync(COPY, 'utf8');
+if ([...copyText.matchAll(/No text has been written yet\./g)].length < 2) {
+  failures.push(
+    'The copy no longer says, for both texts, that no text has been written yet while the version ' +
+      'is the placeholder (DL-186).',
+  );
+}
+if (!/@if \(isPlaceholder\(published\)\)\s*\{\s*<p[^>]*>\{\{\s*words\s*\.\s*noText\s*\}\}/.test(template)) {
+  failures.push('The page no longer says "no text has been written yet" where the placeholder would be (DL-186).');
+}
+
+// Never pre-filled: the editor starts from the published text, or from nothing for the placeholder.
+const draftFrom = block(domain, domain.indexOf('export function legalTextDraftFrom'));
+if (!/isPlaceholderText\(/.test(draftFrom) || !/\{\s*version:\s*''\s*,\s*bodyMarkdown:\s*''\s*\}/.test(draftFrom)) {
+  failures.push("legalTextDraftFrom no longer starts the placeholder's editor empty. Its sentence is not legal text (DL-186).");
+}
+if (!/legalTextDraftFrom\(/.test(methodBody(page, 'startEditing'))) {
+  failures.push('startEditing no longer starts the editor from legalTextDraftFrom (DL-186).');
+}
+// Every value a draft is given is typed, published or empty: once the empty strings are taken out of
+// its argument, no string literal is left in it.
+for (const call of page.matchAll(/(?:draftBody|draftVersion)\s*\.\s*(?:set|update)\s*\(/g)) {
+  const open = (call.index ?? 0) + call[0].length - 1;
+  let end = open;
+  for (let i = open, depth = 0; i < page.length; i++) {
+    if (page[i] === '(') depth++;
+    else if (page[i] === ')' && --depth === 0) {
+      end = i;
+      break;
+    }
+  }
+  if (/['"`]/.test(page.slice(open + 1, end).replace(/''/g, ''))) {
+    failures.push('A legal text draft is set to words written in the code. Nothing here writes legal text (DL-186).');
+    break;
+  }
+}
+
+// The placeholder's version is not a published one.
+const textProblems = block(domain, domain.indexOf('function legalTextProblems'));
+if (!/isPlaceholderText\(/.test(textProblems) || !/LEGAL_TEXT_PLACEHOLDER_VERSION = 'placeholder'/.test(domain)) {
+  failures.push("The placeholder's version is no longer refused before it is sent (DL-186).");
+}
+
+// Shown as text: a text rendered as HTML is markup the console vouches for.
+for (const file of moduleFiles) {
+  const found = /\[innerHTML\]|innerHTML\s*=|bypassSecurityTrust|DomSanitizer/.exec(code(readFileSync(file, 'utf8')));
+  if (found !== null) failures.push(`${shown(file)} renders HTML (${found[0]}). The texts are shown as written (DL-186).`);
+}
+
+// Read whole, sent with its version.
+const mapper = code(readFileSync(MAPPER, 'utf8'));
+const textOf = block(mapper, mapper.indexOf('function legalTextOf'));
+if (
+  !/field\(\s*value\s*,\s*'body_markdown'\s*\)/.test(textOf) ||
+  !/field\(\s*value\s*,\s*'version'\s*\)/.test(textOf) ||
+  !/legalTextOf\(\s*field\(\s*wire\s*,\s*'terms'\s*\)\s*\)/.test(mapper) ||
+  !/legalTextOf\(\s*field\(\s*wire\s*,\s*'privacy_notice'\s*\)\s*\)/.test(mapper)
+) {
+  failures.push('The mapper no longer reads both texts whole, each with its version (DL-186).');
+}
+const toWireText = block(mapper, mapper.indexOf('function toWireLegalText'));
+if (
+  !/terms:\s*toWireLegalText\s*\(\s*changes\s*\.\s*terms\s*\)/.test(mapper) ||
+  !/privacy_notice:\s*toWireLegalText\s*\(\s*changes\s*\.\s*privacyNotice\s*\)/.test(mapper) ||
+  !/version:[\s\S]*body_markdown:/.test(toWireText)
+) {
+  failures.push('The mapper no longer sends each text with its version, together (DL-186).');
+}
+
+// The mock invents no legal text: both texts are the API's placeholders.
+const mock = code(readFileSync(MOCK, 'utf8'));
+for (const key of ['privacyNotice', 'terms']) {
+  if (!new RegExp(`${key}: \\{\\s*version: 'placeholder'`).test(mock)) {
+    failures.push(`The mock's ${key} is not the API's placeholder. No legal text is invented, in the demo either (DL-186).`);
+  }
 }
 
 /* ── 6. no log, no storage ───────────────────────────────────────────────── */
@@ -195,6 +320,7 @@ function report() {
   console.log(
     `App settings check passed (${moduleFiles.length} files: residents told, sent only after the review, ` +
       'acknowledged where it can stop residents, effects before the button, flags not secret, the key ' +
-      'the administrator’s).',
+      'the administrator’s; the Terms of Use and privacy notice published with their version, a new ' +
+      'version acknowledged, no legal text written or rendered here).',
   );
 }

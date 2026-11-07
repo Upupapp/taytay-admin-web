@@ -11,6 +11,7 @@ import {
   type AccountBarangay,
   type AccountRole,
   type AppAccount,
+  type AppAccountFilter,
   type AppAccountId,
   type AppAccountRepository,
   type CursorPage,
@@ -20,6 +21,7 @@ import {
 } from '@domain/index';
 
 import { denyUnless } from './mock-access';
+import { mockVerificationOf } from './mock-account-verification';
 import { MockLatency } from './mock-latency';
 import { MOCK_APP_ACCOUNTS } from './seed/app-accounts.seed';
 import { MOCK_OFFICES } from './seed/offices.seed';
@@ -44,18 +46,28 @@ export class MockAppAccountRepository implements AppAccountRepository {
 
   private accounts: readonly AppAccount[] = MOCK_APP_ACCOUNTS;
 
-  list(page: CursorRequest): Observable<CursorPage<AppAccount>> {
+  list(page: CursorRequest, filter: AppAccountFilter = {}): Observable<CursorPage<AppAccount>> {
     const denied = denyUnless<CursorPage<AppAccount>>(this.access.currentUser(), 'user.view');
     if (denied) {
       return denied;
     }
+    // With a status: the open residents' accounts with it, as the dashboard counts them (`DL-186`).
+    const status = filter.verificationStatus;
+    const accounts =
+      status === undefined
+        ? this.accounts
+        : this.accounts.filter(
+            (account) =>
+              (account.role === 'registered' || account.role === 'verified') &&
+              mockVerificationOf(account.id, account.role) === status,
+          );
     const start = page.cursor ? Number.parseInt(page.cursor, 10) || 0 : 0;
     const limit = Math.min(Math.max(1, page.limit), LARGEST_PAGE);
     const end = start + limit;
-    const hasMore = end < this.accounts.length;
+    const hasMore = end < accounts.length;
 
     return this.latency.respond({
-      items: this.accounts.slice(start, end),
+      items: accounts.slice(start, end),
       hasMore,
       nextCursor: hasMore ? String(end) : null,
     });
