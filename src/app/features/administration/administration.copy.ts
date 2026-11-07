@@ -41,7 +41,8 @@ export const ADMIN_COPY = {
     deactivate: 'Deactivate',
     reactivate: 'Reactivate',
     statusReason: 'Why',
-    statusReasonHint: 'Recorded in the audit trail against your name. Required.',
+    statusReasonHint:
+      'Kept against your name with this account’s switch history; the audit trail shows the act, not the reason. Required.',
     confirm: 'Save',
     cancel: 'Cancel',
     statusChanged: 'Account updated.',

@@ -33,11 +33,7 @@ import {
   describeRetention,
   rulesAwaitingPolicy,
 } from './retention';
-import {
-  DEACTIVATED_NOTICE,
-  PROVISIONING_IS_NOT_BUILT,
-  canHoldSession,
-} from './staff-profile';
+import { DEACTIVATED_NOTICE, PROVISIONING_IS_NOT_BUILT, canHoldSession } from './staff-profile';
 
 const ENTRY: AuditEntry = {
   id: asId<AuditEntryId>('aud-test'),
@@ -81,9 +77,7 @@ describe('an audit row', () => {
 
     expect(row.changedFields).toHaveLength(1);
     expect(row.changedFields[0]?.label).toBe('Contact number');
-    expect(row.changedFields[0] as unknown as Record<string, unknown>).not.toHaveProperty(
-      'before',
-    );
+    expect(row.changedFields[0] as unknown as Record<string, unknown>).not.toHaveProperty('before');
   });
 
   it('flags an entry that moved sensitive personal information', () => {
@@ -135,6 +129,11 @@ describe('reading the trail', () => {
     expect(describeAuditFilter({})).toBe('Everything recorded');
     expect(describeAuditFilter({ sensitiveOnly: true })).toContain('sensitive');
     expect(describeAuditFilter({ action: 'exported' })).toContain('exported');
+  });
+
+  it('names a typed term, so a searched trail is not labelled as everything', () => {
+    expect(describeAuditFilter({ search: 'report' })).toBe('Showing matching “report”');
+    expect(describeAuditFilter({ search: '   ' })).toBe('Everything recorded');
   });
 
   it('knows when a filter is narrowing anything', () => {
@@ -318,7 +317,10 @@ describe('a correction request', () => {
 
   it('accepts an answer that carries one', () => {
     expect(
-      correctionProblems(correction({ outcome: 'Corrected against the PSA certificate.' }), 'applied'),
+      correctionProblems(
+        correction({ outcome: 'Corrected against the PSA certificate.' }),
+        'applied',
+      ),
     ).toEqual([]);
   });
 
@@ -357,16 +359,18 @@ describe('a correction request', () => {
 
   it('carries every field one request would change, not just the first', () => {
     expect(
-      fieldsNamed(correction({ changes: [
-        { field: 'lastName', currentValue: null, proposedValue: 'Sarmiento' },
-        { field: 'streetAddress', currentValue: null, proposedValue: '18-B Rizal Extension' },
-      ] })),
+      fieldsNamed(
+        correction({
+          changes: [
+            { field: 'lastName', currentValue: null, proposedValue: 'Sarmiento' },
+            { field: 'streetAddress', currentValue: null, proposedValue: '18-B Rizal Extension' },
+          ],
+        }),
+      ),
     ).toHaveLength(2);
   });
 
   it('needs a claim to exist at all', () => {
-    expect(correctionProblems(correction({ claim: '   ' }), 'applied')).toContain(
-      'claim-required',
-    );
+    expect(correctionProblems(correction({ claim: '   ' }), 'applied')).toContain('claim-required');
   });
 });

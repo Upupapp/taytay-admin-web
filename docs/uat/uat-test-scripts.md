@@ -2741,7 +2741,8 @@ administrator only. The head and the auditor read the first two and change nothi
 - **Expected result:**
   - Step 1 leaves rows about reports, among them "Exported a report as a file, its conditions
     written inside it", "Opened the report that names residents" and "Exported the report that names
-    residents, as a file", with HEAD's name. "Clear filters" appears.
+    residents, as a file", with HEAD's name. "Clear filters" appears, and the line above the rows
+    reads "Showing matching “report”" in place of "Everything recorded".
   - Step 2 leaves only rows by SW1.
   - Step 3 leaves only rows whose act is "Exported", among them the exports of RPT-05 and RPT-06,
     and the line above the rows names that filter in place of "Everything recorded".
@@ -2809,7 +2810,8 @@ administrator only. The head and the auditor read the first two and change nothi
 - **Expected result:**
   - Your own card reads "This is your own account. You cannot switch it off or on; another
     administrator can." and offers no "Deactivate".
-  - Step 2 shows "Why", with "Recorded in the audit trail against your name. Required.", and
+  - Step 2 shows "Why", with "Kept against your name with this account’s switch history; the audit trail shows the act,
+    not the reason. Required.", and
     "Save". "Save" stays greyed out while "Why" is empty or holds only spaces.
   - Step 3 closes the box, and SW2 still reads "Active".
 

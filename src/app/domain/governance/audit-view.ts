@@ -187,6 +187,12 @@ export function isAuditFilterActive(filter: AuditFilter): boolean {
  */
 export function describeAuditFilter(filter: AuditFilter, actorName?: string): string {
   const parts: string[] = [];
+  // A typed term narrows the stream as much as any dropdown; leaving it out
+  // labelled a searched trail "Everything recorded".
+  const term = filter.search?.trim() ?? '';
+  if (term !== '') {
+    parts.push(`matching “${term}”`);
+  }
   if (filter.from !== undefined || filter.to !== undefined) {
     parts.push(`${filter.from ?? 'the beginning'} to ${filter.to ?? 'now'}`);
   }
