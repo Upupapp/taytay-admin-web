@@ -287,6 +287,22 @@ form** in the console, by design: accounts are provisioned by an administrator o
 the API without Docker; the same command runs there where the API runs, once the staging rehearsal
 is signed off.
 
+### Staff sign-in accounts: add one, reset a password, close one when someone leaves
+
+The sign-in accounts live in the Firebase console (Authentication → Users), not in the staff
+console. Whoever holds the Firebase project does these steps; the role is always given in the staff
+console afterwards.
+
+- **A new staff member.** Firebase console → Authentication → Users → **Add user**, with their work
+  e-mail and a throwaway password. Then the user's menu → **Reset password**, so they set their own.
+  When they have signed in once, an administrator gives the role and office in **Users and roles**.
+- **A forgotten password.** Firebase console → the user's menu → **Reset password**. Firebase sends
+  the person a link to set a new one. Nobody else learns the password.
+- **Someone leaves.** In the staff console, change their account to "Resident" (this clears the
+  office role and is recorded). Then Firebase console → the user's menu → **Disable account**. A
+  disabled account stops working at its next call. Disable rather than delete, so the audit trail
+  still names a real account.
+
 ## 9. Read the logs
 
 Source: staging README, "Read the API logs".
@@ -352,11 +368,11 @@ Firebase key rotation and the staging first-administrator steps. Closed by `DL-1
 production-readiness round): a committed first-administrator command (GL-13), and the rotation of the
 database password and the digital-ID signing key. Still open:
 
-| Gap                                                                           | Where it belongs                          |
-| ----------------------------------------------------------------------------- | ----------------------------------------- |
-| Rollback, restore and key rotation not rehearsed or timed                     | Staging, then launch gate line 18         |
-| `npm run admin:grant` not rehearsed on staging (GL-13)                        | Staging, signed off by the owner          |
-| Database-password rotation for the managed production database not detailed  | `docs/deploy-linode.md`, when it exists   |
-| Backups only on the same server                                               | GL-5                                      |
-| No production runbook for the chosen host (GL-14), including its rollback     | When production exists                    |
-| No breach procedure (GL-16), no alerting to a named person (GL-12)            | LGU, with the developer                   |
+| Gap                                                                         | Where it belongs                        |
+| --------------------------------------------------------------------------- | --------------------------------------- |
+| Rollback, restore and key rotation not rehearsed or timed                   | Staging, then launch gate line 18       |
+| `npm run admin:grant` not rehearsed on staging (GL-13)                      | Staging, signed off by the owner        |
+| Database-password rotation for the managed production database not detailed | `docs/deploy-linode.md`, when it exists |
+| Backups only on the same server                                             | GL-5                                    |
+| No production runbook for the chosen host (GL-14), including its rollback   | When production exists                  |
+| No breach procedure (GL-16), no alerting to a named person (GL-12)          | LGU, with the developer                 |

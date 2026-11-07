@@ -62,9 +62,9 @@ self-registration — contact your administrator if you need access." and "Passw
 by the MSWDO administrator. Contact the office to have yours reset."
 
 **There is no invite or password reset in the console.** Sign-in accounts are created, and staff
-passwords reset, outside the console, in the sign-in service. The written procedure is not finished
-yet: see section 8 of the [operations runbook](../turnover/operations-runbook.md) (go-live item
-GL-13). Until it is, ask the developer.
+passwords reset, outside the console, in the sign-in service (Firebase). The steps are in section 8
+of the [operations runbook](../turnover/operations-runbook.md): "Create the first administrator" and "Staff sign-in
+accounts".
 
 The menu and buttons follow the account's role. The server checks every permission again, so typing
 a page's address does not get past a role: it shows "You do not have access to that section".
@@ -113,8 +113,7 @@ at least two administrator accounts, so one can change the other.
   where the office has verified the person some other way. It issues no digital ID.
 
 The sign-in account itself is outside the console. When someone leaves, also have it disabled in the
-sign-in service. There is no written procedure for this yet: ask the developer, and add the steps to
-the [operations runbook](../turnover/operations-runbook.md) once they are agreed.
+sign-in service: "Staff sign-in accounts" in section 8 of the [operations runbook](../turnover/operations-runbook.md).
 
 ### 3.4 App settings
 
@@ -312,7 +311,8 @@ again.
 first.
 
 **A staff member forgot their password.** It is reset outside the console, in the sign-in service.
-The written steps are not finished yet (GL-13): ask the developer.
+Whoever holds the Firebase project sends a reset link: "Staff sign-in accounts" in section 8 of the
+[operations runbook](../turnover/operations-runbook.md).
 
 **I am the only administrator and need my role changed.** Nobody can change their own role. Keep a
 second administrator account for this.
@@ -384,7 +384,7 @@ November 2026, so make sure the phones carry a staging build from that date or l
    keep at least two administrator accounts.
 3. In the console, change the account's role to "Resident" (the server applies it at the person's
    next request, and clears the office role). Outside the console, have the sign-in account disabled
-   in the sign-in service (ask the developer until the steps are written down).
+   in the sign-in service (section 8 of the operations runbook).
 4. Its entry number, when, what was done, by which account, the kind of record and the record's ID.
    It never records an old or new value, or a reason.
 5. No. Keep the same version: a typo does not change what residents agree to, so nobody needs to
