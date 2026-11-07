@@ -179,3 +179,28 @@
 .family__back {
   margin-block-start: var(--space-base);
 }
+
+/*
+ * A panel's list rows: the name or link, then its meta or action, kept apart. Without these the
+ * name ran into "Head of this family" and the "Make head" button sat flush against it.
+ */
+.panel__list {
+  display: grid;
+  gap: var(--space-compact);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.panel__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-compact) var(--space-snug);
+}
+
+.panel__meta {
+  color: var(--c-text-muted);
+  font-size: 12.5px;
+}
