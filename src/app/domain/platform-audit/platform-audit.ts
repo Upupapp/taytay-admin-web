@@ -25,7 +25,7 @@ export interface PlatformAuditEntry {
 }
 
 /**
- * Every action the API records at `154a052`, in words. Read from the backend's
+ * Every action the API records at `2fd0566`, in words. Read from the backend's
  * `audit.record(...)` calls; a code not here is shown as given and said to have no description in
  * this console, never dropped or guessed at.
  */
@@ -43,6 +43,25 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'hotline.created': 'Added a hotline',
   'hotline.deleted': 'Deleted a hotline',
   'hotline.updated': 'Changed a hotline',
+  // Residents' document requests (`DL-184`), read from `taytay-backend` `2fd0566`: the catalogue's
+  // three acts, and each act on a request — who did what to which request, never what it said.
+  'issuance_type.created': 'Added a document to an office’s catalogue, with a reason',
+  'issuance_type.updated': 'Changed a document in an office’s catalogue, with a reason',
+  'issuance_type.retired':
+    'Retired a document from an office’s catalogue, with a reason; it is kept',
+  'issuance_request.submitted': 'A resident requested a document from an office',
+  'issuance_request.resubmitted': 'A resident sent what the office asked for on a document request',
+  'issuance_request.cancelled': 'A resident cancelled their document request',
+  'issuance_request.under_review': 'Started reviewing a resident’s document request',
+  'issuance_request.needs_info': 'Asked a resident for more on a document request',
+  'issuance_request.approved': 'Approved a resident’s document request',
+  'issuance_request.rejected': 'Refused a resident’s document request, with a reason',
+  'issuance_request.ready_for_pickup':
+    'Marked a requested document ready to claim, with when and where',
+  'issuance_request.released': 'Recorded a requested document as handed to the resident',
+  'issuance_request.attachment_access_granted':
+    'Was given a single-use grant to open a file sent with a document request',
+  'issuance_request.attachment_opened': 'Opened a file sent with a document request',
   'link.created': 'Added a home screen link',
   'link.deleted': 'Deleted a home screen link',
   'link.updated': 'Changed a home screen link',

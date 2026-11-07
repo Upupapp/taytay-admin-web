@@ -622,6 +622,42 @@ export const routes: Routes = [
         ],
       },
       {
+        // `DL-184`. Residents' document requests ("issuance" on the wire). The API grants both keys
+        // to administrators and to staff assigned to an office; these guards mirror the role table
+        // and are not the protection (rule 4). The catalogue reads the office directory too, for an
+        // administrator's choice of office.
+        path: 'resident-documents',
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            title: 'Resident document requests — Taytay Social Welfare',
+            canActivate: [servedGuard('issuance'), permissionGuard('issuance-request.manage')],
+            loadComponent: () =>
+              import('@features/issuance/issuance-queue-page').then((m) => m.IssuanceQueuePage),
+          },
+          {
+            path: 'catalogue',
+            title: 'Document catalogue — Taytay Social Welfare',
+            canActivate: [
+              servedGuard('issuance', 'office'),
+              permissionGuard('issuance-type.manage'),
+            ],
+            loadComponent: () =>
+              import('@features/issuance/issuance-catalogue-page').then(
+                (m) => m.IssuanceCataloguePage,
+              ),
+          },
+          {
+            path: ':requestId',
+            title: 'Resident document request — Taytay Social Welfare',
+            canActivate: [servedGuard('issuance'), permissionGuard('issuance-request.manage')],
+            loadComponent: () =>
+              import('@features/issuance/issuance-request-page').then((m) => m.IssuanceRequestPage),
+          },
+        ],
+      },
+      {
         // `DL-168`. The API grants `user.view` — and the two keys that change an account — to
         // administrators alone; this guard mirrors it and is not the protection (rule 4). The screen
         // reads the office directory too, to name a staff account's office and to offer one.

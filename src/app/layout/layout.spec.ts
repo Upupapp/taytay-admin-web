@@ -274,6 +274,7 @@ describe('navigation when the API cannot serve a module', () => {
       'digital-id',
       'balita',
       'platform-audit',
+      'issuance',
     ]);
     const fixture = TestBed.createComponent(AppNav);
     await fixture.whenStable();

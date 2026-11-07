@@ -100,6 +100,24 @@ describe('permission requirements', () => {
     expect(requireAll('report.view', 'report.export-person-level').match).toBe('every');
     expect(requireAny('report.view', 'report.export-person-level').match).toBe('some');
   });
+
+  it('gives residents’ document requests to the office, and the catalogue to the head (DL-184)', () => {
+    const holders = (key: Permission): readonly StaffRole[] =>
+      ROLES.filter((role) => permissionsForRole(role).includes(key));
+
+    expect(holders('issuance-request.manage')).toEqual([
+      'system-administrator',
+      'mswdo-head',
+      'social-worker',
+      'intake-officer',
+      'release-officer',
+    ]);
+    expect(holders('issuance-type.manage')).toEqual(['system-administrator', 'mswdo-head']);
+    // The catalogue is reached from the request queue, so whoever keeps it must also read requests.
+    for (const role of holders('issuance-type.manage')) {
+      expect(permissionsForRole(role), role).toContain('issuance-request.manage');
+    }
+  });
 });
 
 describe('toAuthenticatedUser', () => {

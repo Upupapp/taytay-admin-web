@@ -281,6 +281,25 @@ export const API_ENDPOINTS = {
    */
   officeDocumentFiles: 'office/document-files',
   /**
+   * Residents' document requests (`DL-184`) — "issuance" on the wire, because "document request"
+   * is the casework act above. The catalogue residents read: public, active types only, answered
+   * whole (`meta: {}`).
+   */
+  issuanceTypes: 'issuance-types',
+  /**
+   * The office's catalogue (`issuance-type.manage`), retired types included, answered whole;
+   * `POST` and `PATCH {id}` with a reason; `POST {id}/retire` with a reason, one-way.
+   */
+  officeIssuanceTypes: 'office/issuance-types',
+  /**
+   * Residents' requests as the issuing office reads them (`issuance-request.manage`): cursor-paged,
+   * newest filed first, by `status` and `type_id`; one by `{id}`; `POST {id}/status` with the words
+   * the resident reads; `POST {id}/attachments/{attachmentId}/access` for a single-use grant.
+   */
+  officeIssuanceRequests: 'office/issuance-requests',
+  /** A request's file for a grant: `POST` with the handle in the body, answered with the bytes. */
+  officeIssuanceFiles: 'office/issuance-files',
+  /**
    * The office directory, written (`DL-170`, `office.manage`): `POST` and `PATCH {id}` as forms,
    * because they carry the banner; `DELETE {id}`. Read through `offices`, which is public.
    */

@@ -1,0 +1,49 @@
+/* Layout only. `.field`, `.card` and `.btn` are styles.scss's (DL-120) and are not redefined. */
+
+.queue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+}
+
+.queue__boundaries {
+  margin: 0 0 var(--space-base);
+  padding-inline-start: var(--space-base);
+  font-size: 13px;
+  color: var(--c-text-muted);
+}
+
+.queue__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-snug);
+}
+
+.queue__note,
+.queue__problem {
+  margin: 0;
+  font-size: 13px;
+}
+
+.queue__note {
+  color: var(--c-text-muted);
+}
+
+.queue__document,
+.queue__office {
+  display: block;
+}
+
+.queue__office {
+  font-size: 12px;
+  color: var(--c-text-muted);
+}
+
+.queue__more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-snug);
+  margin-block-start: var(--space-snug);
+}

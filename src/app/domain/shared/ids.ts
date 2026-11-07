@@ -102,6 +102,20 @@ export type PlatformAuditEntryId = Branded<string, 'PlatformAuditEntryId'>;
 export type OfficeThreadId = Branded<string, 'OfficeThreadId'>;
 /** One message in an office conversation (`DL-168`). */
 export type ThreadMessageId = Branded<string, 'ThreadMessageId'>;
+/**
+ * A kind of document an office issues to residents — a certificate, a clearance (`DL-184`). Not a
+ * `RequirementId`: that is a document the office asks an applicant for inside casework.
+ */
+export type IssuanceTypeId = Branded<string, 'IssuanceTypeId'>;
+/**
+ * A resident's request for a document an office issues (`DL-184`). Not a `DocumentRequestId`,
+ * which is the office asking an applicant for a document.
+ */
+export type IssuanceRequestId = Branded<string, 'IssuanceRequestId'>;
+/** One file a resident sent with a document request — one version of one requirement. */
+export type IssuanceAttachmentId = Branded<string, 'IssuanceAttachmentId'>;
+/** One move in a document request's history, appended and never changed. */
+export type IssuanceEventId = Branded<string, 'IssuanceEventId'>;
 
 /**
  * The single sanctioned way to turn an untyped string (route param, API payload)

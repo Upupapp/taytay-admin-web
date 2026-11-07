@@ -154,7 +154,9 @@ would be the single most damaging false economy available in this audit.
 
 ### DL-10 · Document requests, communications and internal forms are excluded
 
-**Status:** Settled, revisitable.
+**Status:** **Superseded in part by `DL-184`**: residents' document requests are built, on the
+TOR's terms (Section VIII, Months 4–5). Communications and internal forms stay excluded. Was:
+Settled, revisitable.
 **Evidence:** `admin/document-requests.blade.php`, `admin/communications.blade.php`,
 `admin/internal-forms.blade.php`.
 
@@ -7725,6 +7727,89 @@ recipient already counts as a resident served.
   against it (409, by design). There is no real data yet; on staging such a request is voided or
   cancelled and filed again.
 - Nothing is pushed or deployed: migration `0034` runs on the next staging deploy.
+
+## DL-184 — residents' document requests are served: a catalogue per office, the request worked to the counter, and nothing paid or signed online
+
+**Supersedes `DL-10`'s exclusion of document requests.** Basis: the TOR, Section VIII, Months 4–5
+("Document Request: catalog, submission, review, approval, status tracking"), as the requirements
+document traces it (§3.2, row T-5; FR-RES-15, FR-STAFF-30, FR-API-8). `DL-10` read the feature as
+the barangay's or the Civil Registry's; the TOR names it for the platform, and the API now serves it
+for any office. Backend `taytay-backend` `2fd0566` (migration `0035_issuance.sql`); the spec vendored
+here is its (228 operations).
+
+### Two things called "document request"
+
+Code and wire say **issuance** (`/issuance-types`, `/office/issuance-requests`), because the console
+already calls the office asking an applicant for a document inside casework a "document request"
+(`DL-178`). Screens say **"Document requests from residents"**, the menu **"Resident document
+requests"**, and the subtitle names the other thing so nobody answers the wrong person.
+
+### What is built
+
+- **Domain** (`domain/issuance`): the eight statuses as a `StatusCatalog`, and every move as one
+  `StatusTransitions` map, row for row the backend's `lifecycle.ts` — a spec compares them. Three
+  moves are the resident's (cancelling, and answering a request for more); the office is offered
+  only its own, and only those the server lists in `allowed_moves`. `released`, `rejected` and
+  `cancelled` end a request.
+- **One port**, `ISSUANCE_REPOSITORY` (`issuance`), with an HTTP adapter whose every body goes
+  through a `toWire…` mapper, and a mock with seed data. The queue's open statuses are read **whole**
+  (`everyPage`, one per status), because the queue is ordered oldest waiting first and the server
+  pages newest filed first: a queue cut at a page would hide the request that has waited longest
+  (`DL-161`). Ended requests only grow and are browsed a page at a time.
+- **Screens** at `/resident-documents`: the queue (filter by status and document; whom each request
+  waits on and for how long, in words; the office's standard beside it), one request (`:requestId`),
+  and the catalogue (`catalogue`).
+- **Permissions**: the server's `issuance-type.manage` and `issuance-request.manage`, unchanged. In
+  the role table the head keeps the catalogue — an entry tells every resident what the office issues
+  and on what terms — and the head, social worker, intake officer and release officer work requests.
+  The auditor and the barangay link hold neither, as on the server. The menu entry and the queue
+  ask for `issuance-request.manage`; the catalogue route for `issuance-type.manage`, linked from the
+  queue, and a spec holds that every role keeping the catalogue also reads requests.
+- **The app audit trail** names all fourteen `issuance_type.*` and `issuance_request.*` actions.
+
+### Decisions
+
+1. **No online payment, no document generation, no e-signature.** None was supplied (`DL-09`). The
+   fee is integer centavos, shown and paid at the office; the office prepares and signs the paper.
+   Every screen of the module says both, in those words.
+2. **Every word the office writes on a request is the resident's to read.** The reason field is
+   labelled for the resident on every move, and what each move does — who is told, and that the
+   notice names only the reference — is shown before the button (`DL-167`'s pattern). The console's
+   floor of eight characters applies to every move (`DL-54`); the server's to a refusal and a
+   request for more. Marking a request ready asks for the claim details beside the reason:
+   `StatusTransition` gained an optional second field for one destination, so no screen builds its
+   own move form.
+3. **No deadline is invented** (`DL-101`). The waiting time is calendar days since the request
+   entered its status (`updated_at`, which the database sets only from an event) and says on whom it
+   waits. `processing_days` is the office's standard in **working** days, from its Citizen's
+   Charter, shown as "Office standard: N working days" beside it and never subtracted from it: this
+   console holds no holiday calendar, so nothing is called late.
+4. **Files open only after the server's warning.** "Show" asks for a single-use grant; its warning is
+   shown word for word; only "Open it" fetches the bytes, with the handle in a body. An image is shown
+   in the window; a PDF opens in a new tab from the same object URL. Every URL is revoked when the
+   window closes, another request is opened or the page is left. Superseded versions are listed and
+   openable — they are what the office may have read (`DL-77`).
+5. **The purpose is read on the request only.** List rows carry none, on the wire or in the model.
+6. **A catalogue change sends only what moved**, with a reason; a form that changes nothing says so
+   and sends nothing. **Retiring is one-way**: the one act behind a confirmation, which says first
+   that residents can no longer choose it, filed requests continue, and nothing brings it back.
+7. **The fee is typed in pesos and kept in centavos** by `parsePesos`, which reads the pesos and the
+   centavos as two integers; a third decimal place is refused, not rounded (rule 6). An empty fee is
+   "not stated", which residents are told; zero is no fee.
+8. **The type filter offers the public catalogue** — every office's active documents — because
+   the office catalogue needs `issuance-type.manage`, which most of the roles working requests do not
+   hold. A request for a retired document is listed under "every document", and the screen says so.
+9. **The history names the side and the account as given.** The console cannot name a member of
+   staff (`DL-165`), so it says "You" for the signed-in account and shows the ID otherwise.
+
+### Not done, and what the API would need
+
+- **The residents' side** is the mobile app's (FR-RES-15), and is not built here.
+- **No filter by resident or reference** on the office list: the API has none. A resident at the
+  counter is found by the queue's order and the reference they quote.
+- **The backend's parity test** (`tests/casework.test.ts`) skips the two keys in
+  `NOT_YET_IN_CONSOLE`; now the console names them, that list can be removed so they are compared like
+  every other key.
 
 ## DL-185 — the UAT round: console bugs found while writing the test scripts, fixed where the API already serves the fix
 

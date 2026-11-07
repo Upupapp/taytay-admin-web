@@ -131,7 +131,23 @@ import type {
   QuickLinkId,
   TulongServiceId,
   VerificationRequestId,
+  IssuanceAttachmentId,
+  IssuanceRequestId,
+  IssuanceTypeId,
 } from '../shared/ids';
+import type {
+  IssuanceType,
+  IssuanceTypeChanges,
+  IssuanceTypeDraft,
+} from '../issuance/issuance-type';
+import type {
+  IssuanceFileGrant,
+  IssuanceListFilter,
+  IssuanceMove,
+  IssuanceQueueFilter,
+  IssuanceRequest,
+  IssuanceRequestSummary,
+} from '../issuance/issuance-request';
 import type {
   InboxListing,
   OfficeThread,
@@ -1883,3 +1899,70 @@ export interface PlatformAuditRepository {
 export const PLATFORM_AUDIT_REPOSITORY = new InjectionToken<PlatformAuditRepository>(
   'PlatformAuditRepository',
 );
+
+/* ── residents' document requests (`DL-184`) ──────────────────────────────── */
+
+/**
+ * Residents' requests for documents an office issues, and the catalogue they choose from. Code and
+ * wire say **issuance**: "document request" already names the office asking an applicant for a
+ * document inside casework (`AssistanceRequestRepository.listDocumentRequests`).
+ *
+ * Whose requests and types come back is the **server's** decision — a staff account its own
+ * office's, an administrator every office's. Nothing here filters by office, because a filter the
+ * console applied would be a scope the server does not enforce (rule 4).
+ */
+export interface IssuanceRepository {
+  /**
+   * The catalogue residents choose from: every active type of every office, answered whole. Read
+   * to offer a type filter, and needing no grant — the same list the app shows.
+   */
+  catalogue(): Observable<readonly IssuanceType[]>;
+
+  /** The office's own catalogue, retired types included, answered whole (`issuance-type.manage`). */
+  officeTypes(): Observable<readonly IssuanceType[]>;
+
+  createType(draft: IssuanceTypeDraft): Observable<IssuanceType>;
+
+  /** Only the fields that moved, with a reason. Requests already filed keep what they were filed with. */
+  updateType(id: IssuanceTypeId, changes: IssuanceTypeChanges): Observable<IssuanceType>;
+
+  /** One-way: residents can no longer choose it, and nothing brings it back. */
+  retireType(id: IssuanceTypeId, reason: string): Observable<IssuanceType>;
+
+  /**
+   * **Every** request in the open statuses the filter names, or an error — never part of them
+   * (`DL-161`). The queue is ordered oldest waiting first, which the server's newest-first pages
+   * cannot give without reading them all; a partial queue would hide the oldest request of all.
+   */
+  waiting(filter: IssuanceQueueFilter): Observable<readonly IssuanceRequestSummary[]>;
+
+  /**
+   * One cursor page of the requests in one status, newest filed first as the server orders them —
+   * for the ended ones, which only grow. No total (`DL-161`).
+   */
+  list(
+    filter: IssuanceListFilter,
+    page: CursorRequest,
+  ): Observable<CursorPage<IssuanceRequestSummary>>;
+
+  /** One request, as the issuing office reads it. */
+  request(id: IssuanceRequestId): Observable<IssuanceRequest>;
+
+  /** One office move, with the words the resident reads. Refused by the server if not allowed now. */
+  move(id: IssuanceRequestId, move: IssuanceMove): Observable<IssuanceRequest>;
+
+  /**
+   * Asks for a single-use grant to open one file, with the server's warning. A **method rather than
+   * a URL on the model**, as with `openDocument`: nothing opens until the reader has read the
+   * warning and confirmed.
+   */
+  grantAttachment(
+    id: IssuanceRequestId,
+    attachmentId: IssuanceAttachmentId,
+  ): Observable<IssuanceFileGrant>;
+
+  /** The bytes for a grant — once, within its life. The handle travels in a body, never a URL. */
+  readAttachment(grant: IssuanceFileGrant): Observable<Blob>;
+}
+
+export const ISSUANCE_REPOSITORY = new InjectionToken<IssuanceRepository>('IssuanceRepository');

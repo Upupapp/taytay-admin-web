@@ -1,0 +1,62 @@
+/* Layout only. `.field`, `.card` and `.btn` are styles.scss's (DL-120) and are not redefined. */
+
+.catalogue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+}
+
+.catalogue__back {
+  margin: 0 0 var(--space-snug);
+  font-size: 13px;
+}
+
+.catalogue__boundaries {
+  margin: 0 0 var(--space-base);
+  padding-inline-start: var(--space-base);
+  font-size: 13px;
+  color: var(--c-text-muted);
+}
+
+.catalogue__name,
+.catalogue__aside {
+  display: block;
+}
+
+.catalogue__aside {
+  font-size: 12px;
+  color: var(--c-text-muted);
+}
+
+.catalogue__acts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-snug);
+}
+
+.catalogue__retire {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+
+  ul {
+    margin: 0;
+    padding-inline-start: var(--space-base);
+  }
+}
+
+.catalogue__lead {
+  margin: 0;
+  font-weight: 600;
+}
+
+.catalogue__problem,
+.catalogue__outcome {
+  margin: 0;
+  font-size: 13px;
+}
+
+.catalogue__problem {
+  font-weight: 600;
+}

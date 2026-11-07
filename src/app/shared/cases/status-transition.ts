@@ -7,6 +7,19 @@ import { CASE_COPY } from './case.copy';
 export interface StatusTransitionRequest<TStatus extends string> {
   readonly to: TStatus;
   readonly reason: string;
+  /** The second field a destination's guidance asked for, trimmed; `null` when it asked for none. */
+  readonly detail: string | null;
+}
+
+/**
+ * A second piece of writing one destination needs beside its reason — when and where to claim a
+ * document, for one (`DL-184`). Asked for only on that destination, and the button waits for it.
+ */
+export interface TransitionDetail {
+  readonly label: string;
+  readonly hint: string;
+  readonly minimum: number;
+  readonly maximum: number;
 }
 
 /**
@@ -23,6 +36,8 @@ export interface TransitionGuidance {
   readonly reasonHint: string;
   /** What the system of record does on this move, in the order it happens. */
   readonly consequences: readonly string[];
+  /** A second field this destination needs, when it needs one. */
+  readonly detail?: TransitionDetail;
 }
 
 /**
@@ -93,7 +108,7 @@ export interface TransitionGuidance {
 
         <div class="transition__field">
           <label class="transition__label" [attr.for]="reasonId()">{{
-            chosenGuidance()?.reasonLabel ?? copy.reason
+            chosenGuidance()?.reasonLabel ?? reasonLabel()
           }}</label>
           <textarea
             class="transition__reason"
@@ -107,12 +122,32 @@ export interface TransitionGuidance {
             (input)="onReason($event)"
           ></textarea>
           <p class="transition__hint" [id]="reasonHintId()">
-            {{ chosenGuidance()?.reasonHint ?? copy.reasonHint }}
+            {{ chosenGuidance()?.reasonHint ?? reasonHint() }}
           </p>
           @if (showReasonProblem()) {
             <p class="transition__problem" role="alert">{{ copy.reasonTooShort }}</p>
           }
         </div>
+
+        @if (chosenGuidance()?.detail; as field) {
+          <div class="transition__field">
+            <label class="transition__label" [attr.for]="detailId()">{{ field.label }}</label>
+            <textarea
+              class="transition__reason"
+              rows="3"
+              [id]="detailId()"
+              [attr.aria-describedby]="detailHintId()"
+              [attr.aria-invalid]="showDetailProblem() ? 'true' : null"
+              [attr.maxlength]="field.maximum"
+              [value]="detail()"
+              (input)="onDetail($event)"
+            ></textarea>
+            <p class="transition__hint" [id]="detailHintId()">{{ field.hint }}</p>
+            @if (showDetailProblem()) {
+              <p class="transition__problem" role="alert">{{ copy.reasonTooShort }}</p>
+            }
+          </div>
+        }
 
         <div class="transition__actions">
           <button
@@ -149,6 +184,12 @@ export class StatusTransition<TStatus extends string> {
   readonly guidance = input<Partial<Record<TStatus, TransitionGuidance>>>({});
   readonly destinationLabel = input<string>(CASE_COPY.transition.destination);
   readonly confirmLabel = input<string>(CASE_COPY.transition.confirm);
+  /**
+   * The reason's label and hint before a destination is chosen. A lifecycle whose every reason has
+   * one reader — the resident, for a document request (`DL-184`) — names them from the start.
+   */
+  readonly reasonLabel = input<string>(CASE_COPY.transition.reason);
+  readonly reasonHint = input<string>(CASE_COPY.transition.reasonHint);
   readonly busy = input(false);
   /** Unique per instance so two controls on one page keep distinct labels. */
   readonly idPrefix = input('status-transition');
@@ -160,12 +201,16 @@ export class StatusTransition<TStatus extends string> {
   protected readonly destination = signal<TStatus | null>(null);
   protected readonly reason = signal('');
   protected readonly reasonTouched = signal(false);
+  protected readonly detail = signal('');
+  protected readonly detailTouched = signal(false);
 
   protected readonly headingId = computed(() => `${this.idPrefix()}-heading`);
   protected readonly destinationId = computed(() => `${this.idPrefix()}-destination`);
   protected readonly reasonId = computed(() => `${this.idPrefix()}-reason`);
   protected readonly reasonHintId = computed(() => `${this.idPrefix()}-reason-hint`);
   protected readonly consequencesId = computed(() => `${this.idPrefix()}-consequences`);
+  protected readonly detailId = computed(() => `${this.idPrefix()}-detail`);
+  protected readonly detailHintId = computed(() => `${this.idPrefix()}-detail-hint`);
 
   protected readonly legal = computed(() => nextStatuses(this.transitions(), this.current()));
 
@@ -203,8 +248,20 @@ export class StatusTransition<TStatus extends string> {
     return length >= this.minimumReasonLength() && (maximum === null || length <= maximum);
   });
   protected readonly showReasonProblem = computed(() => this.reasonTouched() && !this.reasonOk());
+
+  /** True when the chosen destination asks for no second field, or it is within its limits. */
+  protected readonly detailOk = computed(() => {
+    const field = this.chosenGuidance()?.detail;
+    if (field === undefined) {
+      return true;
+    }
+    const length = this.detail().trim().length;
+    return length >= field.minimum && length <= field.maximum;
+  });
+  protected readonly showDetailProblem = computed(() => this.detailTouched() && !this.detailOk());
+
   protected readonly canConfirm = computed(
-    () => this.destination() !== null && this.reasonOk() && !this.busy(),
+    () => this.destination() !== null && this.reasonOk() && this.detailOk() && !this.busy(),
   );
 
   protected labelFor(status: TStatus): string {
@@ -221,12 +278,22 @@ export class StatusTransition<TStatus extends string> {
     this.reasonTouched.set(true);
   }
 
+  protected onDetail(event: Event): void {
+    this.detail.set((event.target as HTMLTextAreaElement).value);
+    this.detailTouched.set(true);
+  }
+
   protected submit(): void {
     const to = this.destination();
     if (to === null || !this.canConfirm()) {
       return;
     }
-    this.confirmed.emit({ to, reason: this.reason().trim() });
+    const asked = this.chosenGuidance()?.detail !== undefined;
+    this.confirmed.emit({
+      to,
+      reason: this.reason().trim(),
+      detail: asked ? this.detail().trim() : null,
+    });
   }
 
   /** Called by the host after a successful move, so the form does not repeat it. */
@@ -234,5 +301,7 @@ export class StatusTransition<TStatus extends string> {
     this.destination.set(null);
     this.reason.set('');
     this.reasonTouched.set(false);
+    this.detail.set('');
+    this.detailTouched.set(false);
   }
 }

@@ -37,6 +37,7 @@ import {
   PLATFORM_AUDIT_REPOSITORY,
   HOTLINE_REPOSITORY,
   TULONG_SERVICE_REPOSITORY,
+  ISSUANCE_REPOSITORY,
 } from '@domain/index';
 
 import {
@@ -66,6 +67,7 @@ import {
   HttpSessionRefresher,
   HttpStaffRepository,
   HttpVerificationRepository,
+  HttpIssuanceRepository,
 } from './http/http-repositories';
 import { identitySignInMethod } from './http/identity/identity.provider';
 import {
@@ -102,7 +104,7 @@ import {
  * names no mock class at all, and `angular.json` swaps in `data-access.providers.mock.ts` for the
  * one configuration that wants them.
  *
- * ## Twenty-five ports served, seven unserved
+ * ## Twenty-six ports served, seven unserved
  *
  * The Node API serves the signed-in account, its inbox, residents' ID verification review
  * (`DL-167`), the office inbox, the office directory and app accounts with their roles (`DL-168`),
@@ -110,9 +112,9 @@ import {
  * app's settings (`DL-170`), residents’ digital IDs, Balita and the API's audit trail (`DL-171`),
  * the office's resident registry (`DL-174`), its household register, families and saved views
  * (casework phase 1c), its programme catalogue (`DL-176`), assistance requests (`DL-177`,
- * `DL-178`), cases (`DL-179`), releases (`DL-180`), referrals and field visits (`DL-181`), and
- * the dashboard (`DL-182`) — and nothing else this console has a port for (`DL-164`). Every other
- * port is bound to an `Unserved…` adapter that makes no request and
+ * `DL-178`), cases (`DL-179`), releases (`DL-180`), referrals and field visits (`DL-181`), the
+ * dashboard (`DL-182`), and residents’ document requests with their catalogue (`DL-184`) — and
+ * nothing else this console has a port for (`DL-164`). Every other port is bound to an `Unserved…` adapter that makes no request and
  * fails with a sentence saying so (`DL-165`). A port moves from that list to an `Http…` adapter
  * only when the API serves the thing the port names — not something with the same word on it.
  */
@@ -151,6 +153,7 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: CASE_REPOSITORY, useClass: HttpCaseRepository },
     { provide: BENEFICIARY_REPOSITORY, useClass: UnservedBeneficiaryRepository },
     { provide: FIELD_VISIT_REPOSITORY, useClass: HttpFieldVisitRepository },
+    { provide: ISSUANCE_REPOSITORY, useClass: HttpIssuanceRepository },
     // Which of the above make no request, said once for the navigation and the routes (`DL-167`):
     // a module that cannot be served leaves the menu, and its address explains why.
     { provide: UNSERVED_PORTS, useValue: UNSERVED_HTTP_PORTS },

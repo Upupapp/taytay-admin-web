@@ -244,6 +244,20 @@ import {
   type VisitChecklistSelection,
   type VisitObservationDraft,
   type VisitOutcomeDraft,
+  ISSUANCE_OPEN_STATUSES,
+  type IssuanceAttachmentId,
+  type IssuanceFileGrant,
+  type IssuanceListFilter,
+  type IssuanceMove,
+  type IssuanceQueueFilter,
+  type IssuanceRepository,
+  type IssuanceRequest,
+  type IssuanceRequestId,
+  type IssuanceRequestSummary,
+  type IssuanceType,
+  type IssuanceTypeChanges,
+  type IssuanceTypeDraft,
+  type IssuanceTypeId,
 } from '@domain/index';
 
 import { ApiClient } from './api.client';
@@ -407,6 +421,17 @@ import {
 } from './mappers/case.mapper';
 import { toSavedView, toWireSavedViewDraft } from './mappers/saved-view.mapper';
 import { toVerificationRequest } from './mappers/verification.mapper';
+import {
+  toIssuanceFileGrant,
+  toIssuanceRequest,
+  toIssuanceRequestSummary,
+  toIssuanceType,
+  toWireIssuanceFileRequest,
+  toWireIssuanceStatusChange,
+  toWireIssuanceTypeCreate,
+  toWireIssuanceTypeRetire,
+  toWireIssuanceTypeUpdate,
+} from './mappers/issuance.mapper';
 import { list } from './mappers/wire';
 import { unserved } from './unserved-repositories';
 
@@ -3945,4 +3970,153 @@ function readDashboard(wire: unknown, barangays: BarangayIndex): DashboardSummar
     );
   }
   return summary;
+}
+
+/**
+ * Residents' document requests (`DL-184`) — "issuance" on the wire. The office's side: its
+ * catalogue (`issuance-type.manage`) and the requests residents file against it
+ * (`issuance-request.manage`), each office's own on the server, every office's for an
+ * administrator. Nothing here filters by office.
+ *
+ * **The queue is read whole.** The server pages newest filed first; the queue is ordered oldest
+ * waiting first, which only the whole list can give. So each open status is read through
+ * `everyPage`, which refuses past its ceiling rather than truncating (`DL-161`): a queue missing its
+ * oldest page would hide exactly the request that has waited longest. Ended requests only grow, and
+ * are browsed a page at a time.
+ *
+ * **Opening a file is two acts**, as for an assistance request's documents (`DL-178`): a grant with
+ * the server's warning, then — only after the reader confirms — the bytes, with the handle in a body.
+ */
+@Injectable()
+export class HttpIssuanceRepository implements IssuanceRepository {
+  private readonly api = inject(ApiClient);
+
+  catalogue(): Observable<readonly IssuanceType[]> {
+    return this.api
+      .list(API_ENDPOINTS.issuanceTypes)
+      .pipe(map((items) => items.map(readIssuanceType)));
+  }
+
+  officeTypes(): Observable<readonly IssuanceType[]> {
+    return this.api
+      .list(API_ENDPOINTS.officeIssuanceTypes)
+      .pipe(map((items) => items.map(readIssuanceType)));
+  }
+
+  createType(draft: IssuanceTypeDraft): Observable<IssuanceType> {
+    return this.api
+      .post(API_ENDPOINTS.officeIssuanceTypes, toWireIssuanceTypeCreate(draft))
+      .pipe(map(readIssuanceType));
+  }
+
+  updateType(id: IssuanceTypeId, changes: IssuanceTypeChanges): Observable<IssuanceType> {
+    return this.api
+      .patch(`${API_ENDPOINTS.officeIssuanceTypes}/${id}`, toWireIssuanceTypeUpdate(changes))
+      .pipe(map(readIssuanceType));
+  }
+
+  retireType(id: IssuanceTypeId, reason: string): Observable<IssuanceType> {
+    return this.api
+      .post(`${API_ENDPOINTS.officeIssuanceTypes}/${id}/retire`, toWireIssuanceTypeRetire(reason))
+      .pipe(map(readIssuanceType));
+  }
+
+  waiting(filter: IssuanceQueueFilter): Observable<readonly IssuanceRequestSummary[]> {
+    const statuses = filter.status === null ? ISSUANCE_OPEN_STATUSES : [filter.status];
+    return forkJoin(
+      statuses.map((status) =>
+        this.api
+          .everyPage(API_ENDPOINTS.officeIssuanceRequests, {
+            status,
+            type_id: filter.typeId ?? undefined,
+          })
+          .pipe(map((items) => items.map(readIssuanceSummary))),
+      ),
+    ).pipe(map((lists) => lists.flat()));
+  }
+
+  list(
+    filter: IssuanceListFilter,
+    page: CursorRequest,
+  ): Observable<CursorPage<IssuanceRequestSummary>> {
+    return this.api
+      .cursorPage(API_ENDPOINTS.officeIssuanceRequests, page, {
+        status: filter.status,
+        type_id: filter.typeId ?? undefined,
+      })
+      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readIssuanceSummary) })));
+  }
+
+  request(id: IssuanceRequestId): Observable<IssuanceRequest> {
+    return this.api
+      .item(`${API_ENDPOINTS.officeIssuanceRequests}/${id}`)
+      .pipe(map(readIssuanceRequest));
+  }
+
+  move(id: IssuanceRequestId, move: IssuanceMove): Observable<IssuanceRequest> {
+    return this.api
+      .post(
+        `${API_ENDPOINTS.officeIssuanceRequests}/${id}/status`,
+        toWireIssuanceStatusChange(move),
+      )
+      .pipe(map(readIssuanceRequest));
+  }
+
+  /** A grant with the server's warning. Nothing opens until the reader has seen it and confirmed. */
+  grantAttachment(
+    id: IssuanceRequestId,
+    attachmentId: IssuanceAttachmentId,
+  ): Observable<IssuanceFileGrant> {
+    return this.api
+      .post(`${API_ENDPOINTS.officeIssuanceRequests}/${id}/attachments/${attachmentId}/access`, {})
+      .pipe(map(readIssuanceGrant));
+  }
+
+  /** The bytes, for a grant: once, within five minutes, by this account. */
+  readAttachment(grant: IssuanceFileGrant): Observable<Blob> {
+    return this.api.postBlob(API_ENDPOINTS.officeIssuanceFiles, toWireIssuanceFileRequest(grant));
+  }
+}
+
+function readIssuanceType(wire: unknown): IssuanceType {
+  const type = toIssuanceType(wire);
+  if (type === null) {
+    throw new Error(
+      'A document type from the server could not be read, so the catalogue is not shown rather ' +
+        'than shown without it.',
+    );
+  }
+  return type;
+}
+
+function readIssuanceSummary(wire: unknown): IssuanceRequestSummary {
+  const request = toIssuanceRequestSummary(wire);
+  if (request === null) {
+    throw new Error(
+      'A document request from the server could not be read, so none is shown rather than some: ' +
+        'a request left out of this list would wait for an office that does not know it is owed.',
+    );
+  }
+  return request;
+}
+
+function readIssuanceRequest(wire: unknown): IssuanceRequest {
+  const request = toIssuanceRequest(wire);
+  if (request === null) {
+    throw new Error(
+      'The document request from the server could not be read in full, so it is not shown: part ' +
+        'of its history would tell the office something untrue.',
+    );
+  }
+  return request;
+}
+
+function readIssuanceGrant(wire: unknown): IssuanceFileGrant {
+  const grant = toIssuanceFileGrant(wire);
+  if (grant === null) {
+    throw new Error(
+      'The server’s permission to open that file could not be read. Nothing was opened.',
+    );
+  }
+  return grant;
 }

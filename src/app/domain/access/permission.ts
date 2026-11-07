@@ -262,6 +262,18 @@ export const PERMISSIONS = [
    * hold that key hold this one. Mutating: a published article goes out in the municipality's name.
    */
   'news.write',
+
+  /*
+   * RESIDENTS' DOCUMENT REQUESTS (`DL-184`) — the server's keys, spelled as its `StaffCapability`.
+   * "Issuance" because "document request" already names the office asking an applicant for a
+   * document (`document.record`). The server gives both to `admin`, and to `staff` only while the
+   * account is assigned to an office. `issuance-type.manage` keeps the office's catalogue — in the
+   * role table, the head's alone, because a catalogue entry tells every resident what the office
+   * issues and on what terms. `issuance-request.manage` reviews and moves residents' requests — the
+   * roles that work at the office. Both mutating: every move is read by the resident.
+   */
+  'issuance-type.manage',
+  'issuance-request.manage',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -339,6 +351,9 @@ const INTAKE_PERMISSIONS: readonly Permission[] = [
   // account at an office writes that office's Balita.
   'digital-id.verify',
   'news.write',
+  // Mirrors the server (`DL-184`): a staff account at the office reviews residents' requests for the
+  // documents it issues. The barangay link and the auditor hold no office key, so not this one.
+  'issuance-request.manage',
 ];
 
 const SOCIAL_WORKER_PERMISSIONS: readonly Permission[] = [
@@ -431,6 +446,9 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'event.export-registrants',
       'event.mark-attendance',
       'event.view-insights',
+      // The office's catalogue of documents it issues (`DL-184`): what every resident is told the
+      // office issues and on what terms, so the role that answers for what the office says.
+      'issuance-type.manage',
     ],
   },
   'social-worker': {
@@ -469,6 +487,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'office-inbox.manage',
       'digital-id.verify',
       'news.write',
+      'issuance-request.manage',
     ],
   },
   'barangay-link': {

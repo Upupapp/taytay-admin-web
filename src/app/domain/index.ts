@@ -90,6 +90,8 @@ export * from './app-config/app-config';
 export * from './digital-ids/digital-id';
 export * from './balita/balita-article';
 export * from './platform-audit/platform-audit';
+export * from './issuance/issuance-type';
+export * from './issuance/issuance-request';
 export * from './media/image-policy';
 export * from './views/saved-view';
 export * from './work/office-alert';

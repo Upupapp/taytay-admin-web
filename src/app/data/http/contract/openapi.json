@@ -10559,6 +10559,1250 @@
           }
         }
       }
+    },
+    "/api/v1/issuance-types": {
+      "get": {
+        "operationId": "listIssuanceTypes",
+        "summary": "List the document types offices issue",
+        "description": "Document requests (\"issuance\" in code and on the wire; residents and staff read \"document request\"). Public: no token needed. Active types only, office by office then by name; the whole list, never paged (an office lists at most 50).",
+        "security": [],
+        "parameters": [
+          {
+            "name": "office_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "One office only."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active types.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuanceTypeListEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "office_id is not a uuid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/issuance-types/{id}": {
+      "get": {
+        "operationId": "getIssuanceType",
+        "summary": "One active document type",
+        "description": "Public. A retired or unknown type is 404.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuanceTypeEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not offered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/issuance-types": {
+      "get": {
+        "operationId": "listOfficeIssuanceTypes",
+        "summary": "List an office's document types, retired ones included",
+        "description": "Needs issuance-type.manage. Staff read their own office (another office_id is 403); the administrator reads every office, or the one named. Whole, never paged.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "office_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Types, active first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuanceTypeListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No key, or another office.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createIssuanceType",
+        "summary": "Add a document type to an office catalogue",
+        "description": "Needs issuance-type.manage. Staff add to their own office (office_id omitted or their own; another is 403); the administrator names the office (422 without it). A reason is required and kept with the change. Audited issuance_type.created.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssuanceTypeCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuanceTypeEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No key, or another office.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The office already lists an active type of that name, or 50 active types.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/issuance-types/{id}": {
+      "patch": {
+        "operationId": "updateIssuanceType",
+        "summary": "Change a document type",
+        "description": "Needs issuance-type.manage, for the owning office (another office is 404). Only the fields sent change; requests already filed keep what they were filed with. A reason is required; the change records which fields moved, never their values. Audited issuance_type.updated.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssuanceTypeUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The type as it now stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuanceTypeEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or another office.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Retired, or the name is taken.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/issuance-types/{id}/retire": {
+      "post": {
+        "operationId": "retireIssuanceType",
+        "summary": "Retire a document type",
+        "description": "Needs issuance-type.manage, for the owning office. One-way: active becomes false and nothing brings it back; a type is never deleted. Requests already filed continue. Retiring a retired type answers it as it stands. Audited issuance_type.retired.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssuanceTypeRetire"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Retired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuanceTypeEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or another office.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The reason is missing or too short.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/issuance-requests": {
+      "post": {
+        "operationId": "submitIssuanceRequest",
+        "summary": "Request a document",
+        "description": "A verified resident only (role verified and verification_status verified): anybody else signed in is 403, with a message saying why. Multipart: type_id, purpose (10-300 characters), and one file per requirement, in the field named by its code. Every required requirement needs its file (422 keyed by the code). PDF, JPEG or PNG by their bytes (422 keyed by the code); at most 10 MB each (413). A field that names no requirement is 422. The server issues reference_number DR-<year>-<six digits>; the request starts submitted. Audited issuance_request.submitted.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/IssuanceSubmit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Filed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuanceRequestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a verified resident.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "A file is larger than 10 MB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed; details are keyed by field or requirement code.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listMyIssuanceRequests",
+        "summary": "The caller's document requests",
+        "description": "Registered or verified. Newest filed first, a page at a time. Rows carry no purpose and no history.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/IssuanceStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuanceRequestListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a resident.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/issuance-requests/{id}": {
+      "get": {
+        "operationId": "getMyIssuanceRequest",
+        "summary": "One of the caller's document requests",
+        "description": "The history in the resident's words, the office's message beside each line, needs_info_message while the office is waiting, and claim_details once it is ready. Anybody else's request is 404.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuanceRequestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a resident.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not the caller's.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/issuance-requests/{id}/cancel": {
+      "post": {
+        "operationId": "cancelMyIssuanceRequest",
+        "summary": "Cancel a document request",
+        "description": "The resident who filed it, while it is submitted, or while the office is waiting on them (needs-info). Anything else is 409. An optional reason is kept on the event and shown to the office. Audited issuance_request.cancelled.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssuanceCancel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuanceRequestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not the caller's.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Past cancelling.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/issuance-requests/{id}/resubmit": {
+      "post": {
+        "operationId": "resubmitMyIssuanceRequest",
+        "summary": "Send what the office asked for",
+        "description": "The resident who filed it, only from needs-info (409 otherwise). Multipart or JSON: an optional note and any files, one per requirement code, checked like a submission. At least a file or a note (422). Each file is a new version of its requirement; nothing sent before is replaced or deleted. Moves the request back to under-review. Audited issuance_request.resubmitted.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/IssuanceResubmit"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssuanceResubmit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Back under review.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuanceRequestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not the caller's.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The office is not waiting on the resident.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "A file is larger than 10 MB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Nothing sent, or a file refused.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/issuance-requests/{id}/attachments/{attachmentId}/content": {
+      "get": {
+        "operationId": "getMyIssuanceAttachment",
+        "summary": "Open a file the caller sent",
+        "description": "The resident's own file, with their own bearer token. Anybody else's is 404.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file. Answers the bytes, not an envelope: Cache-Control no-store, nosniff, attachment.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, not the caller's, or its copy is missing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/issuance-requests": {
+      "get": {
+        "operationId": "listOfficeIssuanceRequests",
+        "summary": "List an office's document requests",
+        "description": "Needs issuance-request.manage. Staff read their own office's (another office_id is 403); the administrator every office's, or the one named. Newest filed first, a page at a time; no total is sent. Rows carry who it is for and nothing the resident wrote.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/IssuanceStatus"
+            }
+          },
+          {
+            "name": "type_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "office_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeIssuanceRequestListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No key, or another office.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/issuance-requests/{id}": {
+      "get": {
+        "operationId": "getOfficeIssuanceRequest",
+        "summary": "One document request, for its office",
+        "description": "Needs issuance-request.manage. Another office's request is 404.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeIssuanceRequestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or another office.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/issuance-requests/{id}/status": {
+      "post": {
+        "operationId": "moveOfficeIssuanceRequest",
+        "summary": "Move a document request",
+        "description": "Needs issuance-request.manage, for the issuing office (another office is 404). The office's moves: submitted to under-review; under-review to needs-info, approved or rejected; approved to ready-for-pickup; ready-for-pickup to released. Any other move is 409, including the resident's own. needs-info and rejected need a reason of 8 characters or more, which the resident reads; ready-for-pickup needs claim_details and nothing else takes it (422). Every reason the office writes is shown to the resident. Appends an event, audits issuance_request.<to>, and notifies the resident in the app (no push, no email).",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssuanceStatusChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Moved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeIssuanceRequestEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or another office.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not a move the office makes from this status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A reason or claim details missing or misplaced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/issuance-requests/{id}/attachments/{attachmentId}/access": {
+      "post": {
+        "operationId": "grantIssuanceAttachment",
+        "summary": "A grant to open a file the resident sent",
+        "description": "Needs issuance-request.manage, for the issuing office. Issues a single-use handle for five minutes, with the warning to show first. Never a URL. Audited issuance_request.attachment_access_granted.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The grant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuanceFileGrantEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, another office, or not on this request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/issuance-files": {
+      "post": {
+        "operationId": "openIssuanceAttachment",
+        "summary": "Exchange a grant for the file",
+        "description": "Needs issuance-request.manage. The handle travels in the body. Used once, within five minutes, by the account it was issued to; anything else is 404 and does not use it. The office check is asked again. Audited issuance_request.attachment_opened.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeDocumentFileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The file. Answers the bytes, not an envelope: Cache-Control no-store, nosniff, attachment.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The grant is used, expired, someone else's, or the copy is missing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10699,7 +11943,7 @@
           "permissions": {
             "type": "array",
             "items": { "$ref": "#/components/schemas/Permission" },
-            "description": "What this account may do, so a staff client can hide what would be refused. Empty for residents. Platform capabilities come from the account role (staff hold news.write and office-inbox.manage only while assigned to an office); casework keys come from the office role, and a staff account without one holds none. Admin holds every key. Describes enforcement; the routes still decide."
+            "description": "What this account may do, so a staff client can hide what would be refused. Empty for residents. Platform capabilities come from the account role (staff hold news.write, office-inbox.manage, issuance-type.manage and issuance-request.manage only while assigned to an office); casework keys come from the office role, and a staff account without one holds none. Admin holds every key. Describes enforcement; the routes still decide."
           },
           "closed": { "type": "boolean" },
           "closed_at": { "type": ["string", "null"], "format": "date-time" },
@@ -10710,7 +11954,7 @@
       "StaffCapability": {
         "type": "string",
         "description": "Platform capabilities, decided by the account role and, for staff, whether an office is assigned. A staff account with an office role holds only the ones that role names.",
-        "enum": ["household.view-counts", "digital-id.verify", "news.write", "office-inbox.manage", "user.view", "user.change-role", "user.assign-office", "verification.review", "digital-id.manage", "office.manage", "service.manage", "home.manage", "hotline.manage", "app-config.manage", "audit.view"]
+        "enum": ["household.view-counts", "digital-id.verify", "news.write", "office-inbox.manage", "user.view", "user.change-role", "user.assign-office", "verification.review", "digital-id.manage", "office.manage", "service.manage", "home.manage", "hotline.manage", "app-config.manage", "audit.view", "issuance-type.manage", "issuance-request.manage"]
       },
       "CaseworkPermission": {
         "type": "string",
@@ -10789,7 +12033,7 @@
       "Permission": {
         "type": "string",
         "description": "Every key GET /me may carry: StaffCapability, then CaseworkPermission.",
-        "enum": ["household.view-counts", "digital-id.verify", "news.write", "office-inbox.manage", "user.view", "user.change-role", "user.assign-office", "verification.review", "digital-id.manage", "office.manage", "service.manage", "home.manage", "hotline.manage", "app-config.manage", "audit.view", "dashboard.view", "resident.view", "resident.view-sensitive", "resident.create", "resident.update", "resident.deactivate", "resident.export", "beneficiary.view", "beneficiary.review-duplicates", "beneficiary.export", "household.view", "household.manage", "household.correct-vulnerability", "family.view", "family.manage", "case.view", "case.manage", "case.note", "case-note.view-protected", "case.close", "program.view", "program.manage", "request.view", "request.create", "request.intake", "request.assess", "request.endorse", "request.approve", "request.reject", "request.schedule", "request.close", "request.view-sensitive", "document.record", "document.download", "release.view", "release.schedule", "release.release", "release.void", "referral.view", "referral.manage", "report.view", "report.export-person-level", "audit.view-detail", "staff.view", "staff.manage", "saved-view.share", "visit.view", "visit.manage", "newsfeed.view", "newsfeed.create", "newsfeed.edit", "newsfeed.publish", "newsfeed.schedule", "newsfeed.archive", "newsfeed.pin", "newsfeed.moderate", "newsfeed.view-insights", "event.view", "event.create", "event.edit", "event.publish", "event.cancel", "event.archive", "event.manage-registrations", "event.export-registrants", "event.mark-attendance", "event.view-insights", "settings.manage"]
+        "enum": ["household.view-counts", "digital-id.verify", "news.write", "office-inbox.manage", "user.view", "user.change-role", "user.assign-office", "verification.review", "digital-id.manage", "office.manage", "service.manage", "home.manage", "hotline.manage", "app-config.manage", "audit.view", "issuance-type.manage", "issuance-request.manage", "dashboard.view", "resident.view", "resident.view-sensitive", "resident.create", "resident.update", "resident.deactivate", "resident.export", "beneficiary.view", "beneficiary.review-duplicates", "beneficiary.export", "household.view", "household.manage", "household.correct-vulnerability", "family.view", "family.manage", "case.view", "case.manage", "case.note", "case-note.view-protected", "case.close", "program.view", "program.manage", "request.view", "request.create", "request.intake", "request.assess", "request.endorse", "request.approve", "request.reject", "request.schedule", "request.close", "request.view-sensitive", "document.record", "document.download", "release.view", "release.schedule", "release.release", "release.void", "referral.view", "referral.manage", "report.view", "report.export-person-level", "audit.view-detail", "staff.view", "staff.manage", "saved-view.share", "visit.view", "visit.manage", "newsfeed.view", "newsfeed.create", "newsfeed.edit", "newsfeed.publish", "newsfeed.schedule", "newsfeed.archive", "newsfeed.pin", "newsfeed.moderate", "newsfeed.view-insights", "event.view", "event.create", "event.edit", "event.publish", "event.cancel", "event.archive", "event.manage-registrations", "event.export-registrants", "event.mark-attendance", "event.view-insights", "settings.manage"]
       },
       "OfficeRole": {
         "type": "string",
@@ -11948,7 +13192,7 @@
         "required": ["id", "type", "title", "body", "created_at"],
         "properties": {
           "id": { "type": "string", "format": "uuid" },
-          "type": { "type": "string", "enum": ["verification_decided", "message_received"] },
+          "type": { "type": "string", "enum": ["verification_decided", "message_received", "issuance_request_updated"] },
           "title": { "type": "string" },
           "body": { "type": "string" },
           "subject_id": { "type": ["string", "null"], "format": "uuid" },
@@ -19701,6 +20945,1212 @@
             "minLength": 8,
             "maxLength": 1000,
             "description": "Why the request is no longer one of this case’s interventions. Kept on the link and on its event."
+          }
+        }
+      },
+      "IssuanceStatus": {
+        "type": "string",
+        "description": "submitted, under-review, needs-info, approved, ready-for-pickup; released, rejected and cancelled are terminal.",
+        "enum": [
+          "submitted",
+          "under-review",
+          "needs-info",
+          "approved",
+          "ready-for-pickup",
+          "released",
+          "rejected",
+          "cancelled"
+        ]
+      },
+      "IssuanceRequirement": {
+        "type": "object",
+        "required": [
+          "code",
+          "label",
+          "required",
+          "hint"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "hint": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "IssuanceRequirementInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "label",
+          "required"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 40,
+            "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$",
+            "description": "Unique in the type. Not type_id, purpose or note: it is the multipart field the file travels in."
+          },
+          "label": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "hint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300
+          }
+        }
+      },
+      "IssuanceType": {
+        "type": "object",
+        "required": [
+          "id",
+          "office",
+          "name",
+          "description",
+          "requirements",
+          "fee_centavos",
+          "processing_days",
+          "claim_instructions",
+          "active",
+          "retired_at",
+          "accepts",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "office": {
+            "type": "object",
+            "required": [
+              "id",
+              "slug",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssuanceRequirement"
+            }
+          },
+          "fee_centavos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100000000,
+            "description": "Integer centavos, shown and paid at the office. Null: not stated. There is no online payment."
+          },
+          "processing_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 365,
+            "description": "Working days from the office's Citizen's Charter. Null: not stated. 0: the same day."
+          },
+          "claim_instructions": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "retired_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "accepts": {
+            "type": "object",
+            "required": [
+              "mime_types",
+              "max_bytes"
+            ],
+            "properties": {
+              "mime_types": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "application/pdf",
+                    "image/jpeg",
+                    "image/png"
+                  ]
+                }
+              },
+              "max_bytes": {
+                "type": "integer"
+              }
+            },
+            "description": "What a file must be, so the app refuses before it sends."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "IssuanceTypeEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IssuanceType"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "IssuanceTypeListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssuanceType"
+            },
+            "description": "Whole, never paged."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "IssuanceTypeCreate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "reason"
+        ],
+        "properties": {
+          "office_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Required for the administrator; staff may omit it or send their own."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 120
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "requirements": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/components/schemas/IssuanceRequirementInput"
+            }
+          },
+          "fee_centavos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100000000,
+            "description": "Integer centavos, shown and paid at the office. Null: not stated. There is no online payment."
+          },
+          "processing_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 365,
+            "description": "Working days from the office's Citizen's Charter. Null: not stated. 0: the same day."
+          },
+          "claim_instructions": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 500,
+            "description": "Why the office lists it. Kept with the change."
+          }
+        }
+      },
+      "IssuanceTypeUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "minProperties": 2,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 120
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "requirements": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/components/schemas/IssuanceRequirementInput"
+            }
+          },
+          "fee_centavos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100000000,
+            "description": "Integer centavos, shown and paid at the office. Null: not stated. There is no online payment."
+          },
+          "processing_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 365,
+            "description": "Working days from the office's Citizen's Charter. Null: not stated. 0: the same day."
+          },
+          "claim_instructions": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 500,
+            "description": "Why. Kept with the change, beside the names of the fields that moved."
+          }
+        }
+      },
+      "IssuanceTypeRetire": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 500
+          }
+        }
+      },
+      "IssuanceAttachment": {
+        "type": "object",
+        "required": [
+          "id",
+          "requirement_code",
+          "version",
+          "mime_type",
+          "byte_size",
+          "current",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requirement_code": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "mime_type": {
+            "type": "string",
+            "enum": [
+              "application/pdf",
+              "image/jpeg",
+              "image/png"
+            ]
+          },
+          "byte_size": {
+            "type": "integer"
+          },
+          "current": {
+            "type": "boolean",
+            "description": "The latest version sent for its requirement. Earlier ones are kept."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "IssuanceRequestSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "reference_number",
+          "status",
+          "status_label",
+          "type",
+          "office",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference_number": {
+            "type": "string",
+            "pattern": "^DR-[0-9]{4}-[0-9]{6,}$"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IssuanceStatus"
+          },
+          "status_label": {
+            "type": "string"
+          },
+          "type": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "description": "As it was called when filed."
+              }
+            }
+          },
+          "office": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "IssuanceHistoryLine": {
+        "type": "object",
+        "required": [
+          "from_status",
+          "to_status",
+          "status_label",
+          "by",
+          "description",
+          "message",
+          "claim_details",
+          "at"
+        ],
+        "properties": {
+          "from_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IssuanceStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null on the submission."
+          },
+          "to_status": {
+            "$ref": "#/components/schemas/IssuanceStatus"
+          },
+          "status_label": {
+            "type": "string"
+          },
+          "by": {
+            "type": "string",
+            "enum": [
+              "resident",
+              "office"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "The line in the resident's words."
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The words of whoever made the move: the office's reason or request, or the resident's own note."
+          },
+          "claim_details": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "IssuanceRequest": {
+        "type": "object",
+        "required": [
+          "id",
+          "reference_number",
+          "status",
+          "status_label",
+          "type",
+          "office",
+          "created_at",
+          "updated_at",
+          "purpose",
+          "fee_centavos",
+          "processing_days",
+          "claim_instructions",
+          "requirements",
+          "attachments",
+          "claim_details",
+          "needs_info_message",
+          "history",
+          "can_cancel",
+          "can_resubmit"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference_number": {
+            "type": "string",
+            "pattern": "^DR-[0-9]{4}-[0-9]{6,}$"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IssuanceStatus"
+          },
+          "status_label": {
+            "type": "string"
+          },
+          "type": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "description": "As it was called when filed."
+              }
+            }
+          },
+          "office": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "purpose": {
+            "type": "string",
+            "description": "The resident's own words. Never logged, never in a notification."
+          },
+          "fee_centavos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "As stated when filed."
+          },
+          "processing_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "As stated when filed."
+          },
+          "claim_instructions": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The type's general instructions, as they stand now."
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssuanceRequirement"
+            },
+            "description": "As asked when filed."
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssuanceAttachment"
+            }
+          },
+          "claim_details": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When and where to claim, once ready-for-pickup."
+          },
+          "needs_info_message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What the office asked for, while the request is needs-info."
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssuanceHistoryLine"
+            }
+          },
+          "can_cancel": {
+            "type": "boolean"
+          },
+          "can_resubmit": {
+            "type": "boolean"
+          }
+        }
+      },
+      "IssuanceRequestEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IssuanceRequest"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "IssuanceRequestListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssuanceRequestSummary"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "pagination": {
+                "$ref": "#/components/schemas/Pagination"
+              }
+            }
+          }
+        }
+      },
+      "OfficeIssuanceRequestSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "reference_number",
+          "status",
+          "status_label",
+          "type",
+          "office",
+          "created_at",
+          "updated_at",
+          "resident"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference_number": {
+            "type": "string",
+            "pattern": "^DR-[0-9]{4}-[0-9]{6,}$"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IssuanceStatus"
+          },
+          "status_label": {
+            "type": "string"
+          },
+          "type": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "description": "As it was called when filed."
+              }
+            }
+          },
+          "office": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resident": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "OfficeIssuanceEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "from_status",
+          "to_status",
+          "status_label",
+          "actor_side",
+          "actor_id",
+          "reason",
+          "claim_details",
+          "at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IssuanceStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to_status": {
+            "$ref": "#/components/schemas/IssuanceStatus"
+          },
+          "status_label": {
+            "type": "string"
+          },
+          "actor_side": {
+            "type": "string",
+            "enum": [
+              "resident",
+              "office"
+            ]
+          },
+          "actor_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "claim_details": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OfficeIssuanceRequest": {
+        "type": "object",
+        "required": [
+          "id",
+          "reference_number",
+          "status",
+          "status_label",
+          "type",
+          "office",
+          "created_at",
+          "updated_at",
+          "purpose",
+          "fee_centavos",
+          "processing_days",
+          "claim_instructions",
+          "requirements",
+          "attachments",
+          "claim_details",
+          "resident",
+          "history",
+          "allowed_moves"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference_number": {
+            "type": "string",
+            "pattern": "^DR-[0-9]{4}-[0-9]{6,}$"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IssuanceStatus"
+          },
+          "status_label": {
+            "type": "string"
+          },
+          "type": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "description": "As it was called when filed."
+              }
+            }
+          },
+          "office": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "purpose": {
+            "type": "string",
+            "description": "The resident's own words. Never logged, never in a notification."
+          },
+          "fee_centavos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "As stated when filed."
+          },
+          "processing_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "As stated when filed."
+          },
+          "claim_instructions": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The type's general instructions, as they stand now."
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssuanceRequirement"
+            },
+            "description": "As asked when filed."
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssuanceAttachment"
+            }
+          },
+          "claim_details": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When and where to claim, once ready-for-pickup."
+          },
+          "resident": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeIssuanceEvent"
+            }
+          },
+          "allowed_moves": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssuanceStatus"
+            },
+            "description": "The moves the office may make from here. Empty once ended."
+          }
+        }
+      },
+      "OfficeIssuanceRequestEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeIssuanceRequest"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeIssuanceRequestListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeIssuanceRequestSummary"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "pagination": {
+                "$ref": "#/components/schemas/Pagination"
+              }
+            }
+          }
+        }
+      },
+      "IssuanceSubmit": {
+        "type": "object",
+        "required": [
+          "type_id",
+          "purpose"
+        ],
+        "properties": {
+          "type_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 300
+          }
+        },
+        "additionalProperties": {
+          "type": "string",
+          "format": "binary",
+          "description": "One file per requirement, in the field named by the requirement's code."
+        }
+      },
+      "IssuanceResubmit": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "additionalProperties": {
+          "type": "string",
+          "format": "binary",
+          "description": "A new version of a requirement's file, in the field named by its code."
+        }
+      },
+      "IssuanceCancel": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
+      },
+      "IssuanceStatusChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "to"
+        ],
+        "properties": {
+          "to": {
+            "$ref": "#/components/schemas/IssuanceStatus"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "Read by the resident. Required (8 or more characters) for needs-info and rejected."
+          },
+          "claim_details": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 500,
+            "description": "When and where to claim. Required for ready-for-pickup, refused otherwise."
+          }
+        }
+      },
+      "IssuanceFileGrant": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "attachment_id",
+          "file_name",
+          "mime_type",
+          "handle",
+          "expires_at",
+          "warning"
+        ],
+        "properties": {
+          "attachment_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "file_name": {
+            "type": "string",
+            "description": "<requirement code>-v<version>.<ext>; the name on the resident's phone is not kept."
+          },
+          "mime_type": {
+            "type": "string",
+            "enum": [
+              "application/pdf",
+              "image/jpeg",
+              "image/png"
+            ]
+          },
+          "handle": {
+            "type": "string",
+            "description": "Opaque, single-use, five minutes; exchanged for the bytes by the same account at POST /api/v1/office/issuance-files."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "warning": {
+            "type": "string",
+            "description": "Show before opening."
+          }
+        }
+      },
+      "IssuanceFileGrantEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IssuanceFileGrant"
+          },
+          "meta": {
+            "type": "object"
           }
         }
       }

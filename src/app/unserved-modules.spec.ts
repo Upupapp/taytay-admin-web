@@ -213,6 +213,7 @@ describe('the http adapter set', () => {
       '/balita',
       '/app-audit',
       '/cases',
+      '/resident-documents',
     ]) {
       expect(links, `${route} is served`).toContain(route);
     }
@@ -276,6 +277,7 @@ describe('the http adapter set', () => {
     expect(text).toContain('Digital IDs —');
     expect(text).toContain('Balita —');
     expect(text).toContain('App audit trail —');
+    expect(text).toContain('Resident document requests —');
     expect(text).not.toContain('Residents.');
     expect(text).toContain('Residents —');
     for (const port of UNSERVED_HTTP_PORTS) {

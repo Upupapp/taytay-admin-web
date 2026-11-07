@@ -208,6 +208,17 @@ export const NAVIGATION: readonly NavSection[] = [
         description: 'Residents writing to an office from the app, and the office’s replies.',
       },
       {
+        // `DL-184`. Certificates and other documents residents request from an office in the app —
+        // not the casework documents an office asks an applicant for. Staff at an office and
+        // administrators; the catalogue (`issuance-type.manage`, the head's) opens from this page.
+        label: 'Resident document requests',
+        route: '/resident-documents',
+        reads: ['issuance'],
+        glyph: 'DR',
+        permissions: ['issuance-request.manage'],
+        description: 'Documents residents asked an office for in the app, worked to the counter.',
+      },
+      {
         // `DL-168`. Every app account, residents included, and who among them is staff.
         label: 'Users and roles',
         route: '/users',

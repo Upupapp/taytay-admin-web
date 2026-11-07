@@ -65,6 +65,8 @@ const SEED_MARKERS = [
   'SAMPLE BALITA - ',
   // The audit trail seed's row ids (`DL-171`).
   'audit-sample-',
+  // The document-request seed's drawn files (`DL-184`).
+  'SAMPLE ONLY - NOT A REAL FILE',
   'mockLatencyMs":250',
 ];
 

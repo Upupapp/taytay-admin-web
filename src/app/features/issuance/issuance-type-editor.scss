@@ -1,0 +1,83 @@
+/* Layout only. `.field`, `.card` and `.btn` are styles.scss's (DL-120) and are not redefined. */
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+}
+
+.editor__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-snug);
+}
+
+.editor__heading {
+  margin: 0;
+  font-size: 15px;
+}
+
+.editor__requirements {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+}
+
+.editor__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.editor__requirement {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-snug);
+  margin: 0;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: var(--space-snug);
+}
+
+.editor__check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-snug);
+  font-size: 14px;
+}
+
+.editor__row-actions,
+.editor__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-snug);
+}
+
+.editor__problems {
+  margin: 0;
+  padding-inline-start: var(--space-base);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.editor__effects {
+  font-size: 13px;
+
+  ul {
+    margin: 0;
+    padding-inline-start: var(--space-base);
+  }
+}
+
+.editor__lead {
+  margin: 0;
+  font-weight: 600;
+}
+
+.editor__outcome {
+  margin: 0;
+  font-size: 13px;
+}

@@ -70,6 +70,11 @@ import OFFICE_VISIT from './office-visit.json';
 import OFFICE_DASHBOARD from './office-dashboard.json';
 import OFFICE_DASHBOARD_INTAKE from './office-dashboard-intake.json';
 import OFFICE_DOCUMENT_GRANT from './office-document-grant.json';
+import ISSUANCE_TYPES from './issuance-types.json';
+import OFFICE_ISSUANCE_TYPE_RETIRED from './office-issuance-type-retired.json';
+import OFFICE_ISSUANCE_REQUESTS_PAGE from './office-issuance-requests-page.json';
+import OFFICE_ISSUANCE_REQUEST from './office-issuance-request.json';
+import ISSUANCE_FILE_GRANT from './issuance-file-grant.json';
 import OFFICE_REQUIREMENT_TEMPLATE from './office-requirement-template.json';
 import OFFICE_REQUIREMENT_TEMPLATE_REFUSAL from './office-requirement-template-refusal.json';
 import OFFICE_REQUIREMENT_TEMPLATES from './office-requirement-templates.json';
@@ -294,6 +299,15 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['office-open-assessment', OFFICE_OPEN_ASSESSMENT, 'OfficeOpenAssessmentEnvelope'],
     ['office-social-workers', OFFICE_SOCIAL_WORKERS, 'OfficeSocialWorkerListEnvelope'],
     ['office-document-grant', OFFICE_DOCUMENT_GRANT, 'OfficeDocumentGrantEnvelope'],
+    ['issuance-types', ISSUANCE_TYPES, 'IssuanceTypeListEnvelope'],
+    ['office-issuance-type-retired', OFFICE_ISSUANCE_TYPE_RETIRED, 'IssuanceTypeEnvelope'],
+    [
+      'office-issuance-requests-page',
+      OFFICE_ISSUANCE_REQUESTS_PAGE,
+      'OfficeIssuanceRequestListEnvelope',
+    ],
+    ['office-issuance-request', OFFICE_ISSUANCE_REQUEST, 'OfficeIssuanceRequestEnvelope'],
+    ['issuance-file-grant', ISSUANCE_FILE_GRANT, 'IssuanceFileGrantEnvelope'],
     ['office-cases-page', OFFICE_CASES_PAGE, 'OfficeCaseListEnvelope'],
     ['office-case', OFFICE_CASE, 'OfficeCaseEnvelope'],
     ['office-case-caseload', OFFICE_CASE_CASELOAD, 'OfficeCaseEnvelope'],

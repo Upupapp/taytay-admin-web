@@ -207,7 +207,7 @@ describe('the Node adapters', () => {
       http.expectOne({ method: 'GET', url: `${BASE}/me` }).flush(ME_ADMIN);
       const identity = await user;
 
-      // An administrator holds every key the server has (DL-173): fourteen platform capabilities
+      // An administrator holds every key the server has (DL-173): sixteen platform capabilities
       // with a console key of the same name, and the 69 casework keys. `household.view-counts` has no
       // console key, so it is kept aside as unknown and grants nothing.
       expect([...(identity?.permissions ?? [])].sort()).toEqual([...PERMISSIONS].sort());
@@ -227,8 +227,12 @@ describe('the Node adapters', () => {
       http.expectOne(`${BASE}/me`).flush(ME_STAFF);
       const identity = await user;
 
+      // A staff account at an office with no office role holds the office-bound keys, the document
+      // request keys among them (`DL-184`).
       expect([...(identity?.permissions ?? [])].sort()).toEqual([
         'digital-id.verify',
+        'issuance-request.manage',
+        'issuance-type.manage',
         'news.write',
         'office-inbox.manage',
       ]);
@@ -332,9 +336,11 @@ describe('the Node adapters', () => {
           expect(result.user.roleLabel).toBe('Staff');
           expect(result.user.role).toBeNull();
           // The server keys a staff account at an office holds that the console knows (DL-168,
-          // DL-171).
+          // DL-171, DL-184).
           expect([...result.user.permissions].sort()).toEqual([
             'digital-id.verify',
+            'issuance-request.manage',
+            'issuance-type.manage',
             'news.write',
             'office-inbox.manage',
           ]);

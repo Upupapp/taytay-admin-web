@@ -1,0 +1,259 @@
+<form class="editor" (submit)="$event.preventDefault(); save()">
+  @if (creating()) {
+    <div class="field">
+      <label class="field__label" for="issuance-type-office">{{ copy.office }}</label>
+      <select
+        id="issuance-type-office"
+        class="field__input"
+        aria-describedby="issuance-type-office-hint"
+        (change)="onOffice($event)"
+      >
+        <option value="" [selected]="office() === null">{{ copy.ownOffice }}</option>
+        @for (option of officeList(); track option.id) {
+          <option [value]="option.id" [selected]="office() === option.id">
+            {{ officeName(option) }}
+          </option>
+        }
+      </select>
+      <p id="issuance-type-office-hint" class="field__hint">
+        {{ offices().kind === 'error' ? copy.officesFailed : copy.officeHint }}
+      </p>
+    </div>
+  }
+
+  <div class="field">
+    <label class="field__label" for="issuance-type-name">{{ copy.name }}</label>
+    <input
+      id="issuance-type-name"
+      class="field__input"
+      aria-describedby="issuance-type-name-hint"
+      [attr.maxlength]="limits.name.maximum"
+      [value]="name()"
+      (input)="name.set(text($event))"
+    />
+    <p id="issuance-type-name-hint" class="field__hint">{{ copy.nameHint }}</p>
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="issuance-type-description">{{ copy.description }}</label>
+    <textarea
+      id="issuance-type-description"
+      class="field__input"
+      rows="3"
+      aria-describedby="issuance-type-description-hint"
+      [attr.maxlength]="limits.description"
+      [value]="description()"
+      (input)="description.set(text($event))"
+    ></textarea>
+    <p id="issuance-type-description-hint" class="field__hint">{{ copy.descriptionHint }}</p>
+  </div>
+
+  <div class="editor__row">
+    <div class="field">
+      <label class="field__label" for="issuance-type-fee">{{ copy.fee }}</label>
+      <input
+        id="issuance-type-fee"
+        class="field__input"
+        inputmode="decimal"
+        aria-describedby="issuance-type-fee-hint issuance-type-fee-reads"
+        [attr.aria-invalid]="feeEntry().kind === 'invalid' ? 'true' : null"
+        [value]="feeText()"
+        (input)="feeText.set(text($event))"
+      />
+      <p id="issuance-type-fee-hint" class="field__hint">{{ copy.feeHint }}</p>
+      @let fee = feeEntry();
+      <p id="issuance-type-fee-reads" class="field__hint">
+        @if (fee.kind === 'amount') {
+          {{ copy.feeReads }} <strong>{{ fee.fee | peso }}</strong
+          >.
+        } @else if (fee.kind === 'none') {
+          {{ copy.feeNone }}
+        } @else {
+          {{ copy.feeInvalid }}
+        }
+      </p>
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="issuance-type-days">{{ copy.days }}</label>
+      <input
+        id="issuance-type-days"
+        class="field__input"
+        inputmode="numeric"
+        aria-describedby="issuance-type-days-hint"
+        [value]="daysText()"
+        (input)="daysText.set(text($event))"
+      />
+      <p id="issuance-type-days-hint" class="field__hint">{{ copy.daysHint }}</p>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="issuance-type-claim">{{ copy.claimInstructions }}</label>
+    <textarea
+      id="issuance-type-claim"
+      class="field__input"
+      rows="2"
+      aria-describedby="issuance-type-claim-hint"
+      [attr.maxlength]="limits.claimInstructions"
+      [value]="claimInstructions()"
+      (input)="claimInstructions.set(text($event))"
+    ></textarea>
+    <p id="issuance-type-claim-hint" class="field__hint">{{ copy.claimInstructionsHint }}</p>
+  </div>
+
+  <section class="editor__requirements" aria-labelledby="issuance-type-requirements">
+    <h3 id="issuance-type-requirements" class="editor__heading">{{ copy.requirementsHeading }}</h3>
+    <p class="field__hint">{{ copy.requirementsHint }}</p>
+
+    <ol class="editor__list">
+      @for (
+        row of requirements();
+        track row.key;
+        let index = $index, first = $first, last = $last
+      ) {
+        <li>
+          <fieldset class="editor__requirement">
+            <legend>{{ copy.requirementLegend(index + 1) }}</legend>
+            <div class="field">
+              <label class="field__label" [attr.for]="'requirement-label-' + row.key">
+                {{ copy.label }}
+              </label>
+              <input
+                class="field__input"
+                [id]="'requirement-label-' + row.key"
+                [attr.maxlength]="limits.label.maximum"
+                [value]="row.label"
+                (input)="onLabel(index, $event)"
+              />
+            </div>
+            <div class="field">
+              <label class="field__label" [attr.for]="'requirement-code-' + row.key">
+                {{ copy.code }}
+              </label>
+              <input
+                class="field__input"
+                [id]="'requirement-code-' + row.key"
+                [attr.aria-describedby]="'requirement-code-hint-' + row.key"
+                [attr.maxlength]="limits.code.maximum"
+                [value]="row.code"
+                (input)="onCode(index, $event)"
+              />
+              <p class="field__hint" [id]="'requirement-code-hint-' + row.key">
+                {{ copy.codeHint }}
+              </p>
+            </div>
+            <div class="field">
+              <label class="field__label" [attr.for]="'requirement-hint-' + row.key">
+                {{ copy.hint }}
+              </label>
+              <input
+                class="field__input"
+                [id]="'requirement-hint-' + row.key"
+                [attr.maxlength]="limits.hint"
+                [value]="row.hint"
+                (input)="onHint(index, $event)"
+              />
+            </div>
+            <label class="editor__check">
+              <input
+                type="checkbox"
+                [checked]="row.required"
+                (change)="onRequired(index, $event)"
+              />
+              {{ copy.requiredCheck }}
+            </label>
+            <div class="editor__row-actions">
+              <button
+                type="button"
+                class="btn btn--secondary"
+                [disabled]="first"
+                [attr.aria-label]="copy.moveUpLabel(index + 1)"
+                (click)="moveRequirement(index, -1)"
+              >
+                {{ copy.moveUp }}
+              </button>
+              <button
+                type="button"
+                class="btn btn--secondary"
+                [disabled]="last"
+                [attr.aria-label]="copy.moveDownLabel(index + 1)"
+                (click)="moveRequirement(index, 1)"
+              >
+                {{ copy.moveDown }}
+              </button>
+              <button
+                type="button"
+                class="btn btn--secondary"
+                [attr.aria-label]="copy.removeLabel(index + 1)"
+                (click)="removeRequirement(index)"
+              >
+                {{ copy.remove }}
+              </button>
+            </div>
+          </fieldset>
+        </li>
+      }
+    </ol>
+
+    <button
+      type="button"
+      class="btn btn--secondary"
+      [disabled]="requirements().length >= limits.requirements"
+      (click)="addRequirement()"
+    >
+      {{ copy.addRequirement }}
+    </button>
+  </section>
+
+  @if (problems().length > 0) {
+    <ul class="editor__problems">
+      @for (problem of problems(); track problem) {
+        <li>{{ problem }}</li>
+      }
+    </ul>
+  }
+
+  <div class="field">
+    <label class="field__label" for="issuance-type-reason">{{ copy.reason }}</label>
+    <textarea
+      id="issuance-type-reason"
+      class="field__input"
+      rows="2"
+      aria-describedby="issuance-type-reason-hint"
+      [attr.maxlength]="limits.reason.maximum"
+      [value]="reason()"
+      (input)="reason.set(text($event))"
+    ></textarea>
+    <p id="issuance-type-reason-hint" class="field__hint">{{ copy.reasonHint }}</p>
+  </div>
+
+  <div class="editor__effects" id="issuance-type-effects">
+    <p class="editor__lead">{{ copy.effectsLead }}</p>
+    <ul>
+      @for (line of creating() ? copy.createEffects : updateEffects; track line) {
+        <li>{{ line }}</li>
+      }
+    </ul>
+  </div>
+
+  @if (unchanged()) {
+    <p class="field__hint">{{ copy.unchanged }}</p>
+  }
+
+  <div class="editor__actions">
+    <button type="button" class="btn btn--secondary" (click)="cancelled.emit()">
+      {{ copy.cancel }}
+    </button>
+    <button
+      type="submit"
+      class="btn btn--primary"
+      aria-describedby="issuance-type-effects"
+      [disabled]="!canSave()"
+    >
+      {{ busy() ? copy.saving : copy.save }}
+    </button>
+  </div>
+
+  <p class="editor__outcome" role="status">{{ outcome() }}</p>
+</form>

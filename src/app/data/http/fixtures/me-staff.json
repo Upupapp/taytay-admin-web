@@ -25,7 +25,9 @@
       "household.view-counts",
       "digital-id.verify",
       "news.write",
-      "office-inbox.manage"
+      "office-inbox.manage",
+      "issuance-type.manage",
+      "issuance-request.manage"
     ],
     "closed": false,
     "closed_at": null,

@@ -1,0 +1,141 @@
+<p class="catalogue__back">
+  <a routerLink="..">{{ copy.back }}</a>
+</p>
+
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <button type="button" page-actions class="btn btn--primary" (click)="add()">
+    {{ copy.add }}
+  </button>
+</app-page-header>
+
+<ul class="catalogue__boundaries">
+  @for (sentence of boundaries; track sentence) {
+    <li>{{ sentence }}</li>
+  }
+</ul>
+
+<section class="card catalogue" aria-labelledby="issuance-catalogue-heading">
+  <h2 id="issuance-catalogue-heading" class="visually-hidden">{{ copy.caption }}</h2>
+
+  <app-async-content
+    [state]="types()"
+    [content]="catalogueContent"
+    [skeletonLines]="5"
+    (retryRequested)="reload()"
+  >
+    <ng-template #catalogueContent>
+      <app-data-table
+        [columns]="columns()"
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [caption]="copy.caption"
+        [emptyHeading]="copy.emptyHeading"
+        [emptyMessage]="copy.emptyMessage"
+      />
+    </ng-template>
+  </app-async-content>
+
+  <p class="catalogue__outcome" role="status">{{ outcome() }}</p>
+</section>
+
+<ng-template #nameCell let-type>
+  <span class="catalogue__name">{{ type.name }}</span>
+  @if (type.description) {
+    <span class="catalogue__aside">{{ type.description }}</span>
+  }
+</ng-template>
+
+<ng-template #feeCell let-type>
+  {{ type.fee === null ? copy.noFee : (type.fee | peso) }}
+</ng-template>
+
+<ng-template #statusCell let-type>
+  @if (type.active) {
+    {{ copy.active }}
+  } @else {
+    {{ copy.retired }}
+    @if (type.retiredAt) {
+      <span class="catalogue__aside">{{
+        copy.retiredOn((type.retiredAt | date: 'd MMM y') ?? '')
+      }}</span>
+    }
+  }
+</ng-template>
+
+<ng-template #actionCell let-type>
+  @if (type.active) {
+    <div class="catalogue__acts">
+      <button
+        type="button"
+        class="btn btn--secondary"
+        [attr.aria-label]="copy.editLabel(type.name)"
+        (click)="edit(type)"
+      >
+        {{ copy.edit }}
+      </button>
+      <button
+        type="button"
+        class="btn btn--secondary"
+        [attr.aria-label]="copy.retireLabel(type.name)"
+        (click)="askToRetire(type)"
+      >
+        {{ copy.retire }}
+      </button>
+    </div>
+  }
+</ng-template>
+
+@if (editing()) {
+  <app-drawer [open]="true" size="wide" [heading]="drawerHeading()" (dismissed)="closeEditor()">
+    <div drawer-body>
+      <app-issuance-type-editor
+        [type]="editingType()"
+        [offices]="directory.state()"
+        (saved)="onSaved($event)"
+        (cancelled)="closeEditor()"
+      />
+    </div>
+  </app-drawer>
+}
+
+@if (retiring(); as type) {
+  <app-modal [open]="true" [heading]="copy.retireHeading(type.name)" (dismissed)="cancelRetire()">
+    <div modal-body class="catalogue__retire">
+      <p class="catalogue__lead">{{ copy.retireLead }}</p>
+      <ul id="issuance-retire-effects">
+        @for (line of retireEffects; track line) {
+          <li>{{ line }}</li>
+        }
+      </ul>
+      <div class="field">
+        <label class="field__label" for="issuance-retire-reason">{{ copy.retireReason }}</label>
+        <textarea
+          id="issuance-retire-reason"
+          class="field__input"
+          rows="3"
+          aria-describedby="issuance-retire-reason-hint"
+          [attr.maxlength]="reasonLimit"
+          [value]="retireReason()"
+          (input)="onRetireReason($event)"
+        ></textarea>
+        <p id="issuance-retire-reason-hint" class="field__hint">{{ copy.reasonHint }}</p>
+      </div>
+      @if (retireProblem()) {
+        <p class="catalogue__problem" role="alert">{{ retireProblem() }}</p>
+      }
+    </div>
+    <button type="button" modal-actions class="btn btn--secondary" (click)="cancelRetire()">
+      {{ copy.cancel }}
+    </button>
+    <button
+      type="button"
+      modal-actions
+      class="btn btn--primary"
+      aria-describedby="issuance-retire-effects"
+      [disabled]="!retireReasonOk() || retireBusy()"
+      (click)="confirmRetire()"
+    >
+      {{ retireBusy() ? copy.saving : copy.retireConfirm }}
+    </button>
+  </app-modal>
+}

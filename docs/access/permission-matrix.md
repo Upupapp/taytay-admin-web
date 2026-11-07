@@ -35,7 +35,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-82 permissions × 7 roles. `X` means the role holds the permission.
+84 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -151,6 +151,13 @@ account's and a read; keeping cards is the administrator's alone. -->
 administrators, so the roles that answer an office's inbox. Not the newsfeed's keys. -->
 
 | `news.write`                      | X     | X     | X     | X     | X     |       |      |
+
+<!-- Residents' document requests, added by DL-184. The server's own keys, held by staff at an office
+and administrators. The catalogue is the head's: it tells every resident what the office issues and
+on what terms. The requests are worked by the roles at the office. -->
+
+| `issuance-type.manage`            | X     | X     |       |       |       |       |      |
+| `issuance-request.manage`         | X     | X     | X     | X     | X     |       |      |
 
 ---
 

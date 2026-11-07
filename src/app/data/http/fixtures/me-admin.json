@@ -37,6 +37,8 @@
       "hotline.manage",
       "app-config.manage",
       "audit.view",
+      "issuance-type.manage",
+      "issuance-request.manage",
       "dashboard.view",
       "resident.view",
       "resident.view-sensitive",

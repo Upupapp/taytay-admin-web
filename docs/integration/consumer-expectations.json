@@ -564,6 +564,26 @@
     },
     {
       "method": "GET",
+      "path": "issuance-types",
+      "consumer": "issuance.mapper.ts#toIssuanceType",
+      "required": [
+        "active",
+        "id",
+        "name",
+        "office",
+        "updated_at"
+      ],
+      "optional": [
+        "claim_instructions",
+        "description",
+        "fee_centavos",
+        "processing_days",
+        "requirements",
+        "retired_at"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "me",
       "consumer": "me.mapper.ts#toServerIdentity",
       "required": [
@@ -1564,6 +1584,153 @@
         "snapshot"
       ],
       "optional": []
+    },
+    {
+      "method": "GET",
+      "path": "office/issuance-requests",
+      "consumer": "issuance.mapper.ts#toIssuanceRequestSummary",
+      "required": [
+        "created_at",
+        "id",
+        "office",
+        "reference_number",
+        "status",
+        "type",
+        "updated_at"
+      ],
+      "optional": [
+        "resident"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/issuance-requests/{id}",
+      "consumer": "issuance.mapper.ts#toIssuanceRequest",
+      "required": [
+        "history",
+        "purpose"
+      ],
+      "optional": [
+        "allowed_moves",
+        "attachments",
+        "claim_details",
+        "claim_instructions",
+        "fee_centavos",
+        "processing_days",
+        "requirements"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/issuance-requests/{id}/attachments/{attachmentId}/access",
+      "consumer": "issuance.mapper.ts#toIssuanceFileGrant",
+      "required": [
+        "attachment_id",
+        "expires_at",
+        "file_name",
+        "handle",
+        "mime_type",
+        "warning"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "office/issuance-requests/{id}/status",
+      "consumer": "issuance.mapper.ts#toIssuanceRequest",
+      "required": [
+        "history",
+        "purpose"
+      ],
+      "optional": [
+        "allowed_moves",
+        "attachments",
+        "claim_details",
+        "claim_instructions",
+        "fee_centavos",
+        "processing_days",
+        "requirements"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/issuance-types",
+      "consumer": "issuance.mapper.ts#toIssuanceType",
+      "required": [
+        "active",
+        "id",
+        "name",
+        "office",
+        "updated_at"
+      ],
+      "optional": [
+        "claim_instructions",
+        "description",
+        "fee_centavos",
+        "processing_days",
+        "requirements",
+        "retired_at"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/issuance-types",
+      "consumer": "issuance.mapper.ts#toIssuanceType",
+      "required": [
+        "active",
+        "id",
+        "name",
+        "office",
+        "updated_at"
+      ],
+      "optional": [
+        "claim_instructions",
+        "description",
+        "fee_centavos",
+        "processing_days",
+        "requirements",
+        "retired_at"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "office/issuance-types/{id}",
+      "consumer": "issuance.mapper.ts#toIssuanceType",
+      "required": [
+        "active",
+        "id",
+        "name",
+        "office",
+        "updated_at"
+      ],
+      "optional": [
+        "claim_instructions",
+        "description",
+        "fee_centavos",
+        "processing_days",
+        "requirements",
+        "retired_at"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/issuance-types/{id}/retire",
+      "consumer": "issuance.mapper.ts#toIssuanceType",
+      "required": [
+        "active",
+        "id",
+        "name",
+        "office",
+        "updated_at"
+      ],
+      "optional": [
+        "claim_instructions",
+        "description",
+        "fee_centavos",
+        "processing_days",
+        "requirements",
+        "retired_at"
+      ]
     },
     {
       "method": "GET",
