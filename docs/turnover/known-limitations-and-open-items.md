@@ -170,12 +170,11 @@ repository. What remains is for the developer or the owner:
   to unserved adapters". Today seven of 33 ports are unserved.
 - **The backend's `CLAUDE.md` calls Paul "repository owner"**; the requirements document names
   Michaela Angela E. Cailing as the project owner who approves.
-- **The secret scan reports four findings outside the reviewed allowlist** in the console's
-  history (`npm run scan:secrets`, 7 November 2026): sign-in fixtures in three `*.spec.ts` files
-  and the staging Firebase browser key, which is public configuration (`DL-169`). The old PHP
-  scanner reports the same four. A reviewer reads each blob and either accepts it in
-  `docs/integration/secret-scan-allowlist.txt` with a reason or removes it; until then the scan
-  exits with a failure.
+- **The secret scan is clean** (`npm run scan:secrets`, 7 November 2026: 5 accepted, 0 findings).
+  Four findings were read and accepted in `docs/integration/secret-scan-allowlist.txt`, each with
+  its reason: sign-in fixtures in three `*.spec.ts` files that no account uses, and the staging
+  Firebase browser key, which is public configuration (`DL-169`). The key still needs its
+  HTTP-referrer restriction (GL-6, above).
 - **No committed command creates the first administrator** (GL-13). Staging's was made with a
   one-off script that is not in any repository; the staging README now gives the steps and an
   unrehearsed command, and there is no procedure at all for production
