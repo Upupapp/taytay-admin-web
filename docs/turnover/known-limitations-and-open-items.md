@@ -171,9 +171,9 @@ repository. What remains is for the developer or the owner:
   its reason: sign-in fixtures in three `*.spec.ts` files that no account uses, and the staging
   Firebase browser key, which is public configuration (`DL-169`). The key still needs its
   HTTP-referrer restriction (GL-6, above).
-- **The first-administrator command is committed but not rehearsed** (GL-13, `DL-188`):
-  `npm run admin:grant -- --email …`, run inside `taytay-api`. It must be tried once on staging,
-  and the rehearsal signed off by the owner, before it is run in production
+- **The first-administrator command is rehearsed on staging, not yet signed off** (GL-13,
+  `DL-188`): `npm run admin:grant -- --email …`, run inside `taytay-api`. Rehearsed on staging on 7 November 2026 (backend `a7a1884`): run twice for the existing administrator, it answered "granted administrator to …" both times and changed nothing the second time; for an address with no Firebase account it refused and said why. The owner signs
+  the rehearsal off before it is run in production
   ([operations-runbook.md](operations-runbook.md), section 8).
 - **The intake advisory does not read payouts to other people at the applicant's address**
   (`DL-188`). It reads the applicant's own payouts and open cases, and says in the panel that the

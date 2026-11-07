@@ -250,8 +250,7 @@ never print it.
 
 Source: staging README, "Create the first administrator". It is go-live item GL-13 and requirement
 FR-API-7, closed by a committed command (`DL-188`): **`npm run admin:grant -- --email …`**, in
-`taytay-backend` `src/ops/`. **Not yet rehearsed: try it once on staging before relying on it, and
-never run it unrehearsed in production.**
+`taytay-backend` `src/ops/`. Rehearsed on staging on 7 November 2026 (backend `a7a1884`): run twice for the existing administrator, it answered "granted administrator to …" both times and changed nothing the second time; for an address with no Firebase account it refused and said why. **The owner signs this rehearsal off before it is run in production.**
 
 **How it works.** It runs inside `taytay-api`, where the Firebase key already is, so the key never
 leaves the server. It finds the Firebase account by its e-mail and refuses when there is none, when
@@ -371,7 +370,7 @@ database password and the digital-ID signing key. Still open:
 | Gap                                                                         | Where it belongs                        |
 | --------------------------------------------------------------------------- | --------------------------------------- |
 | Rollback, restore and key rotation not rehearsed or timed                   | Staging, then launch gate line 18       |
-| `npm run admin:grant` not rehearsed on staging (GL-13)                      | Staging, signed off by the owner        |
+| `npm run admin:grant` rehearsed on staging 7 Nov 2026; owner sign-off due   | Owner (GL-13)                           |
 | Database-password rotation for the managed production database not detailed | `docs/deploy-linode.md`, when it exists |
 | Backups only on the same server                                             | GL-5                                    |
 | No production runbook for the chosen host (GL-14), including its rollback   | When production exists                  |
