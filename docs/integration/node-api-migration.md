@@ -48,8 +48,9 @@ sign-in only, hosted on Linode.
 | 20 | The follow-up round: what `DL-185` said the API would need | backend + console | done (`DL-186`): `taytay-backend` `0d1cb14`, `77da0b2`, `84c7159`, `0f1ffec`; spec re-vendored at `0f1ffec`. Every dashboard figure opens a list narrowed to exactly what it counted — requests by `category` and `owing_document`, releases (list and queue) by `barangay_id`, `category`, `status_group=handed-over` and `period`, app accounts by `verification_status` — tested from the link to the request each list sends; the released figure now opens everything handed over in the period, not only `released`. A session says "N deferred, M unclaimed" from `deferred_only` and `unclaimed` (`check:releases` stricter). Resident document requests found by their whole reference, or narrowed to one resident; `VERIFICATION_REQUIRED` read as a refusal. The Terms of Use and the privacy notice shown and published in App settings, each with a version the administrator chooses: a new version makes every resident accept again and is acknowledged, the same version changes the text without re-acceptance, the placeholder is said to have no text and nothing is pre-filled (`check:app-settings` rule 8). "Try again" re-runs the load on every page, fixed once in `toViewState` and `AsyncContent`. Still not exact: the referral list (no barangay or programme type filter, said on the list) and the accounts headline. **Not run against a live API** |
 | 21 | Casework phase 6c: search and the work queues | backend + console | done (`DL-189`): `taytay-backend` `e76c715`, no migration — `GET /api/v1/office/search?q=` searches each record type with its list's key through that list's repository, filter and scope, counts each group with the same where-builder, matches only names as shown and reference numbers, and names every type not searched; `GET /api/v1/office/work/mine`, `…/team` (`staff.view`) and `…/alerts` assemble the queues on every read and write nothing. Console: `HttpSearchRepository` and `HttpWorkRepository`, whole or refused; `check:search` and `check:work` hold the served adapters too. Four ports remain unserved. |
 | 22 | Casework phase 6d: reports | backend + console | done (`DL-190`): `taytay-backend` `9d81454`, no migration — `GET /api/v1/office/reports` (the catalogue this account opens), `…/{id}` (one report, counted in SQL under each list's scope, people and households suppressed below 5 with the total taken before, the protected sectors not counted for a reader without `request.view-sensitive`, a filter the report does not honour refused, what cannot be counted said in `limits`) and `…/{id}/export` (`report.export-person-level`; the CSV composed on the server with its conditions inside it). Strict query schemas: nothing returns the figures before suppression. Exporting, and opening the report that names people, are audited. Console: `HttpReportRepository`, refusing an answer that shows what it should have withheld; the screen shows the limits and offers the file to save. Three ports remain unserved. |
+| 23 | Casework phase 6e: governance | backend + console | done (`DL-191`): `taytay-backend` `3a7947c`, migration `0041_office_governance.sql` (additive) — `GET /api/v1/office/staff` and `…/{id}` (the staff directory: the `users` table Users and roles reads, narrowed to staff and admin accounts; name, office role, scope, on or off), `POST …/{id}/deactivate` and `…/reactivate` (`staff.manage`, a reason kept in `account_status_changes`; the account is refused with 401 at its next request; never the caller's own), `GET /api/v1/office/audit` (the office's trail in words, a cursor page; `fields_recorded: false` on every row, no sensitive filter) and `…/{id}` (`audit.view-detail`: no value was stored, audited), `GET /api/v1/office/governance/classifications`, `…/retention` (every period null) and `…/corrections` (`settings.manage`). Console: `HttpGovernanceRepository`, `governance.mapper.ts`, `auditRows` paged, the unserved ceiling 2 |
 
-**Next: casework phase 6** — governance; the newsfeed and events wait for OD-4.
+**Next:** the newsfeed and events wait for OD-4; nothing else in the console is unserved.
 
 ## For the owner to decide
 
@@ -368,7 +369,27 @@ adopt secondary suppression; whether a social worker should see office-wide repo
 mock) rather than their caseload only (the choice made); and whether the release officer and the
 auditor, who lack `request.view-sensitive`, may see the protected sectors counted in reports at
 all (the choice made is no).
-**Next: phase 6 — governance; the newsfeed and events wait for OD-4.**
+**Phase 6e done** (`DL-191`, `taytay-backend` `3a7947c`, migration `0041`): governance is served.
+The staff directory reads the one account store Users and roles reads; what the API does not hold
+about a member of staff — employee ID, unit, contact, position, last sign-in — is said to be not
+recorded. Switching an account off needs a reason, is refused for the caller's own account on the
+server and in the table, and ends the session at its next request (`resolveUser` reads the row on
+every request; `GET /me` says `deactivated` and the console opens no session). The office's audit
+trail is `audit_log`'s casework and staff-account rows said in words; the log records who, what,
+which record and when, so every row says its fields were not recorded, "only sensitive" is refused
+without a request, and an entry's detail says no value was stored. Classifications and retention
+are fixed server configuration compared with the console's; every retention period stays null.
+Correction requests are read from their own table, empty until capture is built. Two ports remain
+unserved: the newsfeed and events.
+
+**For the owner, from phase 6e** (`DL-191`): whether switching an account off should also disable
+it in Firebase (the choice made is no: the API refuses it, and switching back on needs nothing);
+whether the trail should start recording which fields changed (an `audit_log` change, so that a
+row can say what moved and how sensitive it was); the record types the server holds that the
+classification list does not name (cases, home visits, families, ID-verification images, inbox
+messages, digital IDs, staff accounts); the office's records disposition schedule under RA 9470;
+and when capturing a correction request is to be built.
+**Next: the newsfeed and events wait for OD-4.**
 
 ## Decided 2026-11-06: the owner's decisions round (`DL-183`)
 

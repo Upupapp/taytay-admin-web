@@ -40,7 +40,7 @@ const PAGE_SIZE = 50;
  *
  * **A page at a time, newest first** (`DL-161`): "more available", never "of N".
  *
- * Not the governance audit page, which stays unserved (`DL-164`).
+ * Not the governance audit page, which reads the office's own trail in words (`DL-191`).
  */
 @Component({
   selector: 'app-platform-audit-page',

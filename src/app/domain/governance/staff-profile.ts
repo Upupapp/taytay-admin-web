@@ -1,6 +1,6 @@
 import type { AuditStamp } from '../shared/audit';
 import type { BarangayId, IsoDateTime, StaffUserId } from '../shared/ids';
-import type { StaffRole } from '../access/permission';
+import { ROLE_DEFINITIONS, type StaffRole } from '../access/permission';
 
 /**
  * The internal directory entry for a member of staff.
@@ -41,14 +41,22 @@ export interface StaffProfile {
 export interface StaffAccount {
   readonly staffId: StaffUserId;
   readonly displayName: string;
-  readonly role: StaffRole;
+  /** `null`: a staff account not yet given an office role (`DL-173`); it holds no casework key. */
+  readonly role: StaffRole | null;
   readonly roleLabel: string;
-  readonly position: string;
+  /** The job title. `null` when the system of record keeps none — the Node API does not (`DL-191`). */
+  readonly position: string | null;
   /** `null` means municipality-wide rather than "not recorded". */
   readonly barangayId: BarangayId | null;
   readonly barangayLabel: string | null;
   readonly isActive: boolean;
   readonly lastSignInAt: IsoDateTime | null;
+  /**
+   * Whether sign-ins are recorded at all. When false, a null `lastSignInAt` is *not recorded*, never
+   * "never signed in": the Node API is not told of a sign-in, which happens at Firebase (`DL-166`).
+   */
+  readonly lastSignInRecorded: boolean;
+  /** `null`: no directory entry is recorded — employee ID, unit and contact are not held (`DL-115`). */
   readonly profile: StaffProfile | null;
   /** Grants beyond the role baseline, which the matrix screen explains. */
   readonly additionalPermissionCount: number;
@@ -67,6 +75,20 @@ export interface StaffAccount {
  */
 export function canHoldSession(account: { readonly isActive: boolean }): boolean {
   return account.isActive;
+}
+
+/** Said wherever a fact about a member of staff is not held, never a blank or a guess. */
+export const STAFF_NOT_RECORDED = 'Not recorded';
+
+/** The role label for a staff account with no office role yet. */
+export const NO_OFFICE_ROLE_LABEL = 'No office role yet';
+
+/**
+ * What a role is called on screen. A label decides nothing: what an account may do is what the
+ * server resolved on `GET /me` (`DL-173`), and the role matrix is the office's reference.
+ */
+export function staffRoleLabel(role: StaffRole | null): string {
+  return role === null ? NO_OFFICE_ROLE_LABEL : ROLE_DEFINITIONS[role].label;
 }
 
 export const DEACTIVATED_NOTICE =

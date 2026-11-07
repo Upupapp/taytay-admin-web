@@ -158,3 +158,12 @@ describe('the words for the first-administrator command (DL-188)', () => {
     expect(words).toContain('bootstrap command');
   });
 });
+
+describe('the words for switching accounts and opening an entry (DL-191)', () => {
+  it('says the account was switched, and that opening an entry is recorded', () => {
+    // taytay-backend src/modules/office-governance/routes.ts: the audit.record calls.
+    expect(PLATFORM_AUDIT_ACTIONS['user.deactivated']).toContain('Switched a staff account off');
+    expect(PLATFORM_AUDIT_ACTIONS['user.reactivated']).toContain('back on');
+    expect(PLATFORM_AUDIT_ACTIONS['office_audit.detail_read']).toContain('one entry');
+  });
+});

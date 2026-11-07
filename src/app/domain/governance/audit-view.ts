@@ -89,8 +89,17 @@ export interface AuditRow {
   readonly actorName: string;
   readonly occurredAt: IsoDateTime;
   readonly source: AuditSource;
-  /** Which fields moved, and how sensitive each is. */
+  /** Which fields moved, and how sensitive each is. Empty when `fieldsRecorded` is false. */
   readonly changedFields: readonly AuditFieldChange[];
+  /**
+   * Whether the trail recorded which fields moved at all.
+   *
+   * The Node API's trail keeps who, what, which record and when, and no field names (`DL-191`).
+   * An empty `changedFields` there means *not recorded*, not *nothing moved* — and a row that is
+   * not known to touch sensitive information is not known not to. Said on the row, like a report's
+   * limits (`DL-190`), rather than left for a reader to infer from an empty list.
+   */
+  readonly fieldsRecorded: boolean;
   /** True when any changed field is sensitive personal information. */
   readonly touchesSensitive: boolean;
   /** True when there is a detail record to open, for a reader who may. */
@@ -114,6 +123,13 @@ export interface AuditValueChange {
 export interface AuditEntryDetail {
   readonly id: AuditEntryId;
   readonly changes: readonly AuditValueChange[];
+  /**
+   * Whether any value was stored for this entry. False on the Node API, which never stored one;
+   * `changes` is then empty and `notRecorded` says so in words (`DL-191`).
+   */
+  readonly valuesRecorded: boolean;
+  /** What the trail does not hold, in the system of record's words. Null when values were stored. */
+  readonly notRecorded: string | null;
   /** Why the reader is allowed to see this, restated where they see it. */
   readonly accessRationale: string;
 }
@@ -121,6 +137,19 @@ export interface AuditEntryDetail {
 export const AUDIT_DETAIL_RATIONALE =
   'You are seeing the recorded values because your account holds the audit detail permission. ' +
   'This view is itself auditable, and opening it is recorded against your name.';
+
+/** Said on a row whose trail did not record which fields moved. */
+export const AUDIT_FIELDS_NOT_RECORDED =
+  'Which fields changed, and their values before and after, were not recorded.';
+
+/**
+ * The refusal for "only sensitive" against a trail that records no fields: an empty answer would
+ * read as "nothing sensitive was touched", which nobody knows (`DL-191`). No request is made.
+ */
+export const AUDIT_SENSITIVE_FILTER_UNAVAILABLE =
+  'This audit trail does not record which fields an action changed, so it cannot be narrowed to ' +
+  'changes that touched sensitive information. Nothing was asked of the server; clear that filter ' +
+  'to read the trail.';
 
 /* ── Filtering ────────────────────────────────────────────────────────────── */
 
@@ -186,9 +215,11 @@ export function toAuditRow(
   entry: AuditEntry,
   entityLabel: string,
   source: AuditSource,
-  changedFields: readonly AuditFieldChange[],
+  // `null`: the trail did not record which fields moved — never read as "none did".
+  changedFields: readonly AuditFieldChange[] | null,
   hasDetail: boolean,
 ): AuditRow {
+  const fields = changedFields ?? [];
   return {
     id: entry.id,
     entityType: entry.entityType,
@@ -201,10 +232,9 @@ export function toAuditRow(
     actorName: entry.actorName,
     occurredAt: entry.occurredAt,
     source,
-    changedFields,
-    touchesSensitive: changedFields.some(
-      (change) => change.classification === 'sensitive-personal',
-    ),
+    changedFields: fields,
+    fieldsRecorded: changedFields !== null,
+    touchesSensitive: fields.some((change) => change.classification === 'sensitive-personal'),
     hasDetail,
   };
 }
@@ -215,8 +245,16 @@ export function describeAuditRows(rows: readonly AuditRow[]): string {
     return 'Nothing recorded under this filter.';
   }
   const sensitive = rows.filter((row) => row.touchesSensitive).length;
+  const unrecorded = rows.filter((row) => !row.fieldsRecorded).length;
   const base = rows.length === 1 ? '1 event' : `${rows.length} events`;
-  return sensitive === 0
-    ? `${base}.`
-    : `${base}, ${sensitive} touching sensitive information.`;
+  const counted =
+    sensitive === 0 ? `${base}.` : `${base}, ${sensitive} touching sensitive information.`;
+  // A row whose fields were not recorded is not counted as sensitive, and the sentence says why
+  // rather than letting "0 touching sensitive information" be inferred from silence.
+  if (unrecorded === 0) {
+    return counted;
+  }
+  return unrecorded === rows.length
+    ? `${counted} Which fields each changed was not recorded.`
+    : `${counted} Which fields changed was not recorded for ${unrecorded} of them.`;
 }

@@ -292,6 +292,19 @@ export const API_ENDPOINTS = {
    */
   officeReports: 'office/reports',
   /**
+   * Governance (`DL-191`). `office/staff` the staff directory, a bare list (`staff.view`); `{id}`
+   * one account; `{id}/deactivate` and `{id}/reactivate` with `{ reason }` (`staff.manage`, never
+   * the caller's own). `office/audit` the office's trail, a cursor page (`audit.view`), and
+   * `office/audit/{id}` what it recorded about one entry, which is no value (`audit.view-detail`).
+   * `office/governance/…` the classifications, the empty retention schedule and the correction
+   * requests (`settings.manage`).
+   */
+  officeStaff: 'office/staff',
+  officeAudit: 'office/audit',
+  officeGovernanceClassifications: 'office/governance/classifications',
+  officeGovernanceRetention: 'office/governance/retention',
+  officeGovernanceCorrections: 'office/governance/corrections',
+  /**
    * The beneficiary registry (`DL-187`): a projection over the resident registry, keyed on the
    * resident's id. Cursor-paged and alphabetical, by `q`, `barangay_id`, `role`, `received_from`,
    * `received_to` and `with_open_duplicate_review`; one record by `{residentId}`, with

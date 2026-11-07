@@ -13377,6 +13377,719 @@
           }
         }
       }
+    },
+    "/api/v1/office/staff": {
+      "get": {
+        "operationId": "listOfficeStaff",
+        "summary": "The staff directory",
+        "description": "Needs staff.view (administrators, the MSWDO head, the auditor). Every staff and admin account that is not closed, by name, the whole list — switched-off accounts included and said to be off, because a directory that dropped them would hide who used to have access. The same accounts as Users and roles (GET /admin/users), not a second store: this list leaves out residents, and says only who may act — name, office role, barangay scope, on or off. The API holds no employee ID, unit, office contact, position or last sign-in for a staff account, so none is sent. Refused (503) past 1,000 accounts rather than cut short.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every staff and admin account, by name.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeStaffAccountListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No staff.view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "More staff accounts than the list reads whole.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/staff/{id}": {
+      "get": {
+        "operationId": "getOfficeStaffAccount",
+        "summary": "One staff account",
+        "description": "Needs staff.view. A resident, closed or unknown account reads as not found.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The staff account."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeStaffAccountEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No staff.view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such staff or admin account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "An id that is not a uuid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/staff/{id}/deactivate": {
+      "post": {
+        "operationId": "deactivateOfficeStaffAccount",
+        "summary": "Switch a staff account off",
+        "description": "Needs staff.manage (administrators). Switches a staff or admin account off, with the reason, which is kept in account_status_changes beside the act; audited as user.deactivated. The account is refused (401) on its very next request, whatever it holds — every route but GET /me, which answers deactivated: true and no permissions, and POST /auth/sign-out — so a session open at the moment it is switched off ends there, not at its next sign-in. Nothing is asked of Firebase, so switching it back on needs nothing from it. The caller’s own account is refused (403), on the server and in the table. An account already off is refused (409); so is changing the role of an account that is off, until it is switched on.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The staff account."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeAccountSwitch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The account, off.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeStaffAccountEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No staff.manage, or the caller’s own account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such staff or admin account (a resident account is not one).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already off, or closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No reason, or a field that is not reason.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/staff/{id}/reactivate": {
+      "post": {
+        "operationId": "reactivateOfficeStaffAccount",
+        "summary": "Switch a staff account back on",
+        "description": "Needs staff.manage (administrators). Switches a staff or admin account back on, with the reason, which is kept in account_status_changes; audited as user.reactivated. The caller’s own account is refused (403). An account already on is refused (409) rather than recorded twice.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The staff account."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficeAccountSwitch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The account, on.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeStaffAccountEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No staff.manage, or the caller’s own account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such staff or admin account (a resident account is not one).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already on, or closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No reason, or a field that is not reason.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/audit": {
+      "get": {
+        "operationId": "listOfficeAuditTrail",
+        "summary": "The office’s audit trail",
+        "description": "Needs audit.view (administrators, the MSWDO head, the auditor). audit_log’s casework rows (office_*) and staff-account rows (user.*), newest first, a cursor page at a time; the residents’ app’s rows stay on GET /admin/audit, which lists every row by id. Each row is said in words — the act, the kind of record, who — and carries the record’s id as given. audit_log records who, what, to which record and when, and nothing else: no field names, no earlier or later value, no reason and no channel. So every row says fields_recorded: false, and there is no filter for entries that touched sensitive information — an empty answer would read as “none did” (422). A reason is kept with the record it explains, in that record’s own history.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "description": "Rows per page."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "next_cursor from the previous page, as given."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "description": "Up to six words, each found in the row’s words, its record type’s label or the actor’s name. Never in a record: the trail holds no record’s contents."
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "created",
+                "updated",
+                "status-changed",
+                "viewed",
+                "exported",
+                "deleted",
+                "membership-changed",
+                "factor-corrected",
+                "published",
+                "scheduled",
+                "archived",
+                "pinned",
+                "unpinned",
+                "comment-hidden",
+                "comment-restored",
+                "comment-replied",
+                "cancelled",
+                "registration-changed",
+                "attendance-changed"
+              ]
+            },
+            "description": "One kind of act. A kind nothing in this trail is (a newsfeed act) answers an empty page."
+          },
+          {
+            "name": "record_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "resident",
+                "household",
+                "family",
+                "case",
+                "assistance-request",
+                "document",
+                "programme",
+                "referral",
+                "visit",
+                "release",
+                "report",
+                "duplicate-review",
+                "staff",
+                "audit"
+              ]
+            },
+            "description": "One kind of record."
+          },
+          {
+            "name": "actor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "One account’s acts."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "The first day, on the Manila calendar."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "The last day, on the Manila calendar, inclusive."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of the trail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeAuditEntryPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No audit.view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter that is not one of these, from after to, more than six words, or a bad cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/audit/{id}": {
+      "get": {
+        "operationId": "getOfficeAuditEntryDetail",
+        "summary": "What the trail recorded about one entry, beyond its row",
+        "description": "Needs audit.view-detail (administrators and the auditor; not the head): reading that a record changed is oversight, reading what it changed to is access to the record. This server never stored the values, so the answer says values_recorded: false, carries no change and says why in notice. Opening it is audited all the same (office_audit.detail_read). An entry outside the office’s trail reads as not found.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The audit entry."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What was recorded, which is no value.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeAuditEntryDetailEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No audit.view-detail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such entry in the office’s trail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "An id that is not a uuid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/governance/classifications": {
+      "get": {
+        "operationId": "listOfficeDataClassifications",
+        "summary": "What the office holds, classified",
+        "description": "Needs settings.manage. Each record type the office keeps, labelled the way RA 10173 distinguishes data, and what it holds in one sentence. Fixed server configuration about no person; the whole list.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The record types.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeClassifiedRecordTypeListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No settings.manage.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/governance/retention": {
+      "get": {
+        "operationId": "listOfficeRetentionRules",
+        "summary": "How long each record type is kept — nothing recorded",
+        "description": "Needs settings.manage. One rule per classified record type, and every one empty: no records disposition schedule approved under RA 9470 was supplied, so period_in_years, basis and disposal_note are null and provenance is awaiting-office-policy. Null is not zero, not indefinite and not a default. Nothing here deletes anything.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The rules, all awaiting the office’s schedule.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeRetentionRuleListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No settings.manage.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/governance/corrections": {
+      "get": {
+        "operationId": "listOfficeCorrectionRequests",
+        "summary": "Requests to correct a resident’s record",
+        "description": "Needs settings.manage. Newest first, the whole list, from office_correction_requests. Nothing writes there yet — capturing a request is not built — so it reads empty until it is. Applied and refused requests carry the office’s answer in words, and an answered request is never changed or deleted. The person is named as the registry lists them for this reader. Refused (503) past 500 rather than cut short.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every correction request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeCorrectionRequestListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No settings.manage.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "More requests than the list reads whole.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -13485,7 +14198,7 @@
           "created_at": "2026-10-20T08:00:00.000Z",
           "updated_at": "2026-10-20T08:00:00.000Z"
         },
-        "required": ["id", "firebase_uid", "email_verified", "verification_status", "verification_decided_at", "rejection_reason", "role", "office_role", "scope", "scope_barangay_id", "permissions", "closed", "created_at", "updated_at"],
+        "required": ["id", "firebase_uid", "email_verified", "verification_status", "verification_decided_at", "rejection_reason", "role", "office_role", "scope", "scope_barangay_id", "permissions", "closed", "deactivated", "created_at", "updated_at"],
         "properties": {
           "id": { "type": "string", "format": "uuid" },
           "firebase_uid": { "type": "string" },
@@ -13520,6 +14233,8 @@
             "description": "What this account may do, so a staff client can hide what would be refused. Empty for residents. Platform capabilities come from the account role (staff hold news.write, office-inbox.manage, issuance-type.manage and issuance-request.manage only while assigned to an office); casework keys come from the office role, and a staff account without one holds none. Admin holds every key. Describes enforcement; the routes still decide."
           },
           "closed": { "type": "boolean" },
+          "deactivated": { "type": "boolean", "description": "Switched off by the office: no session; every route but this one and sign-out answers 401." },
+          "deactivated_at": { "type": ["string", "null"], "format": "date-time" },
           "closed_at": { "type": ["string", "null"], "format": "date-time" },
           "created_at": { "type": "string", "format": "date-time" },
           "updated_at": { "type": "string", "format": "date-time" }
@@ -25999,6 +26714,581 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/OfficeReportExport"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeStaffAccount": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "role",
+          "office_role",
+          "scope_barangay_id",
+          "is_active",
+          "deactivated_at"
+        ],
+        "description": "Who may act, and nothing else the account holds.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "As the account records it; null when none was given."
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "staff",
+              "admin"
+            ]
+          },
+          "office_role": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "system-administrator",
+              "mswdo-head",
+              "social-worker",
+              "intake-officer",
+              "release-officer",
+              "barangay-link",
+              "auditor",
+              null
+            ],
+            "description": "system-administrator for admin; null for a staff account not yet given an office role."
+          },
+          "scope_barangay_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The one barangay a barangay link works in; null for everyone else."
+          },
+          "is_active": {
+            "type": "boolean",
+            "description": "False once the office has switched the account off."
+          },
+          "deactivated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "OfficeStaffAccountEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeStaffAccount"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeStaffAccountListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeStaffAccount"
+            },
+            "description": "By name, the whole list."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeAccountSwitch": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "description": "Why, kept beside the act.",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
+      },
+      "OfficeAuditEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "action",
+          "category",
+          "record_type",
+          "record_label",
+          "record_id",
+          "summary",
+          "actor_id",
+          "actor_name",
+          "occurred_at",
+          "source",
+          "fields_recorded"
+        ],
+        "description": "One row of the office’s trail: who, what, to which record, when — and no field, value or reason.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "action": {
+            "type": "string",
+            "description": "The code as audit_log holds it."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "created",
+              "updated",
+              "status-changed",
+              "viewed",
+              "exported",
+              "deleted",
+              "membership-changed",
+              "factor-corrected",
+              "published",
+              "scheduled",
+              "archived",
+              "pinned",
+              "unpinned",
+              "comment-hidden",
+              "comment-restored",
+              "comment-replied",
+              "cancelled",
+              "registration-changed",
+              "attendance-changed"
+            ],
+            "description": "The kind of act."
+          },
+          "record_type": {
+            "type": "string",
+            "enum": [
+              "resident",
+              "household",
+              "family",
+              "case",
+              "assistance-request",
+              "document",
+              "programme",
+              "referral",
+              "visit",
+              "release",
+              "report",
+              "duplicate-review",
+              "staff",
+              "audit"
+            ]
+          },
+          "record_label": {
+            "type": "string"
+          },
+          "record_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The record’s id, as given. Nothing is looked up about it."
+          },
+          "summary": {
+            "type": "string",
+            "description": "What happened, in words. Never a value."
+          },
+          "actor_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "actor_name": {
+            "type": "string",
+            "description": "The account’s name, or which of these it is: the server with nobody signed in, an account since closed, one with no name recorded, one this server does not hold."
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "api",
+              "system"
+            ],
+            "description": "api for an account’s request; system for none. Which screen sent it is not recorded."
+          },
+          "fields_recorded": {
+            "type": "boolean",
+            "enum": [
+              false
+            ],
+            "description": "Which fields moved is not recorded by this server."
+          }
+        }
+      },
+      "OfficeAuditEntryPage": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeAuditEntry"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "required": [
+              "pagination"
+            ],
+            "properties": {
+              "pagination": {
+                "$ref": "#/components/schemas/Pagination"
+              }
+            }
+          }
+        }
+      },
+      "OfficeAuditEntryDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "values_recorded",
+          "changes",
+          "notice"
+        ],
+        "description": "One entry’s recorded values — of which this server has none.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "values_recorded": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "changes": {
+            "type": "array",
+            "maxItems": 0,
+            "items": {
+              "type": "object"
+            },
+            "description": "Always empty: no value was stored."
+          },
+          "notice": {
+            "type": "string",
+            "description": "What the trail does and does not record, in words."
+          }
+        }
+      },
+      "OfficeAuditEntryDetailEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeAuditEntryDetail"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeClassifiedRecordType": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "label",
+          "classification",
+          "holds"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "public",
+              "internal",
+              "personal",
+              "sensitive-personal"
+            ]
+          },
+          "holds": {
+            "type": "string"
+          }
+        }
+      },
+      "OfficeClassifiedRecordTypeListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeClassifiedRecordType"
+            },
+            "description": "Every classified record type."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeRetentionRule": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "record_type_key",
+          "label",
+          "classification",
+          "period_in_years",
+          "provenance",
+          "basis",
+          "disposal_note"
+        ],
+        "properties": {
+          "record_type_key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "public",
+              "internal",
+              "personal",
+              "sensitive-personal"
+            ]
+          },
+          "period_in_years": {
+            "type": "null",
+            "description": "No schedule is recorded."
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "awaiting-office-policy"
+            ]
+          },
+          "basis": {
+            "type": "null"
+          },
+          "disposal_note": {
+            "type": "null"
+          }
+        }
+      },
+      "OfficeRetentionRuleListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeRetentionRule"
+            },
+            "description": "One rule per classified record type."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeCorrectionField": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "field",
+          "current_value",
+          "proposed_value"
+        ],
+        "properties": {
+          "field": {
+            "type": "string",
+            "enum": [
+              "first_name",
+              "middle_name",
+              "last_name",
+              "suffix",
+              "birth_date",
+              "sex",
+              "civil_status",
+              "barangay_id",
+              "street_address",
+              "purok_or_sitio",
+              "mobile_number",
+              "email"
+            ]
+          },
+          "current_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "proposed_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "OfficeCorrectionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "resident_id",
+          "resident_name",
+          "claim",
+          "status",
+          "fields",
+          "raised_by",
+          "raised_by_name",
+          "raised_at",
+          "outcome",
+          "decided_by",
+          "decided_at"
+        ],
+        "description": "A request to correct a resident’s record, and its answer.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resident_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resident_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "As the registry lists the person for this reader."
+          },
+          "claim": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "raised",
+              "applied",
+              "refused",
+              "withdrawn"
+            ]
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeCorrectionField"
+            }
+          },
+          "raised_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "raised_by_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "raised_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The office’s answer; present on applied and refused."
+          },
+          "decided_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "decided_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "OfficeCorrectionRequestListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeCorrectionRequest"
+            },
+            "description": "Newest first, the whole list."
           },
           "meta": {
             "type": "object"

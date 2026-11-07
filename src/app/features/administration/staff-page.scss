@@ -118,6 +118,12 @@
   margin: var(--space-base) 0 0;
 }
 
+.account__own {
+  margin: var(--space-base) 0 0;
+  color: var(--c-text-muted);
+  font-size: 12px;
+}
+
 .account__panel {
   margin-block-start: var(--space-snug);
   padding-block-start: var(--space-snug);

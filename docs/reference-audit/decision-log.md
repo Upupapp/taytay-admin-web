@@ -8415,3 +8415,125 @@ data layer's text — each rule validated against a planted regression (13 of 13
 **Still open:** the mock adapter was left as it was, so `local-mock` still ignores the period and
 programme filters, counts drafts and shows the protected sectors to every reader. No UAT script
 covers reports yet.
+
+## DL-191 — governance is served: one account store, a switch that ends the session at its next request, and a trail that says what it does not record
+
+`taytay-backend` `3a7947c` serves `GOVERNANCE_REPOSITORY`. The spec vendored here is that commit's
+(255 operations). Casework phase 6e, after reports (6d, `DL-190`). **Migration `0041`, additive:**
+`users.deactivated_at`, the append-only `account_status_changes`, and the two correction-request
+tables. **Two ports remain unserved**: the newsfeed and events.
+
+### What the server records, read before anything was written
+
+- **`audit_log` keeps six things a row** (`0009_audit.sql`): who, which action code, which kind of
+  record, which record, when, and its id. **No field names, no earlier or later value, no reason, no
+  channel.** A reason is kept beside the act in the record's own history (`office_role_changes`,
+  the case and request events) and is not joined onto the trail.
+- **The trail already holds both populations.** The casework modules write `office_*` codes and
+  the account routes `user.*`; Balita, the directory, digital IDs, ID review and the app's settings
+  write theirs. `GET admin/audit` (`DL-171`) lists every row by id.
+- **There was no deactivation.** `users` had `closed_at` — a resident's own anonymising closure,
+  which cannot be undone — and no switch an administrator could turn off and on. `resolveUser`
+  reads the account's row on every request, and `rejectClosedAccount` refuses a closed one; the
+  Firebase verifier checks revocation. Nothing recorded a sign-in, an employee ID, a unit, an office
+  contact or a position for staff.
+- **Nothing held a correction request.**
+
+### What is served
+
+| Route | Grant | What it answers |
+| --- | --- | --- |
+| `GET office/staff`, `…/{id}` | `staff.view` | Staff and admin accounts not closed, by name, the whole list (503 past 1,000): id, name, tier, office role, scope barangay, on or off |
+| `POST office/staff/{id}/deactivate`, `…/reactivate` | `staff.manage` | `{ reason }`, kept in `account_status_changes`; audited `user.deactivated` / `user.reactivated`; 403 for the caller's own account; 409 when already so |
+| `GET office/audit` | `audit.view` | The office's trail, a cursor page: `office_*` and `user.*` rows in words, `fields_recorded: false`; filters `q`, `action`, `record_type`, `actor_id`, `from`, `to` |
+| `GET office/audit/{id}` | `audit.view-detail` | `values_recorded: false`, no change, a notice; audited `office_audit.detail_read` |
+| `GET office/governance/classifications`, `…/retention`, `…/corrections` | `settings.manage` | Fixed configuration, every retention period null; correction requests from their table |
+
+### Decisions taken (the owner may overturn any; each is the easiest to reverse)
+
+1. **One account store** (`DL-115` as served). The directory reads the `users` table Users and
+   roles reads (`DL-168`), narrowed to staff and admin accounts that are not closed. A closed
+   account is anonymised and has nobody left to name, so it is not listed; a switched-off one is,
+   marked off. No email, mobile or address is sent: the directory's question is who may act.
+2. **What is not held is said, never filled in.** `StaffAccount` gained `lastSignInRecorded`, and
+   `role` and `position` became nullable. On the API `profile` is null, `position` null and
+   `lastSignInRecorded` false, and the screen says **"Not recorded"** for unit, ID and last sign-in
+   — never "Never" or a blank. A staff account with no office role reads **"No office role yet"**
+   rather than being left out. `staffRoleLabel` in the domain names a role; `check:auth` keeps
+   `ROLE_DEFINITIONS` out of `data/http`, and a label decides nothing.
+3. **Switching off is a column and a guard, not closure and not Firebase** (`DL-116`).
+   `users.deactivated_at`; `rejectDeactivatedAccount` answers **401** to every request but `GET /me`
+   and `POST auth/sign-out` — at the session's **next request**, because `resolveUser` reads the row
+   every time. `GET /me` says `deactivated: true` with no permissions; the console's `me.mapper`
+   asks `canHoldSession` and opens no session, like a closed account, and a missing flag is refused
+   like a missing `closed`. **Firebase is not told**, so switching back on needs nothing from it and
+   there is no half-done state between two systems.
+4. **Never the caller's own account, on the server** — the route refuses it (403) and
+   `account_status_changes_not_self` refuses the row. One administrator may switch another off.
+5. **A reason, always, kept beside the act.** `account_status_changes` is append-only (the history
+   trigger); the switch and its row are one transaction under the account's lock. Switching to the
+   state the account is already in is **409**, not a second record.
+6. **A switched-off account keeps its role until it is switched on.** `PATCH admin/users/{id}/role`
+   answers 409 meanwhile: moving it to a resident tier would leave a resident refused by the app with
+   no screen that lists them.
+7. **The office's trail is the casework and staff-account codes, in words.** The residents' app's
+   rows stay on the app's trail (`DL-171`). The words are the console's own for the app's trail,
+   copied to `trail.ts` and compared by a backend test, and a test fails when a code written
+   anywhere in the backend's `src` has no words — a code missing from the table would vanish from
+   the office's trail.
+8. **Fields not recorded is said on the row** (`DL-114`). `AuditRow` gained `fieldsRecorded`;
+   `toAuditRow` takes `null` for "not recorded" and keeps `changedFields` an empty list. Such a row
+   is **not counted as touching sensitive information either way**, and `describeAuditRows` says
+   which fields changed was not recorded. The row reads "Which fields changed, and their values
+   before and after, were not recorded."
+9. **"Only sensitive" is refused, not answered** — by the adapter, without a request, in words; the
+   server's query schema has no such key (422). An empty answer would read as "nothing sensitive was
+   touched", which nobody knows.
+10. **The detail says no value was stored, and the opening is still audited.** `AuditEntryDetail`
+    gained `valuesRecorded` and `notRecorded`. Rows say `hasDetail: false`, so the screen offers no
+    button that opens nothing; the read exists, gated by `audit.view-detail`, and the mapper refuses
+    a detail that carries values.
+11. **The trail is browsed a page at a time** (`DL-161`). `auditRows(filter, page)` returns a
+    `CursorPage`; the screen shows the newest fifty and "Show older entries", and while more exist
+    says how many are shown rather than a total. The mock pages the same way.
+12. **Source is `api` or `system`.** Every request reaches the server through its API; which screen
+    sent it is not recorded. A row with no actor (the first-administrator command) is `system`, its
+    actor "The server, with nobody signed in"; a closed actor is "An account since closed", an
+    unnamed one "An account with no name recorded".
+13. **Classification and retention are fixed server configuration**, not a table: a period with
+    legal weight changes through a reviewed commit, and nothing writes either list. Retention
+    invents nothing (`DL-113`): every period, basis and disposal note is null, every provenance
+    `awaiting-office-policy`; the mapper refuses a period with no office schedule behind it.
+14. **Correction requests are read from a real table** (`office_correction_requests` and its
+    fields), in the console's four words, with the answered-in-words and terminal rules held by the
+    table. Nothing writes there yet, so the list is empty until capture is built, which the page
+    already says (`DL-117`).
+
+### What the console changed
+
+`HttpGovernanceRepository` with `governance.mapper.ts`, which **refuses rather than renders** a row
+claiming its fields were recorded, a detail carrying values, a retention period with no office
+schedule, an applied or refused correction without its words, an administrator not called the
+system administrator, and a barangay it cannot place — whole answers or none. A switch is sent with
+the reason alone, as `toWireAccountSwitch`. `UnservedGovernanceRepository` is gone; `check:routes`'
+unserved ceiling went from 3 to **2**. `check:governance` gained a section for the served adapter —
+not recorded is said, sensitivity is never inferred, values are refused, a reason before any switch,
+`canHoldSession` on `/me`, "Not recorded" on the staff page and on a row — each rule validated
+against a planted regression (13 of 13 caught). The app's audit trail words the three new codes.
+
+### For the owner
+
+- Whether switching an account off should also disable it in Firebase (decision 3).
+- Whether the trail should start recording which fields changed — an `audit_log` change — so a row
+  can say what moved and how sensitive it was, and "only sensitive" can be answered.
+- The record types the server holds that the classification list does not name: cases, home
+  visits, families, ID-verification images, inbox messages, digital IDs and staff accounts.
+- The office's records disposition schedule under RA 9470.
+- When capturing a correction request is to be built, and who may answer one.
+
+The staff page offers no switch on the signed-in administrator's own row and says why, as Users
+and roles does for a role (`DL-168`).
+
+**Still open:** no UAT script covers governance yet (`docs/uat/` was left to the agent writing it).
+The mock still records sign-ins and profiles the API does not, so `local-mock` shows a unit and an ID
+where the API's console says "Not recorded".

@@ -259,3 +259,20 @@
   color: var(--c-text-muted);
   font-size: 13px;
 }
+
+.entry__fields--unrecorded {
+  font-style: italic;
+}
+
+.audit__more {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-snug);
+  margin-top: var(--space-base);
+}
+
+.audit__problem {
+  margin: 0;
+  font-size: 13px;
+}

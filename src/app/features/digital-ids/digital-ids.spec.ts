@@ -2,7 +2,7 @@ import { signal } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError, type Observable } from 'rxjs';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionService } from '@core/access/permission.service';
 import {
@@ -170,6 +170,41 @@ const COPY = DIGITAL_IDS_COPY;
 vi.setConfig({ testTimeout: 20_000 });
 
 describe('DigitalIdsPage — checking a card (DL-171)', () => {
+  // The photo becomes an object URL. jsdom has none, and Node's own refuses a jsdom Blob — which of
+  // the two a worker holds depended on which spec files ran before this one, so the photo test passed
+  // alone and failed inside the full suite. A stand-in, as the other screens' specs use, restored
+  // exactly as it was found rather than deleted.
+  const found = {
+    create: Object.getOwnPropertyDescriptor(URL, 'createObjectURL'),
+    revoke: Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL'),
+  };
+  const restore = (
+    name: 'createObjectURL' | 'revokeObjectURL',
+    was: PropertyDescriptor | undefined,
+  ) => {
+    if (was === undefined) {
+      Reflect.deleteProperty(URL, name);
+    } else {
+      Object.defineProperty(URL, name, was);
+    }
+  };
+  beforeEach(() => {
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      writable: true,
+      value: vi.fn(() => 'blob:test/card-photo'),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      writable: true,
+      value: vi.fn(),
+    });
+  });
+  afterEach(() => {
+    restore('createObjectURL', found.create);
+    restore('revokeObjectURL', found.revoke);
+  });
+
   it('says no camera is needed, and what a check does, before its button', async () => {
     configure();
     const element = await settle(TestBed.createComponent(DigitalIdsPage));

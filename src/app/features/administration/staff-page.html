@@ -46,16 +46,17 @@
                   <dt>{{ copy.columnRole }}</dt>
                   <dd>{{ account.roleLabel }}</dd>
                 </div>
-                @if (account.profile) {
-                  <div>
-                    <dt>{{ copy.columnUnit }}</dt>
-                    <dd>{{ account.profile.unit }}</dd>
-                  </div>
-                  <div>
-                    <dt>ID</dt>
-                    <dd class="account__employee-id">{{ account.profile.employeeId }}</dd>
-                  </div>
-                }
+                <!-- Not held is said, never left blank or guessed (DL-115, DL-191). -->
+                <div>
+                  <dt>{{ copy.columnUnit }}</dt>
+                  <dd>{{ account.profile?.unit ?? copy.notRecorded }}</dd>
+                </div>
+                <div>
+                  <dt>{{ copy.employeeId }}</dt>
+                  <dd class="account__employee-id">
+                    {{ account.profile?.employeeId ?? copy.notRecorded }}
+                  </dd>
+                </div>
                 <div>
                   <dt>{{ copy.columnScope }}</dt>
                   <dd>{{ account.barangayLabel ?? copy.allBarangays }}</dd>
@@ -66,7 +67,9 @@
                     {{
                       account.lastSignInAt
                         ? (account.lastSignInAt | date: 'd MMM y, HH:mm')
-                        : copy.never
+                        : account.lastSignInRecorded
+                          ? copy.never
+                          : copy.notRecorded
                     }}
                   </dd>
                 </div>
@@ -78,7 +81,9 @@
                 </p>
               }
 
-              @if (canManage()) {
+              @if (canManage() && isOwn(account)) {
+                <p class="account__own">{{ copy.ownAccount }}</p>
+              } @else if (canManage()) {
                 <p class="account__actions">
                   <button type="button" class="btn" (click)="toggle(account)">
                     {{

@@ -71,7 +71,10 @@
                 <span class="entry__source">{{ copy.source }} {{ sourceLabel(row) }}</span>
               </p>
 
-              @if (row.changedFields.length > 0) {
+              @if (!row.fieldsRecorded) {
+                <!-- Not recorded, said: an empty list would read as "nothing moved". -->
+                <p class="entry__fields entry__fields--unrecorded">{{ fieldsNotRecorded }}</p>
+              } @else if (row.changedFields.length > 0) {
                 <p class="entry__fields">
                   <span class="entry__fields-label">{{ copy.changedFields }}:</span>
                   @for (change of row.changedFields; track change.field) {
@@ -105,6 +108,9 @@
                   @if (detail(); as recorded) {
                     <!-- Restated where it is used: opening this is itself recorded. -->
                     <p class="values__rationale">{{ recorded.accessRationale }}</p>
+                    @if (recorded.notRecorded) {
+                      <p class="values__empty">{{ recorded.notRecorded }}</p>
+                    }
                     <dl class="values__list">
                       @for (change of recorded.changes; track change.field) {
                         <div class="values__item">
@@ -128,6 +134,17 @@
             </li>
           }
         </ul>
+
+        <div class="audit__more">
+          @if (hasMore()) {
+            <button type="button" class="btn" [disabled]="loadingMore()" (click)="showMore()">
+              {{ loadingMore() ? copy.loadingMore : copy.showMore }}
+            </button>
+          }
+          @if (moreFailed()) {
+            <p class="audit__problem" role="alert">{{ copy.moreFailed }}</p>
+          }
+        </div>
       }
     </ng-template>
   </app-async-content>

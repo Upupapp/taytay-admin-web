@@ -1,12 +1,13 @@
 import {
   STAFF_ROLES,
+  canHoldSession,
   type BarangayId,
   type DataScope,
   type ServerIdentity,
   type StaffUserId,
 } from '@domain/index';
 
-import { field, id, list, oneOf, str } from './wire';
+import { field, flag, id, list, oneOf, str } from './wire';
 
 /** The two API roles that may hold a console session. `registered` and `verified` are residents. */
 type ConsoleRole = 'staff' | 'admin';
@@ -57,14 +58,24 @@ const SCOPES: readonly DataScope[] = ['all-barangays', 'own-barangay', 'assigned
  * real to every guard and fail one screen at a time. Only an explicit `closed: false` is open: an
  * absent or malformed flag must not let a closed account in.
  *
+ * An account the office has **switched off** is refused the same way, through `canHoldSession` —
+ * the rule the mock's staff adapter asks too (`DL-116`). A missing or malformed `deactivated` is
+ * refused like a missing `closed`; the server answers every other route for it with 401 at the next request, and
+ * this keeps the console from opening a session the server would end on its first read (`DL-191`).
+ *
  * @consumes GET me
  */
 export function toServerIdentity(wire: unknown): ServerIdentity | null {
   const accountId = id<StaffUserId>(field(wire, 'id'));
   const role = oneOf<ConsoleRole>(field(wire, 'role'), CONSOLE_ROLES);
   const open = field(wire, 'closed') === false ? true : null;
+  const deactivated = flag(field(wire, 'deactivated'));
 
-  if (accountId === null || role === null || open === null) {
+  if (accountId === null || role === null || open === null || deactivated === null) {
+    return null;
+  }
+  // Switched off by the office: no session, asked the way the mock's staff adapter asks (`DL-116`).
+  if (!canHoldSession({ isActive: !deactivated })) {
     return null;
   }
 

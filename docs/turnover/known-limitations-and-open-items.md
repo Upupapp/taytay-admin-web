@@ -20,14 +20,13 @@ As of 2026-11-07. Each item names its source so it can be checked and closed. Id
 
 ## 2. Console modules the API does not serve
 
-Three of the console's 33 data ports are bound to "unserved" adapters in the staging and
+Two of the console's 33 data ports are bound to "unserved" adapters in the staging and
 production builds (`UNSERVED_HTTP_PORTS`, `src/app/data/http/unserved-repositories.ts`). Their
 screens make no request: they are hidden from the menu and named on the console's "Not connected
 yet" page, and they show sample data only in the `local-mock` configuration.
 
 | Module (port)             | What staff cannot do yet                                                           | Plan                         |
 | ------------------------- | ---------------------------------------------------------------------------------- | ---------------------------- |
-| Governance (`governance`) | Retention settings, correction requests, and the auditor's view of recorded values | Phase 6b (FR-STAFF-26, -27)  |
 | The newsfeed (`newsfeed`) | Posts with reaction and comment counts, and comment moderation                     | Waits for OD-4 (FR-STAFF-34) |
 | Events (`event`)          | Create events and manage registrations                                             | Waits for OD-4               |
 
@@ -39,6 +38,11 @@ From `docs/uat/README.md` ("Not in this UAT round") and the requirements documen
   (FR-STAFF-9) and a programme's change history (FR-STAFF-13) are recorded but no screen shows
   them; programme use counted from releases (FR-STAFF-14); images in staff replies in the inbox
   (FR-STAFF-8).
+- **Governance** (`DL-191`): the audit trail records who, what, which record and when — not which
+  fields changed, their values or the reason, so the auditor's "recorded values" say none were
+  stored and "only sensitive" cannot be used. A staff member's employee ID, unit, contact, position
+  and last sign-in are not recorded. Retention periods wait for the office's RA 9470 schedule.
+  Capturing a correction request is not built.
 - **Directory:** some office details cannot be changed after the office is created, and hidden
   Tulong pages have no admin list. Both need small API fixes (FR-STAFF-4).
 - **Staff two-factor sign-in** is off (FR-STAFF-29, NFR-SEC-7; decision OD-3 below).
@@ -71,7 +75,7 @@ From `docs/uat/README.md` ("Not in this UAT round") and the requirements documen
 | Events, Balita comments and reactions, and applying from the app            | Owner, with the LGU's agreement (the TOR names them)       | OD-4, R-11                                                      | Newsfeed, events, FR-RES-14                                                                                                             |
 | Whether the ID reviewer sees the account's name and birth date              | Owner and office                                           | OD-1                                                            | Deliverable D1's acceptance                                                                                                             |
 | Whether the office inbox names the resident, and closing notices            | Owner and office                                           | OD-2                                                            | —                                                                                                                                       |
-| Casework questions from phases 1 to 6d                                      | Owner                                                      | OD-5; `docs/integration/node-api-migration.md`, "For the owner" | —                                                                                                                                       |
+| Casework questions from phases 1 to 6e                                      | Owner                                                      | OD-5; `docs/integration/node-api-migration.md`, "For the owner" | —                                                                                                                                       |
 | Review windows and the small-count threshold                                | MSWDO head                                                 | OD-6 (`DL-68`, `DL-105`)                                        | Both show "pending confirmation" on screen until recorded                                                                               |
 | Who signs resident-app sprint approvals                                     | Owner                                                      | OD-7                                                            | Sprints S2, S6 to S9                                                                                                                    |
 | PhilSys: which four digits are held, and the IRR duty                       | Owner with the DPO                                         | OD-8                                                            | —                                                                                                                                       |
@@ -138,7 +142,7 @@ The requirements document traces the Terms of Reference (TOR) through the develo
 | TOR feature                                                     | Status on 7 Nov 2026                                                                                                 | Phase                                                              |
 | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | T-10 Beneficiary records, fund tracking, duplicate-claim checks | Built (`DL-187`): the registry, duplicate review and utilization from releases. Programme membership is not recorded | 6b                                                                 |
-| T-12 Audit trails                                               | Partly built: the app's audit trail and casework histories. Governance unserved                                      | 6b                                                                 |
+| T-12 Audit trails                                               | Built (`DL-191`): the office's trail in words and the app's by id. No field, value or reason is recorded             | 6b                                                                 |
 | T-18 Analytics and reports, dashboards, exports                 | Built: the dashboard, search, the work queues (`DL-189`) and the fourteen reports with their exports (`DL-190`)      | 6b                                                                 |
 | T-16 Event and program postings                                 | Deferred; events unserved                                                                                            | 6b, after OD-4                                                     |
 | T-17 Engagement monitoring                                      | Deferred; newsfeed unserved                                                                                          | 6b, after OD-4                                                     |

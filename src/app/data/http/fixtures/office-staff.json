@@ -1,0 +1,59 @@
+{
+  "data": [
+    {
+      "id": "9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c02",
+      "name": "Bautista, Herminia",
+      "role": "staff",
+      "office_role": "mswdo-head",
+      "scope_barangay_id": null,
+      "is_active": true,
+      "deactivated_at": null
+    },
+    {
+      "id": "9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c06",
+      "name": "Dizon, Corazon",
+      "role": "staff",
+      "office_role": "auditor",
+      "scope_barangay_id": null,
+      "is_active": true,
+      "deactivated_at": null
+    },
+    {
+      "id": "9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c01",
+      "name": "Gatdula, Amparo",
+      "role": "admin",
+      "office_role": "system-administrator",
+      "scope_barangay_id": null,
+      "is_active": true,
+      "deactivated_at": null
+    },
+    {
+      "id": "9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c05",
+      "name": "Lazaro, Ernesto",
+      "role": "staff",
+      "office_role": "release-officer",
+      "scope_barangay_id": null,
+      "is_active": false,
+      "deactivated_at": "2026-11-06T01:15:00.000Z"
+    },
+    {
+      "id": "9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c03",
+      "name": "Mercado, Rolando",
+      "role": "staff",
+      "office_role": "barangay-link",
+      "scope_barangay_id": "0b1c2d3e-4f50-4a61-8b72-3c4d5e6f7a01",
+      "is_active": true,
+      "deactivated_at": null
+    },
+    {
+      "id": "9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c04",
+      "name": null,
+      "role": "staff",
+      "office_role": null,
+      "scope_barangay_id": null,
+      "is_active": true,
+      "deactivated_at": null
+    }
+  ],
+  "meta": {}
+}

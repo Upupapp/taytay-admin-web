@@ -258,6 +258,15 @@ describe('staff accounts', () => {
     expect(page.canSave()).toBe(true);
   });
 
+  it('offers no switch on the signed-in administrator’s own account, and says why (DL-191)', async () => {
+    const element = html(await open('/administration/staff', StaffPage));
+    const own = element.querySelectorAll('.account__own');
+
+    // The server refuses it; a button that always fails says nothing about why.
+    expect(own).toHaveLength(1);
+    expect(own[0]?.textContent).toContain('your own account');
+  });
+
   it('hides the deactivate control from somebody who cannot manage staff', async () => {
     const fixture = await open('/administration/staff', StaffPage, 'auditor', 'staff-auditor');
     const page = fixture.componentInstance as unknown as { canManage: () => boolean };

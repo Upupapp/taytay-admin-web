@@ -590,6 +590,7 @@
       "consumer": "me.mapper.ts#toServerIdentity",
       "required": [
         "closed",
+        "deactivated",
         "id",
         "role"
       ],
@@ -1260,6 +1261,39 @@
     },
     {
       "method": "GET",
+      "path": "office/audit",
+      "consumer": "governance.mapper.ts#toGovernanceAuditRow",
+      "required": [
+        "actor_name",
+        "category",
+        "id",
+        "occurred_at",
+        "record_label",
+        "record_type",
+        "source",
+        "summary"
+      ],
+      "optional": [
+        "actor_id",
+        "fields_recorded",
+        "record_id"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/audit/{id}",
+      "consumer": "governance.mapper.ts#toGovernanceAuditDetail",
+      "required": [
+        "id",
+        "notice"
+      ],
+      "optional": [
+        "changes",
+        "values_recorded"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "office/beneficiaries",
       "consumer": "beneficiary.mapper.ts#toBeneficiarySummary",
       "required": [],
@@ -1637,6 +1671,55 @@
         "relationships"
       ],
       "optional": []
+    },
+    {
+      "method": "GET",
+      "path": "office/governance/classifications",
+      "consumer": "governance.mapper.ts#toClassifiedRecordType",
+      "required": [
+        "classification",
+        "holds",
+        "key",
+        "label"
+      ],
+      "optional": []
+    },
+    {
+      "method": "GET",
+      "path": "office/governance/corrections",
+      "consumer": "governance.mapper.ts#toCorrectionRequest",
+      "required": [
+        "claim",
+        "id",
+        "raised_at",
+        "raised_by",
+        "resident_id",
+        "status"
+      ],
+      "optional": [
+        "decided_at",
+        "decided_by",
+        "fields",
+        "outcome",
+        "raised_by_name",
+        "resident_name"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/governance/retention",
+      "consumer": "governance.mapper.ts#toRetentionRule",
+      "required": [
+        "classification",
+        "label",
+        "provenance",
+        "record_type_key"
+      ],
+      "optional": [
+        "basis",
+        "disposal_note",
+        "period_in_years"
+      ]
     },
     {
       "method": "GET",
@@ -2699,6 +2782,66 @@
       ],
       "optional": [
         "name"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/staff",
+      "consumer": "governance.mapper.ts#toStaffAccount",
+      "required": [
+        "id",
+        "is_active",
+        "role"
+      ],
+      "optional": [
+        "name",
+        "office_role",
+        "scope_barangay_id"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/staff/{id}",
+      "consumer": "governance.mapper.ts#toStaffAccount",
+      "required": [
+        "id",
+        "is_active",
+        "role"
+      ],
+      "optional": [
+        "name",
+        "office_role",
+        "scope_barangay_id"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/staff/{id}/deactivate",
+      "consumer": "governance.mapper.ts#toStaffAccount",
+      "required": [
+        "id",
+        "is_active",
+        "role"
+      ],
+      "optional": [
+        "name",
+        "office_role",
+        "scope_barangay_id"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/staff/{id}/reactivate",
+      "consumer": "governance.mapper.ts#toStaffAccount",
+      "required": [
+        "id",
+        "is_active",
+        "role"
+      ],
+      "optional": [
+        "name",
+        "office_role",
+        "scope_barangay_id"
       ]
     },
     {

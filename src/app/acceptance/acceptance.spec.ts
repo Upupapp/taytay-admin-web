@@ -324,7 +324,9 @@ describe('scenario: a restricted user attempts a sensitive export', () => {
 
   it('withholds the audit values from an account that may read the trail', async () => {
     await signedInAs('mswdo-head', 'staff-head');
-    const rows = await firstValueFrom(TestBed.inject(GOVERNANCE_REPOSITORY).auditRows({}));
+    const { items: rows } = await firstValueFrom(
+      TestBed.inject(GOVERNANCE_REPOSITORY).auditRows({}, { limit: 50, cursor: null }),
+    );
 
     expect(rows.length).toBeGreaterThan(0);
     await expect(

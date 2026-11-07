@@ -1,0 +1,9 @@
+{
+  "data": {
+    "id": "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e01",
+    "values_recorded": false,
+    "changes": [],
+    "notice": "This server records who acted, what they did, to which record and when. It does not record which fields changed, what they were before or after, the reason given, or which screen the request came from. A reason is kept with the record it explains, in that record’s own history."
+  },
+  "meta": {}
+}

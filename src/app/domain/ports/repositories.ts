@@ -1427,7 +1427,11 @@ export interface GovernanceRepository {
     reason: string,
   ): Observable<StaffAccount>;
 
-  auditRows(filter: AuditFilter): Observable<readonly AuditRow[]>;
+  /**
+   * The trail, newest first, a cursor page at a time (`DL-161`, `DL-191`): it grows with every act
+   * the office records, so it is browsed and never read whole. "More available", never "of N".
+   */
+  auditRows(filter: AuditFilter, page: CursorRequest): Observable<CursorPage<AuditRow>>;
   /** Recorded values for one entry. Refused without `audit.view-detail`. */
   auditDetail(id: AuditEntryId): Observable<AuditEntryDetail | null>;
 
@@ -1899,7 +1903,7 @@ export const BALITA_REPOSITORY = new InjectionToken<BalitaRepository>('BalitaRep
 
 /**
  * The Node API's audit trail (`audit.view`): read-only, newest first. **Not `GovernanceRepository`**,
- * whose trail belongs to the unserved governance module (`DL-164`).
+ * whose trail is the office's own rows said in words (`office/audit`, `DL-191`).
  */
 export interface PlatformAuditRepository {
   /** One cursor page, newest first. No total (`DL-161`). */

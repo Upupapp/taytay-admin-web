@@ -1,12 +1,20 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { firstValueFrom, switchMap } from 'rxjs';
+import { firstValueFrom, switchMap, tap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
 import {
   AUDIT_ACTION_LABELS,
+  AUDIT_FIELDS_NOT_RECORDED,
   AUDIT_SOURCE_LABELS,
   GOVERNANCE_REPOSITORY,
   asId,
@@ -18,6 +26,7 @@ import {
   type AuditEntryId,
   type AuditFilter,
   type AuditRow,
+  type CursorPage,
 } from '@domain/index';
 import { debouncedTerm } from '@shared/state/debounced';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
@@ -41,6 +50,9 @@ import { ADMIN_COPY } from './administration.copy';
  * a resident's income to every reviewer who filters by date, in the name of
  * accountability.
  */
+/** The API's own ceiling on a page. */
+const PAGE_SIZE = 50;
+
 @Component({
   selector: 'app-audit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,8 +63,10 @@ import { ADMIN_COPY } from './administration.copy';
 export class AuditPage {
   private readonly repository = inject(GOVERNANCE_REPOSITORY);
   private readonly permissions = inject(PermissionService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly copy = ADMIN_COPY.audit;
+  protected readonly fieldsNotRecorded = AUDIT_FIELDS_NOT_RECORDED;
   protected readonly actions = Object.keys(AUDIT_ACTION_LABELS) as AuditAction[];
 
   protected readonly search = signal('');
@@ -78,15 +92,43 @@ export class AuditPage {
     ...(this.sensitiveOnly() ? { sensitiveOnly: true } : {}),
   }));
 
+  /** Older pages, appended by "Show older entries" and dropped whenever the filter changes. */
+  private readonly further = signal<readonly CursorPage<AuditRow>[]>([]);
+  protected readonly loadingMore = signal(false);
+  protected readonly moreFailed = signal(false);
+
   protected readonly state = toSignal(
     toObservable(this.filter).pipe(
-      switchMap((filter) => toViewState(this.repository.auditRows(filter))),
+      tap(() => {
+        this.further.set([]);
+        this.moreFailed.set(false);
+        this.loadingMore.set(false);
+      }),
+      switchMap((filter) =>
+        toViewState(this.repository.auditRows(filter, { limit: PAGE_SIZE, cursor: null })),
+      ),
     ),
-    { initialValue: LOADING as ViewState<readonly AuditRow[]> },
+    { initialValue: LOADING as ViewState<CursorPage<AuditRow>> },
   );
 
-  protected readonly rows = computed<readonly AuditRow[]>(() => valueOf(this.state()) ?? []);
-  protected readonly summary = computed(() => describeAuditRows(this.rows()));
+  protected readonly rows = computed<readonly AuditRow[]>(() => [
+    ...(valueOf(this.state())?.items ?? []),
+    ...this.further().flatMap((page) => page.items),
+  ]);
+
+  private readonly lastPage = computed(
+    () => this.further().at(-1) ?? valueOf(this.state()) ?? null,
+  );
+
+  protected readonly hasMore = computed(() => {
+    const last = this.lastPage();
+    return last !== null && last.hasMore && last.nextCursor !== null;
+  });
+
+  // While more exist, the count is of what is shown and says so; a total is never invented.
+  protected readonly summary = computed(() =>
+    this.hasMore() ? this.copy.shown(this.rows().length) : describeAuditRows(this.rows()),
+  );
   protected readonly coverage = computed(() => describeAuditFilter(this.filter()));
   protected readonly hasFilters = computed(() => isAuditFilterActive(this.filter()));
 
@@ -115,6 +157,32 @@ export class AuditPage {
     this.search.set('');
     this.action.set(null);
     this.sensitiveOnly.set(false);
+  }
+
+  protected showMore(): void {
+    const cursor = this.lastPage()?.nextCursor ?? null;
+    if (cursor === null || this.loadingMore()) {
+      return;
+    }
+    const filter = this.filter();
+    this.loadingMore.set(true);
+    this.moreFailed.set(false);
+    this.repository
+      .auditRows(filter, { limit: PAGE_SIZE, cursor })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (page) => {
+          // The filter changed meanwhile: this page continues a list nobody is looking at.
+          if (filter === this.filter()) {
+            this.further.update((pages) => [...pages, page]);
+          }
+          this.loadingMore.set(false);
+        },
+        error: () => {
+          this.loadingMore.set(false);
+          this.moreFailed.set(true);
+        },
+      });
   }
 
   /* ── Opening the recorded values ────────────────────────────────────────── */

@@ -22,6 +22,8 @@ import {
   type AuditSource,
   type ClassifiedRecordType,
   type CorrectionRequest,
+  type CursorPage,
+  type CursorRequest,
   type GovernanceRepository,
   type RetentionRule,
   type StaffAccount,
@@ -134,6 +136,8 @@ export class MockGovernanceRepository implements GovernanceRepository {
       barangayLabel: staff.barangayId === null ? null : barangayName(staff.barangayId),
       isActive: staff.isActive,
       lastSignInAt: staff.lastSignInAt,
+      // The seed records sign-ins, so a null here is "never", unlike the Node API (`DL-191`).
+      lastSignInRecorded: true,
       profile,
       additionalPermissionCount: staff.additionalPermissions.length,
     };
@@ -141,9 +145,9 @@ export class MockGovernanceRepository implements GovernanceRepository {
 
   /* ── The trail ──────────────────────────────────────────────────────────── */
 
-  auditRows(filter: AuditFilter): Observable<readonly AuditRow[]> {
+  auditRows(filter: AuditFilter, page: CursorRequest): Observable<CursorPage<AuditRow>> {
     const user = this.access.currentUser();
-    const denied = denyUnless<readonly AuditRow[]>(user, 'audit.view');
+    const denied = denyUnless<CursorPage<AuditRow>>(user, 'audit.view');
     if (denied) {
       return denied;
     }
@@ -159,7 +163,10 @@ export class MockGovernanceRepository implements GovernanceRepository {
     ).filter((row) => matchesFilter(row, filter));
 
     return this.latency.respond(
-      [...rows].sort((a, b) => (a.occurredAt < b.occurredAt ? 1 : -1)),
+      pageOf(
+        [...rows].sort((a, b) => (a.occurredAt < b.occurredAt ? 1 : -1)),
+        page,
+      ),
     );
   }
 
@@ -179,6 +186,8 @@ export class MockGovernanceRepository implements GovernanceRepository {
     return this.latency.respond({
       id,
       changes,
+      valuesRecorded: true,
+      notRecorded: null,
       // Restated where it is used, so a reader knows their own view is recorded.
       accessRationale: AUDIT_DETAIL_RATIONALE,
     });
@@ -227,6 +236,16 @@ export class MockGovernanceRepository implements GovernanceRepository {
       [...MOCK_CORRECTION_REQUESTS].sort((a, b) => (a.raisedAt < b.raisedAt ? 1 : -1)),
     );
   }
+}
+
+/** The API's own ceiling on a page (`limit` maximum 50), kept so the mock pages like the server. */
+const LARGEST_PAGE = 50;
+
+function pageOf<T>(rows: readonly T[], page: CursorRequest): CursorPage<T> {
+  const start = page.cursor ? Number.parseInt(page.cursor, 10) || 0 : 0;
+  const end = start + Math.min(Math.max(1, page.limit), LARGEST_PAGE);
+  const hasMore = end < rows.length;
+  return { items: rows.slice(start, end), hasMore, nextCursor: hasMore ? String(end) : null };
 }
 
 function matchesFilter(row: AuditRow, filter: AuditFilter): boolean {

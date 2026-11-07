@@ -1,0 +1,12 @@
+{
+  "data": {
+    "id": "9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c05",
+    "name": "Lazaro, Ernesto",
+    "role": "staff",
+    "office_role": "release-officer",
+    "scope_barangay_id": null,
+    "is_active": false,
+    "deactivated_at": "2026-11-06T01:15:00.000Z"
+  },
+  "meta": {}
+}

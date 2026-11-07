@@ -28,6 +28,10 @@ export const ADMIN_COPY = {
     active: 'Active',
     inactive: 'Deactivated',
     never: 'Never',
+    notRecorded: 'Not recorded',
+    ownAccount:
+      'This is your own account. You cannot switch it off or on; another administrator can.',
+    employeeId: 'ID',
     allBarangays: 'All barangays',
     extraGrants: 'grants beyond the role',
 
@@ -74,8 +78,9 @@ export const ADMIN_COPY = {
     back: 'Back to staff',
 
     valuesNotice:
-      'Rows say what changed and how sensitive it was — never what it changed to. Opening the ' +
-      'recorded values is a separate permission, and doing so is itself recorded.',
+      'Rows say what was done and, where the trail records it, which fields changed and how ' +
+      'sensitive they were — never what it changed to. Opening the recorded values is a ' +
+      'separate permission, and doing so is itself recorded.',
 
     search: 'Search',
     searchPlaceholder: 'Summary, actor or record type',
@@ -105,6 +110,13 @@ export const ADMIN_COPY = {
 
     emptyHeading: 'Nothing recorded under this filter',
     emptyMessage: 'Try a wider date range, or clear the filters.',
+
+    // A page at a time, newest first (`DL-161`): "more available", never "of N".
+    shown: (count: number) =>
+      `Showing the newest ${count} ${count === 1 ? 'entry' : 'entries'} under this filter. More are available.`,
+    showMore: 'Show older entries',
+    loadingMore: 'Loading older entries…',
+    moreFailed: 'Older entries could not be read. Try again.',
   },
 
   governance: {

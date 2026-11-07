@@ -1,0 +1,66 @@
+{
+  "data": [
+    {
+      "id": "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e01",
+      "action": "user.deactivated",
+      "category": "status-changed",
+      "record_type": "staff",
+      "record_label": "Staff account",
+      "record_id": "9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c05",
+      "summary": "Switched a staff account off, with a reason; its session stops at its next request",
+      "actor_id": "9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c01",
+      "actor_name": "Gatdula, Amparo",
+      "occurred_at": "2026-11-06T01:15:00.000Z",
+      "source": "api",
+      "fields_recorded": false
+    },
+    {
+      "id": "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e02",
+      "action": "office_request.document_opened",
+      "category": "viewed",
+      "record_type": "document",
+      "record_label": "Supporting documents",
+      "record_id": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a01",
+      "summary": "Opened a document presented for an assistance request",
+      "actor_id": "9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c06",
+      "actor_name": "Dizon, Corazon",
+      "occurred_at": "2026-11-05T07:40:00.000Z",
+      "source": "api",
+      "fields_recorded": false
+    },
+    {
+      "id": "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e03",
+      "action": "office_resident.updated",
+      "category": "updated",
+      "record_type": "resident",
+      "record_label": "Resident registry",
+      "record_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c01",
+      "summary": "Changed a resident’s registry record",
+      "actor_id": "9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c05",
+      "actor_name": "An account since closed",
+      "occurred_at": "2026-11-04T02:05:00.000Z",
+      "source": "api",
+      "fields_recorded": false
+    },
+    {
+      "id": "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e04",
+      "action": "user.role_granted_by_bootstrap_command",
+      "category": "updated",
+      "record_type": "staff",
+      "record_label": "Staff account",
+      "record_id": "9a0b1c2d-3e4f-4a5b-8c6d-7e8f9a0b1c01",
+      "summary": "Made an account an administrator, by the bootstrap command run on the server",
+      "actor_id": null,
+      "actor_name": "The server, with nobody signed in",
+      "occurred_at": "2026-11-01T00:00:00.000Z",
+      "source": "system",
+      "fields_recorded": false
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "has_more": true,
+      "next_cursor": "MjAyNi0xMS0wMVQwMDowMDowMC4wMDBafDNjNGQ"
+    }
+  }
+}

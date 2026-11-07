@@ -1,0 +1,65 @@
+{
+  "data": [
+    {
+      "key": "resident",
+      "label": "Resident registry",
+      "classification": "personal",
+      "holds": "Name, birth date, address, contact, PhilSys last four, household membership."
+    },
+    {
+      "key": "resident-sector",
+      "label": "Protection sectors",
+      "classification": "sensitive-personal",
+      "holds": "Whether a resident is recorded as a VAWC survivor or a child in conflict with the law."
+    },
+    {
+      "key": "household",
+      "label": "Household record",
+      "classification": "personal",
+      "holds": "Address, members, and the vulnerability indicators read from them."
+    },
+    {
+      "key": "case-note",
+      "label": "Case notes",
+      "classification": "sensitive-personal",
+      "holds": "What a worker recorded about a family, including protected notes."
+    },
+    {
+      "key": "assistance-request",
+      "label": "Assistance requests",
+      "classification": "personal",
+      "holds": "Who asked for what, the assessment, and the decision."
+    },
+    {
+      "key": "document",
+      "label": "Supporting documents",
+      "classification": "sensitive-personal",
+      "holds": "Scans an applicant presented, which routinely include medical abstracts."
+    },
+    {
+      "key": "release",
+      "label": "Releases",
+      "classification": "personal",
+      "holds": "Who was paid what, when and where."
+    },
+    {
+      "key": "referral",
+      "label": "Referrals",
+      "classification": "sensitive-personal",
+      "holds": "Why a client was sent to another office, and what was disclosed to them."
+    },
+    {
+      "key": "programme",
+      "label": "Programme catalogue",
+      "classification": "internal",
+      "holds": "Eligibility guidance, requirements and responsibility. About no person."
+    },
+    {
+      "key": "audit",
+      "label": "Audit trail",
+      "classification": "personal",
+      "holds": "Who accessed or changed which record, and when."
+    }
+  ],
+  "meta": {}
+}

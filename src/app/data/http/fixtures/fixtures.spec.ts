@@ -84,6 +84,13 @@ import OFFICE_WORK_MINE from './office-work-mine.json';
 import OFFICE_WORK_TEAM from './office-work-team.json';
 import OFFICE_WORK_ALERTS from './office-work-alerts.json';
 import OFFICE_REPORTS from './office-reports.json';
+import OFFICE_STAFF from './office-staff.json';
+import OFFICE_STAFF_SWITCHED from './office-staff-switched.json';
+import OFFICE_AUDIT_PAGE from './office-audit-page.json';
+import OFFICE_AUDIT_DETAIL from './office-audit-detail.json';
+import OFFICE_CLASSIFICATIONS from './office-governance-classifications.json';
+import OFFICE_RETENTION from './office-governance-retention.json';
+import OFFICE_CORRECTIONS from './office-governance-corrections.json';
 import OFFICE_REPORT_COMPLETENESS from './office-report-data-completeness.json';
 import OFFICE_REPORT_EXPORT from './office-report-export.json';
 import OFFICE_REPORT_PROGRAMS from './office-report-program-utilisation.json';
@@ -394,6 +401,17 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['office-report-program-utilisation', OFFICE_REPORT_PROGRAMS, 'OfficeReportResultEnvelope'],
     ['office-report-data-completeness', OFFICE_REPORT_COMPLETENESS, 'OfficeReportResultEnvelope'],
     ['office-report-export', OFFICE_REPORT_EXPORT, 'OfficeReportExportEnvelope'],
+    ['office-staff', OFFICE_STAFF, 'OfficeStaffAccountListEnvelope'],
+    ['office-staff-switched', OFFICE_STAFF_SWITCHED, 'OfficeStaffAccountEnvelope'],
+    ['office-audit-page', OFFICE_AUDIT_PAGE, 'OfficeAuditEntryPage'],
+    ['office-audit-detail', OFFICE_AUDIT_DETAIL, 'OfficeAuditEntryDetailEnvelope'],
+    [
+      'office-governance-classifications',
+      OFFICE_CLASSIFICATIONS,
+      'OfficeClassifiedRecordTypeListEnvelope',
+    ],
+    ['office-governance-retention', OFFICE_RETENTION, 'OfficeRetentionRuleListEnvelope'],
+    ['office-governance-corrections', OFFICE_CORRECTIONS, 'OfficeCorrectionRequestListEnvelope'],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
     ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],

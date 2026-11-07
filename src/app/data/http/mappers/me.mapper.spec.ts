@@ -79,6 +79,13 @@ describe('toServerIdentity', () => {
     expect(toServerIdentity({ ...ME_STAFF.data, closed: undefined })).toBeNull();
   });
 
+  it('refuses an account the office switched off, and one that does not say it is on (DL-191)', () => {
+    expect(toServerIdentity(ME_STAFF.data)).not.toBeNull();
+    expect(toServerIdentity({ ...ME_STAFF.data, deactivated: true })).toBeNull();
+    expect(toServerIdentity({ ...ME_STAFF.data, deactivated: undefined })).toBeNull();
+    expect(toServerIdentity({ ...ME_ADMIN.data, deactivated: true })).toBeNull();
+  });
+
   it('falls back to the email, then the role, for a name', () => {
     expect(toServerIdentity({ ...ME_STAFF.data, name: null })?.displayName).toBe(
       ME_STAFF.data.email,

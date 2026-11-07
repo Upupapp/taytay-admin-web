@@ -230,6 +230,16 @@ import {
   type ReportId,
   type ReportRepository,
   type ReportResult,
+  AUDIT_SENSITIVE_FILTER_UNAVAILABLE,
+  type AuditEntryDetail,
+  type AuditEntryId,
+  type AuditFilter,
+  type AuditRow,
+  type ClassifiedRecordType,
+  type CorrectionRequest,
+  type GovernanceRepository,
+  type RetentionRule,
+  type StaffAccount,
   buildTeamQueue,
   isSearchable,
   type DeferralReason,
@@ -478,6 +488,15 @@ import {
 } from './mappers/issuance.mapper';
 import { toSearchResults } from './mappers/search.mapper';
 import { toReportDefinitions, toReportExport, toReportResult } from './mappers/report.mapper';
+import {
+  toClassifiedRecordType,
+  toCorrectionRequest,
+  toGovernanceAuditDetail,
+  toGovernanceAuditRow,
+  toRetentionRule,
+  toStaffAccount,
+  toWireAccountSwitch,
+} from './mappers/governance.mapper';
 import { toOfficeAlerts, toTeamWork, toWorkQueue } from './mappers/work.mapper';
 import { list } from './mappers/wire';
 import { unserved } from './unserved-repositories';
@@ -4655,4 +4674,133 @@ function readIssuanceGrant(wire: unknown): IssuanceFileGrant {
     );
   }
   return grant;
+}
+
+/* ── governance (`DL-191`) ───────────────────────────────────────────────── */
+
+/**
+ * Staff accounts, the office's audit trail and what the office says about its own data, served by
+ * the Node API since phase 6e.
+ *
+ * **One account store.** The directory is the `users` table that Users and roles reads, narrowed to
+ * staff and admin accounts; what the API does not hold about a member of staff is said by the mapper
+ * as not recorded (`DL-115`). **Switching an account off ends its session on the server** at its
+ * next request, and the server refuses the caller's own account (`DL-116`).
+ *
+ * **The trail is the server's six things.** No field, value or reason was recorded, so a row says
+ * so, the detail says so, and "only sensitive" is refused here without a request: an empty answer
+ * would read as "nothing sensitive was touched" (`DL-114`).
+ *
+ * Every read is whole or refused: a row the mapper cannot read refuses the answer rather than being
+ * left out of it, because an audit trail or a staff list with a row quietly missing cannot be
+ * trusted about the others.
+ */
+@Injectable()
+export class HttpGovernanceRepository implements GovernanceRepository {
+  private readonly api = inject(ApiClient);
+  // A barangay link's barangay is the API's id; the console knows it by its own (`GET barangays`).
+  private readonly barangayJoin = new BarangayJoin();
+
+  accounts(): Observable<readonly StaffAccount[]> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .list(API_ENDPOINTS.officeStaff)
+          .pipe(map((rows) => rows.map((row) => readGovernance(toStaffAccount(row, barangays))))),
+      ),
+    );
+  }
+
+  accountById(staffId: StaffUserId): Observable<StaffAccount | null> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .optionalItem(`${API_ENDPOINTS.officeStaff}/${encodeURIComponent(staffId)}`)
+          .pipe(
+            map((wire) =>
+              wire === null ? null : readGovernance(toStaffAccount(wire, barangays)),
+            ),
+          ),
+      ),
+    );
+  }
+
+  setAccountActive(
+    staffId: StaffUserId,
+    isActive: boolean,
+    reason: string,
+  ): Observable<StaffAccount> {
+    if (reason.trim().length === 0) {
+      return throwError(() => new Error('Turning an account on or off needs a reason.'));
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        (isActive
+          ? this.api.post(
+              `${API_ENDPOINTS.officeStaff}/${encodeURIComponent(staffId)}/reactivate`,
+              toWireAccountSwitch(reason.trim()),
+            )
+          : this.api.post(
+              `${API_ENDPOINTS.officeStaff}/${encodeURIComponent(staffId)}/deactivate`,
+              toWireAccountSwitch(reason.trim()),
+            )
+        ).pipe(map((wire) => readGovernance(toStaffAccount(wire, barangays)))),
+      ),
+    );
+  }
+
+  auditRows(filter: AuditFilter, page: CursorRequest): Observable<CursorPage<AuditRow>> {
+    if (filter.sensitiveOnly === true) {
+      return throwError(() => new Error(AUDIT_SENSITIVE_FILTER_UNAVAILABLE));
+    }
+    return this.api
+      .cursorPage(API_ENDPOINTS.officeAudit, page, {
+        q: filter.search,
+        action: filter.action,
+        record_type: filter.entityType,
+        actor_id: filter.actorId,
+        from: filter.from,
+        to: filter.to,
+      })
+      .pipe(
+        map((answer) => ({
+          ...answer,
+          items: answer.items.map((row) => readGovernance(toGovernanceAuditRow(row))),
+        })),
+      );
+  }
+
+  auditDetail(entryId: AuditEntryId): Observable<AuditEntryDetail | null> {
+    return this.api
+      .optionalItem(`${API_ENDPOINTS.officeAudit}/${encodeURIComponent(entryId)}`)
+      .pipe(map((wire) => (wire === null ? null : readGovernance(toGovernanceAuditDetail(wire)))));
+  }
+
+  classifications(): Observable<readonly ClassifiedRecordType[]> {
+    return this.api
+      .list(API_ENDPOINTS.officeGovernanceClassifications)
+      .pipe(map((rows) => rows.map((row) => readGovernance(toClassifiedRecordType(row)))));
+  }
+
+  retention(): Observable<readonly RetentionRule[]> {
+    return this.api
+      .list(API_ENDPOINTS.officeGovernanceRetention)
+      .pipe(map((rows) => rows.map((row) => readGovernance(toRetentionRule(row)))));
+  }
+
+  corrections(): Observable<readonly CorrectionRequest[]> {
+    return this.api
+      .list(API_ENDPOINTS.officeGovernanceCorrections)
+      .pipe(map((rows) => rows.map((row) => readGovernance(toCorrectionRequest(row)))));
+  }
+}
+
+function readGovernance<T>(read: T | null): T {
+  if (read === null) {
+    throw new Error(
+      'An answer from the server could not be read whole, so none of it is shown: a staff list ' +
+        'or an audit trail with a row quietly missing cannot be trusted about the others.',
+    );
+  }
+  return read;
 }

@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom, switchMap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
+import { SessionStore } from '@core/auth/session.store';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   GOVERNANCE_REPOSITORY,
@@ -42,6 +43,7 @@ export class StaffPage {
   private readonly repository = inject(GOVERNANCE_REPOSITORY);
   private readonly permissions = inject(PermissionService);
   private readonly notifications = inject(NotificationStore);
+  private readonly session = inject(SessionStore);
 
   protected readonly copy = ADMIN_COPY.staff;
   protected readonly provisioningNotice = PROVISIONING_IS_NOT_BUILT;
@@ -112,6 +114,15 @@ export class StaffPage {
       current === account.staffId ? null : account.staffId,
     );
     this.reason.set('');
+  }
+
+  /**
+   * The signed-in administrator's own row offers no switch: the server refuses it (`DL-116`,
+   * `DL-191`), and a button that always fails says nothing about why.
+   */
+  protected isOwn(account: StaffAccount): boolean {
+    const user = this.session.user();
+    return user !== null && String(user.id) === String(account.staffId);
   }
 
   protected isOpen(account: StaffAccount): boolean {

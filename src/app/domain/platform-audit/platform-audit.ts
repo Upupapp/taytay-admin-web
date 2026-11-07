@@ -10,8 +10,9 @@ import type { IsoDateTime, PlatformAuditEntryId } from '../shared/ids';
  * them**: nothing is looked up beside a row, so the trail discloses no name, email or record content
  * to the person reading it.
  *
- * **Not the governance audit trail** (`AuditRow`), which belongs to the unserved governance module
- * and carries fields — summaries, sensitivity, sources — this API has none of.
+ * **Not the governance audit trail** (`AuditRow`), which is a separate read (`office/audit`,
+ * `DL-191`): the casework and staff-account rows said in words, beside which what this API does not
+ * record — field names, values, reasons — is said not to be recorded.
  */
 export interface PlatformAuditEntry {
   readonly id: PlatformAuditEntryId;
@@ -120,6 +121,8 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'office_report.exported': 'Exported a report as a file, its conditions written inside it',
   'office_report.person_level_read': 'Opened the report that names residents',
   'office_report.person_level_exported': 'Exported the report that names residents, as a file',
+  // Governance (DL-191): opening what the trail recorded about one entry is itself recorded.
+  'office_audit.detail_read': 'Opened what the trail records about one entry',
   'office_program.created': 'Recorded a programme in the office catalogue',
   'office_program.updated': 'Changed a programme in the office catalogue',
   'office_request.draft_created': 'Began an intake for an assistance request',
@@ -167,6 +170,10 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'user.office_assigned': 'Changed a staff account’s office',
   'user.office_role_changed': 'Changed a staff account’s office role',
   'user.role_changed': 'Changed an account’s role',
+  // Governance (DL-191): the reason is kept beside the act, in account_status_changes.
+  'user.deactivated':
+    'Switched a staff account off, with a reason; its session stops at its next request',
+  'user.reactivated': 'Switched a staff account back on, with a reason',
   // No account acts here, so the row has no actor: the command run on the server did it (DL-188).
   'user.role_granted_by_bootstrap_command':
     'Made an account an administrator, by the bootstrap command run on the server',

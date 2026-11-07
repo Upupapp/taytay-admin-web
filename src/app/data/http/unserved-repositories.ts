@@ -1,12 +1,7 @@
 import { Injectable } from '@angular/core';
 import { throwError, type Observable } from 'rxjs';
 
-import {
-  type GovernanceRepository,
-  type NewsfeedRepository,
-  type EventRepository,
-  type DataPort,
-} from '@domain/index';
+import { type NewsfeedRepository, type EventRepository, type DataPort } from '@domain/index';
 
 /**
  * THE PORTS THE API DOES NOT SERVE, AND WHAT THEY SAY INSTEAD.
@@ -14,8 +9,8 @@ import {
  * The Node API that replaced the Laravel one on 2026-10-20 began as the back office of the
  * residents' app (`DL-164`, `docs/integration/node-api-gap-map.md`). The casework has moved onto it
  * a phase at a time since — the registry, programmes, requests, cases, releases, referrals, visits
- * the dashboard, the beneficiary registry, search, the work queues and reports (`DL-174` to
- * `DL-190`). What is left has no route yet: governance, the newsfeed and events. In the `http`
+ * the dashboard, the beneficiary registry, search, the work queues, reports and governance
+ * (`DL-174` to `DL-191`). What is left has no route yet: the newsfeed and events. In the `http`
  * configuration each of those ports is bound to a class here.
  *
  * ## What an unserved adapter does
@@ -60,43 +55,6 @@ export class UnservedError extends Error {
 
 export function unserved(module: string): Observable<never> {
   return throwError(() => new UnservedError(module));
-}
-
-@Injectable()
-export class UnservedGovernanceRepository implements GovernanceRepository {
-  static readonly port: DataPort = 'governance';
-
-  accounts(): Observable<never> {
-    return unserved('staff accounts, the audit trail and privacy governance');
-  }
-
-  accountById(): Observable<never> {
-    return unserved('staff accounts, the audit trail and privacy governance');
-  }
-
-  setAccountActive(): Observable<never> {
-    return unserved('staff accounts, the audit trail and privacy governance');
-  }
-
-  auditRows(): Observable<never> {
-    return unserved('staff accounts, the audit trail and privacy governance');
-  }
-
-  auditDetail(): Observable<never> {
-    return unserved('staff accounts, the audit trail and privacy governance');
-  }
-
-  classifications(): Observable<never> {
-    return unserved('staff accounts, the audit trail and privacy governance');
-  }
-
-  retention(): Observable<never> {
-    return unserved('staff accounts, the audit trail and privacy governance');
-  }
-
-  corrections(): Observable<never> {
-    return unserved('staff accounts, the audit trail and privacy governance');
-  }
 }
 
 @Injectable()
@@ -222,7 +180,6 @@ export class UnservedEventRepository implements EventRepository {
  * mock one: a spec can import this list, and could not import the binding.
  */
 export const UNSERVED_HTTP_PORTS: readonly DataPort[] = [
-  UnservedGovernanceRepository.port,
   UnservedNewsfeedRepository.port,
   UnservedEventRepository.port,
 ];

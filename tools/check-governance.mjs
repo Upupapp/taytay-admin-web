@@ -367,6 +367,125 @@ if (setActiveBody !== '') {
 }
 notes.push('access: every governance read and the one write are gated');
 
+/* ── 9. The served adapter says what the server does not record (DL-191) ─── */
+
+const mapperFile = 'src/app/data/http/mappers/governance.mapper.ts';
+const httpFile = 'src/app/data/http/http-repositories.ts';
+const meMapperFile = 'src/app/data/http/mappers/me.mapper.ts';
+if (!existsSync(join(root, mapperFile))) {
+  problems.push('The governance mapper has gone, so nothing holds the served trail to DL-114.');
+} else {
+  const mapper = read(mapperFile);
+  const fnBody = (name) =>
+    new RegExp(String.raw`export function ${name}\([\s\S]*?\n\}`).exec(mapper)?.[0] ?? '';
+
+  const rowFn = fnBody('toGovernanceAuditRow');
+  if (rowFn === '') {
+    problems.push('toGovernanceAuditRow has gone.');
+  } else {
+    if (/'(before|after|old_value|new_value|values|changes|changed_fields)'/.test(rowFn)) {
+      problems.push(
+        'The served trail row reads a value or a field list off the wire. A row says which fields ' +
+          'moved at most, and this server records not even that (DL-114, DL-191).',
+      );
+    }
+    if (!/flag\(\s*field\(\s*wire\s*,\s*'fields_recorded'\s*\)\s*\)\s*!==\s*false/.test(rowFn)) {
+      problems.push(
+        'The served trail row no longer refuses a row that claims its fields were recorded. This ' +
+          'mapper has no field names to show, so such a row would be shown as "not recorded" — a ' +
+          'false statement about the trail.',
+      );
+    }
+    if (!/toAuditRow\([\s\S]*?\bnull\s*,\s*false\s*,?\s*\)/.test(rowFn)) {
+      problems.push(
+        'The served trail row is no longer composed as "fields not recorded" through toAuditRow. ' +
+          'An empty field list reads as "nothing moved", and the screen would say so (DL-191).',
+      );
+    }
+  }
+
+  const detailFn = fnBody('toGovernanceAuditDetail');
+  if (
+    !/flag\(\s*field\(\s*wire\s*,\s*'values_recorded'\s*\)\s*\)\s*!==\s*false/.test(detailFn) ||
+    !/changes\.length\s*>\s*0/.test(detailFn)
+  ) {
+    problems.push(
+      'The served detail no longer refuses values. This server stored none, and a detail that ' +
+        'carried some would be read without the audit.view-detail split being checked (DL-114).',
+    );
+  }
+
+  const retentionFn = fnBody('toRetentionRule');
+  if (!/provenance === 'awaiting-office-policy' && \(periodInYears !== null/.test(retentionFn)) {
+    problems.push(
+      'A retention period with no office schedule behind it would be shown. An office that ' +
+        'believes it may delete after five years, and does, cannot undo it (DL-113).',
+    );
+  }
+
+  const staffFn = fnBody('toStaffAccount');
+  for (const [pattern, what] of [
+    [/profile:\s*null,/, 'a directory entry (employee ID, unit, contact)'],
+    [/position:\s*null,/, 'a position'],
+    [/lastSignInRecorded:\s*false,/, 'a record of sign-ins'],
+  ]) {
+    if (!pattern.test(staffFn)) {
+      problems.push(
+        `The served staff account no longer says ${what} is not recorded. The API holds none, ` +
+          'and a value here is an invented fact about an employee (DL-115, DL-191).',
+      );
+    }
+  }
+}
+
+const httpText = existsSync(join(root, httpFile)) ? read(httpFile) : '';
+const httpGovernance =
+  /export class HttpGovernanceRepository[\s\S]*?\n\}\n/.exec(httpText)?.[0] ?? '';
+if (httpGovernance === '') {
+  problems.push('HttpGovernanceRepository has gone.');
+} else {
+  const method = (name) =>
+    new RegExp(String.raw`\n  ${name}\(([\s\S]*?)\n  \}`).exec(httpGovernance)?.[1] ?? '';
+  const rows = method('auditRows');
+  const refuseAt = rows.search(/filter\s*\.\s*sensitiveOnly\s*===\s*true[\s\S]*?AUDIT_SENSITIVE_FILTER_UNAVAILABLE/);
+  const askAt = rows.search(/this\s*\.\s*api\s*\./);
+  if (refuseAt < 0 || askAt < 0 || refuseAt > askAt) {
+    problems.push(
+      '"Only sensitive" is no longer refused before a request. The trail records no fields, so an ' +
+        'empty answer would read as "nothing sensitive was touched" (DL-191).',
+    );
+  }
+  if (/sensitive/i.test(rows.slice(askAt))) {
+    problems.push('The served trail sends a sensitivity filter the server cannot answer truthfully.');
+  }
+  const setActive = method('setAccountActive');
+  const reasonAt = setActive.search(/reason\s*\.\s*trim\s*\(\)\s*\.\s*length === 0/);
+  const postAt = setActive.search(/this\s*\.\s*api\s*\./);
+  if (reasonAt < 0 || postAt < 0 || reasonAt > postAt) {
+    problems.push('The served adapter switches an account without first requiring a reason (DL-54).');
+  }
+}
+
+if (existsSync(join(root, meMapperFile)) && !/canHoldSession\(/.test(read(meMapperFile))) {
+  problems.push(
+    'The served identity no longer asks canHoldSession, so a switched-off account could open a ' +
+      'console session the server ends on its first read (DL-116).',
+  );
+}
+
+const staffTemplate = 'src/app/features/administration/staff-page.html';
+if (existsSync(join(root, staffTemplate)) && !/copy\.notRecorded/.test(read(staffTemplate))) {
+  problems.push('The staff directory no longer says "Not recorded" for what is not held (DL-115).');
+}
+const auditTemplate = 'src/app/features/administration/audit-page.html';
+if (existsSync(join(root, auditTemplate)) && !/!row\.fieldsRecorded/.test(read(auditTemplate))) {
+  problems.push(
+    'The audit trail no longer says on the row that its fields were not recorded; an empty list ' +
+      'reads as "nothing moved" (DL-191).',
+  );
+}
+notes.push('served: not recorded is said, sensitivity is never inferred, values are refused');
+
 /* ── Report ──────────────────────────────────────────────────────────────── */
 
 for (const note of notes) console.log(`  ${note}`);

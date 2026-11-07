@@ -1,0 +1,95 @@
+{
+  "data": [
+    {
+      "record_type_key": "resident",
+      "label": "Resident registry",
+      "classification": "personal",
+      "period_in_years": null,
+      "provenance": "awaiting-office-policy",
+      "basis": null,
+      "disposal_note": null
+    },
+    {
+      "record_type_key": "resident-sector",
+      "label": "Protection sectors",
+      "classification": "sensitive-personal",
+      "period_in_years": null,
+      "provenance": "awaiting-office-policy",
+      "basis": null,
+      "disposal_note": null
+    },
+    {
+      "record_type_key": "household",
+      "label": "Household record",
+      "classification": "personal",
+      "period_in_years": null,
+      "provenance": "awaiting-office-policy",
+      "basis": null,
+      "disposal_note": null
+    },
+    {
+      "record_type_key": "case-note",
+      "label": "Case notes",
+      "classification": "sensitive-personal",
+      "period_in_years": null,
+      "provenance": "awaiting-office-policy",
+      "basis": null,
+      "disposal_note": null
+    },
+    {
+      "record_type_key": "assistance-request",
+      "label": "Assistance requests",
+      "classification": "personal",
+      "period_in_years": null,
+      "provenance": "awaiting-office-policy",
+      "basis": null,
+      "disposal_note": null
+    },
+    {
+      "record_type_key": "document",
+      "label": "Supporting documents",
+      "classification": "sensitive-personal",
+      "period_in_years": null,
+      "provenance": "awaiting-office-policy",
+      "basis": null,
+      "disposal_note": null
+    },
+    {
+      "record_type_key": "release",
+      "label": "Releases",
+      "classification": "personal",
+      "period_in_years": null,
+      "provenance": "awaiting-office-policy",
+      "basis": null,
+      "disposal_note": null
+    },
+    {
+      "record_type_key": "referral",
+      "label": "Referrals",
+      "classification": "sensitive-personal",
+      "period_in_years": null,
+      "provenance": "awaiting-office-policy",
+      "basis": null,
+      "disposal_note": null
+    },
+    {
+      "record_type_key": "programme",
+      "label": "Programme catalogue",
+      "classification": "internal",
+      "period_in_years": null,
+      "provenance": "awaiting-office-policy",
+      "basis": null,
+      "disposal_note": null
+    },
+    {
+      "record_type_key": "audit",
+      "label": "Audit trail",
+      "classification": "personal",
+      "period_in_years": null,
+      "provenance": "awaiting-office-policy",
+      "basis": null,
+      "disposal_note": null
+    }
+  ],
+  "meta": {}
+}
