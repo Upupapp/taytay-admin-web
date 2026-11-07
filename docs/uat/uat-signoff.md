@@ -86,6 +86,20 @@ Decision: [ ] Accepted [ ] Accepted with open items: ................ [ ] Not ac
 | Tested by                  |      |      |           |      |
 | Accepted for the office by |      |      |           |      |
 
+## DOC: Resident document requests (DOC-01 to DOC-14)
+
+| Cases run | Passed | Failed | Blocked | Open defects (ids) |
+| --------- | ------ | ------ | ------- | ------------------ |
+|           |        |        |         |                    |
+
+Decision: [ ] Accepted [ ] Accepted with open items: ................ [ ] Not accepted
+
+|                            | Name | Role | Signature | Date |
+| -------------------------- | ---- | ---- | --------- | ---- |
+| Tested by                  |      |      |           |      |
+| Tested by                  |      |      |           |      |
+| Accepted for the office by |      |      |           |      |
+
 ## REQ: Assistance requests (REQ-01 to REQ-19)
 
 | Cases run | Passed | Failed | Blocked | Open defects (ids) |

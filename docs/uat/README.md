@@ -3,7 +3,7 @@
 This pack is deliverable D6, "Testing and LGU UAT" (item 7 on the project tracker). Office staff and
 resident testers use it to test the platform on the staging site and sign it off before production.
 
-- [uat-test-scripts.md](uat-test-scripts.md): 137 test cases in 13 areas.
+- [uat-test-scripts.md](uat-test-scripts.md): 151 test cases in 14 areas.
 - [uat-signoff.md](uat-signoff.md): the sign-off sheets, the defect summary and the acceptance.
 - "Taytay - UAT test scripts (staging).xlsx": the same cases, with columns to record each result.
 
@@ -12,19 +12,20 @@ of the Taytay app for Android, supplied by the developer.
 
 ## Who tests what
 
-| Code        | Test account                         | Areas and cases                                                            |
-| ----------- | ------------------------------------ | -------------------------------------------------------------------------- |
-| ADMIN       | System administrator                 | ACC-01 to 03, REG-09 to 11, ID-04 to 07, DIR-05 to 12, DSH-07, NFR-04      |
-| HEAD        | MSWDO head                           | DSH, REQ-02, 07, 16 to 19, CAS-09, 11, REL-10, REF-01 to 08, NEWS-01 to 03 |
-| SW1, SW2    | Two social workers                   | REQ-08, 09, 13, 15, CAS-03 to 08, REF-09 to 12                             |
-| INTAKE      | Intake officer                       | ROS, REQ-01, 03 to 06, 10 to 14, CAS-01, 02, 07, NEWS-05, 06, NFR          |
-| RELEASE     | Release officer                      | REL-01 to 08, ACC-07                                                       |
-| BLINK       | Barangay link, working in San Juan   | ROS-05, ID-08, ACC-05, ACC-10                                              |
-| AUDITOR     | Auditor                              | AUD, ACC-08                                                                |
-| RES-A, B, C | Resident testers with Android phones | REG, ID-01, DIR-01 to 04, NEWS-05                                          |
-| GUEST       | The app, not signed in               | REG-01, DIR-01 to 04, NEWS-04                                              |
+| Code        | Test account                         | Areas and cases                                                                         |
+| ----------- | ------------------------------------ | --------------------------------------------------------------------------------------- |
+| ADMIN       | System administrator                 | ACC-01 to 03, REG-09 to 11, ID-04 to 07, DIR-05 to 12, DSH-07, NFR-04                   |
+| HEAD        | MSWDO head                           | DSH, REQ-02, 07, 16 to 19, CAS-09, 11, REL-10, REF-01 to 08, NEWS-01 to 03, DOC-01, 02  |
+| SW1, SW2    | Two social workers                   | REQ-08, 09, 13, 15, CAS-03 to 08, REF-09 to 12                                          |
+| INTAKE      | Intake officer                       | ROS, REQ-01, 03 to 06, 10 to 14, CAS-01, 02, 07, NEWS-05, 06, DOC-05 to 09, 11, 14, NFR |
+| RELEASE     | Release officer                      | REL-01 to 08, ACC-07, DOC-08                                                            |
+| BLINK       | Barangay link, working in San Juan   | ROS-05, ID-08, ACC-05, ACC-10, DOC-14                                                   |
+| AUDITOR     | Auditor                              | AUD, ACC-08, DOC-13, 14                                                                 |
+| RES-A, B, C | Resident testers with Android phones | REG, ID-01, DIR-01 to 04, NEWS-05, DOC-03, 04, 07 to 12                                 |
+| GUEST       | The app, not signed in               | REG-01, DIR-01 to 04, NEWS-04, DOC-01 to 03                                             |
 
-Cases that name several roles (ROS-12, DSH-05, ACC-04, AUD-06) are run by each of those accounts.
+Cases that name several roles (ROS-12, DSH-05, ACC-04, AUD-06, DOC-14) are run by each of those
+accounts.
 
 ## Test accounts
 
@@ -32,6 +33,8 @@ Cases that name several roles (ROS-12, DSH-05, ACC-04, AUD-06) are run by each o
   written in this pack, the workbook, a defect or a screenshot.
 - The administrator gives each account its role, office and office role on "Users and roles"
   (ACC-01, ACC-02). INTAKE is assigned to the MSWDO office, so it can answer the office inbox.
+  HEAD and RELEASE are assigned to it too: only staff at an office work residents' document
+  requests (DOC).
 - Each resident tester uses a test email inbox that no other Taytay account uses.
 
 ## Test data
@@ -44,6 +47,8 @@ Cases that name several roles (ROS-12, DSH-05, ACC-04, AUD-06) are run by each o
 - ID pictures are a printed sample card marked "SAMPLE", never a real ID. The selfie is a photo of a
   printed sample face, not of a person.
 - Uploaded files are test PDFs and photos with no personal content.
+- Document types and their fees are test examples marked "(test)", never the LGU's real documents
+  or fees.
 - Every reason, note or message you type starts with "UAT:", so test records can be told apart.
 - Print the payout list and the referral sheet to PDF only, and delete those files after the round.
 
@@ -55,8 +60,12 @@ Cases that name several roles (ROS-12, DSH-05, ACC-04, AUD-06) are run by each o
    a Blocked case needs the reason in Notes.
 
 Run the areas in this order, because later cases use the records of earlier ones: ACC-01 and
-ACC-02, ROS, REG, ID, DIR, REQ, CAS, REL, REF, NEWS, DSH, AUD, then NFR. REQ-19 runs after REL-01
-and before REL-06.
+ACC-02, ROS, REG, ID, DIR, DOC, REQ, CAS, REL, REF, NEWS, DSH, AUD, then NFR. REQ-19 runs after
+REL-01 and before REL-06.
+
+**Staging needs at least one document type before the DOC cases run.** The head or an
+administrator creates it with case DOC-01 ("UAT Certificate of Indigency (test)"). Until it exists,
+residents have nothing to request and the DOC cases cannot start.
 
 ## Known limits on staging
 
@@ -112,8 +121,8 @@ Not built yet, or not served by the API (the website lists these under "Not conn
 - Changing every office detail after creation, and the list of hidden Tulong pages (FR-STAFF-4).
 - Images in staff replies (FR-STAFF-8), push notifications (FR-API-3) and staff two-factor sign-in
   (FR-STAFF-29).
-- Residents applying for assistance or requesting documents in the app (FR-RES-14, FR-RES-15),
-  events and Balita reactions (FR-RES-9), and emergency alerts (FR-STAFF-33, FR-RES-16).
+- Residents applying for assistance in the app (FR-RES-14), events and Balita reactions
+  (FR-RES-9), and emergency alerts (FR-STAFF-33, FR-RES-16).
 - My Account details and the household screen in the app (FR-RES-11, FR-RES-12), still in progress.
 - Checks made straight against the API: rate limits, size caps, CORS and the security policy
   (FR-API-5, FR-API-6, NFR-SEC-3, NFR-SEC-5). The developer runs these.

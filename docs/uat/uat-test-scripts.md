@@ -1,7 +1,9 @@
 # UAT test scripts: Taytay, Rizal LGU platform (staging)
 
-Version 1.0, 6 November 2026. These scripts are deliverable D6, "Testing and LGU UAT" (item 7 on the
-project tracker). Read [README.md](README.md) first: it names the test accounts, the test-data rules
+Version 1.1, 7 November 2026 (replaces 1.0 of 6 November): adds the DOC area, residents' document
+requests (DOC-01 to DOC-14), and their menu entry in ACC-04.
+
+These scripts are deliverable D6, "Testing and LGU UAT" (item 7 on the project tracker). Read [README.md](README.md) first: it names the test accounts, the test-data rules
 and how to record a result or a defect.
 
 **Where to test**
@@ -27,6 +29,7 @@ and how to record a result or a defect.
 | ROS: Residents registry, households, families | ROS-01 to ROS-12   | 12      |
 | DSH: Dashboard                                | DSH-01 to DSH-07   | 7       |
 | DIR: Directory, home screen and app settings  | DIR-01 to DIR-12   | 12      |
+| DOC: Resident document requests               | DOC-01 to DOC-14   | 14      |
 | REQ: Assistance requests                      | REQ-01 to REQ-19   | 19      |
 | CAS: Cases                                    | CAS-01 to CAS-12   | 12      |
 | REL: Releases and payout sessions             | REL-01 to REL-10   | 10      |
@@ -35,7 +38,7 @@ and how to record a result or a defect.
 | AUD: App audit trail                          | AUD-01 to AUD-06   | 6       |
 | NEWS: Balita and the office inbox             | NEWS-01 to NEWS-06 | 6       |
 | NFR: Privacy, security and accessibility      | NFR-01 to NFR-10   | 10      |
-| **Total**                                     |                    | **137** |
+| **Total**                                     |                    | **151** |
 
 ## REG: Resident registration and ID review
 
@@ -927,6 +930,362 @@ list of app accounts, which is "Users and roles" (ADMIN only).
     Residents’ apps read them the next time they load.".
   - In step 3 the dialog warns that this can force every resident with an older app to update.
   - In step 4 "Save the settings" stays greyed out until the box is ticked. Nothing is saved.
+
+## DOC: Resident document requests
+
+A verified resident asks an office for a document in the Taytay app, and staff work the request on
+the website under "Resident document requests". Nothing is paid or signed online: a fee is only
+shown, and the office prepares the paper itself. Every word the office writes on a request is read
+by the resident in the app.
+
+The cases follow one test request, D1, from RES-B to release. D2 is refused (DOC-09), and D3 is
+sent over a dropped connection, then cancelled (DOC-10, DOC-11). Write down each reference number
+(DR-2026-…) as it is issued.
+
+**Before the DOC cases:** staging needs at least one document type, which DOC-01 creates. HEAD,
+INTAKE and RELEASE are assigned to the MSWDO office (ACC-01): only staff at an office work its
+requests. The document and its fee are test examples, never the LGU's real ones.
+
+### DOC-01 · The head adds a test document to the office's catalogue
+
+- **Role:** HEAD (or ADMIN), then GUEST
+- **Checks:** FR-STAFF-30, FR-API-8 · Must · T-5
+- **Set up first:** HEAD is assigned to the MSWDO office (ACC-01). No "UAT Certificate of Indigency
+  (test)" exists yet.
+- **Steps:**
+  1. Open "Resident document requests" and click "Document catalogue". Read the two lines under the
+     title.
+  2. Click "Add a document". Look at "Save the document" before filling anything in.
+  3. Leave "Office" on "My own office (staff)" (ADMIN chooses the MSWDO instead). Fill "Name" "UAT
+     Certificate of Indigency (test)" and "What it is for" "UAT: test document, please ignore.".
+  4. Type "12.345" in "Fee in pesos", then change it to "12.34". Type "7" in "Working days". Fill
+     "Claim instructions" "UAT: test only. Nothing is issued.".
+  5. Click "Add a requirement". Fill "Label" "UAT test file" and leave "Required" ticked.
+  6. Click "Add a requirement" again. Fill "Label" "UAT test photo", untick "Required" and type
+     "purpose" in its "Code". Then change the code to "uat-test-photo".
+  7. Fill "Why" "UAT: test document for the UAT round". Read "What saving does:" and click "Save the
+     document".
+  8. GUEST: open "My Account", tap "Request documents" and open the new document.
+- **Expected result:**
+  - Step 1 shows "No online payment: the fee is paid at the office." and "The system tracks the
+    request; the office prepares and signs the document itself.".
+  - In step 2 the form lists "The name needs 3 to 120 characters." and "Save the document" is
+    greyed out.
+  - Step 4 shows "Type an amount in pesos, like 50 or 1,250.50 — at most two decimal places.", then
+    "Will be shown to residents as ₱12.34.".
+  - Step 5 fills "Code" with "uat-test-file". Step 6 shows "Requirement 2: the code “purpose” is
+    used by the app for something else." until the code is changed.
+  - Step 7 shows "UAT Certificate of Indigency (test): Saved.". Its row reads "₱12.34", "Office
+    standard: 7 working days", "2 things" and "Offered".
+  - Step 8: the app lists the document under the MSWDO with "Fee: ₱12.34, paid at the office ·
+    About 7 working days". "Document details" shows "What you need to send", with the two files
+    marked "Required" and "Optional", and "How to claim it".
+
+### DOC-02 · A document is changed with a reason, and another is retired for good
+
+- **Role:** HEAD, then GUEST
+- **Checks:** FR-STAFF-30, FR-API-8 · Must · T-5
+- **Set up first:** DOC-01 done.
+- **Steps:**
+  1. In "Document catalogue", click "Edit" on "UAT Certificate of Indigency (test)". Change nothing
+     and look at "Save the document".
+  2. Change "What it is for" to "UAT: test document, changed in DOC-02.". Fill "Why" "UAT: testing
+     a change". Read "What saving does:" and click "Save the document".
+  3. Click "Add a document". Fill "Name" "UAT document to retire (test)" and "Why" "UAT: added to
+     test retiring". Add no requirement. Click "Save the document".
+  4. GUEST: check that "Request documents" lists the new document.
+  5. HEAD: click "Retire" on "UAT document to retire (test)". Read the dialog and click "Cancel".
+  6. Click "Retire" again. Look at the button, then fill "Why it is retired" "UAT: retiring the
+     test document" and click "Retire it — this cannot be undone".
+  7. GUEST: pull down on "Request documents" to refresh it.
+- **Expected result:**
+  - Step 1 shows "Nothing has changed, so there is nothing to save." and the button is greyed out.
+  - Before the button, step 2 lists "Residents see the change in the app’s catalogue from now on."
+    and "The server records which fields moved and your reason, never the old or new values.". It
+    then shows "UAT Certificate of Indigency (test): Saved.".
+  - The dialog "Retire UAT document to retire (test)" lists "What retiring does, before you
+    decide:", including "Residents can no longer choose this document in the app." and "Retiring is
+    one-way: …". "Cancel" changes nothing.
+  - In step 6 the button stays greyed out until the reason is filled. Then "UAT document to retire
+    (test) is retired.". The row reads "Retired" with today's date, with no "Edit" or "Retire".
+  - Step 7: the app no longer lists the retired document. The UAT certificate is still listed.
+
+### DOC-03 · A guest or an unverified resident cannot send a request
+
+- **Role:** GUEST, then RES-A (not verified)
+- **Checks:** FR-RES-15, FR-API-8 · Must · T-5
+- **Set up first:** DOC-01 done. REG-03 done for RES-A.
+- **Steps:**
+  1. As GUEST, open "My Account". Read the line under "Request documents" and tap it.
+  2. Open "UAT Certificate of Indigency (test)".
+  3. As RES-A, do the same. Then tap "Go to verification".
+- **Expected result:**
+  - "Request documents" has the line "Sending a request needs a verified account".
+  - GUEST: the page shows "Sign in to request a document" with a "Sign in" button. "Document
+    details" shows the document, with no "Request this document" button.
+  - RES-A: the page shows "Verify your account first" and "Only verified Taytay residents can send
+    a document request, …". There is no "Request this document" button. "Go to verification" opens
+    the verification screen.
+  - The server also refuses a request from an account that is not verified (VERIFICATION_REQUIRED),
+    whatever the app shows; the developer checks this against the API. In the app that refusal
+    reads "Only verified residents can do this", with "Nothing was sent." and "Go to verification".
+
+### DOC-04 · A verified resident sends a request with files and gets a reference
+
+- **Role:** RES-B (verified)
+- **Checks:** FR-RES-15, FR-API-8 · Must · T-5
+- **Set up first:** DOC-01 done. REG-10 done for RES-B. On RES-B's phone: a small test PDF, a test
+  PDF larger than 10 MB and a small test photo, none with personal content.
+- **Steps:**
+  1. Open "My Account", tap "Request documents" and open "UAT Certificate of Indigency (test)". Tap
+     "Request this document".
+  2. Tap "Review request" with nothing filled in.
+  3. Fill "Purpose" "UAT: test request D1, please ignore". Under "UAT test file" tap "Add file", then
+     "Choose a file", and choose the large PDF.
+  4. Choose the small test PDF instead. Under "UAT test photo" add the test photo the same way.
+  5. Tap "Review request". Read "Review your request", then tap "Send request".
+  6. Tap "Follow this request".
+- **Expected result:**
+  - Step 2 shows "Some answers are missing. They are marked above." and "Add this file to
+    continue." under "UAT test file". Nothing is sent.
+  - Step 3 refuses the large file with "Taytay LGU accepts up to 10 MB.". It is not added.
+  - Step 5 shows "Request sent", "The office has your request" and a "Reference number" of the form
+    DR-2026-NNNNNN. Write it down as D1.
+  - Step 6 opens "Document request" with the status "Sent to the office", the purpose, both files
+    under "Files you sent", "Fee: ₱12.34, paid at the office" and "Cancel this request".
+  - "My document requests" lists D1.
+
+### DOC-05 · Staff find a request in the queue by status and by reference
+
+- **Role:** INTAKE
+- **Checks:** FR-STAFF-30 · Must · T-5
+- **Set up first:** DOC-04 done. INTAKE is assigned to the MSWDO office (ACC-01).
+- **Steps:**
+  1. Open "Resident document requests". Read the title, the lines under it and the notes above the
+     list.
+  2. In "Show", choose "Submitted", then "Cancelled" (under "Ended"), then "Every request still
+     being worked".
+  3. In "Document", choose "UAT Certificate of Indigency (test) — " followed by the office's name.
+     Then choose "Every document".
+  4. In "Reference number" type "DR-2026" and click "Find".
+  5. Type D1's whole number in small letters and click "Find". Then click "Back to the queue".
+  6. Type "DR-2026-999999" and click "Find".
+  7. Click "Back to the queue", then D1's reference number.
+- **Expected result:**
+  - The title is "Document requests from residents", with "No online payment: the fee is paid at
+    the office." and "Oldest waiting first: …". INTAKE has no "Document catalogue" button.
+  - The columns are "Reference", "Resident", "Document", "Status", "Waiting" and "Office standard".
+    D1 reads "Submitted", a waiting time starting "With the office", and "Office standard: 7 working
+    days". No row shows the purpose.
+  - "Submitted" lists D1 and "Cancelled" does not. The document filter keeps D1.
+  - Step 4 shows "Type the whole reference number, such as DR-2026-000123. Part of one finds
+    nothing, so nothing was searched.".
+  - Step 5 shows D1 alone, with "Showing the request numbered DR-2026-…, whatever its status. The
+    other filters do not apply while a number is looked up.". "Show" and "Document" come back with
+    "Back to the queue".
+  - Step 6 shows "No request has that number in the offices you work for. Check it with the
+    resident: another office’s request is not found here.".
+  - Step 7 opens D1, titled with its number and the document's name, with "The request", "What the
+    resident sent", "Move the request on" and "History".
+
+### DOC-06 · A file a resident sent opens only after the server's warning
+
+- **Role:** INTAKE
+- **Checks:** FR-STAFF-30, FR-API-8 · Must · T-5
+- **Set up first:** DOC-05 done, with D1 open.
+- **Steps:**
+  1. Under "What the resident sent", read the note above the files.
+  2. Click "Show" beside "UAT test file". Read the window, then click "Do not open it".
+  3. Click "Show" again, then "Open it". Click "Open the PDF in a new tab", look at it and close
+     that tab.
+  4. Click "Close and discard".
+  5. Click "Show" beside "UAT test photo", then "Open it". Click "Close and discard".
+- **Expected result:**
+  - The note reads "Files are not opened until you ask. Each holds personal information about a
+    resident, and opening one is recorded against your account.".
+  - Each file is listed as "Version 1" with its kind, size and "Current version".
+  - "Show" opens the window "Open a file a resident sent" with "The server’s warning for this
+    file:" and the warning, which names the file, its version and D1's number. Nothing is shown
+    before "Open it". "Do not open it" closes the window and opens nothing.
+  - Step 3 shows "Shown in this tab only while this window is open. It is discarded when you close
+    it or leave the page." and "The PDF is ready.". The new tab shows the test PDF.
+  - Step 5 shows the test photo inside the window.
+
+### DOC-07 · The office asks for more, the resident sends it, and the request returns to review
+
+- **Role:** INTAKE, then RES-B, then INTAKE
+- **Checks:** FR-STAFF-30, FR-RES-15 · Must · T-5
+- **Set up first:** DOC-06 done. A second small test PDF on RES-B's phone.
+- **Steps:**
+  1. INTAKE: on D1, under "Move the request on", choose "Under review" in "Move to". Read the list
+     under "What happens when you confirm". Fill "Words for the resident" "UAT: starting the test
+     review" and click "Record and tell the resident".
+  2. RES-B: open D1 in "My document requests" (pull down to refresh).
+  3. INTAKE: choose "Needs more information" in "Move to". Fill "Words for the resident" "UAT:
+     please send the test file again" and click "Record and tell the resident".
+  4. RES-B: refresh D1. Under "Send what the office asked for", tap "Send to the office" with
+     nothing added.
+  5. Fill "Note to the office (optional)" "UAT: sending the test file again", add the second PDF
+     under "UAT test file" and tap "Send to the office".
+  6. INTAKE: open D1 again from "Resident document requests".
+- **Expected result:**
+  - Step 1's list includes "The resident is told in the app; the notice names the reference number
+    only.". Step 1 shows "Recorded: the request is now under review.".
+  - In step 2 the app shows "Being reviewed", and "Cancel this request" is gone.
+  - Step 3 shows "Recorded: the request is now needs more information.", then "Waiting for the
+    resident: the request returns to review only when they send what was asked, and they may cancel
+    it instead.". No move is offered.
+  - In step 4 the app shows "Needs more from you" and, under "What the office asked for", INTAKE's
+    words exactly. The empty send shows "Add a note or a file first.".
+  - Step 5 shows "Sent. The office will review it again.". The status is "Being reviewed", and
+    "Progress" lists "You sent what the office asked for" with "Your note".
+  - In step 6 D1 is "Under review". "UAT test file" lists "Version 2" as "Current version" and
+    "Version 1" as "Replaced by a later version; kept as sent". "History" shows the resident's note
+    after "The resident wrote:".
+
+### DOC-08 · Approved, ready for pickup with claim details, then released
+
+- **Role:** INTAKE, then RES-B, then RELEASE, then RES-B
+- **Checks:** FR-STAFF-30, FR-RES-15 · Must · T-5
+- **Set up first:** DOC-07 done (D1 is "Under review"). RELEASE is assigned to the MSWDO office.
+- **Steps:**
+  1. INTAKE: on D1 choose "Approved" in "Move to". Read the list, fill "Words for the resident"
+     "UAT: test approval, please ignore" and click "Record and tell the resident".
+  2. Choose "Ready for pickup". Fill "Words for the resident" "UAT: the test document is ready" and
+     look at the button. Fill "When and where to claim it" "UAT: test only, nothing to collect." and
+     click "Record and tell the resident".
+  3. RES-B: refresh D1.
+  4. RELEASE: open "Resident document requests", choose "Ready for pickup" in "Show" and open D1.
+     Choose "Released", read the list, fill "Words for the resident" "UAT: test release, nothing
+     handed over" and click "Record and tell the resident".
+  5. RES-B: refresh D1.
+- **Expected result:**
+  - Step 1's list includes "Nothing is generated or signed by the system: the office prepares the
+    document itself.". Step 1 shows "Recorded: the request is now approved.".
+  - In step 2 "Record and tell the resident" stays greyed out until "When and where to claim it" is
+    filled. Then "Recorded: the request is now ready for pickup.", and "Claim details given to the
+    resident" shows the words.
+  - In step 3 the app shows "Ready to claim" and, under "How to claim it", "From the office" with
+    the claim details and "Bring a valid ID and your reference number.".
+  - Step 4's list includes "The request ends as released. Record it only once the document is in
+    the resident’s hands.". Step 4 shows "Recorded: the request is now released." and "This request
+    has ended. Nothing moves it on.".
+  - In step 5 the app shows "Claimed" and, under "Progress", "The office released the document".
+
+### DOC-09 · A refusal needs a reason, and the resident reads it
+
+- **Role:** RES-B, then INTAKE, then RES-B
+- **Checks:** FR-STAFF-30, FR-API-8 · Must · T-5
+- **Set up first:** DOC-04 done.
+- **Steps:**
+  1. RES-B: send a second request for the UAT certificate as in DOC-04, with the purpose "UAT: test
+     request D2, please ignore". Write its number down as D2.
+  2. INTAKE: open D2 and move it to "Under review" with the words "UAT: starting the test review".
+  3. Choose "Rejected" in "Move to". Type "UAT: no" in "Words for the resident".
+  4. Change the words to "UAT: test refusal, please ignore" and click "Record and tell the
+     resident".
+  5. RES-B: open D2 in "My document requests".
+- **Expected result:**
+  - Step 3 shows "Say a little more — a colleague reading this in two years has only these words.",
+    and "Record and tell the resident" stays greyed out. The list says "The request ends. Nothing
+    in this console or the API reopens it; the resident may file a new one.".
+  - Step 4 shows "Recorded: the request is now rejected." and "This request has ended. Nothing
+    moves it on.".
+  - The app shows "Not issued", INTAKE's words under "The office's reason", and "The office could
+    not issue it" under "Progress". There is no "Cancel this request".
+
+### DOC-10 · A request sent again after a dropped connection is filed once
+
+- **Role:** RES-B
+- **Checks:** FR-API-8, FR-RES-15 · Must · T-5
+- **Set up first:** DOC-04 done. Count the requests in "My document requests".
+- **Steps:**
+  1. Start a third request for the UAT certificate, with the purpose "UAT: test request D3, please
+     ignore" and the small test PDF. Tap "Review request".
+  2. Switch on airplane mode and tap "Send request".
+  3. Switch airplane mode off. Tap "Send request" and, at once, switch airplane mode on again.
+  4. Unless the app shows "Request sent", switch airplane mode off and tap "Send request" again.
+  5. Open "My document requests" and count the requests.
+- **Expected result:**
+  - Step 2 shows "You are offline" and "Nothing was sent. Your answers are still here on the phone.
+    Connect to the internet and try again.". The app stays on "Review your request".
+  - If step 3 shows "No answer from Taytay LGU", it adds "We cannot tell whether it arrived. Try
+    again: it will not be sent twice. Or open My document requests to check first.".
+  - Step 4 ends on "Request sent" with one "Reference number". Write it down as D3.
+  - Step 5 counts exactly one more request than before the case: D3, "Sent to the office". Never
+    two, whatever messages appeared on the way.
+
+### DOC-11 · The resident cancels a request the office has not started
+
+- **Role:** RES-B, then INTAKE
+- **Checks:** FR-RES-15, FR-API-8 · Must · T-5
+- **Set up first:** DOC-10 done (D3 is "Sent to the office").
+- **Steps:**
+  1. RES-B: open D3 and tap "Cancel this request". Read the dialog and tap "Keep it".
+  2. Tap "Cancel this request" again, then "Cancel request".
+  3. INTAKE: in "Resident document requests" choose "Cancelled" in "Show" and open D3.
+- **Expected result:**
+  - The dialog "Cancel this request?" says "A cancelled request cannot be opened again; you would
+    send a new one.". "Keep it" changes nothing.
+  - Step 2 shows "Request cancelled.". D3 reads "Cancelled", with "You cancelled the request" under
+    "Progress" and no "Cancel this request".
+  - The website shows D3 as "Cancelled", with "This request has ended. Nothing moves it on.".
+
+### DOC-12 · The resident sees every move in the app, with a notification
+
+- **Role:** RES-B
+- **Checks:** FR-RES-15, FR-API-8 · Must · T-5
+- **Set up first:** DOC-07 to DOC-11 done.
+- **Steps:**
+  1. Open "Notifications" from the bell on "Home". Read the newest entries.
+  2. Tap the newest entry.
+  3. Open D1 from "My document requests" and read "Progress".
+- **Expected result:**
+  - There is one entry for each move the office made: five on D1 (under review, needs more
+    information, approved, ready for pickup, released) and two on D2 (under review, rejected).
+    RES-B's own acts (sending, sending more, cancelling) add none.
+  - No entry shows the purpose or the office's words. Step 2 opens the request it is about.
+  - D1's "Progress" lists "You sent the request", "The office started reviewing it", "The office
+    asked for more", "You sent what the office asked for", "The office approved it", "Ready to
+    claim" and "The office released the document", each with its date and time, and the office's
+    words under "From the office".
+  - Entries appear when the app is opened: push notifications are not in this round.
+
+### DOC-13 · The audit trail records every document request act
+
+- **Role:** AUDITOR
+- **Checks:** FR-API-8, FR-STAFF-27 · Must · T-5
+- **Set up first:** DOC-01 to DOC-11 done.
+- **Steps:**
+  1. Open "App audit trail" and find the rows for those acts.
+- **Expected result:**
+  - Rows read "Added a document to an office’s catalogue, with a reason", "Changed a document in an
+    office’s catalogue, with a reason", "Retired a document from an office’s catalogue, with a
+    reason; it is kept", "A resident requested a document from an office", "Started reviewing a
+    resident’s document request", "Asked a resident for more on a document request", "A resident
+    sent what the office asked for on a document request", "Approved a resident’s document
+    request", "Marked a requested document ready to claim, with when and where", "Recorded a
+    requested document as handed to the resident", "Refused a resident’s document request, with a
+    reason", "A resident cancelled their document request", "Was given a single-use grant to open a
+    file sent with a document request" and "Opened a file sent with a document request".
+  - Each row has the time and the acting account. No row shows a purpose, the office's words, the
+    claim details or a file.
+
+### DOC-14 · Roles without the permission see no entry and cannot open the pages
+
+- **Role:** BLINK, AUDITOR, then INTAKE
+- **Checks:** FR-STAFF-30, FR-API-4 · Must · T-5
+- **Set up first:** ACC-04 done.
+- **Steps:**
+  1. As BLINK and as AUDITOR, look for "Resident document requests" in the menu. Then type the
+     website address followed by /resident-documents.
+  2. As INTAKE, open "Resident document requests" and look for "Document catalogue". Then type the
+     address followed by /resident-documents/catalogue.
+- **Expected result:**
+  - BLINK and AUDITOR have no "Resident document requests" entry. The address shows "You do not
+    have access to that section" and "Back to dashboard", and no request.
+  - INTAKE has the entry but no "Document catalogue" button. The catalogue address shows "You do
+    not have access to that section".
 
 ## REQ: Assistance requests
 
@@ -1822,14 +2181,14 @@ permission again: a hidden button is never the only protection.
   1. Sign in as each role and list the menu entries. Read the footer under the menu.
 - **Expected result:**
   - ADMIN: Dashboard, Cases, Assistance requests, Residents, Households, Families, Field visits,
-    Referrals, Programs, Releases, ID verification, Office inbox, Users and roles, App directory,
-    Home screen, App settings, Digital IDs, Balita, App audit trail.
+    Referrals, Programs, Releases, ID verification, Office inbox, Resident document requests, Users
+    and roles, App directory, Home screen, App settings, Digital IDs, Balita, App audit trail.
   - HEAD: the same, without ID verification, Users and roles, App directory, Home screen and App
     settings.
   - SW1 and INTAKE: Dashboard, Cases, Assistance requests, Residents, Households, Families, Field
-    visits, Referrals, Programs, Office inbox, Digital IDs, Balita.
+    visits, Referrals, Programs, Office inbox, Resident document requests, Digital IDs, Balita.
   - RELEASE: Dashboard, Assistance requests, Residents, Households, Families, Programs, Releases,
-    Office inbox, Digital IDs, Balita.
+    Office inbox, Resident document requests, Digital IDs, Balita.
   - BLINK: Dashboard, Assistance requests, Residents, Households, Families, Referrals, Programs,
     Digital IDs.
   - AUDITOR: Dashboard, Cases, Assistance requests, Residents, Households, Families, Field visits,
