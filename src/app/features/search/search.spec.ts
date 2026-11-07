@@ -234,7 +234,7 @@ describe('finding a record', () => {
     for (const group of wide.groups) {
       if (group.isTruncated) {
         expect(group.seeAllLink.length).toBeGreaterThan(0);
-        expect(group.seeAllParams['search']).toBe('res');
+        expect(group.seeAllParams['q']).toBe('res');
       }
     }
   });

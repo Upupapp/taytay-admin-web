@@ -135,7 +135,8 @@ function toGroup(wire: unknown, term: string, barangays: BarangayIndex): SearchG
     total,
     isTruncated: total > hits.length,
     seeAllLink: SEE_ALL_LINKS[type],
-    seeAllParams: { search: term },
+    // Every list reads its typed term from `q`; any other key opens the list unfiltered.
+    seeAllParams: { q: term },
   };
 }
 

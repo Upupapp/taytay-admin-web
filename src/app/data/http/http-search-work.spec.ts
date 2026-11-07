@@ -104,7 +104,7 @@ describe('search over the API (DL-189)', () => {
     expect(requests?.total).toBe(7);
     expect(requests?.isTruncated).toBe(true);
     expect(requests?.seeAllLink).toEqual(['/assistance-requests']);
-    expect(requests?.seeAllParams).toEqual({ search: 'mercado' });
+    expect(requests?.seeAllParams).toEqual({ q: 'mercado' });
     expect(requests?.hits[0]?.statusLabel).toBe('Assessment');
     expect(requests?.hits[0]?.reference).toBe('AICS-2026-000041');
 

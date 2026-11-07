@@ -111,7 +111,7 @@ export class MockSearchRepository implements SearchRepository {
       total: hits.length,
       isTruncated: hits.length > shown.length,
       seeAllLink: SEE_ALL_LINKS[type],
-      seeAllParams: { search: term },
+      seeAllParams: { q: term },
     };
   }
 
