@@ -62,11 +62,14 @@ files). The shared Caddy forwards `taytay-api.139-162-51-165.sslip.io` to `tayta
   docker-compose.yml               from deploy/staging-shared-linode/
   console.Caddyfile                static console + its content-security policy
   backend/                         `git archive` of taytay-backend + the Dockerfile
+  backend.prev/                    the backend/ the last deploy replaced (for a rollback)
   console/                         `ng build --configuration staging` output (browser/)
+  console.prev/                    the console/ the last deploy replaced (for a rollback)
   secrets/firebase-adminsdk.json   mode 600, root: the Firebase Admin SDK key, never in git
   .env, .env.api                   mode 600: generated on the server; never copied off it
-  backup.sh                        the nightly database dump
+  backup.sh                        the nightly database dump (in the repo since 9f42f49)
   backups/                         taytay-<UTC time>.sql.gz, mode 600, seven days kept
+/etc/cron.d/taytay-backup          runs backup.sh at 02:17 Manila time (taytay-backup.cron)
 ```
 
 ### How staging is configured
@@ -102,19 +105,19 @@ written authorisation (deliverable D7).
 
 ### What must be supplied, and by whom
 
-| Item                                     | What it is for                                                                                           | To be supplied by                                              | Status       |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------ |
-| Production Linode virtual machine        | Runs the API                                                                                             | Paul Espinas                                                   | Not supplied |
-| Managed PostgreSQL                       | The database, not reachable from the internet, TLS verified (`DATABASE_SSL=require`)                     | Paul Espinas                                                   | Not supplied |
-| Linode Object Storage bucket and key     | Private file storage (`MEDIA_STORE=linode`); never a public bucket                                       | Paul Espinas                                                   | Not supplied |
-| Domain and API address                   | `api.<approved-domain>` for the API, a name for the console, TLS certificates                            | Paul Espinas                                                   | Not supplied |
-| Firebase production project              | Sign-in for residents and staff, separate from staging, with Android and iOS apps registered             | Paul Espinas                                                   | Not supplied |
-| Apple Team ID                            | Signing the iOS app                                                                                      | Paul Espinas                                                   | Not supplied |
-| Android upload keystore                  | Signing the Android app; **losing it means the Play listing can never be updated**                       | Paul Espinas (see the register for a conflict on who holds it) | Not supplied |
-| SMTP account                             | Sign-up and password-reset codes (`EMAIL_SENDER=smtp`)                                                   | Owner's decision: which sender                                 | Not chosen   |
-| Google Play and Apple developer accounts | Publishing the app, under the municipality's own identity (mobile `docs/integration/manual-tasks.md` §4) | The LGU                                                        | Not recorded |
-| Console hosting                          | Linode with Caddy, as on staging, or Netlify (`netlify.toml` exists)                                     | Owner's decision (GL-14)                                       | Not decided  |
-| Digital ID signing key                   | `DIGITAL_ID_SIGNING_KEY`, at least 32 characters; required in production                                 | Generated on the production server                             | Not created  |
+| Item                                     | What it is for                                                                                                                                                       | To be supplied by                                                                           | Status       |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------ |
+| Production Linode virtual machine        | Runs the API                                                                                                                                                         | Paul Espinas                                                                                | Not supplied |
+| Managed PostgreSQL                       | The database, not reachable from the internet, TLS verified (`DATABASE_SSL=require`)                                                                                 | Paul Espinas                                                                                | Not supplied |
+| Linode Object Storage bucket and key     | Private file storage (`MEDIA_STORE=linode`); never a public bucket                                                                                                   | Paul Espinas                                                                                | Not supplied |
+| Domain and API address                   | `api.<approved-domain>` for the API, a name for the console, TLS certificates                                                                                        | Paul Espinas                                                                                | Not supplied |
+| Firebase production project              | Sign-in for residents and staff, separate from staging, with Android and iOS apps registered                                                                         | Paul Espinas                                                                                | Not supplied |
+| Apple Team ID                            | Signing the iOS app                                                                                                                                                  | Paul Espinas                                                                                | Not supplied |
+| Android upload keystore                  | Uploading Android releases. Google Play App Signing holds the app signing key, so a lost upload key is reset through the Play Console rather than ending the listing | Paul Espinas creates it with the Play listing; handed to the LGU at turnover (mobile D-186) | Not supplied |
+| SMTP account                             | Sign-up and password-reset codes (`EMAIL_SENDER=smtp`)                                                                                                               | Owner's decision: which sender                                                              | Not chosen   |
+| Google Play and Apple developer accounts | Publishing the app, under the municipality's own identity (mobile `docs/integration/manual-tasks.md` §4)                                                             | The LGU                                                                                     | Not recorded |
+| Console hosting                          | Linode with Caddy, as on staging, or Netlify (`netlify.toml` exists)                                                                                                 | Owner's decision (GL-14)                                                                    | Not decided  |
+| Digital ID signing key                   | `DIGITAL_ID_SIGNING_KEY`, at least 32 characters; required in production                                                                                             | Generated on the production server                                                          | Not created  |
 
 ### How production differs from staging
 

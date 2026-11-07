@@ -85,9 +85,13 @@ is recorded with a reason), `check:environments` (no production build on sample 
 `check:contract` (requests match the API's published contract). `CLAUDE.md` §3 describes each one.
 Do not weaken a check to make a change pass.
 
-The secret scanner is **not** part of `npm run verify` (launch gate line 00). The scanner in this
-repository, `docs/integration/tools/secret-scan.php`, is a PHP script from the Laravel era; see
-[known-limitations-and-open-items.md](known-limitations-and-open-items.md).
+The secret scanner is **not** part of `npm run verify` (launch gate line 00): it reads the whole
+git history, so it is run by hand before a push with `npm run scan:secrets` (`tools/secret-scan.mjs`,
+Node, no extra dependency). It scans every blob reachable from any branch or tag, accepts only the
+findings a reviewer listed in `docs/integration/secret-scan-allowlist.txt`, and exits with a failure
+on anything else. On 7 November 2026 it reported four findings outside that list; see
+[known-limitations-and-open-items.md](known-limitations-and-open-items.md), section 9. It replaced
+the Laravel-era PHP scanner, which was removed.
 
 ## API: `taytay-backend`
 
@@ -163,6 +167,8 @@ Release builds (Android App Bundle and APK with `--flavor prod`, iOS IPA) are bu
 machine with the commands in `docs/release.md` and `docs/release/README.md`. They cannot be made
 yet: there is no production API address, no production Firebase project, no Android upload
 keystore and no Apple Team ID. See [environments-and-hosting.md](environments-and-hosting.md).
+Google Play App Signing will hold the app signing key; the upload key is created by Paul with the
+Play Console listing and handed to the municipality at turnover (mobile decision D-186).
 
 ## Known test caveats
 

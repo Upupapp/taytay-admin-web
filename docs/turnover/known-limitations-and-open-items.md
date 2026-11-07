@@ -8,7 +8,9 @@ As of 2026-11-07. Each item names its source so it can be checked and closed. Id
 
 - **The launch gate is NO-GO.** `docs/integration/launch-gate.md` was last measured on
   2026-08-29, before the Node API and before staging existed, and its own totals disagree (four or
-  five lines with evidence). It is due to be re-measured after phase 6 (requirements §7.3, R-1).
+  five lines with evidence). Lines 13 and 18 were brought up to date for staging on 2026-11-07
+  (deployed; nightly backups and a tested restore) and stay NO-GO; the rest is due to be
+  re-measured after phase 6 (requirements §7.3, R-1).
 - **Production does not exist.** No server, database, bucket, domain, Firebase project, store
   account or signing key has been supplied
   ([environments-and-hosting.md](environments-and-hosting.md)).
@@ -70,7 +72,6 @@ From `docs/uat/README.md` ("Not in this UAT round") and the requirements documen
 | **Approval of the requirements document**                                   | Owner, the MSWDO head, and the Data Privacy Officer for §5 | §9, OD-9                                                        | Everything that counts as "approved requirements", including what the warranty covers                                                   |
 | **The Terms of Use and Privacy Notice texts**                               | The LGU, with its Data Privacy Officer                     | GL-9, NFR-PRIV-12, `DL-186`                                     | Both are placeholders. An administrator publishes them in the console (App settings); a new version asks every resident to accept again |
 | **Production accounts and infrastructure**                                  | Paul Espinas to supply                                     | GL-1, GL-2, GL-4, GL-5, GL-8                                    | Production; see the register                                                                                                            |
-| Who holds the Android keystore: the project lead or the municipality        | Owner                                                      | mobile `docs/release.md` vs `manual-tasks.md` §3                | Android releases                                                                                                                        |
 | Where the console is hosted in production: Linode with Caddy, or Netlify    | Owner                                                      | GL-14                                                           | Console production deployment                                                                                                           |
 | Confirming the Data Privacy Officer; NPC registration; retention schedule   | LGU leadership and the DPO                                 | GL-9, GL-15, R-5                                                | Launch gate line 14. Longest lead time of any item                                                                                      |
 | A breach-management procedure and response team                             | LGU (DPO) with the developer                               | GL-16 (Proposed)                                                | Go-live                                                                                                                                 |
@@ -157,29 +158,27 @@ The requirements document traces the Terms of Reference (TOR) through the develo
 
 ## 9. Gaps and inconsistencies in the documentation
 
-Found while preparing this package. None is fixed here; each is for the developer or the owner.
+Found while preparing this package. The contradictions and runbook gaps fixed on 7 November 2026
+are no longer listed (console `1564ea0`, `5210aa1`; backend `9f42f49`; mobile `8e3a771`): the
+requirements plan's phase 7 rows, launch gate lines 13 and 18, the staging rollback, the Firebase
+key note in the backend, the staging environment comment, the PHP secret scanner (now
+`npm run scan:secrets`), the UAT workbook, the Android upload keystore (decision D-186 in the
+mobile repository; see the register) and the backup script, which is now in the backend
+repository. What remains is for the developer or the owner:
 
-- **The requirements document disagrees with itself on Document Request.** §3.2 (T-5) records it
-  as built on staging on 7 November; §7.1 still lists phase 7 as "Planned" and §7.2 lists the app
-  sprint as "Not started".
-- **The launch gate predates staging.** Lines 13 and 18 say nothing is deployed and there is no
-  backup or restore; staging has run since 2026-11-05, with nightly dumps and a test restore on
-  2026-11-06.
 - **The console's `CLAUDE.md` counts unserved ports from the move:** "the other eighteen are bound
   to unserved adapters". Today seven of 33 ports are unserved.
-- **`taytay-backend/docs/integration-readiness.md` says no Firebase service-account key has been
-  created.** The staging README records one on the server.
-- **`src/environments/environment.staging.ts`** has a comment saying no staging Firebase key has
-  been supplied, beside a line that sets one.
-- **`docs/integration/rollback.md`** describes rolling back on a hosting dashboard; staging has
-  no dashboard, and no rollback for it is written.
-- **A PHP file is tracked in the console repository**, `docs/integration/tools/secret-scan.php`
-  (the Laravel-era secret scanner), although the console's `CLAUDE.md` §2 rule 1 calls any `.php`
-  file here a defect. The secret scan is not part of `npm run verify`.
 - **The backend's `CLAUDE.md` calls Paul "repository owner"**; the requirements document names
   Michaela Angela E. Cailing as the project owner who approves.
-- **The mobile docs disagree on who holds the Android keystore** (see the register).
-- **The UAT README mentions a workbook**, "Taytay - UAT test scripts (staging).xlsx", that is not
-  in the repository.
-- **The backup script and its schedule live only on the server** (`/opt/taytay/backup.sh`,
-  `/etc/cron.d/taytay-backup`).
+- **The secret scan reports four findings outside the reviewed allowlist** in the console's
+  history (`npm run scan:secrets`, 7 November 2026): sign-in fixtures in three `*.spec.ts` files
+  and the staging Firebase browser key, which is public configuration (`DL-169`). The old PHP
+  scanner reports the same four. A reviewer reads each blob and either accepts it in
+  `docs/integration/secret-scan-allowlist.txt` with a reason or removes it; until then the scan
+  exits with a failure.
+- **No committed command creates the first administrator** (GL-13). Staging's was made with a
+  one-off script that is not in any repository; the staging README now gives the steps and an
+  unrehearsed command, and there is no procedure at all for production
+  ([operations-runbook.md](operations-runbook.md), section 8).
+- **Rollback, restore and key rotation are written down but not rehearsed or timed** on staging
+  (launch gate line 18).
