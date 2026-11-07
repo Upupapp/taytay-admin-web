@@ -345,9 +345,7 @@ describe('the search screen', () => {
       (node) => node.className,
     );
     for (const className of classes) {
-      expect(className).toMatch(
-        /group__(title|meta|reference|barangay|status)/,
-      );
+      expect(className).toMatch(/group__(title|meta|reference|barangay|status)/);
     }
   });
 

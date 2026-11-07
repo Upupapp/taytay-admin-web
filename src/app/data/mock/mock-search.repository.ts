@@ -98,11 +98,7 @@ export class MockSearchRepository implements SearchRepository {
     });
   }
 
-  private toGroup(
-    type: SearchEntityType,
-    hits: readonly SearchHit[],
-    term: string,
-  ): SearchGroup {
+  private toGroup(type: SearchEntityType, hits: readonly SearchHit[], term: string): SearchGroup {
     const shown = hits.slice(0, HITS_PER_GROUP);
     return {
       type,
@@ -222,8 +218,7 @@ export class MockSearchRepository implements SearchRepository {
       )
       .flatMap((record) => {
         const subject = this.residents.find(record.subjectResidentId);
-        const subjectName =
-          subject === undefined ? null : this.disclose(subject, user).listedName;
+        const subjectName = subject === undefined ? null : this.disclose(subject, user).listedName;
         // Reference or the subject's disclosed name. Never the case notes.
         if (!matchesTerm(record.referenceNumber, term) && !matchesTerm(subjectName, term)) {
           return [];
@@ -247,8 +242,7 @@ export class MockSearchRepository implements SearchRepository {
       isWithinBarangayScope(user, request.barangayId),
     ).flatMap((request) => {
       const resident = this.residents.find(request.residentId);
-      const residentName =
-        resident === undefined ? null : this.disclose(resident, user).listedName;
+      const residentName = resident === undefined ? null : this.disclose(resident, user).listedName;
       // The control number or the applicant's disclosed name. Never
       // `reasonForRequest`, which is a sentence somebody wrote about a family.
       if (!matchesTerm(request.referenceNumber, term) && !matchesTerm(residentName, term)) {
