@@ -1,0 +1,72 @@
+{
+  "data": {
+    "definition": {
+      "id": "data-completeness",
+      "area": "quality",
+      "title": "Data completeness and verification",
+      "question": "Which records are missing something the office needs?",
+      "grain": "person-level",
+      "permission": "report.export-person-level",
+      "person_level_justification": "A completeness report is worked through record by record. A count cannot be acted on — somebody has to open each named record and fill in what is missing.",
+      "filters": {
+        "period": false,
+        "barangay": true,
+        "program": false,
+        "status": false,
+        "caseworker": false
+      },
+      "unit": "Records",
+      "caution": "This report names people, because it exists to be corrected record by record. Do not circulate it outside the office."
+    },
+    "applied_filter": {
+      "period": "all-time",
+      "barangay_id": "0b1c2d3e-4f50-4a61-8b72-3c4d5e6f7a04",
+      "program_id": null,
+      "status": null
+    },
+    "applied_filter_description": "All time · Barangay: San Juan",
+    "generated_at": "2026-11-07T06:30:00.000Z",
+    "grain": "person-level",
+    "series": [
+      {
+        "key": "incomplete",
+        "title": "Records missing something",
+        "summary": "2 active records are missing at least one field. Each is named so it can be opened and corrected.",
+        "label_header": "Resident",
+        "value_header": "What is missing",
+        "measure": "records",
+        "rows": [
+          {
+            "key": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c02",
+            "label": "Lazaro, P.",
+            "value": 1,
+            "display": "household",
+            "withheld": null,
+            "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c02"
+          },
+          {
+            "key": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c01",
+            "label": "Mercado, Ana Lim",
+            "value": 2,
+            "display": "mobile number, household",
+            "withheld": null,
+            "resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c01"
+          }
+        ],
+        "total": 2,
+        "suppression_notice": null
+      }
+    ],
+    "caution": "This report names people, because it exists to be corrected record by record. Do not circulate it outside the office.",
+    "limits": [
+      "A missing PhilSys number is not looked for: your account does not read PhilSys digits.",
+      "A missing mobile number is not looked for on a record under a protected sector: your account does not read their contact details."
+    ],
+    "disclosure": {
+      "threshold": 5,
+      "provenance": "convention-pending-confirmation",
+      "basis": "A count below 5 can identify a person in a barangay of this size, so it is withheld rather than shown. The threshold follows common statistical disclosure practice; the MSWDO has not yet confirmed a figure of its own."
+    }
+  },
+  "meta": {}
+}

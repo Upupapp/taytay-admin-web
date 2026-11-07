@@ -10,7 +10,6 @@ import {
   UnservedEventRepository,
   UnservedGovernanceRepository,
   UnservedNewsfeedRepository,
-  UnservedReportRepository,
   UNSERVED_HTTP_PORTS,
 } from '@data/http/unserved-repositories';
 import {
@@ -148,7 +147,6 @@ const OFFERED = MENU.filter((item) => !WITHHELD.includes(item)).map((item) => it
 
 describe('the http adapter set', () => {
   const adapters = [
-    UnservedReportRepository,
     UnservedGovernanceRepository,
     UnservedNewsfeedRepository,
     UnservedEventRepository,
@@ -209,6 +207,7 @@ describe('the http adapter set', () => {
       '/cases',
       '/resident-documents',
       '/work',
+      '/reports',
     ]) {
       expect(links, `${route} is served`).toContain(route);
     }

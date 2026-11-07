@@ -6,7 +6,6 @@ import {
   UnservedEventRepository,
   UnservedGovernanceRepository,
   UnservedNewsfeedRepository,
-  UnservedReportRepository,
 } from './unserved-repositories';
 
 /*
@@ -15,7 +14,6 @@ import {
  * statically instead, by `check:routes`.
  */
 const UNSERVED = [
-  new UnservedReportRepository(),
   new UnservedGovernanceRepository(),
   new UnservedNewsfeedRepository(),
   new UnservedEventRepository(),
@@ -47,7 +45,7 @@ function everyCall(adapter: object): readonly { name: string; result: unknown }[
  * `new`, outside any injector, is the proof.
  */
 describe('the ports the API does not serve', () => {
-  it('covers four ports and every method each declares', () => {
+  it('covers three ports and every method each declares', () => {
     // The resident registry left this list in casework phase 1b (`DL-174`); the household register,
     // saved views and families in phase 1c; programmes in phase 1d (`DL-176`), taking seven methods;
     // assistance requests in phase 2a (`DL-177`), taking nineteen — their phase 2b methods refuse
@@ -55,9 +53,9 @@ describe('the ports the API does not serve', () => {
     // cases in phase 3 (`DL-179`), taking eleven; releases in phase 4 (`DL-180`), taking thirteen; and
     // referrals and field visits in phase 5 (`DL-181`), taking fifteen and eight; and the dashboard
     // (`DL-182`), taking one; and the beneficiary registry (`DL-187`), taking eight; and search and
-    // the work queues (`DL-189`), taking one and three.
-    expect(UNSERVED).toHaveLength(4);
-    expect(UNSERVED.flatMap((adapter) => everyCall(adapter))).toHaveLength(36);
+    // the work queues (`DL-189`), taking one and three; and reports (`DL-190`), taking three.
+    expect(UNSERVED).toHaveLength(3);
+    expect(UNSERVED.flatMap((adapter) => everyCall(adapter))).toHaveLength(33);
   });
 
   it.each(UNSERVED.map((adapter) => [adapter.constructor.name, adapter] as const))(

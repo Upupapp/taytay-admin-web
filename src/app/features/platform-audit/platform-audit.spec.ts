@@ -141,6 +141,15 @@ describe('the words for every case act the API audits (DL-183, DL-185)', () => {
   });
 });
 
+describe('the words for reading and exporting reports (DL-190)', () => {
+  it('says which act left the office, and which named people', () => {
+    // taytay-backend src/modules/office-reports/routes.ts: the audit.record calls.
+    expect(PLATFORM_AUDIT_ACTIONS['office_report.exported']).toContain('file');
+    expect(PLATFORM_AUDIT_ACTIONS['office_report.person_level_read']).toContain('names residents');
+    expect(PLATFORM_AUDIT_ACTIONS['office_report.person_level_exported']).toContain('names residents');
+  });
+});
+
 describe('the words for the first-administrator command (DL-188)', () => {
   it('says the server’s bootstrap command did it, since the row names no account', () => {
     // taytay-backend src/ops/grant-administrator.ts BOOTSTRAP_GRANT_ACTION.

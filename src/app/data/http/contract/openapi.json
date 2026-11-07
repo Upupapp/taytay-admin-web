@@ -13052,6 +13052,331 @@
           }
         }
       }
+    },
+    "/api/v1/office/reports": {
+      "get": {
+        "operationId": "listOfficeReports",
+        "summary": "The reports this account opens",
+        "description": "Needs report.view. The catalogue is data, not code: the console renders whatever it is handed and branches on no report id. Fourteen reports, thirteen of them aggregate; data-completeness names people, states why in person_level_justification and needs report.export-person-level to open at all. Each report needs its own permission on top of report.view (staff-workload staff.view, release-status release.view, referral-outcomes referral.view). A caseload (a social worker) is offered only the six reports that can be counted over its own assignments — caseload, assistance-pipeline, case-aging, visit-workload, referral-outcomes and requirement-bottlenecks; the others count the registry or payouts, which a caseload’s lists refuse. In catalogue order, the whole list.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every report this reader opens.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReportDefinitionListEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No report.view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/reports/{id}": {
+      "get": {
+        "operationId": "getOfficeReport",
+        "summary": "One report’s figures, already suppressed",
+        "description": "Needs report.view and the report’s own permission. Counted in SQL on this read under the scope the list behind each figure reads with: a barangay link inside its barangay, a social worker over the cases, filed requests, visits and referrals assigned to them. Every series counting people or households goes through small-cell suppression on the way out (DL-105): a count from 1 to 4 is withheld — its row kept with its label, its value null, no drill-down — never dropped, never rounded, never a zero; zero is shown. The total is taken before suppression and labelled. The two sectors protected by law (VAWC survivors, RA 9262; children in conflict with the law, RA 9344) are not counted at all for a reader without request.view-sensitive: their rows are listed as withheld and left out of the total. There is no parameter, flag, role or route that returns the figures before suppression: any parameter not documented here is refused (422). A filter the report does not honour is refused rather than ignored. What the report’s question needs and this server does not hold is said in limits, never shown as a zero. Reading data-completeness, the report that names people, is audited (office_report.person_level_read).",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            },
+            "description": "The report: one of caseload, assistance-pipeline, case-aging, visit-workload, staff-workload, program-utilisation, release-status, referral-outcomes, beneficiaries-by-barangay, vulnerability-indicators, service-reach, repeat-assistance, requirement-bottlenecks, data-completeness. An id this server does not know reads as not found, like one the reader may not open."
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all-time",
+                "last-30-days",
+                "last-90-days",
+                "this-year"
+              ],
+              "default": "all-time"
+            },
+            "description": "How far back, on the Manila calendar. What a period counts by is the report’s own and is said in applied_filter_description (\"by the day each case was opened\"). Refused on a report that does not take a period, unless all-time."
+          },
+          {
+            "name": "barangay_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "One barangay. Refused on a report that does not take it, and refused (403) outside an own-barangay reader’s barangay. A barangay link is counted inside its own barangay without asking."
+          },
+          {
+            "name": "program_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "One programme. Refused on a report that does not take it."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "description": "One status the report lists (caseload: a case status; assistance-pipeline: a filed request status). Refused elsewhere, and refused when the report does not list it."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The figures, with the conditions they were counted under.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReportResultEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No report.view, or a barangay outside an own-barangay reader’s.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such report, or one this reader does not open (the same answer for both, DL-31).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A parameter that is not a filter, a filter the report does not take, a status it does not list, or no such barangay or programme.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "data-completeness has more records to name than it lists whole; narrow it to one barangay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/office/reports/{id}/export": {
+      "get": {
+        "operationId": "exportOfficeReport",
+        "summary": "One report as a file that carries its own conditions",
+        "description": "Needs report.view, report.export-person-level and the report’s own permission: producing a file is a separate grant from reading a figure on screen. Composed here and nowhere else (DL-106), like the payout list: the same figures as the report, already suppressed, preceded inside the file by the report, its question, the filter in words, when and by whom, the number of rows, whether it names people, what was withheld and why, what could not be counted, and the RA 10173 handling rule. A cell a spreadsheet would evaluate is prefixed with an apostrophe. Producing it is audited (office_report.exported; office_report.person_level_exported for data-completeness). The warning before a file that names people is the console’s, shown before this is asked for.",
+        "security": [
+          {
+            "firebaseIdToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            },
+            "description": "The report: one of caseload, assistance-pipeline, case-aging, visit-workload, staff-workload, program-utilisation, release-status, referral-outcomes, beneficiaries-by-barangay, vulnerability-indicators, service-reach, repeat-assistance, requirement-bottlenecks, data-completeness. An id this server does not know reads as not found, like one the reader may not open."
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all-time",
+                "last-30-days",
+                "last-90-days",
+                "this-year"
+              ],
+              "default": "all-time"
+            },
+            "description": "How far back, on the Manila calendar. What a period counts by is the report’s own and is said in applied_filter_description (\"by the day each case was opened\"). Refused on a report that does not take a period, unless all-time."
+          },
+          {
+            "name": "barangay_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "One barangay. Refused on a report that does not take it, and refused (403) outside an own-barangay reader’s barangay. A barangay link is counted inside its own barangay without asking."
+          },
+          {
+            "name": "program_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "One programme. Refused on a report that does not take it."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "description": "One status the report lists (caseload: a case status; assistance-pipeline: a filed request status). Refused elsewhere, and refused when the report does not list it."
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "csv"
+              ],
+              "default": "csv"
+            },
+            "description": "CSV. There is no other format and no option on what goes into the file."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file, with its manifest.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficeReportExportEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No report.view or no report.export-person-level, or a barangay outside an own-barangay reader’s.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such report, or one this reader does not open (the same answer for both, DL-31).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "As for the report, or a format other than csv.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "As for the report.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -25167,6 +25492,513 @@
               "$ref": "#/components/schemas/OfficeAlert"
             },
             "description": "Most severe first. The whole list."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeReportDefinition": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "area",
+          "title",
+          "question",
+          "grain",
+          "permission",
+          "person_level_justification",
+          "filters",
+          "unit",
+          "caution"
+        ],
+        "description": "One report in the catalogue (the console’s ReportDefinition).",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "caseload",
+              "assistance-pipeline",
+              "case-aging",
+              "visit-workload",
+              "staff-workload",
+              "program-utilisation",
+              "release-status",
+              "referral-outcomes",
+              "beneficiaries-by-barangay",
+              "vulnerability-indicators",
+              "service-reach",
+              "repeat-assistance",
+              "requirement-bottlenecks",
+              "data-completeness"
+            ]
+          },
+          "area": {
+            "type": "string",
+            "enum": [
+              "operations",
+              "delivery",
+              "population",
+              "quality"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string",
+            "description": "The question the report answers, in an officer’s words."
+          },
+          "grain": {
+            "type": "string",
+            "enum": [
+              "aggregate",
+              "person-level"
+            ]
+          },
+          "permission": {
+            "type": "string",
+            "description": "Held on top of report.view to open it."
+          },
+          "person_level_justification": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why names are needed: required on the person-level report, null on every aggregate one."
+          },
+          "filters": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "period",
+              "barangay",
+              "program",
+              "status",
+              "caseworker"
+            ],
+            "properties": {
+              "period": {
+                "type": "boolean"
+              },
+              "barangay": {
+                "type": "boolean"
+              },
+              "program": {
+                "type": "boolean"
+              },
+              "status": {
+                "type": "boolean"
+              },
+              "caseworker": {
+                "type": "boolean",
+                "description": "No report honours a caseworker filter."
+              }
+            }
+          },
+          "unit": {
+            "type": "string",
+            "description": "What the value column counts."
+          },
+          "caution": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What the figures do not show, printed above them."
+          }
+        }
+      },
+      "OfficeReportDefinitionListEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeReportDefinition"
+            },
+            "description": "In catalogue order. The whole list."
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeReportRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "label",
+          "value",
+          "display",
+          "withheld",
+          "resident_id"
+        ],
+        "description": "One row. A withheld row keeps its label and loses its figure and its drill-down.",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Null exactly when withheld. Integer centavos on a centavos series; a count otherwise."
+          },
+          "display": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Words in place of the figure where the figure alone would not say it: a person’s gaps."
+          },
+          "withheld": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "small-cell",
+              "protected-sector",
+              null
+            ],
+            "description": "small-cell: below the threshold. protected-sector: not counted for this reader at all, whatever its size."
+          },
+          "resident_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The person-level report’s drill-down: the record to open and correct. Null on every aggregate row and every withheld row."
+          }
+        }
+      },
+      "OfficeReportSeries": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "title",
+          "summary",
+          "label_header",
+          "value_header",
+          "measure",
+          "rows",
+          "total",
+          "suppression_notice"
+        ],
+        "description": "A named set of rows with the sentence that describes it. The chart is the table.",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string",
+            "description": "The table’s plain-text equivalent, required (DL-108). It never names a withheld row."
+          },
+          "label_header": {
+            "type": "string"
+          },
+          "value_header": {
+            "type": "string"
+          },
+          "measure": {
+            "type": "string",
+            "enum": [
+              "people",
+              "households",
+              "records",
+              "centavos"
+            ],
+            "description": "people and households are always suppressed; records and money are not."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeReportRow"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Taken before anything was withheld, over what was counted for this reader."
+          },
+          "suppression_notice": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Non-null whenever anything in the series was withheld."
+          }
+        }
+      },
+      "OfficeReportResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "definition",
+          "applied_filter",
+          "applied_filter_description",
+          "generated_at",
+          "grain",
+          "series",
+          "caution",
+          "limits",
+          "disclosure"
+        ],
+        "description": "A report’s figures and the conditions that produced them.",
+        "properties": {
+          "definition": {
+            "$ref": "#/components/schemas/OfficeReportDefinition"
+          },
+          "applied_filter": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "period",
+              "barangay_id",
+              "program_id",
+              "status"
+            ],
+            "properties": {
+              "period": {
+                "type": "string",
+                "enum": [
+                  "all-time",
+                  "last-30-days",
+                  "last-90-days",
+                  "this-year"
+                ]
+              },
+              "barangay_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "program_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "status": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "applied_filter_description": {
+            "type": "string",
+            "description": "The filter and the reader’s scope in words, composed here with what the period counts by."
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "grain": {
+            "type": "string",
+            "enum": [
+              "aggregate",
+              "person-level"
+            ]
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfficeReportSeries"
+            }
+          },
+          "caution": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "limits": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What the report’s question needs and this server does not hold, in words. Never shown as a zero."
+          },
+          "disclosure": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "threshold",
+              "provenance",
+              "basis"
+            ],
+            "properties": {
+              "threshold": {
+                "type": "integer",
+                "enum": [
+                  5
+                ]
+              },
+              "provenance": {
+                "type": "string",
+                "enum": [
+                  "convention-pending-confirmation"
+                ]
+              },
+              "basis": {
+                "type": "string",
+                "description": "Why figures are withheld; stated whether or not anything was."
+              }
+            }
+          }
+        }
+      },
+      "OfficeReportResultEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeReportResult"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "OfficeReportExport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "manifest",
+          "format",
+          "filename",
+          "content"
+        ],
+        "description": "A file and its manifest.",
+        "properties": {
+          "manifest": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "report_id",
+              "report_title",
+              "question",
+              "applied_filter_description",
+              "generated_at",
+              "generated_by",
+              "row_count",
+              "includes_person_level",
+              "handling_notice",
+              "suppression_notice",
+              "limits"
+            ],
+            "description": "What travels inside the file, before the first figure (DL-106).",
+            "properties": {
+              "report_id": {
+                "type": "string",
+                "enum": [
+                  "caseload",
+                  "assistance-pipeline",
+                  "case-aging",
+                  "visit-workload",
+                  "staff-workload",
+                  "program-utilisation",
+                  "release-status",
+                  "referral-outcomes",
+                  "beneficiaries-by-barangay",
+                  "vulnerability-indicators",
+                  "service-reach",
+                  "repeat-assistance",
+                  "requirement-bottlenecks",
+                  "data-completeness"
+                ]
+              },
+              "report_title": {
+                "type": "string"
+              },
+              "question": {
+                "type": "string"
+              },
+              "applied_filter_description": {
+                "type": "string"
+              },
+              "generated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "generated_by": {
+                "type": "string",
+                "description": "The account’s name as recorded."
+              },
+              "row_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "includes_person_level": {
+                "type": "boolean"
+              },
+              "handling_notice": {
+                "type": "string",
+                "description": "The RA 10173 handling rule."
+              },
+              "suppression_notice": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "limits": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "csv"
+            ]
+          },
+          "filename": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string",
+            "description": "The file body, CRLF lines, composed here."
+          }
+        }
+      },
+      "OfficeReportExportEnvelope": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OfficeReportExport"
           },
           "meta": {
             "type": "object"

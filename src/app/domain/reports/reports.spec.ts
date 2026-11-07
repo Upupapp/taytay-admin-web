@@ -213,6 +213,7 @@ describe('the export manifest', () => {
     includesPersonLevel: false,
     handlingNotice: EXPORT_HANDLING_NOTICE,
     suppressionNotice: null,
+    limits: [],
   };
 
   it('puts the conditions inside the file, before the first figure', () => {
@@ -235,6 +236,16 @@ describe('the export manifest', () => {
     const withSuppression = { ...manifest, suppressionNotice: '2 figures are withheld.' };
 
     expect(manifestHeaderLines(withSuppression).join('\n')).toContain('Withheld figures');
+  });
+
+  it('says in the file what the report could not count, before the handling rule', () => {
+    const limited = { ...manifest, limits: ['Programme membership is not recorded.'] };
+    const lines = manifestHeaderLines(limited);
+
+    expect(lines).toContain('Not counted,"Programme membership is not recorded."');
+    expect(lines.findIndex((line) => line.startsWith('Not counted'))).toBeLessThan(
+      lines.findIndex((line) => line.startsWith('Handling')),
+    );
   });
 
   it('flags a person-level export in the file itself', () => {

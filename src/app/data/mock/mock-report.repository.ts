@@ -112,6 +112,7 @@ export class MockReportRepository implements ReportRepository {
       series: this.seriesFor(definition, filter, user),
       caution: definition.caution,
       disclosureBasis: SMALL_CELL_BASIS,
+      limits: [],
     });
   }
 
@@ -143,6 +144,7 @@ export class MockReportRepository implements ReportRepository {
       includesPersonLevel: definition.grain === 'person-level',
       handlingNotice: EXPORT_HANDLING_NOTICE,
       suppressionNotice: suppression ?? null,
+      limits: [],
     };
 
     const lines = [...manifestHeaderLines(manifest), ''];

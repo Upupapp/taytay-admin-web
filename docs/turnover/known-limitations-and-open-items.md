@@ -20,14 +20,13 @@ As of 2026-11-07. Each item names its source so it can be checked and closed. Id
 
 ## 2. Console modules the API does not serve
 
-Four of the console's 33 data ports are bound to "unserved" adapters in the staging and
+Three of the console's 33 data ports are bound to "unserved" adapters in the staging and
 production builds (`UNSERVED_HTTP_PORTS`, `src/app/data/http/unserved-repositories.ts`). Their
 screens make no request: they are hidden from the menu and named on the console's "Not connected
 yet" page, and they show sample data only in the `local-mock` configuration.
 
 | Module (port)             | What staff cannot do yet                                                           | Plan                         |
 | ------------------------- | ---------------------------------------------------------------------------------- | ---------------------------- |
-| Reports (`report`)        | Run the fourteen office reports and exports                                        | Phase 6b (FR-STAFF-24, -31)  |
 | Governance (`governance`) | Retention settings, correction requests, and the auditor's view of recorded values | Phase 6b (FR-STAFF-26, -27)  |
 | The newsfeed (`newsfeed`) | Posts with reaction and comment counts, and comment moderation                     | Waits for OD-4 (FR-STAFF-34) |
 | Events (`event`)          | Create events and manage registrations                                             | Waits for OD-4               |
@@ -72,7 +71,7 @@ From `docs/uat/README.md` ("Not in this UAT round") and the requirements documen
 | Events, Balita comments and reactions, and applying from the app            | Owner, with the LGU's agreement (the TOR names them)       | OD-4, R-11                                                      | Newsfeed, events, FR-RES-14                                                                                                             |
 | Whether the ID reviewer sees the account's name and birth date              | Owner and office                                           | OD-1                                                            | Deliverable D1's acceptance                                                                                                             |
 | Whether the office inbox names the resident, and closing notices            | Owner and office                                           | OD-2                                                            | —                                                                                                                                       |
-| Casework questions from phases 1 to 6a                                      | Owner                                                      | OD-5; `docs/integration/node-api-migration.md`, "For the owner" | —                                                                                                                                       |
+| Casework questions from phases 1 to 6d                                      | Owner                                                      | OD-5; `docs/integration/node-api-migration.md`, "For the owner" | —                                                                                                                                       |
 | Review windows and the small-count threshold                                | MSWDO head                                                 | OD-6 (`DL-68`, `DL-105`)                                        | Both show "pending confirmation" on screen until recorded                                                                               |
 | Who signs resident-app sprint approvals                                     | Owner                                                      | OD-7                                                            | Sprints S2, S6 to S9                                                                                                                    |
 | PhilSys: which four digits are held, and the IRR duty                       | Owner with the DPO                                         | OD-8                                                            | —                                                                                                                                       |
@@ -140,7 +139,7 @@ The requirements document traces the Terms of Reference (TOR) through the develo
 | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | T-10 Beneficiary records, fund tracking, duplicate-claim checks | Built (`DL-187`): the registry, duplicate review and utilization from releases. Programme membership is not recorded | 6b                                                                 |
 | T-12 Audit trails                                               | Partly built: the app's audit trail and casework histories. Governance unserved                                      | 6b                                                                 |
-| T-18 Analytics and reports, dashboards, exports                 | Partly built: the dashboard, search and the work queues (`DL-189`). Reports unserved                                 | 6b                                                                 |
+| T-18 Analytics and reports, dashboards, exports                 | Built: the dashboard, search, the work queues (`DL-189`) and the fourteen reports with their exports (`DL-190`)      | 6b                                                                 |
 | T-16 Event and program postings                                 | Deferred; events unserved                                                                                            | 6b, after OD-4                                                     |
 | T-17 Engagement monitoring                                      | Deferred; newsfeed unserved                                                                                          | 6b, after OD-4                                                     |
 | T-9 Tulong applications from the app                            | The staff side is built; applying from the app is not offered                                                        | After OD-4                                                         |

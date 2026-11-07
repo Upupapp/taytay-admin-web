@@ -1,5 +1,14 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom, switchMap } from 'rxjs';
@@ -19,6 +28,7 @@ import {
   type ReportResult,
   type ReportSeries,
 } from '@domain/index';
+import { ObjectUrls } from '@shared/media/object-urls';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { ChartTable } from '@shared/ui/chart-table/chart-table';
@@ -44,6 +54,9 @@ import { REPORTS_COPY } from './reports.copy';
  *    manifest (`DL-106`), for the same reason a payout manifest does (`DL-92`).
  *  - **Hide that figures are missing.** A withheld cell is labelled, and the
  *    notice above the table says the column will not add up.
+ *
+ * The file it offers is the data layer's, byte for byte: the screen turns the
+ * composed text into a link to save, and adds nothing to it (`DL-190`).
  */
 @Component({
   selector: 'app-report-view-page',
@@ -64,16 +77,26 @@ export class ReportViewPage {
   protected readonly periods = Object.keys(REPORT_PERIOD_LABELS) as ReportPeriod[];
   protected readonly personLevelWarning = PERSON_LEVEL_WARNING;
 
-  protected readonly period = signal<ReportPeriod>('all-time');
-  protected readonly barangayId = signal<BarangayId | null>(null);
+  // Reset when another report is opened: a filter set on one report is not one the next report
+  // necessarily honours, and the server refuses a filter it would otherwise have to ignore.
+  protected readonly period = linkedSignal<string, ReportPeriod>({
+    source: this.id,
+    computation: () => 'all-time',
+  });
+  protected readonly barangayId = linkedSignal<string, BarangayId | null>({
+    source: this.id,
+    computation: () => null,
+  });
 
   private readonly filter = computed<ReportFilter>(() => ({
     ...(this.period() !== 'all-time' ? { period: this.period() } : {}),
     ...(this.barangayId() !== null ? { barangayId: this.barangayId() as BarangayId } : {}),
   }));
 
+  private readonly query = computed(() => ({ id: this.id(), filter: this.filter() }));
+
   protected readonly state = toSignal(
-    toObservable(computed(() => ({ id: this.id(), filter: this.filter() }))).pipe(
+    toObservable(this.query).pipe(
       switchMap((query) =>
         toViewState(this.repository.run(query.id as ReportId, query.filter)),
       ),
@@ -114,6 +137,17 @@ export class ReportViewPage {
   /* ── Exporting ──────────────────────────────────────────────────────────── */
 
   protected readonly exporting = signal(false);
+  private readonly objectUrls = new ObjectUrls();
+  /** The file last composed, to save. Gone when the report or its filter changes. */
+  protected readonly fileReady = linkedSignal<
+    { id: string; filter: ReportFilter },
+    { url: string; filename: string } | null
+  >({ source: this.query, computation: () => null });
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => this.objectUrls.revokeAll());
+  }
+
   /** Set when a person-level export has been asked for and not yet confirmed. */
   protected readonly awaitingConfirmation = signal(false);
 
@@ -145,8 +179,13 @@ export class ReportViewPage {
       const file = await firstValueFrom(
         this.repository.export(result.definition.id, this.filter(), 'csv'),
       );
-      // Reported by name, so an officer knows which file landed and under which
-      // filter — the manifest inside says the rest.
+      // Offered as a link carrying the file's name, made from the text the data
+      // layer composed; the manifest inside says the filter and the rest.
+      this.objectUrls.revokeAll();
+      this.fileReady.set({
+        url: this.objectUrls.makeText(file.content, 'text/csv;charset=utf-8'),
+        filename: file.filename,
+      });
       this.notifications.success(this.copy.exported, file.filename);
     } catch {
       this.notifications.error(this.copy.exportFailed);

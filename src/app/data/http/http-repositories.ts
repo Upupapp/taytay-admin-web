@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import {
   catchError,
@@ -222,6 +223,13 @@ import {
   type TeamQueue,
   type WorkQueue,
   type WorkRepository,
+  type ExportFormat,
+  type ReportDefinition,
+  type ReportExport,
+  type ReportFilter,
+  type ReportId,
+  type ReportRepository,
+  type ReportResult,
   buildTeamQueue,
   isSearchable,
   type DeferralReason,
@@ -469,6 +477,7 @@ import {
   toWireIssuanceTypeUpdate,
 } from './mappers/issuance.mapper';
 import { toSearchResults } from './mappers/search.mapper';
+import { toReportDefinitions, toReportExport, toReportResult } from './mappers/report.mapper';
 import { toOfficeAlerts, toTeamWork, toWorkQueue } from './mappers/work.mapper';
 import { list } from './mappers/wire';
 import { unserved } from './unserved-repositories';
@@ -4174,6 +4183,102 @@ export class HttpWorkRepository implements WorkRepository {
       .list(API_ENDPOINTS.officeWorkAlerts)
       .pipe(map((rows) => readWork(toOfficeAlerts(rows))));
   }
+}
+
+/**
+ * Reports (`DL-190`). Three reads and no write: the catalogue this account opens, one report's
+ * figures, and a file.
+ *
+ * **The server counts, suppresses and composes; this adapter asks and checks.** The figures arrive
+ * already suppressed (`DL-105`) and there is no parameter that could ask for them otherwise — the
+ * filter is sent as four named keys and nothing else. The mapper refuses an answer that shows what
+ * it should have withheld. The file is the server's (`DL-106`), refused if it does not carry its own
+ * conditions; the warning before a person-level file is the screen's, shown before this is called.
+ *
+ * Not found and not yours are one answer, a `404`, read as `null` (`DL-31`). A caseworker filter is
+ * refused here: no report counts by caseworker, and sending one would be refused anyway.
+ */
+@Injectable()
+export class HttpReportRepository implements ReportRepository {
+  private readonly api = inject(ApiClient);
+  // The filter's barangay is the console's id; the API knows it by its own (`GET barangays`).
+  private readonly barangayJoin = new BarangayJoin();
+
+  catalogue(): Observable<readonly ReportDefinition[]> {
+    return this.api
+      .list(API_ENDPOINTS.officeReports)
+      .pipe(map((rows) => readReport(toReportDefinitions(rows))));
+  }
+
+  run(id: ReportId, filter: ReportFilter): Observable<ReportResult | null> {
+    if (filter.caseworkerId !== undefined) {
+      return throwError(() => new Error(NO_CASEWORKER_FILTER));
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) => {
+        const barangayId =
+          filter.barangayId === undefined ? undefined : barangays.toApi(filter.barangayId);
+        if (barangayId === null) {
+          return throwError(() => unknownBarangay());
+        }
+        return this.api
+          .item(`${API_ENDPOINTS.officeReports}/${encodeURIComponent(id)}`, {
+            period: filter.period,
+            barangay_id: barangayId,
+            program_id: filter.programId,
+            status: filter.status,
+          })
+          .pipe(
+            map((wire): ReportResult | null => readReport(toReportResult(wire, barangays))),
+            catchError((error: unknown) =>
+              error instanceof HttpErrorResponse && error.status === 404
+                ? of(null)
+                : throwError(() => error),
+            ),
+          );
+      }),
+    );
+  }
+
+  export(id: ReportId, filter: ReportFilter, format: ExportFormat): Observable<ReportExport> {
+    if (filter.caseworkerId !== undefined) {
+      return throwError(() => new Error(NO_CASEWORKER_FILTER));
+    }
+    // The server composes a spreadsheet and nothing else; a printable view is not a file it makes.
+    if (format !== 'csv') {
+      return throwError(() => new Error('The API composes a report as a CSV file only.'));
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) => {
+        const barangayId =
+          filter.barangayId === undefined ? undefined : barangays.toApi(filter.barangayId);
+        if (barangayId === null) {
+          return throwError(() => unknownBarangay());
+        }
+        return this.api
+          .item(`${API_ENDPOINTS.officeReports}/${encodeURIComponent(id)}/export`, {
+            period: filter.period,
+            barangay_id: barangayId,
+            program_id: filter.programId,
+            status: filter.status,
+            format: 'csv',
+          })
+          .pipe(map((wire) => readReport(toReportExport(wire))));
+      }),
+    );
+  }
+}
+
+const NO_CASEWORKER_FILTER = 'No report counts by caseworker, so a caseworker filter is not sent.';
+
+function readReport<T>(read: T | null): T {
+  if (read === null) {
+    throw new Error(
+      'The report could not be read, so none of it is shown rather than some: a figure that ' +
+        'should have been withheld, or a file without its conditions, is refused whole.',
+    );
+  }
+  return read;
 }
 
 function readWork<T>(read: T | null): T {

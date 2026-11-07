@@ -1,0 +1,257 @@
+{
+  "data": [
+    {
+      "id": "caseload",
+      "area": "operations",
+      "title": "Social welfare caseload",
+      "question": "How many cases is the office carrying, and in what state?",
+      "grain": "aggregate",
+      "permission": "report.view",
+      "person_level_justification": null,
+      "filters": {
+        "period": true,
+        "barangay": true,
+        "program": false,
+        "status": true,
+        "caseworker": false
+      },
+      "unit": "Cases",
+      "caution": null
+    },
+    {
+      "id": "assistance-pipeline",
+      "area": "operations",
+      "title": "Assistance pipeline",
+      "question": "Where are assistance requests sitting on their way to a decision?",
+      "grain": "aggregate",
+      "permission": "report.view",
+      "person_level_justification": null,
+      "filters": {
+        "period": true,
+        "barangay": true,
+        "program": true,
+        "status": true,
+        "caseworker": false
+      },
+      "unit": "Requests",
+      "caution": null
+    },
+    {
+      "id": "case-aging",
+      "area": "operations",
+      "title": "Case aging and turnaround",
+      "question": "How long have open requests been waiting?",
+      "grain": "aggregate",
+      "permission": "report.view",
+      "person_level_justification": null,
+      "filters": {
+        "period": false,
+        "barangay": true,
+        "program": true,
+        "status": false,
+        "caseworker": false
+      },
+      "unit": "Requests",
+      "caution": "Waiting time, not lateness. The office has adopted no service standard for these, so nothing here is behind a target."
+    },
+    {
+      "id": "visit-workload",
+      "area": "operations",
+      "title": "Field visit workload",
+      "question": "How many visits are scheduled, done, or not completed?",
+      "grain": "aggregate",
+      "permission": "report.view",
+      "person_level_justification": null,
+      "filters": {
+        "period": true,
+        "barangay": true,
+        "program": false,
+        "status": false,
+        "caseworker": false
+      },
+      "unit": "Visits",
+      "caution": null
+    },
+    {
+      "id": "staff-workload",
+      "area": "operations",
+      "title": "Staff workload",
+      "question": "How is open work distributed across the office right now?",
+      "grain": "aggregate",
+      "permission": "staff.view",
+      "person_level_justification": null,
+      "filters": {
+        "period": false,
+        "barangay": true,
+        "program": false,
+        "status": false,
+        "caseworker": false
+      },
+      "unit": "Open items",
+      "caution": "This counts what each person is carrying so work can be moved. It is not a productivity measure and must not be read as one: a heavy caseload is usually a hard caseload, and the office cannot see from a count who is doing well."
+    },
+    {
+      "id": "program-utilisation",
+      "area": "delivery",
+      "title": "Programme utilisation",
+      "question": "Which programmes are being used, and how much has gone out?",
+      "grain": "aggregate",
+      "permission": "report.view",
+      "person_level_justification": null,
+      "filters": {
+        "period": true,
+        "barangay": true,
+        "program": true,
+        "status": false,
+        "caseworker": false
+      },
+      "unit": "Releases",
+      "caution": null
+    },
+    {
+      "id": "release-status",
+      "area": "delivery",
+      "title": "Release and distribution status",
+      "question": "What has been released, what is waiting, and what could not be paid?",
+      "grain": "aggregate",
+      "permission": "release.view",
+      "person_level_justification": null,
+      "filters": {
+        "period": true,
+        "barangay": true,
+        "program": false,
+        "status": false,
+        "caseworker": false
+      },
+      "unit": "Releases",
+      "caution": null
+    },
+    {
+      "id": "referral-outcomes",
+      "area": "delivery",
+      "title": "Referral outcomes",
+      "question": "What happened to the people this office referred elsewhere?",
+      "grain": "aggregate",
+      "permission": "referral.view",
+      "person_level_justification": null,
+      "filters": {
+        "period": true,
+        "barangay": true,
+        "program": false,
+        "status": false,
+        "caseworker": false
+      },
+      "unit": "Referrals",
+      "caution": null
+    },
+    {
+      "id": "beneficiaries-by-barangay",
+      "area": "population",
+      "title": "Beneficiaries by barangay",
+      "question": "Where in the municipality is assistance reaching people?",
+      "grain": "aggregate",
+      "permission": "report.view",
+      "person_level_justification": null,
+      "filters": {
+        "period": true,
+        "barangay": false,
+        "program": true,
+        "status": false,
+        "caseworker": false
+      },
+      "unit": "People served",
+      "caution": null
+    },
+    {
+      "id": "vulnerability-indicators",
+      "area": "population",
+      "title": "Household vulnerability indicators",
+      "question": "Which indicators are present across the households on file?",
+      "grain": "aggregate",
+      "permission": "report.view",
+      "person_level_justification": null,
+      "filters": {
+        "period": false,
+        "barangay": true,
+        "program": false,
+        "status": false,
+        "caseworker": false
+      },
+      "unit": "Households",
+      "caution": "Indicators are evidence a caseworker reads, never a decision. Nothing here ranks households or establishes entitlement."
+    },
+    {
+      "id": "service-reach",
+      "area": "population",
+      "title": "Demographic service reach",
+      "question": "Which sectors is the office reaching, and which it may be missing?",
+      "grain": "aggregate",
+      "permission": "report.view",
+      "person_level_justification": null,
+      "filters": {
+        "period": true,
+        "barangay": true,
+        "program": false,
+        "status": false,
+        "caseworker": false
+      },
+      "unit": "People served",
+      "caution": "Sector membership is sensitive. Figures small enough to identify somebody are withheld rather than shown."
+    },
+    {
+      "id": "repeat-assistance",
+      "area": "population",
+      "title": "Repeat assistance patterns",
+      "question": "How often do households come back, and how soon?",
+      "grain": "aggregate",
+      "permission": "report.view",
+      "person_level_justification": null,
+      "filters": {
+        "period": true,
+        "barangay": true,
+        "program": true,
+        "status": false,
+        "caseworker": false
+      },
+      "unit": "Households",
+      "caution": "A household returning is a fact about their circumstances, not about them. This exists for planning, and it decides nobody’s eligibility."
+    },
+    {
+      "id": "requirement-bottlenecks",
+      "area": "quality",
+      "title": "Requirements bottlenecks",
+      "question": "Which documents hold applications up most often?",
+      "grain": "aggregate",
+      "permission": "report.view",
+      "person_level_justification": null,
+      "filters": {
+        "period": true,
+        "barangay": false,
+        "program": true,
+        "status": false,
+        "caseworker": false
+      },
+      "unit": "Requests held",
+      "caution": null
+    },
+    {
+      "id": "data-completeness",
+      "area": "quality",
+      "title": "Data completeness and verification",
+      "question": "Which records are missing something the office needs?",
+      "grain": "person-level",
+      "permission": "report.export-person-level",
+      "person_level_justification": "A completeness report is worked through record by record. A count cannot be acted on — somebody has to open each named record and fill in what is missing.",
+      "filters": {
+        "period": false,
+        "barangay": true,
+        "program": false,
+        "status": false,
+        "caseworker": false
+      },
+      "unit": "Records",
+      "caution": "This report names people, because it exists to be corrected record by record. Do not circulate it outside the office."
+    }
+  ],
+  "meta": {}
+}

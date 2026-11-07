@@ -8280,3 +8280,138 @@ the source, and an alert without a basis is refused — each validated against a
 decisions 3 to 5 (an endorsed request on its assessor's list, a visit behind `case.view`, a
 referral's service requested as its preview); bringing it into line touches `check:work`'s rules on
 the mock and was not in this phase. No UAT script covers My work, the team's queue or search yet.
+
+## DL-190 — reports are served: counted on the server under each reader's scope, small counts of people withheld there, and a file that carries its own conditions
+
+`taytay-backend` `9d81454` serves `REPORT_REPOSITORY`. The spec vendored here is that commit's (246
+operations). Casework phase 6d, after search and the work queues (6c, `DL-189`). **No migration.**
+**Three ports remain unserved**: governance, the newsfeed and events.
+
+### What the server holds now
+
+`GET office/reports` answers the catalogue this account opens, a bare list in catalogue order: the
+console's fourteen definitions, word for word, held on the server to the same `reportProblems`
+(`DL-104`) by its tests. Thirteen are counts; `data-completeness` names people, states why, and needs
+`report.export-person-level` to open at all. Each report needs its own key on top of `report.view`
+(`staff-workload` `staff.view`, `release-status` `release.view`, `referral-outcomes`
+`referral.view`). Not found and not yours are one answer, a 404 (`DL-31`).
+
+`GET office/reports/{id}` counts in SQL on the read, **under the scope the list behind each figure
+reads with**: a barangay link inside its barangay; a social worker over the cases, filed requests,
+visits and referrals assigned to them. Filters are `period`, `barangay_id`, `program_id` and
+`status`; the period is counted on the Manila calendar, and what it counts by is the report's own
+and said in the coverage line ("Last 90 days, by the day each case was opened"). **A filter a report
+does not honour is refused** (422), never ignored — "offering one it ignores is a lie" now holds on
+the server as on the screen.
+
+**Suppression is the server's** (`DL-105`). Every series whose `measure` is `people` or
+`households` goes through it on the way out; there is no argument that skips it. A count from 1 to
+4 is withheld — row and label kept, `value` null, no drill-down — never dropped, rounded or zeroed;
+zero is shown. The total is taken **before**. Rows are never ordered by a hidden figure (shown
+figures largest first, then withheld rows by label, then zeroes), so the order cannot say which of
+two withheld rows is larger, and the sentence beside a table names only a row it shows. The
+threshold is 5, `convention-pending-confirmation`, stated in every answer. **Nothing can ask for
+the figures before suppression**: the query schemas are strict, so `raw`, `suppress`, `threshold`,
+`include_small`, `debug` and every other undeclared parameter are a 422 for every role, the
+administrator included — the backend's tests try seven such parameters on the report and on the
+export, as an administrator, and check the spec documents no other parameter.
+
+`GET office/reports/{id}/export` needs `report.export-person-level` as well — producing a file is a
+separate grant from reading a figure, as the mock already held — and **composes the CSV on the
+server** (`DL-106`), like the payout list (`DL-92`): the report, its question, the filter in words,
+when and by whom, the rows, whether it names people, what was withheld and why, what could not be
+counted, and the RA 10173 handling rule, inside the file before the first figure; a cell a
+spreadsheet would evaluate is guarded as `csvCell` guards it. **Exporting is audited**
+(`office_report.exported`, `office_report.person_level_exported`), and so is **opening the report
+that names people** (`office_report.person_level_read`); the platform audit screen words all three.
+
+### Which reports are served whole, and which say what they cannot count
+
+Each result carries `limits`: what the report's question needs and the records do not hold, in
+words, never a zero (the doctrine of `DL-175`). The console shows them under "What this report
+cannot count" and the server writes them into the file.
+
+- **Served whole**: caseload, the assistance pipeline, case aging, field visit workload, release
+  status, referral outcomes, beneficiaries by barangay and requirements bottlenecks.
+- **Programme utilisation**: releases handed over and money handed over by programme, goods counted
+  and never valued; *cannot count* programme membership, which is not recorded (`DL-187`).
+- **Household vulnerability indicators**: households with a member in each sector, as the mock
+  counted; *cannot count* the household vulnerability factors across households, which are worked
+  out for one household when it is opened.
+- **Demographic service reach**: people served in each sector; *cannot show who was missed* — the
+  office holds no count of how many people in each sector live in Taytay.
+- **Repeat assistance**: households by how often they applied and by the shortest time between two
+  applications (the "how soon" the question asks, which the mock did not count); *cannot count*
+  applicants in no household on file, said with their number — or, when that number is below the
+  threshold, said without it.
+- **Staff workload**: open case tasks, requests in assessment and visits still scheduled, by person;
+  *cannot count* referrals and releases, which have no holder on file.
+- **Data completeness**: *does not look for* a gap in a field the registry withholds from the reader
+  — PhilSys without `resident.view-sensitive`, a protected person's mobile number without
+  `request.view-sensitive` — and says so.
+
+### Decisions taken (the owner may overturn any; each is the easiest to reverse)
+
+1. **The two protected sectors are not counted at all for a reader without
+   `request.view-sensitive`** — stricter than the mock, which showed them to everyone with
+   `report.view`. Their rows stay, marked withheld whatever the figure, and are **left out of the
+   total**, so subtracting the shown rows from the total says nothing about them. Today that reader
+   is the auditor and the release officer.
+2. **A social worker is offered six reports, counted over their caseload** — caseload, pipeline,
+   aging, visits, referrals, requirements — and not the five that count the registry or payouts,
+   which a caseload's lists refuse (`DL-179`, `DL-183`). The mock gave them office-wide figures. A
+   report outside a reader's catalogue is a 404, like one that does not exist.
+3. **Aggregate rows carry no drill-down**, as in the mock; only the person-level report opens a
+   record, by `resident_id`. A drill-down to a list that does not count by the same rule would
+   disagree with its figure in front of the reader. "The drill-down goes with" a withheld cell holds
+   structurally: the server sends none on a withheld row, and the mapper refuses one that does.
+4. **Drafts are not counted**: request figures are the filed ones, as the request list and the
+   dashboard read them. The mock counted drafts, and an aging bucket "Never submitted".
+5. **Ordinal series keep their order** (aging buckets, times applied, time between applications);
+   the mock sorted them by size. Status series stay largest first, as the mock had them.
+6. **"People served" is everybody handed a release, counted once across records found to be the
+   same person** (the beneficiary registry's owners), in the barangay their record names now; a
+   record since deactivated was still served and is counted.
+7. **Staff workload lists every open staff account with an office role, and any account still
+   holding an open item**, by name, the unassigned last; its sentence names nobody as the largest
+   (the mock's summary named the largest row on every series, this one included). No rate, score or
+   rank anywhere in the answer, which the backend's tests check field by field.
+8. **The audit rows name no report** (`subject_id` is a uuid and a report id is not): an aggregate
+   export is `office_report.exported`; the person-level report has actions of its own.
+9. **The person-level report is listed whole or refused** (503 past 5000 records — narrow it to a
+   barangay), as the work queues are (`DL-189`).
+10. **Only CSV is composed**; the port's `printable` format is refused by the adapter without a
+    request.
+
+*For the owner:* **a total taken before suppression discloses a lone withheld figure by
+subtraction.** When one row of a series is withheld, the total minus the shown rows is that row's
+figure. The doctrine asks for both — the true total, and the small figure withheld — and they
+conflict exactly then. The usual remedy is secondary suppression (withholding a second, larger
+cell, or the total), which this office has not adopted; the server follows `DL-105` as written.
+
+### What the console changed
+
+`HttpReportRepository` with `report.mapper.ts`. The mapper **refuses rather than renders** an answer
+that shows what it should have withheld: a series about people with a shown figure below the
+console's own `SMALL_CELL_THRESHOLD` (so a server that lowered its figure is refused here), a
+withheld row with a figure, words or a record to open, a total smaller than the shown rows plus one
+for each small figure withheld, a series with no summary (`DL-108`), a definition `reportProblems`
+rejects, a record to open on an aggregate report, and a file whose content does not carry its
+conditions or says it names nobody when its manifest says it does. Money is formatted from integer
+centavos with `describePesos`; a money series carries `totalDisplay`. A barangay filter is sent as the API knows the barangay, through the same join by name the registry adapters use, and read back as the console's. `ReportResult` and
+`ExportManifest` gained `limits`, and `manifestHeaderLines` writes them into the mock's file too.
+
+The screen shows the limits, the total in words where it is money, and **offers the file to save**:
+the export used to say "Export ready." and hand the user nothing. The composed text becomes an object
+URL through `ObjectUrls.makeText`, offered as a link carrying the file's name, and given back when the
+page is left. Filters reset when another report is opened, so a filter one report honours is never
+sent to one that would refuse it.
+
+`UnservedReportRepository` is gone; `check:routes`' unserved ceiling went from 4 to **3**; `/reports`
+is in the menu for the roles that hold `report.view`. `check:reports` now holds the served adapter
+and mapper too — named filter keys only and no write verb, every refusal above, the file from the
+data layer's text — each rule validated against a planted regression (13 of 13 caught).
+
+**Still open:** the mock adapter was left as it was, so `local-mock` still ignores the period and
+programme filters, counts drafts and shows the protected sectors to every reader. No UAT script
+covers reports yet.

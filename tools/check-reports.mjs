@@ -394,7 +394,12 @@ notes.push('exports: composed by the data layer, carrying filter, time, author a
 const RANKING =
   /\b(?:readonly\s+)?(productivityScore|productivityRate|efficiencyScore|efficiencyRate|performanceScore|performanceRating|performanceIndex|rankingScore|leagueTable|completionRate|throughput|targetMet|slaMet)\s*[:(=]/i;
 const SCORE_FIELD = /readonly\s+\w*[Ss]core\b|\brank(?:ed)?By\s*[:(=]/;
-for (const file of [...domainFiles, ...viewFiles, 'src/app/data/mock/mock-report.repository.ts']) {
+for (const file of [
+  ...domainFiles,
+  ...viewFiles,
+  'src/app/data/mock/mock-report.repository.ts',
+  'src/app/data/http/mappers/report.mapper.ts',
+]) {
   const text = read(file);
   for (const [index, line] of text.split(/\r?\n/).entries()) {
     const trimmed = line.trimStart();
@@ -487,6 +492,149 @@ if (!/isWithinBarangayScope\(/.test(adapter)) {
   problems.push('The report adapter no longer applies barangay scope.');
 }
 notes.push('access: module and per-report permissions, scope applied, export gated separately');
+
+/* ── 8. The served adapter holds the same line (DL-190) ──────────────────── */
+
+/*
+ * Since `DL-190` the API counts, suppresses and composes, and the rules above hold the mock. The
+ * server's answer is read by one mapper and asked for by one adapter, so the line is drawn there
+ * too: the adapter sends the filter as named keys and nothing that could lower a threshold; the
+ * mapper refuses an answer that shows what it should have withheld, a definition that breaks the
+ * catalogue's rules, a series with no summary, and a file that does not carry its own conditions.
+ * Each assertion is scoped to the function it is about, so a match elsewhere cannot pass it.
+ */
+const reportMapperPath = 'src/app/data/http/mappers/report.mapper.ts';
+const httpRepositoriesPath = 'src/app/data/http/http-repositories.ts';
+if (!existsSync(join(root, reportMapperPath))) {
+  problems.push(`${reportMapperPath} has gone, and the served reports with it.`);
+} else {
+  const mapper = read(reportMapperPath);
+  // The function's text, from its declaration to the brace in column zero that closes it.
+  const fn = (name) => {
+    const at = mapper.search(new RegExp(`(?:^|\\n)(?:export )?function ${name}\\(`));
+    if (at < 0) return '';
+    const close = mapper.indexOf('\n}\n', at + 1);
+    return close < 0 ? mapper.slice(at) : mapper.slice(at, close + 3);
+  };
+  const series = fn('toSeries');
+  const row = fn('toRow');
+  const definitionFn = fn('toReportDefinition');
+  const resultFn = fn('toReportResult');
+  const exportFn = fn('toReportExport');
+  for (const [name, body] of [
+    ['toSeries', series],
+    ['toRow', row],
+    ['toReportDefinition', definitionFn],
+    ['toReportResult', resultFn],
+    ['toReportExport', exportFn],
+  ]) {
+    if (body === '') problems.push(`${reportMapperPath}: ${name} has gone.`);
+  }
+  if (!/aboutPeople\s*&&\s*isSmallCell\(\s*value\s*\)/.test(series)) {
+    problems.push(
+      'The report mapper no longer refuses a series about people that shows a figure below the ' +
+        'threshold. A regression on the server would become a disclosure on this screen (DL-105).',
+    );
+  }
+  if (!/row\s*\.\s*residentId\s*!==\s*null/.test(series) || !/row\s*\.\s*display\s*!==\s*null/.test(series)) {
+    problems.push(
+      'The report mapper no longer refuses a withheld row that keeps words or a record to open. ' +
+        'Withholding the figure and linking to the records behind it withholds nothing (DL-105).',
+    );
+  }
+  if (!/total\s*-\s*shown\s*<\s*smallWithheld/.test(series)) {
+    problems.push(
+      'The report mapper no longer checks that the total was taken before suppression. A total ' +
+        'that is the sum of what survived tells the reader a smaller number than the truth.',
+    );
+  }
+  if (!/summary\s*===\s*null/.test(series)) {
+    problems.push('The report mapper accepts a series with no summary sentence (DL-108).');
+  }
+  const withheldBranch =
+    /if\s*\(\s*row\s*\.\s*withheld\s*!==\s*null\s*\)\s*\{[\s\S]*?\n {2}\}/.exec(row)?.[0] ?? '';
+  if (
+    !/isWithheld:\s*true/.test(withheldBranch) ||
+    !/WITHHELD_DISPLAY/.test(withheldBranch) ||
+    /routerLink|residentId/.test(withheldBranch)
+  ) {
+    problems.push(
+      'A withheld row from the API is no longer marked Withheld without a drill-down. A blank or a ' +
+        'zero reads as "none" (DL-105).',
+    );
+  }
+  if (!/threshold\s*!==\s*SMALL_CELL_THRESHOLD/.test(resultFn)) {
+    problems.push(
+      "The report mapper no longer holds the server's threshold to the console's. A server that " +
+        'lowered its figure would be believed here (DL-105).',
+    );
+  }
+  if (!/reportProblems\(\s*definition\s*\)/.test(definitionFn)) {
+    problems.push(
+      'The report mapper no longer holds a definition from the API to reportProblems. A ' +
+        'person-level report with no stated reason would reach the hub (DL-104).',
+    );
+  }
+  const conditions = /const CONDITIONS_IN_THE_FILE = \[([\s\S]*?)\];/.exec(mapper)?.[1] ?? '';
+  for (const [what, pattern] of [
+    ['the handling rule', /\^Handling,.*RA 10173/],
+    ['whether it names people', /\^Names individuals/],
+    ['the filter in words', /\^Filter applied/],
+    ['who generated it', /\^Generated by/],
+    ['when it was generated', /\^Generated at/],
+  ]) {
+    if (!pattern.test(conditions)) {
+      problems.push(`The report mapper no longer refuses a file that does not carry ${what} (DL-106).`);
+    }
+  }
+  if (!/CONDITIONS_IN_THE_FILE\s*\.\s*some\(/.test(exportFn)) {
+    problems.push('The report mapper no longer checks a file for its conditions before handing it over.');
+  }
+}
+
+const httpReports =
+  /export class HttpReportRepository[\s\S]*?\n\}/.exec(read(httpRepositoriesPath))?.[0] ?? '';
+if (httpReports === '') {
+  problems.push('HttpReportRepository has gone.');
+} else {
+  // Each read with its arguments, up to the `)` that the `.pipe(` after it closes; the parameters
+  // are the object literal that ends them.
+  const calls = [...httpReports.matchAll(/\.\s*(?:item|list)\s*\(([\s\S]*?)\)\s*\.\s*pipe\s*\(/g)].map(
+    (match) => [match[0], /,\s*(\{[^}]*\})\s*,?\s*$/.exec(match[1] ?? '')?.[1] ?? ''],
+  );
+  if (calls.length !== 3) {
+    problems.push(
+      `HttpReportRepository makes ${calls.length} reads; it makes three — the catalogue, a report ` +
+        'and a file — and writes nothing.',
+    );
+  }
+  const allowed = new Set(['period', 'barangay_id', 'program_id', 'status', 'format']);
+  for (const [, params] of calls) {
+    for (const key of [...params.matchAll(/(\w+)\s*:/g)].map((match) => match[1])) {
+      if (!allowed.has(key)) {
+        problems.push(
+          `HttpReportRepository sends '${key}'. The filter is four named keys and a format, and ` +
+            'nothing that could ask for the figures before suppression (DL-105).',
+        );
+      }
+    }
+  }
+  if (/\.\s*(?:post|patch|put|delete)\s*\(/.test(httpReports)) {
+    problems.push('HttpReportRepository writes. Reports are read; the file is composed by the API.');
+  }
+  if (/suppress|unsuppressed|raw|includeSmall|threshold/i.test(httpReports.replace(/^\s*(?:\/\/|\*|\/\*).*$/gm, ''))) {
+    problems.push('HttpReportRepository names a way around suppression (DL-105).');
+  }
+}
+
+// The file the screen offers is the data layer's text, byte for byte.
+if (existsSync(join(root, viewPage)) && !/makeText\(\s*file\s*\.\s*content\s*,/.test(read(viewPage))) {
+  problems.push(
+    'The report screen no longer offers the file the data layer composed, as it was handed over. ' +
+      'A file made from anything else is one the manifest does not describe (DL-106).',
+  );
+}
+notes.push('served: the adapter asks with named filters; the mapper refuses a leak, a bad definition and a file without its conditions');
 
 /* ── Report ──────────────────────────────────────────────────────────────── */
 

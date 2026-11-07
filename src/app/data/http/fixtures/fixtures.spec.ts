@@ -83,6 +83,11 @@ import OFFICE_SEARCH_RESULTS_CASELOAD from './office-search-results-caseload.jso
 import OFFICE_WORK_MINE from './office-work-mine.json';
 import OFFICE_WORK_TEAM from './office-work-team.json';
 import OFFICE_WORK_ALERTS from './office-work-alerts.json';
+import OFFICE_REPORTS from './office-reports.json';
+import OFFICE_REPORT_COMPLETENESS from './office-report-data-completeness.json';
+import OFFICE_REPORT_EXPORT from './office-report-export.json';
+import OFFICE_REPORT_PROGRAMS from './office-report-program-utilisation.json';
+import OFFICE_REPORT_VULNERABILITY from './office-report-vulnerability-indicators.json';
 import OFFICE_DOCUMENT_GRANT from './office-document-grant.json';
 import ISSUANCE_TYPES from './issuance-types.json';
 import OFFICE_ISSUANCE_TYPE_RETIRED from './office-issuance-type-retired.json';
@@ -380,6 +385,15 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['office-work-mine', OFFICE_WORK_MINE, 'OfficeWorkQueueEnvelope'],
     ['office-work-team', OFFICE_WORK_TEAM, 'OfficeTeamWorkEnvelope'],
     ['office-work-alerts', OFFICE_WORK_ALERTS, 'OfficeAlertListEnvelope'],
+    ['office-reports', OFFICE_REPORTS, 'OfficeReportDefinitionListEnvelope'],
+    [
+      'office-report-vulnerability-indicators',
+      OFFICE_REPORT_VULNERABILITY,
+      'OfficeReportResultEnvelope',
+    ],
+    ['office-report-program-utilisation', OFFICE_REPORT_PROGRAMS, 'OfficeReportResultEnvelope'],
+    ['office-report-data-completeness', OFFICE_REPORT_COMPLETENESS, 'OfficeReportResultEnvelope'],
+    ['office-report-export', OFFICE_REPORT_EXPORT, 'OfficeReportExportEnvelope'],
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
     ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],

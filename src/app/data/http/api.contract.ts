@@ -286,6 +286,12 @@ export const API_ENDPOINTS = {
   officeWorkTeam: 'office/work/team',
   officeWorkAlerts: 'office/work/alerts',
   /**
+   * Reports (`DL-190`): the catalogue a bare list; `{id}` one report's figures, already suppressed
+   * on the server, by `period`, `barangay_id`, `program_id` and `status`; `{id}/export` the same
+   * as a file composed on the server with its conditions inside it (`report.export-person-level`).
+   */
+  officeReports: 'office/reports',
+  /**
    * The beneficiary registry (`DL-187`): a projection over the resident registry, keyed on the
    * resident's id. Cursor-paged and alphabetical, by `q`, `barangay_id`, `role`, `received_from`,
    * `received_to` and `with_open_duplicate_review`; one record by `{residentId}`, with

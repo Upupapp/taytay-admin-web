@@ -17,9 +17,17 @@
 .report__about,
 .filters,
 .series,
+.limits,
 .disclosure,
 .export {
   padding: var(--space-base);
+}
+
+.limits__list {
+  margin: var(--space-compact) 0 0;
+  padding-inline-start: var(--space-base);
+  font-size: 12.5px;
+  max-inline-size: 78ch;
 }
 
 .report__question {
@@ -159,6 +167,7 @@
 }
 
 .export__hint,
+.export__ready,
 .export__denied {
   margin: var(--space-compact) 0 var(--space-snug);
   color: var(--c-text-muted);
@@ -216,6 +225,7 @@
 
   .report__about,
   .series,
+  .limits,
   .disclosure {
     border: none;
     padding: 0;

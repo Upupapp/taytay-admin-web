@@ -19,6 +19,14 @@ export class ObjectUrls {
     return url;
   }
 
+  /**
+   * An address for a file the data layer composed as text — a report export (`DL-106`). The text
+   * is the file as it was handed over; nothing is added to it here.
+   */
+  makeText(content: string, type: string): string {
+    return this.make(new Blob([content], { type }));
+  }
+
   /** Gives back one address this holder made. Unknown addresses are ignored. */
   revoke(url: string): void {
     if (this.made.delete(url)) {

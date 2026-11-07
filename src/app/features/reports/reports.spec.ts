@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, Injectable, type Type } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, of, type Observable } from 'rxjs';
+import { firstValueFrom, map, of, type Observable } from 'rxjs';
+import { afterEach, beforeEach, vi } from 'vitest';
 
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
@@ -77,7 +78,11 @@ function staffRepository(user: StaffUser): StaffRepository {
 @Component({ template: 'stub' })
 class StubPage {}
 
-async function configure(role: StaffRole, id = 'staff-head'): Promise<void> {
+async function configure(
+  role: StaffRole,
+  id = 'staff-head',
+  reports: Type<unknown> = MockReportRepository,
+): Promise<void> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -89,7 +94,7 @@ async function configure(role: StaffRole, id = 'staff-head'): Promise<void> {
       { provide: APP_ENVIRONMENT, useValue: TEST_ENVIRONMENT },
       { provide: ACCESS_CONTEXT, useExisting: SessionState },
       { provide: STAFF_REPOSITORY, useValue: staffRepository(staffUser(role, id)) },
-      { provide: REPORT_REPOSITORY, useClass: MockReportRepository },
+      { provide: REPORT_REPOSITORY, useClass: reports },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
     ],
   });
@@ -107,8 +112,9 @@ async function openHub(role: StaffRole = 'mswdo-head'): Promise<ComponentFixture
 async function openReport(
   id: string,
   role: StaffRole = 'mswdo-head',
+  reports: Type<unknown> = MockReportRepository,
 ): Promise<ComponentFixture<ReportViewPage>> {
-  await configure(role);
+  await configure(role, 'staff-head', reports);
   await TestBed.inject(Router).navigateByUrl(`/reports/${id}`);
   const fixture = TestBed.createComponent(ReportViewPage);
   fixture.componentRef.setInput('id', id);
@@ -389,5 +395,86 @@ describe('the report that names people', () => {
       'This report names people',
     );
     expect(element.querySelectorAll('.chart__link').length).toBeGreaterThan(0);
+  });
+});
+
+/* ── What a report cannot count, and the file it hands over (DL-190) ─────── */
+
+/** The mock's figures, with a sentence about what the records cannot give. */
+@Injectable()
+class LimitedReports extends MockReportRepository {
+  override run(...args: Parameters<MockReportRepository['run']>) {
+    return super
+      .run(...args)
+      .pipe(
+        map((result) =>
+          result === null ? null : { ...result, limits: ['Programme membership is not recorded.'] },
+        ),
+      );
+  }
+}
+
+describe('what a report cannot count, and the file it hands over (DL-190)', () => {
+  const made: string[] = [];
+  const revoked: string[] = [];
+
+  beforeEach(() => {
+    made.length = 0;
+    revoked.length = 0;
+    // jsdom has no object URLs; these stand in and record what the screen makes and gives back.
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      writable: true,
+      value: vi.fn(() => {
+        const url = `blob:test/${made.length + 1}`;
+        made.push(url);
+        return url;
+      }),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      writable: true,
+      value: vi.fn((url: string) => revoked.push(url)),
+    });
+  });
+
+  afterEach(() => {
+    Reflect.deleteProperty(URL, 'createObjectURL');
+    Reflect.deleteProperty(URL, 'revokeObjectURL');
+  });
+
+  it('says what the records cannot give, rather than showing it as a zero', async () => {
+    const element = html(await openReport('program-utilisation', 'mswdo-head', LimitedReports));
+
+    expect(element.querySelector('#limits-heading')?.textContent).toContain(
+      'What this report cannot count',
+    );
+    expect(element.querySelector('.limits__list')?.textContent).toContain(
+      'Programme membership is not recorded.',
+    );
+  });
+
+  it('says nothing about limits when a report counts everything it asks about', async () => {
+    expect(html(await openReport('caseload')).querySelector('.limits')).toBeNull();
+  });
+
+  it('offers the composed file to save, by its name, and gives the address back on leaving', async () => {
+    const fixture = await openReport('caseload', 'mswdo-head');
+    const page = fixture.componentInstance as unknown as {
+      result: () => unknown;
+      requestExport: (result: unknown) => void;
+    };
+
+    page.requestExport(page.result());
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const link = html(fixture).querySelector<HTMLAnchorElement>('.export__ready a');
+    expect(link?.getAttribute('href')).toBe('blob:test/1');
+    expect(link?.getAttribute('download')).toMatch(/^caseload-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(link?.textContent).toContain('Save caseload-');
+
+    fixture.destroy();
+    expect(revoked).toEqual(['blob:test/1']);
   });
 });

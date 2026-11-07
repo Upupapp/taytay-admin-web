@@ -1,0 +1,99 @@
+{
+  "data": {
+    "definition": {
+      "id": "program-utilisation",
+      "area": "delivery",
+      "title": "Programme utilisation",
+      "question": "Which programmes are being used, and how much has gone out?",
+      "grain": "aggregate",
+      "permission": "report.view",
+      "person_level_justification": null,
+      "filters": {
+        "period": true,
+        "barangay": true,
+        "program": true,
+        "status": false,
+        "caseworker": false
+      },
+      "unit": "Releases",
+      "caution": null
+    },
+    "applied_filter": {
+      "period": "last-90-days",
+      "barangay_id": "0b1c2d3e-4f50-4a61-8b72-3c4d5e6f7a01",
+      "program_id": null,
+      "status": null
+    },
+    "applied_filter_description": "Last 90 days, by the day each release was handed over · Barangay: Dolores",
+    "generated_at": "2026-11-07T06:30:00.000Z",
+    "grain": "aggregate",
+    "series": [
+      {
+        "key": "by-program",
+        "title": "Releases handed over, by programme",
+        "summary": "Releases handed over, by programme: 42 releases in total. The largest is Food packs with 30 (71%).",
+        "label_header": "Programme",
+        "value_header": "Releases",
+        "measure": "records",
+        "rows": [
+          {
+            "key": "4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f02",
+            "label": "Food packs",
+            "value": 30,
+            "display": null,
+            "withheld": null,
+            "resident_id": null
+          },
+          {
+            "key": "4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f01",
+            "label": "Medical assistance",
+            "value": 12,
+            "display": null,
+            "withheld": null,
+            "resident_id": null
+          }
+        ],
+        "total": 42,
+        "suppression_notice": null
+      },
+      {
+        "key": "cash-by-program",
+        "title": "Money handed over, by programme",
+        "summary": "Money handed over, by programme: ₱24,500.00 in total. The largest is Medical assistance with ₱24,500.00. 30 releases were of goods: counted in the table above and never valued, so they add nothing here.",
+        "label_header": "Programme",
+        "value_header": "Amount",
+        "measure": "centavos",
+        "rows": [
+          {
+            "key": "4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f01",
+            "label": "Medical assistance",
+            "value": 2450000,
+            "display": null,
+            "withheld": null,
+            "resident_id": null
+          },
+          {
+            "key": "4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f02",
+            "label": "Food packs",
+            "value": 0,
+            "display": null,
+            "withheld": null,
+            "resident_id": null
+          }
+        ],
+        "total": 2450000,
+        "suppression_notice": null
+      }
+    ],
+    "caution": null,
+    "limits": [
+      "Programme membership is not recorded on this server, so how many people are enrolled in a programme is not counted: only what was handed over under it. A programme with nothing handed over may still have members."
+    ],
+    "disclosure": {
+      "threshold": 5,
+      "provenance": "convention-pending-confirmation",
+      "basis": "A count below 5 can identify a person in a barangay of this size, so it is withheld rather than shown. The threshold follows common statistical disclosure practice; the MSWDO has not yet confirmed a figure of its own."
+    }
+  },
+  "meta": {}
+}

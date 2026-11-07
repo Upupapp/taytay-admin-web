@@ -107,9 +107,22 @@
 
               <p class="series__total">
                 <span class="series__total-label">{{ copy.total }}:</span>
-                <span class="series__total-value">{{ series.total }}</span>
+                <span class="series__total-value">{{ series.totalDisplay ?? series.total }}</span>
                 <span class="series__total-hint">{{ copy.totalHint }}</span>
               </p>
+            </section>
+          }
+
+          @if (result.limits.length > 0) {
+            <!-- Said, never shown as a zero: a figure the records cannot give is not
+                 a figure of none (DL-175, DL-190). -->
+            <section class="card limits" aria-labelledby="limits-heading">
+              <h2 class="report__heading" id="limits-heading">{{ copy.limitsHeading }}</h2>
+              <ul class="limits__list">
+                @for (limit of result.limits; track limit) {
+                  <li>{{ limit }}</li>
+                }
+              </ul>
             </section>
           }
 
@@ -144,6 +157,12 @@
             </p>
           } @else {
             <p class="export__hint">{{ copy.exportHint }}</p>
+            @if (fileReady(); as file) {
+              <p class="export__ready" role="status">
+                {{ copy.fileReady }}
+                <a [href]="file.url" [attr.download]="file.filename">{{ copy.saveFile(file.filename) }}</a>
+              </p>
+            }
             <button
               type="button"
               class="btn"

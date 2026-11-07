@@ -46,6 +46,7 @@ export const REPORTS_COPY = {
     totalHint: 'Counted before anything was withheld, so it does not always match the rows above.',
     withheldHeading: 'Some figures are withheld',
     disclosureHeading: 'Why figures are withheld',
+    limitsHeading: 'What this report cannot count',
 
     namesPeopleHeading: 'This report names people',
 
@@ -56,6 +57,8 @@ export const REPORTS_COPY = {
     exportConfirm: 'I understand — export it',
     exportCancel: 'Cancel',
     exported: 'Export ready.',
+    fileReady: 'The file is ready. It carries the report, the filter and who produced it.',
+    saveFile: (filename: string) => `Save ${filename}`,
     exportFailed: 'That export could not be produced.',
     noExportPermission: 'Your account can read this report but cannot export it.',
 

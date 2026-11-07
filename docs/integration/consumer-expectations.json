@@ -2295,6 +2295,55 @@
     },
     {
       "method": "GET",
+      "path": "office/reports",
+      "consumer": "report.mapper.ts#toReportDefinition",
+      "required": [
+        "area",
+        "filters",
+        "grain",
+        "id",
+        "permission",
+        "question",
+        "title",
+        "unit"
+      ],
+      "optional": [
+        "caution",
+        "person_level_justification"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/reports/{id}",
+      "consumer": "report.mapper.ts#toReportResult",
+      "required": [
+        "applied_filter",
+        "applied_filter_description",
+        "definition",
+        "generated_at",
+        "grain",
+        "limits",
+        "series"
+      ],
+      "optional": [
+        "caution",
+        "disclosure"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/reports/{id}/export",
+      "consumer": "report.mapper.ts#toReportExport",
+      "required": [],
+      "optional": [
+        "content",
+        "filename",
+        "format",
+        "manifest"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "office/requirement-templates",
       "consumer": "program.mapper.ts#toRequirementTemplate",
       "required": [

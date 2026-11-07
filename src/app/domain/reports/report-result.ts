@@ -109,6 +109,11 @@ export interface ReportSeries {
    * Reported separately so a reader adding up visible rows is not misled.
    */
   readonly total: number;
+  /**
+   * The total in words, where a bare number would be read wrongly — a peso amount on a series that
+   * counts money in centavos. A screen falls back to `total`.
+   */
+  readonly totalDisplay?: string;
   /** Non-null when anything in this series was withheld (`DL-105`). */
   readonly suppressionNotice: string | null;
 }
@@ -138,6 +143,13 @@ export interface ReportResult {
   readonly caution: string | null;
   /** Stated whenever suppression is in force, whether or not it bit. */
   readonly disclosureBasis: string;
+  /**
+   * What the report's question needs and the records do not hold, in words (`DL-190`).
+   *
+   * A figure that cannot be counted is said not to be counted, never shown as a zero — the doctrine
+   * the unserved panels follow (`DL-175`). Empty when the report counts everything it asks about.
+   */
+  readonly limits: readonly string[];
 }
 
 export function seriesFor(result: ReportResult, key: string): ReportSeries | null {
@@ -179,6 +191,8 @@ export interface ExportManifest {
   readonly handlingNotice: string;
   /** Stated in the file whenever figures were withheld. */
   readonly suppressionNotice: string | null;
+  /** What the report could not count, in the file as on the screen (`DL-190`). */
+  readonly limits: readonly string[];
 }
 
 export const EXPORT_HANDLING_NOTICE =
@@ -217,6 +231,9 @@ export function manifestHeaderLines(manifest: ExportManifest): readonly string[]
   ];
   if (manifest.suppressionNotice !== null) {
     lines.push(`Withheld figures,${csvCell(manifest.suppressionNotice)}`);
+  }
+  for (const limit of manifest.limits) {
+    lines.push(`Not counted,${csvCell(limit)}`);
   }
   lines.push(`Handling,${csvCell(manifest.handlingNotice)}`);
   return lines;
