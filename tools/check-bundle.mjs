@@ -158,7 +158,7 @@ if (!isProductionArtefact) {
 /**
  * Secrets, in the artefact rather than in the source (TAB 13 step 8).
  *
- * The repository scanner at `docs/integration/tools/secret-scan.php` reads git history and
+ * The repository scanner, `tools/secret-scan.mjs` (`npm run scan:secrets`), reads git history and
  * **skips minified bundles** — reasonably, since a 1 MB line of transpiled JavaScript produces
  * nothing but false positives against a generic entropy rule.
  *

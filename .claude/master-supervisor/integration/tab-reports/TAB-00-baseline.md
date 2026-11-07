@@ -23,7 +23,7 @@ require remote administration or deployment, which this work is not authorized t
 | --- | --- |
 | Console evidence ledger | `docs/integration/evidence-ledger.md` |
 | Backend evidence ledger | `taytay-backend/docs/integration/evidence-ledger.md` |
-| Secret scanner (gitleaks substitute) | `docs/integration/tools/secret-scan.php`, both repositories |
+| Secret scanner (gitleaks substitute) | `docs/integration/tools/secret-scan.php`, both repositories. *Ported to Node as the console's `tools/secret-scan.mjs` (`npm run scan:secrets`) on 2026-11-07 and the PHP file removed: console `CLAUDE.md` rule 1 allows no PHP here. The backend no longer carries a copy.* |
 | Integration supervisor state | `.claude/master-supervisor/integration/state.json` |
 
 ## Measured starting truth

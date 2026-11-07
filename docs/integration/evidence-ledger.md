@@ -1931,3 +1931,39 @@ finding into a closed one. This belongs to the API.
 the allow-list §5 already promises, or §5 is amended to say sorting is not offered and the seven
 column headers come out of the console. Both are small; the current state — a documented feature,
 a faithful client and no server — is the only option that misleads a caseworker.
+
+---
+
+## 2026-11-07 — The secret scanner is Node now
+
+_Appended note. The entries above, including every mention of `secret-scan.php`, are left as they
+were written._
+
+`docs/integration/tools/secret-scan.php` was the last PHP file in this repository, and `CLAUDE.md`
+rule 1 calls any PHP here a defect. It is replaced by `tools/secret-scan.mjs`, run as
+`npm run scan:secrets`, with no new dependency. The rules, the placeholder list, the allowlist
+(`docs/integration/secret-scan-allowlist.txt`, same `rule|path` format) and the "reachable objects
+only" behaviour are unchanged: the script runs `git rev-list --objects --all` and feeds it to
+`git cat-file --batch --buffer` itself, which is the pipeline the PHP version was fed by hand. Two
+deliberate differences: it exits 1 when it finds something unaccepted (the PHP version always
+exited 0), and it is still **not** part of `npm run verify`, because it reads all of history and
+belongs before a push rather than in every local gate.
+
+**Parity, checked before the PHP file was deleted**, with PHP 8.4.2 on this machine:
+
+- A throwaway repository with invented, pattern-shaped values for every rule (nothing real): both
+  scanners printed **byte-identical** output, with the allowlist (23 findings, 2 accepted) and
+  without it (25 findings, 0 accepted). The planted set covered history-only and other-branch
+  values (found), placeholders and values under eight characters (skipped), a vertical tab as
+  whitespace (found) and a no-break space (not whitespace to PCRE, skipped by both), a non-ASCII
+  path and CRLF text, a binary blob and a blob over 1,500,000 bytes (counted, skipped), and a
+  dangling blob plus a staged-then-reset file (unreachable, never read by either).
+- This repository's full history: byte-identical output. 3,247 blobs seen, 3,246 scanned,
+  1 accepted, **4 findings not in the allowlist**: `assigned-secret` in three `*.spec.ts` sign-in
+  fixtures and `google-api-key` in `src/environments/environment.staging.ts`, the staging Firebase
+  browser key, which is public configuration (`DL-169`). The PHP version reports the same four, so
+  they predate the port. They are **not** added to the allowlist here: accepting a finding is a
+  reviewer reading the blob, which is what that file is for.
+
+The backend repository no longer tracks a copy of the PHP scanner; it left with the Laravel tree
+(`laravel-archive`).
