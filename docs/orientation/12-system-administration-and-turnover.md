@@ -252,27 +252,28 @@ After turnover these are the LGU's tasks. The LGU decides how often, and who doe
 Run these on staging with test accounts only. **Do not save** a new terms or privacy version, or a
 higher "Oldest app version allowed": it would affect every tester's app.
 
-| #   | Exercise                                                               | Role                         | UAT case        |
-| --- | ---------------------------------------------------------------------- | ---------------------------- | --------------- |
-| 1   | Sign in with a wrong password, then the right one                      | INTAKE                       | NFR-01          |
-| 2   | Sign out in one browser; act in another                                | INTAKE                       | NFR-02          |
-| 3   | Reload the page and sign in again                                      | INTAKE                       | NFR-03          |
-| 4   | Look for a stored sign-in pass in the browser                          | ADMIN                        | NFR-04          |
-| 5   | Give a test account its role, office and office role                   | ADMIN                        | ACC-01          |
-| 6   | Give a barangay link its barangay                                      | ADMIN                        | ACC-02          |
-| 7   | Open your own row: no role can be chosen                               | ADMIN                        | ACC-03          |
-| 8   | Compare each role's menu                                               | Each role                    | ACC-04          |
-| 9   | Type a page address your role does not open                            | BLINK, RELEASE               | ACC-05          |
-| 10  | Move a verified account to "Resident"; its card is revoked; restore it | ADMIN                        | ID-07           |
-| 11  | Change the contact line through the confirmation                       | ADMIN                        | DIR-12          |
-| 12  | Open the Terms of Use editor; review a new version; "Go back"          | ADMIN, with the DPO          | No UAT case yet |
-| 13  | Read the audit trail's notes and columns                               | AUDITOR                      | AUD-01          |
-| 14  | Find the rows for ID, account, directory and settings acts             | AUDITOR                      | AUD-02, AUD-03  |
-| 15  | Find the rows for registry, request, case and release acts             | AUDITOR                      | AUD-04, AUD-05  |
-| 16  | Check who can open the audit trail                                     | HEAD, AUDITOR, ADMIN, INTAKE | AUD-06          |
+| #   | Exercise                                                               | Role                         | UAT case       |
+| --- | ---------------------------------------------------------------------- | ---------------------------- | -------------- |
+| 1   | Sign in with a wrong password, then the right one                      | INTAKE                       | NFR-01         |
+| 2   | Sign out in one browser; act in another                                | INTAKE                       | NFR-02         |
+| 3   | Reload the page and sign in again                                      | INTAKE                       | NFR-03         |
+| 4   | Look for a stored sign-in pass in the browser                          | ADMIN                        | NFR-04         |
+| 5   | Give a test account its role, office and office role                   | ADMIN                        | ACC-01         |
+| 6   | Give a barangay link its barangay                                      | ADMIN                        | ACC-02         |
+| 7   | Open your own row: no role can be chosen                               | ADMIN                        | ACC-03         |
+| 8   | Compare each role's menu                                               | Each role                    | ACC-04         |
+| 9   | Type a page address your role does not open                            | BLINK, RELEASE               | ACC-05         |
+| 10  | Move a verified account to "Resident"; its card is revoked; restore it | ADMIN                        | ID-07          |
+| 11  | Change the contact line through the confirmation                       | ADMIN                        | DIR-12         |
+| 12  | Open the Terms of Use editor; review a new version; "Go back"          | ADMIN, with the DPO          | DIR-13 (part)  |
+| 13  | Read the audit trail's notes and columns                               | AUDITOR                      | AUD-01         |
+| 14  | Find the rows for ID, account, directory and settings acts             | AUDITOR                      | AUD-02, AUD-03 |
+| 15  | Find the rows for registry, request, case and release acts             | AUDITOR                      | AUD-04, AUD-05 |
+| 16  | Check who can open the audit trail                                     | HEAD, AUDITOR, ADMIN, INTAKE | AUD-06         |
 
-Exercise 12 has no UAT case: the Terms of Use and Privacy Notice editor was added after the UAT pack
-was written. Run it like this:
+Exercise 12 is the first half of DIR-13, stopped before saving: saving a new version on staging
+makes every tester accept again, so DIR-13 itself runs last in the UAT round. Run the exercise
+like this:
 
 1. Open "App settings". Under "Terms of Use and privacy notice", read the placeholder sentence.
 2. Click "Write the Terms of Use". Type a test version, _uat-1_, and the text _UAT: test text, not
@@ -370,10 +371,10 @@ new version the next time they load.
 verified test resident with a card for exercise 10. Remind everyone not to save a new legal text
 version or a higher oldest app version on staging.
 
-**Check on the day.** The console says a new version of the Terms of Use or the Privacy Notice makes
-every resident accept the text again in the app. At the time of writing this was not confirmed on a
-phone. Before the session, ask the developer to show how the staging app asks a signed-in resident
-to accept a new version, so you can answer this question with confidence.
+**Check on the day.** A new version of the Terms of Use or the Privacy Notice makes every signed-in
+resident accept the text again: the app shows "The Terms of Use have changed" (or the Privacy
+Notice) with "I agree" and "Sign out", and a guest is never asked. This arrived in the app on 7
+November 2026, so make sure the phones carry a staging build from that date or later.
 
 **Answer key**
 

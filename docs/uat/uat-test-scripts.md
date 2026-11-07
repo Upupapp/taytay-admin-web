@@ -1,7 +1,7 @@
 # UAT test scripts: Taytay, Rizal LGU platform (staging)
 
 Version 1.1, 7 November 2026 (replaces 1.0 of 6 November): adds the DOC area, residents' document
-requests (DOC-01 to DOC-14), and their menu entry in ACC-04.
+requests (DOC-01 to DOC-14), their menu entry in ACC-04, and DIR-13 (residents accept new Terms of Use).
 
 These scripts are deliverable D6, "Testing and LGU UAT" (item 7 on the project tracker). Read [README.md](README.md) first: it names the test accounts, the test-data rules
 and how to record a result or a defect.
@@ -28,7 +28,7 @@ and how to record a result or a defect.
 | ID: Digital ID                                | ID-01 to ID-08     | 8       |
 | ROS: Residents registry, households, families | ROS-01 to ROS-12   | 12      |
 | DSH: Dashboard                                | DSH-01 to DSH-07   | 7       |
-| DIR: Directory, home screen and app settings  | DIR-01 to DIR-12   | 12      |
+| DIR: Directory, home screen and app settings  | DIR-01 to DIR-13   | 13      |
 | DOC: Resident document requests               | DOC-01 to DOC-14   | 14      |
 | REQ: Assistance requests                      | REQ-01 to REQ-19   | 19      |
 | CAS: Cases                                    | CAS-01 to CAS-12   | 12      |
@@ -38,7 +38,7 @@ and how to record a result or a defect.
 | AUD: App audit trail                          | AUD-01 to AUD-06   | 6       |
 | NEWS: Balita and the office inbox             | NEWS-01 to NEWS-06 | 6       |
 | NFR: Privacy, security and accessibility      | NFR-01 to NFR-10   | 10      |
-| **Total**                                     |                    | **151** |
+| **Total**                                     |                    | **152** |
 
 ## REG: Resident registration and ID review
 
@@ -934,6 +934,34 @@ list of app accounts, which is "Users and roles" (ADMIN only).
     Residents’ apps read them the next time they load.".
   - In step 3 the dialog warns that this can force every resident with an older app to update.
   - In step 4 "Save the settings" stays greyed out until the box is ticked. Nothing is saved.
+
+### DIR-13 · New Terms of Use: the administrator publishes them, and residents accept again
+
+- **Role:** ADMIN, then RES1 on the phone
+- **Checks:** FR-STAFF-6, FR-RES-2, FR-RES-12 · Must · D1
+- **Set up first:** REG-05 done for RES1. Run this case **last in the round**, after telling every
+  tester: once it is saved, every signed-in resident on staging is asked to accept the test text.
+  Use a test version such as "uat-2026-11" and a text that starts "UAT test text, not the LGU's
+  Terms of Use.".
+- **Steps:**
+  1. ADMIN: open "App settings", go to "Terms of Use and privacy notice" and click "Write the Terms
+     of Use" (or "Change the Terms of Use" if a text exists).
+  2. Type the test version in "Version of the Terms of Use" and the test text in "Text of the
+     Terms of Use". Click "Review the change".
+  3. Read "What this does:", tick the box, and click "Save the settings".
+  4. RES1: open the app (already signed in), or leave it and come back after five minutes.
+  5. Tap "Read the Terms of Use", close the sheet, then tap "I agree".
+  6. Close and reopen the app.
+- **Expected result:**
+  - Step 3 lists, before the button, "This is a new version, uat-2026-11, so it makes every
+    resident accept the Terms of Use again in the app before going on using it." and "The text is
+    published exactly as written here, and the app shows it as written. …". The button stays greyed
+    out until the box is ticked.
+  - Step 4 shows "The Terms of Use have changed", with "I agree" and "Sign out". The account's
+    screens cannot be opened until RES1 agrees.
+  - Step 5 shows the test text, and "I agree" goes on to the app.
+  - Step 6 does not ask again.
+  - "Sign out" (if a tester tries it) returns to browsing as a guest; a guest is never asked.
 
 ## DOC: Resident document requests
 

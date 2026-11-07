@@ -3,7 +3,7 @@
 This pack is deliverable D6, "Testing and LGU UAT" (item 7 on the project tracker). Office staff and
 resident testers use it to test the platform on the staging site and sign it off before production.
 
-- [uat-test-scripts.md](uat-test-scripts.md): 151 test cases in 14 areas.
+- [uat-test-scripts.md](uat-test-scripts.md): 152 test cases in 14 areas.
 - [uat-signoff.md](uat-signoff.md): the sign-off sheets, the defect summary and the acceptance.
 - The workbook, "Taytay - UAT test scripts (staging).xlsx": the same cases, with columns to record
   each result and a "Defects" tab. It is **not kept in this repository**. It is generated from these

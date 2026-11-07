@@ -72,7 +72,7 @@ Decision: [ ] Accepted [ ] Accepted with open items: ................ [ ] Not ac
 | Tested by                  |      |      |           |      |
 | Accepted for the office by |      |      |           |      |
 
-## DIR: Directory, home screen and app settings (DIR-01 to DIR-12)
+## DIR: Directory, home screen and app settings (DIR-01 to DIR-13)
 
 | Cases run | Passed | Failed | Blocked | Open defects (ids) |
 | --------- | ------ | ------ | ------- | ------------------ |
