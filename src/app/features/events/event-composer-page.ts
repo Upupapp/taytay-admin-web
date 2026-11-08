@@ -17,6 +17,7 @@ import {
   type EventDraft,
   type LguEventId,
 } from '@domain/index';
+import { ImageFileField } from '@shared/media/image-file-field';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { EVENTS_COPY } from './events.copy';
@@ -40,11 +41,15 @@ import { EVENTS_COPY } from './events.copy';
  *
  * Everything else is lenient while drafting and strict at publication, on the
  * reasoning in `DL-125`.
+ *
+ * The cover is a file, never an address (`DL-193`). `ImageFileField` refuses what the API would
+ * refuse before anything is sent; the chosen image is stored only when the draft is saved, and the
+ * composer says so before its button. Its description sits beside it, never behind a disclosure.
  */
 @Component({
   selector: 'app-event-composer-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeader, RouterLink],
+  imports: [ImageFileField, PageHeader, RouterLink],
   templateUrl: './event-composer-page.html',
   styleUrl: './event-composer-page.scss',
 })
@@ -62,7 +67,8 @@ export class EventComposerPage {
   protected readonly summary = signal('');
   protected readonly details = signal('');
   protected readonly category = signal<EventCategory>('assembly');
-  protected readonly imageUrl = signal('');
+  /** The chosen cover, already held to `APP_IMAGE_POLICY` by the field; sent only on save. */
+  protected readonly cover = signal<Blob | null>(null);
   protected readonly altText = signal('');
   protected readonly startsAt = signal('');
   protected readonly endsAt = signal('');
@@ -95,10 +101,7 @@ export class EventComposerPage {
     summary: this.summary(),
     details: this.details(),
     category: this.category(),
-    image:
-      this.imageUrl().trim() === ''
-        ? null
-        : { url: this.imageUrl().trim(), altText: this.altText() },
+    image: this.coverImage(),
     startsAt: this.asDate(this.startsAt()),
     endsAt: this.asDate(this.endsAt()),
     venue: {
@@ -140,6 +143,11 @@ export class EventComposerPage {
   protected readonly canSave = computed(
     () => this.title().trim().length > 0 && this.saveProblems().length === 0 && !this.saving(),
   );
+
+  private coverImage(): EventDraft['image'] {
+    const file = this.cover();
+    return file === null ? null : { kind: 'chosen', file, altText: this.altText() };
+  }
 
   private asDate(value: string): EventDraft['startsAt'] {
     return value === '' ? null : asIsoDateTime(new Date(value));

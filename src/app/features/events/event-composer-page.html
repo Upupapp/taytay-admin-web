@@ -49,16 +49,16 @@
 
   <section class="card composer__panel" aria-labelledby="image-heading">
     <h2 class="composer__heading" id="image-heading">{{ copy.imageHeading }}</h2>
+    <p class="composer__hint">{{ copy.imageNote }}</p>
 
-    <label class="field">
-      <span class="field__label">{{ copy.imageUrl }}</span>
-      <input
-        type="text"
-        class="field__input"
-        [value]="imageUrl()"
-        (input)="onText(imageUrl, $event)"
-      />
-    </label>
+    <!-- Refuses a file the API would refuse before anything is sent (`DL-193`). -->
+    <app-image-file-field
+      inputId="event-cover"
+      [label]="copy.image"
+      [hint]="copy.imageHint"
+      [disabled]="saving()"
+      (chosen)="cover.set($event)"
+    />
 
     <!-- Beside the image, never behind a disclosure (`DL-125`). -->
     <label class="field">
@@ -281,6 +281,18 @@
       <ul class="problems__list">
         @for (problem of publishProblems(); track problem) {
           <li>{{ problem }}</li>
+        }
+      </ul>
+    </div>
+  }
+
+  @if (cover() !== null) {
+    <!-- What saving does to the image, before the button that does it. -->
+    <div class="card composer__effects" role="status">
+      <p>{{ copy.coverEffectsLead }}</p>
+      <ul>
+        @for (effect of copy.coverEffects; track $index) {
+          <li>{{ effect }}</li>
         }
       </ul>
     </div>

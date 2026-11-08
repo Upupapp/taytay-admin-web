@@ -1,5 +1,5 @@
 import type { AuditStamp } from '../shared/audit';
-import type { BarangayId, IsoDateTime, LguEventId, StaffUserId } from '../shared/ids';
+import type { BarangayId, IsoDateTime, LguEventId, MediaId, StaffUserId } from '../shared/ids';
 import type { StatusCatalog, StatusTransitions } from '../shared/status';
 
 /**
@@ -104,11 +104,28 @@ export const EVENT_CATEGORY_LABELS: Readonly<Record<EventCategory, string>> = {
 export const EVENT_TIMEZONE = 'Asia/Manila';
 export const EVENT_TIMEZONE_LABEL = 'Philippine Standard Time (Asia/Manila)';
 
-export interface EventImage {
-  readonly url: string;
+/**
+ * An event's cover, as the API keeps it: an image uploaded through the API and the office's words
+ * for it (`DL-193`).
+ *
+ * There is no address. The residents' app loads a cover only from the API's own route, so an
+ * address somebody typed was never shown to anybody, and fetching one would tell a host the LGU does
+ * not run who opened the event. The console reads the bytes through the data layer too.
+ */
+export interface EventCover {
+  readonly mediaId: MediaId;
   /** What the image shows, for somebody who cannot see it. Never the file name. */
   readonly altText: string;
 }
+
+/**
+ * A cover as the composer holds it: one the API already keeps — a duplicate carries its original's —
+ * or an image chosen in this tab and not yet sent. A chosen image has already passed
+ * `APP_IMAGE_POLICY` in the field that took it; it is stored only when the draft is saved.
+ */
+export type EventCoverDraft =
+  | (EventCover & { readonly kind: 'stored' })
+  | { readonly kind: 'chosen'; readonly file: Blob; readonly altText: string };
 
 export interface EventVenue {
   readonly name: string;
@@ -147,7 +164,7 @@ export interface LguEvent {
   readonly details: string;
   readonly category: EventCategory;
   readonly status: EventStatus;
-  readonly image: EventImage | null;
+  readonly image: EventCover | null;
   readonly startsAt: IsoDateTime;
   readonly endsAt: IsoDateTime;
   readonly venue: EventVenue;
@@ -183,7 +200,7 @@ export interface EventDraft {
   readonly summary: string;
   readonly details: string;
   readonly category: EventCategory;
-  readonly image: EventImage | null;
+  readonly image: EventCoverDraft | null;
   readonly startsAt: IsoDateTime | null;
   readonly endsAt: IsoDateTime | null;
   readonly venue: EventVenue;
@@ -457,7 +474,8 @@ export function duplicateOf(event: LguEvent): EventDraft {
     summary: event.summary,
     details: event.details,
     category: event.category,
-    image: event.image,
+    // The same stored image, named again; nothing is uploaded twice (`DL-193`).
+    image: event.image === null ? null : { kind: 'stored', ...event.image },
     startsAt: null,
     endsAt: null,
     venue: event.venue,

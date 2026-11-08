@@ -92,19 +92,6 @@
   padding: var(--space-base);
 }
 
-.event__thumb {
-  inline-size: 96px;
-  block-size: 64px;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-base);
-  object-fit: cover;
-}
-
-.event__thumb--none {
-  display: block;
-  background: var(--c-surface-sunken, transparent);
-}
-
 .event__body {
   flex: 1 1 320px;
   min-inline-size: 0;

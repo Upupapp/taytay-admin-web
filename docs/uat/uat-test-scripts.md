@@ -1,6 +1,9 @@
 # UAT test scripts: Taytay, Rizal LGU platform (staging)
 
-Version 1.4, 8 November 2026 (replaces 1.3 of the same day): adds events (EVT-01 to EVT-11), served
+Version 1.5, 8 November 2026 (replaces 1.4 of the same day): an event's cover is a picture file
+uploaded through the API, never a typed address (DL-193), so EVT-01 and EVT-02 choose a file,
+EVT-01 checks a wrong file is refused before it is sent, and EVT-02 and EVT-11 check when residents
+see the cover. Version 1.4 added events (EVT-01 to EVT-11), served
 by the API since 8 November (DL-192), whose resident steps need an app build that includes events
 (decision D-191 in the app's decision log), and adds Events to the menus in ACC-04. Version 1.3
 added Staff and roles, the office's audit trail and data governance (GOV-01 to GOV-08), served by
@@ -3219,7 +3222,11 @@ waitlist; and "E2", "UAT Feeding programme (test)", which starts and ends during
 
 **Needs an app build with events.** The resident steps (EVT-02 step 8, EVT-03 to EVT-05, EVT-08,
 EVT-09 and EVT-11) need a staging build of the app that includes events (decision D-191 in the
-app's decision log). Until the developer supplies one, those cases are Blocked.
+app's decision log), and the cover checks in EVT-02 step 8 and EVT-11 step 6 one that also
+includes D-193. Until the developer supplies one, those cases are Blocked.
+
+**Test pictures.** EVT-01 and EVT-02 need a PDF and a small JPEG (test images only, nothing showing
+a real person).
 
 **Timing.** E2 starts 45 minutes after it is created and ends an hour later. EVT-08 runs before it
 starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11 runs last in EVT.
@@ -3228,7 +3235,7 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
 
 - **Role:** HEAD
 - **Checks:** FR-STAFF-26 · Should · T-16
-- **Set up first:** ACC-04 done.
+- **Set up first:** ACC-04 done. The test PDF and the small test JPEG.
 - **Steps:**
   1. Open "Events", under "Community" in the menu. Read the page.
   2. Click "Create an event". Read the hints under "When" and "Registration", and the box above
@@ -3236,9 +3243,10 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
   3. Type "UAT incomplete event (test)" in "Event title".
   4. Fill "Starts" with tomorrow at 10:00 and "Ends" with tomorrow at 09:00.
   5. Change "Ends" to tomorrow at 12:00. Read the box.
-  6. In "Image", type the staff website address followed by /favicon.ico. Type "UAT: the
-     website's logo." in "Describe the image", then delete it again.
-  7. Click "Save draft".
+  6. Read "Cover image". In "Image", choose the PDF (switch the file dialog to "All files"). Then
+     choose the small JPEG. Type "UAT: a test picture." in "Describe the image", then delete it
+     again. Read the box above "Save draft".
+  7. Click "Save draft". On the event's page, click "Show the cover image".
   8. Click "Back to events", then "Drafts".
 - **Expected result:**
   - Step 1 shows "Events" with "Municipal activities, registrations and attendance." and "Create
@@ -3253,11 +3261,22 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
   - In step 5 the box lists only what publishing will need: "Write the one line residents see in
     the list.", "Name the venue.", "Give the full address. "Covered court" is not findable by
     somebody new." and "Name somebody residents can ask.". "Save draft" can now be clicked.
-  - In step 6 "Describe the cover image before publishing. A resident using a screen reader gets
-    nothing from a poster with no description." appears once the address is typed, goes while a
-    description is there, and comes back when it is deleted. "Describe the image" sits right under
-    "Image", with "Required before publishing. …".
-  - Step 7 shows "Draft saved." and opens the event's page, marked "Draft".
+  - In step 6 "Cover image" reads "Upload the picture here. The residents’ app shows only a cover
+    stored through the Taytay API, never a link to another site.", and there is no box for a web
+    address. The PDF shows "That file is not a JPEG, PNG or WebP image, whatever its name says. …"
+    under "Image", and nothing is sent. The JPEG is shown as a preview with its name and size, and
+    "Choose no image". "Describe the cover image before publishing. A resident using a screen
+    reader gets nothing from a poster with no description." appears once the JPEG is chosen, goes
+    while a description is there, and comes back when it is deleted. "Describe the image" sits right
+    under "Image", with "Required before publishing. …". Above "Save draft" a box reads "Saving this
+    draft with a cover image:", then "Stores the image on the server first, then saves the event
+    naming it. If the event is then refused, the image stays stored, unused." and "Shows the cover
+    to residents only once the event is published, and after it is completed — never while it is a
+    draft, and not once it is cancelled.".
+  - Step 7 shows "Draft saved." and opens the event's page, marked "Draft". The picture is not
+    shown until "Show the cover image" is clicked; then the JPEG appears. Under it the page reads
+    "Residents see this cover only while the event is published or completed: not on a draft, and
+    not once it is cancelled or archived."
   - In step 8 E0 is listed under "Drafts", marked "Draft", with "Registration" "No registration
     needed" and "Registered" "0 / no limit". It is not under "Upcoming" or "Published".
 
@@ -3274,7 +3293,8 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
   4. Click "Back to events", then "Create an event". Fill "Event title" with "UAT Livelihood
      seminar (test)", "One-line summary" with "UAT test event, please ignore.", "Category" with
      "Livelihood training", "Starts" with seven days from today at 09:00 and "Ends" with the same
-     day at 12:00. Leave "Image" empty. Read the box above "Save draft".
+     day at 12:00. In "Image", choose the small JPEG, and type "UAT: a test picture for the
+     seminar." in "Describe the image". Read the boxes above "Save draft".
   5. Fill "Venue name" with "UAT Test Hall", then "Complete address" with "UAT 1 Test Street",
      then "Contact person" with "UAT Contact (test)" and "Office" with "MSWDO", reading the box
      after each.
@@ -3295,7 +3315,9 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
   - Step 3 shows "Saved." E0 reads "Archived" and is listed under "Archived" only. Its "Actions"
     offer no button: nothing publishes it again.
   - Step 4 lists "Name the venue.", "Give the full address. …" and "Name somebody residents can
-    ask.". "Save draft" can already be clicked: these stop publishing, not saving.
+    ask.", and not "Describe the cover image before publishing. …". The box "Saving this draft with
+    a cover image:" stands above "Save draft". "Save draft" can already be clicked: these stop
+    publishing, not saving.
   - In step 5 each line goes as its field is filled. Once the contact is named, the box is gone.
   - In step 6 ticking the waitlist while "Capacity" is empty shows "A waitlist needs a capacity —
     otherwise nobody ever joins it." and greys out "Save draft"; typing 1 clears both. "Who this is
@@ -3303,8 +3325,10 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
     The save shows "Draft saved." and opens E1's page.
   - Step 7 shows "Saved.". E1 reads "Published", "Publication" gives "Published" with the date and
     time, and "Actions" offers "Cancel event" and "Archive", with no "Publish" and no "Mark
-    completed".
-  - In step 8 E1 is listed with its summary, date and venue. E0 is not.
+    completed". Under "What residents see" the line "Residents see this cover only while the event
+    is published or completed: …" is gone.
+  - In step 8 E1 is listed with its summary, date and venue, and with the picture chosen in step 4
+    (an app build that includes D-193). E0 is not.
 
 ### EVT-03 · Only a verified resident can register
 
@@ -3562,12 +3586,15 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
     and time, and "Why it was cancelled" with the reason typed.
   - "Actions" offers only "Archive": no "Publish" and no "Cancel event". Nothing on the page puts
     the event back on.
+  - In step 4 the line "Residents see this cover only while the event is published or completed:
+    …" is back under "What residents see".
   - The tooltip in step 4 reads "Called off, and everybody registered has been told. It cannot be
     un-cancelled — an event that is back on is a new event.". "What the office did" gains
     "Cancelled" ("Event cancelled. Everybody holding a place or a waitlist place was told in the
     residents’ app.") with the reason.
   - In step 5 E1 is under "Cancelled" and not under "Upcoming".
   - In step 6 each has a notification that E1 is called off. It does not show the head's reason.
+    E1 in the app no longer shows its picture (an app build that includes D-193).
     The app shows E1 as cancelled.
 
 ## NFR: Privacy, security and accessibility

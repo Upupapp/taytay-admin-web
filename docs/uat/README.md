@@ -126,7 +126,8 @@ owner. Nothing in the sheets is signed in advance.
 Not built yet, or not served by the API (the website lists these under "Not connected yet"):
 
 - The newsfeed (FR-STAFF-26), which waits for OD-4. Events, served by the API since 8 November
-  2026 (`DL-192`), have their scripts since version 1.4 (EVT). Governance, the rest of
+  2026 (`DL-192`), have their scripts since version 1.4 (EVT); their covers are uploaded since
+  version 1.5 (`DL-193`). Governance, the rest of
   FR-STAFF-26, is served since 8 November 2026 (`DL-191`) and has its scripts since version 1.3
   (GOV, AUD-07). Capturing a correction request is not built, and the governance page says so
   (GOV-05).

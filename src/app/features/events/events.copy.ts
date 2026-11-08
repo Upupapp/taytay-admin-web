@@ -56,7 +56,11 @@ export const EVENTS_COPY = {
     category: 'Category',
 
     imageHeading: 'Cover image',
-    imageUrl: 'Image',
+    imageNote:
+      'Upload the picture here. The residents’ app shows only a cover stored through the Taytay API, ' +
+      'never a link to another site.',
+    image: 'Image',
+    imageHint: 'Optional. The picture residents see with the event once it is published.',
     altText: 'Describe the image',
     altTextHint:
       'Required before publishing. A resident using a screen reader gets nothing from a poster ' +
@@ -97,6 +101,15 @@ export const EVENTS_COPY = {
     remindersHeading: 'Reminders',
     reminders: 'What to bring, and anything else worth saying',
 
+    // What saving does to a chosen cover, said before the button (`DL-193`, as `DL-170` for a banner).
+    coverEffectsLead: 'Saving this draft with a cover image:',
+    coverEffects: [
+      'Stores the image on the server first, then saves the event naming it. If the event is then ' +
+        'refused, the image stays stored, unused.',
+      'Shows the cover to residents only once the event is published, and after it is completed — ' +
+        'never while it is a draft, and not once it is cancelled.',
+    ],
+
     saveDraft: 'Save draft',
     saved: 'Draft saved.',
     saveFailed: 'That could not be saved.',
@@ -110,6 +123,13 @@ export const EVENTS_COPY = {
 
     previewHeading: 'What residents see',
     previewNote: 'A read-only preview of the listing in the resident app.',
+    coverShow: 'Show the cover image',
+    coverLoading: 'Loading the cover image…',
+    coverFailed: 'The cover image could not be loaded.',
+    coverHide: 'Hide the cover image',
+    coverNotShown:
+      'Residents see this cover only while the event is published or completed: not on a draft, and ' +
+      'not once it is cancelled or archived.',
     detailsHeading: 'Details',
     whenHeading: 'When',
     whereHeading: 'Where',

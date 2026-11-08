@@ -21,6 +21,12 @@
  *      promo codes or payment. No recurring events. No event chat or comments.
  *   6. **No resident registration from this console.** The office manages what
  *      arrives; it does not sign anybody up (`DL-123`).
+ *   7. **A cover is an uploaded image, never an address** (`DL-193`). The
+ *      residents' app loads a cover only from the API, so a typed link was never
+ *      shown; the composer takes a file through the field that refuses what the
+ *      API would refuse before anything is sent, keeps the description beside
+ *      it, says what saving does to the image before its button, and every
+ *      cover on screen comes through the data layer.
  *
  * Exit 0 = clean, 1 = at least one violation.
  */
@@ -864,6 +870,123 @@ if (eventMapper === '') {
   }
 }
 notes.push('served adapter: bound, nobody signed up, reasoned before sending, closed set, server stamp');
+
+/* ── 10. A cover is an uploaded image, never an address (`DL-193`) ────────── */
+
+/*
+ * The residents' app loads an event's cover only from the API's own route (its D-192), so a link the
+ * office typed was never shown to anybody, and the field that took one invited something that did
+ * nothing. Each rule below was validated against a planted regression.
+ */
+{
+  const coverType = iface(event, 'EventCover');
+  if (coverType === '' || !/mediaId:\s*MediaId/.test(coverType) || /\b(url|href|src|link)\??:/.test(code(coverType))) {
+    problems.push(
+      '`EventCover` is not a stored image named by its `MediaId`, or it carries an address. A cover ' +
+        'is uploaded through the API; an address on the model is one a template will load (`DL-193`).',
+    );
+  }
+  const lguEvent = iface(event, 'LguEvent');
+  const eventDraft = iface(event, 'EventDraft');
+  if (!/image:\s*EventCover \| null/.test(lguEvent) || !/image:\s*EventCoverDraft \| null/.test(eventDraft)) {
+    problems.push('`LguEvent` or `EventDraft` no longer holds its cover as `EventCover` / `EventCoverDraft`.');
+  }
+
+  // The mapper reads the stored image and never the residents' public address; the body names the
+  // stored image and never an address.
+  if (/field\(\s*wire\s*,\s*'image_url'\s*\)/.test(mapperCode)) {
+    problems.push(
+      "The event mapper reads image_url. That is the residents' public route, which answers only once " +
+        'an event is published; a template bound to it would load from the API host, not the data layer.',
+    );
+  }
+  // To the end of the function: its parameter types hold braces, so `fn` would stop inside them.
+  const wireStart = eventMapper.indexOf('export function toWireEventDraft(');
+  const wireDraft = wireStart < 0 ? '' : code(eventMapper.slice(wireStart, eventMapper.indexOf('\n}\n', wireStart)));
+  if (!/image_media_id:/.test(wireDraft) || /image_url/.test(wireDraft)) {
+    problems.push('`toWireEventDraft` no longer names the cover by `image_media_id`, or sends an address.');
+  }
+
+  // The adapter refuses everything it can before the image leaves, uploads it through `POST media`,
+  // and reads a cover's bytes with the bearer in a header.
+  const save = httpMethod('saveDraft');
+  const refusedAt = save.search(/eventProblems\(/);
+  const storedAt = save.search(/storedCover\(/);
+  if (refusedAt < 0 || storedAt < 0 || storedAt < refusedAt) {
+    problems.push(
+      '`HttpEventRepository.saveDraft` stores the cover before refusing what the domain refuses, or ' +
+        'no longer stores it at all. Nothing is sent for a draft that cannot be saved.',
+    );
+  }
+  const storerStart = httpCode.indexOf('private storedCover(');
+  const storer = storerStart < 0 ? '' : httpCode.slice(storerStart, httpCode.indexOf('\n  }\n', storerStart));
+  if (!/postForm\(\s*API_ENDPOINTS\s*\.\s*media\s*,\s*toWireMediaUpload\(/.test(storer)) {
+    problems.push('The cover is no longer stored through `POST media` with `toWireMediaUpload`.');
+  }
+  if (!/api\s*\.\s*blob\(\s*`\$\{API_ENDPOINTS\s*\.\s*media\}\/[^`]*\/content`/.test(httpMethod('coverImage'))) {
+    problems.push(
+      '`coverImage` no longer reads `media/{id}/content` through `ApiClient.blob`. A draft\'s cover is ' +
+        'read with the bearer in a header, never from an address.',
+    );
+  }
+  if (!/refusal\(\s*draft\s*\.\s*image\s*\.\s*file\s*\)/.test(mockCode) || !/APP_IMAGE_POLICY/.test(mockCode)) {
+    problems.push('The mock stores a chosen cover without refusing what `POST media` refuses.');
+  }
+
+  // The composer: a file through the shared field, the description beside it, the effects before
+  // the button.
+  const composerFile = templates.find((file) => file.includes('composer'));
+  const composerHtml = composerFile === undefined ? '' : code(read(composerFile));
+  const imageSection = /<section[^>]*aria-labelledby="image-heading"[\s\S]*?<\/section>/.exec(composerHtml)?.[0] ?? '';
+  if (!/<app-image-file-field\b/.test(imageSection)) {
+    problems.push(
+      'The composer no longer takes the cover through `<app-image-file-field>`, the field that refuses ' +
+        'a file the API would refuse before anything is sent.',
+    );
+  }
+  if (!/\[value\]="altText\(\)"/.test(imageSection)) {
+    problems.push('The cover\'s description is no longer beside the image (`DL-125`).');
+  }
+  if (/type="url"/.test(imageSection) || /imageUrl|image_url/.test(composerHtml)) {
+    problems.push('The composer asks for an image address again. A typed cover is never shown (`DL-193`).');
+  }
+  // Every mention, not the first: a second copy of the effects below the button is read after the
+  // decision is made.
+  const effectsAt = Math.max(-1, ...[...composerHtml.matchAll(/copy\s*\.\s*coverEffects\b/g)].map((m) => m.index));
+  const buttonAt = composerHtml.search(/<button[^>]*type="submit"/);
+  if (effectsAt < 0 || buttonAt < 0 || effectsAt > buttonAt) {
+    problems.push('What saving does to the cover image is no longer said before the save button.');
+  }
+  const coverEffects = entry(copy, 'composer').match(/coverEffects:\s*\[[\s\S]*?\]/)?.[0] ?? '';
+  if (!/stays stored/.test(coverEffects) || !/published/.test(coverEffects)) {
+    problems.push(
+      'The composer no longer says the image is stored first and stays if the event is refused, or ' +
+        'when residents see the cover.',
+    );
+  }
+
+  // Every cover on screen comes through the data layer, from an address this tab made and gives back.
+  for (const file of templates) {
+    const template = code(read(file));
+    for (const [tag] of template.matchAll(/<img\b[^>]*>/g)) {
+      const source = /\[src\]="([^"]+)"/.exec(tag)?.[1];
+      if (source === undefined || /[.(]/.test(source)) {
+        problems.push(`${file} draws an image from ${source ?? 'a fixed address'}. Bytes come through the data layer.`);
+      }
+    }
+    if (/<img\b/.test(template)) {
+      // Every holder the component makes is given back when it goes, not merely one of them.
+      const component = code(read(file.replace(/\.html$/, '.ts')));
+      const holders = [...component.matchAll(/(\w+)\s*=\s*new ObjectUrls\(\)/g)].map((m) => m[1]);
+      const destroyAt = component.indexOf('onDestroy(');
+      const onDestroy = destroyAt < 0 ? '' : component.slice(destroyAt, destroyAt + 300);
+      if (holders.length === 0 || holders.some((holder) => !new RegExp(`this\\s*\\.\\s*${holder}\\s*\\.\\s*revokeAll\\(\\)`).test(onDestroy))) {
+        problems.push(`${file} shows an image without every ObjectUrls holder given back on destroy.`);
+      }
+    }
+  }
+}
+notes.push('covers: uploaded, never an address; refused before sending; described beside; read through the data layer');
 
 /* ── Report ──────────────────────────────────────────────────────────────── */
 

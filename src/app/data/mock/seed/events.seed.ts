@@ -5,6 +5,7 @@ import {
   type EventRegistrationId,
   type LguEvent,
   type LguEventId,
+  type MediaId,
   type ResidentId,
   type StaffUserId,
 } from '@domain/index';
@@ -40,6 +41,8 @@ type EventBase = Omit<LguEvent, 'registeredCount' | 'waitlistedCount'>;
  *
  * Every cover image carries alt text, because an event that could not be
  * published without it should not be seeded without it either (`DL-125`).
+ * A cover is a stored image named by its id, as the API keeps one (`DL-193`);
+ * the mock serves its bytes from `sampleEventCover`.
  */
 const EVENT_BASE: readonly EventBase[] = [
   {
@@ -54,7 +57,7 @@ const EVENT_BASE: readonly EventBase[] = [
     category: 'payout',
     status: 'published',
     image: {
-      url: '/assets/events/payout-hall.svg',
+      mediaId: asId<MediaId>('media-event-cover-0001'),
       altText: 'The Municipal Hall lobby set up with numbered chairs and a service desk.',
     },
     startsAt: daysAfterAnchor(45, 8),
@@ -93,7 +96,7 @@ const EVENT_BASE: readonly EventBase[] = [
     category: 'medical-mission',
     status: 'published',
     image: {
-      url: '/assets/events/medical-mission.svg',
+      mediaId: asId<MediaId>('media-event-cover-0002'),
       altText: 'A covered court with consultation tables under a tarpaulin banner.',
     },
     startsAt: daysAfterAnchor(52, 8),
@@ -134,7 +137,7 @@ const EVENT_BASE: readonly EventBase[] = [
     category: 'livelihood-training',
     status: 'published',
     image: {
-      url: '/assets/events/livelihood.svg',
+      mediaId: asId<MediaId>('media-event-cover-0003'),
       altText: 'A training kitchen with work tables and sealed sample jars.',
     },
     startsAt: daysAfterAnchor(60, 8),
@@ -213,7 +216,7 @@ const EVENT_BASE: readonly EventBase[] = [
     category: 'relief-distribution',
     status: 'completed',
     image: {
-      url: '/assets/events/relief.svg',
+      mediaId: asId<MediaId>('media-event-cover-0004'),
       altText: 'Stacked family food packs on pallets inside a barangay hall.',
     },
     startsAt: daysBeforeAnchor(20, 7),
@@ -468,4 +471,17 @@ function countFor(id: LguEventId, status: EventRegistration['status']): number {
   return MOCK_REGISTRATIONS.filter(
     (registration) => registration.eventId === id && registration.status === status,
   ).length;
+}
+
+/**
+ * The bytes the mock serves for a stored cover: a labelled placeholder, so nobody mistakes a seeded
+ * event's picture for a real poster (`DL-193`).
+ */
+export function sampleEventCover(title: string): Blob {
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360">' +
+    '<rect width="640" height="360" fill="#10559a"/>' +
+    `<text x="24" y="190" font-size="24" fill="#fff">SAMPLE COVER - ${title.replace(/[<&>]/g, '')}</text>` +
+    '</svg>';
+  return new Blob([svg], { type: 'image/svg+xml' });
 }

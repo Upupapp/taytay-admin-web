@@ -18,11 +18,28 @@
             <span class="event__category">{{ categoryLabel(event) }}</span>
           </p>
 
-          @if (event.image) {
-            <figure class="event__figure">
-              <img class="event__image" [src]="event.image.url" [alt]="event.image.altText" />
-              <figcaption class="event__caption">{{ event.image.altText }}</figcaption>
-            </figure>
+          @if (event.image; as cover) {
+            @if (coverUrl(); as url) {
+              <figure class="event__figure">
+                <img class="event__image" [src]="url" [alt]="cover.altText" />
+                <figcaption class="event__caption">{{ cover.altText }}</figcaption>
+              </figure>
+              <button type="button" class="btn" (click)="hideCover()">{{ copy.coverHide }}</button>
+            } @else {
+              @if (coverState() === 'loading') {
+                <p class="event__hint" role="status">{{ copy.coverLoading }}</p>
+              } @else {
+                @if (coverState() === 'failed') {
+                  <p class="event__hint" role="alert">{{ copy.coverFailed }}</p>
+                }
+                <button type="button" class="btn" (click)="showCover(event)">
+                  {{ copy.coverShow }}
+                </button>
+              }
+            }
+            @if (event.status !== 'published' && event.status !== 'completed') {
+              <p class="event__hint">{{ copy.coverNotShown }}</p>
+            }
           }
 
           <p class="event__summary">{{ event.summary }}</p>

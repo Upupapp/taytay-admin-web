@@ -2,7 +2,7 @@ import type { UploadPolicy, UploadRefusal } from '../requirements/upload-policy'
 
 /**
  * What the residents' app accepts as an image — an office banner, a Tulong page's picture, a home
- * banner (`DL-170`).
+ * banner (`DL-170`), an event's cover (`DL-193`).
  *
  * The figures are the API's, read from the backend at `2736e28`: `MAX_IMAGE_BYTES = 5 * 1024 * 1024`
  * in `src/modules/media/images.ts`, the same ceiling on multer's `fileSize` in `src/http/upload.ts`,

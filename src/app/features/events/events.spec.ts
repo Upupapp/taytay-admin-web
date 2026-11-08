@@ -598,3 +598,134 @@ describe('"Try again" on the event list', () => {
     expect(element.textContent).not.toContain('The server did not answer.');
   });
 });
+
+/* ── A cover is uploaded, and read through the data layer (DL-193) ────────── */
+
+describe('an event’s cover', () => {
+  const made: string[] = [];
+  const revoked: string[] = [];
+  const originals = {
+    create: Object.getOwnPropertyDescriptor(URL, 'createObjectURL'),
+    revoke: Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL'),
+  };
+
+  beforeEach(() => {
+    made.length = 0;
+    revoked.length = 0;
+    // jsdom has no object URLs; these stand in and record what the page makes and gives back.
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      writable: true,
+      value: () => {
+        const url = `blob:test/${made.length + 1}`;
+        made.push(url);
+        return url;
+      },
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      writable: true,
+      value: (url: string) => revoked.push(url),
+    });
+  });
+
+  afterEach(() => {
+    for (const [name, descriptor] of [
+      ['createObjectURL', originals.create],
+      ['revokeObjectURL', originals.revoke],
+    ] as const) {
+      if (descriptor === undefined) {
+        Reflect.deleteProperty(URL, name);
+      } else {
+        Object.defineProperty(URL, name, descriptor);
+      }
+    }
+  });
+
+  it('is a file taken by the field that refuses before sending, with its description beside it', async () => {
+    const fixture = await openComposer();
+    const section = html(fixture).querySelector('section[aria-labelledby="image-heading"]');
+
+    expect(section?.querySelector('app-image-file-field input[type="file"]')).not.toBeNull();
+    expect(section?.querySelector('input[type="url"]')).toBeNull();
+    expect(section?.textContent).toContain('Describe the image');
+    expect(section?.textContent).toContain('never a link to another site');
+    // Nothing is said about storing an image nobody chose.
+    expect(text(fixture)).not.toContain('Saving this draft with a cover image');
+  });
+
+  it('says what saving does to the image before the button, and hands the file to be stored', async () => {
+    const fixture = await openComposer();
+    const save = vi.spyOn(TestBed.inject(EVENT_REPOSITORY), 'saveDraft');
+    const page = fixture.componentInstance as unknown as {
+      title: { set: (value: string) => void };
+      startsAt: { set: (value: string) => void };
+      endsAt: { set: (value: string) => void };
+      cover: { set: (value: Blob | null) => void };
+      altText: { set: (value: string) => void };
+      save: () => Promise<void>;
+    };
+    const file = new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a])], {
+      type: 'image/png',
+    });
+    page.title.set('Feeding programme');
+    page.startsAt.set('2026-12-01T09:00');
+    page.endsAt.set('2026-12-01T11:00');
+    page.cover.set(file);
+    page.altText.set('Volunteers handing out food packs.');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const effects = html(fixture).querySelector('.composer__effects');
+    const submit = html(fixture).querySelector('button[type="submit"]');
+    expect(effects?.textContent).toContain('the image stays stored, unused');
+    expect(effects?.textContent).toContain('not once it is cancelled');
+    expect(
+      effects !== null &&
+        submit !== null &&
+        (effects.compareDocumentPosition(submit) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+    ).toBe(true);
+
+    await page.save();
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        image: { kind: 'chosen', file, altText: 'Volunteers handing out food packs.' },
+      }),
+      null,
+    );
+  });
+
+  it('is read only when asked, shown with the office’s words, and given back when the page goes', async () => {
+    const fixture = await openEvent('event-0001');
+    const read = vi.spyOn(TestBed.inject(EVENT_REPOSITORY), 'coverImage');
+    fixture.detectChanges();
+
+    expect(html(fixture).querySelector('img')).toBeNull();
+    expect(read).not.toHaveBeenCalled();
+
+    const show = [...html(fixture).querySelectorAll('button')].find(
+      (b) => (b.textContent ?? '').trim() === 'Show the cover image',
+    );
+    show?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(read).toHaveBeenCalledTimes(1);
+    const image = html(fixture).querySelector('img.event__image');
+    expect(image?.getAttribute('src')).toBe('blob:test/1');
+    expect(image?.getAttribute('alt')).toContain('Municipal Hall lobby');
+    expect(html(fixture).querySelector('figcaption')?.textContent).toContain(
+      'Municipal Hall lobby',
+    );
+
+    fixture.destroy();
+    expect(revoked).toEqual(['blob:test/1']);
+  });
+
+  it('draws no picture on the list, where each would be a request of its own', async () => {
+    const fixture = await openList();
+    fixture.detectChanges();
+
+    expect(html(fixture).querySelector('img')).toBeNull();
+  });
+});

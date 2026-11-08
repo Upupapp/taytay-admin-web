@@ -305,6 +305,7 @@ import {
   eventProblems,
   type AttendanceStatus,
   type EventCapacitySummary,
+  type EventCover,
   type EventDraft,
   type EventFilter,
   type EventMetrics,
@@ -4889,6 +4890,11 @@ export class HttpEventRepository implements EventRepository {
   /**
    * A new draft, or a draft replaced whole. Refused here, with no request, on what the domain refuses
    * to save — the server would refuse it too, in words this screen would not show.
+   *
+   * A cover chosen in the composer is stored through `POST media` only after every refusal this side
+   * can make, and the draft then names it (`DL-193`). If the server refuses the draft after that, the
+   * image stays stored, unused, as a home banner's does (`DL-170`); the composer says so before its
+   * button.
    */
   saveDraft(draft: EventDraft, id: LguEventId | null): Observable<LguEvent> {
     const problems = eventProblems(draft, asIsoDateTime(new Date()), 'save');
@@ -4904,19 +4910,32 @@ export class HttpEventRepository implements EventRepository {
         if (venue !== null && venueBarangayId === null) {
           return throwError(() => unknownBarangay());
         }
-        const saved =
-          id === null
-            ? this.api.post(
-                API_ENDPOINTS.officeEvents,
-                toWireEventDraft(draft, { startsAt, endsAt }, venueBarangayId),
-              )
-            : this.api.patch(
-                `${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}`,
-                toWireEventDraft(draft, { startsAt, endsAt }, venueBarangayId),
-              );
-        return saved.pipe(map((wire) => readEvents(toLguEvent(wire, barangays))));
+        return this.storedCover(draft).pipe(
+          switchMap((cover) =>
+            id === null
+              ? this.api.post(
+                  API_ENDPOINTS.officeEvents,
+                  toWireEventDraft(draft, { startsAt, endsAt }, venueBarangayId, cover),
+                )
+              : this.api.patch(
+                  `${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}`,
+                  toWireEventDraft(draft, { startsAt, endsAt }, venueBarangayId, cover),
+                ),
+          ),
+          map((wire) => readEvents(toLguEvent(wire, barangays))),
+        );
       }),
     );
+  }
+
+  /**
+   * A cover's bytes, with the bearer token in a header (`ApiClient.blob`) — a draft's too, which the
+   * public `GET events/{id}/cover` would not answer (`DL-193`).
+   */
+  coverImage(event: LguEvent): Observable<Blob> {
+    return event.image === null
+      ? throwError(() => new Error('This event has no cover image.'))
+      : this.api.blob(`${API_ENDPOINTS.media}/${encodeURIComponent(event.image.mediaId)}/content`);
   }
 
   publish(id: LguEventId, reason: string): Observable<LguEvent> {
@@ -5061,6 +5080,29 @@ export class HttpEventRepository implements EventRepository {
     return this.api
       .list(`${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}/history`)
       .pipe(map((rows) => rows.map((row) => readEvents(toEventHistoryRow(row)))));
+  }
+
+  /** The cover the draft will name: kept as stored, or stored now; `null` for none. */
+  private storedCover(draft: EventDraft): Observable<EventCover | null> {
+    const cover = draft.image;
+    if (cover === null) {
+      return of(null);
+    }
+    if (cover.kind === 'stored') {
+      return of({ mediaId: cover.mediaId, altText: cover.altText });
+    }
+    return this.api.postForm(API_ENDPOINTS.media, toWireMediaUpload(cover.file)).pipe(
+      map((wire) => {
+        const mediaId = toStoredMedia(wire);
+        if (mediaId === null) {
+          throw new Error(
+            'The cover image was stored, but the server’s answer could not be read, so the event was ' +
+              'not saved. The image stays stored, unused.',
+          );
+        }
+        return { mediaId, altText: cover.altText };
+      }),
+    );
   }
 
   private moved(sent: Observable<unknown>): Observable<LguEvent> {

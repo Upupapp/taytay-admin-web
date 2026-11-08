@@ -100,6 +100,17 @@ export class EventDetailPage {
   protected readonly saving = signal(false);
 
   private readonly objectUrls = new ObjectUrls();
+  /** The cover's address, apart from the export's so that exporting does not take the picture away. */
+  private readonly coverUrls = new ObjectUrls();
+  /** The cover, shown only when asked for; another event's page starts without it (`DL-193`). */
+  protected readonly coverUrl = linkedSignal<string, string | null>({
+    source: this.id,
+    computation: () => null,
+  });
+  protected readonly coverState = linkedSignal<string, 'closed' | 'loading' | 'failed'>({
+    source: this.id,
+    computation: () => 'closed',
+  });
   /** The last export, offered to save; another event's page starts without one. */
   protected readonly fileReady = linkedSignal<string, { url: string; filename: string } | null>({
     source: this.id,
@@ -108,7 +119,10 @@ export class EventDetailPage {
 
   constructor() {
     // The file names residents: its address is given back when the page goes.
-    inject(DestroyRef).onDestroy(() => this.objectUrls.revokeAll());
+    inject(DestroyRef).onDestroy(() => {
+      this.objectUrls.revokeAll();
+      this.coverUrls.revokeAll();
+    });
   }
 
   protected readonly canPublish = computed(() => this.permissions.has('event.publish'));
@@ -329,6 +343,32 @@ export class EventDetailPage {
     // No reason required: marking somebody present is an observation, not a
     // decision about their place.
     await this.act(this.repository.markAttendance(asId<LguEventId>(event.id), row.id, attendance));
+  }
+
+  /** Reads the cover through the data layer — a draft's too — only when asked (`DL-193`). */
+  protected async showCover(event: LguEvent): Promise<void> {
+    if (event.image === null || this.coverState() === 'loading') {
+      return;
+    }
+    this.coverState.set('loading');
+    try {
+      const bytes = await firstValueFrom(this.repository.coverImage(event));
+      // Answered after another event was opened: this is not its cover.
+      if (event.id !== this.id()) {
+        return;
+      }
+      this.coverUrls.revokeAll();
+      this.coverUrl.set(this.coverUrls.make(bytes));
+      this.coverState.set('closed');
+    } catch {
+      this.coverState.set('failed');
+    }
+  }
+
+  protected hideCover(): void {
+    this.coverUrls.revokeAll();
+    this.coverUrl.set(null);
+    this.coverState.set('closed');
   }
 
   protected async exportList(event: LguEvent): Promise<void> {

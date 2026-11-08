@@ -8,6 +8,7 @@ import {
   type AuditRow,
   type EventCapacitySummary,
   type EventCategory,
+  type EventCover,
   type EventDraft,
   type EventMetrics,
   type EventRegistrationId,
@@ -15,6 +16,7 @@ import {
   type IsoDateTime,
   type LguEvent,
   type LguEventId,
+  type MediaId,
   type RegistrantExport,
   type RegistrantView,
   type RegistrationStatus,
@@ -38,6 +40,11 @@ import { dateTime, field, flag, id, int, oneOf, str } from './wire';
  *
  * **What the API does not keep is not invented.** `replacesEventId` is null: nothing in the console
  * or the API records that one event replaces another yet.
+ *
+ * **A cover is a stored image, never an address** (`DL-193`). The mapper reads `image_media_id` and
+ * the description, and never `image_url`: that is the residents' public route, which answers only
+ * once an event is published, and a template bound to it would load from the API's host instead of
+ * through the data layer.
  */
 
 const STATUSES: readonly EventStatus[] = [
@@ -87,6 +94,14 @@ function nullableWords(value: unknown): string | null | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
+/** A stored image's id, `null` for none; anything else `undefined`, which refuses the record. */
+function nullableMediaId(value: unknown): MediaId | null | undefined {
+  if (value === null) {
+    return null;
+  }
+  return id<MediaId>(value) ?? undefined;
+}
+
 function nullableTime(value: unknown): IsoDateTime | null | undefined {
   if (value === null) {
     return null;
@@ -120,7 +135,7 @@ export function toLguEvent(wire: unknown, barangays: BarangayIndex): LguEvent | 
   const details = words(field(wire, 'details'));
   const category = oneOf(field(wire, 'category'), CATEGORIES);
   const status = oneOf(field(wire, 'status'), STATUSES);
-  const imageUrl = nullableWords(field(wire, 'image_url'));
+  const imageMediaId = nullableMediaId(field(wire, 'image_media_id'));
   const imageAltText = nullableWords(field(wire, 'image_alt_text'));
   const startsAt = dateTime(field(wire, 'starts_at'));
   const endsAt = dateTime(field(wire, 'ends_at'));
@@ -156,7 +171,7 @@ export function toLguEvent(wire: unknown, barangays: BarangayIndex): LguEvent | 
     details === null ||
     category === null ||
     status === null ||
-    imageUrl === undefined ||
+    imageMediaId === undefined ||
     imageAltText === undefined ||
     startsAt === null ||
     endsAt === null ||
@@ -199,7 +214,7 @@ export function toLguEvent(wire: unknown, barangays: BarangayIndex): LguEvent | 
     details,
     category,
     status,
-    image: imageUrl === null ? null : { url: imageUrl, altText: imageAltText ?? '' },
+    image: imageMediaId === null ? null : { mediaId: imageMediaId, altText: imageAltText ?? '' },
     startsAt,
     endsAt,
     venue: { name: venueName, address: venueAddress, mapUrl: venueMapUrl, barangayId },
@@ -230,7 +245,7 @@ export interface EventDraftWire {
   readonly summary: string;
   readonly details: string;
   readonly category: EventCategory;
-  readonly image_url: string | null;
+  readonly image_media_id: MediaId | null;
   readonly image_alt_text: string | null;
   readonly starts_at: string;
   readonly ends_at: string;
@@ -253,12 +268,15 @@ export interface EventDraftWire {
 /**
  * A draft as the API takes it: every field, flat. The caller has already refused what cannot be
  * sent truthfully — a draft with no dates (the API holds none, `DL-192`) or a venue barangay the API
- * does not know by the same name — and hands over the dates and the API's barangay id.
+ * does not know by the same name — and hands over the dates, the API's barangay id, and the cover
+ * as stored: a chosen image is uploaded before this body is made, so it names only what the API
+ * already keeps (`DL-193`).
  */
 export function toWireEventDraft(
   draft: EventDraft,
   dates: { readonly startsAt: IsoDateTime; readonly endsAt: IsoDateTime },
   venueBarangayId: string | null,
+  cover: EventCover | null,
 ): EventDraftWire {
   const blankToNull = (value: string | null): string | null =>
     value === null || value.trim() === '' ? null : value.trim();
@@ -267,8 +285,8 @@ export function toWireEventDraft(
     summary: draft.summary.trim(),
     details: draft.details,
     category: draft.category,
-    image_url: draft.image === null ? null : draft.image.url.trim(),
-    image_alt_text: draft.image === null ? null : draft.image.altText.trim(),
+    image_media_id: cover === null ? null : cover.mediaId,
+    image_alt_text: cover === null ? null : cover.altText.trim(),
     starts_at: dates.startsAt,
     ends_at: dates.endsAt,
     venue_name: draft.venue.name.trim(),

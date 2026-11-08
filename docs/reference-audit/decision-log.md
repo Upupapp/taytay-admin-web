@@ -8663,3 +8663,73 @@ words the nine new `office_event` codes, the same words the office's trail uses.
 **Still open:** no UAT script covers events yet (`docs/uat/` was left to the agent writing it). The
 residents' app is not yet wired to `GET events` and the registration routes; the brief for that is
 recorded with phase 6f.
+
+## DL-193 — an event's cover is an image uploaded through the API, served from the API's own route while residents are shown the event, and never an address
+
+**Why.** The residents' app loads an event's cover only from the API's own origin (its D-192): a
+picture from a host the LGU does not run tells that host who opened the event and from where. So a
+cover the office typed (`office_events.image_url`, `DL-192`) was never shown to anybody, and the
+composer's "Image" box invited something that did nothing. The owner delegated the choice; covers
+are now uploaded, as a Balita cover and a home banner's image already are (`DL-170`, `DL-171`).
+`DL-125` stands unchanged: a cover is described before it is published, the description sits
+beside the image, and a draft may be saved without it.
+
+`taytay-backend` `7522174`; the spec vendored here is that commit's (278 operations).
+
+### What the server does
+
+- **Migration `0043`, additive:** `office_events.image_media_id` referencing `media`; the
+  image-and-description constraint widened to read it (both or neither); one cover, never beside a
+  typed address; a published event's cover never undescribed (`published_at` set, a cover, and no
+  words is refused by the database too); and `guard_office_event` taught that a published event
+  keeps the cover it went out with.
+- **`POST`/`PATCH office/events` take `image_media_id`** with `image_alt_text`. The image is stored
+  first with `POST media`. A typed `image_url` is refused as an unknown field.
+- **`GET events/{id}/cover`**, public, answers for a **published or completed** event with a cover
+  and is 404 otherwise, as a hidden home banner's image is.
+- The office's event carries `image_media_id` and `image_url` (that route, set only while it
+  answers); the residents' `cover_image` is `{ url, alt_text }` with the same absolute URL, built
+  from the request's origin as a Balita `cover_url` is.
+
+### What the console changed
+
+`LguEvent.image` is an `EventCover` — a `MediaId` and the description, **no address** — and
+`EventDraft.image` an `EventCoverDraft`: one already stored (a duplicate carries its original's) or
+a file chosen in this tab. The composer takes the file through `ImageFileField`, which refuses what
+`POST media` would refuse before anything is sent; "Describe the image" stays beside it; and when a
+file is chosen, the box above "Save draft" says the image is stored first and stays stored if the
+event is then refused, and when residents see it. `HttpEventRepository.saveDraft` refuses what the
+domain refuses, then stores the image, then saves the draft naming it (`toWireEventDraft` sends
+`image_media_id`). `coverImage` reads `media/{id}/content` with the bearer in a header, a draft's
+too; the event's page shows the cover only when asked, from an object URL given back when the page
+goes. The list draws no picture. `check:events` gained section 10 for all of it — the model holds
+no address, the mapper reads no `image_url`, nothing is stored before a refusal, the upload goes
+through `POST media`, the field and the description share the image section, the effects stand
+before the button, and every `<img>` binds an object URL from a holder given back on destroy —
+each rule validated against a planted regression (14 of 14 caught).
+
+### Decisions taken (each the easiest to reverse)
+
+1. **Only an image this account uploaded, or one already an event's cover.** A cover is served to
+   anybody; without this, an `event.create` holder could name a resident's selfie or a message
+   attachment by its id and publish it. A duplicate and a draft saved again keep their cover.
+2. **A cancelled event's cover is not served.** Residents still see the event, so they learn it is
+   off; its poster is not shown advertising it. The console's page says when residents see a cover.
+3. **The office reads a draft's cover through `GET media/{id}/content`**, never the public route,
+   which would not answer for it.
+4. **No picture on the list.** Each would be a request of its own; the cover is on the event's page.
+5. **A replaced or refused upload stays stored, unused**, as a home banner's image does. Nothing
+   deletes an upload; the composer says so before its button.
+6. **An address typed before `0043` is kept, never served, and dropped at the draft's next save.**
+   The staging API listed no upcoming or past events on 8 November, so none had been published;
+   drafts could not be read without a staff token, and the migration does not depend on there
+   being none.
+
+### For the owner
+
+- Whether a cancelled event should keep showing its cover (decision 2).
+- Whether replaced and refused uploads should be deleted, and when (decision 5).
+- **The API builds absolute URLs from the request's own scheme and sets no `trust proxy`**, so
+  behind the staging Caddy every `cover_url`, banner `image_url` and event cover URL reads
+  `http://`. The app ignores the host of all three and fetches by path (D-193), so nothing breaks;
+  a client that loaded the URL as given would not reach it.

@@ -77,12 +77,6 @@
         <ul class="cards">
           @for (event of events(); track event.id) {
             <li class="card event">
-              @if (event.image) {
-                <img class="event__thumb" [src]="event.image.url" [alt]="event.image.altText" />
-              } @else {
-                <span class="event__thumb event__thumb--none" aria-hidden="true"></span>
-              }
-
               <div class="event__body">
                 <p class="event__head">
                   <a class="event__title" [routerLink]="['/events', event.id]">{{ event.title }}</a>

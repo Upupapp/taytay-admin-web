@@ -33,8 +33,8 @@ function headOf(file: Blob): Promise<Uint8Array> {
 
 /**
  * Choosing an image for the residents' app — an office banner, a Tulong page's picture, a home
- * banner (`DL-170`). Shared because three screens upload one, and each must refuse the same files the
- * same way.
+ * banner (`DL-170`), an event's cover (`DL-193`). Shared because four screens upload one, and each
+ * must refuse the same files the same way.
  *
  * ## It refuses before anything is sent
  *

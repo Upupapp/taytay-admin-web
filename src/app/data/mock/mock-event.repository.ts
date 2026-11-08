@@ -3,6 +3,7 @@ import { throwError, type Observable } from 'rxjs';
 
 import {
   ACCESS_CONTEXT,
+  APP_IMAGE_POLICY,
   EVENT_STATUS_TRANSITIONS,
   PermissionDeniedError,
   REGISTRANT_EXPORT_NOTICE,
@@ -21,6 +22,7 @@ import {
   type AttendanceStatus,
   type AuditRow,
   type EventCapacitySummary,
+  type EventCover,
   type EventDraft,
   type EventFilter,
   type EventMetrics,
@@ -30,6 +32,7 @@ import {
   type EventView,
   type LguEvent,
   type LguEventId,
+  type MediaId,
   type Permission,
   type RegistrantExport,
   type RegistrantFilter,
@@ -40,7 +43,7 @@ import {
 import { denyUnless } from './mock-access';
 import { matchesSearch } from './mock-query';
 import { MockLatency } from './mock-latency';
-import { MOCK_EVENTS, MOCK_REGISTRATIONS } from './seed/events.seed';
+import { MOCK_EVENTS, MOCK_REGISTRATIONS, sampleEventCover } from './seed/events.seed';
 import { MOCK_RESIDENTS } from './seed/residents.seed';
 
 const STATUS_AUDIT = {
@@ -82,6 +85,12 @@ export class MockEventRepository implements EventRepository {
   private readonly access = inject(ACCESS_CONTEXT);
 
   private events: readonly LguEvent[] = [...MOCK_EVENTS];
+  /** Stored covers, as the API keeps them apart from the events that name them (`DL-193`). */
+  private readonly covers = new Map<MediaId, Blob>(
+    MOCK_EVENTS.flatMap((event) =>
+      event.image === null ? [] : [[event.image.mediaId, sampleEventCover(event.title)] as const],
+    ),
+  );
   private registrations: readonly EventRegistration[] = [...MOCK_REGISTRATIONS];
   private trail: readonly AuditRow[] = [];
 
@@ -190,6 +199,17 @@ export class MockEventRepository implements EventRepository {
     if (id !== null && existing === undefined) {
       return throwError(() => new PermissionDeniedError('event.edit'));
     }
+    const refused = draft.image?.kind === 'chosen' ? this.refusal(draft.image.file) : null;
+    if (refused) {
+      return throwError(() => refused);
+    }
+    // Stored as the API stores it: the image first, then the event that names it.
+    const image: EventCover | null =
+      draft.image === null
+        ? null
+        : draft.image.kind === 'stored'
+          ? { mediaId: draft.image.mediaId, altText: draft.image.altText }
+          : { mediaId: this.storeCover(draft.image.file), altText: draft.image.altText };
 
     const saved: LguEvent = {
       id: existing?.id ?? asId<LguEventId>(`event-${String(this.events.length + 1).padStart(4, '0')}`),
@@ -198,7 +218,7 @@ export class MockEventRepository implements EventRepository {
       details: draft.details,
       category: draft.category,
       status: existing?.status ?? 'draft',
-      image: draft.image,
+      image,
       // A draft is saved with its dates (`DL-192`); the fallback only narrows
       // the type, and the placeholder never reaches a resident.
       startsAt: draft.startsAt ?? existing?.startsAt ?? now,
@@ -231,6 +251,13 @@ export class MockEventRepository implements EventRepository {
     this.record(saved, existing === undefined ? 'created' : 'updated',
       existing === undefined ? 'Event created.' : 'Event edited.', null);
     return this.latency.respond(saved);
+  }
+
+  coverImage(event: LguEvent): Observable<Blob> {
+    const stored = event.image === null ? undefined : this.covers.get(event.image.mediaId);
+    return stored === undefined
+      ? throwError(() => new Error('This event has no cover image.'))
+      : this.latency.respond(stored);
   }
 
   publish(id: LguEventId, reason: string): Observable<LguEvent> {
@@ -414,6 +441,20 @@ export class MockEventRepository implements EventRepository {
    * cancellation a moment ago has to be visible on the next render, and a
    * stale figure here is exactly the failure `DL-129` is about.
    */
+  /** The server's own refusals, as `POST media` makes them. */
+  private refusal(image: Blob): Error | null {
+    if (image.size > APP_IMAGE_POLICY.maxBytes) return new Error('That file is larger than 5 MB.');
+    return APP_IMAGE_POLICY.mimeTypes.includes(image.type)
+      ? null
+      : new Error('The file must be a JPEG, PNG, or WebP image.');
+  }
+
+  private storeCover(image: Blob): MediaId {
+    const media = asId<MediaId>(`media-event-cover-${String(this.covers.size + 1).padStart(4, '0')}`);
+    this.covers.set(media, image);
+    return media;
+  }
+
   private withCounts(event: LguEvent): LguEvent {
     const rows = this.registrationsFor(event.id);
     return {
@@ -575,7 +616,7 @@ function toDraft(event: LguEvent): EventDraft {
     summary: event.summary,
     details: event.details,
     category: event.category,
-    image: event.image,
+    image: event.image === null ? null : { kind: 'stored', ...event.image },
     startsAt: event.startsAt,
     endsAt: event.endsAt,
     venue: event.venue,

@@ -1513,8 +1513,16 @@ export interface EventRepository {
   list(view: EventView, filter: EventFilter): Observable<readonly LguEvent[]>;
   getById(id: LguEventId): Observable<LguEvent | null>;
 
-  /** Saves a draft. Refuses what the domain refuses (`eventProblems`). */
+  /**
+   * Saves a draft. Refuses what the domain refuses (`eventProblems`) before anything is sent. A cover
+   * chosen in the composer is stored first and named by the draft (`DL-193`).
+   */
   saveDraft(draft: EventDraft, id: LguEventId | null): Observable<LguEvent>;
+  /**
+   * An event's cover, as bytes, through the data layer — a draft's too, which residents are never
+   * shown. Never an address for a template to load (`DL-193`).
+   */
+  coverImage(event: LguEvent): Observable<Blob>;
   publish(id: LguEventId, reason: string): Observable<LguEvent>;
   /** Irreversible, and everybody registered is told (`DL-131`). */
   cancel(id: LguEventId, reason: string): Observable<LguEvent>;

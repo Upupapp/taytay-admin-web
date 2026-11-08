@@ -15,6 +15,7 @@ import {
   type EventDraft,
   type EventRegistrationId,
   type LguEventId,
+  type MediaId,
 } from '@domain/index';
 
 import OFFICE_EVENT from './fixtures/office-event.json';
@@ -25,6 +26,7 @@ import OFFICE_EVENT_METRICS from './fixtures/office-event-metrics.json';
 import OFFICE_EVENT_REGISTRANT from './fixtures/office-event-registrant.json';
 import OFFICE_EVENT_REGISTRANTS from './fixtures/office-event-registrants.json';
 import OFFICE_EVENTS from './fixtures/office-events.json';
+import MEDIA from './fixtures/media.json';
 import { HttpEventRepository } from './http-repositories';
 
 const BASE = 'https://api.example.gov.ph/api/v1';
@@ -122,6 +124,11 @@ describe('events over the API (DL-192)', () => {
       expect(mission?.venue.barangayId).toBe('brgy-dolores');
       expect(mission?.registeredCount).toBe(2);
       expect(mission?.image?.altText).toContain('poster');
+      // The stored image, never the residents' public address (`DL-193`).
+      expect(mission?.image).toEqual({
+        mediaId: '7c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e41',
+        altText: 'A poster: free check-ups at the Dolores covered court, Saturday morning.',
+      });
       // Nothing records that one event replaces another, so nothing is invented.
       expect(mission?.replacesEventId).toBeNull();
       expect(calledOff?.cancellationReason).toContain('supplies');
@@ -277,10 +284,12 @@ describe('events over the API (DL-192)', () => {
         starts_at: '2026-12-01T01:00:00.000Z',
         capacity: 40,
         waitlist_enabled: true,
-        image_url: null,
+        image_media_id: null,
+        image_alt_text: null,
         venue_map_url: null,
       });
       expect(Object.keys(post.request.body as object)).toHaveLength(22);
+      expect(post.request.body).not.toHaveProperty('image_url');
       post.flush(OFFICE_EVENT);
       expect((await created).id).toBe(MISSION);
 
@@ -292,6 +301,80 @@ describe('events over the API (DL-192)', () => {
       expect(patch.request.method).toBe('PATCH');
       patch.flush(OFFICE_EVENT);
       await edited;
+    });
+
+    it('stores a chosen cover through POST media first, then names it with its description', async () => {
+      const file = new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])], {
+        type: 'image/png',
+      });
+      const created = firstValueFrom(
+        repository.saveDraft(
+          draft({
+            image: { kind: 'chosen', file, altText: '  Volunteers at the covered court.  ' },
+          }),
+          null,
+        ),
+      );
+      barangays();
+      const upload = http.expectOne({ method: 'POST', url: `${BASE}/media` });
+      expect(upload.request.body).toBeInstanceOf(FormData);
+      // FormData hands a Blob back as a File of the same bytes.
+      const sent = upload.request.body instanceof FormData ? upload.request.body.get('file') : null;
+      expect(sent instanceof Blob ? [sent.size, sent.type] : null).toEqual([file.size, file.type]);
+      upload.flush(MEDIA, { status: 201, statusText: 'Created' });
+
+      const post = http.expectOne({ method: 'POST', url: EVENTS });
+      expect(post.request.body).toMatchObject({
+        image_media_id: MEDIA.data.id,
+        image_alt_text: 'Volunteers at the covered court.',
+      });
+      expect(post.request.body).not.toHaveProperty('image_url');
+      post.flush(OFFICE_EVENT, { status: 201, statusText: 'Created' });
+      await created;
+    });
+
+    it('names a stored cover again without uploading it, and reads any cover through media', async () => {
+      const stored = asId<MediaId>('7c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e41');
+      const saved = firstValueFrom(
+        repository.saveDraft(
+          draft({ image: { kind: 'stored', mediaId: stored, altText: 'A poster.' } }),
+          MISSION,
+        ),
+      );
+      barangays();
+      http.expectNone(`${BASE}/media`);
+      const patch = http.expectOne({ method: 'PATCH', url: `${EVENTS}/${MISSION}` });
+      expect(patch.request.body).toMatchObject({
+        image_media_id: stored,
+        image_alt_text: 'A poster.',
+      });
+      patch.flush(OFFICE_EVENT);
+      const event = await saved;
+
+      // The bearer travels in a header; a draft's cover is read the same way (`DL-193`).
+      const bytes = firstValueFrom(repository.coverImage(event));
+      const read = http.expectOne(`${BASE}/media/${stored}/content`);
+      expect(read.request.method).toBe('GET');
+      expect(read.request.responseType).toBe('blob');
+      read.flush(new Blob(['png']));
+      expect(await bytes).toBeInstanceOf(Blob);
+
+      await expect(
+        firstValueFrom(repository.coverImage({ ...event, image: null })),
+      ).rejects.toThrow('no cover');
+    });
+
+    it('sends nothing, not even the image, for a draft the domain refuses', async () => {
+      const file = new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], { type: 'image/png' });
+      await expect(
+        firstValueFrom(
+          repository.saveDraft(
+            draft({ startsAt: null, endsAt: null, image: { kind: 'chosen', file, altText: '' } }),
+            null,
+          ),
+        ),
+      ).rejects.toThrow('Choose when it starts.');
+      http.expectNone(`${BASE}/media`);
     });
 
     it('sends nothing for a draft with no dates or a barangay the API does not know', async () => {

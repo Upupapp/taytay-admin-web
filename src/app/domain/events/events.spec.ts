@@ -1,4 +1,4 @@
-import { asId, type IsoDateTime, type LguEventId } from '../shared/ids';
+import { asId, type IsoDateTime, type LguEventId, type MediaId } from '../shared/ids';
 import {
   EVENT_STATUS_CATALOG,
   EVENT_STATUS_TRANSITIONS,
@@ -387,10 +387,17 @@ describe('publishing rules', () => {
   });
 
   it('refuses an undescribed cover image at publication only', () => {
-    const poster = draft({ image: { url: '/poster.png', altText: '  ' } });
+    const stored = draft({
+      image: { kind: 'stored', mediaId: asId<MediaId>('media-1'), altText: '  ' },
+    });
+    const chosen = draft({
+      image: { kind: 'chosen', file: new Blob(['png'], { type: 'image/png' }), altText: '' },
+    });
 
-    expect(eventProblems(poster, NOW, 'publish')).toContain('image-without-alt-text');
-    expect(eventProblems(poster, NOW, 'save')).not.toContain('image-without-alt-text');
+    for (const poster of [stored, chosen]) {
+      expect(eventProblems(poster, NOW, 'publish')).toContain('image-without-alt-text');
+      expect(eventProblems(poster, NOW, 'save')).not.toContain('image-without-alt-text');
+    }
   });
 
   it('accepts an event in the past, because a correction is not a mistake', () => {
@@ -451,6 +458,14 @@ describe('duplicating an event', () => {
     expect(copy).not.toHaveProperty('id');
     expect(copy).not.toHaveProperty('registrations');
     expect(copy).not.toHaveProperty('status');
+  });
+
+  it('names the same stored cover and its words, so nothing is uploaded twice (`DL-193`)', () => {
+    const cover = { mediaId: asId<MediaId>('media-1'), altText: 'A poster.' };
+    const copy = duplicateOf(event({ image: cover }));
+
+    expect(copy.image).toEqual({ kind: 'stored', ...cover });
+    expect(duplicateOf(event()).image).toBeNull();
   });
 
   it('clears the registration window, which belonged to the old date', () => {
