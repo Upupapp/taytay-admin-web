@@ -8727,9 +8727,22 @@ each rule validated against a planted regression (14 of 14 caught).
 
 ### For the owner
 
+> **Settled 2026-11-08, on the owner's delegation ("decide the best practice").** The first two
+> questions below keep what was built. **A cancelled event shows no cover:** a poster carries its
+> own date and venue, so somebody glancing down the list reads it as an invitation; the words
+> "Called off by Taytay LGU" carry the news instead. **An unused upload is kept:** deleting is the
+> one act nobody can take back, and no disposition schedule was supplied, so no deletion period is
+> invented (`DL-113`); unused uploads go when the office's schedule says so. The third was a
+> defect rather than a question, and is fixed in the backend: see the note under it.
+
 - Whether a cancelled event should keep showing its cover (decision 2).
 - Whether replaced and refused uploads should be deleted, and when (decision 5).
 - **The API builds absolute URLs from the request's own scheme and sets no `trust proxy`**, so
   behind the staging Caddy every `cover_url`, banner `image_url` and event cover URL reads
   `http://`. The app ignores the host of all three and fetches by path (D-193), so nothing breaks;
   a client that loaded the URL as given would not reach it.
+  *Fixed 2026-11-08 in backend `b6f206f`:* Express believes `X-Forwarded-For` and
+  `X-Forwarded-Proto` only from loopback and private-network hops, so the URLs read `https://`
+  behind Caddy. It mattered more than the URLs: every request had carried Caddy's address, so all
+  clients shared one rate-limit bucket and one OTP throttle. `TRUST_PROXY` overrides it for another
+  proxy and refuses `true`.

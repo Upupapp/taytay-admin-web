@@ -57,9 +57,10 @@ From `docs/uat/README.md` ("Not in this UAT round") and the requirements documen
 - **App sprints awaiting approval:** S2 Sign-in, S6 Balita and S8 My Account are in review; S7
   Tulong and S9 Polish are recorded with no approval; the S5 Directory record contradicts itself
   (requirements §7.2).
-- **API fixes before production** (GL-11): `trust proxy` behind the proxy (otherwise every client
-  shares one rate limit), exposing `Retry-After`, and answering an unexpected upload field with a
-  4xx rather than a 500. None of these is in the backend yet.
+- **API fixes before production** (GL-11): done on 8 November 2026. The API trusts only
+  private-network proxies, so each client has its own rate limit and OTP throttle (backend
+  `b6f206f`; `TRUST_PROXY` if production's proxy is elsewhere); CORS exposes `Retry-After`; and every
+  malformed upload is answered with a 413 or 422 rather than a 500 (`e32be23`).
 
 ## 4. Decisions waiting on the owner or the LGU
 

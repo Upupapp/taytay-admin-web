@@ -90,8 +90,10 @@ These are not engineering choices, and nothing below has been built.
 
 ## Smaller backend items found on the way
 
-- `app.set('trust proxy', 1)` behind nginx, or the 120-a-minute limiter is shared by every client.
-- Expose `Retry-After` through CORS (the console reads `details.retry_after` meanwhile).
+- ~~`trust proxy` behind the proxy, or the 120-a-minute limiter is shared by every client.~~ Done in
+  backend `b6f206f` (loopback and private-network hops only; `TRUST_PROXY` to override).
+- ~~Expose `Retry-After` through CORS.~~ Done in `e32be23`; the console still reads
+  `details.retry_after`, which says the same.
 - `X-Client-Channel` is sent by both clients and read by nobody.
 - Media uploads are capped at 5 MB on the API and 10 MB in the console's casework document policy
   (`DOCUMENT_UPLOAD_POLICY`, unserved). The app's images use `APP_IMAGE_POLICY`, which matches the API.
