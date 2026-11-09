@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, Injectable } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, of, type Observable } from 'rxjs';
+import { firstValueFrom, map, of, type Observable } from 'rxjs';
 
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
@@ -20,6 +20,8 @@ import {
   type AttentionSignal,
   type AuthenticatedUser,
   type BarangayId,
+  type DashboardFilter,
+  type DashboardSummary,
   type Page,
   type StaffRepository,
   type StaffRole,
@@ -89,10 +91,43 @@ function repository(user: StaffUser | null): StaffRepository {
 @Component({ template: 'stub' })
 class StubPage {}
 
+/**
+ * The dry run's payouts (2026-11-09): ₱3,000.50 to one person and a release of goods to another,
+ * both under one programme type.
+ */
+@Injectable()
+class CentavoDashboardRepository extends MockDashboardRepository {
+  override summary(filter: DashboardFilter): Observable<DashboardSummary> {
+    return super.summary(filter).pipe(
+      map((summary) => ({
+        ...summary,
+        payouts:
+          summary.payouts === null
+            ? null
+            : {
+                ...summary.payouts,
+                residentsServedInPeriod: 2,
+                disbursedInPeriod: { centavos: 300_050, currency: 'PHP' as const },
+                goodsReleasedInPeriod: 1,
+                disbursedByCategory: [
+                  {
+                    category: 'medical-assistance' as const,
+                    amount: { centavos: 300_050, currency: 'PHP' as const },
+                    count: 1,
+                    goodsCount: 1,
+                  },
+                ],
+              },
+      })),
+    );
+  }
+}
+
 async function setUp(
   role: StaffRole | null = 'mswdo-head',
   barangayId: BarangayId | null = null,
   url = '/dashboard',
+  dashboard: typeof MockDashboardRepository = MockDashboardRepository,
 ): Promise<ComponentFixture<DashboardPage>> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -109,7 +144,7 @@ async function setUp(
         provide: STAFF_REPOSITORY,
         useValue: repository(role ? staffUser(role, barangayId) : null),
       },
-      { provide: DASHBOARD_REPOSITORY, useClass: MockDashboardRepository },
+      { provide: DASHBOARD_REPOSITORY, useClass: dashboard },
     ],
   });
   await firstValueFrom(TestBed.inject(SessionStore).load());
@@ -551,5 +586,37 @@ describe('payouts and the residents’ app are absent for a reader who cannot op
     expect(
       element.querySelector<HTMLAnchorElement>('.app-figures a.metric[href="/verification"]'),
     ).not.toBeNull();
+  });
+});
+
+/* ── Money said as money, goods as a count (dry run 2026-11-09, defects 7 and 8) ── */
+
+describe('the released figures', () => {
+  it('says a programme type’s amount to the centavo, as the one peso formatter does', async () => {
+    const element = html(await setUp('mswdo-head', null, '/dashboard', CentavoDashboardRepository));
+    const text = element.textContent ?? '';
+
+    // It used to read ₱3,001, from a formatter of its own that dropped the centavos (rule 6).
+    expect(text).toContain('₱3,000.50 and 1 release of goods');
+    expect(text).not.toContain('₱3,001');
+  });
+
+  it('does not count a goods recipient among the people the money went to (DL-93)', async () => {
+    const element = html(await setUp('mswdo-head', null, '/dashboard', CentavoDashboardRepository));
+    const released = [...element.querySelectorAll('a.metric')].find((link) =>
+      link.textContent?.includes(DASHBOARD_COPY.disbursed),
+    );
+
+    expect(released?.textContent).toContain('₱3,000.50');
+    expect(released?.textContent).toContain('Money or goods to 2 beneficiaries.');
+    expect(released?.textContent).toContain(
+      'The amount is money only; 1 release of goods is counted, not valued.',
+    );
+    expect(released?.textContent).not.toContain('Across 2 beneficiaries');
+  });
+
+  it('keeps the plain sentence when every release was money', () => {
+    expect(DASHBOARD_COPY.disbursedHint(1, 0)).toBe('Across 1 beneficiary.');
+    expect(DASHBOARD_COPY.disbursedHint(3, 0)).toBe('Across 3 beneficiaries.');
   });
 });

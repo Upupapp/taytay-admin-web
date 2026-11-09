@@ -1,4 +1,4 @@
-import type { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 
 /** `field -> [messages]`, ready for a form to render beside its inputs. */
 export type ApiFieldErrors = Readonly<Record<string, readonly string[]>>;
@@ -79,6 +79,23 @@ export function isApiFailure(value: unknown): value is ApiFailure {
     'code' in value &&
     'details' in value
   );
+}
+
+/**
+ * Whether the server said the thing asked for is not there — `404`, or the API's `NOT_FOUND` — in
+ * whichever form the failure reached the caller.
+ *
+ * **One test for every adapter.** The error interceptor rethrows the parsed `ApiFailure`, and the
+ * adapters' not-found checks looked for the raw `HttpErrorResponse` it replaces, so no `404` ever
+ * became the `null` a screen turns into its own "not available" message: every not-found screen
+ * showed "Could not load this section" instead (dry run 2026-11-09, defect 4). The raw form is
+ * still recognised, for a client built without the interceptor.
+ */
+export function isNotFound(failure: unknown): boolean {
+  if (failure instanceof HttpErrorResponse) {
+    return failure.status === 404;
+  }
+  return isApiFailure(failure) && (failure.status === 404 || failure.code === 'NOT_FOUND');
 }
 
 interface WireError {

@@ -1,5 +1,7 @@
 import { Observable, type Subscription } from 'rxjs';
 
+import { failureReason } from './failure-reason';
+
 /**
  * The four states every asynchronous screen can be in.
  *
@@ -64,10 +66,10 @@ export function toViewState<TValue>(source: Observable<TValue>): Observable<View
       subscriber.next(LOADING as ViewState<TValue>);
       attempt = source.subscribe({
         next: (value) => subscriber.next(ready(value)),
+        // The server's own sentence when it answered (an `ApiFailure`), or an adapter's `Error`:
+        // a refused read is said in the screen's place, and no longer by a navigation (`DL-196`).
         error: (error: unknown) =>
-          subscriber.next(
-            failed<TValue>(error instanceof Error ? error.message : GENERIC_FAILURE, run),
-          ),
+          subscriber.next(failed<TValue>(failureReason(error) ?? GENERIC_FAILURE, run)),
         complete: () => subscriber.complete(),
       });
     };

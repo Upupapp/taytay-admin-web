@@ -1,3 +1,5 @@
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component, Injectable, type Type } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
@@ -7,6 +9,9 @@ import { afterEach, beforeEach, vi } from 'vitest';
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
+import { httpErrorInterceptor } from '@core/http/api.interceptors';
+import { NotificationStore } from '@core/notifications/notification.store';
+import { HttpReportRepository } from '@data/http/http-repositories';
 import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
 import { MockReportRepository } from '@data/mock/mock-report.repository';
 import {
@@ -31,6 +36,7 @@ import type { AppEnvironment } from '@env/environment.model';
 
 import { ReportHubPage } from './report-hub-page';
 import { ReportViewPage } from './report-view-page';
+import { REPORTS_COPY } from './reports.copy';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
   name: 'local-mock',
@@ -243,7 +249,11 @@ describe('withheld figures', () => {
   it('labels a withheld cell rather than showing a zero or a blank', async () => {
     const fixture = await openReport('service-reach');
     const page = fixture.componentInstance as unknown as {
-      result: () => { readonly series: readonly { readonly rows: readonly { readonly isWithheld?: boolean; readonly display?: string }[] }[] } | null;
+      result: () => {
+        readonly series: readonly {
+          readonly rows: readonly { readonly isWithheld?: boolean; readonly display?: string }[];
+        }[];
+      } | null;
     };
     const rows = page.result()?.series.flatMap((series) => series.rows) ?? [];
     const withheld = rows.filter((row) => row.isWithheld === true);
@@ -257,7 +267,11 @@ describe('withheld figures', () => {
   it('never withholds a zero, because an absence of service is the finding', async () => {
     const fixture = await openReport('service-reach');
     const page = fixture.componentInstance as unknown as {
-      result: () => { readonly series: readonly { readonly rows: readonly { readonly value: number; readonly isWithheld?: boolean }[] }[] } | null;
+      result: () => {
+        readonly series: readonly {
+          readonly rows: readonly { readonly value: number; readonly isWithheld?: boolean }[];
+        }[];
+      } | null;
     };
     const rows = page.result()?.series.flatMap((series) => series.rows) ?? [];
 
@@ -476,5 +490,62 @@ describe('what a report cannot count, and the file it hands over (DL-190)', () =
 
     fixture.destroy();
     expect(revoked).toEqual(['blob:test/1']);
+  });
+});
+
+/**
+ * Dry run 2026-11-09, defect 4 (RPT-01): a social worker typing /reports/release-status was shown
+ * "Could not load this section" and a "Request failed" notice. The API answers a report the reader
+ * may not open as not found (`DL-31`), the interceptor rethrew its own failure, and the adapter
+ * looked for the raw response it replaces — so the report never became the `null` this page turns
+ * into its own message. Run through the real interceptor and the real adapter.
+ */
+describe('a report the API does not offer this reader (DL-196)', () => {
+  it('says it is not available, with no notice and no navigation', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([
+          { path: 'reports/:id', component: ReportViewPage },
+          { path: '**', component: StubPage },
+        ]),
+        provideHttpClient(withInterceptors([httpErrorInterceptor])),
+        provideHttpClientTesting(),
+        { provide: APP_ENVIRONMENT, useValue: TEST_ENVIRONMENT },
+        { provide: ACCESS_CONTEXT, useExisting: SessionState },
+        {
+          provide: STAFF_REPOSITORY,
+          useValue: staffRepository(staffUser('social-worker', 'staff-sw-1')),
+        },
+        { provide: REPORT_REPOSITORY, useClass: HttpReportRepository },
+        { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
+      ],
+    });
+    await firstValueFrom(TestBed.inject(SessionStore).load());
+    const http = TestBed.inject(HttpTestingController);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate');
+    const fixture = TestBed.createComponent(ReportViewPage);
+    fixture.componentRef.setInput('id', 'release-status');
+    TestBed.tick();
+
+    http.expectOne({ method: 'GET', url: '/api/barangays' }).flush({
+      data: [{ id: '6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01', code: 'dolores', name: 'Dolores' }],
+      meta: {},
+    });
+    http
+      .expectOne({ method: 'GET', url: '/api/office/reports/release-status' })
+      .flush(
+        { error: { code: 'NOT_FOUND', message: 'That report is not available.' } },
+        { status: 404, statusText: 'Not Found' },
+      );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await fixture.whenStable();
+    http.verify();
+
+    const text = html(fixture).textContent ?? '';
+    expect(text).toContain(REPORTS_COPY.view.notFoundHeading);
+    expect(text).not.toContain('Could not load');
+    expect(TestBed.inject(NotificationStore).toasts()).toEqual([]);
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

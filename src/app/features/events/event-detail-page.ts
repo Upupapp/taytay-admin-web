@@ -141,6 +141,15 @@ export class EventDetailPage {
 
   private readonly key = computed(() => ({ id: this.id(), nonce: this.reloads() }));
 
+  /**
+   * Marking somebody at the door changes the counts, the registrant list and the history — never
+   * the event. So it re-reads those and leaves the event alone: re-reading the event put the page
+   * back to loading, which took the check-in panel down with it, and the sentence saying who was
+   * just marked went with the panel (dry run 2026-11-09, defect 5).
+   */
+  private readonly marks = signal(0);
+  private readonly countKey = computed(() => ({ ...this.key(), marks: this.marks() }));
+
   protected readonly state = toSignal(
     toObservable(this.key).pipe(
       switchMap((query) => toViewState(this.repository.getById(asId<LguEventId>(query.id)))),
@@ -149,14 +158,14 @@ export class EventDetailPage {
   );
 
   protected readonly capacityState = toSignal(
-    toObservable(this.key).pipe(
+    toObservable(this.countKey).pipe(
       switchMap((query) => toViewState(this.repository.capacity(asId<LguEventId>(query.id)))),
     ),
     { initialValue: LOADING as ViewState<EventCapacitySummary> },
   );
 
   protected readonly historyState = toSignal(
-    toObservable(this.key).pipe(
+    toObservable(this.countKey).pipe(
       switchMap((query) => toViewState(this.repository.history(asId<LguEventId>(query.id)))),
     ),
     { initialValue: LOADING as ViewState<readonly AuditRow[]> },
@@ -172,6 +181,7 @@ export class EventDetailPage {
   private readonly registrantQuery = computed(() => ({
     id: this.id(),
     nonce: this.reloads(),
+    marks: this.marks(),
     filter: {
       ...(this.settledSearch() ? { search: this.settledSearch() } : {}),
       ...(this.statusFilter() ? { status: this.statusFilter() as RegistrationStatus } : {}),
@@ -239,9 +249,9 @@ export class EventDetailPage {
     this.checkInMode.update((on) => !on);
   }
 
-  /** A registrant marked at the door: the counts are read again, as after any act. */
+  /** A registrant marked at the door: the counts are read again, and the event is not. */
   protected onCheckedIn(): void {
-    this.reloads.update((count) => count + 1);
+    this.marks.update((count) => count + 1);
   }
 
   /** Where the office's own count says the safe limit is reached (`DL-195`). A warning only. */

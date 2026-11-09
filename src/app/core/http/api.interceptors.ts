@@ -112,8 +112,28 @@ function returnToSignIn(session: SessionStore, router: Router): void {
 }
 
 /**
- * Turns a failure into one user-visible message and one navigation decision, so
- * no feature has to hand-roll error handling.
+ * Turns a failure into at most one user-visible message, so no feature has to hand-roll error
+ * handling — and navigates only when the **session** is over (`DL-196`).
+ *
+ * ## Where it may still navigate
+ *
+ * Only on `401`: the credential is gone, and every screen is equally unusable. A `403` used to
+ * send the whole app to "You do not have access to that section", and that was wrong for every
+ * request it could not see the purpose of. A barangay link opening a resident's record was
+ * refused the record's **home visits panel**, and lost the record; a barangay link's refused save
+ * lost the form they had typed (dry run 2026-11-09, defects 1 and 2). This interceptor cannot tell
+ * which read a screen depends on — the same port method is the visits page's own read and a panel
+ * on the resident record — so it decides nothing about the screen:
+ *
+ * - **A route the reader may not open** is refused by its guard, before any request, with the same
+ *   key as its navigation entry (rule 8). That, and only that, leads to `/forbidden`.
+ * - **A refused read** (`403` on a `GET`) is said where it was asked: the screen's error panel, or
+ *   the side panel in place. No toast, which would only repeat it.
+ * - **A refused write** stays on its form, whose contents are kept, and is said in the server's
+ *   words — here, once, as "Request refused".
+ * - **Not found** on a read is the screen's own message ("That report is not available"), so it
+ *   raises no toast either: a resident record that does not exist read three ways used to raise
+ *   three "Request failed" notices over a "Could not load this section" panel (defect 4).
  *
  * What changed in TAB 01: this reads the envelope the API actually sends.
  * It previously looked for `{ message }`, which this API has never returned —
@@ -142,6 +162,7 @@ export const httpErrorInterceptor: HttpInterceptorFn = (request, next) => {
 
   function refuse(error: HttpErrorResponse) {
     const failure = readApiError(error);
+    const isRead = READ_METHODS.has(request.method);
 
     /*
      * Branch on `code`, never on `message` — the message is written for
@@ -168,7 +189,17 @@ export const httpErrorInterceptor: HttpInterceptorFn = (request, next) => {
         break;
 
       case 'FORBIDDEN':
-        void router.navigate(['/forbidden']);
+        // Never a navigation (`DL-196`): the screen keeps its place, and a form its contents.
+        if (!isRead) {
+          notifications.error('Request refused', describeFailure(failure));
+        }
+        break;
+
+      case 'NOT_FOUND':
+        // A read's absence is the screen's to say; a write to something gone is said here.
+        if (!isRead) {
+          notifications.error('Request failed', describeFailure(failure));
+        }
         break;
 
       // A resident who has not finished verifying, refused a document request (`DL-186`). Only a
@@ -227,6 +258,9 @@ async function withReadableBody(error: HttpErrorResponse): Promise<HttpErrorResp
   }
 }
 
+/** The methods that read. A refusal or an absence on one of these is the screen's to say. */
+const READ_METHODS: ReadonlySet<string> = new Set(['GET', 'HEAD']);
+
 /**
  * Only for a response that carried no envelope. Anything richer would be
  * guessing at a body that was never sent.
@@ -237,6 +271,8 @@ function codeFromStatus(status: number): string | null {
       return 'UNAUTHENTICATED';
     case 403:
       return 'FORBIDDEN';
+    case 404:
+      return 'NOT_FOUND';
     default:
       return null;
   }

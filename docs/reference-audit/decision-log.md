@@ -9024,3 +9024,86 @@ schedule exists (DL-113). **Owner question** for when the schedule exists.
 - **Spec.** Vendored from `taytay-backend` `12431a3`, which holds `cf30686`'s two routes and the
   newsfeed keys' removal (`DL-194`): the `/me` fixture no longer carries the nine `newsfeed.*` keys,
   and the account test expects `household.view-counts` as the only key it keeps aside.
+
+## DL-196 — a refusal is said where it happened: the error interceptor navigates only when the session is over, a panel the reader cannot open is not asked for, and not found is the screen's own message
+
+**Why.** The developer's UAT dry run of 9 November 2026 (`docs/uat/dry-run-2026-11-09.md`) found a
+barangay link and a release officer unable to open any resident's record. The record also asks for
+the person's home visits; the API refuses those two roles `visit.view`, and the error interceptor
+answered **every** `403` by navigating the whole app to "You do not have access to that section" —
+though the page was written to leave the visits panel empty (defect 1, Critical; ROS-05, NFR-06).
+The same rule threw away a barangay link's typed form when the API refused its save for another
+barangay (defect 2), and sent INTAKE away from "My work" when it pressed "Mark done" on a protected
+case's task (defect 6). Separately, no `404` ever reached a screen as "not found": the interceptor
+rethrows its parsed `ApiFailure`, and `ApiClient.optionalItem` and the reports adapter tested for the
+raw `HttpErrorResponse` it replaces, so every not-found screen showed "Could not load this section"
+under one "Request failed" notice per read (defect 4; RPT-01; three notices on an unknown resident).
+
+The interceptor cannot tell which read a screen depends on. `FieldVisitRepository.forResident` is a
+panel on the resident record; a visit list read is the visits page's own. A rule keyed on the
+request would be wrong on one of them, so the interceptor decides nothing about the screen.
+
+### The rule
+
+1. **The interceptor navigates only on `401`** — the credential is gone and every screen is equally
+   unusable — to sign-in with the current screen as the return address, as before.
+2. **`/forbidden` is reached only from a route guard.** Every route is guarded with its navigation
+   entry's key (rule 8), before any request; that is where "you may not open this section" is
+   decided. A `403` that arrives after the guard let the reader in is narrower than the route — a
+   panel, a write, a record outside the reader's scope — and is said where it happened.
+3. **A refused read** (`403` on `GET` or `HEAD`) raises no toast and no navigation. The screen's
+   error panel says it, and `toViewState` now carries the server's sentence (`failureReason`)
+   rather than "The information could not be loaded", because the panel is now the only place it is
+   said. A side panel says it in its own place.
+4. **A refused write** stays on its form, with its contents, and the server's sentence is raised
+   once, as "Request refused" with the reference. The resident form also says above the fields that
+   the save was refused and nothing was saved, and that what was typed is still there.
+5. **Not found on a read** raises no toast: it is the screen's to say ("That report is not
+   available", "That resident is not available"). `isNotFound` in `core/http/api-failure.ts` is the
+   one test every adapter uses, and it recognises the rethrown `ApiFailure` (`404` or `NOT_FOUND`)
+   as well as the raw response. Not found on a write is still raised as "Request failed".
+6. **A screen does not ask for a panel its reader's keys cannot read** (usability, never the
+   boundary — rule 4). It asks with the key the panel's own route uses: the resident record's
+   home-visits panel needs `visit.view` (`/visits`) and its families panel `family.view`
+   (`/families/:id`). A panel not asked for says so ("Your role does not open home visits, so none
+   were read for this record"), never "No home visit has been recorded", which `DL-112` forbids.
+
+Easiest to reverse of the options weighed: it removes a navigation rather than adding a mechanism.
+An alternative, a request flag marking a screen's "primary" read, was rejected because the ports do
+not and should not know which screen calls them.
+
+### What else the dry run fixed
+
+- **The signed-in account's barangay** is the API's id in `GET me`; `toServerIdentity` now
+  translates it through the same `GET barangays` join every other adapter uses, asked only for an
+  account confined to one barangay. A barangay link's footer read "Barangay Unknown barangay"
+  (defect 3). A barangay the join cannot place is read as the narrowest scope, as one never named.
+- **The resident form offers a barangay link their own barangay only**, and starts a new record
+  there (CLAUDE.md "Data scope": the UI does not offer a choice the user cannot use).
+- **Check-in mode keeps saying who was marked.** Marking re-read the event, the page went back to
+  loading, and the check-in panel was rebuilt without "Marked … as attended." (defect 5). A mark now
+  re-reads the counts, the registrant list and the history, and not the event.
+- **The dashboard formats amounts with `PesoPipe`.** Its own formatter dropped centavos, so
+  "Released by programme type" read ₱3,001 for ₱3,000.50 (defect 7, rule 6). The "Released" caption
+  no longer reads a goods recipient as somebody the money went to: "Money or goods to 2
+  beneficiaries. The amount is money only; 1 release of goods is counted, not valued." (defect 8,
+  `DL-93`).
+- **The governance page no longer says the previous value stays in the audit trail**; the trail
+  keeps who, what, which record and when, and no values (defect 9, `DL-191`).
+- **A staff card says what the account covers by its office role**: "Cases assigned to them" for a
+  social worker, not "All barangays" (defect 10).
+- **Backend** `taytay-backend` `dc1d571`: a task on a protected case whose words are withheld from
+  the reader is listed with `is_manageable: false` for that reader, so "Mark done" is not offered
+  only to be refused (defect 6); report sentences say "1 case" and "1 person served" (defect 11);
+  the registrant file gives Manila times with the zone stated and the list's words for status and
+  attendance (defect 12, `DL-130`). No route or schema changed, so the vendored spec stands.
+
+### Tests
+
+The interceptor's rules each have a test (`api.interceptors.spec.ts`), as does `isNotFound`. The
+not-found path is tested on two screens through the real interceptor and the real HTTP adapter —
+the resident record and a report — each showing its own message with no notice and no navigation.
+The resident record is tested for a barangay link (visits not requested, record shown) and for a
+refused panel (said in place, never as "none"); the form for its one barangay and for keeping what
+was typed after a refusal; check-in for the sentence and for not re-reading the event; the
+dashboard for centavos and the caption; staff cards for coverage; the correction wording.

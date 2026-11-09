@@ -21,6 +21,8 @@ import {
   isSensitive,
 } from './data-classification';
 import {
+  CORRECTION_CAPTURE_IS_NOT_BUILT,
+  CORRECTION_STATUS_CATALOG,
   CORRECTION_TRANSITIONS,
   fieldsNamed,
   correctionProblems,
@@ -372,5 +374,22 @@ describe('a correction request', () => {
 
   it('needs a claim to exist at all', () => {
     expect(correctionProblems(correction({ claim: '   ' }), 'applied')).toContain('claim-required');
+  });
+});
+
+/**
+ * The trail keeps who, what, which record and when, and no values (`DL-191`). The governance page
+ * said "the previous value stays in the audit trail either way" (dry run 2026-11-09, defect 9).
+ */
+describe('what the correction wording promises about the audit trail', () => {
+  it('never says the trail keeps a value it does not keep', () => {
+    const said = [
+      CORRECTION_CAPTURE_IS_NOT_BUILT,
+      ...Object.values(CORRECTION_STATUS_CATALOG).map((entry) => entry.description),
+    ];
+    for (const sentence of said) {
+      expect(sentence).not.toMatch(/(previous|old|earlier) value/i);
+    }
+    expect(CORRECTION_CAPTURE_IS_NOT_BUILT).toContain('never what it said before or after');
   });
 });

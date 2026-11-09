@@ -2,10 +2,11 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { catchError, EMPTY, of, switchMap } from 'rxjs';
+import { catchError, EMPTY, map, of, switchMap, type Observable } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { NotConnected } from '@core/access/not-connected';
+import { PermissionService } from '@core/access/permission.service';
 import { ServedPorts } from '@core/access/served-ports';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
@@ -33,6 +34,7 @@ import {
   type FieldVisit,
   membersOf,
 } from '@domain/index';
+import { failureReason } from '@shared/state/failure-reason';
 import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
@@ -43,6 +45,31 @@ import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { RELATIONSHIP_COPY } from '@shared/families/relationship.copy';
 import { RESIDENTS_COPY } from './residents.copy';
+
+/**
+ * A side panel's read: what it found, or the sentence saying it was refused.
+ *
+ * A refusal is said **in the panel** (`DL-196`). It used to be swallowed into an empty list — which
+ * reads as "none recorded", the wrong answer `DL-112` warns about — after the error interceptor had
+ * already sent the whole app to "You do not have access to that section".
+ */
+type PanelRead<TItem> =
+  | { readonly kind: 'read'; readonly items: readonly TItem[] }
+  | { readonly kind: 'refused'; readonly reason: string };
+
+const NOTHING_READ_YET = { kind: 'read', items: [] } as const;
+
+function panelRead<TItem>(source: Observable<readonly TItem[]>): Observable<PanelRead<TItem>> {
+  return source.pipe(
+    map((items): PanelRead<TItem> => ({ kind: 'read', items })),
+    catchError((failure: unknown) =>
+      of<PanelRead<TItem>>({
+        kind: 'refused',
+        reason: failureReason(failure) ?? RESIDENTS_COPY.detail.panelUnread,
+      }),
+    ),
+  );
+}
 
 /**
  * One resident, and everything attached to them.
@@ -83,6 +110,7 @@ export class ResidentDetailPage {
   private readonly visits = inject(FIELD_VISIT_REPOSITORY);
   private readonly notifications = inject(NotificationStore);
   private readonly served = inject(ServedPorts);
+  private readonly permissions = inject(PermissionService);
 
   /**
    * The record's primary port is the resident registry; families and home visits are panels on it
@@ -91,6 +119,16 @@ export class ResidentDetailPage {
    */
   protected readonly servesFamilies = this.served.serves('family');
   protected readonly servesVisits = this.served.serves('field-visit');
+
+  /**
+   * Whether this reader opens each panel at all, by the key its own screen's route asks for
+   * (`/families/:id`, `/visits`). A panel the reader cannot open is **not requested** — asking was
+   * how a barangay link opening a resident's record was answered 403 for the home visits and sent
+   * away from the record (dry run 2026-11-09, defect 1). A usability check only: the API refuses
+   * the read whatever this says (rule 4).
+   */
+  protected readonly opensFamilies = this.permissions.can('family.view');
+  protected readonly opensVisits = this.permissions.can('visit.view');
 
   /** Bound from the route by `withComponentInputBinding()`. */
   readonly id = input.required<string>();
@@ -113,22 +151,14 @@ export class ResidentDetailPage {
    * stops a reader treating the second as the first.
    */
   protected readonly familiesOf = toSignal(
-    toObservable(computed(() => this.id())).pipe(
-      switchMap((id) =>
-        this.servesFamilies ? this.families.familiesOf(asId<ResidentId>(id)) : EMPTY,
+    toObservable(computed(() => ({ id: this.id(), opens: this.opensFamilies() }))).pipe(
+      switchMap(({ id, opens }) =>
+        this.servesFamilies && opens
+          ? panelRead(this.families.familiesOf(asId<ResidentId>(id)))
+          : EMPTY,
       ),
-      /*
-       * A panel this role may not read is ABSENT, never fatal.
-       *
-       * These are side panels on somebody's record. Letting a refusal propagate takes the whole
-       * page down — so an intake officer looking up an address would see nothing at all because
-       * they cannot read home visits. The empty state and the refused state look alike here,
-       * which is the one thing `DL-112` argues against; it is the lesser harm, and the panel
-       * headings stay visible so nobody reads a missing panel as a missing record.
-       */
-      catchError(() => of([])),
     ),
-    { initialValue: [] as readonly FamilySummary[] },
+    { initialValue: NOTHING_READ_YET as PanelRead<FamilySummary> },
   );
 
   /**
@@ -139,22 +169,14 @@ export class ResidentDetailPage {
    * readable — until now it was written and shown nowhere.
    */
   protected readonly kinshipHistory = toSignal(
-    toObservable(computed(() => this.id())).pipe(
-      switchMap((id) =>
-        this.servesFamilies ? this.families.historyForResident(asId<ResidentId>(id)) : EMPTY,
+    toObservable(computed(() => ({ id: this.id(), opens: this.opensFamilies() }))).pipe(
+      switchMap(({ id, opens }) =>
+        this.servesFamilies && opens
+          ? panelRead(this.families.historyForResident(asId<ResidentId>(id)))
+          : EMPTY,
       ),
-      /*
-       * A panel this role may not read is ABSENT, never fatal.
-       *
-       * These are side panels on somebody's record. Letting a refusal propagate takes the whole
-       * page down — so an intake officer looking up an address would see nothing at all because
-       * they cannot read home visits. The empty state and the refused state look alike here,
-       * which is the one thing `DL-112` argues against; it is the lesser harm, and the panel
-       * headings stay visible so nobody reads a missing panel as a missing record.
-       */
-      catchError(() => of([])),
     ),
-    { initialValue: [] as readonly RelationshipEvent[] },
+    { initialValue: NOTHING_READ_YET as PanelRead<RelationshipEvent> },
   );
 
   /**
@@ -165,22 +187,14 @@ export class ResidentDetailPage {
    * is often the only record of what the office actually saw.
    */
   protected readonly visitsFor = toSignal(
-    toObservable(computed(() => this.id())).pipe(
-      switchMap((id) =>
-        this.servesVisits ? this.visits.forResident(asId<ResidentId>(id)) : EMPTY,
+    toObservable(computed(() => ({ id: this.id(), opens: this.opensVisits() }))).pipe(
+      switchMap(({ id, opens }) =>
+        this.servesVisits && opens
+          ? panelRead(this.visits.forResident(asId<ResidentId>(id)))
+          : EMPTY,
       ),
-      /*
-       * A panel this role may not read is ABSENT, never fatal.
-       *
-       * These are side panels on somebody's record. Letting a refusal propagate takes the whole
-       * page down — so an intake officer looking up an address would see nothing at all because
-       * they cannot read home visits. The empty state and the refused state look alike here,
-       * which is the one thing `DL-112` argues against; it is the lesser harm, and the panel
-       * headings stay visible so nobody reads a missing panel as a missing record.
-       */
-      catchError(() => of([])),
     ),
-    { initialValue: [] as readonly FieldVisit[] },
+    { initialValue: NOTHING_READ_YET as PanelRead<FieldVisit> },
   );
 
   protected eventLabel(event: RelationshipEvent): string {

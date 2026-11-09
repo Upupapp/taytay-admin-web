@@ -29,6 +29,8 @@ export const WORK_COPY = {
     unassigned: 'Nobody yet',
     open: 'Open',
     taskOnly: 'Only a task can be handed over or rescheduled. Everything else is the state of a record — act on the record.',
+    taskNotYours:
+      'This task is on a case withheld from your account, so you cannot act on it. A colleague cleared for protected records can.',
 
     reassign: 'Hand over',
     reassignTo: 'Hand to',

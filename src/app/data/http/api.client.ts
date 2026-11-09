@@ -1,8 +1,9 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { catchError, map, of, switchMap, throwError, type Observable } from 'rxjs';
 
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
+import { isNotFound } from '@core/http/api-failure';
 import type { CursorPage, CursorRequest } from '@domain/index';
 
 import {
@@ -146,16 +147,14 @@ export class ApiClient {
    * of them is safe to act on. A `404` becomes `null`; everything else — a `500`, a refused
    * cross-origin request, a dropped connection — propagates, so the screen shows a failure rather
    * than an absence.
+   *
+   * The `404` arrives as the interceptor's `ApiFailure`, never as the raw response, so it is asked
+   * of `isNotFound` — the one test every adapter uses (`DL-196`).
    */
   optionalItem<TItem>(path: string): Observable<TItem | null> {
     return this.http.get<ApiItemResponse<TItem>>(this.url(path)).pipe(
       map((response) => response.data),
-      catchError((error: unknown) => {
-        if (error instanceof HttpErrorResponse && error.status === 404) {
-          return of(null);
-        }
-        return throwError(() => error);
-      }),
+      catchError((error: unknown) => (isNotFound(error) ? of(null) : throwError(() => error))),
     );
   }
 

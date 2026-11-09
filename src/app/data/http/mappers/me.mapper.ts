@@ -7,6 +7,7 @@ import {
   type StaffUserId,
 } from '@domain/index';
 
+import type { BarangayIndex } from './resident.mapper';
 import { field, flag, id, list, oneOf, str } from './wire';
 
 /** The two API roles that may hold a console session. `registered` and `verified` are residents. */
@@ -51,6 +52,12 @@ const SCOPES: readonly DataScope[] = ['all-barangays', 'own-barangay', 'assigned
  * `assigned-cases`: failing closed, as `fromServerIdentity` does with keys (`DL-133`).
  * `office_role` labels the account on screen and decides nothing.
  *
+ * `scope_barangay_id` is the **API's** id for the barangay, and the console knows barangays by its
+ * own (`TAYTAY_BARANGAYS`). It is translated through the same `GET barangays` join every other
+ * adapter uses, never kept as sent: kept, it named no barangay the console knew, and a barangay
+ * link's footer read "Barangay Unknown barangay" (dry run 2026-11-09, defect 3). A barangay the join
+ * cannot place is read like one that was never named — the narrowest scope.
+ *
  * ## Who is refused
  *
  * A `registered` or `verified` account is a resident, and a closed account is closed. Either is
@@ -65,7 +72,10 @@ const SCOPES: readonly DataScope[] = ['all-barangays', 'own-barangay', 'assigned
  *
  * @consumes GET me
  */
-export function toServerIdentity(wire: unknown): ServerIdentity | null {
+export function toServerIdentity(
+  wire: unknown,
+  barangays: BarangayIndex | null,
+): ServerIdentity | null {
   const accountId = id<StaffUserId>(field(wire, 'id'));
   const role = oneOf<ConsoleRole>(field(wire, 'role'), CONSOLE_ROLES);
   const open = field(wire, 'closed') === false ? true : null;
@@ -82,7 +92,8 @@ export function toServerIdentity(wire: unknown): ServerIdentity | null {
   const email = str(field(wire, 'email'));
   const officeRole = oneOf(field(wire, 'office_role'), STAFF_ROLES);
   const sentScope = oneOf(field(wire, 'scope'), SCOPES);
-  const scopeBarangay = id<BarangayId>(field(wire, 'scope_barangay_id'));
+  const scopeBarangay: BarangayId | null =
+    barangays?.toConsole(str(field(wire, 'scope_barangay_id'))) ?? null;
   const scope: DataScope =
     sentScope === null || (sentScope === 'own-barangay' && scopeBarangay === null)
       ? 'assigned-cases'
@@ -102,4 +113,12 @@ export function toServerIdentity(wire: unknown): ServerIdentity | null {
     // An administrator acts for every office; only a staff account can be without one (`DL-168`).
     awaitingOffice: role === 'staff' && str(field(wire, 'office_id')) === null,
   };
+}
+
+/**
+ * Whether `GET me` confines the account to one barangay — the only answer whose barangay the
+ * console must translate, so the only one that needs `GET barangays` before it can be read.
+ */
+export function confinesToOneBarangay(wire: unknown): boolean {
+  return field(wire, 'scope') === 'own-barangay' && str(field(wire, 'scope_barangay_id')) !== null;
 }

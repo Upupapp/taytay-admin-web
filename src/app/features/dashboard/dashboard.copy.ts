@@ -62,9 +62,18 @@ export const DASHBOARD_COPY = {
   scheduledPayouts: 'Scheduled payouts',
   scheduledPayoutsHint: 'Vouchers with a confirmed release date.',
   disbursed: 'Released',
+  /**
+   * `people` counts everybody handed money **or** goods, so beside a peso figure it may only be
+   * said as that. "₱3,000.50. Across 2 beneficiaries" read as two people sharing the money when one
+   * of them received a sack of rice (dry run 2026-11-09, defect 8; `DL-93`).
+   */
   disbursedHint: (people: number, goods: number) =>
-    (people === 1 ? 'Across 1 beneficiary.' : `Across ${people} beneficiaries.`) +
-    (goods === 0 ? '' : ` Also ${goodsCount(goods)}, counted and not valued.`),
+    goods === 0
+      ? people === 1
+        ? 'Across 1 beneficiary.'
+        : `Across ${people} beneficiaries.`
+      : `Money or goods to ${people === 1 ? '1 beneficiary' : `${people} beneficiaries`}. ` +
+        `The amount is money only; ${goodsCount(goods)} ${goods === 1 ? 'is' : 'are'} counted, not valued.`,
   /** Said where payout figures would be, so their absence is not read as "nothing paid out". */
   payoutsNotShown: 'Payout figures are not shown: your role does not open the releases they count.',
   viewRecords: 'View the records behind this figure',

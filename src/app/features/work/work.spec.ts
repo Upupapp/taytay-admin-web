@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, Injectable } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, of, type Observable } from 'rxjs';
+import { firstValueFrom, map, of, type Observable } from 'rxjs';
 
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
@@ -19,17 +19,20 @@ import {
   emptyPage,
   toAuthenticatedUser,
   type AuthenticatedUser,
+  type IsoDate,
   type Page,
   type StaffRepository,
   type StaffRole,
   type StaffUser,
   type StaffUserId,
   type SignInOutcome,
+  type WorkQueue,
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
 
 import { NotificationCentrePage } from './notification-centre-page';
 import { TeamQueuePage } from './team-queue-page';
+import { WORK_COPY } from './work.copy';
 import { WorkQueuePage } from './work-queue-page';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
@@ -78,7 +81,28 @@ function staffRepository(user: StaffUser): StaffRepository {
 @Component({ template: 'stub' })
 class StubPage {}
 
-async function configure(user: StaffUser): Promise<void> {
+/**
+ * The queue as the API answers a reader a protected case's task is withheld from: listed, because
+ * it is owed, and not manageable, because the case refuses that reader's every act on it.
+ */
+@Injectable()
+class WithheldTaskWorkRepository extends MockWorkRepository {
+  override myQueue(asOf: IsoDate): Observable<WorkQueue> {
+    return super.myQueue(asOf).pipe(
+      map((queue) => ({
+        ...queue,
+        items: queue.items.map((item) =>
+          item.source === 'case-task' ? { ...item, isManageable: false } : item,
+        ),
+      })),
+    );
+  }
+}
+
+async function configure(
+  user: StaffUser,
+  work: typeof MockWorkRepository = MockWorkRepository,
+): Promise<void> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -91,7 +115,7 @@ async function configure(user: StaffUser): Promise<void> {
       { provide: APP_ENVIRONMENT, useValue: TEST_ENVIRONMENT },
       { provide: ACCESS_CONTEXT, useExisting: SessionState },
       { provide: STAFF_REPOSITORY, useValue: staffRepository(user) },
-      { provide: WORK_REPOSITORY, useClass: MockWorkRepository },
+      { provide: WORK_REPOSITORY, useClass: work },
       { provide: CASE_REPOSITORY, useClass: MockCaseRepository },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
     ],
@@ -244,6 +268,20 @@ describe('acting on the queue', () => {
 
     expect(notes.length).toBeGreaterThan(0);
     expect(notes[0]?.textContent).toContain('state of a record');
+  });
+
+  // Dry run 2026-11-09, defect 6: INTAKE was offered "Mark done" on a withheld task, the API
+  // refused it, and the console left for "You do not have access to that section".
+  it('offers no act on a task the server says is not this reader’s, and says why', async () => {
+    await configure(staffUser('social-worker', 'staff-sw-1'), WithheldTaskWorkRepository);
+    await TestBed.inject(Router).navigateByUrl('/work');
+    const fixture = TestBed.createComponent(WorkQueuePage);
+    await fixture.whenStable();
+    const element = html(fixture);
+
+    const buttons = [...element.querySelectorAll('button')].map((b) => b.textContent?.trim());
+    expect(buttons).not.toContain(WORK_COPY.queue.complete);
+    expect(element.textContent).toContain(WORK_COPY.queue.taskNotYours);
   });
 
   it('refuses to complete a task with no outcome recorded', async () => {

@@ -168,7 +168,7 @@ goes, the request and its answer stay on file** (`DL-117`).
 | --- | --- |
 | `raised` | Said to be wrong. Nobody has looked. |
 | `under-review` | The office is checking against what was presented. |
-| `applied` | Corrected. The previous value stays in the trail. |
+| `applied` | Corrected. The outcome says what changed; the audit trail keeps only that it changed (`DL-191`). |
 | `refused` | Not agreed, and the reason is recorded and disclosable. |
 | `withdrawn` | No longer pursued. |
 

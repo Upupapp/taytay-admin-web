@@ -18,7 +18,9 @@ import {
   toAuthenticatedUser,
   type AuditEntryId,
   type AuthenticatedUser,
+  type BarangayId,
   type Page,
+  type StaffAccount,
   type StaffRepository,
   type StaffRole,
   type StaffUser,
@@ -30,6 +32,7 @@ import type { AppEnvironment } from '@env/environment.model';
 import { AuditPage } from './audit-page';
 import { GovernancePage } from './governance-page';
 import { RolesPage } from './roles-page';
+import { ADMIN_COPY } from './administration.copy';
 import { StaffPage } from './staff-page';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
@@ -297,6 +300,39 @@ describe('staff accounts', () => {
         ),
       ),
     ).rejects.toThrow();
+  });
+
+  // Dry run 2026-11-09, defect 10: every account without a barangay read "All barangays", a
+  // social worker included, whose scope is the cases assigned to them.
+  it('says what each account covers by its office role, never "All barangays" for a caseload', async () => {
+    const fixture = await open('/administration/staff', StaffPage);
+    const page = fixture.componentInstance as unknown as {
+      covers: (account: StaffAccount) => string;
+    };
+    const account = (role: StaffAccount['role'], barangayLabel: string | null): StaffAccount => ({
+      staffId: asId<StaffUserId>('staff-x'),
+      displayName: 'Test',
+      role,
+      roleLabel: 'Test',
+      position: null,
+      barangayId: barangayLabel === null ? null : asId<BarangayId>('brgy-san-juan'),
+      barangayLabel,
+      isActive: true,
+      lastSignInAt: null,
+      lastSignInRecorded: false,
+      profile: null,
+      additionalPermissionCount: 0,
+    });
+
+    expect(page.covers(account('social-worker', null))).toBe(ADMIN_COPY.staff.coversAssignedCases);
+    expect(page.covers(account('mswdo-head', null))).toBe(ADMIN_COPY.staff.allBarangays);
+    expect(page.covers(account('barangay-link', 'San Juan'))).toBe('San Juan');
+    expect(page.covers(account('barangay-link', null))).toBe(
+      ADMIN_COPY.staff.coversUnnamedBarangay,
+    );
+    expect(page.covers(account(null, null))).toBe(ADMIN_COPY.staff.coversNothingYet);
+    // And on the cards themselves: the seed has social workers.
+    expect(html(fixture).textContent).toContain(ADMIN_COPY.staff.coversAssignedCases);
   });
 
   it('refuses account changes to an account without staff.manage', async () => {

@@ -52,7 +52,8 @@ export const CORRECTION_STATUS_CATALOG: StatusCatalog<CorrectionStatus> = {
     value: 'applied',
     label: 'Applied',
     tone: 'success',
-    description: 'The record was corrected. The previous value stays in the trail.',
+    description:
+      'The record was corrected. The outcome says what changed; the audit trail keeps only that it changed.',
   },
   refused: {
     value: 'refused',
@@ -224,5 +225,7 @@ export function correctionProblems(
 export const CORRECTION_CAPTURE_IS_NOT_BUILT =
   'The form for raising a correction request is not built. The record, its states and the rule ' +
   'that an answer must carry a reason are in place; capturing one from a screen is the next ' +
-  'step. Until then, record the request as a case note and correct the record in the usual way — ' +
-  'the previous value stays in the audit trail either way.';
+  'step. Until then, record the request as a case note and correct the record in the usual way. ' +
+  // The trail keeps who, what, which record and when, and no values (`DL-191`): this used to say
+  // the previous value stays in it, which the trail cannot do (dry run 2026-11-09, defect 9).
+  'The audit trail records who changed the record and when, never what it said before or after.';

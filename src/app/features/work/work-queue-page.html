@@ -163,6 +163,10 @@
             <button type="button" class="btn" (click)="toggle(item)">
               {{ isOpen(item) ? copy.cancel : copy.complete }}
             </button>
+          } @else if (item.source === 'case-task') {
+            <!-- A task the server will not let this reader act on: its case is withheld from
+                 them, so "Mark done" would only invite a refusal (dry run 2026-11-09, defect 6). -->
+            <span class="work-rows__note">{{ copy.taskNotYours }}</span>
           } @else {
             <!-- Honest about what this item is. Offering a snooze on the state
                  of a record would be offering a control that does nothing. -->

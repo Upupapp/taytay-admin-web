@@ -1,6 +1,6 @@
 import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 
-import { readApiError } from './api-failure';
+import { isNotFound, readApiError } from './api-failure';
 
 /*
  * Written out rather than imported from `data/http/fixtures`, because `core` does not reach into an
@@ -162,5 +162,30 @@ describe('readApiError', () => {
     );
 
     expect(failure.details).toBeNull();
+  });
+});
+
+/**
+ * One not-found test for every adapter (dry run 2026-11-09, defect 4): the interceptor rethrows an
+ * `ApiFailure`, and the adapters looked for the raw response it replaces, so no 404 became `null`.
+ */
+describe('isNotFound', () => {
+  it('recognises the failure the interceptor rethrows, and the raw response it replaces', () => {
+    const failure = readApiError(
+      new HttpErrorResponse({
+        status: 404,
+        error: { error: { code: 'NOT_FOUND', message: 'That report is not available.' } },
+      }),
+    );
+    expect(isNotFound(failure)).toBe(true);
+    expect(isNotFound(new HttpErrorResponse({ status: 404 }))).toBe(true);
+  });
+
+  it('is not a refusal, a failure or an error raised in the console', () => {
+    expect(isNotFound(readApiError(new HttpErrorResponse({ status: 403 })))).toBe(false);
+    expect(isNotFound(readApiError(new HttpErrorResponse({ status: 500 })))).toBe(false);
+    expect(isNotFound(new HttpErrorResponse({ status: 0 }))).toBe(false);
+    expect(isNotFound(new Error('not found'))).toBe(false);
+    expect(isNotFound(null)).toBe(false);
   });
 });

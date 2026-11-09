@@ -1,4 +1,3 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import {
   catchError,
@@ -16,6 +15,7 @@ import {
 
 import { AuthTokenHolder } from '@core/auth/auth-token.holder';
 import type { SessionRefresher } from '@core/auth/session-refresher';
+import { isNotFound } from '@core/http/api-failure';
 import {
   fromServerIdentity,
   mediaFor,
@@ -27,6 +27,7 @@ import {
   type MfaCredentials,
   type NotificationId,
   type NotificationRepository,
+  type ServerIdentity,
   type SignInCredentials,
   type SignInOutcome,
   type StaffRepository,
@@ -328,7 +329,7 @@ import { API_ENDPOINTS } from './api.contract';
 import type { IdentityGrant, IdentityPort } from './identity/identity.model';
 import { IdentityProvider } from './identity/identity.provider';
 import { invalidCredentials, signInUnavailable } from './identity/sign-in-messages';
-import { toServerIdentity } from './mappers/me.mapper';
+import { confinesToOneBarangay, toServerIdentity } from './mappers/me.mapper';
 import { toDashboardSummary } from './mappers/dashboard.mapper';
 import {
   toAssistanceHistoryReading,
@@ -554,6 +555,18 @@ export class HttpStaffRepository implements StaffRepository {
   private readonly api = inject(ApiClient);
   private readonly tokens = inject(AuthTokenHolder);
   private readonly identity: IdentityPort = inject(IdentityProvider);
+  // A barangay link's barangay arrives as the API's id; the console knows it by its own.
+  private readonly barangayJoin = new BarangayJoin();
+
+  /**
+   * `GET me`, read — with the barangay a barangay link serves translated to the console's id.
+   * `GET barangays` is asked only for that account: nobody else's answer names a barangay.
+   */
+  private identify(wire: unknown): Observable<ServerIdentity | null> {
+    return confinesToOneBarangay(wire)
+      ? this.barangayJoin.read().pipe(map((barangays) => toServerIdentity(wire, barangays)))
+      : of(toServerIdentity(wire, null));
+  }
 
   /**
    * `GET admin/users` lists every account in the residents' app, not the office's staff, and only
@@ -583,9 +596,8 @@ export class HttpStaffRepository implements StaffRepository {
     }
 
     return this.api.item(API_ENDPOINTS.me).pipe(
-      map((wire) => {
-        const identity = toServerIdentity(wire);
-
+      switchMap((wire) => this.identify(wire)),
+      map((identity) => {
         if (identity === null) {
           this.tokens.clear();
           return null;
@@ -661,9 +673,8 @@ export class HttpStaffRepository implements StaffRepository {
 
       return this.api.item(API_ENDPOINTS.me);
     }).pipe(
-      map((wire) => {
-        const identity = toServerIdentity(wire);
-
+      switchMap((wire) => this.identify(wire)),
+      map((identity) => {
         if (identity === null) {
           throw invalidCredentials();
         }
@@ -853,7 +864,8 @@ export class HttpOfficeInboxRepository implements OfficeInboxRepository {
           .item(API_ENDPOINTS.me)
           .pipe(
             map((me): InboxListing =>
-              toServerIdentity(me)?.awaitingOffice === true ? { kind: 'no-office' } : listing,
+              // Only whether an office is named is read here, so no barangay needs translating.
+              toServerIdentity(me, null)?.awaitingOffice === true ? { kind: 'no-office' } : listing,
             ),
           );
       }),
@@ -4284,9 +4296,7 @@ export class HttpReportRepository implements ReportRepository {
           .pipe(
             map((wire): ReportResult | null => readReport(toReportResult(wire, barangays))),
             catchError((error: unknown) =>
-              error instanceof HttpErrorResponse && error.status === 404
-                ? of(null)
-                : throwError(() => error),
+              isNotFound(error) ? of(null) : throwError(() => error),
             ),
           );
       }),

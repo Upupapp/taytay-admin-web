@@ -1,19 +1,22 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import {
   Component,
   Injectable,
   type EnvironmentProviders,
+  type WritableSignal,
   type Provider,
   type Type,
 } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, map, of, type Observable } from 'rxjs';
+import { firstValueFrom, map, of, throwError, type Observable } from 'rxjs';
 
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
+import { httpErrorInterceptor } from '@core/http/api.interceptors';
+import { NotificationStore } from '@core/notifications/notification.store';
 import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
 import { MockResidentRepository } from '@data/mock/mock-resident.repository';
 import { MockFamilyRepository } from '@data/mock/mock-family.repository';
@@ -21,7 +24,7 @@ import { MockFieldVisitRepository } from '@data/mock/mock-field-visit.repository
 import { MockSavedViewRepository } from '@data/mock/mock-saved-view.repository';
 import OFFICE_RELATIONSHIP_HISTORY from '@data/http/fixtures/office-relationship-history.json';
 import OFFICE_RESIDENT_FAMILIES from '@data/http/fixtures/office-resident-families.json';
-import { HttpFamilyRepository } from '@data/http/http-repositories';
+import { HttpFamilyRepository, HttpResidentRepository } from '@data/http/http-repositories';
 import {
   ACCESS_CONTEXT,
   asId,
@@ -40,6 +43,7 @@ import {
   type Page,
   type ResidentId,
   type ResidentProfile,
+  type Resident,
   type ResidentRepository,
   type StaffRepository,
   type StaffRole,
@@ -104,6 +108,24 @@ function staffRepository(user: StaffUser | null): StaffRepository {
 
 @Component({ template: 'stub' })
 class StubPage {}
+
+/** What the error interceptor rethrows when the API refuses (`ApiFailure`). */
+const REFUSAL = {
+  code: 'FORBIDDEN',
+  status: 403,
+  message: 'A barangay link records residents of their own barangay only.',
+  details: null,
+  requestId: null,
+  retryAfterSeconds: null,
+};
+
+/** The registry as an API that refuses every save would answer it. */
+@Injectable()
+class RefusingResidentRepository extends MockResidentRepository {
+  override create(): Observable<Resident> {
+    return throwError(() => REFUSAL);
+  }
+}
 
 /**
  * The registry as an API that serves residents and not their assistance history would answer it:
@@ -215,6 +237,12 @@ async function openForm(
 }
 
 const html = (fixture: ComponentFixture<unknown>) => fixture.nativeElement as HTMLElement;
+
+/** The form's barangay choice, found by its label. */
+const barangaySelect = (element: HTMLElement) =>
+  [...element.querySelectorAll('label.field')]
+    .find((label) => label.textContent?.includes(RESIDENTS_COPY.form.barangay))
+    ?.querySelector('select');
 
 /* ── The URL is the query ─────────────────────────────────────────────────── */
 
@@ -567,6 +595,88 @@ describe('a record whose family panel reads the API (casework phase 1c)', () => 
   });
 });
 
+/* ── DL-196: a refusal is said in place, and a not-found is the screen's own ── */
+
+describe('a panel the reader does not open, or that the server refuses (DL-196)', () => {
+  // Dry run 2026-11-09, defect 1: the record asked for the home visits, the API refused a barangay
+  // link, and the interceptor sent the whole app to "You do not have access to that section".
+  it('opens a barangay link record without asking for the home visits the role does not open', async () => {
+    await configure('barangay-link', SAN_JUAN);
+    const forResident = vi.spyOn(TestBed.inject(FIELD_VISIT_REPOSITORY), 'forResident');
+    const familiesOf = vi.spyOn(TestBed.inject(FAMILY_REPOSITORY), 'familiesOf');
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate');
+
+    const fixture = TestBed.createComponent(ResidentDetailPage);
+    fixture.componentRef.setInput('id', 'res-0001');
+    await fixture.whenStable();
+    const element = html(fixture);
+
+    expect(forResident).not.toHaveBeenCalled();
+    // The families panel is the barangay link's to read, so it is still asked for.
+    expect(familiesOf).toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+    expect(element.textContent).toContain('Mercado');
+    const visits = element.querySelector('#visits-heading')?.closest('section');
+    expect(visits?.textContent).toContain(RESIDENTS_COPY.detail.visitsNotOpen);
+    expect(visits?.textContent).not.toContain(RESIDENTS_COPY.detail.noVisits);
+  });
+
+  it('says a refused panel in its place, never as "none recorded", and keeps the record', async () => {
+    await configure('mswdo-head', null, [], MockResidentRepository, [
+      {
+        provide: FIELD_VISIT_REPOSITORY,
+        useValue: { forResident: () => throwError(() => REFUSAL) },
+      },
+    ]);
+    const fixture = TestBed.createComponent(ResidentDetailPage);
+    fixture.componentRef.setInput('id', 'res-0001');
+    await fixture.whenStable();
+    const element = html(fixture);
+
+    const visits = element.querySelector('#visits-heading')?.closest('section');
+    expect(visits?.querySelector('[role="status"]')?.textContent?.trim()).toBe(
+      RESIDENTS_COPY.detail.panelRefused(REFUSAL.message),
+    );
+    expect(visits?.textContent).not.toContain(RESIDENTS_COPY.detail.noVisits);
+    expect(element.textContent).toContain('Mercado');
+  });
+});
+
+describe('a resident the API does not have (DL-196)', () => {
+  // Dry run 2026-11-09, defect 4: the 404 arrived as the interceptor's failure, the adapter looked
+  // for the raw response, and the page said "Could not load this section" under three notices.
+  it('says the record is not available, through the real interceptor, with no notice', async () => {
+    await configure('mswdo-head', null, ['family', 'field-visit'], HttpResidentRepository, [
+      provideHttpClient(withInterceptors([httpErrorInterceptor])),
+      provideHttpClientTesting(),
+    ]);
+    const http = TestBed.inject(HttpTestingController);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate');
+    const fixture = TestBed.createComponent(ResidentDetailPage);
+    fixture.componentRef.setInput('id', 'res-9999');
+    TestBed.tick();
+
+    http.expectOne({ method: 'GET', url: '/api/barangays' }).flush({
+      data: [{ id: '6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01', code: 'dolores', name: 'Dolores' }],
+      meta: {},
+    });
+    http
+      .expectOne({ method: 'GET', url: '/api/office/residents/res-9999' })
+      .flush(
+        { error: { code: 'NOT_FOUND', message: 'That resident was not found.' } },
+        { status: 404, statusText: 'Not Found' },
+      );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await fixture.whenStable();
+    http.verify();
+
+    expect(html(fixture).textContent).toContain(RESIDENTS_COPY.detail.notFoundHeading);
+    expect(html(fixture).textContent).not.toContain('Could not load');
+    expect(TestBed.inject(NotificationStore).toasts()).toEqual([]);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+});
+
 /* ── Create and edit ──────────────────────────────────────────────────────── */
 
 describe('registering and correcting a record', () => {
@@ -583,6 +693,65 @@ describe('registering and correcting a record', () => {
     expect(
       element.querySelector<HTMLInputElement>('input[autocomplete="family-name"]')?.value,
     ).toBe('Mercado');
+  });
+
+  // Dry run 2026-11-09, defect 2: all five barangays were offered to a barangay link, the API
+  // refused the other four, and the refusal sent the app away with the form.
+  it('offers a barangay link their own barangay only, and starts the record there', async () => {
+    await configure('barangay-link', SAN_JUAN);
+    await TestBed.inject(Router).navigateByUrl('/residents/new');
+    const fixture = TestBed.createComponent(ResidentFormPage);
+    await fixture.whenStable();
+
+    const select = barangaySelect(html(fixture));
+    const named = [...(select?.querySelectorAll('option') ?? [])]
+      .map((option) => option.textContent?.trim())
+      .filter((name) => name !== '—');
+    expect(named).toEqual(['San Juan']);
+    expect(select?.value).toBe('brgy-san-juan');
+  });
+
+  it('offers every barangay to a municipality-wide writer', async () => {
+    const select = barangaySelect(html(await openForm('intake-officer')));
+    // The five, and the empty choice a new record starts on.
+    expect(select?.querySelectorAll('option')).toHaveLength(6);
+  });
+
+  it('keeps what was typed when the save is refused, and says nothing was saved', async () => {
+    await configure('intake-officer', null, [], RefusingResidentRepository);
+    await TestBed.inject(Router).navigateByUrl('/residents/new');
+    const fixture = TestBed.createComponent(ResidentFormPage);
+    await fixture.whenStable();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate');
+    const form = fixture.componentInstance as unknown as { model: WritableSignal<object> };
+    form.model.update((model) => ({
+      ...model,
+      first: 'Ana',
+      last: 'Halimbawa',
+      birthDate: '1990-01-01',
+      barangayId: 'brgy-dolores',
+      streetAddress: '1 Test Street',
+    }));
+    await fixture.whenStable();
+
+    const element = html(fixture);
+    (element.querySelector('form') as HTMLFormElement).dispatchEvent(
+      new Event('submit', { bubbles: true, cancelable: true }),
+    );
+    await fixture.whenStable();
+
+    expect(navigate).not.toHaveBeenCalled();
+    const alert = element.querySelector('.form__problems[role="alert"]');
+    expect(alert?.textContent).toContain(RESIDENTS_COPY.form.saveFailedHeading);
+    expect(alert?.textContent).toContain('The save was refused, and nothing was saved.');
+    expect(alert?.textContent).toContain(REFUSAL.message);
+    expect(alert?.textContent).toContain('What you typed is still on the form.');
+    expect(element.querySelector<HTMLInputElement>('input[autocomplete="given-name"]')?.value).toBe(
+      'Ana',
+    );
+    expect(
+      element.querySelector<HTMLInputElement>('input[autocomplete="family-name"]')?.value,
+    ).toBe('Halimbawa');
   });
 
   it('names what is wrong instead of failing silently', async () => {

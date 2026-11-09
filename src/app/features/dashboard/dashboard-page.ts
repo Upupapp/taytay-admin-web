@@ -44,11 +44,12 @@ import {
   type DrillDown,
 } from './dashboard-drill-down';
 
-const PESO = new Intl.NumberFormat('en-PH', {
-  style: 'currency',
-  currency: 'PHP',
-  maximumFractionDigits: 0,
-});
+/**
+ * A category's amount is said by the one peso formatter (rule 6), centavos and all. This screen had
+ * its own, with no centavos, and "Released by programme type" read ₱3,001 for ₱3,000.50 beside a
+ * headline of ₱3,000.50 (dry run 2026-11-09, defect 7).
+ */
+const PESO = new PesoPipe();
 
 interface AttentionCard {
   readonly signal: AttentionSignal;
@@ -194,11 +195,7 @@ export class DashboardPage {
         key: row.category,
         label: PROGRAM_CATEGORY_LABELS[row.category],
         value: toDecimal(row.amount),
-        display: this.copy.categoryDisplay(
-          PESO.format(toDecimal(row.amount)),
-          row.count,
-          row.goodsCount,
-        ),
+        display: this.copy.categoryDisplay(PESO.transform(row.amount), row.count, row.goodsCount),
         routerLink: drill.route,
         queryParams: drill.queryParams,
       };

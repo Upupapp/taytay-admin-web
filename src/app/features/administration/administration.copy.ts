@@ -33,6 +33,10 @@ export const ADMIN_COPY = {
       'This is your own account. You cannot switch it off or on; another administrator can.',
     employeeId: 'ID',
     allBarangays: 'All barangays',
+    // What an account's office role confines it to (`ROLE_DEFINITIONS[role].scope`), in words.
+    coversAssignedCases: 'Cases assigned to them',
+    coversUnnamedBarangay: 'One barangay, not named',
+    coversNothingYet: 'Nothing until given an office role',
     extraGrants: 'grants beyond the role',
 
     provisioningHeading: 'Adding an account',

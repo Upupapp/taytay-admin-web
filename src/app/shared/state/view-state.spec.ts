@@ -26,6 +26,23 @@ describe('toViewState', () => {
     expect(failure?.kind === 'error' ? failure.message : null).toBe('Network is down');
   });
 
+  // DL-196: a refused read no longer leaves the screen, so the panel carries the server's words.
+  it('says the server’s sentence when the failure is the API’s', async () => {
+    const refusal = {
+      code: 'FORBIDDEN',
+      status: 403,
+      message: 'Your account cannot read home visits.',
+      details: null,
+      requestId: null,
+      retryAfterSeconds: null,
+    };
+    const states = await collect(toViewState<number>(throwError(() => refusal)), 2);
+    const failure = states[1];
+    expect(failure?.kind === 'error' ? failure.message : null).toBe(
+      'Your account cannot read home visits.',
+    );
+  });
+
   it('falls back to a non-technical message for a non-Error rejection', async () => {
     const states = await collect(toViewState<number>(throwError(() => 'boom')), 2);
     const failure = states[1];

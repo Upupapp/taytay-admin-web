@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, type Signal, type WritableSignal } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter, Router } from '@angular/router';
 import { defer, firstValueFrom, of, throwError, type Observable } from 'rxjs';
 
@@ -17,7 +18,10 @@ import {
   emptyPage,
   toAuthenticatedUser,
   type AuthenticatedUser,
+  type CheckInLookup,
+  type LguEventId,
   type Page,
+  type RegistrantView,
   type StaffRepository,
   type StaffRole,
   type StaffUser,
@@ -26,6 +30,7 @@ import {
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
 
+import { EventCheckIn } from './event-check-in';
 import { EventComposerPage } from './event-composer-page';
 import { EventDetailPage } from './event-detail-page';
 import { EventListPage } from './event-list-page';
@@ -867,5 +872,47 @@ describe('check-in mode (DL-195)', () => {
   it('is not offered to a reader who cannot mark attendance', async () => {
     const fixture = await openEvent('event-0003', 'auditor', 'staff-auditor');
     expect(buttons(fixture)).not.toContain('Check-in mode');
+  });
+
+  // Dry run 2026-11-09, defect 5: marking somebody re-read the event, the page went back to
+  // loading, and the panel that said "Marked … as attended." was rebuilt without it.
+  it('says who was marked, and re-reads the counts but not the event', async () => {
+    const fixture = await openEvent('event-0003');
+    const repository = TestBed.inject(EVENT_REPOSITORY);
+    const page = fixture.componentInstance as unknown as { toggleCheckIn: () => void };
+    page.toggleCheckIn();
+    await fixture.whenStable();
+
+    const panel = fixture.debugElement.query(By.directive(EventCheckIn));
+    const checkIn = panel.componentInstance as unknown as {
+      term: WritableSignal<string>;
+      lookup: Signal<CheckInLookup | null>;
+      find: () => Promise<void>;
+      markAttended: (row: RegistrantView) => Promise<void>;
+    };
+    // Found the way the door finds somebody: by their reference, typed whole.
+    const listed = await firstValueFrom(repository.registrants(asId<LguEventId>('event-0003'), {}));
+    const unmarked = listed.find(
+      (entry) => entry.status !== 'cancelled' && entry.attendance !== 'attended',
+    );
+    checkIn.term.set(unmarked?.reference ?? '');
+    await checkIn.find();
+    const row = checkIn
+      .lookup()
+      ?.matches.find((match) => match.status !== 'cancelled' && match.attendance !== 'attended');
+    expect(row).toBeDefined();
+    if (row === undefined) {
+      return;
+    }
+
+    const readEvent = vi.spyOn(repository, 'getById');
+    const readCounts = vi.spyOn(repository, 'capacity');
+    await checkIn.markAttended(row);
+    await fixture.whenStable();
+
+    expect(text(fixture)).toContain(`Marked ${row.reference} as attended.`);
+    expect(fixture.debugElement.query(By.directive(EventCheckIn)).componentInstance).toBe(checkIn);
+    expect(readEvent).not.toHaveBeenCalled();
+    expect(readCounts).toHaveBeenCalled();
   });
 });

@@ -23,6 +23,13 @@
       </div>
     } @else {
       <form class="form" novalidate (submit)="submit($event)">
+        @if (saveFailure(); as failure) {
+          <!-- Above what was typed, which stays: a refused save never costs the form (DL-196). -->
+          <div class="card form__problems" role="alert">
+            <h2 class="form__problems-heading">{{ copy.saveFailedHeading }}</h2>
+            <p>{{ failure }}</p>
+          </div>
+        }
         @if (problems().length > 0) {
           <div class="card form__problems" role="alert">
             <h2 class="form__problems-heading">{{ copy.problemsHeading }}</h2>
@@ -148,7 +155,7 @@
               <span class="field__label">{{ copy.barangay }}</span>
               <select class="field__input" (change)="onText('barangayId', $event)">
                 <option value="" [selected]="model().barangayId === ''">—</option>
-                @for (barangay of barangays; track barangay.id) {
+                @for (barangay of barangays(); track barangay.id) {
                   <option [value]="barangay.id" [selected]="model().barangayId === barangay.id">
                     {{ barangay.name }}
                   </option>

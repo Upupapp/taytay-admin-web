@@ -148,6 +148,7 @@ export interface CategoryTotal {
  */
 export interface DashboardPayouts {
   readonly scheduledPayouts: number;
+  /** Everybody handed money **or** goods in the period — not the people the money went to. */
   readonly residentsServedInPeriod: number;
   /**
    * Renamed from `disbursedThisMonth` in TAB 06. The old name was inaccurate:

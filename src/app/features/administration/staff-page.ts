@@ -11,6 +11,7 @@ import {
   GOVERNANCE_REPOSITORY,
   PROVISIONING_IS_NOT_BUILT,
   RESET_ACCESS_IS_NOT_BUILT,
+  ROLE_DEFINITIONS,
   type StaffAccount,
 } from '@domain/index';
 import { debouncedTerm } from '@shared/state/debounced';
@@ -123,6 +124,28 @@ export class StaffPage {
   protected isOwn(account: StaffAccount): boolean {
     const user = this.session.user();
     return user !== null && String(user.id) === String(account.staffId);
+  }
+
+  /**
+   * What an account covers, as its office role confines it. The API sends a barangay only for a
+   * barangay link, and this used to read every other account as "All barangays" — a social
+   * worker included, whose scope is the cases assigned to them (dry run 2026-11-09, defect 10).
+   */
+  protected covers(account: StaffAccount): string {
+    if (account.barangayLabel !== null) {
+      return account.barangayLabel;
+    }
+    if (account.role === null) {
+      return this.copy.coversNothingYet;
+    }
+    switch (ROLE_DEFINITIONS[account.role].scope) {
+      case 'assigned-cases':
+        return this.copy.coversAssignedCases;
+      case 'own-barangay':
+        return this.copy.coversUnnamedBarangay;
+      case 'all-barangays':
+        return this.copy.allBarangays;
+    }
   }
 
   protected isOpen(account: StaffAccount): boolean {

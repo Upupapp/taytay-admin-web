@@ -63,6 +63,11 @@ export const RESIDENTS_COPY = {
     kinshipHint:
       'Every recorded change, newest first, with who made it and why. Nothing here is ever removed — a relationship that ended is shown as ended, not deleted.',
     noKinshipHistory: 'No changes have been recorded.',
+    // Said in the panel's place rather than an empty list, which would read as "none recorded".
+    visitsNotOpen: 'Your role does not open home visits, so none were read for this record.',
+    familiesNotOpen: 'Your role does not open families, so none were read for this record.',
+    panelRefused: (reason: string) => `This part of the record was not read. ${reason}`,
+    panelUnread: 'The server did not answer for it. The rest of the record is shown.',
     subtitleFallback: 'Resident record',
     edit: 'Edit record',
     retire: 'Retire record',
@@ -143,6 +148,16 @@ export const RESIDENTS_COPY = {
     editSubtitle: 'Correct the details on an existing record.',
     save: 'Save record',
     saving: 'Saving…',
+    saveFailedHeading: 'Not saved',
+    /** The server's words when it gave any; what was typed is kept either way (`DL-196`). */
+    saveFailed: (reason: string | null, refused: boolean) =>
+      [
+        refused ? 'The save was refused, and nothing was saved.' : 'The record could not be saved.',
+        reason,
+        'What you typed is still on the form.',
+      ]
+        .filter((part): part is string => part !== null)
+        .join(' '),
     cancel: 'Cancel',
 
     nameHeading: 'Name',

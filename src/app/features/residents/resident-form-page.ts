@@ -12,6 +12,7 @@ import { Router, RouterLink } from '@angular/router';
 import { catchError, forkJoin, map, of, switchMap, type Observable } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
+import { isApiFailure } from '@core/http/api-failure';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   asId,
@@ -38,6 +39,7 @@ import {
   type Sex,
   type VulnerabilitySector,
 } from '@domain/index';
+import { failureReason } from '@shared/state/failure-reason';
 import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -120,7 +122,19 @@ export class ResidentFormPage {
   readonly id = input<string | undefined>(undefined);
 
   protected readonly copy = RESIDENTS_COPY.form;
-  protected readonly barangays = TAYTAY_BARANGAYS;
+
+  /**
+   * The barangays this writer may file a record in. A barangay link is confined to their own
+   * (`own-barangay`), so that is the only one offered: offering all five invited a choice the API
+   * refuses, and the refusal used to cost the form (dry run 2026-11-09, defect 2; CLAUDE.md "Data
+   * scope"). A usability check only — the API refuses another barangay whatever this offers.
+   */
+  protected readonly barangays = computed(() => {
+    const bound = this.permissions.boundBarangayId();
+    return bound === null
+      ? TAYTAY_BARANGAYS
+      : TAYTAY_BARANGAYS.filter((barangay) => barangay.id === bound);
+  });
   protected readonly sexes = SEXES;
   protected readonly civilStatuses = CIVIL_STATUSES;
 
@@ -157,9 +171,18 @@ export class ResidentFormPage {
     () => this.offeredSectors().length < VULNERABILITY_SECTORS.length,
   );
 
-  protected readonly model = signal<FormModel>(BLANK);
+  // A new record by a barangay link starts in their barangay, the only one they may choose.
+  protected readonly model = signal<FormModel>({
+    ...BLANK,
+    barangayId: this.permissions.boundBarangayId() ?? '',
+  });
   protected readonly problems = signal<readonly ResidentDraftProblem[]>([]);
   protected readonly submitting = signal(false);
+  /**
+   * Why the last save did not happen, said on the form above what was typed — which stays. A
+   * refused save used to send the app away and take the form with it (`DL-196`).
+   */
+  protected readonly saveFailure = signal<string | null>(null);
   protected readonly loadFailed = signal<string | null>(null);
 
   /** `null` on the create route; the existing record on the edit route. */
@@ -286,6 +309,7 @@ export class ResidentFormPage {
 
     const id = this.id();
     this.submitting.set(true);
+    this.saveFailure.set(null);
     const save$ =
       id === undefined
         ? this.repository.create(draft)
@@ -323,15 +347,14 @@ export class ResidentFormPage {
           );
         }
 
-        void this.router.navigate(['/residents', saved.id]);
-      },
-      error: (failure: unknown) => {
-        this.submitting.set(false);
-        this.notifications.error(
-          failure instanceof Error ? failure.message : 'That record could not be saved.',
-        );
-      },
-    });
+          void this.router.navigate(['/residents', saved.id]);
+        },
+        error: (failure: unknown) => {
+          this.submitting.set(false);
+          // Said on the form, once; the server's refusal is also the interceptor's one toast.
+          this.saveFailure.set(this.copy.saveFailed(failureReason(failure), wasRefused(failure)));
+        },
+      });
   }
 
   /**
@@ -398,4 +421,16 @@ export class ResidentFormPage {
 function blankToNull(value: string): string | null {
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
+ * Whether the save certainly did not happen: refused by the server (a `4xx` it answered with), or
+ * stopped here before anything was sent. A server error or a dropped connection is not said to have
+ * saved nothing, because that is not known.
+ */
+function wasRefused(failure: unknown): boolean {
+  if (isApiFailure(failure)) {
+    return failure.status >= 400 && failure.status < 500;
+  }
+  return failure instanceof Error;
 }
