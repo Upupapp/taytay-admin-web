@@ -93,10 +93,12 @@ residents have nothing to request and the DOC cases cannot start.
   D-194.
 - **Android only.** No iOS build exists yet.
 - **Defects found before the round.** The developer's dry run
-  ([dry-run-2026-11-09.md](dry-run-2026-11-09.md)) found product defects that the office will meet
-  until they are fixed on staging: a barangay link or a release officer cannot open a resident's
-  record (ROS-05, NFR-06), a barangay link's footer reads "Unknown barangay" (ACC-02, ACC-04), and
-  RPT-01 and EVT-18 fail on one step each. Log them as defects as usual.
+  ([dry-run-2026-11-09.md](dry-run-2026-11-09.md)) found twelve product defects. All are fixed in
+  the code (see its "Fixed" notes), but the office meets them on staging until staging is
+  redeployed: a barangay link or a release officer cannot open a resident's record (ROS-05,
+  NFR-06), a barangay link's footer reads "Unknown barangay" (ACC-02, ACC-04), and RPT-01 and EVT-18
+  fail on one step each. Ask whether staging has been redeployed before the round; if it has not,
+  log them as defects as usual.
 - **A reload signs you out of the staff website.** This is by design (NFR-03). Move around with the
   menu and the links.
 

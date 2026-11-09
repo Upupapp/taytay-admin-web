@@ -1,6 +1,11 @@
 # UAT test scripts: Taytay, Rizal LGU platform (staging)
 
-Version 1.8, 9 November 2026 (replaces 1.7 of the same day): after the developer's dry run
+Version 1.9, 9 November 2026 (replaces 1.8 of the same day): the dry run's product defects are
+fixed (see its "Fixed" notes), and five cases follow the product's new wording. ROS-05 no longer
+asks for another barangay, because a barangay link is now offered its own barangay only; WRK-06
+expects no "Mark done" on the withheld task; EVT-07 expects Manila times and the list's words in the
+file; GOV-01 reads SW1's "Covers"; NFR-06 reads BLINK's "Home visits". No case is added or removed.
+Version 1.8, 9 November 2026 (replaced 1.7 of the same day): after the developer's dry run
 ([dry-run-2026-11-09.md](dry-run-2026-11-09.md)), ACC-04 lists SW1's and INTAKE's menus as the
 website shows them, RPT-08 says why a programme that gave out only goods reads "₱0.00", and EVT-17
 says that "Why" empties after each move. No case is added or removed. Version 1.7, 9 November 2026
@@ -532,13 +537,16 @@ list of app accounts, which is "Users and roles" (ADMIN only).
 - **Steps:**
   1. Open "Residents" and search "Halimbawa".
   2. Click "Register a resident". Look for "PhilSys — last four digits only" and "Monthly income
-     (₱)".
-  3. Register "Elisa Halimbawa" with "Barangay" "Dolores" and click "Save record".
-  4. Change "Barangay" to "San Juan" and click "Save record".
+     (₱)", and open "Barangay".
+  3. Register "Elisa Halimbawa" and click "Save record".
 - **Expected result:**
   - Step 1 lists San Juan residents only: Ana and Ben, never Dante.
-  - The form has no PhilSys or income field.
-  - Step 3 is refused by the server and nothing is saved. Step 4 shows "Resident registered.".
+  - The form has no PhilSys or income field. "Barangay" offers "San Juan" only, already chosen: no
+    other barangay can be picked. (The server also refuses another barangay; the form no longer
+    offers one.)
+  - Step 3 shows "Resident registered." and opens Elisa's record, with her details. Under "Home
+    visits" it reads "Your role does not open home visits, so none were read for this record.".
+    The page never changes to "You do not have access to that section".
 
 ### ROS-06 · Register a household
 
@@ -2413,7 +2421,8 @@ else is done on its own record. Office alerts describe the state of the records:
   - HEAD sees the task's own words, about Carmen by her full name, with "With: Nobody yet".
   - INTAKE sees a "Task" row reading "A task on a protected case. Its words are withheld from your
     role.", about "Halimbawa, C.", with "With: Nobody yet". The words typed in step 1 appear nowhere
-    on INTAKE's page.
+    on INTAKE's page. The row offers no "Mark done" and reads "This task is on a case withheld from
+    your account, so you cannot act on it. A colleague cleared for protected records can.".
   - "Open the case" opens the case, which shows "Withheld from your account" as in NFR-06.
 
 ## RPT: Reports and exports
@@ -2673,8 +2682,8 @@ administrator only. The head and the auditor read the first two and change nothi
   away for a moment and gives it back in step 6.
 - **Steps:**
   1. Open "Staff and roles", under "Administration" in the menu. Read the page and every card.
-  2. Read "Role", "Unit", "ID", "Covers" and "Last signed in" on the cards of INTAKE, BLINK and your
-     own account.
+  2. Read "Role", "Unit", "ID", "Covers" and "Last signed in" on the cards of INTAKE, BLINK, SW1
+     and your own account.
   3. Type INTAKE's name, as its card shows it, in "Search". Then replace it with "UAT nobody".
   4. Clear "Search". Open "Users and roles" and click "Manage" on SW2. Choose "No office role" in
      "Give the account the office role", fill "Why (required)" with "UAT: GOV-01, given back in step
@@ -2688,8 +2697,9 @@ administrator only. The head and the auditor read the first two and change nothi
     trail" and "Permission matrix" at the top and "Data governance" at the foot.
   - ADMIN and every staff test account are listed, each marked "Active". No resident tester (RES-A,
     RES-B, RES-C) is listed.
-  - INTAKE's "Role" reads "Intake officer", BLINK's "Covers" reads "San Juan", and your own "Role"
-    reads "System administrator". On every card "Unit", "ID" and "Last signed in" read "Not
+  - INTAKE's "Role" reads "Intake officer", BLINK's "Covers" reads "San Juan", SW1's "Covers" reads
+    "Cases assigned to them" (never "All barangays"), and your own "Role" reads "System
+    administrator". On every card "Unit", "ID" and "Last signed in" read "Not
     recorded": never "Never" and never a blank.
   - Step 3 leaves INTAKE's card only. "UAT nobody" shows "No accounts match" and "Try a wider
     search, or include deactivated accounts.".
@@ -3483,13 +3493,17 @@ created, and EVT-20 reads E1 cancelled and E2 completed.
     today's date and ends ".csv". Under the warning it shows "The file is ready. It carries the event,
     the filter, who produced it and how to handle it." and a link "Save" followed by that name.
   - The file opens with lines starting "Event" (E1's title), "Category", "Starts", "Venue",
-    "Generated at", "Generated by" (with HEAD's name), "Registrants" (2) and "Handling", which reads
+    "Generated at", "Generated by" (with HEAD's name), "Registrants" (2) and "Handling". "Starts" and
+    "Generated at" give the date and time in Taytay, for example "2026-11-16 09:00 (Asia/Manila,
+    UTC+08:00)", never a time ending in "Z". "Handling" reads
     "This file lists residents who registered for a municipal event. It is held by the MSWDO of
     Taytay, Rizal and protected under RA 10173. Take it to the venue if you need it there, keep it
     within the office otherwise, and delete it once attendance has been recorded."
-  - Then one table with exactly the columns "Reference", "Name", "Barangay", "Registered", "Status"
-    and "Attendance", and a row each for RES-B and RES-C. No address, birth date, phone number,
-    email or ID number.
+  - Then one table with exactly the columns "Reference", "Name", "Barangay", "Registered
+    (Asia/Manila, UTC+08:00)", "Status" and "Attendance", and a row each for RES-B and RES-C.
+    "Registered" gives a date and time such as "2026-11-10 14:05"; "Status" and "Attendance" read as
+    on the screen, for example "Registered" and "Not checked in", never "registered" or
+    "not-checked-in". No address, birth date, phone number, email or ID number.
 
 ### EVT-08 · A resident gives up their own place until the event starts, and the office can restore it
 
@@ -4034,6 +4048,9 @@ created, and EVT-20 reads E1 cancelled and E2 completed.
   - Her record shows "Hidden by your role", listing "Protected sector membership".
   - Her case says what it says is withheld, and shows "Withheld from your account" instead of the
     presenting problem, tasks and notes.
+  - BLINK sees her record, with "Hidden by your role", and "Home visits" reads
+    "Your role does not open home visits, so none were read for this record.". The page never
+    changes to "You do not have access to that section".
   - HEAD sees the full record and case.
 
 ### NFR-07 · Identity numbers and income are withheld from roles without clearance
