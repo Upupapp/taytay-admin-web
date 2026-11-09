@@ -153,6 +153,7 @@ import type {
   AccountRole,
   AppAccount,
   AppAccountFilter,
+  NameCorrection,
   OfficeRoleChange,
 } from '../accounts/app-account';
 import type { DirectoryOffice, OfficeChanges, OfficeDraft } from '../directory/directory-office';
@@ -1672,6 +1673,12 @@ export interface AppAccountRepository {
    * account, never `system-administrator` — on the server.
    */
   assignOfficeRole(id: AppAccountId, change: OfficeRoleChange): Observable<AppAccount>;
+
+  /**
+   * Corrects a verified account's name against an ID somebody at the office has seen (`DL-198`).
+   * The server keeps the earlier name, and refuses if the account's name is not `previousName`.
+   */
+  correctName(id: AppAccountId, correction: NameCorrection): Observable<AppAccount>;
 
   /** The barangays as the API lists them, whole, for choosing a barangay link's barangay. */
   barangays(): Observable<readonly AccountBarangay[]>;

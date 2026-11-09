@@ -32,6 +32,7 @@ import { failureReason } from '@shared/state/failure-reason';
 import { valueOf, type ViewState } from '@shared/state/view-state';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
+import { AccountNameCorrection } from './account-name-correction';
 import { AccountOfficeRole } from './account-office-role';
 import { ACCOUNTS_COPY } from './accounts.copy';
 
@@ -61,7 +62,7 @@ import { ACCOUNTS_COPY } from './accounts.copy';
 @Component({
   selector: 'app-account-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AccountOfficeRole, StatusBadge],
+  imports: [AccountNameCorrection, AccountOfficeRole, StatusBadge],
   templateUrl: './account-panel.html',
   styleUrl: './account-panel.scss',
 })

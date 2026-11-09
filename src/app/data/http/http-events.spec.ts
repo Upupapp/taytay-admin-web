@@ -529,6 +529,20 @@ describe('events over the API (DL-192)', () => {
       expect(last?.identityVerified).toBe(false);
       expect(last?.nameSource).toBe('account');
     });
+
+    it('reads a name the office corrected against an ID as its own source (DL-198)', async () => {
+      const read = firstValueFrom(repository.registrants(MISSION, {}));
+      barangays();
+      const [first, ...rest] = OFFICE_EVENT_REGISTRANTS.data;
+      http
+        .expectOne((candidate) => candidate.url === `${EVENTS}/${MISSION}/registrants`)
+        .flush({
+          ...OFFICE_EVENT_REGISTRANTS,
+          data: [{ ...first, name_source: 'office-correction' }, ...rest],
+        });
+      const rows = await read;
+      expect(rows[0]?.nameSource).toBe('office-correction');
+    });
   });
 
   it('reads the history as the office’s acts, each with its reason and no recorded fields', async () => {

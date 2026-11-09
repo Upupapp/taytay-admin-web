@@ -280,3 +280,54 @@ export const OFFICE_ROLE_ALWAYS: readonly string[] = [
   'The server refuses a role that would let one person both approve a request and release its ' +
     'money.',
 ];
+
+/* ── correcting a verified account's name (`DL-198`) ───────────────────────── */
+
+/**
+ * A verified account's name, corrected at the office against a government ID somebody there has
+ * seen — a marriage, a court order. Since `DL-197` the resident cannot change a name the office
+ * checked, so this is the one way it changes. The server keeps the earlier name in an append-only
+ * history and refuses the correction if the account's name is no longer `previousName`.
+ */
+export interface NameCorrection {
+  readonly name: string;
+  /** The account's name as the screen showed it. */
+  readonly previousName: string;
+}
+
+/** The API's limit on a name (`NameCorrection.name`: 1 to 120 characters, trimmed). */
+export const NAME_CORRECTION_MAX = 120;
+
+/** True for an account whose name only the office may now change: a verified one with a name. */
+export function hasCheckedName(account: AppAccount): boolean {
+  return account.role === 'verified' && account.name !== null;
+}
+
+/** Why a correction would be refused before it is sent, in words; empty when it would not. */
+export function nameCorrectionProblems(account: AppAccount, name: string): readonly string[] {
+  const next = name.trim();
+  if (next === '') {
+    return ['Type the name exactly as the ID shows it.'];
+  }
+  if (next.length > NAME_CORRECTION_MAX) {
+    return [`A name is at most ${NAME_CORRECTION_MAX} characters.`];
+  }
+  if (next === (account.name ?? '').trim()) {
+    return ['That is already the account’s name.'];
+  }
+  return [];
+}
+
+/**
+ * What the server does when a name is corrected, said before the button (`DL-198`). Read from
+ * `taytay-backend` `09e1cd0`: `POST admin/users/{id}/name-corrections` and `correctName` in
+ * `src/modules/users/repository.ts`, and the event lists' `REGISTRANT_FROM`.
+ */
+export const NAME_CORRECTION_EFFECTS: readonly string[] = [
+  'The account’s name becomes the one you type. The resident’s digital ID shows it, and so do the ' +
+    'office’s event lists.',
+  'The earlier name is kept in the account’s name history, with who corrected it and when.',
+  'The ID is not reviewed again: the account stays verified and keeps its digital ID.',
+  'The audit trail records that the name was corrected, not the names. The server keeps no reason.',
+  'The resident is not told in the app. Tell them at the counter.',
+];

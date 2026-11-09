@@ -119,6 +119,9 @@ class Accounts implements AppAccountRepository {
   assignOfficeRole(): Observable<AppAccount> {
     throw new Error('not used');
   }
+  correctName(): Observable<AppAccount> {
+    throw new Error('not used');
+  }
   barangays(): Observable<readonly AccountBarangay[]> {
     throw new Error('not used');
   }

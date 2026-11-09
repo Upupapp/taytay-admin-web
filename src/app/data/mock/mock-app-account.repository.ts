@@ -3,7 +3,9 @@ import { throwError, type Observable } from 'rxjs';
 
 import {
   ACCESS_CONTEXT,
+  hasCheckedName,
   isOwnAccount,
+  nameCorrectionProblems,
   officeRoleChangeProblems,
   takesAnOffice,
   takesAnOfficeRole,
@@ -16,6 +18,7 @@ import {
   type AppAccountRepository,
   type CursorPage,
   type CursorRequest,
+  type NameCorrection,
   type OfficeId,
   type OfficeRoleChange,
 } from '@domain/index';
@@ -136,6 +139,43 @@ export class MockAppAccountRepository implements AppAccountRepository {
       return throwError(() => new Error(problem));
     }
     return this.save({ ...account, officeRole: change.role, scopeBarangayId: change.barangayId });
+  }
+
+  /** The API's refusals, in its words (`DL-198`). The mock keeps no name history. */
+  correctName(id: AppAccountId, correction: NameCorrection): Observable<AppAccount> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<AppAccount>(user, 'verification.review');
+    if (denied) {
+      return denied;
+    }
+    const account = this.accounts.find((candidate) => candidate.id === id);
+    if (account === undefined) {
+      return throwError(() => new Error('That user was not found.'));
+    }
+    if (isOwnAccount(account, user === null ? null : String(user.id))) {
+      return throwError(() => new Error('You cannot correct your own name.'));
+    }
+    if (!hasCheckedName(account)) {
+      return throwError(
+        () =>
+          new Error(
+            'Only a verified account’s name is corrected here. Before its ID is approved, and after a rejection, the resident changes it in the app.',
+          ),
+      );
+    }
+    if ((account.name ?? '').trim() !== correction.previousName.trim()) {
+      return throwError(
+        () =>
+          new Error(
+            'The account’s name is not the one shown. Read the account again before correcting it.',
+          ),
+      );
+    }
+    const problem = nameCorrectionProblems(account, correction.name)[0];
+    if (problem !== undefined) {
+      return throwError(() => new Error(problem));
+    }
+    return this.save({ ...account, name: correction.name.trim() });
   }
 
   /** The console's own five barangays stand in for the API's list, which keys them differently. */

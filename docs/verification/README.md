@@ -88,7 +88,10 @@ compare the ID with what the account says about itself. The owner decided (OD-1)
   reject and ask the resident for the name printed on their ID.
 - **After approval the name is fixed in the app**: the API refuses a change of name or birth date
   while a request is pending or approved, so a verified account cannot be renamed under its digital
-  ID. After a rejection the resident may correct it.
+  ID. After a rejection the resident may correct it. A legal name change is corrected by the office
+  on "Users and roles", against a government ID it has seen, and the earlier name is kept (`DL-198`).
+- **The app asks for no birth date** (`DL-198`): age is sensitive personal information, and nothing
+  uses an account's birth date, so usually only the name is checked.
 
 A person compares the name with the card. The software compares nothing with the card, and holds no
 match score (`check:verification`, rules 1 and 8).

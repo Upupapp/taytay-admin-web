@@ -3,7 +3,7 @@
 This pack is deliverable D6, "Testing and LGU UAT" (item 7 on the project tracker). Office staff and
 resident testers use it to test the platform on the staging site and sign it off before production.
 
-- [uat-test-scripts.md](uat-test-scripts.md): 202 test cases in 19 areas.
+- [uat-test-scripts.md](uat-test-scripts.md): 203 test cases in 19 areas.
 - [uat-signoff.md](uat-signoff.md): the sign-off sheets, the defect summary and the acceptance.
 - [dry-run-2026-11-09.md](dry-run-2026-11-09.md): the developer's dry run of 9 November 2026 on a
   local copy, before the office's round: the result of each case it touched, the three cases it

@@ -13,7 +13,11 @@ import {
   ACCOUNT_ROLE_CATALOG,
   ACCOUNT_ROLE_TRANSITIONS,
   ACCOUNT_ROLES,
+  hasCheckedName,
   isOwnAccount,
+  NAME_CORRECTION_EFFECTS,
+  NAME_CORRECTION_MAX,
+  nameCorrectionProblems,
   OFFICE_ASSIGNMENT_EFFECTS,
   ROLE_CHANGE_ALWAYS,
   ROLE_CHANGE_EFFECTS,
@@ -129,5 +133,38 @@ describe('the office role (DL-173)', () => {
     expect(OFFICE_ROLE_ALWAYS.join(' ')).toMatch(/keeps your reason/);
     expect(OFFICE_ROLE_ALWAYS.join(' ')).toMatch(/approve a request and release its money/);
     expect(ROLE_CHANGE_ALWAYS.join(' ')).toMatch(/office role is not kept/);
+  });
+});
+
+describe('correcting a verified account’s name (DL-198)', () => {
+  const verified: AppAccount = {
+    id: asId<AppAccountId>('account-v'),
+    name: 'Ana Cruz',
+    email: null,
+    role: 'verified',
+    officeId: null,
+    officeRole: null,
+    scopeBarangayId: null,
+  };
+
+  it('is the office’s only for a verified account with a name', () => {
+    expect(hasCheckedName(verified)).toBe(true);
+    expect(hasCheckedName({ ...verified, role: 'registered' })).toBe(false);
+    expect(hasCheckedName({ ...verified, role: 'staff' })).toBe(false);
+    expect(hasCheckedName({ ...verified, name: null })).toBe(false);
+  });
+
+  it('refuses an empty name, a long one and the same one, before anything is sent', () => {
+    expect(nameCorrectionProblems(verified, '   ')).toHaveLength(1);
+    expect(nameCorrectionProblems(verified, 'x'.repeat(NAME_CORRECTION_MAX + 1))).toHaveLength(1);
+    expect(nameCorrectionProblems(verified, ' Ana Cruz ')).toEqual(['That is already the account’s name.']);
+    expect(nameCorrectionProblems(verified, 'Ana Cruz Reyes')).toEqual([]);
+  });
+
+  it('says before the button that the earlier name is kept and the ID is not reviewed again', () => {
+    const said = NAME_CORRECTION_EFFECTS.join(' ');
+    expect(said).toMatch(/earlier name is kept/);
+    expect(said).toMatch(/not reviewed again/);
+    expect(said).toMatch(/keeps no reason/);
   });
 });

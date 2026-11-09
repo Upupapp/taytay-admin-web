@@ -1,0 +1,58 @@
+@if (applies() && canCorrect()) {
+  <section class="panel__block" aria-labelledby="account-name-correction">
+    <h3 id="account-name-correction" class="panel__heading">{{ copy.heading }}</h3>
+    <p class="panel__note">{{ copy.intro }}</p>
+
+    @if (own()) {
+      <p class="panel__note">{{ copy.ownAccount }}</p>
+    } @else {
+      <div class="field">
+        <label class="field__label" for="account-name-correction-name">{{ copy.nameLabel }}</label>
+        <input
+          id="account-name-correction-name"
+          class="field__input"
+          type="text"
+          autocomplete="off"
+          aria-describedby="account-name-correction-hint"
+          [attr.maxlength]="max"
+          [value]="name()"
+          [disabled]="busy()"
+          (input)="type($event)"
+        />
+        <span id="account-name-correction-hint" class="panel__hint">{{ copy.nameHint }}</span>
+      </div>
+
+      <!-- What the server does, between the field and the button that does it. -->
+      <div class="panel__effects">
+        <p>{{ copy.lead }}</p>
+        <ul>
+          @for (effect of effects; track $index) {
+            <li>{{ effect }}</li>
+          }
+        </ul>
+      </div>
+
+      <label class="check">
+        <input
+          type="checkbox"
+          [checked]="seen()"
+          [disabled]="busy() || problems().length > 0"
+          (change)="tick($event)"
+        />
+        {{ copy.statement }}
+      </label>
+
+      @if (name().trim() !== '' && problems().length > 0) {
+        <ul class="panel__problem" role="alert">
+          @for (problem of problems(); track $index) {
+            <li>{{ problem }}</li>
+          }
+        </ul>
+      }
+
+      <button type="button" class="btn btn--primary" [disabled]="!ready()" (click)="save()">
+        {{ busy() ? copy.saving : copy.confirm }}
+      </button>
+    }
+  </section>
+}

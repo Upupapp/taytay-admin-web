@@ -1,6 +1,8 @@
 # UAT test scripts: Taytay, Rizal LGU platform (staging)
 
-Version 1.10, 9 November 2026 (replaces 1.9 of the same day): the ID reviewer now sees the name the
+Version 1.11, 9 November 2026 (replaces 1.10 of the same day): ACC-11 is added — the office corrects
+a verified resident's name against an ID it has seen (`DL-198`). Version 1.10, 9 November 2026
+(replaced 1.9 of the same day): the ID reviewer now sees the name the
 account gives and ticks that the ID shows it before approving, and a checked name can no longer be
 changed in the app (`DL-197`). REG-09 and REG-10 follow the new review; REG-14 is added (a resident
 rejected for a name that does not match puts it right). The README asks testers to write their
@@ -3085,6 +3087,31 @@ permission again: a hidden button is never the only protection.
   - Step 2 offers San Juan residents only, never Dante.
   - The request is filed and appears in BLINK's list. The list shows no request from another
     barangay.
+
+### ACC-11 · Correct a verified resident's name against an ID
+
+- **Role:** ADMIN
+- **Checks:** FR-STAFF-1, FR-STAFF-11 · Must · D1
+- **Set up first:** REG-10 done, so RES-B is verified. A second printed sample card shows RES-B's
+  fictional name with a different surname (for example "Ben Santos" for "Ben Halimbawa").
+- **Steps:**
+  1. In "Users and roles", click "Manage" on RES-B's row. Read "Correct the name".
+  2. In "The name as the ID shows it" type RES-B's current name exactly, and look at the box and the
+     button.
+  3. Type the name from the second sample card instead. Tick "I have seen a government ID that
+     shows this name.", then change one letter of the name.
+  4. Put the name back as the card shows it, tick the box again and click "Correct the name".
+  5. Click "Manage" on your own row.
+  6. RES-B: in the app, open "My Account", then "Edit profile".
+- **Expected result:**
+  - Step 1 lists, above the button, "The earlier name is kept in the account’s name history, with
+    who corrected it and when." and "The ID is not reviewed again: the account stays verified and
+    keeps its digital ID.". No "Why" box is shown.
+  - Step 2 shows "That is already the account’s name." and the box cannot be ticked.
+  - In step 3 the box clears when the name changes, and "Correct the name" stays greyed out.
+  - Step 4 shows "The name is now …" with the new name, and the row shows it.
+  - Step 5 shows no "Correct the name" section (your own account is not a verified resident's).
+  - Step 6 shows the new name, locked.
 
 ## AUD: App audit trail
 

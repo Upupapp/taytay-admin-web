@@ -147,4 +147,49 @@ describe('MockAppAccountRepository (DL-168)', () => {
     const promoted = await firstValueFrom(repository.changeRole(staff.id, 'staff'));
     expect(promoted.officeRole).toBeNull();
   });
+
+  it('corrects only a verified account’s name, against the name shown, as the API does (DL-198)', async () => {
+    const repository = signedInAs('system-administrator');
+    const verified = await find(
+      repository,
+      (account) => account.role === 'verified' && account.name !== null,
+    );
+    const resident = await find(
+      repository,
+      (account) => account.role === 'registered' && account.name !== null,
+    );
+    const shown = verified.name ?? '';
+
+    await expect(
+      firstValueFrom(
+        repository.correctName(resident.id, { name: 'New Name', previousName: resident.name ?? '' }),
+      ),
+    ).rejects.toThrow(/Only a verified account/);
+    await expect(
+      firstValueFrom(repository.correctName(verified.id, { name: 'New Name', previousName: 'Other' })),
+    ).rejects.toThrow(/not the one shown/);
+    await expect(
+      firstValueFrom(repository.correctName(verified.id, { name: shown, previousName: shown })),
+    ).rejects.toThrow(/already the account/);
+
+    const corrected = await firstValueFrom(
+      repository.correctName(verified.id, { name: ' New Name ', previousName: shown }),
+    );
+    expect(corrected.name).toBe('New Name');
+  });
+
+  it('lets only a reader who reviews IDs correct a name', async () => {
+    const verified = await find(
+      signedInAs('system-administrator'),
+      (account) => account.role === 'verified',
+    );
+    const refusal: unknown = await firstValueFrom(
+      signedInAs('mswdo-head').correctName(verified.id, {
+        name: 'New Name',
+        previousName: verified.name ?? '',
+      }),
+    ).catch((error: unknown) => error);
+
+    expect(isPermissionDenied(refusal)).toBe(true);
+  });
 });

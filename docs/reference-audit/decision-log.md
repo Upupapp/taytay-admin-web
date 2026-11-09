@@ -9192,3 +9192,80 @@ rejection for a name that does not match through to approval.
 
 Easiest to reverse of the options: no migration (`name_at_approval` has existed since `0044`), and
 removing the confirmation and the lock is a revert.
+
+## DL-198 — the residents' app does not collect a birth date, and the office corrects a verified name against an ID it has seen
+
+**Why.** `DL-197` left two things open, and the owner asked for best practice on both ("do whats
+best in the still open", 9 November 2026): the app never asks for a birth date, so only the name is
+checked against the ID; and with a checked name fixed in the app, nothing changed a verified
+resident's name after a marriage or a court order.
+
+### The birth date is not collected
+
+- **Age is sensitive personal information.** RA 10173 s.3(l)(1) lists "age" among sensitive
+  personal information, and s.11(d) requires personal information to be "adequate and not
+  excessive in relation to the purposes for which they are collected and processed". Read on
+  LawPhil (`lawphil.net/statutes/repacts/ra2012/ra_10173_2012.html`) on 9 November 2026; the
+  NPC's and the Official Gazette's pages refused the automated read (403).
+- **Nothing downstream uses an account's birth date.** The digital ID shows a name, a photo and a
+  barangay; the event lists show a name; no screen or rule reads the account's birth date. Asking
+  for one only to compare it with the ID would collect sensitive information for a check whose
+  result nothing uses.
+- **So the app keeps not asking**, and the review keeps saying "None given. The residents' app does
+  not ask for one, so only the name is checked." If a feature ever needs the account's birth date
+  (an age-limited event, say), that feature collects it, with the privacy notice updated first, and
+  `DL-197`'s comparison then covers it with no further change: the API already sends and compares
+  it when the account holds one.
+
+### The office corrects a verified name
+
+1. **The API** (`taytay-backend` `09e1cd0`, migration `0045`):
+   `POST admin/users/{id}/name-corrections`, administrator only, never one's own account, and only
+   for a verified account (before approval, and after a rejection, the resident changes the name in
+   the app). The body is the new name, `previous_name` — the name the screen showed, compared under
+   the row lock — and `id_checked: true`, the statement that the person correcting it has seen a
+   government ID that shows the new name. The earlier name is appended to `account_name_corrections`
+   in the same transaction (append-only), and the act is audited `user.name_corrected`, with the
+   same words in both trails.
+2. **The lists follow it.** The office's event lists show the name last checked against an ID —
+   the approval's, or a later correction's — and say which: "Name the office corrected since,
+   against their ID" (`name_source` `office-correction`). The digital ID reads the account's name,
+   so it shows the correction at once.
+3. **The console.** On "Users and roles", a verified account's panel has "Correct the name" for a
+   reader who holds `verification.review` — the key that approves an ID, because correcting a
+   checked name is the same judgement. What the server does is said first; the button waits for
+   "I have seen a government ID that shows this name.", which clears whenever the name typed
+   changes. No reason is asked for: the server keeps none (`DL-168`). The reader's own account is
+   refused before the field and again in `save`.
+4. **Closing an account now blanks the names the office checked**: `name_at_approval` and both
+   names in the correction history, as closure blanks every other personal field. The rows stay, so
+   who decided what, and when, survives without saying whom it was about. Before this, a closed
+   account's approval kept its name.
+
+### What it does not do
+
+- **It is not a new ID review.** The account stays verified and keeps its digital ID and its
+  photo. A correction rests on an ID seen at the counter, which the office does not keep; a
+  resident who should be reviewed afresh is moved off "verified" (which revokes the card) and sends
+  a new request from the app.
+- **The resident is not told in the app.** There is no notification for it; the effects say so, and
+  ask the reader to tell the resident at the counter.
+- **The history is not on a screen.** The earlier names are kept for accountability, not shown:
+  the audit trail says a name was corrected, not what it was, like every other row (`DL-114`).
+
+### Tests and checks
+
+Backend: every refusal (another role, one's own account, a missing account, no statement, an extra
+key, an account not verified, a name not the one shown, the same name), the correction and its
+history row and audit row, the resident still unable to change it, closure blanking both names and
+the approval's, and the event list showing the corrected name as `office-correction`. Console: the
+domain's rules, both adapters, the event mapper's third source, and the panel (offered only for a
+verified account to an ID reviewer, effects before the button, the statement held and cleared, the
+same name refused, one's own account refused, a refusal said). `check:accounts` gained rule 9, and
+each of its parts was validated against a planted regression (eight, all caught). UAT ACC-11 runs
+it.
+
+Easiest to reverse of the options weighed: the table is additive, and the route and the panel
+section can be removed without touching anything else. A resident-initiated name change from the
+app, with new ID photos and a review, was weighed and left for later: it needs a new app flow and
+a second kind of verification request, for an event the office sees rarely.

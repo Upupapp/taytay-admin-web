@@ -74,7 +74,11 @@ const REGISTRATION_STATUSES: readonly RegistrationStatus[] = [
 ];
 const ATTENDANCE: readonly AttendanceStatus[] = ['not-checked-in', 'attended', 'no-show'];
 const ELIGIBILITIES: readonly RegistrationEligibility[] = ['verified-residents', 'app-accounts'];
-const NAME_SOURCES: readonly RegistrantNameSource[] = ['id-approval', 'account'];
+const NAME_SOURCES: readonly RegistrantNameSource[] = [
+  'id-approval',
+  'office-correction',
+  'account',
+];
 const HISTORY_ACTIONS: readonly AuditAction[] = [
   'created',
   'updated',

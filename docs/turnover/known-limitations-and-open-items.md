@@ -63,8 +63,12 @@ From `docs/uat/README.md` ("Not in this UAT round") and the requirements documen
   (`DL-195`). It is the name the account carried when the ID was approved. Since 9 November 2026 the
   reviewer is sent that name and approves only after ticking that the ID shows it (`DL-197`), and the
   resident cannot change it in the app afterwards. Approvals before then (staging test data only)
-  were not checked. **No office screen changes a verified resident's name** (after a marriage, for
-  one); that needs an office route that checks the ID again.
+  were not checked. **The office corrects a verified resident's name** (after a marriage, for one)
+  on "Users and roles", against a government ID it has seen; the earlier name is kept (`DL-198`).
+  It is not a new ID review, and the resident is not told in the app.
+- **The residents' app does not ask for a birth date** (`DL-198`): age is sensitive personal
+  information (RA 10173 s.3(l)(1)) and nothing uses an account's birth date, so the ID review
+  checks the name only. A feature that needs one collects it then, with the privacy notice updated.
 - **Notes or an assistance-needs checklist on an event registration are not built** (`DL-195`).
   Needs such as a wheelchair or a medical condition are health information, sensitive personal
   information under RA 10173 §3(l), processed only on the grounds in §13. Holding them needs the
@@ -99,7 +103,7 @@ From `docs/uat/README.md` ("Not in this UAT round") and the requirements documen
 | Events, Balita comments and reactions, and applying from the app            | Owner, with the LGU's agreement (the TOR names them)       | OD-4, R-11                                                      | Balita comments and reactions (FR-RES-9, FR-STAFF-34), events, FR-RES-14                                                                |
 | ~~Retire the console's newsfeed in favour of Balita~~ **Decided 2026-11-09: retired** | Owner ("do what's best")                         | OD-4, `DL-171`, `DL-192`, `DL-194`                              | Nothing now. No port is unserved; the other launch-gate lines still apply. The backend still lists the nine `newsfeed.*` keys, and its console-parity test fails until they go (`DL-194`) |
 | ~~Whether the ID reviewer sees the account's name and birth date~~ **Decided 2026-11-09: yes, while the request waits** | Owner and office                                           | OD-1, `DL-197` | Nothing now. The reviewer sees them in the review, not the list (D1 still waits on e-mail sending and S2) |
-| ~~Whether the ID reviewer confirms, or transcribes, the name on the ID~~ **Decided 2026-11-09: confirms** | Owner ("do what's best") | `DL-195`, `DL-197` | Nothing now. Approval needs a tick that the ID shows the name; a checked name cannot be changed in the app. An office route to change a verified name (marriage, court order) is not built |
+| ~~Whether the ID reviewer confirms, or transcribes, the name on the ID~~ **Decided 2026-11-09: confirms** | Owner ("do what's best") | `DL-195`, `DL-197` | Nothing now. Approval needs a tick that the ID shows the name; a checked name cannot be changed in the app, and the office corrects it against an ID it sees (`DL-198`) |
 | Notes or an assistance-needs checklist on event registrations               | Owner, with the DPO                                        | `DL-195`, `DL-113`, GL-9                                        | The office's retention schedule; not built until one exists, with the resident's consent and a grant for who may read them              |
 | Whether the office inbox names the resident, and closing notices            | Owner and office                                           | OD-2                                                            | —                                                                                                                                       |
 | Casework questions from phases 1 to 6f                                      | Owner                                                      | OD-5; `docs/integration/node-api-migration.md`, "For the owner" | —                                                                                                                                       |

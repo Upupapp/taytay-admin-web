@@ -25,6 +25,7 @@ import {
   type BarangayId,
   type CursorPage,
   type CursorRequest,
+  type NameCorrection,
   type Office,
   type OfficeId,
   type OfficeRepository,
@@ -82,6 +83,7 @@ class RecordingAccounts implements AppAccountRepository {
   readonly roleChanges: { id: string; role: AccountRole }[] = [];
   readonly assignments: { id: string; office: OfficeId | null }[] = [];
   readonly officeRoles: { id: string; change: OfficeRoleChange }[] = [];
+  readonly corrections: { id: string; correction: NameCorrection }[] = [];
   barangayReads = 0;
   failWith: unknown = null;
 
@@ -123,6 +125,15 @@ class RecordingAccounts implements AppAccountRepository {
       ...account(id, 'staff', null, change.role),
       scopeBarangayId: change.barangayId,
     });
+  }
+
+  correctName(id: AppAccountId, correction: NameCorrection): Observable<AppAccount> {
+    if (this.failWith !== null) {
+      const failure = this.failWith;
+      return throwError(() => failure);
+    }
+    this.corrections.push({ id, correction });
+    return of({ ...account(id, 'verified'), name: correction.name.trim() });
   }
 
   barangays(): Observable<readonly AccountBarangay[]> {
@@ -577,5 +588,113 @@ describe('AccountOfficeRole (DL-173)', () => {
       expect(officeRoleChoices(element)).toEqual([]);
       expect(element.textContent).toContain(said);
     }
+  });
+});
+
+/* ── correcting a verified account's name (DL-198) ───────────────────────── */
+
+describe('AccountNameCorrection (DL-198)', () => {
+  const REVIEWER: readonly Permission[] = ['user.view', 'user.change-role', 'verification.review'];
+  const section = (element: HTMLElement) =>
+    element.querySelector('[aria-labelledby="account-name-correction"]');
+
+  function typeName(element: HTMLElement, name: string): void {
+    const field = element.querySelector<HTMLInputElement>('#account-name-correction-name');
+    if (field === null) throw new Error('no name field');
+    field.value = name;
+    field.dispatchEvent(new Event('input'));
+  }
+
+  function tickSeen(element: HTMLElement): void {
+    const box = section(element)?.querySelector<HTMLInputElement>('input[type="checkbox"]');
+    if (box === null || box === undefined) throw new Error('no statement to tick');
+    box.checked = true;
+    box.dispatchEvent(new Event('change'));
+  }
+
+  it('is offered for a verified account only, and only to a reader who reviews IDs', async () => {
+    const verified = panel(account('v', 'verified'), false, REVIEWER);
+    expect(section(await settle(verified.fixture))).not.toBeNull();
+
+    for (const role of ['registered', 'staff', 'admin'] as const) {
+      const other = panel(account(`x-${role}`, role), false, REVIEWER);
+      expect(section(await settle(other.fixture))).toBeNull();
+    }
+    const noKey = panel(account('v', 'verified'));
+    expect(section(await settle(noKey.fixture))).toBeNull();
+  });
+
+  it('says what it does before the button, and waits for the statement that the ID was seen', async () => {
+    const { repository, fixture } = panel(account('v', 'verified'), false, REVIEWER);
+    const element = await settle(fixture);
+    const block = section(element);
+    if (block === null) throw new Error('no section');
+
+    const text = block.textContent ?? '';
+    expect(text.indexOf('earlier name is kept')).toBeGreaterThan(-1);
+    // The heading has the button's words too, so the button is the last time they appear.
+    expect(text.indexOf('earlier name is kept')).toBeLessThan(
+      text.lastIndexOf(ACCOUNTS_COPY.nameCorrection.confirm),
+    );
+    expect(block.querySelector('textarea')).toBeNull();
+
+    typeName(element, 'Person v Reyes');
+    await settle(fixture);
+    expect(buttonNamed(element, ACCOUNTS_COPY.nameCorrection.confirm)?.disabled).toBe(true);
+
+    tickSeen(element);
+    await settle(fixture);
+    buttonNamed(element, ACCOUNTS_COPY.nameCorrection.confirm)?.click();
+    await settle(fixture);
+
+    expect(repository.corrections).toEqual([
+      { id: 'v', correction: { name: 'Person v Reyes', previousName: 'Person v' } },
+    ]);
+    expect(liveRegion(element)).toBe(ACCOUNTS_COPY.nameCorrection.saved('Person v Reyes'));
+  });
+
+  it('unticks the statement when the name changes, and refuses the same name', async () => {
+    const { fixture } = panel(account('v', 'verified'), false, REVIEWER);
+    const element = await settle(fixture);
+
+    typeName(element, 'Person v Reyes');
+    await settle(fixture);
+    tickSeen(element);
+    await settle(fixture);
+    typeName(element, 'Person v Santos');
+    await settle(fixture);
+    const box = section(element)?.querySelector<HTMLInputElement>('input[type="checkbox"]');
+    expect(box?.checked).toBe(false);
+    expect(buttonNamed(element, ACCOUNTS_COPY.nameCorrection.confirm)?.disabled).toBe(true);
+
+    typeName(element, 'Person v');
+    await settle(fixture);
+    expect(element.querySelector('.panel__problem')?.textContent).toContain('already the account');
+    expect(box?.disabled).toBe(true);
+  });
+
+  it('refuses the reader’s own account', async () => {
+    const { fixture } = panel(account('v', 'verified'), true, REVIEWER);
+    const element = await settle(fixture);
+
+    expect(section(element)?.textContent).toContain(ACCOUNTS_COPY.nameCorrection.ownAccount);
+    expect(element.querySelector('#account-name-correction-name')).toBeNull();
+  });
+
+  it('says plainly when the server refused it', async () => {
+    const { repository, fixture } = panel(account('v', 'verified'), false, REVIEWER);
+    repository.failWith = new Error('The account’s name is not the one shown.');
+    const element = await settle(fixture);
+
+    typeName(element, 'Person v Reyes');
+    await settle(fixture);
+    tickSeen(element);
+    await settle(fixture);
+    buttonNamed(element, ACCOUNTS_COPY.nameCorrection.confirm)?.click();
+    await settle(fixture);
+
+    expect(liveRegion(element)).toBe(
+      ACCOUNTS_COPY.nameCorrection.notDone('The account’s name is not the one shown.'),
+    );
   });
 });

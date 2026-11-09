@@ -141,4 +141,23 @@ export const ACCOUNTS_COPY = {
     notDone: (why: string): string => `That was not done. ${why}`,
     failed: 'The server refused it or could not be reached.',
   },
+
+  /** Correcting a verified account's name at the counter (`DL-198`). */
+  nameCorrection: {
+    heading: 'Correct the name',
+    intro:
+      'This account’s name was checked against the resident’s ID, so the resident cannot change ' +
+      'it in the app. Correct it here only with a government ID in front of you that shows the ' +
+      'new name — after a marriage or a court order, for example.',
+    ownAccount: 'This is your own account. The server refuses a correction to your own name.',
+    nameLabel: 'The name as the ID shows it',
+    nameHint: 'Exactly as printed on the ID, up to 120 characters.',
+    lead: 'What the server does if you correct it:',
+    statement: 'I have seen a government ID that shows this name.',
+    confirm: 'Correct the name',
+    saving: 'Saving…',
+    saved: (name: string): string => `The name is now ${name}.`,
+    notDone: (why: string): string => `That was not done. ${why}`,
+    failed: 'The server refused it or could not be reached.',
+  },
 } as const;

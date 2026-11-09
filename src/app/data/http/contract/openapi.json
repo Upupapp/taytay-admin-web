@@ -491,6 +491,28 @@
         }
       }
     },
+    "/api/v1/admin/users/{id}/name-corrections": {
+      "post": {
+        "operationId": "correctUserName",
+        "summary": "Correct a verified account's name, against an ID somebody at the office has seen",
+        "description": "Admin only; correcting your own is 403. Only for a verified account: before its ID is approved, and after a rejection, the resident changes the name in the app, which refuses a change while the ID is pending or verified. id_checked must be true: the person correcting it has seen a government ID that shows the new name. previous_name is the name the screen showed, compared with the account under a lock. The earlier name is appended to an append-only history in the same transaction, and the office's event lists show the corrected name with name_source office-correction. Audited as `user.name_corrected`.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NameCorrection" } } }
+        },
+        "responses": {
+          "200": { "description": "Name corrected.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserListItemEnvelope" } } } },
+          "403": { "description": "Not an admin, or the caller's own account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "User not found.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "The account is closed or not verified, its name is not previous_name, or it already has this name.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "The body could not be validated, or id_checked is not true.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
     "/api/v1/admin/users/{id}/office-role": {
       "patch": {
         "operationId": "assignUserOfficeRole",
@@ -16976,6 +16998,15 @@
         "required": ["office_id"],
         "properties": { "office_id": { "type": ["string", "null"], "format": "uuid" } }
       },
+      "NameCorrection": {
+        "type": "object",
+        "required": ["name", "previous_name", "id_checked"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 120, "description": "The name as the ID shows it." },
+          "previous_name": { "type": "string", "minLength": 1, "maxLength": 120, "description": "The account's name as the screen showed it." },
+          "id_checked": { "type": "boolean", "const": true, "description": "The person correcting it has seen a government ID that shows the new name." }
+        }
+      },
       "OfficeRoleChange": {
         "type": "object",
         "additionalProperties": false,
@@ -30265,9 +30296,10 @@
             "type": "string",
             "enum": [
               "id-approval",
+              "office-correction",
               "account"
             ],
-            "description": "id-approval: the name the account carried when the office approved its ID, kept as it stood then. account: the name as the resident typed it — an account not ID-verified, or verified before a name was kept at approval with none recorded."
+            "description": "id-approval: the name the account carried when the office approved its ID, kept as it stood then. office-correction: a name the office corrected since, against an ID it saw (newer than the approval). account: the name as the resident typed it — an account not ID-verified, or verified before a name was kept at approval with none recorded."
           },
           "identity_verified": {
             "type": "boolean",

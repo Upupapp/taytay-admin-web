@@ -145,5 +145,13 @@
   (announced)="outcome.set($event)"
 />
 
+<!-- Its own section, for a verified account only: a checked name changes here alone (DL-198). -->
+<app-account-name-correction
+  [account]="account()"
+  [own]="own()"
+  (changed)="changed.emit($event)"
+  (announced)="outcome.set($event)"
+/>
+
 <!-- Always in the DOM, so a screen reader hears the outcome when the text arrives. -->
 <p class="panel__outcome" role="status" aria-live="polite">{{ outcome() }}</p>

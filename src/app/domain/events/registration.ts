@@ -145,10 +145,11 @@ export interface RegistrantView {
   readonly nameSource: RegistrantNameSource;
 }
 
-export type RegistrantNameSource = 'id-approval' | 'account';
+export type RegistrantNameSource = 'id-approval' | 'office-correction' | 'account';
 
 export const REGISTRANT_NAME_SOURCE_LABELS: Readonly<Record<RegistrantNameSource, string>> = {
   'id-approval': 'Name as it stood when their ID was approved',
+  'office-correction': 'Name the office corrected since, against their ID',
   account: 'Name as typed in the app',
 };
 

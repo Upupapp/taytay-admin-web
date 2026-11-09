@@ -903,6 +903,25 @@ describe('the Node adapters', () => {
       expect(account.scopeBarangayId).toBe(barangay);
     });
 
+    it('corrects a verified name with the name shown and the statement that the ID was seen (DL-198)', async () => {
+      const corrected = firstValueFrom(
+        accounts.correctName(accountId, { name: '  Ana Cruz Reyes ', previousName: 'Ana Cruz' }),
+      );
+
+      const request = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/users/${accountId}/name-corrections`,
+      });
+      expect(request.request.body).toEqual({
+        name: 'Ana Cruz Reyes',
+        previous_name: 'Ana Cruz',
+        id_checked: true,
+      });
+      request.flush(USER_ROLE_CHANGED);
+
+      expect((await corrected).id).toBe(USER_ROLE_CHANGED.data.id);
+    });
+
     it('reads the barangays whole, as the API keys them, and refuses a list it cannot read', async () => {
       const listed = firstValueFrom(accounts.barangays());
       http.expectOne({ method: 'GET', url: `${BASE}/barangays` }).flush({

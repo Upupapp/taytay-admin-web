@@ -186,6 +186,8 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'thread.closed': 'Closed a conversation with a resident',
   'user.office_assigned': 'Changed a staff account’s office',
   'user.office_role_changed': 'Changed a staff account’s office role',
+  'user.name_corrected':
+    'Corrected a verified account’s name after seeing an ID that shows it; the earlier name is kept',
   'user.role_changed': 'Changed an account’s role',
   // Governance (DL-191): the reason is kept beside the act, in account_status_changes.
   'user.deactivated':

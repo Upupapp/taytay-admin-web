@@ -38,6 +38,14 @@
  *      may carry: the barangay a barangay link may see, which the server decides — not where the
  *      person lives, which rule 1 still keeps out.
  *
+ * ## A checked name (`DL-198`): corrected against an ID seen, never one's own
+ *   9. `AccountNameCorrection` asks about the reader's own account before the field, and `save`
+ *      refuses it too; it is offered for a verified account (`hasCheckedName`) to a reader who holds
+ *      `verification.review`; the effects come before the statement that an ID was seen, and both
+ *      before the one button, which waits for the statement; there is no reason box, and the effects
+ *      say the server keeps none and keeps the earlier name; the port takes a `NameCorrection` and
+ *      the adapter posts it to `name-corrections` with the name shown and `id_checked: true`.
+ *
  * Each rule was validated against a planted regression before being trusted.
  */
 
@@ -58,6 +66,8 @@ const PANEL = join(FEATURE, 'account-panel.ts');
 const PANEL_TEMPLATE = join(FEATURE, 'account-panel.html');
 const ROLE_PANEL = join(FEATURE, 'account-office-role.ts');
 const ROLE_TEMPLATE = join(FEATURE, 'account-office-role.html');
+const NAME_PANEL = join(FEATURE, 'account-name-correction.ts');
+const NAME_TEMPLATE = join(FEATURE, 'account-name-correction.html');
 const PAGE_TEMPLATE = join(FEATURE, 'accounts-page.html');
 const MAPPER = join(APP, 'data', 'http', 'mappers', 'app-account.mapper.ts');
 const MOCK = join(APP, 'data', 'mock', 'mock-app-account.repository.ts');
@@ -303,6 +313,66 @@ if (!/keeps your reason/.test(domain.slice(domain.indexOf('export const OFFICE_R
   failures.push('OFFICE_ROLE_ALWAYS no longer says the server keeps the reason it asks for.');
 }
 
+/* ── 9. a checked name: corrected against an ID seen, never one's own ────── */
+
+const namePanelCode = existsSync(NAME_PANEL) ? code(read(NAME_PANEL)) : '';
+const nameTemplate = existsSync(NAME_TEMPLATE) ? code(read(NAME_TEMPLATE)) : '';
+if (namePanelCode === '' || nameTemplate === '') {
+  failures.push('AccountNameCorrection is missing, so a verified name has no route to change (DL-198).');
+} else {
+  const nameOwn = nameTemplate.indexOf('@if (own())');
+  const nameField = nameTemplate.indexOf('id="account-name-correction-name"');
+  if (nameOwn === -1 || nameField === -1 || nameOwn > nameField) {
+    failures.push("The name correction's field is offered before asking whether it is the reader's own account.");
+  }
+  if (!/this\s*\.\s*own\s*\(\s*\)/.test(methodBody(namePanelCode, 'save'))) {
+    failures.push("AccountNameCorrection.save no longer refuses the reader's own account.");
+  }
+  if (
+    !/applies\s*=\s*computed\(\s*\(\)\s*=>\s*hasCheckedName\s*\(/.test(namePanelCode) ||
+    !/canCorrect\s*=\s*this\s*\.\s*permissions\s*\.\s*can\s*\(\s*'verification\.review'\s*\)/.test(namePanelCode)
+  ) {
+    failures.push('The name correction is not confined to a verified account and a reader who reviews IDs.');
+  }
+  const nameEffects = nameTemplate.indexOf('of effects');
+  const nameStatement = nameTemplate.indexOf('type="checkbox"');
+  const nameButton = nameTemplate.indexOf('(click)="save()"');
+  if (
+    nameField === -1 ||
+    nameEffects === -1 ||
+    nameStatement === -1 ||
+    nameButton === -1 ||
+    !(nameField < nameEffects && nameEffects < nameStatement && nameStatement < nameButton) ||
+    [...nameTemplate.matchAll(/save\(\)/g)].length !== 1
+  ) {
+    failures.push("The name correction's effects and statement no longer come before the one button that makes it.");
+  }
+  if (
+    !/\[disabled\]="!ready\(\)"/.test(nameTemplate) ||
+    !/ready\s*=\s*computed\([\s\S]*?this\s*\.\s*seen\s*\(\s*\)[\s\S]*?\);/.test(namePanelCode)
+  ) {
+    failures.push('The name correction button no longer waits for the statement that an ID was seen.');
+  }
+  if (/<textarea/.test(nameTemplate)) {
+    failures.push('The name correction asks for a reason the server does not keep (DL-168, DL-198).');
+  }
+}
+const nameEffectsAt = domain.indexOf('export const NAME_CORRECTION_EFFECTS');
+const nameEffectsText = nameEffectsAt === -1 ? '' : domain.slice(nameEffectsAt, domain.indexOf('];', nameEffectsAt));
+if (!/earlier name is kept/.test(nameEffectsText) || !/keeps no reason/.test(nameEffectsText)) {
+  failures.push('NAME_CORRECTION_EFFECTS no longer says the earlier name is kept and no reason is.');
+}
+if (!/\n\s+correctName\(id: AppAccountId, correction: NameCorrection\): Observable<AppAccount>;/.test(ports)) {
+  failures.push('AppAccountRepository.correctName no longer takes a NameCorrection, the name shown included.');
+}
+if (
+  !/this\s*\.\s*api\s*\.\s*post\(\s*`\$\{API_ENDPOINTS\.adminUsers\}\/\$\{id\}\/name-corrections`\s*,\s*\{[\s\S]*?previous_name:\s*correction\s*\.\s*previousName,\s*id_checked:\s*true,?\s*\}/.test(
+    httpAccounts,
+  )
+) {
+  failures.push('HttpAppAccountRepository must post the correction to name-corrections with the name shown and id_checked.');
+}
+
 report();
 
 function report() {
@@ -313,6 +383,7 @@ function report() {
   }
   console.log(
     `Accounts check passed (${moduleFiles.length} files: the minimum shown, effects before every button, ` +
-      'no reason collected but for the office role, which keeps it; not one’s own role; the keys the administrator’s).',
+      'no reason collected but for the office role, which keeps it; not one’s own role; the keys the administrator’s; ' +
+      'a checked name corrected only against an ID seen).',
   );
 }

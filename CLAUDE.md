@@ -135,7 +135,8 @@ logged or notified, attachments only after a warning and revoked on leave, an em
 inbox asked about before it is shown, no reason collected for a close (`DL-168`);
 `check:accounts` holds users and roles to the minimum — name, email, role, office for
 every app account — with what a role or office change does shown before its button,
-no reason collected, and one's own role never offered (`DL-168`);
+no reason collected, and one's own role never offered (`DL-168`), and a verified name
+corrected only against an ID seen, with the statement before the button (`DL-198`);
 `check:directory` holds the residents' app directory to saying what each act does
 before its button, deleting only through a confirmation, refusing an image before
 it is sent, and never treating a Tulong page as a programme (`DL-170`);

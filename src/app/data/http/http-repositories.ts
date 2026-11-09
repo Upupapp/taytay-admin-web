@@ -52,6 +52,7 @@ import {
   type AppAccountId,
   type AppAccountRepository,
   type OfficeId,
+  type NameCorrection,
   type OfficeRoleChange,
   HOTLINE_LIST_CAP,
   type DirectoryOffice,
@@ -968,6 +969,17 @@ export class HttpAppAccountRepository implements AppAccountRepository {
   assignOfficeRole(id: AppAccountId, change: OfficeRoleChange): Observable<AppAccount> {
     return this.api
       .patch(`${API_ENDPOINTS.adminUsers}/${id}/office-role`, toWireOfficeRoleChange(change))
+      .pipe(map(readAccount));
+  }
+
+  /** `id_checked` is the statement the screen's button waited for (`DL-198`). */
+  correctName(id: AppAccountId, correction: NameCorrection): Observable<AppAccount> {
+    return this.api
+      .post(`${API_ENDPOINTS.adminUsers}/${id}/name-corrections`, {
+        name: correction.name.trim(),
+        previous_name: correction.previousName,
+        id_checked: true,
+      })
       .pipe(map(readAccount));
   }
 

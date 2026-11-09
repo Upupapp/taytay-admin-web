@@ -251,10 +251,11 @@ export const EVENTS_COPY = {
     registrantsNote: 'Residents register in the mobile app. Nobody is added from here.',
     namesNote:
       'Names are in full. For a resident whose ID is verified, the name is the one their account ' +
-      'carried when the ID was approved.',
+      'carried when the ID was approved, or one the office corrected since against their ID.',
     notVerified: 'Not ID-verified',
     nameSources: {
       'id-approval': 'Name as it stood when their ID was approved',
+      'office-correction': 'Name the office corrected since, against their ID',
       account: 'Name as typed in the app',
     },
     registrantSearch: 'Search registrants',
