@@ -8,7 +8,7 @@
  *
  * The rule this file exists to enforce: **an asset is rendered only when its
  * provenance is `vendored`.** Anything else falls back to a neutral,
- * visibly-unofficial placeholder. See `DL-22`.
+ * visibly-unofficial placeholder. See `DL-22` and `DL-199`.
  */
 
 export type AssetKind = 'seal' | 'wordmark' | 'monogram' | 'icon';
@@ -63,52 +63,42 @@ export interface BrandAsset {
 /**
  * The municipal seal.
  *
- * Deliberately NOT vendored. Three independent reasons, each verifiable:
+ * Vendored on the project owner's instruction (10 November 2026, `DL-199`,
+ * superseding `DL-22`'s refusal): the same file the project's public website
+ * shows, copied byte for byte, and the same artwork the residents' app already
+ * ships as its registered seal. One seal across the website, the app and this
+ * console, so a resident and an officer see the same mark.
  *
- * 1. Only derivatives are publicly available. The official site
- *    (https://www.taytayrizal.gov.ph/) is a Wix site and serves its imagery
- *    through `static.wixstatic.com` transform URLs — e.g.
- *    `.../v1/fill/w_225,h_150,al_c,q_85,.../taytay%20gov.png`. Those are
- *    resized and re-encoded renditions, not the master artwork. Copying one
- *    would mean shipping an *altered* seal, which this TAB forbids outright.
- * 2. No licence or terms of use is published. The site carries no copyright
- *    notice, no terms page and no attribution statement (checked 2026-08-14),
- *    so there is no permission to rely on and no attribution text that could
- *    be reproduced without inventing it.
- * 3. The IP position is not a permission. RA 8293 §176.1 provides that "No
- *    copyright shall subsist in any work of the Government of the Philippines"
- *    while requiring prior approval for exploitation *for profit*. Absence of
- *    copyright is not the same as a right to reproduce an official emblem, and
- *    seals are additionally governed by heraldic and local-ordinance rules that
- *    this project has no evidence about.
- *
- * The correct resolution is procurement, not scraping: the LGU supplies the
- * master file plus written permission, someone fills in the fields below, and
- * `provenance` flips to `vendored`. Until then the placeholder renders.
+ * What is still open is said in `evidence` rather than smoothed over: the
+ * Municipality's written permission is not on file in this repository, and no
+ * attribution text has been supplied, so none is shown (`attribution: null`
+ * means "none supplied", not "none required").
  */
 const MUNICIPAL_SEAL: BrandAsset = {
   id: 'municipal-seal',
   kind: 'seal',
   title: 'Official Seal of the Municipality of Taytay, Rizal',
-  provenance: 'not-acquired',
-  source: 'https://www.taytayrizal.gov.ph/ (official municipal website)',
-  mediaType: null,
-  dimensions: null,
-  optimizedPath: null,
+  provenance: 'vendored',
+  source:
+    'Upupapp/taytay-website, commit 8df0f54, taytay-rizal-website/assets/images/taytay-seal.png — copied byte for byte on 2026-11-10 on the project owner’s instruction.',
+  mediaType: 'image/png',
+  dimensions: { width: 360, height: 360 },
+  optimizedPath: 'brand/taytay-seal.png',
   attribution: null,
   alterationPolicy: 'scale-only',
   evidence: [
-    'Official site resolves: https://taytayrizal.gov.ph -> https://www.taytayrizal.gov.ph/ (HTTP 200, checked 2026-08-14).',
-    'Site is Wix-hosted; imagery is served as static.wixstatic.com transform URLs (w_225,h_150,enc_avif,quality_auto) — derivatives, not masters.',
-    'No copyright notice, terms-of-use page, licence statement or attribution text found on the site (checked 2026-08-14).',
-    'RA 8293 §176.1 verified at https://lawphil.net/statutes/repacts/ra1997/ra_8293_1997.html — removes copyright from government works but does not grant emblem-reproduction rights.',
-    'No Sangguniang Bayan ordinance describing the seal was located; none is asserted.',
+    'File: public/brand/taytay-seal.png, PNG with an alpha channel (transparent corners), 360 × 360 px, 169,289 bytes, SHA-256 2fbd93b1c49993dbee7e75bfcef841700f128b9315b4e43c18e750707c80f2b9 — identical to the website’s file.',
+    'Same artwork as the residents’ app’s registered seal (taytay-mobile-app assets/brand/taytay_seal.png, 560 px), recorded there as the S0 design source supplied as the official Municipality of Taytay seal; compared by eye on 2026-11-10, no difference but size and margin.',
+    'Not recompressed, cropped, padded or recoloured; drawn with object-fit: contain at 32, 48, 96 or 160 px. At 2× density the largest box asks for 320 px, which the 360 px file covers.',
+    'The Municipality’s written permission is not on file in this repository; it is an open item in docs/turnover/known-limitations-and-open-items.md.',
+    'RA 8293 §176.1 (https://lawphil.net/statutes/repacts/ra1997/ra_8293_1997.html) removes copyright from government works; it is not itself a permission to reproduce an emblem, which is why the permission stays an open item.',
   ],
 };
 
 /**
- * Project-owned monogram used wherever a mark is needed and the seal is not
- * available. It is plain initials in the application typeface: no wreath, no
+ * Project-owned monogram: the initials `SealPlaceholder` draws when the seal is
+ * not available. Since `DL-199` that happens only if the seal is withdrawn by
+ * setting its provenance back, which needs no code change. It is plain initials in the application typeface: no wreath, no
  * circular emblem, no gold, nothing that imitates a government seal.
  */
 const APP_MONOGRAM: BrandAsset = {

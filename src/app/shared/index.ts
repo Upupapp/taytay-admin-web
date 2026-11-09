@@ -12,6 +12,7 @@ export * from './brand/brand-palette';
 export * from './brand/brand.copy';
 export * from './brand/contrast';
 export * from './brand/municipal-seal';
+export * from './brand/seal-placeholder';
 export * from './beneficiaries/assistance-history-timeline';
 export * from './beneficiaries/identity-comparison';
 export * from './cases/case-timeline';

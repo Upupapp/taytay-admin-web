@@ -388,7 +388,9 @@ good as that list.
 
 ### DL-22 · The municipal seal is not vendored, and the placeholder is not a seal
 
-**Status:** Settled (implemented in TAB 03).
+**Status:** Superseded by `DL-199` (10 November 2026): the seal is vendored on the owner's
+instruction, from the project website's file. The placeholder and the structural safety property
+below still stand.
 
 The official seal is deliberately **not** copied into this repository. Three
 independent reasons, each checkable:
@@ -9269,3 +9271,55 @@ Easiest to reverse of the options weighed: the table is additive, and the route 
 section can be removed without touching anything else. A resident-initiated name change from the
 app, with new ID photos and a review, was weighed and left for later: it needs a new app flow and
 a second kind of verification request, for an event the office sees rarely.
+
+## DL-199 — the console shows the municipal seal, the same file as the website and the same artwork as the app
+
+**Status:** Settled (10 November 2026). Supersedes `DL-22`'s refusal, and `DL-24`'s trigger for
+adopting NgOptimizedImage.
+
+**Why.** The owner asked for it: "can you see the taytay rizal seal/logo here in this repo — use this
+also in the taytay system", pointing at the project's website repository. The residents' app has
+shown the seal since 20 October 2026 (`taytay-mobile-app` `06bec4b`), on its home screen, the
+digital ID, the directory, Balita and Tulong, while this console still drew "TR" in a dashed
+square. One office, two marks.
+
+**What `DL-22` refused, and what has changed.**
+
+1. *Only derivatives were available* — Wix renditions of the municipal site. The file now vendored
+   is the website repository's `taytay-rizal-website/assets/images/taytay-seal.png` (commit
+   `8df0f54`), a 360 × 360 PNG with transparent corners, copied **byte for byte** (SHA-256
+   `2fbd93b1…80f2b9`, in the manifest in full). It is the same artwork as the app's registered seal
+   (560 px), which that repository records as the S0 design source "supplied as the official
+   Municipality of Taytay seal"; compared by eye on 10 November 2026, the two differ in size and
+   margin only. The website's copy is used rather than the app's because it is the one the owner
+   pointed at, and the website and the console then serve the identical file; at 2× density the
+   console's largest box (160 px) asks for 320 px, which 360 covers.
+2. *No permission was published.* That is still true of a document: the Municipality's written
+   permission is **not on file** in this repository. The owner's instruction, and the app's record
+   of the artwork as LGU-supplied, are the basis today. The manifest says so in its evidence, and
+   the open item is in `docs/turnover/known-limitations-and-open-items.md` §4, so the permission is
+   asked for rather than assumed.
+3. *Absence of copyright is not permission* (RA 8293 §176.1). Unchanged, and the reason item 2
+   stays open.
+
+**How.** Nothing about the safety property moved: `MunicipalSeal` still has no `src` input and
+draws only what the manifest clears, scale-only, with `object-fit: contain` in a fixed square. The
+manifest entry is now `vendored` with path, media type and intrinsic size, and the sign-in page and
+the sidebar lockup show the seal with no component change — the swap `DL-22` designed for.
+
+- **The placeholder stays, as its own component** (`SealPlaceholder`), so withdrawing the seal is
+  still one line in the manifest, and the fallback stays tested while the live path draws the seal.
+- **`AppImage` no longer paints a grey box behind a loaded image.** Its loading and failure layers
+  already paint the box; the base colour showed only through transparency, and around the seal it
+  would have put a grey square behind a round mark — a background that changes what the seal looks
+  like.
+- **The browser tab shows the seal** (`<link rel="icon">` to the same file), as the website's does.
+  The Angular scaffold's default `favicon.ico` is removed: it was the framework's mark, not the
+  office's.
+- **NgOptimizedImage stays deferred.** `DL-24` said to adopt it with the first raster asset. Its
+  value is CDN loaders and `srcset`; with one 169 KB file, no CDN and fixed sizes, it would add
+  configuration and no saving. `AppImage` already sets width, height, `loading` and
+  `fetchpriority`. Revisit when there is an image CDN or a second raster asset.
+
+**Not changed.** The residents' app (already shows the same artwork) and the website. Easiest to
+reverse: set the manifest entry back to `not-acquired`, and the placeholder renders again.

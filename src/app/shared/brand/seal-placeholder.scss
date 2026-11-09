@@ -1,3 +1,9 @@
+/* The host adds no box of its own, so the placeholder sits exactly where the
+   seal's image box would. */
+:host {
+  display: contents;
+}
+
 /* Placeholder styling is deliberately plain: a dashed square with initials.
    No circle, no wreath, no gold, no ribbon — nothing that could be mistaken
    for, or read as a redrawing of, an official government seal. DL-22. */

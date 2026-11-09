@@ -4,6 +4,7 @@ import { AppImage } from './app-image';
 import { BrandMark } from './brand-mark';
 import { BRAND_COPY } from './brand.copy';
 import { MunicipalSeal } from './municipal-seal';
+import { SealPlaceholder } from './seal-placeholder';
 import {
   asRenderable,
   BRAND_ASSETS,
@@ -20,14 +21,18 @@ describe('asset manifest', () => {
     expect(findAsset('nope')).toBeUndefined();
   });
 
-  it('records the seal as not acquired, with checkable evidence', () => {
+  it('records the seal as vendored, with its source, its bytes and what is still open (DL-199)', () => {
     const seal = findAsset(MUNICIPAL_SEAL_ID);
-    expect(seal?.provenance).toBe('not-acquired');
-    expect(seal?.optimizedPath).toBeNull();
-    // The point of the entry is the evidence; an empty list would make the
-    // refusal unauditable.
-    expect(seal?.evidence.length).toBeGreaterThanOrEqual(3);
-    expect(seal?.evidence.join(' ')).toContain('taytayrizal.gov.ph');
+    expect(seal?.provenance).toBe('vendored');
+    expect(seal?.optimizedPath).toBe('brand/taytay-seal.png');
+    expect(seal?.mediaType).toBe('image/png');
+    expect(seal?.dimensions).toEqual({ width: 360, height: 360 });
+    expect(seal?.source).toContain('taytay-website');
+    const evidence = seal?.evidence.join(' ') ?? '';
+    // The hash pins the exact file, so a recompressed copy contradicts its own record.
+    expect(evidence).toContain('2fbd93b1c49993dbee7e75bfcef841700f128b9315b4e43c18e750707c80f2b9');
+    // The open permission is said, not smoothed over.
+    expect(evidence).toMatch(/written permission is not on file/);
   });
 
   it('never claims attribution that was not supplied', () => {
@@ -36,16 +41,32 @@ describe('asset manifest', () => {
         expect(asset.attribution).toBeNull();
       }
     }
+    // Nobody at the Municipality has supplied attribution text for the seal.
+    expect(findAsset(MUNICIPAL_SEAL_ID)?.attribution).toBeNull();
   });
 
   it('protects the seal from alteration at the manifest level', () => {
     expect(findAsset(MUNICIPAL_SEAL_ID)?.alterationPolicy).toBe('scale-only');
   });
 
-  it('treats an unacquired asset as not renderable', () => {
-    const seal = findAsset(MUNICIPAL_SEAL_ID) as BrandAsset;
-    expect(isRenderable(seal)).toBe(false);
-    expect(asRenderable(seal)).toBeNull();
+  it('renders the seal, and treats an unacquired asset as not renderable', () => {
+    expect(asRenderable(findAsset(MUNICIPAL_SEAL_ID))?.optimizedPath).toBe('brand/taytay-seal.png');
+
+    const withdrawn: BrandAsset = {
+      id: 'x',
+      kind: 'seal',
+      title: 'x',
+      provenance: 'not-acquired',
+      source: null,
+      mediaType: 'image/png',
+      dimensions: { width: 360, height: 360 },
+      optimizedPath: 'brand/x.png',
+      attribution: null,
+      alterationPolicy: 'scale-only',
+      evidence: [],
+    };
+    expect(isRenderable(withdrawn)).toBe(false);
+    expect(asRenderable(withdrawn)).toBeNull();
     expect(asRenderable(undefined)).toBeNull();
   });
 
@@ -95,20 +116,15 @@ describe('MunicipalSeal', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('renders the placeholder while the seal is unacquired', async () => {
+  it('draws the vendored seal from the manifest, not the placeholder (DL-199)', async () => {
     const element = await render();
-    expect(element.querySelector('.seal-placeholder')).not.toBeNull();
-    expect(element.querySelector('img')).toBeNull();
+    const img = element.querySelector('img');
+    expect(img?.getAttribute('src')).toBe('brand/taytay-seal.png');
+    expect(img?.getAttribute('alt')).toBe(BRAND_COPY.sealAlt);
+    expect(element.querySelector('.seal-placeholder')).toBeNull();
   });
 
-  it('never presents the placeholder as the official seal', async () => {
-    const element = await render();
-    const placeholder = element.querySelector('.seal-placeholder');
-    expect(placeholder?.getAttribute('aria-label')).toBe(BRAND_COPY.sealPlaceholderLabel);
-    expect(placeholder?.getAttribute('aria-label')).not.toContain('Official');
-  });
-
-  it('reserves an identical box at every size, so a later swap cannot shift layout', async () => {
+  it('draws it into a square box at every size, so it scales uniformly or not at all', async () => {
     for (const [size, px] of [
       ['sm', '32px'],
       ['md', '48px'],
@@ -116,15 +132,46 @@ describe('MunicipalSeal', () => {
       ['xl', '160px'],
     ] as const) {
       const element = await render({ size });
-      const placeholder = element.querySelector<HTMLElement>('.seal-placeholder');
-      expect(placeholder?.style.width).toBe(px);
-      expect(placeholder?.style.height).toBe(px);
+      const box = element.querySelector<HTMLElement>('.img');
+      expect(box?.style.width).toBe(px);
+      expect(box?.style.height).toBe(px);
     }
   });
 
   it('hides itself from assistive technology when decorative', async () => {
-    const element = await render({ decorative: true });
-    const placeholder = element.querySelector('.seal-placeholder');
+    const img = (await render({ decorative: true })).querySelector('img');
+    expect(img?.getAttribute('alt')).toBe('');
+    expect(img?.getAttribute('aria-hidden')).toBe('true');
+  });
+});
+
+describe('SealPlaceholder', () => {
+  async function render(inputs: Record<string, unknown> = {}) {
+    const fixture = TestBed.createComponent(SealPlaceholder);
+    fixture.componentRef.setInput('pixels', 48);
+    for (const [key, value] of Object.entries(inputs)) {
+      fixture.componentRef.setInput(key, value);
+    }
+    await fixture.whenStable();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('never presents itself as the official seal', async () => {
+    const placeholder = (await render()).querySelector('.seal-placeholder');
+    expect(placeholder?.getAttribute('aria-label')).toBe(BRAND_COPY.sealPlaceholderLabel);
+    expect(placeholder?.getAttribute('aria-label')).not.toContain('Official');
+  });
+
+  it('reserves the box it is given, the same box the seal would take', async () => {
+    const placeholder = (await render({ pixels: 96 })).querySelector<HTMLElement>(
+      '.seal-placeholder',
+    );
+    expect(placeholder?.style.width).toBe('96px');
+    expect(placeholder?.style.height).toBe('96px');
+  });
+
+  it('hides itself from assistive technology when decorative', async () => {
+    const placeholder = (await render({ decorative: true })).querySelector('.seal-placeholder');
     expect(placeholder?.getAttribute('aria-hidden')).toBe('true');
     expect(placeholder?.getAttribute('role')).toBeNull();
   });
@@ -242,7 +289,8 @@ describe('BrandMark', () => {
   it('treats its seal as decorative, since the wordmark already names the office', async () => {
     const fixture = TestBed.createComponent(BrandMark);
     await fixture.whenStable();
-    const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelector('.seal-placeholder')?.getAttribute('aria-hidden')).toBe('true');
+    const img = (fixture.nativeElement as HTMLElement).querySelector('img');
+    expect(img?.getAttribute('src')).toBe('brand/taytay-seal.png');
+    expect(img?.getAttribute('aria-hidden')).toBe('true');
   });
 });

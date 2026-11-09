@@ -6,7 +6,10 @@
      image having loaded, so a slow or failed load cannot move the page. */
   flex: none;
   vertical-align: middle;
-  background: var(--c-surface-muted);
+  /* No background of its own: the pending and fallback layers paint the box
+     while there is no image, and a loaded image keeps its own transparency —
+     the seal's corners are transparent, and a grey square behind them would
+     change what the seal looks like (DL-199). */
 }
 
 .img--rounded {

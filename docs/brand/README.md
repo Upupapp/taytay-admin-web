@@ -4,7 +4,7 @@ The digital identity layer for the MSWDO staff console: colour tokens that are
 audited rather than asserted, an asset register that records provenance, and
 three components that make the safe behaviour the default.
 
-Decisions behind everything here: `DL-21` (palette), `DL-22` (seal), `DL-23`
+Decisions behind everything here: `DL-21` (palette), `DL-22` and `DL-199` (seal), `DL-23`
 (copy/localisation), `DL-24` (images), `DL-25` (accessibility) in
 [`../reference-audit/decision-log.md`](../reference-audit/decision-log.md).
 
@@ -72,11 +72,12 @@ tint) and decorative rules (`--c-border` identifies no component).
 
 All exported from `@shared/index`.
 
-| Component       | Purpose                                                                                                |
-| --------------- | ------------------------------------------------------------------------------------------------------ |
-| `MunicipalSeal` | The seal, or a provenance-aware placeholder. **No `src` input** — it cannot render an uncleared asset. |
-| `BrandMark`     | The lockup: seal beside the office name. The one place the product is named on screen.                 |
-| `AppImage`      | Any image. Reserves its box, falls back honestly, never distorts.                                      |
+| Component         | Purpose                                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------------------------ |
+| `MunicipalSeal`   | The seal, or a provenance-aware placeholder. **No `src` input** — it cannot render an uncleared asset. |
+| `SealPlaceholder` | The placeholder: a dashed square with initials, drawn only if the seal is withdrawn from the manifest. |
+| `BrandMark`       | The lockup: seal beside the office name. The one place the product is named on screen.                 |
+| `AppImage`        | Any image. Reserves its box, falls back honestly, never distorts.                                      |
 
 ### Why the seal component is safe by construction
 
@@ -87,20 +88,28 @@ caller could use to point it at arbitrary artwork, and no styling hook that
 could recolour or crop it: it is drawn into a square with `object-fit: contain`,
 so it scales uniformly or not at all.
 
-The placeholder is deliberately unlike a government seal — a dashed square with
-initials, no circle, no wreath, no gold. Its accessible name is "Municipal seal
-not available", so assistive-technology users are told the same thing the
-styling tells everyone else.
+**The seal is vendored** (`DL-199`): `public/brand/taytay-seal.png`, the project
+website's file byte for byte, and the same artwork the residents' app shows. It
+also serves as the browser tab icon. The Municipality's written permission is
+still an open item, and the manifest says so.
+
+The placeholder (`SealPlaceholder`) is deliberately unlike a government seal — a
+dashed square with initials, no circle, no wreath, no gold. Its accessible name
+is "Municipal seal not available", so assistive-technology users are told the
+same thing the styling tells everyone else. It renders only if the seal is
+withdrawn by setting its provenance back.
 
 ### Why images cannot shift the layout
 
 `AppImage` requires `width` and `height` and reserves that box with an explicit
 `aspect-ratio` before the network responds. Failure renders a labelled fallback
-**in the same box**. Seal sizes are fixed tokens (32/48/96/160 px), so swapping
-today's placeholder for a real seal tomorrow moves nothing.
+**in the same box**. Seal sizes are fixed tokens (32/48/96/160 px), so the swap
+from placeholder to seal moved nothing. A loaded image has no background behind
+it, so the seal's transparent corners stay transparent.
 
-NgOptimizedImage is deferred rather than rejected — see `DL-24`. It earns its
-keep with CDN loaders and srcset; we currently vendor zero raster assets.
+NgOptimizedImage is deferred rather than rejected — see `DL-24` and `DL-199`. It
+earns its keep with CDN loaders and srcset; we vendor one raster asset and have
+no image CDN.
 
 ---
 
