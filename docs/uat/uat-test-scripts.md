@@ -1,8 +1,11 @@
 # UAT test scripts: Taytay, Rizal LGU platform (staging)
 
-Version 1.7, 9 November 2026 (replaces 1.6 of the same day): an event can now be corrected after it
-is published, carry a safe limit, be checked in one person at a time, and say who may register
-(DL-195). EVT-12 to EVT-20 test these, most on a fourth test event, "E3": nine cases added, 201 in
+Version 1.8, 9 November 2026 (replaces 1.7 of the same day): after the developer's dry run
+([dry-run-2026-11-09.md](dry-run-2026-11-09.md)), ACC-04 lists SW1's and INTAKE's menus as the
+website shows them, RPT-08 says why a programme that gave out only goods reads "₱0.00", and EVT-17
+says that "Why" empties after each move. No case is added or removed. Version 1.7, 9 November 2026
+(replaced 1.6 of the same day): an event can now be corrected after it is published, carry a
+safe limit, be checked in one person at a time, and say who may register (DL-195). EVT-12 to EVT-20 test these, most on a fourth test event, "E3": nine cases added, 201 in
 all. EVT-02, EVT-03, EVT-04, EVT-06, EVT-09, EVT-10 and EVT-11 now expect what the event page shows
 since: "Correct this event", "Who may register", a verified registrant's name as it stood when the
 ID was approved, and a move past capacity said so in the history. EVT-11 no longer runs last in
@@ -2603,7 +2606,9 @@ conditions. Only the head, the auditor and the administrator can export.
     ₱3,000.50 counts under its programme), and its "Total:" is in pesos too.
   - The sentence above the money table says how many releases were goods, "counted in the table
     above and never valued". If no goods release has been handed over, it says "No goods were
-    handed over under this filter." instead. No goods release has a peso figure anywhere.
+    handed over under this filter." instead. No goods release has a peso figure anywhere. A
+    programme that handed over only goods reads "₱0.00" in the money table: that is the money
+    handed over under it, not a value put on the goods.
   - "What this report cannot count" reads "Programme membership is not recorded on this server, so
     how many people are enrolled in a programme is not counted: only what was handed over under it.
     A programme with nothing handed over may still have members."
@@ -2931,10 +2936,12 @@ permission again: a hidden button is never the only protection.
     Digital IDs, Balita, App audit trail, Staff and roles, Audit trail, Settings.
   - HEAD: the same, without ID verification, Users and roles, App directory, Home screen, App
     settings and Settings.
-  - SW1: Dashboard, My work, Cases, Assistance requests, Residents, Beneficiaries, Households,
-    Families, Field visits, Referrals, Programs, Reports, Office inbox, Resident document requests,
-    Digital IDs, Balita.
-  - INTAKE: the same as SW1, without Reports.
+  - SW1: Dashboard, My work, Cases, Assistance requests, Beneficiaries, Field visits, Referrals,
+    Programs, Reports, Office inbox, Resident document requests, Digital IDs, Balita. A social
+    worker works on assigned cases only, so Residents, Households and Families are not offered.
+  - INTAKE: Dashboard, My work, Cases, Assistance requests, Residents, Beneficiaries, Households,
+    Families, Field visits, Referrals, Programs, Office inbox, Resident document requests, Digital
+    IDs, Balita.
   - RELEASE: Dashboard, My work, Assistance requests, Residents, Households, Families, Programs,
     Releases, Reports, Office inbox, Resident document requests, Digital IDs, Balita.
   - BLINK: Dashboard, My work, Assistance requests, Residents, Households, Families, Referrals,
@@ -3829,8 +3836,8 @@ created, and EVT-20 reads E1 cancelled and E2 completed.
      registered" on RES-C's row.
   3. Read "Registration" and the lines under the table. Look at "Move to registered" on RES-A's
      row.
-  4. Replace "Why" with "UAT: EVT-17, a third place, past the safe limit." and click "Move to
-     registered" on RES-A's row.
+  4. Type "UAT: EVT-17, a third place, past the safe limit." in "Why" (it empties after each saved
+     move) and click "Move to registered" on RES-A's row.
   5. Read "What the office did".
 - **Expected result:**
   - Step 1 shows "Safe limit: 2. Nobody is let in past it — not by the app, and not by the office."
@@ -3842,7 +3849,8 @@ created, and EVT-20 reads E1 cancelled and E2 completed.
   - In step 3 the lines under the table add "Your figures say the safe limit is reached. The backend
     refuses anybody past it; this goes through only if a place has opened since this screen
     loaded.". "Move to registered" is still offered on RES-A's row: the warning greys out nothing
-    (DL-129).
+    (DL-129). The button is greyed out only because "Why" emptied after step 2's move, and can be
+    clicked again once "Why" is filled.
   - Step 4 is refused with "Request failed" and "2 residents already hold a place, and this event’s
     safe limit is 2: the most the venue holds or the stock covers. Nobody was moved.", then "That
     could not be saved.". RES-A's row still reads "Waitlisted", and the counts still give 2 of 1.

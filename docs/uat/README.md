@@ -5,6 +5,9 @@ resident testers use it to test the platform on the staging site and sign it off
 
 - [uat-test-scripts.md](uat-test-scripts.md): 201 test cases in 19 areas.
 - [uat-signoff.md](uat-signoff.md): the sign-off sheets, the defect summary and the acceptance.
+- [dry-run-2026-11-09.md](dry-run-2026-11-09.md): the developer's dry run of 9 November 2026 on a
+  local copy, before the office's round: the result of each case it touched, the three cases it
+  corrected (version 1.8), and the product defects it found.
 - The workbook, "Taytay - UAT test scripts (staging).xlsx": the same cases, with columns to record
   each result and a "Defects" tab. It is **not kept in this repository**. It is generated from these
   Markdown files and handed out with the pack.
@@ -89,6 +92,11 @@ residents have nothing to request and the DOC cases cannot start.
   (EVT-03, EVT-14) and the correction notices (EVT-15, EVT-16) need a build that also includes
   D-194.
 - **Android only.** No iOS build exists yet.
+- **Defects found before the round.** The developer's dry run
+  ([dry-run-2026-11-09.md](dry-run-2026-11-09.md)) found product defects that the office will meet
+  until they are fixed on staging: a barangay link or a release officer cannot open a resident's
+  record (ROS-05, NFR-06), a barangay link's footer reads "Unknown barangay" (ACC-02, ACC-04), and
+  RPT-01 and EVT-18 fail on one step each. Log them as defects as usual.
 - **A reload signs you out of the staff website.** This is by design (NFR-03). Move around with the
   menu and the links.
 
