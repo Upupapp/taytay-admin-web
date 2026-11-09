@@ -32,6 +32,15 @@
  *   7. `verification.review` is the server's key, mutating, held by the system administrator alone,
  *      and the route asks for it.
  *
+ * ## An approval says the ID shows the account's name (`DL-197`)
+ *
+ *   8. The port's `approve` takes a `ConfirmedIdentity` and the http adapter sends it back as
+ *      `confirmed_name` and `confirmed_birthdate`; the review's approval carries a `confirmation`
+ *      the reviewer must tick, which the shared `StatusTransition` holds its button for; the moves
+ *      offered come from `reviewMovesFor`, so an account with no name cannot be approved; and the
+ *      queue list never renders the account's name — it belongs beside the ID, not in a list
+ *      anybody scrolls.
+ *
  * Each rule was validated against a planted regression before being trusted.
  */
 
@@ -344,6 +353,45 @@ if (
   );
 }
 
+/* ── 8. an approval says the ID shows the account's name ─────────────────── */
+
+if (!/approve\(\s*id:\s*VerificationRequestId,\s*note:\s*string,\s*confirmed:\s*ConfirmedIdentity,?\s*\)/.test(port)) {
+  failures.push(
+    "VerificationRepository.approve does not take the ConfirmedIdentity the reviewer checked (DL-197).",
+  );
+}
+if (
+  !/approve\([\s\S]*?confirmed_name:\s*confirmed\s*\.\s*name,\s*confirmed_birthdate:\s*confirmed\s*\.\s*birthDate/.test(
+    httpClass,
+  )
+) {
+  failures.push(
+    'HttpVerificationRepository.approve must send back confirmed_name and confirmed_birthdate, which the API compares with the account.',
+  );
+}
+if (!/approved:\s*\{[\s\S]*?confirmation:\s*\{[\s\S]*?\},?\s*\)?,?\s*\},\s*rejected:/.test(reviewCode)) {
+  failures.push(
+    "The review's approval carries no confirmation to tick. Approving says the ID shows the account's name (DL-197).",
+  );
+}
+if (!/moves\s*=\s*computed\(\(\)\s*=>\s*reviewMovesFor\(/.test(reviewCode)) {
+  failures.push(
+    'The review offers moves that do not come from reviewMovesFor, so an account with no name could be approved.',
+  );
+}
+const transition = code(read(APP, 'shared', 'cases', 'status-transition.ts'));
+if (!/canConfirm\s*=\s*computed\([\s\S]*?this\s*\.\s*confirmationOk\s*\(\s*\)[\s\S]*?\);/.test(transition)) {
+  failures.push(
+    "StatusTransition's button no longer waits for a destination's confirmation to be ticked.",
+  );
+}
+const queueTemplate = read(FEATURE, 'verification-queue-page.html');
+if (/\baccount\b|accountName|identity/.test(queueTemplate)) {
+  failures.push(
+    "The queue list renders what the account gives. The name is shown in a review, beside the ID it is checked against (DL-197).",
+  );
+}
+
 /* ── 7. one key, the server's, held by the administrator alone ───────────── */
 
 const permission = code(read(APP, 'domain', 'access', 'permission.ts'));
@@ -392,6 +440,6 @@ function report() {
   }
   console.log(
     `Verification check passed (${moduleFiles.length} files: no verdict, no address, images only after the warning, ` +
-      "revoked on leave, the resident named as a rejection's reader).",
+      "revoked on leave, the resident named as a rejection's reader, the account's name confirmed against the ID).",
   );
 }

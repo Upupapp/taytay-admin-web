@@ -2,9 +2,11 @@ import { asId, type AppAccountId, type MediaId, type VerificationRequestId } fro
 import { nextStatuses } from '../shared/status';
 import {
   awaitsReview,
+  identityToConfirm,
   imagesOf,
   mediaFor,
   REVIEW_NOTE_LIMITS,
+  reviewMovesFor,
   reviewNoteProblem,
   VERIFICATION_DECISION_EFFECTS,
   VERIFICATION_REVIEW_MOVES,
@@ -33,6 +35,7 @@ function request(
     reviewedAt: null,
     residentMessage: null,
     reviewNote: null,
+    account: status === 'pending' ? { name: 'Ana Cruz', birthDate: null } : null,
   };
 }
 
@@ -91,6 +94,24 @@ describe('the images a request carries', () => {
     expect(imagesOf(request('pending'))).toEqual(['id-front', 'id-back', 'selfie']);
     expect(imagesOf(request('pending', null))).toEqual(['id-front', 'selfie']);
     expect(mediaFor(request('pending', null), 'id-back')).toBeNull();
+  });
+
+  it('confirms the name the account gives, and leaves only a rejection without one (DL-197)', () => {
+    expect(identityToConfirm(request('pending'))).toEqual({ name: 'Ana Cruz', birthDate: null });
+    expect(reviewMovesFor(request('pending'))).toEqual(['approved', 'rejected']);
+
+    const nameless: VerificationRequest = {
+      ...request('pending'),
+      account: { name: null, birthDate: null },
+    };
+    expect(identityToConfirm(nameless)).toBeNull();
+    expect(reviewMovesFor(nameless)).toEqual(['rejected']);
+    expect(identityToConfirm(request('approved'))).toBeNull();
+  });
+
+  it('says before an approval that the confirmed name is kept and can no longer be changed', () => {
+    expect(VERIFICATION_DECISION_EFFECTS.approved.join(' ')).toMatch(/name you confirmed is kept/);
+    expect(VERIFICATION_DECISION_EFFECTS.approved.join(' ')).toMatch(/cannot change their name/);
   });
 
   it('holds no verdict, number or address of its own', () => {

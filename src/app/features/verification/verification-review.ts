@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, formatDate } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,6 +7,7 @@ import {
   effect,
   inject,
   input,
+  LOCALE_ID,
   output,
   signal,
   untracked,
@@ -17,14 +18,16 @@ import { forkJoin, map } from 'rxjs';
 import {
   awaitsReview,
   ID_DOCUMENT_TYPE_LABELS,
+  identityToConfirm,
   imagesOf,
   REVIEW_NOTE_LIMITS,
+  reviewMovesFor,
   VERIFICATION_DECISION_EFFECTS,
   VERIFICATION_IMAGE_LABELS,
   VERIFICATION_REPOSITORY,
-  VERIFICATION_REVIEW_MOVES,
   VERIFICATION_STATUS_CATALOG,
   VERIFICATION_STATUS_TRANSITIONS,
+  type ConfirmedIdentity,
   type VerificationImageKind,
   type VerificationRequest,
   type VerificationStatus,
@@ -70,6 +73,14 @@ interface OpenedImage {
  * — appear between the choice and the button, and the reason's label names its reader: the office
  * for an approval, **the resident** for a rejection.
  *
+ * ## Approving says the ID shows the account's name
+ *
+ * While a request waits, the API sends the name and birth date the account gives, and they are
+ * shown above the images (`DL-197`). Approval asks the reviewer to tick that the ID shows them —
+ * the statement names the very name, so the tick is about this record — and sends them back as
+ * read; the server refuses if the account no longer matches. An account with no name cannot be
+ * approved at all: approval is not offered, and the screen says why.
+ *
  * The decision is not gated on having opened the images. A reviewer who has not is told so, beside
  * the button: a warning rather than a block, as elsewhere here (`DL-91`), because a rejection can
  * rest on what the resident wrote.
@@ -84,6 +95,7 @@ interface OpenedImage {
 export class VerificationReview {
   private readonly repository = inject(VERIFICATION_REPOSITORY);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly locale = inject(LOCALE_ID);
   private readonly objectUrls = new ObjectUrls();
 
   readonly request = input.required<VerificationRequest>();
@@ -94,21 +106,36 @@ export class VerificationReview {
   protected readonly copy = VERIFICATION_COPY.review;
   protected readonly catalog = VERIFICATION_STATUS_CATALOG;
   protected readonly transitions = VERIFICATION_STATUS_TRANSITIONS;
-  protected readonly moves = VERIFICATION_REVIEW_MOVES;
   protected readonly limits = REVIEW_NOTE_LIMITS;
 
-  protected readonly guidance: Partial<Record<VerificationStatus, TransitionGuidance>> = {
-    approved: {
-      reasonLabel: this.copy.approveLabel,
-      reasonHint: this.copy.approveHint,
-      consequences: VERIFICATION_DECISION_EFFECTS.approved,
+  /** What approving would confirm; `null` when the account gives no name to check. */
+  protected readonly identity = computed(() => identityToConfirm(this.request()));
+  protected readonly moves = computed(() => reviewMovesFor(this.request()));
+
+  /**
+   * Built per request, so the approval's statement names this record's name and is ticked afresh
+   * for every record. Without a name there is no statement, and no approval is offered (`moves`).
+   */
+  protected readonly guidance = computed<Partial<Record<VerificationStatus, TransitionGuidance>>>(
+    () => {
+      const identity = this.identity();
+      return {
+        approved: {
+          reasonLabel: this.copy.approveLabel,
+          reasonHint: this.copy.approveHint,
+          consequences: VERIFICATION_DECISION_EFFECTS.approved,
+          ...(identity === null
+            ? {}
+            : { confirmation: { label: this.statement(identity), hint: this.copy.confirmHint } }),
+        },
+        rejected: {
+          reasonLabel: this.copy.rejectLabel,
+          reasonHint: this.copy.rejectHint,
+          consequences: VERIFICATION_DECISION_EFFECTS.rejected,
+        },
+      };
     },
-    rejected: {
-      reasonLabel: this.copy.rejectLabel,
-      reasonHint: this.copy.rejectHint,
-      consequences: VERIFICATION_DECISION_EFFECTS.rejected,
-    },
-  };
+  );
 
   protected readonly warningOpen = signal(false);
   protected readonly images = signal<ViewState<readonly OpenedImage[]>>(IDLE);
@@ -185,9 +212,10 @@ export class VerificationReview {
 
   protected decide(event: StatusTransitionRequest<VerificationStatus>): void {
     const request = this.request();
+    const identity = identityToConfirm(request);
     const act =
-      event.to === 'approved'
-        ? this.repository.approve(request.id, event.reason)
+      event.to === 'approved' && identity !== null
+        ? this.repository.approve(request.id, event.reason, identity)
         : event.to === 'rejected'
           ? this.repository.reject(request.id, event.reason)
           : null;
@@ -211,6 +239,16 @@ export class VerificationReview {
         this.outcome.set(this.copy.notRecorded(failureReason(failure) ?? this.copy.failed));
       },
     });
+  }
+
+  /** What the reviewer ticks: the very name, and the birth date when the account gives one. */
+  private statement(identity: ConfirmedIdentity): string {
+    return identity.birthDate === null
+      ? this.copy.confirmName(identity.name)
+      : this.copy.confirmNameAndBirthDate(
+          identity.name,
+          formatDate(identity.birthDate, 'd MMMM y', this.locale),
+        );
   }
 
   /** Revokes every object URL this component made. Idempotent. */

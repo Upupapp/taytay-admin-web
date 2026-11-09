@@ -16,7 +16,9 @@
       "issues": [],
       "created_at": "2026-11-04T08:15:00.000Z",
       "reviewed_at": null,
-      "notes": null
+      "notes": null,
+      "account_name": "Ana Cruz",
+      "account_birthdate": "1990-05-01"
     },
     {
       "id": "7c1e2d3f-4a5b-4c6d-8e7f-9a0b1c2d3e02",
@@ -34,7 +36,9 @@
       "issues": [],
       "created_at": "2026-11-03T02:05:00.000Z",
       "reviewed_at": null,
-      "notes": null
+      "notes": null,
+      "account_name": null,
+      "account_birthdate": null
     }
   ],
   "meta": {

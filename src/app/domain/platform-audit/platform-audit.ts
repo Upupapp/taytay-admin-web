@@ -127,7 +127,7 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'office_event.updated': 'Edited a draft event',
   // DL-195: a published event is corrected, never silently edited.
   'office_event.corrected':
-    'Corrected a published event, with a reason; its earlier details are kept, and residents holding a place are told when its date, time, venue or who may register changes',
+    'Corrected a published event before it started, with a reason; its earlier details are kept, and anybody holding a place was told if its date, time, venue or who may register changed',
   'office_event.published': 'Published an event to the residents’ app, with a reason',
   'office_event.cancelled':
     'Cancelled an event, with a reason; everybody holding a place was told in the residents’ app',

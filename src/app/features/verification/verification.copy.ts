@@ -32,9 +32,10 @@ export const VERIFICATION_COPY = {
     moreFailed: 'The next requests could not be loaded. The ones above are still correct.',
     drawerHeading: 'Review an ID verification',
     noAccountDetail:
-      'The server sends this request without the account holder’s name or details — only the ID ' +
-      'and the selfie. What this review can establish is that the selfie shows the person on the ' +
-      'ID and that the ID is legible and of the kind stated.',
+      'Besides the ID and the selfie, the server sends only the name and birth date the account ' +
+      'gives, and only while a request is waiting — they appear in the review, not in this list. ' +
+      'A review establishes that the selfie shows the person on the ID, that the ID is legible and ' +
+      'of the kind stated, and that it shows the name the account gives.',
   },
 
   review: {
@@ -46,6 +47,24 @@ export const VERIFICATION_COPY = {
     residentMessage: 'What the resident wrote with their correction',
     reviewNote: 'Note recorded with the decision',
     reviewNoteForResident: 'Reason given to the resident',
+
+    accountHeading: 'What the account says',
+    accountIntro:
+      'The resident gave these when they made their account. Check them against the ID: ' +
+      'approving says the ID shows this name.',
+    accountName: 'Name',
+    accountBirthDate: 'Birth date',
+    noBirthDate:
+      'None given. The residents’ app does not ask for one, so only the name is checked.',
+    noName:
+      'The account gives no name, so there is nothing to check against the ID and this request ' +
+      'cannot be approved. Reject it, and ask the resident to add the name printed on their ID.',
+    confirmName: (name: string): string => `The ID shows the name “${name}”.`,
+    confirmNameAndBirthDate: (name: string, birthDate: string): string =>
+      `The ID shows the name “${name}” and the birth date ${birthDate}.`,
+    confirmHint:
+      'Required to approve. If the ID shows a different name, reject the request and say so. ' +
+      'Once approved, the resident cannot change their name or birth date in the app.',
 
     imagesHeading: 'The images',
     imagesClosed:

@@ -46,7 +46,7 @@ sensitive things this console shows, so:
 
 | Decision | What the API does |
 | --- | --- |
-| Approve | Marks the account verified; a resident account becomes a verified resident (staff and admin roles unchanged); issues a digital ID with the selfie as its photo if the account is then a verified resident account, not closed, and has none; tells the resident "Your identity review was approved." Nothing in this console can undo it. |
+| Approve | Needs the tick that the ID shows the account's name; keeps that name, which the resident can no longer change in the app; marks the account verified; a resident account becomes a verified resident (staff and admin roles unchanged); issues a digital ID with the selfie as its photo if the account is then a verified resident account, not closed, and has none; tells the resident "Your identity review was approved." Nothing in this console can undo it. |
 | Reject | Puts the reason in front of the resident in the app; tells them "Your identity review was rejected."; the account stays registered and the resident may correct and resend, which returns the request to the queue. |
 
 ## The lifecycle
@@ -69,16 +69,29 @@ request that is no longer pending — a colleague got there first — is refused
 - **The review opens in a drawer.** The API has no read of one request, so there is no address a
   reload could answer. After a decision the queue is read again from the server, never patched.
 
-## What the reviewer cannot see
+## The name the account gives (`DL-197`)
 
-The API sends a request with the account id, the ID type, the images, the dates and any message the
-resident wrote — and **not** the account holder's name, birth date or address. So this review can
-establish that the selfie shows the person on the ID and that the ID is legible and of the kind
-stated; it cannot compare the ID with what the account says about itself. The screen says this. Whether
-the review should also show the account's name and birth date is the owner's decision: it is more
-personal data on the screen, for a better-grounded decision. It would need the API as well — the
-vendored spec at `2736e28` has no `GET admin/users/{id}`, and `GET admin/users` omits birth dates
-(`DL-168`).
+Until 9 November 2026 the API sent a request with the account id, the ID type, the images, the dates
+and any message the resident wrote, and **not** the account holder's name, so a review could not
+compare the ID with what the account says about itself. The owner decided (OD-1) that it should.
+
+- **While a request waits**, the API also sends `account_name` and `account_birthdate`. The review
+  shows them under "What the account says", above the images. The queue list never shows them, and
+  a decided request no longer carries them.
+- **Approving asks for a tick**: "The ID shows the name “…”." (and the birth date, when the account
+  gives one — the residents' app does not ask for one, so usually only the name is checked). The
+  button waits for it, and the tick clears for another request.
+- **The name goes back as read** (`confirmed_name`, `confirmed_birthdate`). The API compares it with
+  the account under a lock and refuses a difference, then keeps it as the name the ID was approved
+  under, which the events door list shows.
+- **An account with no name cannot be approved.** Approval is not offered; the screen says to
+  reject and ask the resident for the name printed on their ID.
+- **After approval the name is fixed in the app**: the API refuses a change of name or birth date
+  while a request is pending or approved, so a verified account cannot be renamed under its digital
+  ID. After a rejection the resident may correct it.
+
+A person compares the name with the card. The software compares nothing with the card, and holds no
+match score (`check:verification`, rules 1 and 8).
 
 ## Access
 

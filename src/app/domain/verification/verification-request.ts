@@ -1,4 +1,10 @@
-import type { AppAccountId, IsoDateTime, MediaId, VerificationRequestId } from '../shared/ids';
+import type {
+  AppAccountId,
+  IsoDate,
+  IsoDateTime,
+  MediaId,
+  VerificationRequestId,
+} from '../shared/ids';
 import { nextStatuses, type StatusCatalog, type StatusTransitions } from '../shared/status';
 
 /**
@@ -39,6 +45,40 @@ export interface VerificationRequest {
    * decision form names the reader before anybody types.
    */
   readonly reviewNote: string | null;
+  /**
+   * What the account says about its holder, for the reviewer to check against the ID (`DL-197`).
+   * The API sends it only while the request awaits a decision; `null` on a decided request.
+   */
+  readonly account: AccountIdentity | null;
+}
+
+/**
+ * The name and birth date an app account gives (`DL-197`): the resident's own words, which an
+ * approval says somebody checked against the ID.
+ */
+export interface AccountIdentity {
+  /** `null` when the account gives none: then there is nothing to check, and no approval. */
+  readonly name: string | null;
+  /** `null` when the account holds none. The residents' app does not ask for one. */
+  readonly birthDate: IsoDate | null;
+}
+
+/**
+ * What a reviewer confirms they checked against the ID, sent back with an approval exactly as the
+ * request showed it. The API compares it with the account under a lock and refuses a difference, so
+ * the name an approval keeps is one somebody looked at (`DL-197`).
+ */
+export interface ConfirmedIdentity {
+  readonly name: string;
+  readonly birthDate: IsoDate | null;
+}
+
+/** What approving this request would confirm, or `null` when the account gives no name to check. */
+export function identityToConfirm(request: VerificationRequest): ConfirmedIdentity | null {
+  const account = request.account;
+  return account === null || account.name === null
+    ? null
+    : { name: account.name, birthDate: account.birthDate };
 }
 
 export interface VerificationImages {
@@ -153,6 +193,16 @@ export const VERIFICATION_STATUS_TRANSITIONS: StatusTransitions<VerificationStat
 /** The moves an office reviewer makes. Resubmitting is the resident's, in the app. */
 export const VERIFICATION_REVIEW_MOVES: readonly VerificationDecision[] = ['approved', 'rejected'];
 
+/**
+ * The decisions open on this request. An account that gives no name has nothing to check against
+ * the ID, so it can only be rejected — with a reason that asks the resident for the name (`DL-197`).
+ */
+export function reviewMovesFor(request: VerificationRequest): readonly VerificationDecision[] {
+  return identityToConfirm(request) === null
+    ? VERIFICATION_REVIEW_MOVES.filter((move) => move !== 'approved')
+    : VERIFICATION_REVIEW_MOVES;
+}
+
 /** True when the office can decide this request now. */
 export function awaitsReview(request: VerificationRequest): boolean {
   return nextStatuses(VERIFICATION_STATUS_TRANSITIONS, request.status).some((to) =>
@@ -170,13 +220,17 @@ export function awaitsReview(request: VerificationRequest): boolean {
  * registered role becomes verified. Staff and admin roles are left unchanged." / "Notes are
  * required. The account stays registered and may submit again."), and the handlers behind them in
  * `src/modules/verification/routes.ts` and `repository.ts`, which notify the resident, issue the
- * digital ID and put a rejection's notes in front of the resident as the reason. If the backend
+ * digital ID and put a rejection's notes in front of the resident as the reason; and, since
+ * `DL-197`, the `VerificationApproval` body that keeps the confirmed name and the `PATCH /me` rule
+ * that then refuses a change of name or birth date. If the backend
  * changes what a decision does, this list is wrong until somebody reads it again.
  */
 export const VERIFICATION_DECISION_EFFECTS: Readonly<
   Record<VerificationDecision, readonly string[]>
 > = {
   approved: [
+    'The name you confirmed is kept as the name this ID was approved under. From now on the ' +
+      'resident cannot change their name or birth date in the app.',
     'The account is marked verified. A resident account becomes a verified resident account; a ' +
       'staff or administrator account keeps its role.',
     'If it is then a verified resident account that is not closed, a digital ID is issued with ' +
@@ -195,7 +249,7 @@ export const VERIFICATION_DECISION_EFFECTS: Readonly<
 };
 
 /**
- * How long a decision's words may be. The maximum is the API's (`ReviewNotes`, `RejectNotes`:
+ * How long a decision's words may be. The maximum is the API's (`VerificationApproval`, `RejectNotes`:
  * 1,000 characters, trimmed). The minimum is this console's: a decision about somebody's identity
  * carries a sentence, the same floor every other recorded move here has (`DL-54`).
  */

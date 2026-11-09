@@ -542,6 +542,11 @@ describe('the Node adapters', () => {
 
       const answer = await page;
       expect(answer.items.map((item) => item.idType)).toEqual(['drivers-license', 'umid']);
+      // What the account gives, for the reviewer to check against the ID (DL-197).
+      expect(answer.items.map((item) => item.account)).toEqual([
+        { name: 'Ana Cruz', birthDate: '1990-05-01' },
+        { name: null, birthDate: null },
+      ]);
       expect(answer.hasMore).toBe(true);
       expect(answer.nextCursor).toBe(VERIFICATION_PAGE.meta.pagination.next_cursor);
     });
@@ -566,18 +571,29 @@ describe('the Node adapters', () => {
       await expect(page).rejects.toThrow(/could not be read/);
     });
 
-    it('approves with the note in notes, which the resident never sees', async () => {
+    it('approves with the note in notes, and sends back the name and birth date it confirmed', async () => {
       const id = asId<VerificationRequestId>(VERIFICATION_APPROVED.data.id);
-      const decided = firstValueFrom(verification.approve(id, 'Selfie matches the ID photo.'));
+      const decided = firstValueFrom(
+        verification.approve(id, 'Selfie matches the ID photo.', {
+          name: 'Ana Cruz',
+          birthDate: asIsoDate('1990-05-01'),
+        }),
+      );
 
       const request = http.expectOne({
         method: 'POST',
         url: `${BASE}/admin/verification-requests/${id}/approve`,
       });
-      expect(request.request.body).toEqual({ notes: 'Selfie matches the ID photo.' });
+      expect(request.request.body).toEqual({
+        notes: 'Selfie matches the ID photo.',
+        confirmed_name: 'Ana Cruz',
+        confirmed_birthdate: '1990-05-01',
+      });
       request.flush(VERIFICATION_APPROVED);
 
-      expect((await decided).status).toBe('approved');
+      const answer = await decided;
+      expect(answer.status).toBe('approved');
+      expect(answer.account).toBeNull();
     });
 
     it('rejects with the reason in notes, which is what the resident reads', async () => {

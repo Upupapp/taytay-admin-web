@@ -8940,7 +8940,8 @@ one-way, and an event that is back on is a new event.
   (`verification_requests.name_at_approval`, backfilled from the account for approvals before
   `0044`), and a verified registrant is listed by it — the name the resident gave as the one on their
   ID, frozen so that a later edit does not change whom the door expects. It is **not a transcription
-  of the card**, and the list says which source each name comes from.
+  of the card**, and the list says which source each name comes from. *(Since `DL-197` the reviewer
+  is sent the account's name and approves only after ticking that the ID shows it.)*
 - **Check-in mode.** The event page has a mode that finds one registrant by name or reference and
   marks attendance, and never shows the list: `GET office/events/{id}/check-in?q=` answers at most
   five matches and whether more matched, for `event.mark-attendance`. While it is on, the registrant
@@ -8975,7 +8976,7 @@ schedule exists (DL-113). **Owner question** for when the schedule exists.
 
 1. Should the ID reviewer confirm, or transcribe, the name on the ID when approving it? Today the
    reviewer is not sent the name, so the door list shows the name the resident gave, as it stood at
-   approval.
+   approval. **Decided 9 November 2026: confirm (`DL-197`).**
 2. Assistance needs on a registration, once a retention schedule exists (above).
 
 ### What the console changed
@@ -9107,3 +9108,87 @@ The resident record is tested for a barangay link (visits not requested, record 
 refused panel (said in place, never as "none"); the form for its one barangay and for keeping what
 was typed after a refusal; check-in for the sentence and for not re-reading the event; the
 dashboard for centavos and the caption; staff cards for coverage; the correction wording.
+
+## DL-197 — an ID reviewer confirms the account's name against the ID, and a checked name is no longer the resident's to change
+
+**Why.** `DL-195` left the owner a question (its owner question 1, and the requirements plan's
+`OD-1`): should the ID reviewer confirm, or transcribe, the name on the ID? The reviewer approved an
+ID against the selfie **without being sent the account's name** (`DL-167`), so the name an approval
+kept (`name_at_approval`), which the office's event door lists show as a verified registrant's,
+was the name the resident typed, unchecked against the card. The digital ID showed the account's
+**live** name, and `PATCH /me` let any member change it, so a verified account could be renamed and
+keep its card. The three options were set out to the owner on 9 November 2026: leave it, confirm, or
+transcribe. The owner answered "do whats best".
+
+### The decision: confirm, not transcribe
+
+- **Confirming** is one tick per review, against the name on the screen. **Transcribing** makes the
+  office the author of a name the resident never typed, adds a typing error to every review that
+  has one, and needs a field the API does not have. **Leaving it** keeps "verified" meaning less
+  than the door list and the digital ID say it means.
+- **Privacy.** The reviewer already sees the name and birth date printed on the ID. The account's
+  copy adds only the comparison (RA 10173, proportionality), so it is sent **only while a decision
+  is owed**, shown **in the review beside the images** and never in the queue list, and dropped
+  from a decided request.
+- **A person compares; the software does not.** The API compares the reviewer's echo with the
+  account (did it change while somebody looked?), never the account with the card. There is no match
+  score, and `check:verification` rule 1 still refuses one.
+
+### The rule
+
+1. **The API** (`taytay-backend` `c5e1a7d`): a pending request in the admin queue carries
+   `account_name` and `account_birthdate`; a decided one carries neither, and a resident's own copy
+   never did.
+2. **Approving** takes `confirmed_name` and `confirmed_birthdate` (the birth date may be null), sent
+   back exactly as read. They are compared with the account under a row lock: an account with no
+   name is `409`, and one whose name or birth date is not the one confirmed is `409`. So
+   `name_at_approval` is a name somebody checked against a card.
+3. **A checked name is not the resident's to change.** `PATCH /me` refuses a change of `name` or
+   `birthdate` while verification is `pending` or `verified` (`409`); the same value re-sent is not a
+   change. Before a request, and after a rejection, both may still change, so a mismatch can be put
+   right.
+4. **The console.** The review shows "What the account says" above the images. Approval asks the
+   reviewer to tick a statement that names the very name, and the birth date when there is one: "The
+   ID shows the name “Ana Cruz”." The shared `StatusTransition` gained `TransitionConfirmation` for
+   this: a destination may need a statement ticked, the button waits for it, and the tick clears
+   whenever the destination or the statement changes, so it never carries over to another record. An
+   account with no name is not offered approval at all (`reviewMovesFor`), and the screen says to
+   reject and ask for the name. The approval's consequences now say first that the confirmed name is
+   kept and can no longer be changed in the app.
+5. **The birth date is usually absent.** The residents' app does not ask for one at sign-up, so the
+   review says only the name can be checked, and the statement names only the name.
+
+### What it does not do
+
+- **The door list's words stay** "Name as it stood when their ID was approved". They are true of
+  every approval: those before this change (staging test data only) and every one after, which is
+  now also checked.
+- **There is no office route to change a verified resident's name** (a marriage, a court order).
+  The app never offered one either; what changed is that the API no longer lets a direct call
+  rename a checked account. An office-side correction, with the ID checked again, is an owner
+  question.
+- **The residents' app.** A resident whose request is rejected because the name does not match must
+  be able to put the name right, and the app's profile screen offered no name field. That change is
+  the app's `D-195` (`taytay-mobile-app` `5c4bc4c`). Before an ID is sent, and after a rejection,
+  "Edit profile" lets the resident write the name exactly as printed on the ID. While the check is
+  pending, and after approval, the name is shown locked with the reason. A "Your name and your ID"
+  card above the photos says, before the send button, that the office checks the ID shows the
+  account's name and that it cannot be changed afterwards. The start and needs-correction pages
+  gained a link to "Edit profile", which only a verified resident's screen had.
+
+### Tests and checks
+
+Backend: the queue's two fields (pending only, absent once decided, never on a resident's copy),
+every refusal of an approval, the lock on `PATCH /me` both ways, the kept name, and a nameless
+account rejected, named, corrected and approved. Console: the mapper (pending only), the HTTP body,
+the mock's two refusals, `identityToConfirm` and `reviewMovesFor`, and the screen (the section, the
+statement with and without a birth date, the button held until ticked, the echo sent, the tick
+cleared for another request, rejection only without a name, no name in the queue).
+`check:verification` gained rule 8: the port's and the adapter's confirmation, the review's
+statement, moves from `reviewMovesFor`, `StatusTransition` waiting for the tick, and no account
+field in the queue template. Each part was validated against a planted regression (six, all caught).
+The UAT scripts (version 1.10) follow it: REG-09 and REG-10 read and tick the name, and REG-14 runs a
+rejection for a name that does not match through to approval.
+
+Easiest to reverse of the options: no migration (`name_at_approval` has existed since `0044`), and
+removing the confirmation and the lock is a revert.

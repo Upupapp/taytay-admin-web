@@ -42,6 +42,33 @@
   </dl>
 </section>
 
+@if (decidable()) {
+  <section class="review__block" aria-labelledby="review-account">
+    <h3 id="review-account" class="review__heading">{{ copy.accountHeading }}</h3>
+    @if (identity(); as claimed) {
+      <p class="review__note">{{ copy.accountIntro }}</p>
+      <dl class="review__facts">
+        <div>
+          <dt>{{ copy.accountName }}</dt>
+          <dd class="review__words">{{ claimed.name }}</dd>
+        </div>
+        <div>
+          <dt>{{ copy.accountBirthDate }}</dt>
+          <dd>
+            @if (claimed.birthDate; as birthDate) {
+              <time [attr.datetime]="birthDate">{{ birthDate | date: 'd MMMM y' }}</time>
+            } @else {
+              {{ copy.noBirthDate }}
+            }
+          </dd>
+        </div>
+      </dl>
+    } @else {
+      <p class="review__caution">{{ copy.noName }}</p>
+    }
+  </section>
+}
+
 <section class="review__block" aria-labelledby="review-images">
   <h3 id="review-images" class="review__heading">{{ copy.imagesHeading }}</h3>
 
@@ -85,11 +112,11 @@
       [catalog]="catalog"
       [transitions]="transitions"
       [current]="request().status"
-      [permitted]="moves"
+      [permitted]="moves()"
       [heading]="copy.decisionPrompt"
       [destinationLabel]="copy.destinationLabel"
       [confirmLabel]="copy.confirm"
-      [guidance]="guidance"
+      [guidance]="guidance()"
       [minimumReasonLength]="limits.minimum"
       [maximumReasonLength]="limits.maximum"
       [busy]="busy()"

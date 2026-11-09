@@ -5,6 +5,7 @@ import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import {
   ACCESS_CONTEXT,
   asId,
+  identityToConfirm,
   isPermissionDenied,
   ROLE_DEFINITIONS,
   type AccessContext,
@@ -19,6 +20,9 @@ import type { AppEnvironment } from '@env/environment.model';
 
 import { MockVerificationRepository } from './mock-verification.repository';
 import { SAMPLE_IMAGE_MARKER } from './seed/verification-requests.seed';
+
+/** For a refusal that comes before the name is compared. */
+const ANY_NAME = { name: 'Any Name', birthDate: null } as const;
 
 const TEST_ENVIRONMENT: AppEnvironment = {
   name: 'local-mock',
@@ -110,7 +114,7 @@ describe('MockVerificationRepository', () => {
     expect(decided.reviewedAt).not.toBeNull();
 
     await expect(
-      firstValueFrom(repository.approve(waiting.id, 'Selfie matches the ID photo.')),
+      firstValueFrom(repository.approve(waiting.id, 'Selfie matches the ID photo.', ANY_NAME)),
     ).rejects.toThrow(/no longer pending/);
   });
 
@@ -118,7 +122,7 @@ describe('MockVerificationRepository', () => {
     const repository = signedInAs('system-administrator');
     const waiting = await firstPending(repository);
 
-    await expect(firstValueFrom(repository.approve(waiting.id, 'ok'))).rejects.toThrow(
+    await expect(firstValueFrom(repository.approve(waiting.id, 'ok', ANY_NAME))).rejects.toThrow(
       /needs a sentence/,
     );
   });
@@ -128,9 +132,46 @@ describe('MockVerificationRepository', () => {
 
     await expect(
       firstValueFrom(
-        repository.approve(asId<VerificationRequestId>('vr-nowhere'), 'Selfie matches the ID.'),
+        repository.approve(
+          asId<VerificationRequestId>('vr-nowhere'),
+          'Selfie matches the ID.',
+          ANY_NAME,
+        ),
       ),
     ).rejects.toThrow(/not found/);
+  });
+
+  it('approves only the name the account gives, as the API compares it (DL-197)', async () => {
+    const repository = signedInAs('system-administrator');
+    const waiting = await firstPending(repository);
+    const identity = identityToConfirm(waiting);
+    if (identity === null) throw new Error('the first waiting sample gives no name');
+
+    await expect(
+      firstValueFrom(
+        repository.approve(waiting.id, 'Selfie matches the ID photo.', {
+          ...identity,
+          name: 'Somebody Else',
+        }),
+      ),
+    ).rejects.toThrow(/not the one confirmed/);
+
+    const approved = await firstValueFrom(
+      repository.approve(waiting.id, 'Selfie matches the ID photo.', identity),
+    );
+    expect(approved.status).toBe('approved');
+    expect(approved.account).toBeNull();
+  });
+
+  it('cannot approve an account that gives no name (DL-197)', async () => {
+    const repository = signedInAs('system-administrator');
+    const page = await firstValueFrom(repository.list({ status: 'pending' }, { limit: 50 }));
+    const nameless = page.items.find((item) => identityToConfirm(item) === null);
+    if (nameless === undefined) throw new Error('the samples hold no nameless request');
+
+    await expect(
+      firstValueFrom(repository.approve(nameless.id, 'Selfie matches the ID photo.', ANY_NAME)),
+    ).rejects.toThrow(/gives no name/);
   });
 
   it('hands over a drawn placeholder that says it is a sample, never a photograph', async () => {

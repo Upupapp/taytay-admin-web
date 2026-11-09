@@ -127,7 +127,9 @@ serve out of the navigation and names it on one page (`DL-167`), and holds every
 secondary panel whose port is unserved to saying so in place — no request, and
 `<app-not-connected>` where the panel would be (`DL-175`); `check:verification` holds
 the ID-review screen to its privacy rules — images only after a warning, fetched
-with the bearer in a header, discarded on leave (`DL-167`); `check:inbox` holds the
+with the bearer in a header, discarded on leave (`DL-167`) — and an approval to a
+tick that the ID shows the name the account gives, a name the queue list never
+shows (`DL-197`); `check:inbox` holds the
 office inbox to its own — no preview of what a resident wrote in the list, nothing
 logged or notified, attachments only after a warning and revoked on leave, an empty
 inbox asked about before it is shown, no reason collected for a close (`DL-168`);

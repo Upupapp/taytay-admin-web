@@ -7,7 +7,7 @@ import {
   type VerificationRequestId,
 } from '@domain/index';
 
-import { dateTime, field, id, oneOf, str } from './wire';
+import { date, dateTime, field, id, oneOf, str } from './wire';
 
 /** The API's ID types are `snake_case`; the domain's are kebab case, like every other union. */
 const ID_TYPE_BY_WIRE: Readonly<Record<string, IdDocumentType>> = {
@@ -40,6 +40,12 @@ const ID_TYPE_BY_WIRE: Readonly<Record<string, IdDocumentType>> = {
  * | `reviewed_at`        | `reviewedAt`        | not reviewed                   |
  * | `message`            | `residentMessage`   | the resident wrote nothing     |
  * | `notes`              | `reviewNote`        | no note                        |
+ * | `account_name`       | `account.name`      | the account gives no name      |
+ * | `account_birthdate`  | `account.birthDate` | the account holds no birth date |
+ *
+ * The two `account_` fields come only while the request is `pending` (`DL-197`): the API sends what
+ * the account says about its holder for the reviewer to check against the ID, and stops once a
+ * decision is made. So `account` is read on a pending request and is `null` on any other.
  *
  * **Not read**: `reviewer_id` (an account id nobody here can name — see the domain model),
  * `can_edit` (the resident's affordance, not the office's), `submitted_categories` (derivable from
@@ -89,5 +95,12 @@ export function toVerificationRequest(wire: unknown): VerificationRequest | null
     reviewedAt: dateTime(field(wire, 'reviewed_at')),
     residentMessage: str(field(wire, 'message')),
     reviewNote: str(field(wire, 'notes')),
+    account:
+      status === 'pending'
+        ? {
+            name: str(field(wire, 'account_name')),
+            birthDate: date(field(wire, 'account_birthdate')),
+          }
+        : null,
   };
 }

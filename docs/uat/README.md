@@ -3,7 +3,7 @@
 This pack is deliverable D6, "Testing and LGU UAT" (item 7 on the project tracker). Office staff and
 resident testers use it to test the platform on the staging site and sign it off before production.
 
-- [uat-test-scripts.md](uat-test-scripts.md): 201 test cases in 19 areas.
+- [uat-test-scripts.md](uat-test-scripts.md): 202 test cases in 19 areas.
 - [uat-signoff.md](uat-signoff.md): the sign-off sheets, the defect summary and the acceptance.
 - [dry-run-2026-11-09.md](dry-run-2026-11-09.md): the developer's dry run of 9 November 2026 on a
   local copy, before the office's round: the result of each case it touched, the three cases it
@@ -53,7 +53,10 @@ DOC-14) are run by each of those accounts.
   Elisa. Resident testers register as fictional Halimbawas too.
 - Mobile numbers are 0917 000 00NN, addresses "UAT 1 Test Street", birth dates in 1980.
 - ID pictures are a printed sample card marked "SAMPLE", never a real ID. The selfie is a photo of a
-  printed sample face, not of a person.
+  printed sample face, not of a person. **Write your fictional name on your sample card exactly as
+  you type it in the app** ("First name", then "Last name"): the reviewer checks that the ID shows
+  the name the account gives, and approves only when it does (`DL-197`). **RES-C is the exception:**
+  RES-C's card carries a middle name the account does not have, for REG-14.
 - Uploaded files are test PDFs and photos with no personal content.
 - Document types and their fees are test examples marked "(test)", never the LGU's real documents
   or fees.

@@ -5,8 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   asId,
+  asIsoDate,
   VERIFICATION_REPOSITORY,
   type AppAccountId,
+  type ConfirmedIdentity,
   type CursorPage,
   type CursorRequest,
   type MediaId,
@@ -37,6 +39,7 @@ function request(n: number, status: VerificationStatus = 'pending'): Verificatio
     reviewedAt: null,
     residentMessage: null,
     reviewNote: null,
+    account: status === 'pending' ? { name: `Sample Person ${n}`, birthDate: null } : null,
   };
 }
 
@@ -44,7 +47,11 @@ function request(n: number, status: VerificationStatus = 'pending'): Verificatio
 class RecordingVerifications implements VerificationRepository {
   readonly listed: { filter: VerificationFilter; page: CursorRequest }[] = [];
   readonly opened: VerificationImageKind[] = [];
-  readonly decisions: { to: 'approved' | 'rejected'; words: string }[] = [];
+  readonly decisions: {
+    to: 'approved' | 'rejected';
+    words: string;
+    confirmed?: ConfirmedIdentity;
+  }[] = [];
   /** What a decision fails with, or `null` to record it. */
   failWith: unknown = null;
 
@@ -60,8 +67,12 @@ class RecordingVerifications implements VerificationRepository {
     );
   }
 
-  approve(id: VerificationRequestId, note: string): Observable<VerificationRequest> {
-    return this.decide(id, 'approved', note);
+  approve(
+    id: VerificationRequestId,
+    note: string,
+    confirmed: ConfirmedIdentity,
+  ): Observable<VerificationRequest> {
+    return this.decide(id, 'approved', note, confirmed);
   }
 
   reject(id: VerificationRequestId, reason: string): Observable<VerificationRequest> {
@@ -77,12 +88,13 @@ class RecordingVerifications implements VerificationRepository {
     id: VerificationRequestId,
     to: 'approved' | 'rejected',
     words: string,
+    confirmed?: ConfirmedIdentity,
   ): Observable<VerificationRequest> {
     if (this.failWith !== null) {
       const failure = this.failWith;
       return throwError(() => failure);
     }
-    this.decisions.push({ to, words });
+    this.decisions.push(confirmed === undefined ? { to, words } : { to, words, confirmed });
     return of({ ...request(1), id, status: to, reviewNote: words });
   }
 }
@@ -142,6 +154,15 @@ async function settle<T>(fixture: ComponentFixture<T>): Promise<HTMLElement> {
 /* ── the queue ───────────────────────────────────────────────────────────── */
 
 describe('VerificationQueuePage', () => {
+  it('lists no account’s name: it is shown in a review, beside the ID (DL-197)', async () => {
+    configure();
+    const fixture = TestBed.createComponent(VerificationQueuePage);
+    const element = await settle(fixture);
+
+    expect(element.querySelector('table')).not.toBeNull();
+    expect(element.textContent).not.toContain('Sample Person');
+  });
+
   it('opens on what is waiting, one cursor page at a time', async () => {
     const repository = configure();
     const fixture = TestBed.createComponent(VerificationQueuePage);
@@ -392,6 +413,8 @@ describe('VerificationReview', () => {
     reason.value = 'Selfie matches the ID photo.';
     reason.dispatchEvent(new Event('input'));
     await settle(fixture);
+    tick(element);
+    await settle(fixture);
     buttonNamed(element, VERIFICATION_COPY.review.confirm)?.click();
     await settle(fixture);
 
@@ -433,5 +456,99 @@ describe('VerificationReview', () => {
 
     expect(element.querySelector('.transition__select')).toBeNull();
     expect(element.textContent).toContain(VERIFICATION_COPY.review.alreadyDecided);
+    expect(element.textContent).not.toContain(VERIFICATION_COPY.review.accountHeading);
+  });
+
+  describe('the name the account gives (DL-197)', () => {
+    async function chooseApproval<T>(fixture: ComponentFixture<T>): Promise<HTMLElement> {
+      const element = await settle(fixture);
+      const select = element.querySelector<HTMLSelectElement>('.transition__select');
+      const reason = element.querySelector<HTMLTextAreaElement>('.transition__reason');
+      if (select === null || reason === null) throw new Error('no decision control');
+      select.value = 'approved';
+      select.dispatchEvent(new Event('change'));
+      reason.value = 'Selfie matches the ID photo.';
+      reason.dispatchEvent(new Event('input'));
+      return settle(fixture);
+    }
+
+    it('is shown beside the images, and says the app asks for no birth date', async () => {
+      const { fixture } = review();
+      const element = await settle(fixture);
+
+      const section = element.querySelector('[aria-labelledby="review-account"]');
+      expect(section?.textContent).toContain('Sample Person 1');
+      expect(section?.textContent).toContain(VERIFICATION_COPY.review.noBirthDate);
+    });
+
+    it('is approved only once the reviewer ticks that the ID shows it, and goes back as read', async () => {
+      const { repository, fixture, emitted } = review();
+      const element = await chooseApproval(fixture);
+
+      const statement = element.querySelector('label.check');
+      expect(statement?.textContent).toContain('The ID shows the name “Sample Person 1”.');
+      expect(buttonNamed(element, VERIFICATION_COPY.review.confirm)?.disabled).toBe(true);
+
+      tick(element);
+      await settle(fixture);
+      expect(buttonNamed(element, VERIFICATION_COPY.review.confirm)?.disabled).toBe(false);
+      buttonNamed(element, VERIFICATION_COPY.review.confirm)?.click();
+      await settle(fixture);
+
+      expect(repository.decisions).toEqual([
+        {
+          to: 'approved',
+          words: 'Selfie matches the ID photo.',
+          confirmed: { name: 'Sample Person 1', birthDate: null },
+        },
+      ]);
+      expect(emitted.map((decided) => decided.status)).toEqual(['approved']);
+    });
+
+    it('names the birth date in the statement when the account gives one', async () => {
+      const { fixture } = review({
+        ...request(1),
+        account: { name: 'Ana Cruz', birthDate: asIsoDate('1990-05-01') },
+      });
+      const element = await chooseApproval(fixture);
+
+      expect(element.querySelector('label.check')?.textContent).toContain(
+        'The ID shows the name “Ana Cruz” and the birth date 1 May 1990.',
+      );
+    });
+
+    it('is unticked when another request takes its place', async () => {
+      const { fixture } = review();
+      const element = await chooseApproval(fixture);
+      tick(element);
+      await settle(fixture);
+
+      fixture.componentRef.setInput('request', request(3));
+      const after = await settle(fixture);
+
+      const box = after.querySelector<HTMLInputElement>('label.check input[type="checkbox"]');
+      expect(after.querySelector('label.check')?.textContent).toContain('Sample Person 3');
+      expect(box?.checked).toBe(false);
+      expect(buttonNamed(after, VERIFICATION_COPY.review.confirm)?.disabled).toBe(true);
+    });
+
+    it('leaves only a rejection when the account gives no name, and says why', async () => {
+      const { fixture } = review({ ...request(1), account: { name: null, birthDate: null } });
+      const element = await settle(fixture);
+
+      const options = [
+        ...element.querySelectorAll<HTMLOptionElement>('.transition__select option'),
+      ].map((option) => option.value);
+      expect(options).toEqual(['', 'rejected']);
+      expect(element.textContent).toContain(VERIFICATION_COPY.review.noName);
+    });
   });
 });
+
+/** Ticks the statement an approval asks for. */
+function tick(root: ParentNode): void {
+  const box = root.querySelector<HTMLInputElement>('label.check input[type="checkbox"]');
+  if (box === null) throw new Error('no statement to tick');
+  box.checked = true;
+  box.dispatchEvent(new Event('change'));
+}

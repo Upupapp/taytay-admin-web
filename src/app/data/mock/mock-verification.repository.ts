@@ -5,8 +5,10 @@ import {
   ACCESS_CONTEXT,
   asIsoDateTime,
   awaitsReview,
+  identityToConfirm,
   mediaFor,
   reviewNoteProblem,
+  type ConfirmedIdentity,
   type CursorPage,
   type CursorRequest,
   type VerificationDecision,
@@ -68,8 +70,12 @@ export class MockVerificationRepository implements VerificationRepository {
     });
   }
 
-  approve(id: VerificationRequestId, note: string): Observable<VerificationRequest> {
-    return this.decide(id, 'approved', note);
+  approve(
+    id: VerificationRequestId,
+    note: string,
+    confirmed: ConfirmedIdentity,
+  ): Observable<VerificationRequest> {
+    return this.decide(id, 'approved', note, confirmed);
   }
 
   reject(id: VerificationRequestId, reason: string): Observable<VerificationRequest> {
@@ -92,6 +98,7 @@ export class MockVerificationRepository implements VerificationRepository {
     id: VerificationRequestId,
     decision: VerificationDecision,
     note: string,
+    confirmed: ConfirmedIdentity | null = null,
   ): Observable<VerificationRequest> {
     const denied = denyUnless<VerificationRequest>(
       this.access.currentUser(),
@@ -111,9 +118,34 @@ export class MockVerificationRepository implements VerificationRepository {
     if (!awaitsReview(current)) {
       return throwError(() => new Error('That verification request is no longer pending.'));
     }
+    // The API's two refusals, in its words (`DL-197`): nothing to check, or not what was checked.
+    if (decision === 'approved') {
+      const expected = identityToConfirm(current);
+      if (expected === null) {
+        return throwError(
+          () =>
+            new Error(
+              'The account gives no name to check against the ID. Reject the request and say what is missing.',
+            ),
+        );
+      }
+      if (
+        confirmed === null ||
+        confirmed.name.trim() !== expected.name ||
+        confirmed.birthDate !== expected.birthDate
+      ) {
+        return throwError(
+          () =>
+            new Error(
+              'The name or birth date on the account is not the one confirmed. Read the request again and check it against the ID.',
+            ),
+        );
+      }
+    }
 
     const decided: VerificationRequest = {
       ...current,
+      account: null,
       status: decision,
       reviewedAt: asIsoDateTime(new Date()),
       reviewNote: note.trim(),

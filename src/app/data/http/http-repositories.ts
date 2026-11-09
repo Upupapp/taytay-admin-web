@@ -20,6 +20,7 @@ import {
   fromServerIdentity,
   mediaFor,
   SignInError,
+  type ConfirmedIdentity,
   type CursorPage,
   type CursorRequest,
   type AppNotification,
@@ -793,9 +794,18 @@ export class HttpVerificationRepository implements VerificationRepository {
       .pipe(map((answer) => ({ ...answer, items: answer.items.map(readVerification) })));
   }
 
-  approve(id: VerificationRequestId, note: string): Observable<VerificationRequest> {
+  /** `confirmed_…` go back exactly as `account_…` came, and the server compares them (`DL-197`). */
+  approve(
+    id: VerificationRequestId,
+    note: string,
+    confirmed: ConfirmedIdentity,
+  ): Observable<VerificationRequest> {
     return this.api
-      .post(`${API_ENDPOINTS.verificationRequests}/${id}/approve`, { notes: note })
+      .post(`${API_ENDPOINTS.verificationRequests}/${id}/approve`, {
+        notes: note,
+        confirmed_name: confirmed.name,
+        confirmed_birthdate: confirmed.birthDate,
+      })
       .pipe(map(readVerification));
   }
 

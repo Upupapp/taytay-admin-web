@@ -456,6 +456,8 @@
         "user_id"
       ],
       "optional": [
+        "account_birthdate",
+        "account_name",
         "id_back_media_id",
         "message",
         "notes",
@@ -476,6 +478,8 @@
         "user_id"
       ],
       "optional": [
+        "account_birthdate",
+        "account_name",
         "id_back_media_id",
         "message",
         "notes",
@@ -496,6 +500,8 @@
         "user_id"
       ],
       "optional": [
+        "account_birthdate",
+        "account_name",
         "id_back_media_id",
         "message",
         "notes",

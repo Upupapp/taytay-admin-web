@@ -27,7 +27,16 @@ describe('toVerificationRequest', () => {
       reviewedAt: null,
       residentMessage: 'I took the photo again in daylight so the name can be read.',
       reviewNote: null,
+      account: { name: 'Ana Cruz', birthDate: '1990-05-01' },
     });
+  });
+
+  it('reads what the account gives only while the request waits (DL-197)', () => {
+    expect(toVerificationRequest(WITHOUT_BACK)?.account).toEqual({ name: null, birthDate: null });
+    expect(toVerificationRequest(APPROVED.data)?.account).toBeNull();
+    expect(
+      toVerificationRequest({ ...APPROVED.data, account_name: 'Ana Cruz' })?.account,
+    ).toBeNull();
   });
 
   it('reads an ID with no back as having none, not as a missing record', () => {
@@ -48,6 +57,7 @@ describe('toVerificationRequest', () => {
 
     expect(Object.keys(request ?? {}).sort()).toEqual(
       [
+        'account',
         'accountId',
         'id',
         'idType',

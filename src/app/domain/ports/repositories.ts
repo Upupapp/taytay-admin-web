@@ -176,6 +176,7 @@ import type {
   BalitaDraft,
 } from '../balita/balita-article';
 import type {
+  ConfirmedIdentity,
   VerificationFilter,
   VerificationImageKind,
   VerificationRequest,
@@ -1551,8 +1552,16 @@ export interface VerificationRepository {
    */
   list(filter: VerificationFilter, page: CursorRequest): Observable<CursorPage<VerificationRequest>>;
 
-  /** Marks the account verified. The note is for the office; the resident never sees it. */
-  approve(id: VerificationRequestId, note: string): Observable<VerificationRequest>;
+  /**
+   * Marks the account verified. The note is for the office; the resident never sees it.
+   * `confirmed` is the name and birth date the reviewer checked against the ID, exactly as the
+   * request showed them; the server refuses an approval whose account no longer matches (`DL-197`).
+   */
+  approve(
+    id: VerificationRequestId,
+    note: string,
+    confirmed: ConfirmedIdentity,
+  ): Observable<VerificationRequest>;
 
   /** Refuses it. The resident reads `reason` in the app as what was wrong. */
   reject(id: VerificationRequestId, reason: string): Observable<VerificationRequest>;

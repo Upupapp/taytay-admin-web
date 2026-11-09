@@ -1,6 +1,10 @@
 # UAT test scripts: Taytay, Rizal LGU platform (staging)
 
-Version 1.9, 9 November 2026 (replaces 1.8 of the same day): the dry run's product defects are
+Version 1.10, 9 November 2026 (replaces 1.9 of the same day): the ID reviewer now sees the name the
+account gives and ticks that the ID shows it before approving, and a checked name can no longer be
+changed in the app (`DL-197`). REG-09 and REG-10 follow the new review; REG-14 is added (a resident
+rejected for a name that does not match puts it right). The README asks testers to write their
+fictional name on the sample card. Version 1.9, 9 November 2026 (replaced 1.8 of the same day): the dry run's product defects are
 fixed (see its "Fixed" notes), and five cases follow the product's new wording. ROS-05 no longer
 asks for another barangay, because a barangay link is now offered its own barangay only; WRK-06
 expects no "Mark done" on the withheld task; EVT-07 expects Manila times and the list's words in the
@@ -237,14 +241,17 @@ still puts an ID in the review queue, so REG-09 to REG-11 can run.
   4. Under "The images", click "Show the ID and the selfie". Read the dialog and click "Cancel".
   5. Click "Show the ID and the selfie" again, then "Show them".
   6. Close the review with the ✕ at its top. Click "Review" on the same request again.
+  7. Read "What the account says", above "The images".
 - **Expected result:**
   - The columns are "Sent", "ID sent" and "Status". "Show" offers "Awaiting review", "Approved",
-    "Rejected" and "Every request".
+    "Rejected" and "Every request". No resident's name appears in the list.
   - No picture loads before step 5. The dialog is titled "Before you open these images" and says
     "You are about to see a resident’s government ID and a photograph of their face.".
   - Step 5 shows "Front of the ID" and "Selfie", with "Shown in this tab only while this review is
     open. They are discarded when you hide them, close the review or leave the page.".
   - After step 6 the pictures are hidden again until you ask for them.
+  - Step 7 shows "Name" with RES-B's fictional name as typed in the app, and "Birth date" with
+    "None given. The residents’ app does not ask for one, so only the name is checked.".
 
 ### REG-10 · Staff: approve, and the digital ID is issued
 
@@ -256,14 +263,21 @@ still puts an ID in the review queue, so REG-09 to REG-11 can run.
   2. Read "What happens when you confirm".
   3. In "Note for the office (the resident does not see this)" type "UAT".
   4. Replace it with "UAT: sample ID and sample face checked for the test round.".
-  5. Click "Record the decision".
-  6. RES-B: in the app, open "My Account", then "Verification status".
+  5. Compare the name under "What the account says" with the name written on the sample card in the
+     pictures. They match, so tick "The ID shows the name “…”." (it names RES-B's name).
+  6. Click "Record the decision".
+  7. RES-B: in the app, open "My Account", then "Verification status".
 - **Expected result:**
-  - Step 2 lists, above the button, "The account is marked verified.", that a digital ID is issued
-    with the selfie as its photo, and "Nothing in this console can undo an approval.".
+  - Step 2 lists, above the button, first "The name you confirmed is kept as the name this ID was
+    approved under. From now on the resident cannot change their name or birth date in the app.",
+    then "The account is marked verified.", that a digital ID is issued with the selfie as its photo,
+    and "Nothing in this console can undo an approval.".
   - After step 3 "Record the decision" stays greyed out and "Say a little more — …" appears.
-  - Step 5 shows "Approved. The server marked the account verified.".
-  - Step 6 shows "Your account is verified" with the chip "Verified".
+  - After step 4, and until the box is ticked in step 5, "Record the decision" stays greyed out.
+    Under the box: "Required to approve. If the ID shows a different name, reject the request and
+    say so. …".
+  - Step 6 shows "Approved. The server marked the account verified.".
+  - Step 7 shows "Your account is verified" with the chip "Verified".
 
 ### REG-11 · Staff: reject with a reason; the resident corrects and sends again
 
@@ -321,6 +335,42 @@ still puts an ID in the review queue, so REG-09 to REG-11 can run.
   - Step 2 shows "Those passwords do not match.". Step 3 shows "Password updated".
   - In step 5 the old password is refused with "Incorrect email or password." and the new one
     signs in.
+
+### REG-14 · The ID must show the account's name; a rejected resident puts the name right
+
+- **Role:** ADMIN, then RES-C, then ADMIN, then RES-C
+- **Checks:** FR-STAFF-1, FR-RES-3 · Must · D1
+- **Set up first:** REG-11 done, so RES-C's corrected request is awaiting review. RES-C's sample card
+  carries a middle name the account does not have (README, "Test data"): for example "Carmen Santos
+  Halimbawa" on the card and "Carmen Halimbawa" in the app.
+- **Steps:**
+  1. ADMIN: in "ID verification", click "Review" on RES-C's request. Read "What the account says",
+     then show the images and compare the name with the card.
+  2. Choose "Approved" in "Decision", type a note, and read the box above "Record the decision". Do
+     not tick it. Then change "Decision" to "Rejected".
+  3. In "Reason the resident will read" type "UAT: the name on your account is not the name on your
+     ID. Change it to the name printed on the ID, then send again." and click "Record the decision".
+  4. RES-C: open "My Account", then "Verification status". Read "Your name and your ID", then tap
+     "Check the name on your account".
+  5. In "Full name" type the name exactly as the card shows it, and save.
+  6. Back in "Verification status", tap "Resubmit for verification". In "Message" type "UAT: name
+     changed to match the ID." and tap "Resubmit for verification".
+  7. ADMIN: review RES-C's request again. Choose "Approved", type "UAT: the name now matches the ID;
+     selfie checked.", tick the box and click "Record the decision".
+  8. RES-C: open "My Account", then "Edit profile".
+- **Expected result:**
+  - Step 1 shows under "Name" the account's name ("Carmen Halimbawa"), not the card's.
+  - In step 2 the box reads "The ID shows the name “Carmen Halimbawa”.", and "Record the decision"
+    stays greyed out while it is not ticked.
+  - Step 3 shows "Rejected. The resident can now read your reason in the app.".
+  - Step 4 shows, above the photos, "Taytay LGU will check that your ID shows the name on your
+    account. Make sure the two match before you send. Your name cannot be changed while the check is
+    pending or after it is approved.". Under "Full name": "Write your name exactly as it is printed
+    on your government ID. Taytay LGU checks it against your ID.".
+  - In step 7 "What the account says" and the box both show the corrected name, and the review ends
+    with "Approved. The server marked the account verified.".
+  - In step 8 the name is not a field. It shows "Taytay LGU checked this name against your ID, so it
+    cannot be changed here. To change it, ask Taytay LGU.".
 
 ## ID: Digital ID
 

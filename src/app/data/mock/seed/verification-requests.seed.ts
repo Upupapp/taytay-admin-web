@@ -1,5 +1,6 @@
 import {
   asId,
+  asIsoDate,
   asIsoDateTime,
   type AppAccountId,
   type IdDocumentType,
@@ -30,6 +31,9 @@ interface SeedRow {
   readonly reviewed?: string;
   readonly residentMessage?: string;
   readonly reviewNote?: string;
+  /** What the account gives; read only while pending, as the API sends it (`DL-197`). */
+  readonly accountName?: string | null;
+  readonly accountBirthDate?: string;
 }
 
 const HAND_WRITTEN: readonly SeedRow[] = [
@@ -39,6 +43,8 @@ const HAND_WRITTEN: readonly SeedRow[] = [
     withBack: true,
     status: 'pending',
     submitted: '2026-11-04T23:40:00.000Z',
+    accountName: 'Liza Sample Reyes',
+    accountBirthDate: '1988-03-14',
   },
   {
     n: 2,
@@ -47,6 +53,7 @@ const HAND_WRITTEN: readonly SeedRow[] = [
     status: 'pending',
     submitted: '2026-11-04T08:15:00.000Z',
     residentMessage: 'I took the photo again in daylight so the name can be read.',
+    accountName: 'Jun Sample Bautista',
   },
   {
     n: 3,
@@ -54,6 +61,8 @@ const HAND_WRITTEN: readonly SeedRow[] = [
     withBack: false,
     status: 'pending',
     submitted: '2026-11-03T02:05:00.000Z',
+    // An account that gives no name: there is nothing to check, so it can only be rejected.
+    accountName: null,
   },
   {
     n: 4,
@@ -86,6 +95,7 @@ const GENERATED: readonly SeedRow[] = Array.from({ length: 22 }, (_, index) => (
   withBack: index % 3 !== 0,
   status: 'pending' as const,
   submitted: new Date(Date.UTC(2026, 9, 25, 9) - index * 3_600_000).toISOString(),
+  accountName: `Sample Resident ${100 + index}`,
 }));
 
 function toRequest(row: SeedRow): VerificationRequest {
@@ -105,6 +115,13 @@ function toRequest(row: SeedRow): VerificationRequest {
     reviewedAt: row.reviewed === undefined ? null : asIsoDateTime(row.reviewed),
     residentMessage: row.residentMessage ?? null,
     reviewNote: row.reviewNote ?? null,
+    account:
+      row.status === 'pending'
+        ? {
+            name: row.accountName ?? null,
+            birthDate: row.accountBirthDate === undefined ? null : asIsoDate(row.accountBirthDate),
+          }
+        : null,
   };
 }
 

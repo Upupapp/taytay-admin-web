@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  linkedSignal,
+  output,
+  signal,
+} from '@angular/core';
 
 import { nextStatuses, type StatusCatalog, type StatusTransitions } from '@domain/index';
 
@@ -23,6 +31,17 @@ export interface TransitionDetail {
 }
 
 /**
+ * A statement one destination needs somebody to make before its button works — that the name an
+ * account gives is the one printed on the ID, for one (`DL-197`). Asked only on that destination,
+ * and unticked again whenever the destination or the statement changes, so a tick never carries
+ * over to a different record.
+ */
+export interface TransitionConfirmation {
+  readonly label: string;
+  readonly hint: string;
+}
+
+/**
  * What one destination means, said before anybody confirms it (`DL-167`).
  *
  * For a lifecycle whose moves do something outside the record — a resident is told, an account
@@ -38,6 +57,8 @@ export interface TransitionGuidance {
   readonly consequences: readonly string[];
   /** A second field this destination needs, when it needs one. */
   readonly detail?: TransitionDetail;
+  /** A statement this destination needs ticked, when it needs one. */
+  readonly confirmation?: TransitionConfirmation;
 }
 
 /**
@@ -149,6 +170,22 @@ export interface TransitionGuidance {
           </div>
         }
 
+        @if (chosenGuidance()?.confirmation; as statement) {
+          <div class="transition__field">
+            <label class="check">
+              <input
+                type="checkbox"
+                [id]="confirmationId()"
+                [attr.aria-describedby]="confirmationHintId()"
+                [checked]="ticked()"
+                (change)="onTicked($event)"
+              />
+              {{ statement.label }}
+            </label>
+            <p class="transition__hint" [id]="confirmationHintId()">{{ statement.hint }}</p>
+          </div>
+        }
+
         <div class="transition__actions">
           <button
             type="button"
@@ -211,6 +248,8 @@ export class StatusTransition<TStatus extends string> {
   protected readonly consequencesId = computed(() => `${this.idPrefix()}-consequences`);
   protected readonly detailId = computed(() => `${this.idPrefix()}-detail`);
   protected readonly detailHintId = computed(() => `${this.idPrefix()}-detail-hint`);
+  protected readonly confirmationId = computed(() => `${this.idPrefix()}-confirmation`);
+  protected readonly confirmationHintId = computed(() => `${this.idPrefix()}-confirmation-hint`);
 
   protected readonly legal = computed(() => nextStatuses(this.transitions(), this.current()));
 
@@ -260,8 +299,22 @@ export class StatusTransition<TStatus extends string> {
   });
   protected readonly showDetailProblem = computed(() => this.detailTouched() && !this.detailOk());
 
+  /** Unticked whenever the chosen destination's guidance changes — another move, another record. */
+  protected readonly ticked = linkedSignal<TransitionGuidance | null, boolean>({
+    source: () => this.chosenGuidance(),
+    computation: () => false,
+  });
+  protected readonly confirmationOk = computed(
+    () => this.chosenGuidance()?.confirmation === undefined || this.ticked(),
+  );
+
   protected readonly canConfirm = computed(
-    () => this.destination() !== null && this.reasonOk() && this.detailOk() && !this.busy(),
+    () =>
+      this.destination() !== null &&
+      this.reasonOk() &&
+      this.detailOk() &&
+      this.confirmationOk() &&
+      !this.busy(),
   );
 
   protected labelFor(status: TStatus): string {
@@ -276,6 +329,10 @@ export class StatusTransition<TStatus extends string> {
   protected onReason(event: Event): void {
     this.reason.set((event.target as HTMLTextAreaElement).value);
     this.reasonTouched.set(true);
+  }
+
+  protected onTicked(event: Event): void {
+    this.ticked.set((event.target as HTMLInputElement).checked);
   }
 
   protected onDetail(event: Event): void {
@@ -303,5 +360,6 @@ export class StatusTransition<TStatus extends string> {
     this.reasonTouched.set(false);
     this.detail.set('');
     this.detailTouched.set(false);
+    this.ticked.set(false);
   }
 }

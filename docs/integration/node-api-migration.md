@@ -81,21 +81,18 @@ These are not engineering choices, and nothing below has been built.
    custom claim set before first sign-in, or a database edit.
 6. **One Firebase project for residents and staff.** Signing out revokes every session of that
    account, including the same person's resident app, if they use one account for both.
-7. **ID review shows no account name or birth date** (the request carries neither); should the
-   reviewer see the account's name and birth date to compare against the ID? More personal data on
-   screen — an office decision. It would need the API too: the spec has no `GET admin/users/{id}`,
-   and `GET admin/users` omits birth dates.
+7. ~~**ID review shows no account name or birth date**~~ **Decided 9 Nov 2026 (OD-1, `DL-197`):**
+   a waiting request now carries the account's name and birth date, shown in the review beside the
+   images, and approval needs a tick that the ID shows the name (backend `c5e1a7d`).
 8. **The office inbox names no resident.** A conversation carries the resident's account id and
    nothing else, so staff answer somebody they know only by what they wrote. Showing a name is more
    personal data on the screen and needs the API to send it — the office's decision first.
 9. **Closing a conversation tells the resident nothing**, and keeps no reason. Whether the resident
    should be told, and whether a reason should be kept (the API would have to store it), is the
    office's decision; the console asks for no reason it cannot keep.
-10. **The name an events list gives a verified registrant is not read from the ID** (`DL-195`).
-    The reviewer approves the ID against the selfie and is not sent the account's name (item 7), so
-    the approval keeps the name the account carried at that moment, and the door list shows it.
-    Should the reviewer confirm, or transcribe, the name on the ID when approving it? Until then the
-    name is the one the resident gave, never checked against the card.
+10. **The name an events list gives a verified registrant** (`DL-195`) is the one the approval
+    kept. **Decided 9 Nov 2026 (`DL-197`): the reviewer confirms it** against the card before
+    approving, so from then on it is a checked name; it is not transcribed.
 11. **Assistance needs on an event registration** (`DL-195`). A wheelchair or a medical condition
     is health information (RA 10173 §3(l), §13): holding it needs the resident's explicit consent, a
     grant for who may read it, and deletion on a retention period the office sets. No retention
@@ -434,10 +431,9 @@ are told of a change to when, where or who may register, or of fewer places; the
 go past the places with a reason, never past the safe limit; staff lists keep full names, a
 verified registrant's as it stood at approval, and the door finds one person at a time; and an event
 is open to verified residents or to every app account, never the second if it gives something out.
-**For the owner, from `DL-195`:** whether the ID reviewer should confirm, or transcribe, the name on
-the ID when approving it (today the reviewer is not sent the name, so the door list shows the name
-the resident gave, as it stood at approval); and assistance needs on a registration, once a
-retention schedule exists. Both are items 10 and 11 above.
+**For the owner, from `DL-195`:** assistance needs on a registration, once a retention schedule
+exists (item 11 above). Whether the ID reviewer confirms or transcribes the name was decided on
+9 November 2026: confirms (`DL-197`, item 10).
 
 ## Decided 2026-11-09: the newsfeed is retired (`DL-194`)
 
