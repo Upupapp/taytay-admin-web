@@ -101,7 +101,8 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
     'Recorded whether two records are one person, with a reason; nothing was merged',
   'office_referral.drafted': 'Drafted a referral to another office; nothing was disclosed',
   'office_referral.basis_recorded': 'Recorded the lawful basis for a referral, with its reason',
-  'office_referral.field_shared': 'Chose one more field for a referral to carry, with the need for it',
+  'office_referral.field_shared':
+    'Chose one more field for a referral to carry, with the need for it',
   'office_referral.sent': 'Sent a referral to another office, under its recorded basis',
   'office_referral.status_changed': 'Moved a referral on, with a reason',
   'office_referral.outcome_recorded': 'Recorded what the receiving office did with a referral',
@@ -124,6 +125,9 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   // Events (DL-192): each reason is kept beside the act, in office_event_acts.
   'office_event.created': 'Created an event as a draft',
   'office_event.updated': 'Edited a draft event',
+  // DL-195: a published event is corrected, never silently edited.
+  'office_event.corrected':
+    'Corrected a published event, with a reason; its earlier details are kept, and residents holding a place are told when its date, time, venue or who may register changes',
   'office_event.published': 'Published an event to the residents’ app, with a reason',
   'office_event.cancelled':
     'Cancelled an event, with a reason; everybody holding a place was told in the residents’ app',
@@ -196,7 +200,9 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
 
 /** The action in words, or `null` when this console has none for the code. */
 export function describeAuditAction(code: string): string | null {
-  return Object.hasOwn(PLATFORM_AUDIT_ACTIONS, code) ? (PLATFORM_AUDIT_ACTIONS[code] ?? null) : null;
+  return Object.hasOwn(PLATFORM_AUDIT_ACTIONS, code)
+    ? (PLATFORM_AUDIT_ACTIONS[code] ?? null)
+    : null;
 }
 
 /** What a row of this trail does not hold, said on the screen once rather than implied. */
