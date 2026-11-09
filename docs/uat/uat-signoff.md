@@ -254,7 +254,7 @@ Decision: [ ] Accepted [ ] Accepted with open items: ................ [ ] Not ac
 | Tested by                  |      |      |           |      |
 | Accepted for the office by |      |      |           |      |
 
-## EVT: Events (EVT-01 to EVT-11)
+## EVT: Events (EVT-01 to EVT-20)
 
 | Cases run | Passed | Failed | Blocked | Open defects (ids) |
 | --------- | ------ | ------ | ------- | ------------------ |

@@ -300,11 +300,14 @@ import {
   type IssuanceTypeId,
   ISSUANCE_REFERENCE_INCOMPLETE,
   wholeIssuanceReference,
+  CHECK_IN_MIN_LENGTH,
   EVENT_PROBLEM_MESSAGES,
   asIsoDateTime,
   eventProblems,
   type AttendanceStatus,
+  type CheckInLookup,
   type EventCapacitySummary,
+  type EventCorrection,
   type EventCover,
   type EventDraft,
   type EventFilter,
@@ -516,6 +519,7 @@ import {
   toWireAccountSwitch,
 } from './mappers/governance.mapper';
 import {
+  toCheckInLookup,
   toEventCapacity,
   toEventHistoryRow,
   toEventMetrics,
@@ -523,6 +527,7 @@ import {
   toRegistrantExport,
   toRegistrantView,
   toWireEventAttendance,
+  toWireEventCorrection,
   toWireEventDraft,
   toWireEventReason,
 } from './mappers/event.mapper';
@@ -4938,6 +4943,42 @@ export class HttpEventRepository implements EventRepository {
       : this.api.blob(`${API_ENDPOINTS.media}/${encodeURIComponent(event.image.mediaId)}/content`);
   }
 
+  /**
+   * A published event corrected (`DL-195`). Refused here, with no request, on what the domain
+   * refuses to publish and without a reason: the server would refuse both. A chosen cover is stored
+   * first, as for a draft; what is material, and who is told, is the server's to decide on what it
+   * holds inside the event's row lock.
+   */
+  correct(id: LguEventId, draft: EventDraft, correction: EventCorrection): Observable<LguEvent> {
+    const problems = eventProblems(draft, asIsoDateTime(new Date()), 'publish');
+    const { startsAt, endsAt } = draft;
+    if (problems.length > 0 || startsAt === null || endsAt === null) {
+      const said = problems.map((problem) => EVENT_PROBLEM_MESSAGES[problem]);
+      return throwError(() => new Error(said.length > 0 ? said.join(' ') : EVENT_PROBLEM_MESSAGES['starts-required']));
+    }
+    if (correction.reason.trim().length === 0) {
+      return throwError(() => new Error(EVENT_REASON_REQUIRED));
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) => {
+        const venue = draft.venue.barangayId;
+        const venueBarangayId = venue === null ? null : barangays.toApi(venue);
+        if (venue !== null && venueBarangayId === null) {
+          return throwError(() => unknownBarangay());
+        }
+        return this.storedCover(draft).pipe(
+          switchMap((cover) =>
+            this.api.post(
+              `${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}/correct`,
+              toWireEventCorrection(draft, { startsAt, endsAt }, venueBarangayId, cover, correction),
+            ),
+          ),
+          map((wire) => readEvents(toLguEvent(wire, barangays))),
+        );
+      }),
+    );
+  }
+
   publish(id: LguEventId, reason: string): Observable<LguEvent> {
     if (reason.trim().length === 0) {
       return throwError(() => new Error(EVENT_REASON_REQUIRED));
@@ -4998,6 +5039,21 @@ export class HttpEventRepository implements EventRepository {
             attendance: filter.attendance,
           })
           .pipe(map((rows) => rows.map((row) => readEvents(toRegistrantView(row, barangays))))),
+      ),
+    );
+  }
+
+  /** Check-in mode: a handful of matches and whether there were more, never the list (`DL-195`). */
+  checkIn(id: LguEventId, term: string): Observable<CheckInLookup> {
+    const q = term.trim();
+    if (q.length < CHECK_IN_MIN_LENGTH) {
+      return throwError(() => new Error(CHECK_IN_TOO_SHORT));
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .item(`${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}/check-in`, { q })
+          .pipe(map((wire) => readEvents(toCheckInLookup(wire, barangays)))),
       ),
     );
   }
@@ -5122,6 +5178,8 @@ export class HttpEventRepository implements EventRepository {
 
 const EVENT_REASON_REQUIRED =
   'That needs a reason. It is recorded against your name, and the resident can ask.';
+
+const CHECK_IN_TOO_SHORT = 'Type at least two letters of the name, or the reference.';
 
 function readEvents<T>(read: T | null): T {
   if (read === null) {

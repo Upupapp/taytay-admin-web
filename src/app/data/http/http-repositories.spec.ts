@@ -209,21 +209,10 @@ describe('the Node adapters', () => {
 
       // An administrator holds every key the server has (DL-173): sixteen platform capabilities
       // with a console key of the same name, and the casework keys. `household.view-counts` has no
-      // console key, and the nine `newsfeed.*` keys the API still sends lost theirs when the
-      // newsfeed was retired (DL-194): each is kept aside as unknown and grants nothing.
+      // console key: it is kept aside as unknown and grants nothing. The nine `newsfeed.*` keys left
+      // the API too (taytay-backend 12431a3, DL-194), so `/me` no longer sends them.
       expect([...(identity?.permissions ?? [])].sort()).toEqual([...PERMISSIONS].sort());
-      expect(identity?.unknownPermissions).toEqual([
-        'household.view-counts',
-        'newsfeed.view',
-        'newsfeed.create',
-        'newsfeed.edit',
-        'newsfeed.publish',
-        'newsfeed.schedule',
-        'newsfeed.archive',
-        'newsfeed.pin',
-        'newsfeed.moderate',
-        'newsfeed.view-insights',
-      ]);
+      expect(identity?.unknownPermissions).toEqual(['household.view-counts']);
       // The server names the office role now, so the console's own label is the one shown.
       expect(identity?.role).toBe('system-administrator');
       expect(identity?.roleLabel).toBe('System administrator');

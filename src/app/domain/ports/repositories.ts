@@ -21,9 +21,10 @@ import type {
   AuditRow,
 } from '../governance/audit-view';
 import type { CorrectionRequest } from '../governance/correction-request';
-import type { EventDraft, EventFilter, EventView, LguEvent } from '../events/event';
+import type { EventCorrection, EventDraft, EventFilter, EventView, LguEvent } from '../events/event';
 import type {
   AttendanceStatus,
+  CheckInLookup,
   EventCapacitySummary,
   EventMetrics,
   RegistrantExport,
@@ -1465,6 +1466,14 @@ export interface EventRepository {
    * shown. Never an address for a template to load (`DL-193`).
    */
   coverImage(event: LguEvent): Observable<Blob>;
+  /**
+   * A published event corrected before it starts, with a reason, by somebody who may publish
+   * (`DL-195`, superseding `DL-192`'s "only a draft can be edited"). The server keeps what the event
+   * said before, refuses a correction that would take anybody's place, and tells everybody holding a
+   * place of a change they plan around — with the old and the new — or of any other change when
+   * `tellRegistrants` asks. Refused here, with no request, on what the domain refuses to publish.
+   */
+  correct(id: LguEventId, draft: EventDraft, correction: EventCorrection): Observable<LguEvent>;
   publish(id: LguEventId, reason: string): Observable<LguEvent>;
   /** Irreversible, and everybody registered is told (`DL-131`). */
   cancel(id: LguEventId, reason: string): Observable<LguEvent>;
@@ -1473,6 +1482,12 @@ export interface EventRepository {
   archive(id: LguEventId, reason: string): Observable<LguEvent>;
 
   registrants(id: LguEventId, filter: RegistrantFilter): Observable<readonly RegistrantView[]>;
+  /**
+   * Check-in mode (`DL-195`): a name or a reference typed at the door, answered with a handful of
+   * registrants and whether more matched — never the list. Refused with no request under
+   * `CHECK_IN_MIN_LENGTH` characters.
+   */
+  checkIn(id: LguEventId, term: string): Observable<CheckInLookup>;
   /**
    * How full it was **when asked**. Carries its own `asOf`, and offers no
    * `hasRoom`: whether a place exists is the backend's answer (`DL-129`).

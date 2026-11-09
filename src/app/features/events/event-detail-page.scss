@@ -240,3 +240,12 @@
   color: var(--c-text-muted);
   font-size: 12.5px;
 }
+
+// A registrant nobody has ID-checked, said in words beside the name (`DL-195`).
+.registrants__unverified {
+  display: inline-block;
+  margin-inline-start: var(--space-micro);
+  padding: 0 var(--space-micro);
+  border: 1px solid var(--c-warning);
+  border-radius: var(--radius-tight);
+}

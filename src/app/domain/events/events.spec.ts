@@ -3,6 +3,10 @@ import {
   EVENT_STATUS_CATALOG,
   EVENT_STATUS_TRANSITIONS,
   EVENT_TIMEZONE,
+  canBeCorrected,
+  correctionDraftOf,
+  correctionOf,
+  eventCorrectionProblems,
   countsByEventView,
   duplicateOf,
   eventProblems,
@@ -23,6 +27,7 @@ import {
   placesRemaining,
   promotionExceedsCapacity,
   registrationProblems,
+  safeLimitReached,
   targetStatusOf,
   type EventCapacitySummary,
   type EventRegistration,
@@ -53,7 +58,10 @@ function draft(overrides: Partial<EventDraft> = {}): EventDraft {
       opensAt: null,
       closesAt: null,
       capacity: 200,
+      safeLimit: null,
       waitlistEnabled: false,
+      eligibility: 'verified-residents',
+      givesOutBenefit: true,
       participationNote: null,
     },
     reminders: null,
@@ -477,5 +485,143 @@ describe('duplicating an event', () => {
     expect(copy.registration.opensAt).toBeNull();
     expect(copy.registration.closesAt).toBeNull();
     expect(copy.registration.capacity).toBe(200);
+  });
+});
+
+describe('who may register, and the safe limit (DL-195)', () => {
+  const registration = draft().registration;
+
+  it('holds the four categories that always give something out to it, and to verified residents', () => {
+    for (const category of ['payout', 'relief-distribution', 'feeding-programme', 'medical-mission'] as const) {
+      expect(
+        eventProblems(draft({ category, registration: { ...registration, givesOutBenefit: false } }), NOW, 'save'),
+      ).toContain('benefit-category-gives-out');
+    }
+    expect(
+      eventProblems(
+        draft({ category: 'seminar', registration: { ...registration, givesOutBenefit: false } }),
+        NOW,
+        'save',
+      ),
+    ).toEqual([]);
+    expect(
+      eventProblems(
+        draft({
+          category: 'seminar',
+          registration: { ...registration, givesOutBenefit: true, eligibility: 'app-accounts' },
+        }),
+        NOW,
+        'save',
+      ),
+    ).toContain('benefit-for-verified-residents-only');
+    expect(
+      eventProblems(
+        draft({
+          category: 'assembly',
+          registration: { ...registration, givesOutBenefit: false, eligibility: 'app-accounts' },
+        }),
+        NOW,
+        'publish',
+      ),
+    ).toEqual([]);
+  });
+
+  it('keeps a safe limit beside a capacity and at or above it', () => {
+    const limited = (capacity: number | null, safeLimit: number | null) =>
+      eventProblems(draft({ registration: { ...registration, capacity, safeLimit } }), NOW, 'save');
+    expect(limited(200, 230)).toEqual([]);
+    expect(limited(200, 200)).toEqual([]);
+    expect(limited(200, 150)).toContain('safe-limit-below-capacity');
+    expect(limited(null, 150)).toContain('safe-limit-without-capacity');
+    expect(limited(200, 0)).toContain('safe-limit-not-a-number');
+  });
+
+  it('says the safe limit is reached as a warning on a snapshot, never a verdict', () => {
+    expect(safeLimitReached(summary({ registeredCount: 230 }), 230)).toBe(true);
+    expect(safeLimitReached(summary({ registeredCount: 229 }), 230)).toBe(false);
+    expect(safeLimitReached(summary({ registeredCount: 999 }), null)).toBe(false);
+  });
+});
+
+describe('correcting a published event (DL-195)', () => {
+  const published = event({ registeredCount: 120, waitlistedCount: 4 });
+
+  it('may correct a published event until it starts, and nothing else', () => {
+    expect(canBeCorrected(published, NOW)).toBe(true);
+    expect(canBeCorrected(published, LATER)).toBe(false);
+    for (const status of ['draft', 'cancelled', 'completed', 'archived'] as const) {
+      expect(canBeCorrected(event({ status }), NOW)).toBe(false);
+    }
+  });
+
+  it('starts from the event as it stands, and a correction that changes nothing says so', () => {
+    const unchanged = correctionOf(published, correctionDraftOf(published));
+    expect(unchanged).toEqual({ changed: [], material: false, capacityCut: false });
+  });
+
+  it('calls a change to when, where, who may register or fewer places material, and nothing else', () => {
+    const start = correctionDraftOf(published);
+    const moved = (changes: Partial<EventDraft>) => correctionOf(published, { ...start, ...changes });
+    expect(moved({ startsAt: '2026-09-17T02:00:00.000Z' as IsoDateTime }).material).toBe(true);
+    expect(moved({ venue: { ...start.venue, name: 'Taytay municipal gym' } })).toEqual({
+      changed: ['venue'],
+      material: true,
+      capacityCut: false,
+    });
+    expect(
+      moved({ registration: { ...start.registration, eligibility: 'app-accounts' } }).material,
+    ).toBe(true);
+    expect(moved({ registration: { ...start.registration, capacity: 150 } })).toEqual({
+      changed: ['capacity'],
+      material: true,
+      capacityCut: true,
+    });
+    expect(moved({ registration: { ...start.registration, capacity: 250 } }).material).toBe(false);
+    for (const changes of [
+      { title: 'Medical mission — corrected' },
+      { details: 'Bring your own water.' },
+      { reminders: 'Bring a valid ID and water.' },
+      { contact: { ...start.contact, phone: '0917 000 0000' } },
+    ] satisfies Partial<EventDraft>[]) {
+      const summary = moved(changes);
+      expect(summary.changed.length).toBe(1);
+      expect(summary.material).toBe(false);
+    }
+  });
+
+  it('refuses a correction without a reason, or one that would take a place', () => {
+    const start = correctionDraftOf(published);
+    const reasoned = { reason: 'The court is under repair.', tellRegistrants: false };
+    expect(eventCorrectionProblems(published, start, reasoned, NOW)).toEqual([]);
+    expect(eventCorrectionProblems(published, start, { ...reasoned, reason: ' ' }, NOW)).toEqual([
+      'reason-required',
+    ]);
+    expect(
+      eventCorrectionProblems(
+        published,
+        { ...start, registration: { ...start.registration, capacity: 100 } },
+        reasoned,
+        NOW,
+      ),
+    ).toContain('capacity-below-places-held');
+    expect(
+      eventCorrectionProblems(
+        published,
+        { ...start, registration: { ...start.registration, isRequired: false } },
+        reasoned,
+        NOW,
+      ),
+    ).toContain('registration-required-is-fixed');
+    expect(
+      eventCorrectionProblems(
+        event({ registeredCount: 1, waitlistedCount: 2, registration: { ...start.registration, waitlistEnabled: true } }),
+        { ...start, registration: { ...start.registration, waitlistEnabled: false } },
+        reasoned,
+        NOW,
+      ),
+    ).toContain('waitlist-in-use');
+    expect(eventCorrectionProblems(event({ status: 'cancelled' }), start, reasoned, NOW)).toContain(
+      'not-correctable',
+    );
   });
 });

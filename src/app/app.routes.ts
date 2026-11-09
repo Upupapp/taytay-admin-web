@@ -500,6 +500,15 @@ export const routes: Routes = [
             loadComponent: () =>
               import('@features/events/event-detail-page').then((m) => m.EventDetailPage),
           },
+          {
+            // Correcting a published event goes out in the office's name, as publishing did, so it
+            // costs `publish` (`DL-195`). The detail screen offers the link under the same grant.
+            path: ':id/correct',
+            title: 'Correct an event — Taytay Social Welfare',
+            canActivate: [servedGuard('event'), permissionGuard('event.publish')],
+            loadComponent: () =>
+              import('@features/events/event-composer-page').then((m) => m.EventComposerPage),
+          },
         ],
       },
       {

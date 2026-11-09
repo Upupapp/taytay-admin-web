@@ -8869,3 +8869,158 @@ None was weakened; each was changed to hold the same intent with nothing unserve
 - **Comments and reactions on Balita** (OD-4) are the owner's decision with the LGU, as before.
 - **Launch gate line 05/07:** its unserved-port condition now holds. The line itself, and every
   other line, still needs its evidence and its signature.
+
+## DL-195 — a published event is corrected with a trace, no admission passes a safe limit, the door list shows the name an ID was approved under and finds one person at a time, and the office says who may register
+
+**Why.** Four questions came back once events were running, and the owner delegated them ("research
+best practices and do what's best"). An office that published the wrong venue could only cancel and
+start again, which DL-131 makes a new event and every registrant loses their place. The capacity
+warning before a promotion (DL-129) said nothing about the venue's real limit. Initials or a typed
+name cannot identify somebody at the door. And every event was closed to residents whose ID the
+office has not verified, though a clean-up or an orientation has no reason to be.
+
+`taytay-backend` `cf30686` (migration `0044`); the spec vendored here is that commit's.
+
+**Sources.** Eventbrite tells attendees automatically when an event's date, time or venue changes,
+and leaves other edits to the organiser
+(https://www.eventbrite.com/help/en-us/articles/748624/what-emails-will-attendees-automatically-receive/).
+The NPC's Advisory Opinion 2018-003 (compendium pp. 54–56,
+https://privacy.gov.ph/wp-content/uploads/2023/05/compendium_2018_1519.pdf) treats a logbook open to
+whoever signs next as a disclosure of everybody already in it, the concern behind its 2020 probe of
+open contact-tracing forms. GOV.UK's service manual asks for the identity check proportionate to the
+harm the service could do (https://www.gov.uk/service-manual/design/checking-users-identities). The
+IRR's §18(c) asks that personal data be adequate and not excessive for the purpose
+(https://privacy.gov.ph/implementing-rules-regulations-data-privacy-act-2012/).
+
+### 1. A published event is corrected, and the correction is kept
+
+**Supersedes DL-192 decision 2** ("only a draft can be edited"). **DL-131 stands**: cancelling is
+one-way, and an event that is back on is a new event.
+
+- **Who and when.** A holder of `event.publish`, because a correction goes out in the office's name
+  as the event did. While the event is published and the clock says it has not started; never on a
+  cancelled, completed or archived event, and a draft is still edited, not corrected.
+- **How it is kept.** `POST office/events/{id}/correct` takes the whole composer with a required
+  reason. Each correction is an appended act (`corrected`) with a revision holding what the event
+  said before and which fields moved. The database refuses a change to a published event in any
+  transaction that kept no revision, after it starts, or that turns registration on or off. The
+  event's history lists the correction by its fields — never their values (DL-114) — with the reason
+  and whether residents were told.
+- **What is material.** When it starts or ends, the venue (name, address, map link, barangay), who may
+  register, and fewer places. A capacity or a safe limit below the places already held is refused:
+  nobody loses a place to a correction. The waitlist cannot be turned off while anybody is on it.
+- **Notices.** A material change sends everybody holding a place or a waitlist place an in-app notice
+  (`event_registration_updated`) saying what changed, with the old and the new date, time and venue,
+  and that their registration stands. Never the reason. Title, description, contact, cover and what to
+  bring are not material; for those the correction form offers **"Tell registered residents"**, off
+  by default, for a changed "what to bring". The residents' app opens the event from the notice, and
+  a resident who can no longer go gives up their place there as before (its D-194).
+- **A correction that changes nothing records nothing** and tells nobody, so a retried request
+  answers as the first did without a key. The form says before its button what the correction will
+  do, as the cancel and publish confirmations do (DL-124).
+
+### 2. Admitting past capacity keeps its warning, and gains two safeguards
+
+- **A safe limit.** `safe_limit` is optional, at or above the capacity, and only beside one: the
+  venue's posted occupant load, or the stock on hand for a distribution. No act brings confirmed
+  places above it — a resident registering, the office promoting or restoring — and the server checks
+  inside the event's row lock, where every place is decided (DL-129). The composer explains the field
+  in plain words. The warning before a promotion past capacity (DL-91, DL-129) stays a warning.
+- **A reason for every admission past capacity.** 0042 already required a reason on every promotion
+  and restoration (`office_event_acts_reasoned`), so this needed no new rule; what was added is the
+  record: the act now says it went past the places (`past_capacity`), the database refuses that mark on
+  any act without a reason, and the history says it in words.
+
+### 3. Full names, shown carefully
+
+- **Staff lists keep full names.** Initials cannot identify somebody at the door.
+- **The name an ID was approved under.** The API held no name from an ID: the reviewer approves the
+  ID against the selfie and is **not sent the account's name** (DL-167, the verification copy says
+  so). So the approval now keeps the name the account carries at that moment
+  (`verification_requests.name_at_approval`, backfilled from the account for approvals before
+  `0044`), and a verified registrant is listed by it — the name the resident gave as the one on their
+  ID, frozen so that a later edit does not change whom the door expects. It is **not a transcription
+  of the card**, and the list says which source each name comes from.
+- **Check-in mode.** The event page has a mode that finds one registrant by name or reference and
+  marks attendance, and never shows the list: `GET office/events/{id}/check-in?q=` answers at most
+  five matches and whether more matched, for `event.mark-attendance`. While it is on, the registrant
+  list is not on the screen. This is the NPC's concern with open logbooks (Advisory Opinion 2018-003;
+  the 2020 probe of open contact-tracing forms) applied to a door list somebody turns to face the
+  queue.
+- **The export stays the composed six columns** (DL-130). The name column carries the same name as
+  the list.
+
+### 4. Who may register is the event's setting
+
+- `registration_eligibility` is `verified-residents` (the default) or `app-accounts` (any signed-in
+  account). An unverified account registers only at an `app-accounts` event.
+- **An event that gives out cash, goods or a benefit stays verified-residents**, enforced by the
+  route and the database. The categories decide where they can: a payout, a relief distribution, a
+  feeding programme and a medical mission always give something out. A seminar, a livelihood training
+  or an assembly may or may not (a starter kit, a snack pack), so the categories **cannot** tell for
+  those, and an explicit **"gives out cash, goods or a benefit"** flag (`gives_out_benefit`) decides,
+  ticked and fixed for the four categories that always do.
+- Staff lists mark registrants who are not ID-verified. The residents' app says who an event is open
+  to (`registration.open_to`), and changing the setting on a published event is a material correction.
+
+### Not built
+
+Notes, or an assistance-needs checklist, on registrations. Such needs (a wheelchair, a medical
+condition) are health information, which is sensitive personal information under RA 10173 §3(l) and
+is processed only on the grounds in §13. Holding them properly needs the resident's explicit consent,
+a grant for who may read them, and deletion on a retention period the office sets, and no retention
+schedule exists (DL-113). **Owner question** for when the schedule exists.
+
+### Owner questions
+
+1. Should the ID reviewer confirm, or transcribe, the name on the ID when approving it? Today the
+   reviewer is not sent the name, so the door list shows the name the resident gave, as it stood at
+   approval.
+2. Assistance needs on a registration, once a retention schedule exists (above).
+
+### What the console changed
+
+- **Domain.** `EventRegistrationPolicy` gains `safeLimit`, `eligibility` (`RegistrationEligibility`:
+  `verified-residents` | `app-accounts`) and `givesOutBenefit`; `BENEFIT_CATEGORIES` and
+  `categoryGivesOutBenefit` hold the four categories. `eventProblems` refuses a safe limit that is not
+  a whole number, has no capacity, or sits below it, a benefit category not marked as giving
+  something out, and a benefit event open to every account — on a draft as well as at publication,
+  because none can become right by adding to it. `correctionOf`, `eventCorrectionProblems`,
+  `canBeCorrected`, `correctionDraftOf`, `CORRECTION_FIELD_LABELS` and `MATERIAL_CORRECTION_FIELDS`
+  are the API's rules, so the form can say before its button what the server will do.
+  `RegistrantView` gains `identityVerified` and `nameSource`; `CheckInLookup` is matches and whether
+  there were more; `safeLimitReached` is a warning on a snapshot (`DL-129`), never a gate.
+- **Ports and adapters.** `EventRepository.correct(id, draft, correction)` and `checkIn(id, term)`.
+  The served adapter refuses a correction with no reason or one the publication rules refuse, and a
+  lookup under two characters, with no request; a chosen cover is stored first, as for a draft. The
+  stand-in refuses what the API refuses, including an admission past the safe limit, and says in its
+  trail who the server would have told. `toWireEventCorrection` names every key, as every write body
+  here does (`check:wire-adoption`).
+- **Screens.** The composer gains the safe limit with its explanation beside it, "Who may register",
+  and "This event gives out cash, goods or a benefit", ticked and fixed for the four categories.
+  `events/:id/correct` (guarded by `event.publish`) is the same composer started from the event: a
+  reason, "Tell registered residents" off by default, the correction's own refusals, and "Saving this
+  correction:" listing what changes and who is told, before "Save the correction". The event page
+  offers "Correct this event" to a holder of `event.publish` until the event starts; shows who may
+  register, whether it gives something out, and the safe limit beside the counts; warns before a
+  promotion when the office's count says the safe limit is reached; marks "Not ID-verified" beside a
+  name; and has "Check-in mode", which takes the registrant table off the screen and finds one person
+  by name or reference (`EventCheckIn`), marks them attended, and empties itself before the next.
+- **`check:events` section 11 (new).** A correction carries a reason and the tell flag, the port
+  takes them, the four material fields and a capacity cut stay material, only a published event that
+  has not started is correctable, the flag is off by default, the effects are said before the
+  button, the served adapter refuses a reasonless correction before sending, and the route is
+  guarded by `event.publish`; the safe limit is on the policy, refused below capacity, explained with
+  "occupant load", refused past by the stand-in, and never disables a promotion; `RegistrantView`
+  says who is verified and the list marks who is not; `CheckInLookup` is exactly two fields, check-in
+  never reads the list, empties itself after marking, and the table sits in the other branch of
+  check-in mode; the export stays six columns; eligibility is exactly two values; the four benefit
+  categories stay; a benefit event open to every account is refused; and no assistance-needs field
+  exists anywhere in the module. The closed sets it already held — the registrant view's fields, the
+  mapper's wire fields and the events routes — were each extended by name for what this decision
+  adds, not loosened. Validated against 22 planted regressions, 22 caught (two rules were tightened
+  after the first run missed a disabled safe-limit refusal in the stand-in and a second branch
+  rendering the table).
+- **Spec.** Vendored from `taytay-backend` `12431a3`, which holds `cf30686`'s two routes and the
+  newsfeed keys' removal (`DL-194`): the `/me` fixture no longer carries the nine `newsfeed.*` keys,
+  and the account test expects `household.view-counts` as the only key it keeps aside.

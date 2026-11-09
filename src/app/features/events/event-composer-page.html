@@ -1,306 +1,425 @@
-<app-page-header [title]="copy.title">
-  <a page-actions class="btn" routerLink="/events">{{ copy.back }}</a>
-</app-page-header>
+@if (correcting()) {
+  <app-page-header [title]="copy.correctTitle">
+    <a page-actions class="btn" [routerLink]="['/events', id()]">{{ copy.correctBack }}</a>
+  </app-page-header>
+} @else {
+  <app-page-header [title]="copy.title">
+    <a page-actions class="btn" routerLink="/events">{{ copy.back }}</a>
+  </app-page-header>
+}
 
-<form class="composer" (submit)="$event.preventDefault(); save()">
-  <section class="card composer__panel" aria-labelledby="about-heading">
-    <h2 class="composer__heading" id="about-heading">{{ copy.aboutHeading }}</h2>
+@if (correcting() && original() === undefined) {
+  <p class="composer__hint" role="status">{{ copy.correctLoading }}</p>
+} @else if (correcting() && !correctable()) {
+  <p class="card composer__panel" role="status">{{ copy.correctUnavailable }}</p>
+} @else {
+  <form class="composer" (submit)="$event.preventDefault(); submit()">
+    @if (correcting()) {
+      <section class="card composer__panel" aria-labelledby="correction-heading">
+        <h2 class="composer__heading" id="correction-heading">{{ copy.correctionHeading }}</h2>
+        <p class="composer__hint">{{ copy.correctionNote }}</p>
+        <label class="field">
+          <span class="field__label">{{ copy.correctionReason }}</span>
+          <input
+            type="text"
+            class="field__input"
+            aria-describedby="correction-reason-hint"
+            [value]="reason()"
+            (input)="onText(reason, $event)"
+          />
+          <span class="field__hint" id="correction-reason-hint">{{
+            copy.correctionReasonHint
+          }}</span>
+        </label>
+      </section>
+    }
 
-    <label class="field">
-      <span class="field__label">{{ copy.eventTitle }}</span>
-      <input type="text" class="field__input" [value]="title()" (input)="onText(title, $event)" />
-    </label>
+    <section class="card composer__panel" aria-labelledby="about-heading">
+      <h2 class="composer__heading" id="about-heading">{{ copy.aboutHeading }}</h2>
 
-    <label class="field">
-      <span class="field__label">{{ copy.summary }}</span>
-      <input
-        type="text"
-        class="field__input"
-        aria-describedby="summary-hint"
-        [value]="summary()"
-        (input)="onText(summary, $event)"
-      />
-      <span class="field__hint" id="summary-hint">{{ copy.summaryHint }}</span>
-    </label>
-
-    <label class="field">
-      <span class="field__label">{{ copy.details }}</span>
-      <textarea
-        class="field__input"
-        rows="6"
-        aria-describedby="details-hint"
-        [value]="details()"
-        (input)="onText(details, $event)"
-      ></textarea>
-      <span class="field__hint" id="details-hint">{{ copy.detailsHint }}</span>
-    </label>
-
-    <label class="field">
-      <span class="field__label">{{ copy.category }}</span>
-      <select class="field__input" (change)="onCategory($event)">
-        @for (value of categories; track value) {
-          <option [value]="value" [selected]="category() === value">
-            {{ categoryLabel(value) }}
-          </option>
-        }
-      </select>
-    </label>
-  </section>
-
-  <section class="card composer__panel" aria-labelledby="image-heading">
-    <h2 class="composer__heading" id="image-heading">{{ copy.imageHeading }}</h2>
-    <p class="composer__hint">{{ copy.imageNote }}</p>
-
-    <!-- Refuses a file the API would refuse before anything is sent (`DL-193`). -->
-    <app-image-file-field
-      inputId="event-cover"
-      [label]="copy.image"
-      [hint]="copy.imageHint"
-      [disabled]="saving()"
-      (chosen)="cover.set($event)"
-    />
-
-    <!-- Beside the image, never behind a disclosure (`DL-125`). -->
-    <label class="field">
-      <span class="field__label">{{ copy.altText }}</span>
-      <input
-        type="text"
-        class="field__input"
-        aria-describedby="alt-hint"
-        [value]="altText()"
-        (input)="onText(altText, $event)"
-      />
-      <span class="field__hint" id="alt-hint">{{ copy.altTextHint }}</span>
-    </label>
-  </section>
-
-  <section class="card composer__panel" aria-labelledby="when-heading">
-    <h2 class="composer__heading" id="when-heading">{{ copy.whenHeading }}</h2>
-    <p class="composer__hint">{{ timezone }}</p>
-
-    <label class="field">
-      <span class="field__label">{{ copy.startsAt }}</span>
-      <input
-        type="datetime-local"
-        class="field__input"
-        [value]="startsAt()"
-        (input)="onText(startsAt, $event)"
-      />
-    </label>
-
-    <label class="field">
-      <span class="field__label">{{ copy.endsAt }}</span>
-      <input
-        type="datetime-local"
-        class="field__input"
-        [value]="endsAt()"
-        (input)="onText(endsAt, $event)"
-      />
-    </label>
-  </section>
-
-  <section class="card composer__panel" aria-labelledby="where-heading">
-    <h2 class="composer__heading" id="where-heading">{{ copy.whereHeading }}</h2>
-
-    <label class="field">
-      <span class="field__label">{{ copy.venueName }}</span>
-      <input
-        type="text"
-        class="field__input"
-        [value]="venueName()"
-        (input)="onText(venueName, $event)"
-      />
-    </label>
-
-    <label class="field">
-      <span class="field__label">{{ copy.address }}</span>
-      <input
-        type="text"
-        class="field__input"
-        aria-describedby="address-hint"
-        [value]="address()"
-        (input)="onText(address, $event)"
-      />
-      <span class="field__hint" id="address-hint">{{ copy.addressHint }}</span>
-    </label>
-
-    <label class="field">
-      <span class="field__label">{{ copy.barangay }}</span>
-      <select class="field__input" (change)="onBarangay($event)">
-        <option value="">—</option>
-        @for (barangay of barangays; track barangay.id) {
-          <option [value]="barangay.id" [selected]="barangayId() === barangay.id">
-            {{ barangay.name }}
-          </option>
-        }
-      </select>
-    </label>
-
-    <label class="field">
-      <span class="field__label">{{ copy.mapUrl }}</span>
-      <input
-        type="url"
-        class="field__input"
-        aria-describedby="map-hint"
-        [value]="mapUrl()"
-        (input)="onText(mapUrl, $event)"
-      />
-      <span class="field__hint" id="map-hint">{{ copy.mapUrlHint }}</span>
-    </label>
-  </section>
-
-  <section class="card composer__panel" aria-labelledby="contact-heading">
-    <h2 class="composer__heading" id="contact-heading">{{ copy.contactHeading }}</h2>
-
-    <label class="field">
-      <span class="field__label">{{ copy.contactName }}</span>
-      <input
-        type="text"
-        class="field__input"
-        [value]="contactName()"
-        (input)="onText(contactName, $event)"
-      />
-    </label>
-
-    <label class="field">
-      <span class="field__label">{{ copy.contactOffice }}</span>
-      <input
-        type="text"
-        class="field__input"
-        [value]="contactOffice()"
-        (input)="onText(contactOffice, $event)"
-      />
-    </label>
-
-    <label class="field">
-      <span class="field__label">{{ copy.contactPhone }}</span>
-      <input
-        type="tel"
-        class="field__input"
-        [value]="contactPhone()"
-        (input)="onText(contactPhone, $event)"
-      />
-    </label>
-  </section>
-
-  <section class="card composer__panel" aria-labelledby="registration-heading">
-    <h2 class="composer__heading" id="registration-heading">{{ copy.registrationHeading }}</h2>
-    <!-- Said on the form, because it is the thing an admin most reasonably
-         assumes otherwise. -->
-    <p class="composer__hint">{{ copy.registrationHint }}</p>
-
-    <label class="composer__toggle">
-      <input
-        type="checkbox"
-        [checked]="registrationRequired()"
-        (change)="onRegistrationRequired($event)"
-      />
-      <span>{{ copy.registrationRequired }}</span>
-    </label>
-
-    @if (registrationRequired()) {
       <label class="field">
-        <span class="field__label">{{ copy.opensAt }}</span>
+        <span class="field__label">{{ copy.eventTitle }}</span>
+        <input type="text" class="field__input" [value]="title()" (input)="onText(title, $event)" />
+      </label>
+
+      <label class="field">
+        <span class="field__label">{{ copy.summary }}</span>
         <input
-          type="datetime-local"
+          type="text"
           class="field__input"
-          [value]="opensAt()"
-          (input)="onText(opensAt, $event)"
+          aria-describedby="summary-hint"
+          [value]="summary()"
+          (input)="onText(summary, $event)"
         />
+        <span class="field__hint" id="summary-hint">{{ copy.summaryHint }}</span>
       </label>
 
       <label class="field">
-        <span class="field__label">{{ copy.closesAt }}</span>
-        <input
-          type="datetime-local"
-          class="field__input"
-          [value]="closesAt()"
-          (input)="onText(closesAt, $event)"
-        />
-      </label>
-
-      <label class="field">
-        <span class="field__label">{{ copy.capacity }}</span>
-        <input
-          type="number"
-          min="1"
-          step="1"
-          class="field__input"
-          aria-describedby="capacity-hint"
-          [value]="capacity()"
-          (input)="onText(capacity, $event)"
-        />
-        <span class="field__hint" id="capacity-hint">{{ copy.capacityHint }}</span>
-      </label>
-
-      <label class="composer__toggle">
-        <input type="checkbox" [checked]="waitlist()" (change)="onWaitlist($event)" />
-        <span>{{ copy.waitlist }}</span>
-      </label>
-
-      <label class="field">
-        <span class="field__label">{{ copy.participationNote }}</span>
+        <span class="field__label">{{ copy.details }}</span>
         <textarea
           class="field__input"
-          rows="2"
-          aria-describedby="participation-hint"
-          [value]="participationNote()"
-          (input)="onText(participationNote, $event)"
+          rows="6"
+          aria-describedby="details-hint"
+          [value]="details()"
+          (input)="onText(details, $event)"
         ></textarea>
-        <!-- Guidance, never a gate (`DL-42`, `DL-60`). -->
-        <span class="field__hint" id="participation-hint">{{ copy.participationHint }}</span>
+        <span class="field__hint" id="details-hint">{{ copy.detailsHint }}</span>
       </label>
+
+      <label class="field">
+        <span class="field__label">{{ copy.category }}</span>
+        <select class="field__input" (change)="onCategory($event)">
+          @for (value of categories; track value) {
+            <option [value]="value" [selected]="category() === value">
+              {{ categoryLabel(value) }}
+            </option>
+          }
+        </select>
+      </label>
+    </section>
+
+    <section class="card composer__panel" aria-labelledby="image-heading">
+      <h2 class="composer__heading" id="image-heading">{{ copy.imageHeading }}</h2>
+      <p class="composer__hint">{{ copy.imageNote }}</p>
+
+      <!-- Refuses a file the API would refuse before anything is sent (`DL-193`). -->
+      <app-image-file-field
+        inputId="event-cover"
+        [label]="copy.image"
+        [hint]="copy.imageHint"
+        [disabled]="saving()"
+        (chosen)="cover.set($event)"
+      />
+
+      <!-- Beside the image, never behind a disclosure (`DL-125`). -->
+      <label class="field">
+        <span class="field__label">{{ copy.altText }}</span>
+        <input
+          type="text"
+          class="field__input"
+          aria-describedby="alt-hint"
+          [value]="altText()"
+          (input)="onText(altText, $event)"
+        />
+        <span class="field__hint" id="alt-hint">{{ copy.altTextHint }}</span>
+      </label>
+    </section>
+
+    <section class="card composer__panel" aria-labelledby="when-heading">
+      <h2 class="composer__heading" id="when-heading">{{ copy.whenHeading }}</h2>
+      <p class="composer__hint">{{ timezone }}</p>
+
+      <label class="field">
+        <span class="field__label">{{ copy.startsAt }}</span>
+        <input
+          type="datetime-local"
+          class="field__input"
+          [value]="startsAt()"
+          (input)="onText(startsAt, $event)"
+        />
+      </label>
+
+      <label class="field">
+        <span class="field__label">{{ copy.endsAt }}</span>
+        <input
+          type="datetime-local"
+          class="field__input"
+          [value]="endsAt()"
+          (input)="onText(endsAt, $event)"
+        />
+      </label>
+    </section>
+
+    <section class="card composer__panel" aria-labelledby="where-heading">
+      <h2 class="composer__heading" id="where-heading">{{ copy.whereHeading }}</h2>
+
+      <label class="field">
+        <span class="field__label">{{ copy.venueName }}</span>
+        <input
+          type="text"
+          class="field__input"
+          [value]="venueName()"
+          (input)="onText(venueName, $event)"
+        />
+      </label>
+
+      <label class="field">
+        <span class="field__label">{{ copy.address }}</span>
+        <input
+          type="text"
+          class="field__input"
+          aria-describedby="address-hint"
+          [value]="address()"
+          (input)="onText(address, $event)"
+        />
+        <span class="field__hint" id="address-hint">{{ copy.addressHint }}</span>
+      </label>
+
+      <label class="field">
+        <span class="field__label">{{ copy.barangay }}</span>
+        <select class="field__input" (change)="onBarangay($event)">
+          <option value="">—</option>
+          @for (barangay of barangays; track barangay.id) {
+            <option [value]="barangay.id" [selected]="barangayId() === barangay.id">
+              {{ barangay.name }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label class="field">
+        <span class="field__label">{{ copy.mapUrl }}</span>
+        <input
+          type="url"
+          class="field__input"
+          aria-describedby="map-hint"
+          [value]="mapUrl()"
+          (input)="onText(mapUrl, $event)"
+        />
+        <span class="field__hint" id="map-hint">{{ copy.mapUrlHint }}</span>
+      </label>
+    </section>
+
+    <section class="card composer__panel" aria-labelledby="contact-heading">
+      <h2 class="composer__heading" id="contact-heading">{{ copy.contactHeading }}</h2>
+
+      <label class="field">
+        <span class="field__label">{{ copy.contactName }}</span>
+        <input
+          type="text"
+          class="field__input"
+          [value]="contactName()"
+          (input)="onText(contactName, $event)"
+        />
+      </label>
+
+      <label class="field">
+        <span class="field__label">{{ copy.contactOffice }}</span>
+        <input
+          type="text"
+          class="field__input"
+          [value]="contactOffice()"
+          (input)="onText(contactOffice, $event)"
+        />
+      </label>
+
+      <label class="field">
+        <span class="field__label">{{ copy.contactPhone }}</span>
+        <input
+          type="tel"
+          class="field__input"
+          [value]="contactPhone()"
+          (input)="onText(contactPhone, $event)"
+        />
+      </label>
+    </section>
+
+    <section class="card composer__panel" aria-labelledby="registration-heading">
+      <h2 class="composer__heading" id="registration-heading">{{ copy.registrationHeading }}</h2>
+      <!-- Said on the form, because it is the thing an admin most reasonably
+         assumes otherwise. -->
+      <p class="composer__hint">{{ copy.registrationHint }}</p>
+
+      <label class="composer__toggle">
+        <input
+          type="checkbox"
+          [checked]="registrationRequired()"
+          (change)="onRegistrationRequired($event)"
+        />
+        <span>{{ copy.registrationRequired }}</span>
+      </label>
+
+      @if (registrationRequired()) {
+        <label class="field">
+          <span class="field__label">{{ copy.opensAt }}</span>
+          <input
+            type="datetime-local"
+            class="field__input"
+            [value]="opensAt()"
+            (input)="onText(opensAt, $event)"
+          />
+        </label>
+
+        <label class="field">
+          <span class="field__label">{{ copy.closesAt }}</span>
+          <input
+            type="datetime-local"
+            class="field__input"
+            [value]="closesAt()"
+            (input)="onText(closesAt, $event)"
+          />
+        </label>
+
+        <label class="field">
+          <span class="field__label">{{ copy.capacity }}</span>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            class="field__input"
+            aria-describedby="capacity-hint"
+            [value]="capacity()"
+            (input)="onText(capacity, $event)"
+          />
+          <span class="field__hint" id="capacity-hint">{{ copy.capacityHint }}</span>
+        </label>
+
+        <!-- What the number is, in plain words, beside it (`DL-195`). -->
+        <label class="field">
+          <span class="field__label">{{ copy.safeLimit }}</span>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            class="field__input"
+            aria-describedby="safe-limit-hint"
+            [value]="safeLimit()"
+            (input)="onText(safeLimit, $event)"
+          />
+          <span class="field__hint" id="safe-limit-hint">{{ copy.safeLimitHint }}</span>
+        </label>
+
+        <label class="composer__toggle">
+          <input type="checkbox" [checked]="waitlist()" (change)="onWaitlist($event)" />
+          <span>{{ copy.waitlist }}</span>
+        </label>
+
+        <fieldset class="composer__choices" aria-describedby="eligibility-hint">
+          <legend class="field__label">{{ copy.eligibilityLegend }}</legend>
+          @for (value of eligibilities; track value) {
+            <label class="composer__toggle">
+              <input
+                type="radio"
+                name="eligibility"
+                [value]="value"
+                [checked]="eligibility() === value"
+                (change)="onEligibility(value)"
+              />
+              <span>{{ eligibilityLabel(value) }}</span>
+            </label>
+          }
+          <span class="field__hint" id="eligibility-hint">{{ copy.eligibilityHint }}</span>
+        </fieldset>
+
+        <label class="composer__toggle">
+          <input
+            type="checkbox"
+            aria-describedby="benefit-hint"
+            [checked]="benefitFixed() || givesOutBenefit()"
+            [disabled]="benefitFixed()"
+            (change)="onGivesOutBenefit($event)"
+          />
+          <span>{{ copy.givesOutBenefit }}</span>
+        </label>
+        <span class="field__hint" id="benefit-hint">
+          {{ benefitFixed() ? copy.givesOutBenefitFixed : copy.givesOutBenefitHint }}
+        </span>
+
+        <label class="field">
+          <span class="field__label">{{ copy.participationNote }}</span>
+          <textarea
+            class="field__input"
+            rows="2"
+            aria-describedby="participation-hint"
+            [value]="participationNote()"
+            (input)="onText(participationNote, $event)"
+          ></textarea>
+          <!-- Guidance, never a gate (`DL-42`, `DL-60`). -->
+          <span class="field__hint" id="participation-hint">{{ copy.participationHint }}</span>
+        </label>
+      }
+    </section>
+
+    <section class="card composer__panel" aria-labelledby="reminders-heading">
+      <h2 class="composer__heading" id="reminders-heading">{{ copy.remindersHeading }}</h2>
+      <label class="field">
+        <span class="field__label">{{ copy.reminders }}</span>
+        <textarea
+          class="field__input"
+          rows="3"
+          [value]="reminders()"
+          (input)="onText(reminders, $event)"
+        ></textarea>
+      </label>
+    </section>
+
+    @if (correcting()) {
+      <section class="card composer__panel" aria-labelledby="tell-heading">
+        <h2 class="composer__heading" id="tell-heading">{{ copy.tellRegistrants }}</h2>
+        <label class="composer__toggle">
+          <input
+            type="checkbox"
+            aria-describedby="tell-hint"
+            [checked]="tellRegistrants()"
+            (change)="onTellRegistrants($event)"
+          />
+          <span>{{ copy.tellRegistrants }}</span>
+        </label>
+        <span class="field__hint" id="tell-hint">{{ copy.tellRegistrantsHint }}</span>
+      </section>
+
+      @if (correctionBlocks().length > 0) {
+        <div class="card problems problems--blocking" role="alert">
+          <h2 class="problems__heading">{{ copy.correctionProblemsHeading }}</h2>
+          <ul class="problems__list">
+            @for (problem of correctionBlocks(); track problem) {
+              <li>{{ problem }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      <!-- What the correction does, before the button that does it (`DL-195`, as `DL-124`). -->
+      <div class="card composer__effects" role="status">
+        <p>{{ copy.correctionEffectsLead }}</p>
+        <ul>
+          @for (effect of correctionEffects(); track $index) {
+            <li>{{ effect }}</li>
+          }
+        </ul>
+      </div>
+    } @else if (blockingProblems().length > 0) {
+      <div class="card problems problems--blocking" role="alert">
+        <h2 class="problems__heading">{{ copy.problemsHeading }}</h2>
+        <ul class="problems__list">
+          @for (problem of blockingProblems(); track problem) {
+            <li>{{ problem }}</li>
+          }
+        </ul>
+      </div>
+    } @else if (publishProblems().length > 0) {
+      <div class="card problems" role="status">
+        <h2 class="problems__heading">{{ copy.problemsHeading }}</h2>
+        <ul class="problems__list">
+          @for (problem of publishProblems(); track problem) {
+            <li>{{ problem }}</li>
+          }
+        </ul>
+      </div>
     }
-  </section>
 
-  <section class="card composer__panel" aria-labelledby="reminders-heading">
-    <h2 class="composer__heading" id="reminders-heading">{{ copy.remindersHeading }}</h2>
-    <label class="field">
-      <span class="field__label">{{ copy.reminders }}</span>
-      <textarea
-        class="field__input"
-        rows="3"
-        [value]="reminders()"
-        (input)="onText(reminders, $event)"
-      ></textarea>
-    </label>
-  </section>
+    @if (cover() !== null && !correcting()) {
+      <!-- What saving does to the image, before the button that does it. -->
+      <div class="card composer__effects" role="status">
+        <p>{{ copy.coverEffectsLead }}</p>
+        <ul>
+          @for (effect of copy.coverEffects; track $index) {
+            <li>{{ effect }}</li>
+          }
+        </ul>
+      </div>
+    }
 
-  @if (blockingProblems().length > 0) {
-    <div class="card problems problems--blocking" role="alert">
-      <h2 class="problems__heading">{{ copy.problemsHeading }}</h2>
-      <ul class="problems__list">
-        @for (problem of blockingProblems(); track problem) {
-          <li>{{ problem }}</li>
-        }
-      </ul>
-    </div>
-  } @else if (publishProblems().length > 0) {
-    <div class="card problems" role="status">
-      <h2 class="problems__heading">{{ copy.problemsHeading }}</h2>
-      <ul class="problems__list">
-        @for (problem of publishProblems(); track problem) {
-          <li>{{ problem }}</li>
-        }
-      </ul>
-    </div>
-  }
-
-  @if (cover() !== null) {
-    <!-- What saving does to the image, before the button that does it. -->
-    <div class="card composer__effects" role="status">
-      <p>{{ copy.coverEffectsLead }}</p>
-      <ul>
-        @for (effect of copy.coverEffects; track $index) {
-          <li>{{ effect }}</li>
-        }
-      </ul>
-    </div>
-  }
-
-  <p class="composer__actions">
-    <button type="submit" class="btn btn--primary" [disabled]="!canSave()">
-      {{ copy.saveDraft }}
-    </button>
-  </p>
-</form>
+    <p class="composer__actions">
+      @if (correcting()) {
+        <button type="submit" class="btn btn--primary" [disabled]="!canCorrect()">
+          {{ copy.saveCorrection }}
+        </button>
+      } @else {
+        <button type="submit" class="btn btn--primary" [disabled]="!canSave()">
+          {{ copy.saveDraft }}
+        </button>
+      }
+    </p>
+  </form>
+}

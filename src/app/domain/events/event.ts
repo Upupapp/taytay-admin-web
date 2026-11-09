@@ -101,6 +101,36 @@ export const EVENT_CATEGORY_LABELS: Readonly<Record<EventCategory, string>> = {
 };
 
 /** The municipality runs on Philippine Standard Time and says so on the form. */
+/**
+ * The categories that always give out cash, goods or a benefit (`DL-195`): a payout hands over
+ * money, a relief distribution and a feeding programme goods, a medical mission care and medicine.
+ * For the other three the category cannot tell — a seminar may or may not hand out starter kits — so
+ * the office says, with `givesOutBenefit`. The API and its database hold the same list.
+ */
+export const BENEFIT_CATEGORIES: readonly EventCategory[] = [
+  'medical-mission',
+  'feeding-programme',
+  'payout',
+  'relief-distribution',
+];
+
+export function categoryGivesOutBenefit(category: EventCategory): boolean {
+  return BENEFIT_CATEGORIES.includes(category);
+}
+
+/**
+ * Who may register (`DL-195`): residents whose ID the office verified, or any account signed in to
+ * the residents' app. An event that gives out cash, goods or a benefit is verified-residents only,
+ * because an unverified account cannot be told apart from a second account of somebody already
+ * served.
+ */
+export type RegistrationEligibility = 'verified-residents' | 'app-accounts';
+
+export const REGISTRATION_ELIGIBILITY_LABELS: Readonly<Record<RegistrationEligibility, string>> = {
+  'verified-residents': 'Residents whose ID the office has verified',
+  'app-accounts': 'Anyone signed in to the residents’ app',
+};
+
 export const EVENT_TIMEZONE = 'Asia/Manila';
 export const EVENT_TIMEZONE_LABEL = 'Philippine Standard Time (Asia/Manila)';
 
@@ -152,7 +182,17 @@ export interface EventRegistrationPolicy {
   readonly opensAt: IsoDateTime | null;
   readonly closesAt: IsoDateTime | null;
   readonly capacity: number | null;
+  /**
+   * The most people the venue holds (its posted occupant load) or the stock on hand covers, at or
+   * above `capacity` and only beside one (`DL-195`). The server stops every admission at it — a
+   * resident registering, the office promoting or restoring — inside the event's row lock.
+   */
+  readonly safeLimit: number | null;
   readonly waitlistEnabled: boolean;
+  /** Who may register (`DL-195`). */
+  readonly eligibility: RegistrationEligibility;
+  /** Whether the event gives out cash, goods or a benefit; always true for `BENEFIT_CATEGORIES`. */
+  readonly givesOutBenefit: boolean;
   /** Who the event is for, in words. Guidance, never a gate (`DL-42`, `DL-60`). */
   readonly participationNote: string | null;
 }
@@ -225,7 +265,12 @@ export type EventProblem =
   | 'registration-closes-after-the-event'
   | 'capacity-not-a-number'
   | 'waitlist-without-capacity'
-  | 'map-link-not-a-url';
+  | 'map-link-not-a-url'
+  | 'safe-limit-not-a-number'
+  | 'safe-limit-without-capacity'
+  | 'safe-limit-below-capacity'
+  | 'benefit-category-gives-out'
+  | 'benefit-for-verified-residents-only';
 
 export type EventIntent = 'save' | 'publish';
 
@@ -300,6 +345,22 @@ export function eventProblems(
   if (draft.venue.mapUrl !== null && !/^https?:\/\/\S+$/.test(draft.venue.mapUrl.trim())) {
     problems.push('map-link-not-a-url');
   }
+  // The safe limit sits above the places, never below and never alone (`DL-195`): it is the most
+  // the venue holds or the stock covers, which is at least what the office offers.
+  const { safeLimit, eligibility, givesOutBenefit } = draft.registration;
+  if (safeLimit !== null && (!Number.isInteger(safeLimit) || safeLimit <= 0)) {
+    problems.push('safe-limit-not-a-number');
+  } else if (safeLimit !== null && capacity === null) {
+    problems.push('safe-limit-without-capacity');
+  } else if (safeLimit !== null && capacity !== null && safeLimit < capacity) {
+    problems.push('safe-limit-below-capacity');
+  }
+  if (categoryGivesOutBenefit(draft.category) && !givesOutBenefit) {
+    problems.push('benefit-category-gives-out');
+  }
+  if (givesOutBenefit && eligibility !== 'verified-residents') {
+    problems.push('benefit-for-verified-residents-only');
+  }
 
   // `now` is taken so the caller cannot be surprised by a hidden clock, and is
   // deliberately unused: an event scheduled in the past is a **correction**
@@ -326,6 +387,210 @@ export const EVENT_PROBLEM_MESSAGES: Readonly<Record<EventProblem, string>> = {
   'capacity-not-a-number': 'Capacity has to be a whole number of people, or left blank.',
   'waitlist-without-capacity': 'A waitlist needs a capacity — otherwise nobody ever joins it.',
   'map-link-not-a-url': 'A map link needs to start with http:// or https://.',
+  'safe-limit-not-a-number': 'The safe limit has to be a whole number of people, or left blank.',
+  'safe-limit-without-capacity':
+    'A safe limit sits above a number of places. Set the capacity first, or leave the safe limit blank.',
+  'safe-limit-below-capacity':
+    'The safe limit cannot be lower than the capacity: it is the most the venue holds or the stock covers.',
+  'benefit-category-gives-out':
+    'This kind of event always gives out cash, goods or a benefit. Tick the box that says so.',
+  'benefit-for-verified-residents-only':
+    'An event that gives out cash, goods or a benefit is open to verified residents only.',
+};
+
+/* ── Correcting a published event (`DL-195`) ──────────────────────────────── */
+
+/**
+ * What a correction can change, by the names the API's history uses.
+ *
+ * A copy of the API's `CORRECTION_FIELDS`, compared with it by the API's tests whenever this
+ * console is checked out beside it.
+ */
+export type CorrectionField =
+  | 'title'
+  | 'summary'
+  | 'details'
+  | 'category'
+  | 'cover'
+  | 'starts-at'
+  | 'ends-at'
+  | 'venue'
+  | 'contact'
+  | 'registration-window'
+  | 'capacity'
+  | 'safe-limit'
+  | 'waitlist'
+  | 'eligibility'
+  | 'gives-out-benefit'
+  | 'participation-note'
+  | 'reminders';
+
+export const CORRECTION_FIELD_LABELS: Readonly<Record<CorrectionField, string>> = {
+  title: 'the title',
+  summary: 'the one-line summary',
+  details: 'the description',
+  category: 'the category',
+  cover: 'the cover image',
+  'starts-at': 'when it starts',
+  'ends-at': 'when it ends',
+  venue: 'the venue',
+  contact: 'who to ask',
+  'registration-window': 'when registration opens or closes',
+  capacity: 'the number of places',
+  'safe-limit': 'the safe limit',
+  waitlist: 'the waitlist',
+  eligibility: 'who may register',
+  'gives-out-benefit': 'whether it gives out cash, goods or a benefit',
+  'participation-note': 'who the event is for',
+  reminders: 'what to bring',
+};
+
+/** The changes residents plan around. Fewer places is material too; more is not. */
+export const MATERIAL_CORRECTION_FIELDS: readonly CorrectionField[] = [
+  'starts-at',
+  'ends-at',
+  'venue',
+  'eligibility',
+];
+
+/** What the office says with a correction: why, and whether to tell residents of the rest. */
+export interface EventCorrection {
+  readonly reason: string;
+  /** For a change that is not material. A material change tells them whatever this says. */
+  readonly tellRegistrants: boolean;
+}
+
+export interface CorrectionSummary {
+  readonly changed: readonly CorrectionField[];
+  readonly material: boolean;
+  readonly capacityCut: boolean;
+}
+
+/**
+ * Which fields a correction moves, and whether residents plan around them — the API's
+ * `correctionOf`, so the form can say before its button what the correction will do.
+ */
+export function correctionOf(event: LguEvent, draft: EventDraft): CorrectionSummary {
+  const same = (a: unknown, b: unknown): boolean => (a ?? null) === (b ?? null);
+  const blank = (value: string | null): string | null =>
+    value === null || value.trim() === '' ? null : value.trim();
+  const cover =
+    draft.image === null
+      ? event.image === null
+      : draft.image.kind === 'stored' &&
+        event.image !== null &&
+        draft.image.mediaId === event.image.mediaId &&
+        draft.image.altText.trim() === event.image.altText;
+  const moved: Record<CorrectionField, boolean> = {
+    title: !same(event.title, draft.title.trim()),
+    summary: !same(event.summary, draft.summary.trim()),
+    details: !same(event.details, draft.details),
+    category: !same(event.category, draft.category),
+    cover: !cover,
+    'starts-at': !same(event.startsAt, draft.startsAt),
+    'ends-at': !same(event.endsAt, draft.endsAt),
+    venue:
+      !same(event.venue.name, draft.venue.name.trim()) ||
+      !same(event.venue.address, draft.venue.address.trim()) ||
+      !same(event.venue.mapUrl, blank(draft.venue.mapUrl)) ||
+      !same(event.venue.barangayId, draft.venue.barangayId),
+    contact:
+      !same(event.contact.name, draft.contact.name.trim()) ||
+      !same(event.contact.office, draft.contact.office.trim()) ||
+      !same(event.contact.phone, blank(draft.contact.phone)),
+    'registration-window':
+      !same(event.registration.opensAt, draft.registration.opensAt) ||
+      !same(event.registration.closesAt, draft.registration.closesAt),
+    capacity: !same(event.registration.capacity, draft.registration.capacity),
+    'safe-limit': !same(event.registration.safeLimit, draft.registration.safeLimit),
+    waitlist: !same(event.registration.waitlistEnabled, draft.registration.waitlistEnabled),
+    eligibility: !same(event.registration.eligibility, draft.registration.eligibility),
+    'gives-out-benefit': !same(event.registration.givesOutBenefit, draft.registration.givesOutBenefit),
+    'participation-note': !same(
+      event.registration.participationNote,
+      blank(draft.registration.participationNote),
+    ),
+    reminders: !same(event.reminders, blank(draft.reminders)),
+  };
+  const changed = (Object.keys(CORRECTION_FIELD_LABELS) as CorrectionField[]).filter(
+    (field) => moved[field],
+  );
+  const after = draft.registration.capacity;
+  const before = event.registration.capacity;
+  const capacityCut = after !== null && (before === null || after < before);
+  return {
+    changed,
+    capacityCut,
+    material: capacityCut || changed.some((field) => MATERIAL_CORRECTION_FIELDS.includes(field)),
+  };
+}
+
+/**
+ * Whether a published event may still be corrected: published, and not yet started by the clock.
+ * A draft is edited, and a cancelled, completed or archived event is kept as it stands (`DL-131`).
+ */
+export function canBeCorrected(event: LguEvent, now: IsoDateTime): boolean {
+  return event.status === 'published' && now < event.startsAt;
+}
+
+export type EventCorrectionProblem =
+  | 'not-correctable'
+  | 'reason-required'
+  | 'registration-required-is-fixed'
+  | 'starts-in-the-past'
+  | 'capacity-below-places-held'
+  | 'safe-limit-below-places-held'
+  | 'waitlist-in-use';
+
+/**
+ * What stops a correction, beside the draft's own rules (`eventProblems`, on publish). The API
+ * checks the same inside the event's row lock, against counts that cannot move meanwhile; these use
+ * the counts the screen last read, and say so.
+ */
+export function eventCorrectionProblems(
+  event: LguEvent,
+  draft: EventDraft,
+  correction: EventCorrection,
+  now: IsoDateTime,
+): readonly EventCorrectionProblem[] {
+  const problems: EventCorrectionProblem[] = [];
+  if (!canBeCorrected(event, now)) {
+    problems.push('not-correctable');
+  }
+  if (correction.reason.trim().length === 0) {
+    problems.push('reason-required');
+  }
+  if (draft.registration.isRequired !== event.registration.isRequired) {
+    problems.push('registration-required-is-fixed');
+  }
+  if (draft.startsAt !== null && draft.startsAt <= now) {
+    problems.push('starts-in-the-past');
+  }
+  const { capacity, safeLimit, waitlistEnabled } = draft.registration;
+  if (capacity !== null && capacity < event.registeredCount) {
+    problems.push('capacity-below-places-held');
+  }
+  if (safeLimit !== null && safeLimit < event.registeredCount) {
+    problems.push('safe-limit-below-places-held');
+  }
+  if (!waitlistEnabled && event.registration.waitlistEnabled && event.waitlistedCount > 0) {
+    problems.push('waitlist-in-use');
+  }
+  return problems;
+}
+
+export const EVENT_CORRECTION_PROBLEM_MESSAGES: Readonly<Record<EventCorrectionProblem, string>> = {
+  'not-correctable':
+    'Only a published event that has not started can be corrected. A cancelled event that is back on is a new event.',
+  'reason-required': 'Say why it is corrected. It is kept with the correction, against your name.',
+  'registration-required-is-fixed':
+    'Whether this event takes registration is fixed once it is published. Residents planned around it.',
+  'starts-in-the-past': 'A correction cannot move the start into the past.',
+  'capacity-below-places-held':
+    'More residents already hold a place than this capacity. Nobody loses a place to a correction.',
+  'safe-limit-below-places-held': 'More residents already hold a place than this safe limit.',
+  'waitlist-in-use':
+    'Residents are on the waitlist. Move them to a place or cancel their waitlist places first, with a reason.',
 };
 
 /* ── When residents can see it, and when they can sign up ─────────────────── */
@@ -458,6 +723,26 @@ export interface EventFilter {
   readonly category?: EventCategory;
   readonly from?: IsoDateTime;
   readonly to?: IsoDateTime;
+}
+
+/**
+ * The draft a correction starts from: the event as it stands, its stored cover named again
+ * (`DL-195`). Nothing is cleared — a correction changes what the office says it changes.
+ */
+export function correctionDraftOf(event: LguEvent): EventDraft {
+  return {
+    title: event.title,
+    summary: event.summary,
+    details: event.details,
+    category: event.category,
+    image: event.image === null ? null : { kind: 'stored', ...event.image },
+    startsAt: event.startsAt,
+    endsAt: event.endsAt,
+    venue: event.venue,
+    contact: event.contact,
+    registration: event.registration,
+    reminders: event.reminders,
+  };
 }
 
 /**

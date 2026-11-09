@@ -3,7 +3,7 @@
 This pack is deliverable D6, "Testing and LGU UAT" (item 7 on the project tracker). Office staff and
 resident testers use it to test the platform on the staging site and sign it off before production.
 
-- [uat-test-scripts.md](uat-test-scripts.md): 192 test cases in 19 areas.
+- [uat-test-scripts.md](uat-test-scripts.md): 201 test cases in 19 areas.
 - [uat-signoff.md](uat-signoff.md): the sign-off sheets, the defect summary and the acceptance.
 - The workbook, "Taytay - UAT test scripts (staging).xlsx": the same cases, with columns to record
   each result and a "Defects" tab. It is **not kept in this repository**. It is generated from these
@@ -69,7 +69,8 @@ ACC-02, ROS, REG, ID, DIR, DOC, REQ, CAS, REL, REF, NEWS, EVT, DSH, SRCH, WRK, R
 NFR. REQ-19 runs after REL-01 and before REL-06. The set-up of NFR-06 (Carmen Halimbawa, "VAWC
 survivor", with a case) is done before SRCH, WRK and RPT, which use her record. In EVT, the second
 test event starts 45 minutes after it is created and ends an hour later (EVT-08, EVT-09), and
-EVT-11 runs last: it cancels the first one, and RES-B and RES-C are told in the app. GOV-08 runs
+EVT-11 runs after the other cases on the first one: it cancels it, and RES-B and RES-C are told in
+the app. EVT-12 to EVT-20 run after EVT-11, in order, mostly on a fourth test event. GOV-08 runs
 last in GOV: it switches SW2's account off and back on, so tell SW2 before it starts.
 
 **Staging needs at least one document type before the DOC cases run.** The head or an
@@ -83,7 +84,10 @@ residents have nothing to request and the DOC cases cannot start.
   an ID in the review queue, so the staff review cases can still run.
 - **Events in the app need a new build.** The resident steps of EVT need a staging build of the
   app that includes events (decision D-191 in the app's decision log). Until the developer
-  supplies one, EVT-03 to EVT-05, EVT-08, EVT-09, EVT-11 and step 8 of EVT-02 are Blocked.
+  supplies one, EVT-03 to EVT-05, EVT-08, EVT-09, EVT-11, EVT-14 to EVT-19 (EVT-17 to EVT-19 use
+  the registrations of EVT-14) and step 8 of EVT-02 are Blocked. The "Who can register" checks
+  (EVT-03, EVT-14) and the correction notices (EVT-15, EVT-16) need a build that also includes
+  D-194.
 - **Android only.** No iOS build exists yet.
 - **A reload signs you out of the staff website.** This is by design (NFR-03). Move around with the
   menu and the links.
@@ -130,9 +134,11 @@ Not built yet. Every console module is served by the API since 9 November 2026, 
   residents read in the app (`DL-194`); it has no scripts because it no longer exists. Comments and
   reactions on Balita (FR-RES-9, FR-STAFF-34) are not built and wait for OD-4. Events, served by the
   API since 8 November 2026 (`DL-192`), have their scripts since version 1.4 (EVT); their covers are
-  uploaded since version 1.5 (`DL-193`). Governance, the rest of FR-STAFF-26, is served since
-  8 November 2026 (`DL-191`) and has its scripts since version 1.3 (GOV, AUD-07). Capturing a
-  correction request is not built, and the governance page says so (GOV-05).
+  uploaded since version 1.5 (`DL-193`), and corrections, the safe limit, check-in mode and who may
+  register are tested since version 1.7 (EVT-12 to EVT-20, `DL-195`). Notes or an assistance-needs
+  checklist on a registration are not built (`DL-195`). Governance, the rest of FR-STAFF-26, is
+  served since 8 November 2026 (`DL-191`) and has its scripts since version 1.3 (GOV, AUD-07).
+  Capturing a correction request is not built, and the governance page says so (GOV-05).
 - Served by the API since 7 November 2026, but with no test script in this round yet:
   beneficiaries and duplicate review (FR-STAFF-12) and programme use counted from releases on the
   programme pages (FR-STAFF-14) (`DL-187`). Reports, My work and search have their scripts since

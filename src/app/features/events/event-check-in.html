@@ -1,0 +1,62 @@
+<div class="check-in">
+  <!-- One person at a time, never the list (`DL-195`). -->
+  <p class="check-in__note">{{ copy.checkInNote }}</p>
+
+  <form class="check-in__search" (submit)="$event.preventDefault(); find()">
+    <label class="field check-in__field">
+      <span class="field__label">{{ copy.checkInSearch }}</span>
+      <input
+        type="search"
+        class="field__input"
+        autocomplete="off"
+        aria-describedby="check-in-hint"
+        [value]="term()"
+        (input)="onTerm($event)"
+      />
+      <span class="field__hint" id="check-in-hint">{{ copy.checkInHint }}</span>
+    </label>
+    <button type="submit" class="btn btn--primary" [disabled]="!canFind()">
+      {{ copy.checkInFind }}
+    </button>
+  </form>
+
+  <p class="check-in__done" role="status">{{ done() ?? '' }}</p>
+
+  @if (lookup(); as found) {
+    @if (found.matches.length === 0) {
+      <p class="check-in__none" role="status">{{ copy.checkInNone }}</p>
+    } @else {
+      <ul class="check-in__matches" aria-label="{{ copy.checkInSearch }}">
+        @for (row of found.matches; track row.id) {
+          <li class="check-in__match">
+            <div class="check-in__who">
+              <span class="check-in__name">{{ row.displayName }}</span>
+              <span class="check-in__reference">{{ row.reference }}</span>
+              <span class="check-in__source">{{ copy.nameSources[row.nameSource] }}</span>
+              @if (!row.identityVerified) {
+                <span class="check-in__unverified">{{ copy.notVerified }}</span>
+              }
+            </div>
+            <div class="check-in__state">
+              <app-status-badge [catalog]="registrationCatalog" [status]="row.status" />
+              <app-status-badge [catalog]="attendanceCatalog" [status]="row.attendance" />
+            </div>
+            @if (row.status !== 'cancelled' && row.attendance !== 'attended') {
+              <button
+                type="button"
+                class="btn btn--small"
+                [disabled]="busy()"
+                (click)="markAttended(row)"
+              >
+                {{ copy.markAttended }}
+              </button>
+            }
+          </li>
+        }
+      </ul>
+      @if (found.moreMatches) {
+        <p class="check-in__more" role="status">{{ copy.checkInMore }}</p>
+      }
+    }
+  }
+</div>

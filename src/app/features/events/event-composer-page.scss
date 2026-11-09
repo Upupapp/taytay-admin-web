@@ -78,3 +78,12 @@
 .composer__actions {
   margin: 0;
 }
+
+// The choice of who may register, laid out as the other toggles are (`DL-195`).
+.composer__choices {
+  display: grid;
+  gap: var(--space-compact);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}

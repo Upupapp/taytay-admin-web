@@ -27,6 +27,12 @@
  *      API would refuse before anything is sent, keeps the description beside
  *      it, says what saving does to the image before its button, and every
  *      cover on screen comes through the data layer.
+ *   8. **Corrections, safe limits, names and who may register** (`DL-195`). A
+ *      published event is corrected with a reason by somebody who may publish,
+ *      and the form says what it does first; a safe limit is explained and never
+ *      passed; check-in mode finds one person and never renders the list; an
+ *      event that gives something out is for verified residents; and no
+ *      assistance-needs field exists without a retention schedule.
  *
  * Exit 0 = clean, 1 = at least one violation.
  */
@@ -260,6 +266,10 @@ if (view === '') {
     'status',
     'attendance',
     'notes',
+    // Whether the account's ID is verified and where the name comes from (`DL-195`): an event open
+    // to every app account lists people nobody checked, and the door must know which.
+    'identityVerified',
+    'nameSource',
   ];
   for (const [, field] of view.matchAll(/^\s*readonly (\w+):/gm)) {
     if (!ALLOWED.includes(field)) {
@@ -639,6 +649,8 @@ if (eventsBlock === '') {
     ["''", 'event.view'],
     ["'new'", 'event.create'],
     ["':id'", 'event.view'],
+    // A correction goes out in the office's name, as publishing did (`DL-195`).
+    ["':id/correct'", 'event.publish'],
   ];
   const children = eventsBlock.split(/\n\s{10}\{/).slice(1);
   if (children.length !== EXPECTED.length) {
@@ -807,10 +819,21 @@ if (eventMapper === '') {
   // The closed set, refused wider (`DL-130`).
   const closedSet = /const REGISTRANT_FIELDS = \[([\s\S]*?)\]/.exec(eventMapper)?.[1] ?? '';
   const fields = [...closedSet.matchAll(/'([a-z_]+)'/g)].map((match) => match[1]);
-  const EXPECTED = ['id', 'reference', 'display_name', 'barangay_id', 'registered_at', 'status', 'attendance'];
+  // Seven fields, and since `DL-195` whether the account's ID is verified and where the name comes from.
+  const EXPECTED = [
+    'id',
+    'reference',
+    'display_name',
+    'name_source',
+    'identity_verified',
+    'barangay_id',
+    'registered_at',
+    'status',
+    'attendance',
+  ];
   if (fields.length !== EXPECTED.length || EXPECTED.some((name) => !fields.includes(name))) {
     problems.push(
-      `The registrant mapper's closed set is [${fields.join(', ')}]. It is the seven fields a ` +
+      `The registrant mapper's closed set is [${fields.join(', ')}]. It is the nine fields a ` +
         'RegistrantView is made from and no other — an account id or a contact on that list is a ' +
         'wider read than the screen (`DL-130`).',
     );
@@ -987,6 +1010,176 @@ notes.push('served adapter: bound, nobody signed up, reasoned before sending, cl
   }
 }
 notes.push('covers: uploaded, never an address; refused before sending; described beside; read through the data layer');
+
+/* ── 11. Corrections, safe limits, names and who may register (`DL-195`) ──── */
+
+{
+  const composerTs = code(read('src/app/features/events/event-composer-page.ts'));
+  const composerHtml = code(read('src/app/features/events/event-composer-page.html'));
+  const detailHtml = code(read('src/app/features/events/event-detail-page.html'));
+  const checkInTs = existsSync(join(root, 'src/app/features/events/event-check-in.ts'))
+    ? code(read('src/app/features/events/event-check-in.ts'))
+    : '';
+  const checkInHtml = existsSync(join(root, 'src/app/features/events/event-check-in.html'))
+    ? code(read('src/app/features/events/event-check-in.html'))
+    : '';
+  const http = code(read('src/app/data/http/http-repositories.ts'));
+  const httpEvents = /class HttpEventRepository[\s\S]*?\n\}/.exec(http)?.[0] ?? '';
+
+  // A correction is an act with a reason, by somebody who may publish, and says what it does first.
+  const correctionType = iface(event, 'EventCorrection');
+  if (!/readonly reason: string;/.test(correctionType) || !/readonly tellRegistrants: boolean;/.test(correctionType)) {
+    problems.push(
+      '`EventCorrection` no longer carries a reason and whether to tell residents. A correction to ' +
+        'what residents read is kept with why it was made (`DL-195`).',
+    );
+  }
+  if (!/correct\(\s*id: LguEventId,\s*draft: EventDraft,\s*correction: EventCorrection\s*\): Observable<LguEvent>/.test(portsCode)) {
+    problems.push('`EventRepository.correct` no longer takes the draft and an `EventCorrection` (`DL-195`).');
+  }
+  const material = /MATERIAL_CORRECTION_FIELDS[^=]*=\s*\[([^\]]*)\]/.exec(eventCode)?.[1] ?? '';
+  for (const field of ['starts-at', 'ends-at', 'venue', 'eligibility']) {
+    if (!material.includes(`'${field}'`)) {
+      problems.push(
+        `\`${field}\` is no longer a material correction. When and where an event is, and who may ` +
+          'register, are what residents plan around; a change to them tells every holder (`DL-195`).',
+      );
+    }
+  }
+  if (!/capacityCut\s*\|\|/.test(fn(eventCode, 'correctionOf'))) {
+    problems.push('Fewer places is no longer a material correction (`DL-195`).');
+  }
+  const correctable = fn(eventCode, 'canBeCorrected');
+  if (!/status === 'published'/.test(correctable) || !/now < event\.startsAt/.test(correctable)) {
+    problems.push(
+      '`canBeCorrected` no longer holds a correction to a published event that has not started. A ' +
+        'cancelled event that is back on is a new event (`DL-131`, `DL-195`).',
+    );
+  }
+  if (!/tellRegistrants\s*=\s*signal\(false\)/.test(composerTs)) {
+    problems.push('"Tell registered residents" is no longer off by default (`DL-195`).');
+  }
+  const effectsAt = composerHtml.indexOf('correctionEffects()');
+  const correctButtonAt = composerHtml.indexOf('copy.saveCorrection');
+  if (effectsAt < 0 || correctButtonAt < 0 || effectsAt > correctButtonAt) {
+    problems.push('What a correction does is no longer said before the button that saves it (`DL-195`).');
+  }
+  const httpCorrect = /\n  correct\([\s\S]*?\n  \}/.exec(httpEvents)?.[0] ?? '';
+  const refusedAt = httpCorrect.indexOf('EVENT_REASON_REQUIRED');
+  const requestAt = httpCorrect.search(/this\s*\.\s*api\s*\./);
+  if (httpCorrect === '' || refusedAt < 0 || (requestAt >= 0 && requestAt < refusedAt)) {
+    problems.push('The served adapter no longer refuses a correction without a reason before sending it.');
+  }
+  if (!/path: ':id\/correct',[\s\S]{0,400}?permissionGuard\('event\.publish'\)/.test(routes)) {
+    problems.push(
+      'The correction route is no longer guarded by `event.publish`. A correction goes out in the ' +
+        'office’s name, as publishing did (`DL-195`).',
+    );
+  }
+
+  // The safe limit: explained in plain words, at or above the places, and refused past.
+  if (!/readonly safeLimit: number \| null;/.test(iface(event, 'EventRegistrationPolicy'))) {
+    problems.push('`EventRegistrationPolicy` no longer carries a safe limit (`DL-195`).');
+  }
+  if (!/'safe-limit-below-capacity'/.test(fn(eventCode, 'eventProblems'))) {
+    problems.push('A safe limit below the capacity is no longer refused (`DL-195`).');
+  }
+  if (!/occupant load/.test(entry(copy, 'composer'))) {
+    problems.push('The composer no longer explains the safe limit in plain words (`DL-195`).');
+  }
+  const mockAct = /actOnRegistration\([\s\S]*?\n  \}/.exec(mockCode)?.[0] ?? '';
+  if (!/if \([^{]*safeLimit !== null && held >= safeLimit\)\s*\{\s*return throwError/.test(mockAct)) {
+    problems.push('The stand-in adapter no longer refuses an admission past the safe limit, as the API does.');
+  }
+  for (const [tag] of detailHtml.matchAll(/<button\b[^>]*>/g)) {
+    if (/\[disabled\]="[^"]*atSafeLimit/.test(tag)) {
+      problems.push(
+        'A promotion is disabled on the office’s own count of the safe limit. The count is a ' +
+          'snapshot; the backend decides, and the screen warns (`DL-129`, `DL-195`).',
+      );
+    }
+  }
+
+  // Names in full, marked where nobody checked them; check-in finds one person and never the list.
+  if (!/readonly identityVerified: boolean;/.test(view)) {
+    problems.push('`RegistrantView` no longer says whether the account’s ID is verified (`DL-195`).');
+  }
+  if (!/!row\.identityVerified/.test(detailHtml) || !/copy\.notVerified/.test(detailHtml)) {
+    problems.push('The registrant list no longer marks a registrant who is not ID-verified (`DL-195`).');
+  }
+  const lookup = iface(registration, 'CheckInLookup');
+  const lookupFields = [...lookup.matchAll(/^\s*readonly (\w+):/gm)].map((match) => match[1]).sort();
+  if (lookupFields.join(',') !== 'matches,moreMatches') {
+    problems.push(
+      '`CheckInLookup` is no longer a handful of matches and whether there were more. Check-in mode ' +
+        'never receives the list (`DL-195`).',
+    );
+  }
+  if (!/checkIn\(\s*id: LguEventId,\s*term: string\s*\): Observable<CheckInLookup>/.test(portsCode)) {
+    problems.push('`EventRepository.checkIn` no longer answers a `CheckInLookup` for a typed term (`DL-195`).');
+  }
+  if (checkInTs === '' || checkInHtml === '') {
+    problems.push('Check-in mode has gone from the event page (`DL-195`).');
+  } else {
+    if (/\.\s*registrants\s*\(/.test(checkInTs) || /registrants\(\)/.test(checkInHtml)) {
+      problems.push('Check-in mode reads the registrant list. It finds one person, never the list (`DL-195`).');
+    }
+    const markBody = /markAttended\([\s\S]*?\n  \}/.exec(checkInTs)?.[0] ?? '';
+    if (!/this\s*\.\s*term\s*\.\s*set\(''\)/.test(markBody) || !/this\s*\.\s*lookup\s*\.\s*set\(null\)/.test(markBody)) {
+      problems.push(
+        'Check-in mode no longer empties itself once somebody is marked. The next person at the table ' +
+          'would read the last one’s name (`DL-195`).',
+      );
+    }
+  }
+  // The table is the other branch of the mode itself: nothing but the lookup sits between the two.
+  const mode = /@if \(checkInMode\(\)\) \{\s*<app-event-check-in\b[^>]*\/>\s*\} @else \{/.exec(detailHtml);
+  const tableAt = detailHtml.indexOf('<table class="registrants"');
+  if (mode === null || tableAt < 0 || mode.index > tableAt) {
+    problems.push(
+      'The registrant table is no longer kept off the screen in check-in mode. A door list turned to ' +
+        'face the queue shows everybody on it (NPC Advisory Opinion 2018-003, `DL-195`).',
+    );
+  }
+  if (!/'Reference,Name,Barangay,Registered,Status,Attendance'/.test(mock)) {
+    problems.push('The registrant export is no longer the composed six columns (`DL-130`, `DL-195`).');
+  }
+
+  // Who may register: two values, and an event that gives something out is for verified residents.
+  const eligibility = /export type RegistrationEligibility =([^;]*);/.exec(eventCode)?.[1] ?? '';
+  if (eligibility.replace(/\s+/g, ' ').trim() !== "'verified-residents' | 'app-accounts'") {
+    problems.push('`RegistrationEligibility` is no longer exactly verified residents or app accounts (`DL-195`).');
+  }
+  const benefit = /BENEFIT_CATEGORIES[^=]*=\s*\[([^\]]*)\]/.exec(eventCode)?.[1] ?? '';
+  for (const category of ['payout', 'relief-distribution', 'feeding-programme', 'medical-mission']) {
+    if (!benefit.includes(`'${category}'`)) {
+      problems.push(`\`${category}\` no longer always gives something out (\`DL-195\`).`);
+    }
+  }
+  const problemsFn = fn(eventCode, 'eventProblems');
+  if (!/givesOutBenefit && eligibility !== 'verified-residents'/.test(problemsFn) || !/'benefit-for-verified-residents-only'/.test(problemsFn)) {
+    problems.push(
+      'An event that gives out cash, goods or a benefit is no longer refused when open to every app ' +
+        'account (`DL-195`).',
+    );
+  }
+
+  // Not built: assistance needs on a registration are health information with no retention schedule.
+  const needs = /\b(?:assistance|accessibility|medical|health|special|dietary)Needs?\b|\bhealthNotes?\b|\bneedsChecklist\b/i;
+  for (const [name, text] of [
+    ['domain/events', eventCode + registrationCode],
+    ['features/events', featureCode],
+    ['the events adapter', mockCode],
+  ]) {
+    if (needs.test(text)) {
+      problems.push(
+        `${name} holds an assistance-needs field. That is health information (RA 10173 §3(l), §13) ` +
+          'and needs consent, a grant and a retention schedule that does not exist (`DL-113`, `DL-195`).',
+      );
+    }
+  }
+}
+notes.push('corrections, safe limits, names, check-in and who may register: DL-195 holds');
 
 /* ── Report ──────────────────────────────────────────────────────────────── */
 

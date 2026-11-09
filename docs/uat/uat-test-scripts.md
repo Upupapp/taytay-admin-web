@@ -1,12 +1,19 @@
 # UAT test scripts: Taytay, Rizal LGU platform (staging)
 
-Version 1.6, 9 November 2026 (replaces 1.5 of 8 November): the staff website's newsfeed was retired
-in favour of Balita (DL-194), so every part of the website is served and no menu ends with "Not
-connected yet" (ACC-04, NFR-08). No case tested the newsfeed: the NEWS cases test Balita and the
-office inbox, and stay as they were. Still 192 cases. Version 1.5 made an event's cover a picture
-file uploaded through the API, never a typed address (DL-193), so EVT-01 and EVT-02 choose a file,
-EVT-01 checks a wrong file is refused before it is sent, and EVT-02 and EVT-11 check when residents
-see the cover. Version 1.4 added events (EVT-01 to EVT-11), served
+Version 1.7, 9 November 2026 (replaces 1.6 of the same day): an event can now be corrected after it
+is published, carry a safe limit, be checked in one person at a time, and say who may register
+(DL-195). EVT-12 to EVT-20 test these, most on a fourth test event, "E3": nine cases added, 201 in
+all. EVT-02, EVT-03, EVT-04, EVT-06, EVT-09, EVT-10 and EVT-11 now expect what the event page shows
+since: "Correct this event", "Who may register", a verified registrant's name as it stood when the
+ID was approved, and a move past capacity said so in the history. EVT-11 no longer runs last in
+EVT. The "Who can register" checks in EVT-03 and EVT-14, and the notices in EVT-15 and EVT-16, need
+an app build that includes D-194. Version 1.6, 9 November 2026 (replaced 1.5 of 8 November): the
+staff website's newsfeed was retired in favour of Balita (DL-194), so every part of the website is
+served and no menu ends with "Not connected yet" (ACC-04, NFR-08). No case tested the newsfeed: the
+NEWS cases test Balita and the office inbox, and stayed as they were, 192 cases. Version 1.5 made
+an event's cover a picture file uploaded through the API, never a typed address (DL-193), so EVT-01
+and EVT-02 choose a file, EVT-01 checks a wrong file is refused before it is sent, and EVT-02 and
+EVT-11 check when residents see the cover. Version 1.4 added events (EVT-01 to EVT-11), served
 by the API since 8 November (DL-192), whose resident steps need an app build that includes events
 (decision D-191 in the app's decision log), and adds Events to the menus in ACC-04. Version 1.3
 added Staff and roles, the office's audit trail and data governance (GOV-01 to GOV-08), served by
@@ -56,9 +63,9 @@ and how to record a result or a defect.
 | ACC: Accounts, roles and access                       | ACC-01 to ACC-10   | 10      |
 | AUD: App audit trail                                  | AUD-01 to AUD-07   | 7       |
 | NEWS: Balita and the office inbox                     | NEWS-01 to NEWS-06 | 6       |
-| EVT: Events                                           | EVT-01 to EVT-11   | 11      |
+| EVT: Events                                           | EVT-01 to EVT-20   | 20      |
 | NFR: Privacy, security and accessibility              | NFR-01 to NFR-10   | 10      |
-| **Total**                                             |                    | **192** |
+| **Total**                                             |                    | **201** |
 
 ## REG: Resident registration and ID review
 
@@ -3218,22 +3225,28 @@ earlier or later value and no reason; the reasons live in each record's own hist
 ## EVT: Events
 
 "Events", under "Community" in the menu, is where the office runs its events, served by the API
-since 8 November 2026 (DL-192). The head (and the administrator) create, publish, cancel and
-complete events, and move registrations; the auditor reads them; the other roles have no Events.
-Residents register in the Taytay app, never on the website. The cases follow three test events:
-"E0", a draft made to be refused; "E1", "UAT Livelihood seminar (test)", with one place and a
-waitlist; and "E2", "UAT Feeding programme (test)", which starts and ends during the round.
+since 8 November 2026 (DL-192). The head (and the administrator) create, publish, correct, cancel
+and complete events, and move registrations; the auditor reads them; the other roles have no
+Events. Residents register in the Taytay app, never on the website. The cases follow four test
+events: "E0", a draft made to be refused; "E1", "UAT Livelihood seminar (test)", with one place and a
+waitlist; "E2", "UAT Feeding programme (test)", which starts and ends during the round; and "E3",
+"UAT Orientation (test)", open to anyone signed in to the app, with one place, a safe limit of 2
+and a waitlist (DL-195).
 
 **Needs an app build with events.** The resident steps (EVT-02 step 8, EVT-03 to EVT-05, EVT-08,
-EVT-09 and EVT-11) need a staging build of the app that includes events (decision D-191 in the
-app's decision log), and the cover checks in EVT-02 step 8 and EVT-11 step 6 one that also
-includes D-193. Until the developer supplies one, those cases are Blocked.
+EVT-09, EVT-11 and EVT-14 to EVT-16) need a staging build of the app that includes events (decision
+D-191 in the app's decision log), the cover checks in EVT-02 step 8 and EVT-11 step 6 one that also
+includes D-193, and the "Who can register" checks in EVT-03 and EVT-14 and the correction notices in
+EVT-15 and EVT-16 one that also includes D-194. Until the developer supplies one, those cases are
+Blocked, and so are EVT-17 to EVT-19, which use the registrations of EVT-14.
 
 **Test pictures.** EVT-01 and EVT-02 need a PDF and a small JPEG (test images only, nothing showing
 a real person).
 
 **Timing.** E2 starts 45 minutes after it is created and ends an hour later. EVT-08 runs before it
-starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11 runs last in EVT.
+starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11 runs after the
+other cases on E1. EVT-12 to EVT-20 run after EVT-11, in order: E3 starts seven days after it is
+created, and EVT-20 reads E1 cancelled and E2 completed.
 
 ### EVT-01 · A draft is saved only with its start and end
 
@@ -3328,9 +3341,10 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
     for" reads "Guidance for residents reading the listing. It does not stop anybody registering.".
     The save shows "Draft saved." and opens E1's page.
   - Step 7 shows "Saved.". E1 reads "Published", "Publication" gives "Published" with the date and
-    time, and "Actions" offers "Cancel event" and "Archive", with no "Publish" and no "Mark
-    completed". Under "What residents see" the line "Residents see this cover only while the event
-    is published or completed: …" is gone.
+    time, and "Actions" offers "Cancel event", "Correct this event" and "Archive", with no "Publish"
+    and no "Mark completed". Under "What residents see" the line "Residents see this cover only
+    while the event is published or completed: …" is gone, and "Who may register" reads "Residents
+    whose ID the office has verified", the default (DL-195).
   - In step 8 E1 is listed with its summary, date and venue, and with the picture chosen in step 4
     (an app build that includes D-193). E0 is not.
 
@@ -3341,18 +3355,21 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
 - **Set up first:** EVT-02 done. REG-03 done for RES-A, whose account is not verified. An app
   build that includes events (D-191).
 - **Steps:**
-  1. RES-A: open E1 in the app's list of events and tap "Register for this event".
+  1. RES-A: open E1 in the app's list of events. Read "Who can register", then tap "Register for
+     this event".
   2. Tap "Verify my identity".
   3. HEAD: open E1 from "Events". Read "Registration" and "Registrants".
 - **Expected result:**
-  - Step 1 shows "This event needs a verified account", with "Verify my identity". Nothing is
-    registered.
+  - In step 1 "Who can register" says the event is for residents whose ID the office has verified
+    (an app build that includes D-194). The tap shows "This event needs a verified account", with
+    "Verify my identity". Nothing is registered.
   - Step 2 opens the verification screen.
   - In step 3 the counts still give 0 of 1 registered, and "Registrants" reads "Nobody has
     registered yet.".
-  - The server refuses a registration from an account that is not verified (VERIFICATION_REQUIRED),
-    whatever the app shows; the developer checks this against the API. Every event is for verified
-    residents only, and the website has no setting to change that (DL-192).
+  - The server refuses a registration from an account that is not verified (VERIFICATION_REQUIRED)
+    for an event open to verified residents, whatever the app shows; the developer checks this
+    against the API. E1 has the default, "Residents whose ID the office has verified"; EVT-14 tests
+    an event open to anyone signed in to the app (DL-195).
 
 ### EVT-04 · A resident registers in the app; the office sees the reference, and when the counts were taken
 
@@ -3374,13 +3391,15 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
     Residents are registering in the app while you read them, and the system of record decides
     who gets the last place.". Under "Attendance": "Attendance is still open. Anybody not marked is
     simply not marked — it does not mean they did not come.". "Registrants" reads "Residents
-    register in the mobile app. Nobody is added from here.".
+    register in the mobile app. Nobody is added from here." and "Names are in full. For a resident
+    whose ID is verified, the name is the one their account carried when the ID was approved.".
   - In step 2 the app takes the registration and shows RES-B's reference, which starts "ER-".
   - In step 3 nothing has changed: the same counts and the same "Counted at". The page says what
     was true when it asked; it does not claim to be live.
   - In step 4 the counts give 1 of 1 registered, "Registration" reads "Full", "Places left" reads
-    "0", and "Counted at" is later. "Registrants" has one row: "Reference" as in the app, "Name" as
-    RES-B's app account gives it, "Barangay" RES-B's barangay, "Registered" today's date, "Status"
+    "0", and "Counted at" is later. "Registrants" has one row: "Reference" as in the app, "Name"
+    RES-B's full name as their account carried it when the ID was approved (REG-10), with no "Not
+    ID-verified" beside it, "Barangay" RES-B's barangay, "Registered" today's date, "Status"
     "Registered" and "Attendance" "Not checked in".
   - The table has those six columns and "Actions", and nothing else: no address, birth date, phone
     number, email or ID number.
@@ -3430,9 +3449,10 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
   - In step 2 the auditor reads "What residents see", "Publication", "Registration" (the counts,
     "Counted at" and "These numbers were true when this screen last asked. …"), "Registrants"
     with the rows of RES-B and RES-C, and "What the office did" with its reasons.
-  - "Actions" shows the "Why" field and no button: no "Publish", "Cancel event", "Mark completed"
-    or "Archive". "Registrants" has no "Actions" column, no "Export the list" and no line about the
-    file; no row offers "Attended", "No-show", "Move to registered", "Cancel" or "Restore".
+  - "Actions" shows the "Why" field and no button: no "Publish", "Cancel event", "Mark completed",
+    "Correct this event" or "Archive". "Registrants" has no "Actions" column, no "Check-in mode",
+    no "Export the list" and no line about the file; no row offers "Attended", "No-show", "Move to
+    registered", "Cancel" or "Restore".
   - Step 3 shows "You do not have access to that section".
   - SW1's menu has no "Events", and the address shows "You do not have access to that section" and
     "Back to dashboard", with no event shown.
@@ -3516,10 +3536,11 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
   6. Click "Attended" on RES-B's row.
   7. RES-B and RES-C: open E2 in the app.
 - **Expected result:**
-  - In step 1 there is no "Mark completed" while E2 has not ended, and "Attendance" reads
-    "Attendance is still open. Anybody not marked is simply not marked — it does not mean they did
-    not come.". The server also refuses to complete an event that has not started; the developer
-    checks this against the API.
+  - In step 1 there is no "Mark completed" while E2 has not ended, and no "Correct this event":
+    E2 has started, and a started event is not corrected (DL-195). "Attendance" reads "Attendance
+    is still open. Anybody not marked is simply not marked — it does not mean they did not come.".
+    The server also refuses to complete an event that has not started; the developer checks this
+    against the API.
   - Each click in step 2 shows "Saved." and asks for no reason. RES-C's row reads "No-show", then
     "Attended", and the attendance line gives 1 attended, 0 no-shows and 1 not yet marked.
   - The tooltip in step 3 reads "Nothing recorded. This is not the same as saying they did not
@@ -3550,7 +3571,8 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
     "Published" ("Event published to the residents’ app.") and "Created" ("Event created as a
     draft."). The reasons typed in EVT-05 and EVT-02 appear under their rows.
   - The "Registration changed" row names the registration by its reference, as "Registrants" shows
-    it, and says the resident was told in the app. No row names a resident, and the residents' own
+    it, says the move went "past the event’s number of places" (E1 had one place, already held),
+    and says the resident was told in the app. No row names a resident, and the residents' own
     registrations are not listed.
   - Step 2 shows "Status changed" ("Event completed. Attendance declared final; nobody unmarked
     became a no-show.") with the reason from EVT-09, two "Attendance changed" rows for RES-C's
@@ -3568,8 +3590,9 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
 
 - **Role:** HEAD, then RES-B and RES-C
 - **Checks:** FR-STAFF-26, FR-RES-9 · Should · T-16
-- **Set up first:** EVT-10 done. Run this case **last in EVT**: it calls E1 off, and RES-B and RES-C
-  are told in the app. An app build that includes events (D-191).
+- **Set up first:** EVT-10 done. Run this case **after the other cases on E1** (EVT-01 to
+  EVT-10): it calls E1 off, and RES-B and RES-C are told in the app. An app build that includes
+  events (D-191).
 - **Steps:**
   1. HEAD: open E1 from "Events". Read the line above "Cancel event". With "Why" empty, look at
      "Cancel event".
@@ -3588,8 +3611,8 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
     and "Cancel the event". "Keep it" closes it, and E1 still reads "Published".
   - Step 3 shows "Saved.". E1 reads "Cancelled", and "Publication" gives "Cancelled" with the date
     and time, and "Why it was cancelled" with the reason typed.
-  - "Actions" offers only "Archive": no "Publish" and no "Cancel event". Nothing on the page puts
-    the event back on.
+  - "Actions" offers only "Archive": no "Publish", no "Cancel event" and no "Correct this event".
+    Nothing on the page puts the event back on.
   - In step 4 the line "Residents see this cover only while the event is published or completed:
     …" is back under "What residents see".
   - The tooltip in step 4 reads "Called off, and everybody registered has been told. It cannot be
@@ -3600,6 +3623,328 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
   - In step 6 each has a notification that E1 is called off. It does not show the head's reason.
     E1 in the app no longer shows its picture (an app build that includes D-193).
     The app shows E1 as cancelled.
+
+### EVT-12 · An event that gives out cash, goods or a benefit is for verified residents only, and a payout always gives something out
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-26 · Should · T-16
+- **Set up first:** EVT-11 done. Nothing in this case is saved.
+- **Steps:**
+  1. Open "Events" and click "Create an event". Fill "Event title" with "UAT benefit check
+     (test)", "Starts" with tomorrow at 10:00 and "Ends" with tomorrow at 12:00. Tick "Residents
+     need to register for this". Read "Who may register" and "This event gives out cash, goods or
+     a benefit", with the lines under them.
+  2. Choose "Payout" in "Category" and read the box and the line under it. Then choose "Relief
+     distribution", "Feeding programme" and "Medical mission" in turn, and "Payout" again.
+  3. Choose "Anyone signed in to the residents’ app" under "Who may register". Read the box above
+     "Save draft".
+  4. Choose "Seminar" in "Category". Read the box under "Who may register" and the box above
+     "Save draft".
+  5. Tick "This event gives out cash, goods or a benefit". Read the box above "Save draft".
+  6. Untick it, then click "Back to events" and click "Drafts".
+- **Expected result:**
+  - In step 1 "Who may register" offers "Residents whose ID the office has verified", chosen, and
+    "Anyone signed in to the residents’ app", with "Most events are for residents whose ID the
+    office has verified. Open one to every app account only if it gives nothing out, such as a
+    clean-up or an orientation.". "This event gives out cash, goods or a benefit" is unticked (the
+    category starts as "Assembly"), with "Tick it if anybody leaves with money, goods, medicine or
+    a service — a starter kit, a food pack. An event that gives something out is for verified
+    residents only.". "Save draft" can be clicked.
+  - In step 2, for each of the four categories, the box is ticked and greyed out, so it cannot be
+    unticked, and the line under it reads "This kind of event always gives something out, so it is
+    for verified residents only." (DL-195).
+  - In step 3 the box "Before this can be published" lists only "An event that gives out cash,
+    goods or a benefit is open to verified residents only.", and "Save draft" is greyed out.
+  - In step 4 the box can be clicked again and is unticked, its line reads "Tick it if anybody
+    leaves with money, goods, medicine or a service — …", and "An event that gives out cash, goods
+    or a benefit is open to verified residents only." is gone: a seminar may give nothing out.
+    "Save draft" can be clicked.
+  - Step 5 brings back "An event that gives out cash, goods or a benefit is open to verified
+    residents only.", and "Save draft" is greyed out again.
+  - In step 6 no "UAT benefit check (test)" is listed under "Drafts".
+  - The server refuses an event that gives something out and is open to every app account, and a
+    payout, relief distribution, feeding programme or medical mission not marked as giving
+    something out; the developer checks this against the API.
+
+### EVT-13 · A safe limit sits at or above the places, and E3 is published open to anyone signed in to the app
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-26 · Should · T-16
+- **Set up first:** EVT-12 done.
+- **Steps:**
+  1. Click "Create an event". Fill "Event title" with "UAT Orientation (test)", "One-line summary"
+     with "UAT test event, please ignore.", leave "Category" as "Assembly", and fill "Starts" with
+     seven days from today at 14:00, "Ends" with the same day at 16:00, "Venue name" with "UAT Test
+     Hall", "Complete address" with "UAT 1 Test Street", "Contact person" with "UAT Contact (test)"
+     and "Office" with "MSWDO".
+  2. Tick "Residents need to register for this". Read "Safe limit" and the line under it.
+  3. Type 2 in "Safe limit", with "Capacity" empty. Read the box above "Save draft".
+  4. Type 3 in "Capacity". Read the box.
+  5. Change "Capacity" to 1 and tick "Keep a waitlist once it is full". Choose "Anyone signed in to
+     the residents’ app" under "Who may register", and leave "This event gives out cash, goods or a
+     benefit" unticked. Click "Save draft".
+  6. On E3's page, type "UAT: EVT-13, test event open to anyone signed in to the app." in "Why" and
+     click "Publish". Read "What residents see", "Registration" and "Actions".
+- **Expected result:**
+  - In step 2 "Safe limit" sits under "Capacity", with "Optional. The most people the venue can
+    safely hold — the occupant load posted at the venue — or, for a distribution, the most the
+    stock on hand covers. It must be at least the capacity. The office can still move people past
+    the capacity, with a reason; nobody is let in past the safe limit, by the app or by the
+    office.".
+  - Step 3 shows "A safe limit sits above a number of places. Set the capacity first, or leave the
+    safe limit blank.", and "Save draft" is greyed out.
+  - Step 4 shows "The safe limit cannot be lower than the capacity: it is the most the venue holds
+    or the stock covers.", and "Save draft" stays greyed out.
+  - Step 5 shows "Draft saved." and opens E3's page.
+  - Step 6 shows "Saved." and E3 reads "Published". Under "What residents see", "Who may register"
+    reads "Anyone signed in to the residents’ app", and there is no "Gives out cash, goods or a
+    benefit.". "Registration" gives 0 of 1 registered and "Safe limit: 2. Nobody is let in past it
+    — not by the app, and not by the office.". "Actions" offers "Correct this event", with "Fix a
+    date, a venue, who may register or anything else before it starts. Residents are told of a
+    change they plan around." above it.
+
+### EVT-14 · Anyone signed in may register for E3, and the list gives full names and marks who is not ID-verified
+
+- **Role:** RES-B, RES-A (not verified) and RES-C, then HEAD
+- **Checks:** FR-RES-9, FR-STAFF-26 · Should · T-16
+- **Set up first:** EVT-13 done. RES-A's account is still not verified (EVT-03); RES-B and RES-C
+  are verified (REG-10, EVT-05). An app build that includes events (D-191) and D-194.
+- **Steps:**
+  1. RES-B: open E3 in the app, tap "Register for this event" and complete the registration.
+  2. RES-A: open E3 in the app. Read "Who can register", then tap "Register for this event" and
+     complete the registration. Note the reference the app shows.
+  3. RES-C: register for E3 as RES-B did.
+  4. HEAD: open E3 from "Events". Read "Registration", "Registrants" and the lines above the table.
+  5. Click "Export the list", save the file with the "Save" link, and open it in Notepad. Then
+     delete it.
+- **Expected result:**
+  - In step 1 the app takes RES-B's registration, for E3's one place.
+  - In step 2 "Who can register" says anyone signed in to the app can register, with no verified
+    ID needed. RES-A is not sent to verify: the app takes RES-A onto the waitlist and shows
+    RES-A's reference.
+  - In step 3 the app takes RES-C onto the waitlist.
+  - In step 4 the counts give 1 of 1 registered and 2 waitlisted. Above the table: "Residents
+    register in the mobile app. Nobody is added from here." and "Names are in full. For a resident
+    whose ID is verified, the name is the one their account carried when the ID was approved.".
+  - RES-B's and RES-C's rows each give the full name as the account carried it when the ID was
+    approved (REG-10, EVT-05), with nothing beside it. RES-A's row gives the name as typed in the
+    app, with "Not ID-verified" beside it. No name is cut to initials.
+  - The table has the six columns of EVT-04 and "Actions", and nothing else.
+  - In step 5 the file starts with the same lines as in EVT-07, for E3, with "Registrants" (3).
+    Then one table with exactly the columns "Reference", "Name", "Barangay", "Registered", "Status"
+    and "Attendance", a row each for RES-A, RES-B and RES-C, and the same names as the list
+    (DL-130, DL-195).
+  - The server takes an unverified account's registration only for an event open to anyone signed
+    in to the app; the developer checks this against the API.
+
+### EVT-15 · A correction residents do not plan around tells them only when the box is ticked
+
+- **Role:** HEAD, then RES-A, RES-B and RES-C
+- **Checks:** FR-STAFF-26, FR-RES-9 · Should · T-16
+- **Set up first:** EVT-14 done: RES-B holds E3's place, and RES-A and RES-C are waitlisted. E3
+  has not started. Steps 5 and 8 need an app build that includes D-194.
+- **Steps:**
+  1. HEAD: open E3 from "Events". Read the line above "Correct this event" and click it.
+  2. Read the page down to "Save the correction". Read "Tell registered residents", the box
+     "Before this can be corrected" and the box "Saving this correction:", and look at "Save the
+     correction".
+  3. Type "UAT: EVT-15, what to bring is corrected." in "Why it is corrected" and "UAT: bring a pen
+     (test)." in "What to bring, and anything else worth saying". Read the box "Saving this
+     correction:".
+  4. Click "Save the correction". Read "Reminders" and "What the office did".
+  5. RES-A, RES-B and RES-C: open "Notifications" from the bell on "Home".
+  6. HEAD: click "Correct this event" again. Type "UAT: EVT-15, residents are told this time." in
+     "Why it is corrected", replace "What to bring, and anything else worth saying" with "UAT: bring
+     a pen and a notebook (test).", and tick "Tell registered residents". Read the box "Saving this
+     correction:".
+  7. Click "Save the correction". Read "What the office did".
+  8. RES-A, RES-B and RES-C: open "Notifications" from the bell on "Home" and tap the newest one.
+- **Expected result:**
+  - Step 1 shows "Fix a date, a venue, who may register or anything else before it starts.
+    Residents are told of a change they plan around.". The click opens "Correct a published event"
+    with "Back to the event".
+  - In step 2 the page starts with "The correction", "Residents have read this event and made plans
+    around it. The correction is kept beside what the event said before, with your reason, and the
+    event’s history lists it.", and "Why it is corrected" with "Required. Kept with the correction
+    against your name. Residents are never shown it.". Below it is the "Create an event" form,
+    filled in with E3 as published. "Tell registered residents" is unticked, with "For a change
+    they do not plan around, such as what to bring. A change to when or where it is, who may
+    register, or fewer places always tells them.". "Before this can be corrected" lists "Say why it
+    is corrected. It is kept with the correction, against your name.". "Saving this correction:"
+    reads "Changes nothing yet. Nothing is recorded and nobody is told.", and "Save the correction"
+    is greyed out.
+  - In step 3 "Before this can be corrected" is gone, and "Saving this correction:" lists "Changes
+    what to bring.", "Sends residents no notice." and "Keeps what the event said before, and cannot
+    be undone except by another correction.".
+  - Step 4 shows "Correction saved." and opens E3's page, still "Published". "Reminders" reads "UAT:
+    bring a pen (test).". "What the office did" gains, first, "Updated" with "Corrected after
+    publication: what to bring. Residents were not sent a notice." and the reason from step 3. The
+    registrants are as they were.
+  - In step 5 nobody has a notification about E3.
+  - In step 6 "Saving this correction:" lists "Changes what to bring.", "Tells everybody holding a
+    place or a waitlist place (3 by this screen’s last count) in the residents’ app that the details
+    were updated." and "Keeps what the event said before, …".
+  - Step 7 shows "Correction saved.". "What the office did" gains "Updated" with "Corrected after
+    publication: what to bring. Everybody holding a place or a waitlist place was told in the app,
+    at the office’s request." and the reason from step 6.
+  - In step 8 each has one notification that the office updated what to bring for E3. It does not
+    show the head's reason. Tapping it opens E3, which shows the new text. RES-B still holds the
+    place, and RES-A and RES-C are still waitlisted.
+
+### EVT-16 · Moving E3's time tells everybody holding a place, with the old time and the new
+
+- **Role:** HEAD, then RES-A, RES-B and RES-C
+- **Checks:** FR-STAFF-26, FR-RES-9 · Should · T-16
+- **Set up first:** EVT-15 done. E3 has not started. Step 4 needs an app build that includes D-194.
+- **Steps:**
+  1. HEAD: open E3 and click "Correct this event". Type "UAT: EVT-16, the orientation moves an hour
+     later." in "Why it is corrected".
+  2. Change "Starts" to 15:00 and "Ends" to 17:00, on the same day. Leave "Tell registered
+     residents" unticked. Read the box "Saving this correction:".
+  3. Click "Save the correction". Read "When" under "What residents see", and "What the office did".
+  4. RES-A, RES-B and RES-C: open "Notifications" from the bell on "Home" and tap the newest one.
+- **Expected result:**
+  - In step 2 "Saving this correction:" lists "Changes when it starts, when it ends.", "Tells
+    everybody holding a place or a waitlist place (3 by this screen’s last count) in the residents’
+    app, with the old and the new date, time and venue. Their registrations stand." and "Keeps what
+    the event said before, and cannot be undone except by another correction.". The unticked box
+    changes nothing: a change to when it is always tells them (DL-195).
+  - Step 3 shows "Correction saved.", and E3 now runs from 15:00 to 17:00. "What the office did"
+    gains "Updated" with "Corrected after publication: when it starts and when it ends. Everybody
+    holding a place or a waitlist place was told in the app, with the old and the new." and the
+    reason from step 1. The row names what moved, never the old or the new time (DL-114).
+  - In step 4 each has a notification that E3 has changed, giving the new time and the old one and
+    saying the registration still stands. It does not show the head's reason. Tapping it opens E3,
+    at 15:00. RES-B still holds the place, and RES-A and RES-C are still waitlisted.
+
+### EVT-17 · The office may go past the places with a reason, after a warning, but never past the safe limit
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-26 · Should · T-16
+- **Set up first:** EVT-16 done: E3 has one place and a safe limit of 2; RES-B holds the place, and
+  RES-A and RES-C are waitlisted.
+- **Steps:**
+  1. Open E3 from "Events". Read "Registration" and the lines under the table.
+  2. Type "UAT: EVT-17, a second place, within the safe limit." in "Why" and click "Move to
+     registered" on RES-C's row.
+  3. Read "Registration" and the lines under the table. Look at "Move to registered" on RES-A's
+     row.
+  4. Replace "Why" with "UAT: EVT-17, a third place, past the safe limit." and click "Move to
+     registered" on RES-A's row.
+  5. Read "What the office did".
+- **Expected result:**
+  - Step 1 shows "Safe limit: 2. Nobody is let in past it — not by the app, and not by the office."
+    in "Registration", and under the table "Your figures say this event is full. The backend
+    decides — if a place has opened since this screen loaded, this will go through.". There is no
+    line about the safe limit under the table yet.
+  - Step 2 shows "Saved.". RES-C's row reads "Registered", the counts give 2 of 1 registered, and
+    "Places left" reads "0".
+  - In step 3 the lines under the table add "Your figures say the safe limit is reached. The backend
+    refuses anybody past it; this goes through only if a place has opened since this screen
+    loaded.". "Move to registered" is still offered on RES-A's row: the warning greys out nothing
+    (DL-129).
+  - Step 4 is refused with "Request failed" and "2 residents already hold a place, and this event’s
+    safe limit is 2: the most the venue holds or the stock covers. Nobody was moved.", then "That
+    could not be saved.". RES-A's row still reads "Waitlisted", and the counts still give 2 of 1.
+  - In step 5 the newest row is "Registration changed" for RES-C's reference: "… moved from
+    waitlisted to registered, past the event’s number of places. The resident was told in the
+    app.", with the reason from step 2. The refused move of step 4 added no row.
+  - The server refuses every admission past the safe limit, a resident's own registration as well
+    as the office's moves; the developer checks this against the API.
+
+### EVT-18 · Check-in mode finds one registrant at a time and never shows the list
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-26 · Should · T-16
+- **Set up first:** EVT-17 done: RES-B and RES-C are registered for E3, and RES-A is waitlisted.
+  RES-A's reference, from EVT-14 step 2.
+- **Steps:**
+  1. Open E3 from "Events". Click "Check-in mode" under "Registrants". Read the panel.
+  2. Type one letter in "Name or reference" and look at "Find".
+  3. Type RES-A's reference and click "Find".
+  4. Replace it with the first three letters of RES-B's first name and click "Find".
+  5. Click "Attended" beside RES-B's name. Read the panel.
+  6. Type "Zzq" and click "Find".
+  7. Click "Leave check-in mode". Read "Registration" and RES-B's row.
+- **Expected result:**
+  - In step 1 the button reads "Leave check-in mode". The panel reads "Finds one registrant by name
+    or reference and never shows the list, so nobody at the table reads the names of everybody else
+    who signed up.", with "Name or reference", "At least two letters of the name, or the whole
+    reference, such as ER-2026-000123." and "Find". The table, "Search registrants", the "Status"
+    and "Attendance" filters, "Export the list" and the line about the file are gone, and no
+    registrant's name is on the screen (DL-195).
+  - In step 2 "Find" is greyed out.
+  - Step 3 shows one match: RES-A's name, the reference, "Name as typed in the app", "Not
+    ID-verified", "Waitlisted", "Not checked in" and "Attended". Nobody else is shown.
+  - Step 4 shows RES-B's full name, the reference, "Name as it stood when their ID was approved",
+    "Registered", "Not checked in" and "Attended", with no "Not ID-verified", and any other
+    registrant whose name or reference holds those letters; never more than five.
+  - Step 5 shows "Marked … as attended." with RES-B's reference. "Name or reference" is empty, and
+    no name is left on the screen.
+  - Step 6 shows "Nobody registered for this event matches that.".
+  - In step 7 the table is back, RES-B's row reads "Attended", and the attendance line gives 1
+    attended.
+  - With three testers no search matches more than five registrants. The developer checks against
+    the API that a lookup answers at most five matches and says when more matched, which the panel
+    shows as "More than five registrants match. Type more of the name, or the reference.".
+
+### EVT-19 · A correction takes no place from anybody, keeps the waitlist while people are on it, and cannot start in the past
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-26 · Should · T-16
+- **Set up first:** EVT-18 done: E3 has one place, two residents hold places (EVT-17) and RES-A is
+  waitlisted. E3 has not started. Nothing in this case is saved.
+- **Steps:**
+  1. Open E3 and click "Correct this event". Type "UAT: EVT-19, corrections that are refused." in
+     "Why it is corrected". Read the box "Before this can be corrected".
+  2. Change "Safe limit" to 1. Read the box.
+  3. Change "Capacity" to 2 and "Safe limit" back to 2. Read both boxes above "Save the
+     correction".
+  4. Untick "Keep a waitlist once it is full". Read the box. Tick it again.
+  5. Change "Starts" to yesterday at 15:00. Read the box. Change it back.
+  6. Untick "Residents need to register for this". Read the box.
+  7. Click "Back to the event". Read "What the office did".
+- **Expected result:**
+  - In step 1 "Before this can be corrected" lists "More residents already hold a place than this
+    capacity. Nobody loses a place to a correction.": E3 has one place, and two residents hold one.
+    "Save the correction" is greyed out.
+  - Step 2 adds "More residents already hold a place than this safe limit.".
+  - In step 3 both lines go, and "Before this can be corrected" with them. "Saving this correction:"
+    lists "Changes the number of places." and "Sends residents no notice.": more places is not a
+    change residents plan around. "Save the correction" can be clicked.
+  - Step 4 shows "Residents are on the waitlist. Move them to a place or cancel their waitlist places
+    first, with a reason.", and ticking the box again removes it.
+  - Step 5 shows "A correction cannot move the start into the past.", and changing it back removes
+    it.
+  - Step 6 shows "Whether this event takes registration is fixed once it is published. Residents
+    planned around it.", and "Save the correction" is greyed out.
+  - In step 7 nothing was saved: "What the office did" has no row newer than the attendance marked
+    in EVT-18.
+  - The server refuses each of these too, against counts taken inside the event's row lock; the
+    developer checks this against the API.
+
+### EVT-20 · A completed or cancelled event cannot be corrected
+
+- **Role:** HEAD
+- **Checks:** FR-STAFF-26 · Should · T-16
+- **Set up first:** EVT-09 and EVT-11 done: E2 is completed and E1 is cancelled. EVT-09 step 1
+  checked E2 while it ran.
+- **Steps:**
+  1. Open "Events", click "Past" and open E2. Read "Actions".
+  2. Add "/correct" to the end of the address in the browser and press Enter (sign in again if
+     asked, NFR-03).
+  3. Click "Back to the event", then "Back to events". Click "Cancelled", open E1 and read
+     "Actions".
+  4. Add "/correct" to the end of the address as in step 2.
+- **Expected result:**
+  - In step 1 E2 reads "Completed", and "Actions" offers no "Correct this event".
+  - Step 2 opens "Correct a published event", which reads "This event cannot be corrected: only a
+    published event that has not started can be. A cancelled event that is back on is a new
+    event.", with no form and no "Save the correction".
+  - In step 3 E1 reads "Cancelled", and "Actions" offers no "Correct this event".
+  - Step 4 shows the same sentence, with no form (DL-131, DL-195).
+  - The server refuses to correct a draft, an event that has started, and a cancelled, completed or
+    archived event; the developer checks this against the API.
 
 ## NFR: Privacy, security and accessibility
 

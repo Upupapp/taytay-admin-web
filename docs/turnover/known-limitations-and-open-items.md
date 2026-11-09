@@ -1,6 +1,7 @@
 # Known limitations and open items
 
-As of 2026-11-07, with the newsfeed's retirement on 2026-11-09 (`DL-194`). Each item names its
+As of 2026-11-07, with the newsfeed's retirement and the events changes of 2026-11-09 (`DL-194`,
+`DL-195`). Each item names its
 source so it can be checked and closed. Ids such as `GL-3`,
 `OD-3`, `FR-STAFF-4` and `T-5` refer to the requirements document,
 `docs/project/requirements-and-implementation-plan.md` (version 1.4, not approved).
@@ -53,9 +54,22 @@ From `docs/uat/README.md` ("Not in this UAT round") and the requirements documen
 - **Staff two-factor sign-in** is off (FR-STAFF-29, NFR-SEC-7; decision OD-3 below).
 - **Push notifications:** the API has only a mock sender and the app has no push plugin
   (FR-API-3, T-14). In-app notifications work.
-- **Events** (`DL-192`): served to the console and to the residents' app, which is wired to them
-  (app `bc9a201`, D-191) but has no staging build that includes them yet. A published event cannot be corrected; a registrant's name is the one on
-  their app account; residents are told of a cancellation or a moved place in the app only.
+- **Events** (`DL-192`, `DL-195`): served to the console and to the residents' app, which is wired
+  to them (app `bc9a201`, D-191; who may register and correction notices, D-194) but has no staging
+  build that includes them yet. Since backend `cf30686` a published event can be corrected until it
+  starts. **Residents are told of a correction, a cancellation or a moved place in the app only**:
+  no SMS, email or push notification is sent (FR-API-3, T-14).
+- **The name an events list gives a verified registrant is not a transcription of the ID**
+  (`DL-195`). The ID reviewer approves the ID against the selfie and is not sent the account's name
+  (`DL-167`), so the list shows the name the account carried when the ID was approved: the name the
+  resident gave as the one on their ID, kept from that moment, and never checked against the card.
+  Whether the reviewer should confirm or transcribe it is an owner question (section 4).
+- **Notes or an assistance-needs checklist on an event registration are not built** (`DL-195`).
+  Needs such as a wheelchair or a medical condition are health information, sensitive personal
+  information under RA 10173 §3(l), processed only on the grounds in §13. Holding them needs the
+  resident's explicit consent, a grant for who may read them, and deletion on a retention period
+  the office sets, and no retention schedule exists (`DL-113`, GL-9). An owner question for when it
+  does (section 4).
 - **Residents' app:** applying for assistance from the app (FR-RES-14, waits for OD-4); events
   (served and wired, D-191, awaiting a staging build) and Balita reactions (FR-RES-9); My Account details and the household screen (FR-RES-11, FR-RES-12,
   in progress); emergency alerts (FR-RES-16, proposed). **No iOS build exists**, and iOS cannot
@@ -84,6 +98,8 @@ From `docs/uat/README.md` ("Not in this UAT round") and the requirements documen
 | Events, Balita comments and reactions, and applying from the app            | Owner, with the LGU's agreement (the TOR names them)       | OD-4, R-11                                                      | Balita comments and reactions (FR-RES-9, FR-STAFF-34), events, FR-RES-14                                                                |
 | ~~Retire the console's newsfeed in favour of Balita~~ **Decided 2026-11-09: retired** | Owner ("do what's best")                         | OD-4, `DL-171`, `DL-192`, `DL-194`                              | Nothing now. No port is unserved; the other launch-gate lines still apply. The backend still lists the nine `newsfeed.*` keys, and its console-parity test fails until they go (`DL-194`) |
 | Whether the ID reviewer sees the account's name and birth date              | Owner and office                                           | OD-1                                                            | Deliverable D1's acceptance                                                                                                             |
+| Whether the ID reviewer confirms, or transcribes, the name on the ID        | Owner                                                      | `DL-195` (beside OD-1)                                          | Until then an events list gives a verified registrant the name the resident gave, as it stood at approval, unchecked against the card   |
+| Notes or an assistance-needs checklist on event registrations               | Owner, with the DPO                                        | `DL-195`, `DL-113`, GL-9                                        | The office's retention schedule; not built until one exists, with the resident's consent and a grant for who may read them              |
 | Whether the office inbox names the resident, and closing notices            | Owner and office                                           | OD-2                                                            | —                                                                                                                                       |
 | Casework questions from phases 1 to 6f                                      | Owner                                                      | OD-5; `docs/integration/node-api-migration.md`, "For the owner" | —                                                                                                                                       |
 | Review windows and the small-count threshold                                | MSWDO head                                                 | OD-6 (`DL-68`, `DL-105`)                                        | Both show "pending confirmation" on screen until recorded                                                                               |
@@ -154,7 +170,7 @@ The requirements document traces the Terms of Reference (TOR) through the develo
 | T-10 Beneficiary records, fund tracking, duplicate-claim checks | Built (`DL-187`): the registry, duplicate review and utilization from releases. Programme membership is not recorded | 6b                                                                 |
 | T-12 Audit trails                                               | Built (`DL-191`): the office's trail in words and the app's by id. No field, value or reason is recorded             | 6b                                                                 |
 | T-18 Analytics and reports, dashboards, exports                 | Built: the dashboard, search, the work queues (`DL-189`) and the fourteen reports with their exports (`DL-190`)      | 6b                                                                 |
-| T-16 Event and program postings                                 | Built for the office, on the API (`DL-192`) and wired in the residents' app (D-191)                            | 6b, after OD-4                                                     |
+| T-16 Event and program postings                                 | Built for the office, on the API (`DL-192`, `DL-195`) and wired in the residents' app (D-191, D-194)           | 6b, after OD-4                                                     |
 | T-17 Engagement monitoring                                      | Deferred: Balita has no comments or reactions to count. The console's newsfeed was retired (`DL-194`)                | A future Balita feature, after OD-4                                |
 | T-9 Tulong applications from the app                            | The staff side is built; applying from the app is not offered                                                        | After OD-4                                                         |
 | T-11 Barangay validation and endorsement                        | Not started                                                                                                          | 8, after OD-12                                                     |

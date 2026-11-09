@@ -6,8 +6,10 @@ import {
   type AuditAction,
   type AuditEntryId,
   type AuditRow,
+  type CheckInLookup,
   type EventCapacitySummary,
   type EventCategory,
+  type EventCorrection,
   type EventCover,
   type EventDraft,
   type EventMetrics,
@@ -18,7 +20,9 @@ import {
   type LguEventId,
   type MediaId,
   type RegistrantExport,
+  type RegistrantNameSource,
   type RegistrantView,
+  type RegistrationEligibility,
   type RegistrationStatus,
   type StaffUserId,
 } from '@domain/index';
@@ -69,6 +73,8 @@ const REGISTRATION_STATUSES: readonly RegistrationStatus[] = [
   'cancelled',
 ];
 const ATTENDANCE: readonly AttendanceStatus[] = ['not-checked-in', 'attended', 'no-show'];
+const ELIGIBILITIES: readonly RegistrationEligibility[] = ['verified-residents', 'app-accounts'];
+const NAME_SOURCES: readonly RegistrantNameSource[] = ['id-approval', 'account'];
 const HISTORY_ACTIONS: readonly AuditAction[] = [
   'created',
   'updated',
@@ -127,6 +133,7 @@ function nullableStaffId(value: unknown): StaffUserId | null | undefined {
  * @consumes POST office/events/{id}/cancel
  * @consumes POST office/events/{id}/complete
  * @consumes POST office/events/{id}/archive
+ * @consumes POST office/events/{id}/correct
  */
 export function toLguEvent(wire: unknown, barangays: BarangayIndex): LguEvent | null {
   const eventId = id<LguEventId>(field(wire, 'id'));
@@ -151,7 +158,11 @@ export function toLguEvent(wire: unknown, barangays: BarangayIndex): LguEvent | 
   const closesAt = nullableTime(field(wire, 'registration_closes_at'));
   const sentCapacity = field(wire, 'capacity');
   const capacity = sentCapacity === null ? null : int(sentCapacity);
+  const sentSafeLimit = field(wire, 'safe_limit');
+  const safeLimit = sentSafeLimit === null ? null : int(sentSafeLimit);
   const waitlistEnabled = flag(field(wire, 'waitlist_enabled'));
+  const eligibility = oneOf(field(wire, 'registration_eligibility'), ELIGIBILITIES);
+  const givesOutBenefit = flag(field(wire, 'gives_out_benefit'));
   const participationNote = nullableWords(field(wire, 'participation_note'));
   const reminders = nullableWords(field(wire, 'reminders'));
   const publishedAt = nullableTime(field(wire, 'published_at'));
@@ -186,7 +197,10 @@ export function toLguEvent(wire: unknown, barangays: BarangayIndex): LguEvent | 
     opensAt === undefined ||
     closesAt === undefined ||
     (sentCapacity !== null && capacity === null) ||
+    (sentSafeLimit !== null && safeLimit === null) ||
     waitlistEnabled === null ||
+    eligibility === null ||
+    givesOutBenefit === null ||
     participationNote === undefined ||
     reminders === undefined ||
     publishedAt === undefined ||
@@ -224,7 +238,10 @@ export function toLguEvent(wire: unknown, barangays: BarangayIndex): LguEvent | 
       opensAt,
       closesAt,
       capacity,
+      safeLimit,
       waitlistEnabled,
+      eligibility,
+      givesOutBenefit,
       participationNote,
     },
     reminders,
@@ -260,7 +277,10 @@ export interface EventDraftWire {
   readonly registration_opens_at: string | null;
   readonly registration_closes_at: string | null;
   readonly capacity: number | null;
+  readonly safe_limit: number | null;
   readonly waitlist_enabled: boolean;
+  readonly registration_eligibility: RegistrationEligibility;
+  readonly gives_out_benefit: boolean;
   readonly participation_note: string | null;
   readonly reminders: string | null;
 }
@@ -300,9 +320,87 @@ export function toWireEventDraft(
     registration_opens_at: draft.registration.opensAt,
     registration_closes_at: draft.registration.closesAt,
     capacity: draft.registration.capacity,
+    safe_limit: draft.registration.safeLimit,
     waitlist_enabled: draft.registration.waitlistEnabled,
+    registration_eligibility: draft.registration.eligibility,
+    gives_out_benefit: draft.registration.givesOutBenefit,
     participation_note: blankToNull(draft.registration.participationNote),
     reminders: blankToNull(draft.reminders),
+  };
+}
+
+/** The body of `POST office/events/{id}/correct`: the whole draft, the reason, and the notice. */
+export interface EventCorrectionWire {
+  readonly title: string;
+  readonly summary: string;
+  readonly details: string;
+  readonly category: EventCategory;
+  readonly image_media_id: MediaId | null;
+  readonly image_alt_text: string | null;
+  readonly starts_at: string;
+  readonly ends_at: string;
+  readonly venue_name: string;
+  readonly venue_address: string;
+  readonly venue_map_url: string | null;
+  readonly venue_barangay_id: string | null;
+  readonly contact_name: string;
+  readonly contact_office: string;
+  readonly contact_phone: string | null;
+  readonly registration_required: boolean;
+  readonly registration_opens_at: string | null;
+  readonly registration_closes_at: string | null;
+  readonly capacity: number | null;
+  readonly safe_limit: number | null;
+  readonly waitlist_enabled: boolean;
+  readonly registration_eligibility: RegistrationEligibility;
+  readonly gives_out_benefit: boolean;
+  readonly participation_note: string | null;
+  readonly reminders: string | null;
+  readonly reason: string;
+  readonly tell_registrants: boolean;
+}
+
+/**
+ * A correction as the API takes it (`DL-195`): the draft as `toWireEventDraft` writes it, with why
+ * it is corrected and whether to tell residents of a change that is not material. Explicit keys, as
+ * every write body here is, because the API validates `snake_case` and refuses an unknown one.
+ */
+export function toWireEventCorrection(
+  draft: EventDraft,
+  dates: { readonly startsAt: IsoDateTime; readonly endsAt: IsoDateTime },
+  venueBarangayId: string | null,
+  cover: EventCover | null,
+  correction: EventCorrection,
+): EventCorrectionWire {
+  const body = toWireEventDraft(draft, dates, venueBarangayId, cover);
+  return {
+    title: body.title,
+    summary: body.summary,
+    details: body.details,
+    category: body.category,
+    image_media_id: body.image_media_id,
+    image_alt_text: body.image_alt_text,
+    starts_at: body.starts_at,
+    ends_at: body.ends_at,
+    venue_name: body.venue_name,
+    venue_address: body.venue_address,
+    venue_map_url: body.venue_map_url,
+    venue_barangay_id: body.venue_barangay_id,
+    contact_name: body.contact_name,
+    contact_office: body.contact_office,
+    contact_phone: body.contact_phone,
+    registration_required: body.registration_required,
+    registration_opens_at: body.registration_opens_at,
+    registration_closes_at: body.registration_closes_at,
+    capacity: body.capacity,
+    safe_limit: body.safe_limit,
+    waitlist_enabled: body.waitlist_enabled,
+    registration_eligibility: body.registration_eligibility,
+    gives_out_benefit: body.gives_out_benefit,
+    participation_note: body.participation_note,
+    reminders: body.reminders,
+    reason: correction.reason.trim(),
+    tell_registrants: correction.tellRegistrants,
   };
 }
 
@@ -329,6 +427,8 @@ const REGISTRANT_FIELDS = [
   'id',
   'reference',
   'display_name',
+  'name_source',
+  'identity_verified',
   'barangay_id',
   'registered_at',
   'status',
@@ -357,6 +457,8 @@ export function toRegistrantView(wire: unknown, barangays: BarangayIndex): Regis
   const registrationId = id<EventRegistrationId>(field(wire, 'id'));
   const reference = str(field(wire, 'reference'));
   const displayName = str(field(wire, 'display_name'));
+  const nameSource = oneOf(field(wire, 'name_source'), NAME_SOURCES);
+  const identityVerified = flag(field(wire, 'identity_verified'));
   const sentBarangay = nullableWords(field(wire, 'barangay_id'));
   const registeredAt = dateTime(field(wire, 'registered_at'));
   const status = oneOf(field(wire, 'status'), REGISTRATION_STATUSES);
@@ -365,6 +467,8 @@ export function toRegistrantView(wire: unknown, barangays: BarangayIndex): Regis
     registrationId === null ||
     reference === null ||
     displayName === null ||
+    nameSource === null ||
+    identityVerified === null ||
     sentBarangay === undefined ||
     registeredAt === null ||
     status === null ||
@@ -385,7 +489,33 @@ export function toRegistrantView(wire: unknown, barangays: BarangayIndex): Regis
     attendance,
     // The API keeps no office notes on a registration: nothing writes one (`DL-192`).
     notes: null,
+    identityVerified,
+    nameSource,
   };
+}
+
+/**
+ * Check-in mode's answer (`DL-195`): at most a handful of registrants and whether more matched.
+ * Refused whole if any row is refused, as the list is: a door volunteer told "nobody matches" about
+ * somebody the console could not read would turn them away.
+ *
+ * @consumes GET office/events/{id}/check-in
+ */
+export function toCheckInLookup(wire: unknown, barangays: BarangayIndex): CheckInLookup | null {
+  const rows = field(wire, 'matches');
+  const moreMatches = flag(field(wire, 'more_matches'));
+  if (!Array.isArray(rows) || moreMatches === null) {
+    return null;
+  }
+  const matches: RegistrantView[] = [];
+  for (const row of rows) {
+    const view = toRegistrantView(row, barangays);
+    if (view === null) {
+      return null;
+    }
+    matches.push(view);
+  }
+  return { matches, moreMatches };
 }
 
 /**

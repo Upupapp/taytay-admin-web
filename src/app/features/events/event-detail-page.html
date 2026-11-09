@@ -78,6 +78,14 @@
             </p>
           }
 
+          @if (event.registration.isRequired) {
+            <h3 class="event__subheading">{{ copy.eligibilityHeading }}</h3>
+            <p class="event__line event__line--muted">{{ eligibilityLabel(event) }}</p>
+          }
+          @if (event.registration.givesOutBenefit) {
+            <p class="event__line event__line--muted">{{ copy.givesOutBenefit }}</p>
+          }
+
           @if (event.reminders) {
             <h3 class="event__subheading">{{ copy.remindersHeading }}</h3>
             <p class="event__line event__line--muted">{{ event.reminders }}</p>
@@ -148,6 +156,9 @@
                   <dd>{{ summary.asOf | date: 'd MMM y, HH:mm:ss' }}</dd>
                 </div>
               </dl>
+              @if (event.registration.safeLimit !== null) {
+                <p class="event__line">{{ copy.safeLimit(event.registration.safeLimit) }}</p>
+              }
               <!-- The sentence the whole capacity design exists to make true. -->
               <p class="event__hint">{{ copy.snapshotNote }}</p>
 
@@ -207,6 +218,14 @@
             </button>
           }
 
+          @if (canCorrectEvent(event)) {
+            <!-- A correction is kept and residents are told; the form says how before its button. -->
+            <p class="event__hint">{{ copy.correctNote }}</p>
+            <p class="event__actions">
+              <a class="btn" [routerLink]="['/events', event.id, 'correct']">{{ copy.correct }}</a>
+            </p>
+          }
+
           <p class="event__actions">
             @if (canArchive() && can(event, 'archived')) {
               <button type="button" class="btn" [disabled]="!canAct()" (click)="archive(event)">
@@ -220,7 +239,25 @@
           <h2 class="event__heading" id="registrants-heading">{{ copy.registrantsHeading }}</h2>
           <!-- Nobody is registered from this console (`DL-123`). -->
           <p class="event__hint">{{ copy.registrantsNote }}</p>
+          <p class="event__hint">{{ copy.namesNote }}</p>
 
+          @if (canMarkAttendance() && event.status === 'published') {
+            <p class="event__actions">
+              <button
+                type="button"
+                class="btn"
+                [attr.aria-pressed]="checkInMode()"
+                (click)="toggleCheckIn()"
+              >
+                {{ checkInMode() ? copy.checkInOff : copy.checkIn }}
+              </button>
+            </p>
+          }
+
+          <!-- Check-in mode finds one person and never renders the list (`DL-195`). -->
+          @if (checkInMode()) {
+            <app-event-check-in [eventId]="event.id" (marked)="onCheckedIn()" />
+          } @else {
           <div class="registrant-filters">
             <label class="field">
               <span class="field__label">{{ copy.registrantSearch }}</span>
@@ -304,6 +341,11 @@
                           <td class="registrants__reference">{{ row.reference }}</td>
                           <td>
                             {{ row.displayName }}
+                            @if (!row.identityVerified) {
+                              <span class="registrants__unverified">{{ copy.notVerified }}</span>
+                            } @else if (row.nameSource === 'account') {
+                              <span class="registrants__note">{{ copy.nameSources.account }}</span>
+                            }
                             @if (row.notes) {
                               <span class="registrants__note">{{ row.notes }}</span>
                             }
@@ -386,9 +428,14 @@
                   <!-- Warned, never blocked: the backend decides (`DL-129`). -->
                   <p class="event__warning">{{ copy.promoteOverCapacity }}</p>
                 }
+                @if (atSafeLimit(event) && canManage()) {
+                  <!-- The backend refuses past the safe limit; said before the button (`DL-195`). -->
+                  <p class="event__warning">{{ copy.promoteAtSafeLimit }}</p>
+                }
               }
             </ng-template>
           </app-async-content>
+          }
         </section>
 
         <section class="card event__panel" aria-labelledby="history-heading">

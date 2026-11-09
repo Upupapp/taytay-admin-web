@@ -133,7 +133,37 @@ export interface RegistrantView {
   readonly attendance: AttendanceStatus;
   /** `null` where the reader lacks `events.manage-registrations`. */
   readonly notes: string | null;
+  /**
+   * Whether the office verified this account's ID (`DL-195`). An event open to every app account
+   * lists people nobody has checked, and the list says which.
+   */
+  readonly identityVerified: boolean;
+  /**
+   * Where `displayName` comes from: the name the account carried when its ID was approved, kept as
+   * it stood then, or the account as the resident typed it (`DL-195`).
+   */
+  readonly nameSource: RegistrantNameSource;
 }
+
+export type RegistrantNameSource = 'id-approval' | 'account';
+
+export const REGISTRANT_NAME_SOURCE_LABELS: Readonly<Record<RegistrantNameSource, string>> = {
+  'id-approval': 'Name as it stood when their ID was approved',
+  account: 'Name as typed in the app',
+};
+
+/**
+ * What check-in mode is answered with (`DL-195`): a handful of registrants matching what was typed,
+ * and whether more matched. Never the list — a door list turned to face the queue shows everybody in
+ * it, the NPC's concern with open logbooks (Advisory Opinion 2018-003).
+ */
+export interface CheckInLookup {
+  readonly matches: readonly RegistrantView[];
+  readonly moreMatches: boolean;
+}
+
+/** The fewest characters check-in mode searches with; the API refuses fewer. */
+export const CHECK_IN_MIN_LENGTH = 2;
 
 export interface RegistrantFilter {
   readonly search?: string;
@@ -289,6 +319,16 @@ export function canOfferPromotion(status: RegistrationStatus): boolean {
  */
 export function promotionExceedsCapacity(summary: EventCapacitySummary): boolean {
   return summary.capacity !== null && summary.registeredCount >= summary.capacity;
+}
+
+/**
+ * Whether the office's own count says the safe limit is reached (`DL-195`). Unlike capacity this is
+ * not the office's to exceed: the server refuses an admission past it, and the screen says so before
+ * the button. Still a snapshot, so the button stays offered — a place may have opened a second ago,
+ * and only the server knows (`DL-129`).
+ */
+export function safeLimitReached(summary: EventCapacitySummary, safeLimit: number | null): boolean {
+  return safeLimit !== null && summary.registeredCount >= safeLimit;
 }
 
 /* ── Metrics ──────────────────────────────────────────────────────────────── */

@@ -93,7 +93,25 @@ export const EVENTS_COPY = {
     closesAt: 'Registration closes',
     capacity: 'Capacity',
     capacityHint: 'Leave blank if there is no limit.',
+    // Plain words for the safe limit (`DL-195`): what it is, where the number comes from, and
+    // that nobody is let in past it — not even by the office.
+    safeLimit: 'Safe limit',
+    safeLimitHint:
+      'Optional. The most people the venue can safely hold — the occupant load posted at the venue — ' +
+      'or, for a distribution, the most the stock on hand covers. It must be at least the capacity. ' +
+      'The office can still move people past the capacity, with a reason; nobody is let in past the ' +
+      'safe limit, by the app or by the office.',
     waitlist: 'Keep a waitlist once it is full',
+    eligibilityLegend: 'Who may register',
+    eligibilityHint:
+      'Most events are for residents whose ID the office has verified. Open one to every app account ' +
+      'only if it gives nothing out, such as a clean-up or an orientation.',
+    givesOutBenefit: 'This event gives out cash, goods or a benefit',
+    givesOutBenefitHint:
+      'Tick it if anybody leaves with money, goods, medicine or a service — a starter kit, a food ' +
+      'pack. An event that gives something out is for verified residents only.',
+    givesOutBenefitFixed:
+      'This kind of event always gives something out, so it is for verified residents only.',
     participationNote: 'Who this is for',
     participationHint:
       'Guidance for residents reading the listing. It does not stop anybody registering.',
@@ -114,6 +132,41 @@ export const EVENTS_COPY = {
     saved: 'Draft saved.',
     saveFailed: 'That could not be saved.',
     problemsHeading: 'Before this can be published',
+
+    // Correcting a published event (`DL-195`).
+    correctTitle: 'Correct a published event',
+    correctBack: 'Back to the event',
+    correctLoading: 'Loading the event…',
+    correctUnavailable:
+      'This event cannot be corrected: only a published event that has not started can be. A ' +
+      'cancelled event that is back on is a new event.',
+    correctionHeading: 'The correction',
+    correctionNote:
+      'Residents have read this event and made plans around it. The correction is kept beside what ' +
+      'the event said before, with your reason, and the event’s history lists it.',
+    correctionReason: 'Why it is corrected',
+    correctionReasonHint:
+      'Required. Kept with the correction against your name. Residents are never shown it.',
+    tellRegistrants: 'Tell registered residents',
+    tellRegistrantsHint:
+      'For a change they do not plan around, such as what to bring. A change to when or where it is, ' +
+      'who may register, or fewer places always tells them.',
+    correctionProblemsHeading: 'Before this can be corrected',
+    correctionEffectsLead: 'Saving this correction:',
+    correctionNothing: 'Changes nothing yet. Nothing is recorded and nobody is told.',
+    correctionChanges: (fields: string) => `Changes ${fields}.`,
+    correctionTellsMaterial: (holders: number) =>
+      `Tells everybody holding a place or a waitlist place (${holders} by this screen’s last count) ` +
+      'in the residents’ app, with the old and the new date, time and venue. Their registrations stand.',
+    correctionTellsRequested: (holders: number) =>
+      `Tells everybody holding a place or a waitlist place (${holders} by this screen’s last count) ` +
+      'in the residents’ app that the details were updated.',
+    correctionTellsNobody: 'Sends residents no notice.',
+    correctionKept:
+      'Keeps what the event said before, and cannot be undone except by another correction.',
+    saveCorrection: 'Save the correction',
+    corrected: 'Correction saved.',
+    correctFailed: 'That correction could not be saved.',
   },
 
   detail: {
@@ -136,6 +189,8 @@ export const EVENTS_COPY = {
     contactHeading: 'Who to ask',
     remindersHeading: 'Reminders',
     participationHeading: 'Who this is for',
+    eligibilityHeading: 'Who may register',
+    givesOutBenefit: 'Gives out cash, goods or a benefit.',
     mapLink: 'Open the map',
 
     metaHeading: 'Publication',
@@ -159,6 +214,8 @@ export const EVENTS_COPY = {
       'Attendance is still open. Anybody not marked is simply not marked — it does not mean they ' +
       'did not come.',
     attendanceFinalNote: 'Attendance is final for this event.',
+    safeLimit: (limit: number) =>
+      `Safe limit: ${limit}. Nobody is let in past it — not by the app, and not by the office.`,
 
     actionsHeading: 'Actions',
     reason: 'Why',
@@ -181,6 +238,10 @@ export const EVENTS_COPY = {
       'This declares attendance final. Anybody still unmarked stays unmarked — nobody is turned ' +
       'into a no-show by this.',
     archive: 'Archive',
+    correct: 'Correct this event',
+    correctNote:
+      'Fix a date, a venue, who may register or anything else before it starts. Residents are told ' +
+      'of a change they plan around.',
     duplicate: 'Duplicate',
     keep: 'Keep it',
     saved: 'Saved.',
@@ -188,6 +249,14 @@ export const EVENTS_COPY = {
 
     registrantsHeading: 'Registrants',
     registrantsNote: 'Residents register in the mobile app. Nobody is added from here.',
+    namesNote:
+      'Names are in full. For a resident whose ID is verified, the name is the one their account ' +
+      'carried when the ID was approved.',
+    notVerified: 'Not ID-verified',
+    nameSources: {
+      'id-approval': 'Name as it stood when their ID was approved',
+      account: 'Name as typed in the app',
+    },
     registrantSearch: 'Search registrants',
     status: 'Status',
     attendance: 'Attendance',
@@ -207,6 +276,24 @@ export const EVENTS_COPY = {
     promoteOverCapacity:
       'Your figures say this event is full. The backend decides — if a place has opened since ' +
       'this screen loaded, this will go through.',
+    promoteAtSafeLimit:
+      'Your figures say the safe limit is reached. The backend refuses anybody past it; this goes ' +
+      'through only if a place has opened since this screen loaded.',
+
+    // Check-in mode (`DL-195`): one person at a time, never the list.
+    checkIn: 'Check-in mode',
+    checkInOff: 'Leave check-in mode',
+    checkInNote:
+      'Finds one registrant by name or reference and never shows the list, so nobody at the table ' +
+      'reads the names of everybody else who signed up.',
+    checkInSearch: 'Name or reference',
+    checkInHint:
+      'At least two letters of the name, or the whole reference, such as ER-2026-000123.',
+    checkInFind: 'Find',
+    checkInNone: 'Nobody registered for this event matches that.',
+    checkInMore: 'More than five registrants match. Type more of the name, or the reference.',
+    checkInMarked: (reference: string) => `Marked ${reference} as attended.`,
+    checkInFailed: 'That lookup could not be completed.',
     cancelRegistration: 'Cancel',
     restoreRegistration: 'Restore',
     registrationReason: 'Why',

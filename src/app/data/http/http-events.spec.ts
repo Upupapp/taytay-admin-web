@@ -20,6 +20,7 @@ import {
 
 import OFFICE_EVENT from './fixtures/office-event.json';
 import OFFICE_EVENT_CAPACITY from './fixtures/office-event-capacity.json';
+import OFFICE_EVENT_CHECK_IN from './fixtures/office-event-check-in.json';
 import OFFICE_EVENT_EXPORT from './fixtures/office-event-export.json';
 import OFFICE_EVENT_HISTORY from './fixtures/office-event-history.json';
 import OFFICE_EVENT_METRICS from './fixtures/office-event-metrics.json';
@@ -72,7 +73,10 @@ function draft(overrides: Partial<EventDraft> = {}): EventDraft {
       opensAt: null,
       closesAt: null,
       capacity: 40,
+      safeLimit: null,
       waitlistEnabled: true,
+      eligibility: 'verified-residents',
+      givesOutBenefit: true,
       participationNote: null,
     },
     reminders: null,
@@ -207,6 +211,8 @@ describe('events over the API (DL-192)', () => {
           'barangayId',
           'displayName',
           'id',
+          'identityVerified',
+          'nameSource',
           'notes',
           'reference',
           'registeredAt',
@@ -288,7 +294,7 @@ describe('events over the API (DL-192)', () => {
         image_alt_text: null,
         venue_map_url: null,
       });
-      expect(Object.keys(post.request.body as object)).toHaveLength(22);
+      expect(Object.keys(post.request.body as object)).toHaveLength(25);
       expect(post.request.body).not.toHaveProperty('image_url');
       post.flush(OFFICE_EVENT);
       expect((await created).id).toBe(MISSION);
@@ -414,6 +420,114 @@ describe('events over the API (DL-192)', () => {
       await expect(
         firstValueFrom(repository.actOnRegistration(MISSION, WAITLISTED, 'cancel', '')),
       ).rejects.toThrow(/needs a reason/);
+    });
+  });
+
+  describe('corrections, check-in and who may register (DL-195)', () => {
+    it('reads who may register, whether it gives something out, and the safe limit', async () => {
+      const read = firstValueFrom(repository.getById(MISSION));
+      barangays();
+      http.expectOne(`${EVENTS}/${MISSION}`).flush({
+        data: {
+          ...OFFICE_EVENT.data,
+          safe_limit: 230,
+          registration_eligibility: 'verified-residents',
+          gives_out_benefit: true,
+        },
+        meta: {},
+      });
+      const event = await read;
+      expect(event?.registration.safeLimit).toBe(230);
+      expect(event?.registration.eligibility).toBe('verified-residents');
+      expect(event?.registration.givesOutBenefit).toBe(true);
+    });
+
+    it('refuses an event whose eligibility it does not know, rather than guessing', async () => {
+      const read = firstValueFrom(repository.getById(MISSION));
+      barangays();
+      http
+        .expectOne(`${EVENTS}/${MISSION}`)
+        .flush({ data: { ...OFFICE_EVENT.data, registration_eligibility: 'everyone' }, meta: {} });
+      await expect(read).rejects.toThrow(/could not be read whole/);
+    });
+
+    it('sends a correction whole, with its reason and whether to tell residents', async () => {
+      const corrected = firstValueFrom(
+        repository.correct(
+          MISSION,
+          draft({
+            summary: 'Hot meals for enrolled children.',
+            venue: {
+              name: 'Taytay municipal gym',
+              address: 'Rizal Ave., San Juan, Taytay, Rizal',
+              mapUrl: null,
+              barangayId: asId<BarangayId>('brgy-dolores'),
+            },
+            contact: { name: 'MSWDO front desk', office: 'MSWDO', phone: null },
+          }),
+          { reason: '  The court is under repair. ', tellRegistrants: true },
+        ),
+      );
+      barangays();
+      const request = http.expectOne(`${EVENTS}/${MISSION}/correct`);
+      expect(request.request.method).toBe('POST');
+      const body = request.request.body as Record<string, unknown>;
+      expect(body['reason']).toBe('The court is under repair.');
+      expect(body['tell_registrants']).toBe(true);
+      expect(body['venue_name']).toBe('Taytay municipal gym');
+      expect(body['venue_barangay_id']).toBe(DOLORES_API);
+      expect(body['safe_limit']).toBeNull();
+      expect(body['registration_eligibility']).toBe('verified-residents');
+      expect(body['gives_out_benefit']).toBe(true);
+      request.flush(OFFICE_EVENT);
+      expect((await corrected).id).toBe(MISSION);
+    });
+
+    it('refuses a correction with no reason, or one that would not publish, without a request', async () => {
+      const filled = draft({
+        summary: 'Hot meals.',
+        venue: { name: 'Gym', address: 'Rizal Ave., Taytay', mapUrl: null, barangayId: null },
+        contact: { name: 'Desk', office: 'MSWDO', phone: null },
+      });
+      await expect(
+        firstValueFrom(
+          repository.correct(MISSION, filled, { reason: ' ', tellRegistrants: false }),
+        ),
+      ).rejects.toThrow(/needs a reason/);
+      await expect(
+        firstValueFrom(
+          repository.correct(MISSION, draft(), { reason: 'Fixing it.', tellRegistrants: false }),
+        ),
+      ).rejects.toThrow(/one line residents see/);
+    });
+
+    it('finds one registrant at the door and never asks for the list', async () => {
+      const found = firstValueFrom(repository.checkIn(MISSION, '  ana reyes '));
+      barangays();
+      const request = http.expectOne(
+        (candidate) => candidate.url === `${EVENTS}/${MISSION}/check-in`,
+      );
+      expect(request.request.method).toBe('GET');
+      expect(request.request.params.get('q')).toBe('ana reyes');
+      request.flush(OFFICE_EVENT_CHECK_IN);
+      const lookup = await found;
+      expect(lookup.matches.map((row) => row.reference)).toEqual(['ER-2026-000001']);
+      expect(lookup.moreMatches).toBe(false);
+      await expect(firstValueFrom(repository.checkIn(MISSION, 'a'))).rejects.toThrow(/two letters/);
+    });
+
+    it('marks a registrant nobody ID-checked, and where each name comes from', async () => {
+      const read = firstValueFrom(repository.registrants(MISSION, {}));
+      barangays();
+      http
+        .expectOne((candidate) => candidate.url === `${EVENTS}/${MISSION}/registrants`)
+        .flush(OFFICE_EVENT_REGISTRANTS);
+      const rows = await read;
+      const last = rows[rows.length - 1];
+      expect(rows[0]?.identityVerified).toBe(true);
+      expect(rows[0]?.nameSource).toBe('id-approval');
+      expect(last?.identityVerified).toBe(false);
+      expect(last?.nameSource).toBe('account');
     });
   });
 

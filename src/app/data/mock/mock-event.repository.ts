@@ -11,7 +11,13 @@ import {
   asIsoDateTime,
   attendanceRateOf,
   barangayName,
+  CHECK_IN_MIN_LENGTH,
+  CORRECTION_FIELD_LABELS,
+  EVENT_CORRECTION_PROBLEM_MESSAGES,
   canTransition,
+  correctionDraftOf,
+  correctionOf,
+  eventCorrectionProblems,
   discloseResident,
   eventProblems,
   matchesEventView,
@@ -21,7 +27,9 @@ import {
   userHasPermission,
   type AttendanceStatus,
   type AuditRow,
+  type CheckInLookup,
   type EventCapacitySummary,
+  type EventCorrection,
   type EventCover,
   type EventDraft,
   type EventFilter,
@@ -59,6 +67,9 @@ const STATUS_SUMMARY = {
   completed: 'Event completed. Attendance declared final.',
   archived: 'Event archived.',
 } as const;
+
+/** As many as the API's check-in lookup answers with (`DL-195`). */
+const CHECK_IN_MATCHES = 5;
 
 /**
  * The events adapter.
@@ -148,6 +159,30 @@ export class MockEventRepository implements EventRepository {
       .filter((view) => matchesSearch([view.displayName, view.reference], filter.search));
 
     return this.latency.respond(views);
+  }
+
+  /**
+   * Check-in mode (`DL-195`): at most five registrants matching what was typed, and whether more
+   * matched. Never the list.
+   */
+  checkIn(id: LguEventId, term: string): Observable<CheckInLookup> {
+    const denied = denyUnless<CheckInLookup>(this.access.currentUser(), 'event.mark-attendance');
+    if (denied) {
+      return denied;
+    }
+    const typed = term.trim();
+    if (typed.length < CHECK_IN_MIN_LENGTH) {
+      return throwError(() => new Error('Type at least two letters of the name, or the reference.'));
+    }
+    const found = this.registrationsFor(id)
+      .map((registration) => this.compose(registration))
+      .filter(
+        (view) =>
+          view.reference.toUpperCase() === typed.toUpperCase() ||
+          matchesSearch([view.displayName], typed),
+      )
+      .sort((a, b) => Number(b.reference.toUpperCase() === typed.toUpperCase()) - Number(a.reference.toUpperCase() === typed.toUpperCase()));
+    return this.latency.respond({ matches: found.slice(0, CHECK_IN_MATCHES), moreMatches: found.length > CHECK_IN_MATCHES });
   }
 
   capacity(id: LguEventId): Observable<EventCapacitySummary> {
@@ -260,6 +295,76 @@ export class MockEventRepository implements EventRepository {
       : this.latency.respond(stored);
   }
 
+  /**
+   * A published event corrected before it starts (`DL-195`), held to the rules the API holds:
+   * `event.publish`, a reason, the publication rules, and nobody losing a place. A correction that
+   * changes nothing records nothing. This stand-in sends no notice — there is no resident app behind
+   * it — and says in the trail who the server would have told.
+   */
+  correct(id: LguEventId, draft: EventDraft, correction: EventCorrection): Observable<LguEvent> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<LguEvent>(user, 'event.publish');
+    if (denied) {
+      return denied;
+    }
+    const stored = this.events.find((entry) => entry.id === id);
+    if (stored === undefined) {
+      return throwError(() => new PermissionDeniedError('event.publish'));
+    }
+    const event = this.withCounts(stored);
+    const now = asIsoDateTime(new Date());
+    const refused = [
+      ...eventCorrectionProblems(event, draft, correction, now).map((problem) => EVENT_CORRECTION_PROBLEM_MESSAGES[problem]),
+      ...eventProblems(draft, now, 'publish'),
+    ];
+    if (refused.length > 0) {
+      return throwError(() => new Error(refused.join(' ')));
+    }
+    const chosen = draft.image?.kind === 'chosen' ? this.refusal(draft.image.file) : null;
+    if (chosen) {
+      return throwError(() => chosen);
+    }
+    const summary = correctionOf(event, draft);
+    if (summary.changed.length === 0) {
+      return this.latency.respond(event);
+    }
+    const image: EventCover | null =
+      draft.image === null
+        ? null
+        : draft.image.kind === 'stored'
+          ? { mediaId: draft.image.mediaId, altText: draft.image.altText.trim() }
+          : { mediaId: this.storeCover(draft.image.file), altText: draft.image.altText.trim() };
+    const corrected: LguEvent = {
+      ...stored,
+      title: draft.title.trim(),
+      summary: draft.summary.trim(),
+      details: draft.details,
+      category: draft.category,
+      image,
+      startsAt: draft.startsAt ?? stored.startsAt,
+      endsAt: draft.endsAt ?? stored.endsAt,
+      venue: draft.venue,
+      contact: draft.contact,
+      registration: draft.registration,
+      reminders: draft.reminders,
+      audit: { ...stored.audit, updatedAt: now, updatedBy: user?.id ?? null },
+    };
+    this.events = this.events.map((entry) => (entry.id === corrected.id ? corrected : entry));
+    const told = summary.material
+      ? 'Everybody holding a place or a waitlist place was told in the app, with the old and the new.'
+      : correction.tellRegistrants
+        ? 'Everybody holding a place or a waitlist place was told in the app, at the office’s request.'
+        : 'Residents were not sent a notice.';
+    const fields = summary.changed.map((field) => CORRECTION_FIELD_LABELS[field]);
+    this.record(
+      corrected,
+      'updated',
+      `Corrected after publication: ${fields.join(', ')}. ${told}`,
+      correction.reason.trim(),
+    );
+    return this.latency.respond(this.withCounts(corrected));
+  }
+
   publish(id: LguEventId, reason: string): Observable<LguEvent> {
     return this.move(id, 'published', 'event.publish', reason, (event, user) => ({
       status: 'published' as const,
@@ -315,7 +420,20 @@ export class MockEventRepository implements EventRepository {
 
     // Promotion is not gated on the office's own count. A stand-in backend
     // that refused here would be inventing the concurrency guarantee the
-    // command says not to invent (`DL-129`).
+    // command says not to invent (`DL-129`). The safe limit is a different
+    // thing: the API refuses past it inside the row lock (`DL-195`), and this
+    // stand-in refuses the same.
+    const event = this.events.find((entry) => entry.id === registration.eventId);
+    const safeLimit = event?.registration.safeLimit ?? null;
+    const held = this.registrationsFor(registration.eventId).filter((row) => row.status === 'registered').length;
+    if (targetStatusOf(action) === 'registered' && safeLimit !== null && held >= safeLimit) {
+      return throwError(
+        () =>
+          new Error(
+            `${held} residents already hold a place, and this event’s safe limit is ${safeLimit}. Nobody was moved.`,
+          ),
+      );
+    }
     const updated = this.saveRegistration(registration, {
       status: targetStatusOf(action),
       statusReason: reason.trim(),
@@ -430,6 +548,11 @@ export class MockEventRepository implements EventRepository {
       // grant that covers managing the registration rather than merely seeing
       // that it exists.
       notes: holds('event.manage-registrations') ? registration.notes : null,
+      // This stand-in has no ID approvals: somebody on the registry stands in
+      // for a verified account, and anybody else for an account nobody checked
+      // (`DL-195`).
+      identityVerified: resident !== undefined,
+      nameSource: resident === undefined ? 'account' : 'id-approval',
     };
   }
 
@@ -611,19 +734,7 @@ export class MockEventRepository implements EventRepository {
 }
 
 function toDraft(event: LguEvent): EventDraft {
-  return {
-    title: event.title,
-    summary: event.summary,
-    details: event.details,
-    category: event.category,
-    image: event.image === null ? null : { kind: 'stored', ...event.image },
-    startsAt: event.startsAt,
-    endsAt: event.endsAt,
-    venue: event.venue,
-    contact: event.contact,
-    registration: event.registration,
-    reminders: event.reminders,
-  };
+  return correctionDraftOf(event);
 }
 
 function cell(value: string): string {

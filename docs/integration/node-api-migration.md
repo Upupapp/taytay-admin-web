@@ -51,10 +51,12 @@ sign-in only, hosted on Linode.
 | 23 | Casework phase 6e: governance | backend + console | done (`DL-191`): `taytay-backend` `3a7947c`, migration `0041_office_governance.sql` (additive) — `GET /api/v1/office/staff` and `…/{id}` (the staff directory: the `users` table Users and roles reads, narrowed to staff and admin accounts; name, office role, scope, on or off), `POST …/{id}/deactivate` and `…/reactivate` (`staff.manage`, a reason kept in `account_status_changes`; the account is refused with 401 at its next request; never the caller's own), `GET /api/v1/office/audit` (the office's trail in words, a cursor page; `fields_recorded: false` on every row, no sensitive filter) and `…/{id}` (`audit.view-detail`: no value was stored, audited), `GET /api/v1/office/governance/classifications`, `…/retention` (every period null) and `…/corrections` (`settings.manage`). Console: `HttpGovernanceRepository`, `governance.mapper.ts`, `auditRows` paged, the unserved ceiling 2 |
 | 24 | Casework phase 6f: events, the office's side and the residents' | backend + console | done (`DL-192`): `taytay-backend` `580acbb`, migration `0042_office_events.sql` (additive) — `GET /api/v1/office/events?view=` (one of the six views, read whole), a draft created by `POST` and replaced by `PATCH` while it is one, `…/{id}/publish`, `…/cancel`, `…/complete`, `…/archive` with a reason kept in `office_event_acts`, `…/capacity` (the server's `as_of`), `…/metrics`, `…/registrants` (the closed set) and `…/registrants/export`, `…/history`, a registration moved or attendance marked by hand; and for the residents' app `GET /api/v1/events`, `GET /api/v1/events/{id}`, `POST /api/v1/events/{id}/registrations` (the last place given inside the event's row lock, `idempotency_key` in the body) and `…/registrations/{id}/cancel`. `HttpEventRepository` bound; one port remains unserved |
 | 25 | The newsfeed retired in favour of Balita | console | done (`DL-194`), the owner's decision of 2026-11-09: the newsfeed's screens, port, model, mock and unserved adapter, its nine `newsfeed.*` keys and `check:newsfeed` are removed. `UNSERVED_HTTP_PORTS` is empty and `check:routes` holds the unserved count at zero. The backend still lists the nine keys (`src/auth/casework.ts`), and its console-parity test fails until they go |
+| 26 | Events revised: a published event corrected, a safe limit, names at the door, who may register | backend + console | done (`DL-195`): `taytay-backend` `cf30686`, migration `0044` — `POST /api/v1/office/events/{id}/correct` (`event.publish`; the whole composer with a required reason, kept as an appended `corrected` act with a revision of what the event said before and which fields moved; refused once the event starts, on a cancelled, completed or archived event, and when it would take a place from anybody or turn registration on or off; a change to when, where, who may register or fewer places tells every holder in the app with the old and the new, other changes only when asked) and `GET /api/v1/office/events/{id}/check-in?q=` (`event.mark-attendance`; at most five matches and whether more matched). `safe_limit`, passed by no admission and checked in the event's row lock; `past_capacity` on an act, refused without a reason; `verification_requests.name_at_approval`, backfilled for earlier approvals; `registration_eligibility` and `gives_out_benefit`, a benefit event for verified residents only. Console: `EventRepository.correct` and `checkIn`, the correction form at `events/:id/correct`, check-in mode, "Not ID-verified", `check:events` section 11. Not built: notes on a registration |
 
 **Next:** nothing in the console is unserved: the newsfeed, the last unserved port, was retired in
-favour of Balita (`DL-194`). The backend is to drop the nine `newsfeed.*` keys it still lists. The
-residents' app is wired to the events routes (app `bc9a201`, D-191).
+favour of Balita (`DL-194`), and the backend dropped the nine `newsfeed.*` keys in `12431a3`. The
+residents' app is wired to the events routes (app `bc9a201`, D-191), and to `cf30686`'s who may
+register and correction notices (D-194).
 
 ## For the owner to decide
 
@@ -89,6 +91,15 @@ These are not engineering choices, and nothing below has been built.
 9. **Closing a conversation tells the resident nothing**, and keeps no reason. Whether the resident
    should be told, and whether a reason should be kept (the API would have to store it), is the
    office's decision; the console asks for no reason it cannot keep.
+10. **The name an events list gives a verified registrant is not read from the ID** (`DL-195`).
+    The reviewer approves the ID against the selfie and is not sent the account's name (item 7), so
+    the approval keeps the name the account carried at that moment, and the door list shows it.
+    Should the reviewer confirm, or transcribe, the name on the ID when approving it? Until then the
+    name is the one the resident gave, never checked against the card.
+11. **Assistance needs on an event registration** (`DL-195`). A wheelchair or a medical condition
+    is health information (RA 10173 §3(l), §13): holding it needs the resident's explicit consent, a
+    grant for who may read it, and deletion on a retention period the office sets. No retention
+    schedule exists (`DL-113`), so nothing is collected; the question waits for one.
 
 ## Smaller backend items found on the way
 
@@ -413,6 +424,21 @@ an app account; whether unverified residents may register for some events (the c
 for every event); whether the office wants notes on a registration.
 **Next: the newsfeed waits for OD-4. The residents' app is wired to the events routes next.**
 
+**Events revised** (`DL-195`, `taytay-backend` `cf30686`, migration `0044`): the owner delegated
+phase 6f's questions ("research best practices and do what's best"). The migration adds
+`safe_limit`, `registration_eligibility` and `gives_out_benefit` to an event, a revision per
+correction, `past_capacity` on an act and `verification_requests.name_at_approval`; the commit adds
+two routes, `POST /api/v1/office/events/{id}/correct` and `GET /api/v1/office/events/{id}/check-in`.
+A published event is corrected until it starts, with a reason, and the residents holding a place
+are told of a change to when, where or who may register, or of fewer places; the office may still
+go past the places with a reason, never past the safe limit; staff lists keep full names, a
+verified registrant's as it stood at approval, and the door finds one person at a time; and an event
+is open to verified residents or to every app account, never the second if it gives something out.
+**For the owner, from `DL-195`:** whether the ID reviewer should confirm, or transcribe, the name on
+the ID when approving it (today the reviewer is not sent the name, so the door list shows the name
+the resident gave, as it stood at approval); and assistance needs on a registration, once a
+retention schedule exists. Both are items 10 and 11 above.
+
 ## Decided 2026-11-09: the newsfeed is retired (`DL-194`)
 
 The owner ("do what's best") retired the console's newsfeed in favour of Balita, the news residents
@@ -423,10 +449,10 @@ unserved**, so `check:routes` holds the count at zero and fails the build on any
 That clears one condition of launch gate line 05/07; the line's other conditions and every other
 line still apply.
 
-For the backend: `src/auth/casework.ts` still lists the nine keys and grants them to the head and
-the auditor, so the spec's `CaseworkPermission` and `/me` carry them, and `tests/casework.test.ts`
-("parity with the staff console") fails against this console until they are removed and the spec
-re-vendored here. Comments and reactions on Balita remain OD-4's, a future Balita feature.
+For the backend: `src/auth/casework.ts` listed the nine keys and granted them to the head and the
+auditor, so the spec's `CaseworkPermission` and `/me` carried them, and `tests/casework.test.ts`
+("parity with the staff console") failed against this console. `taytay-backend` `12431a3` removed
+them and their grants, and the spec vendored here is that commit's; the parity test passes again. Comments and reactions on Balita remain OD-4's, a future Balita feature.
 
 ## Decided 2026-11-06: the owner's decisions round (`DL-183`)
 

@@ -1,0 +1,19 @@
+{
+  "data": {
+    "matches": [
+      {
+        "id": "6f7a8b9c-0d1e-4f2a-8b3c-4d5e6f7a8b01",
+        "reference": "ER-2026-000001",
+        "display_name": "Ana Reyes",
+        "name_source": "id-approval",
+        "identity_verified": true,
+        "barangay_id": "0b1c2d3e-4f50-4a61-8b72-3c4d5e6f7a01",
+        "registered_at": "2026-11-03T03:00:00.000Z",
+        "status": "registered",
+        "attendance": "not-checked-in"
+      }
+    ],
+    "more_matches": false
+  },
+  "meta": {}
+}

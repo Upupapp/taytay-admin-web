@@ -1,21 +1,41 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, of, switchMap } from 'rxjs';
 
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
+  CORRECTION_FIELD_LABELS,
+  EVENT_CORRECTION_PROBLEM_MESSAGES,
   EVENT_CATEGORY_LABELS,
   EVENT_PROBLEM_MESSAGES,
   EVENT_REPOSITORY,
   EVENT_TIMEZONE_LABEL,
+  REGISTRATION_ELIGIBILITY_LABELS,
   TAYTAY_BARANGAYS,
   asId,
   asIsoDateTime,
+  canBeCorrected,
+  categoryGivesOutBenefit,
+  correctionOf,
+  eventCorrectionProblems,
   eventProblems,
   type BarangayId,
   type EventCategory,
+  type EventCover,
   type EventDraft,
+  type IsoDateTime,
+  type LguEvent,
   type LguEventId,
+  type RegistrationEligibility,
 } from '@domain/index';
 import { ImageFileField } from '@shared/media/image-file-field';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -45,6 +65,12 @@ import { EVENTS_COPY } from './events.copy';
  * The cover is a file, never an address (`DL-193`). `ImageFileField` refuses what the API would
  * refuse before anything is sent; the chosen image is stored only when the draft is saved, and the
  * composer says so before its button. Its description sits beside it, never behind a disclosure.
+ *
+ * **The same form corrects a published event** (`DL-195`), at `events/:id/correct`. It starts from
+ * the event as it stands, asks why, offers "Tell registered residents" switched off, and says before
+ * its button what the correction changes and who it tells — a change to when, where, who may
+ * register or fewer places always tells everybody holding a place. The publication rules apply,
+ * because residents are reading it.
  */
 @Component({
   selector: 'app-event-composer-page',
@@ -58,8 +84,14 @@ export class EventComposerPage {
   private readonly notifications = inject(NotificationStore);
   private readonly router = inject(Router);
 
+  /** Set by `events/:id/correct`; absent when creating. */
+  readonly id = input<string>();
+
   protected readonly copy = EVENTS_COPY.composer;
   protected readonly categories = Object.keys(EVENT_CATEGORY_LABELS) as EventCategory[];
+  protected readonly eligibilities = Object.keys(
+    REGISTRATION_ELIGIBILITY_LABELS,
+  ) as RegistrationEligibility[];
   protected readonly barangays = TAYTAY_BARANGAYS;
   protected readonly timezone = EVENT_TIMEZONE_LABEL;
 
@@ -83,10 +115,33 @@ export class EventComposerPage {
   protected readonly opensAt = signal('');
   protected readonly closesAt = signal('');
   protected readonly capacity = signal('');
+  protected readonly safeLimit = signal('');
   protected readonly waitlist = signal(false);
+  protected readonly eligibility = signal<RegistrationEligibility>('verified-residents');
+  protected readonly givesOutBenefit = signal(false);
   protected readonly participationNote = signal('');
   protected readonly reminders = signal('');
   protected readonly saving = signal(false);
+
+  /* ── Correcting (`DL-195`) ──────────────────────────────────────────────── */
+
+  protected readonly correcting = computed(() => this.id() !== undefined);
+  /** The event being corrected, as last read: `undefined` while loading, `null` if not found. */
+  protected readonly original = toSignal(
+    toObservable(this.id).pipe(
+      switchMap((id) =>
+        id === undefined ? of(null) : this.repository.getById(asId<LguEventId>(id)),
+      ),
+    ),
+  );
+  /** The cover the event already has, kept unless a new file is chosen. */
+  private readonly storedCover = signal<EventCover | null>(null);
+  protected readonly reason = signal('');
+  /** Off by default: a change residents do not plan around reaches them only when asked. */
+  protected readonly tellRegistrants = signal(false);
+
+  /** The category decides where it can: four kinds of event always give something out. */
+  protected readonly benefitFixed = computed(() => categoryGivesOutBenefit(this.category()));
 
   /**
    * Fixed for the lifetime of the screen.
@@ -95,6 +150,16 @@ export class EventComposerPage {
    * one that is a minute stale.
    */
   private readonly now = asIsoDateTime(new Date());
+
+  constructor() {
+    // The form starts from the event as it stands, once, when it arrives.
+    effect(() => {
+      const event = this.original();
+      if (event !== undefined && event !== null) {
+        this.fill(event);
+      }
+    });
+  }
 
   protected readonly draft = computed<EventDraft>(() => ({
     title: this.title(),
@@ -120,7 +185,10 @@ export class EventComposerPage {
       opensAt: this.asDate(this.opensAt()),
       closesAt: this.asDate(this.closesAt()),
       capacity: this.capacity().trim() === '' ? null : Number(this.capacity()),
+      safeLimit: this.safeLimit().trim() === '' ? null : Number(this.safeLimit()),
       waitlistEnabled: this.waitlist(),
+      eligibility: this.eligibility(),
+      givesOutBenefit: this.benefitFixed() || this.givesOutBenefit(),
       participationNote: this.participationNote().trim() || null,
     },
     reminders: this.reminders().trim() || null,
@@ -144,13 +212,129 @@ export class EventComposerPage {
     () => this.title().trim().length > 0 && this.saveProblems().length === 0 && !this.saving(),
   );
 
+  /** What stops the correction, in words: the publication rules and the correction's own. */
+  protected readonly correctionBlocks = computed<readonly string[]>(() => {
+    const event = this.original();
+    if (!this.correcting() || event === undefined || event === null) {
+      return [];
+    }
+    return [
+      ...eventCorrectionProblems(
+        event,
+        this.draft(),
+        { reason: this.reason(), tellRegistrants: this.tellRegistrants() },
+        this.now,
+      ).map((problem) => EVENT_CORRECTION_PROBLEM_MESSAGES[problem]),
+      ...this.publishProblems(),
+    ];
+  });
+
+  /** What the correction would do, said before the button that does it. */
+  protected readonly correctionEffects = computed<readonly string[]>(() => {
+    const event = this.original();
+    if (event === undefined || event === null) {
+      return [];
+    }
+    const summary = correctionOf(event, this.draft());
+    if (summary.changed.length === 0) {
+      return [this.copy.correctionNothing];
+    }
+    const holders = event.registeredCount + event.waitlistedCount;
+    const fields = summary.changed.map((field) => CORRECTION_FIELD_LABELS[field]);
+    return [
+      this.copy.correctionChanges(fields.join(', ')),
+      summary.material
+        ? this.copy.correctionTellsMaterial(holders)
+        : this.tellRegistrants()
+          ? this.copy.correctionTellsRequested(holders)
+          : this.copy.correctionTellsNobody,
+      this.copy.correctionKept,
+    ];
+  });
+
+  protected readonly canCorrect = computed(() => {
+    const event = this.original();
+    return (
+      event !== undefined &&
+      event !== null &&
+      this.correctionBlocks().length === 0 &&
+      correctionOf(event, this.draft()).changed.length > 0 &&
+      !this.saving()
+    );
+  });
+
+  /** Whether the event can be corrected at all; said instead of the form when it cannot. */
+  protected readonly correctable = computed(() => {
+    const event = this.original();
+    return event !== undefined && event !== null && canBeCorrected(event, this.now);
+  });
+
   private coverImage(): EventDraft['image'] {
     const file = this.cover();
-    return file === null ? null : { kind: 'chosen', file, altText: this.altText() };
+    if (file !== null) {
+      return { kind: 'chosen', file, altText: this.altText() };
+    }
+    const stored = this.storedCover();
+    return stored === null
+      ? null
+      : { kind: 'stored', mediaId: stored.mediaId, altText: this.altText() };
   }
 
+  /** The form, filled from the event as it stands. */
+  private fill(event: LguEvent): void {
+    this.title.set(event.title);
+    this.summary.set(event.summary);
+    this.details.set(event.details);
+    this.category.set(event.category);
+    this.storedCover.set(event.image);
+    this.altText.set(event.image?.altText ?? '');
+    this.startsAt.set(this.asLocal(event.startsAt));
+    this.endsAt.set(this.asLocal(event.endsAt));
+    this.venueName.set(event.venue.name);
+    this.address.set(event.venue.address);
+    this.mapUrl.set(event.venue.mapUrl ?? '');
+    this.barangayId.set(event.venue.barangayId);
+    this.contactName.set(event.contact.name);
+    this.contactOffice.set(event.contact.office);
+    this.contactPhone.set(event.contact.phone ?? '');
+    this.registrationRequired.set(event.registration.isRequired);
+    this.opensAt.set(
+      event.registration.opensAt === null ? '' : this.asLocal(event.registration.opensAt),
+    );
+    this.closesAt.set(
+      event.registration.closesAt === null ? '' : this.asLocal(event.registration.closesAt),
+    );
+    this.capacity.set(
+      event.registration.capacity === null ? '' : String(event.registration.capacity),
+    );
+    this.safeLimit.set(
+      event.registration.safeLimit === null ? '' : String(event.registration.safeLimit),
+    );
+    this.waitlist.set(event.registration.waitlistEnabled);
+    this.eligibility.set(event.registration.eligibility);
+    this.givesOutBenefit.set(event.registration.givesOutBenefit);
+    this.participationNote.set(event.registration.participationNote ?? '');
+    this.reminders.set(event.reminders ?? '');
+  }
+
+  /** An instant as a `datetime-local` value, in this browser's time, as the field reads it back. */
+  private asLocal(value: IsoDateTime): string {
+    const at = new Date(value);
+    const two = (part: number): string => String(part).padStart(2, '0');
+    const local =
+      `${at.getFullYear()}-${two(at.getMonth() + 1)}-${two(at.getDate())}` +
+      `T${two(at.getHours())}:${two(at.getMinutes())}`;
+    this.filledTimes.set(local, value);
+    return local;
+  }
+
+  /** The event's own instants, by the field text they were filled as. */
+  private readonly filledTimes = new Map<string, IsoDateTime>();
+
   private asDate(value: string): EventDraft['startsAt'] {
-    return value === '' ? null : asIsoDateTime(new Date(value));
+    // A time left as the event had it is the event's own instant, seconds included, so an untouched
+    // field never reads as a correction of when the event is.
+    return value === '' ? null : (this.filledTimes.get(value) ?? asIsoDateTime(new Date(value)));
   }
 
   protected categoryLabel(category: EventCategory): string {
@@ -176,6 +360,48 @@ export class EventComposerPage {
 
   protected onWaitlist(event: Event): void {
     this.waitlist.set((event.target as HTMLInputElement).checked);
+  }
+
+  protected onEligibility(value: RegistrationEligibility): void {
+    this.eligibility.set(value);
+  }
+
+  protected eligibilityLabel(value: RegistrationEligibility): string {
+    return REGISTRATION_ELIGIBILITY_LABELS[value];
+  }
+
+  protected onGivesOutBenefit(event: Event): void {
+    this.givesOutBenefit.set((event.target as HTMLInputElement).checked);
+  }
+
+  protected onTellRegistrants(event: Event): void {
+    this.tellRegistrants.set((event.target as HTMLInputElement).checked);
+  }
+
+  protected submit(): Promise<void> {
+    return this.correcting() ? this.saveCorrection() : this.save();
+  }
+
+  protected async saveCorrection(): Promise<void> {
+    const event = this.original();
+    if (!this.canCorrect() || event === undefined || event === null) {
+      return;
+    }
+    this.saving.set(true);
+    try {
+      const corrected = await firstValueFrom(
+        this.repository.correct(asId<LguEventId>(event.id), this.draft(), {
+          reason: this.reason(),
+          tellRegistrants: this.tellRegistrants(),
+        }),
+      );
+      this.notifications.success(this.copy.corrected);
+      await this.router.navigate(['/events', asId<LguEventId>(corrected.id)]);
+    } catch {
+      this.notifications.error(this.copy.correctFailed);
+    } finally {
+      this.saving.set(false);
+    }
   }
 
   protected async save(): Promise<void> {

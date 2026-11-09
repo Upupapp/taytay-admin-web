@@ -153,6 +153,18 @@ async function openEvent(
   return fixture;
 }
 
+async function openCorrection(
+  eventId: string,
+  role: StaffRole = 'mswdo-head',
+  id = 'staff-head',
+): Promise<ComponentFixture<EventComposerPage>> {
+  await configure(staffUser(role, id));
+  const fixture = TestBed.createComponent(EventComposerPage);
+  fixture.componentRef.setInput('id', eventId);
+  await fixture.whenStable();
+  return fixture;
+}
+
 const html = (fixture: ComponentFixture<unknown>) => fixture.nativeElement as HTMLElement;
 const text = (fixture: ComponentFixture<unknown>) => html(fixture).textContent ?? '';
 const buttons = (fixture: ComponentFixture<unknown>) =>
@@ -302,6 +314,8 @@ describe('the registrant table', () => {
       'barangayId',
       'displayName',
       'id',
+      'identityVerified',
+      'nameSource',
       'notes',
       'reference',
       'registeredAt',
@@ -727,5 +741,131 @@ describe('an event’s cover', () => {
     fixture.detectChanges();
 
     expect(html(fixture).querySelector('img')).toBeNull();
+  });
+});
+
+/* ── DL-195: corrections, the safe limit, check-in and who may register ──── */
+
+describe('correcting a published event (DL-195)', () => {
+  interface CorrectionPage {
+    title: () => string;
+    venueName: { set: (value: string) => void };
+    reminders: { set: (value: string) => void };
+    reason: { set: (value: string) => void };
+    tellRegistrants: () => boolean;
+    canCorrect: () => boolean;
+    correctionEffects: () => readonly string[];
+    correctionBlocks: () => readonly string[];
+    saveCorrection: () => Promise<void>;
+  }
+
+  it('is offered on a published event that has not started, to somebody who may publish', async () => {
+    const head = await openEvent('event-0002');
+    expect(text(head)).toContain('Correct this event');
+    const started = await openEvent('event-0006');
+    expect(text(started)).not.toContain('Correct this event');
+    const cancelled = await openEvent('event-0007');
+    expect(text(cancelled)).not.toContain('Correct this event');
+    const auditor = await openEvent('event-0002', 'auditor', 'staff-auditor');
+    expect(text(auditor)).not.toContain('Correct this event');
+  });
+
+  it('starts from the event, asks why, and leaves residents untold unless asked', async () => {
+    const fixture = await openCorrection('event-0002');
+    const page = fixture.componentInstance as unknown as CorrectionPage;
+    expect(page.title()).toContain('Medical mission');
+    expect(page.tellRegistrants()).toBe(false);
+    expect(page.correctionEffects()).toEqual([
+      'Changes nothing yet. Nothing is recorded and nobody is told.',
+    ]);
+    page.reminders.set('Bring a valid ID and your own water.');
+    await fixture.whenStable();
+    expect(page.correctionEffects().join(' ')).toContain('Sends residents no notice.');
+    expect(page.canCorrect()).toBe(false);
+    expect(page.correctionBlocks().join(' ')).toContain('Say why it is corrected');
+  });
+
+  it('says before its button that a new venue tells everybody holding a place', async () => {
+    const fixture = await openCorrection('event-0002');
+    const page = fixture.componentInstance as unknown as CorrectionPage;
+    page.venueName.set('Taytay municipal gym');
+    page.reason.set('The covered court is under repair.');
+    await fixture.whenStable();
+
+    const said = page.correctionEffects().join(' ');
+    expect(said).toContain('Changes the venue.');
+    expect(said).toContain('with the old and the new date, time and venue');
+    expect(page.canCorrect()).toBe(true);
+    const effectsAt = text(fixture).indexOf('Saving this correction:');
+    const buttonAt = text(fixture).indexOf('Save the correction');
+    expect(effectsAt).toBeGreaterThan(-1);
+    expect(effectsAt).toBeLessThan(buttonAt);
+
+    await page.saveCorrection();
+    const repository = TestBed.inject(EVENT_REPOSITORY);
+    const corrected = await firstValueFrom(repository.getById(asId('event-0002')));
+    expect(corrected?.venue.name).toBe('Taytay municipal gym');
+    const history = await firstValueFrom(repository.history(asId('event-0002')));
+    expect(history[0]?.summary).toContain('Corrected after publication: the venue.');
+    expect(history[0]?.reason).toBe('The covered court is under repair.');
+  });
+
+  it('says the event cannot be corrected once it has started', async () => {
+    const fixture = await openCorrection('event-0006');
+    expect(text(fixture)).toContain('only a published event that has not started can be');
+    expect(buttons(fixture)).not.toContain('Save the correction');
+  });
+});
+
+describe('the safe limit and who may register (DL-195)', () => {
+  it('explains the safe limit in plain words on the composer', async () => {
+    const fixture = await openComposer();
+    const page = fixture.componentInstance as unknown as {
+      registrationRequired: { set: (value: boolean) => void };
+    };
+    page.registrationRequired.set(true);
+    await fixture.whenStable();
+    expect(text(fixture)).toContain('occupant load posted at the venue');
+    expect(text(fixture)).toContain('Who may register');
+  });
+
+  it('ticks and fixes "gives out cash, goods or a benefit" for a payout', async () => {
+    const fixture = await openComposer();
+    const page = fixture.componentInstance as unknown as {
+      category: { set: (value: string) => void };
+      registrationRequired: { set: (value: boolean) => void };
+      draft: () => { registration: { givesOutBenefit: boolean } };
+    };
+    page.registrationRequired.set(true);
+    page.category.set('payout');
+    await fixture.whenStable();
+    expect(page.draft().registration.givesOutBenefit).toBe(true);
+    expect(text(fixture)).toContain('This kind of event always gives something out');
+  });
+
+  it('shows the safe limit beside the counts, and who may register in the preview', async () => {
+    const fixture = await openEvent('event-0002');
+    expect(text(fixture)).toContain('Safe limit: 230.');
+    expect(text(fixture)).toContain('Residents whose ID the office has verified');
+  });
+});
+
+describe('check-in mode (DL-195)', () => {
+  it('finds one registrant and never puts the list on the screen', async () => {
+    const fixture = await openEvent('event-0003');
+    expect(html(fixture).querySelector('table.registrants')).not.toBeNull();
+    const page = fixture.componentInstance as unknown as { toggleCheckIn: () => void };
+    page.toggleCheckIn();
+    await fixture.whenStable();
+
+    expect(html(fixture).querySelector('table.registrants')).toBeNull();
+    expect(html(fixture).querySelector('app-event-check-in')).not.toBeNull();
+    expect(text(fixture)).toContain('never shows the list');
+    expect(buttons(fixture)).toContain('Leave check-in mode');
+  });
+
+  it('is not offered to a reader who cannot mark attendance', async () => {
+    const fixture = await openEvent('event-0003', 'auditor', 'staff-auditor');
+    expect(buttons(fixture)).not.toContain('Check-in mode');
   });
 });

@@ -23,10 +23,12 @@ import {
   EVENT_STATUS_CATALOG,
   EVENT_STATUS_TRANSITIONS,
   REGISTRATION_AVAILABILITY_LABELS,
+  REGISTRATION_ELIGIBILITY_LABELS,
   REGISTRATION_STATUS_CATALOG,
   asId,
   asIsoDateTime,
   barangayName,
+  canBeCorrected,
   canOfferPromotion,
   canTransition,
   describeAttendance,
@@ -35,6 +37,7 @@ import {
   placesRemaining,
   promotionExceedsCapacity,
   registrationAvailability,
+  safeLimitReached,
   type AttendanceStatus,
   type AuditRow,
   type EventCapacitySummary,
@@ -52,6 +55,7 @@ import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
+import { EventCheckIn } from './event-check-in';
 import { EVENTS_COPY } from './events.copy';
 
 /**
@@ -78,7 +82,7 @@ import { EVENTS_COPY } from './events.copy';
 @Component({
   selector: 'app-event-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, Modal, PageHeader, RouterLink, StatusBadge],
+  imports: [AsyncContent, DatePipe, EventCheckIn, Modal, PageHeader, RouterLink, StatusBadge],
   templateUrl: './event-detail-page.html',
   styleUrl: './event-detail-page.scss',
 })
@@ -223,6 +227,37 @@ export class EventDetailPage {
   protected readonly history = computed<readonly AuditRow[]>(
     () => valueOf(this.historyState()) ?? [],
   );
+
+  /**
+   * Check-in mode (`DL-195`). While it is on the registrant list is not on the screen at all — not
+   * hidden by a style, not rendered — so a screen turned to face the queue shows one person at a
+   * time.
+   */
+  protected readonly checkInMode = signal(false);
+
+  protected toggleCheckIn(): void {
+    this.checkInMode.update((on) => !on);
+  }
+
+  /** A registrant marked at the door: the counts are read again, as after any act. */
+  protected onCheckedIn(): void {
+    this.reloads.update((count) => count + 1);
+  }
+
+  /** Where the office's own count says the safe limit is reached (`DL-195`). A warning only. */
+  protected atSafeLimit(event: LguEvent): boolean {
+    const summary = this.summary();
+    return summary !== null && safeLimitReached(summary, event.registration.safeLimit);
+  }
+
+  /** A published event that has not started, for somebody who may publish (`DL-195`). */
+  protected canCorrectEvent(event: LguEvent): boolean {
+    return this.canPublish() && canBeCorrected(event, asIsoDateTime(new Date()));
+  }
+
+  protected eligibilityLabel(event: LguEvent): string {
+    return REGISTRATION_ELIGIBILITY_LABELS[event.registration.eligibility];
+  }
 
   /* ── Reading the event ──────────────────────────────────────────────────── */
 
