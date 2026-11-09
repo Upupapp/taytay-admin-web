@@ -40,8 +40,9 @@ const PAGE_SIZE = 20;
 /**
  * Balita (`news.write`, `DL-171`): the news residents read in the Taytay app, written and kept here.
  *
- * **Not the newsfeed.** The console's newsfeed module is a different model the API cannot serve
- * (`DL-164`); this screen reads its own port and says near its title that residents read it in the app.
+ * **The one news channel.** The console's newsfeed, a different model the API never served
+ * (`DL-164`), was retired in favour of this screen (`DL-194`); it says near its title that residents
+ * read it in the app, and that it is the only news this console publishes.
  *
  * **The published list, a page at a time** (`DL-161`), pinned first then newest, as residents see it.
  * The API lists no drafts, so a draft created or opened here is kept in this page's memory — never in

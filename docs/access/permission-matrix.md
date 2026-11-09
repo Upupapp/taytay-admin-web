@@ -35,7 +35,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-84 permissions × 7 roles. `X` means the role holds the permission.
+75 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -90,17 +90,9 @@ self-registration), `DL-33` (accessible authentication).
 | `saved-view.share`                      | X     | X    |     |        |      |      |       |
 | `settings.manage`                 | X     |      |     |        |      |      |       |
 
-<!-- Newsfeed and Events, added by the late-phase command (TAB 24). -->
+<!-- Events, added by the late-phase command (TAB 24) beside nine newsfeed keys. The newsfeed
+and its keys were retired on 2026-11-09 in favour of Balita (DL-194). -->
 
-| `newsfeed.view`                    | X     | X     |       |       |       |       | X    |
-| `newsfeed.create`                  | X     | X     |       |       |       |       |      |
-| `newsfeed.edit`                    | X     | X     |       |       |       |       |      |
-| `newsfeed.publish`                 | X     | X     |       |       |       |       |      |
-| `newsfeed.schedule`                | X     | X     |       |       |       |       |      |
-| `newsfeed.archive`                 | X     | X     |       |       |       |       |      |
-| `newsfeed.pin`                     | X     | X     |       |       |       |       |      |
-| `newsfeed.moderate`       | X     | X     |       |       |       |       |      |
-| `newsfeed.view-insights`           | X     | X     |       |       |       |       | X    |
 | `event.view`                      | X     | X     |       |       |       |       | X    |
 | `event.create`                    | X     | X     |       |       |       |       |      |
 | `event.edit`                      | X     | X     |       |       |       |       |      |
@@ -148,7 +140,8 @@ account's and a read; keeping cards is the administrator's alone. -->
 | `digital-id.manage`               | X     |       |       |       |       |       |      |
 
 <!-- Balita, the residents' app news, added by DL-171. The server's own key: staff at an office and
-administrators, so the roles that answer an office's inbox. Not the newsfeed's keys. -->
+administrators, so the roles that answer an office's inbox. The console's one news channel since
+the newsfeed was retired (DL-194). -->
 
 | `news.write`                      | X     | X     | X     | X     | X     |       |      |
 
@@ -173,14 +166,15 @@ test asserts it is empty, so this cannot regress quietly.
 _see_ staff (`staff.view`) but cannot change roles. Whoever can grant permissions
 should not also be working cases with them.
 
-**Newsfeed and Events sit with the head, not with caseworkers.** A post or an
-event goes out in the MSWDO's name, so the command's suggested "Newsfeed
-Manager" and "Events Manager" map onto the role that already answers for what
-the office says (`DL-122`). A caseworker's remit is casework; nothing about it
-implies speaking for the municipality. The auditor holds the two `view` and two
-`view-insights` keys and nothing that changes anything — which is why
-`export-registrations` and both `view-insights` keys are classified read-only,
-or adding them would have turned oversight into a mutating role.
+**Events sit with the head, not with caseworkers.** An event goes out in the
+MSWDO's name, so the command's suggested "Events Manager" maps onto the role
+that already answers for what the office says (`DL-122`). A caseworker's remit
+is casework; nothing about it implies speaking for the municipality. The
+auditor holds `event.view` and `event.view-insights` and nothing that changes
+anything — which is why `event.export-registrants` and `event.view-insights`
+are classified read-only, or adding them would have turned oversight into a
+mutating role. The nine `newsfeed.*` keys that sat beside them, with the head's
+and the auditor's grants of them, were retired with the newsfeed (`DL-194`).
 
 **`audit.view-detail` is held by the auditor and not the head.** Reading the
 trail is oversight — did somebody record a reason, assign an owner, act in time?

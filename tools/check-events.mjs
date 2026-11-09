@@ -433,7 +433,7 @@ for (const token of ['eventChat', 'eventComment', 'discussion']) {
   ) {
     problems.push(
       `The events module has \`${token}\`. There is no event chat and no event comments — the ` +
-        'command excludes both, and moderation lives in the newsfeed.',
+        'command excludes both, and the console has no comment moderation since the newsfeed was retired (DL-194).',
     );
   }
 }

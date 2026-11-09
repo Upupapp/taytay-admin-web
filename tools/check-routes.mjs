@@ -30,7 +30,9 @@
  *
  * How many ports are unserved. That number is the honest size of the gap between this console and
  * its API (`DL-164`), it may only shrink, and launch gate line 05/07 stays NO-GO while it is above
- * zero — unless the owner retires those screens.
+ * zero — unless the owner retires those screens. It reached zero on 9 November 2026, when the owner
+ * retired the newsfeed's screens in favour of Balita (`DL-194`), so it is now a hard rule as well:
+ * a port bound to an unserved adapter fails the build.
  */
 
 import { createHash } from 'node:crypto';
@@ -293,12 +295,13 @@ for (const [pattern, what] of [
  * serving search and the work queues (`DL-189`), and to three the same day, when it began serving
  * reports (`DL-190`), and to two the same day, when it began serving governance — staff
  * accounts, the office's audit trail and data policy (`DL-191`), and to one on 8 November 2026,
- * when it began serving events — the office's side of the residents' registrations (`DL-192`).
- * LOWER THIS as a port is served (or retired by
- * the owner); never raise it. Raising it means
- * a screen that worked against the API has stopped.
+ * when it began serving events — the office's side of the residents' registrations (`DL-192`), and
+ * to zero on 9 November 2026, when the owner retired the newsfeed's screens, its port and its keys
+ * in favour of Balita, the news residents read in the app (`DL-194`). Never raise it: raising it
+ * means a screen that worked against the API has stopped, or a screen was built ahead of its API —
+ * and either reopens launch gate line 05/07.
  */
-const UNSERVED_CEILING = 1;
+const UNSERVED_CEILING = 0;
 
 if (unservedBindings.length > UNSERVED_CEILING) {
   failures.push(
@@ -324,9 +327,13 @@ console.log(
     `${provenance.repository}@${provenance.commitShort}, ${operations} operations).`,
 );
 
-console.error(
-  `\n  \u001b[31m${unservedBindings.length} of ${bindings.length} ports have no route\u001b[0m and are bound to an adapter that ` +
-    `makes no request.\n  Gate line 05/07 is NO-GO until this reaches zero or the owner retires those screens (DL-164).\n`,
+/*
+ * Reached only with the count at the ceiling, which is zero, so the count is zero here. Printed so a
+ * reader of the gate log sees the measure, not only a pass: gate line 05/07's unserved-port
+ * condition holds, and the gate's other lines still apply (DL-194).
+ */
+console.log(
+  `  ${unservedBindings.length} of ${bindings.length} ports have no route: every port is served by one (DL-194).`,
 );
 
 /** Walk each `this.api.<verb>(` to its matching close paren, counting depth. */

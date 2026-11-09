@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { PermissionService } from '@core/access/permission.service';
 import { ServedPorts, UNSERVED_ROUTE } from '@core/access/served-ports';
+import { SessionStore } from '@core/auth/session.store';
 import { NAVIGATION, type NavItem, type NavSection } from '@core/navigation/navigation';
 
 import { LAYOUT_COPY } from '../layout.copy';
@@ -22,6 +23,11 @@ import { LAYOUT_COPY } from '../layout.copy';
  * reads a port the bound adapter set cannot serve is withheld, and one link names
  * them all instead: the module is left out of the menu, never left unexplained,
  * because a missing link with no reason reads as a missing record (`DL-112`).
+ *
+ * The same link is offered to a staff account no office is linked to (`DL-168`),
+ * even when every module is served, as it is since the newsfeed was retired
+ * (`DL-194`): that page is where the account is told why it has no office inbox
+ * and who can fix it, and with nothing withheld it would otherwise be unreachable.
  */
 @Component({
   selector: 'app-nav',
@@ -55,7 +61,7 @@ import { LAYOUT_COPY } from '../layout.copy';
       @if (sections().length === 0) {
         <p class="nav__empty">{{ withholding ? copy.navEmptyUnserved : copy.navEmpty }}</p>
       }
-      @if (withholding) {
+      @if (withholding || awaitingOffice()) {
         <ul class="nav__list nav__list--unserved">
           <li>
             <a
@@ -64,7 +70,9 @@ import { LAYOUT_COPY } from '../layout.copy';
               routerLinkActive="nav__link--active"
               #unservedActive="routerLinkActive"
               [attr.aria-current]="unservedActive.isActive ? 'page' : null"
-              [title]="copy.navUnservedDescription"
+              [title]="
+                withholding ? copy.navUnservedDescription : copy.navAwaitingOfficeDescription
+              "
               (click)="navigated.emit()"
             >
               <span class="nav__glyph" aria-hidden="true">NC</span>
@@ -80,6 +88,7 @@ import { LAYOUT_COPY } from '../layout.copy';
 export class AppNav {
   private readonly permissions = inject(PermissionService);
   private readonly served = inject(ServedPorts);
+  private readonly session = inject(SessionStore);
 
   /** Emitted after a link is chosen, so a mobile shell can close its drawer. */
   readonly navigated = output<void>();
@@ -89,6 +98,9 @@ export class AppNav {
 
   /** Fixed for the life of the app: which adapter set is bound does not change at run time. */
   protected readonly withholding = this.served.unserved.length > 0;
+
+  /** A staff account the server has linked to no office (`DL-168`). */
+  protected readonly awaitingOffice = computed(() => this.session.user()?.awaitingOffice === true);
 
   /** Sections with no permitted, served entry are dropped rather than rendered empty. */
   protected readonly sections = computed<readonly NavSection[]>(() =>

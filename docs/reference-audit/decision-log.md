@@ -3259,7 +3259,7 @@ reading of a misconfiguration.
 
 ### DL-122 · Newsfeed and Events extend the one permission model
 
-**Status:** Settled (implemented in TAB 24).
+**Status:** Settled (implemented in TAB 24). Its newsfeed half — nine keys and their grants — is superseded by `DL-194`; the events half stands.
 
 The late-phase command adds two modules and says, in as many words, to extend
 the existing centralised permission model and not create a second RBAC. That is
@@ -3302,7 +3302,7 @@ split would not apply to a published post.
 
 ### DL-123 · The resident contract is written down and never implemented
 
-**Status:** Settled (implemented in TAB 24).
+**Status:** Settled (implemented in TAB 24). Its post and comment half is superseded by `DL-194`; the events half and the asymmetry stand.
 
 The command permits the admin portal to define typed interfaces describing what
 the separate resident mobile app consumes, and forbids implementing that app.
@@ -3342,7 +3342,7 @@ Two shapes carry the same reasoning further:
 
 ### DL-124 · Publishing is one-way, and the screen says so before the act
 
-**Status:** Settled (implemented in TAB 25).
+**Status:** Settled (implemented in TAB 25). Superseded by `DL-194`: the newsfeed was retired. The warning-before-publish doctrine lives on in Balita.
 
 `POST_STATUS_TRANSITIONS.published` is `['archived']`. There is no path from
 `published` back to `draft` or `scheduled`, and no screen offers an "unpublish",
@@ -3373,7 +3373,7 @@ mistakenly archived flood advisory is worse off than one that can.
 
 ### DL-125 · An image is described before it is published, and not before
 
-**Status:** Settled (implemented in TAB 25).
+**Status:** Settled (implemented in TAB 25). Superseded by `DL-194` for the newsfeed, which was retired. The doctrine lives on in an event's cover (`DL-193`).
 
 `PostImage.altText` is a **required** `string`, not optional and not nullable,
 and `postProblems` refuses to publish a post whose image has none.
@@ -3403,7 +3403,7 @@ is acted on; "alt text required" is worked around.
 
 ### DL-126 · Reach is counts, and there is no method that could say more
 
-**Status:** Settled (implemented in TAB 25).
+**Status:** Settled (implemented in TAB 25). Superseded by `DL-194`: the newsfeed was retired. It is the starting point for reactions on Balita, if built.
 
 `Post` carries `reactionCount` and `commentCount`. Nothing in the newsfeed
 domain, the port, either adapter or any screen can answer *which* residents
@@ -3427,7 +3427,7 @@ limit an office never sees is one it discovers by being wrong about it.
 
 ### DL-127 · Hiding keeps the words; removal deletes them
 
-**Status:** Settled (implemented in TAB 25).
+**Status:** Settled (implemented in TAB 25). Superseded by `DL-194`: the newsfeed was retired. It is the starting point for comments on Balita, if built.
 
 `CommentState` is `visible | hidden | removed`, and the two moderation outcomes
 are different promises:
@@ -8746,3 +8746,126 @@ each rule validated against a planted regression (14 of 14 caught).
   behind Caddy. It mattered more than the URLs: every request had carried Caddy's address, so all
   clients shared one rate-limit bucket and one OTP throttle. `TRUST_PROXY` overrides it for another
   proxy and refuses `true`.
+
+## DL-194 — the console's newsfeed is retired in favour of Balita, the one news channel, and no port is unserved
+
+**Decided by the owner, 9 November 2026** ("do what's best"), on the recommendation the open items
+carried (`docs/turnover/known-limitations-and-open-items.md` §4).
+
+**Why.** Residents read news in one place: the app's Balita, which the Node API serves (`GET /news`)
+and this console publishes to (`features/balita`, `DL-171`). The API has no newsfeed, and building
+one would publish posts that no resident ever sees, because no client reads them. The console's
+newsfeed (TAB 25) was a different model — scheduling, image descriptions, comments, moderation,
+reach counts — bound since the move to an adapter that made no request (`DL-165`), and after events
+were served (`DL-192`) it was the last such port. `CLAUDE.md` held the launch gate at NO-GO while
+any port is unserved, "unless the owner retires the screens behind it"; this is that retirement.
+
+It is a removal, not a switch. Dormant code rots, and a gate guarding a module nobody can open is a
+green number about nothing (`DL-143`). Git history keeps all of it; the last commit that has it is
+`48dfa4f`.
+
+### What went
+
+- **Screens:** `features/newsfeed` (list, composer, detail, copy and spec: 11 files), its three
+  routes and its menu entry under Community.
+- **Domain:** `domain/newsfeed` (`Post`, `Comment`, their catalogs, transitions, problems and spec:
+  3 files), `PostId`, `CommentId`, `NewsfeedRepository`, `NEWSFEED_REPOSITORY`, and `newsfeed` from
+  `DATA_PORTS` and `DATA_PORT_HOLDINGS`.
+- **Data:** `MockNewsfeedRepository`, its seed and `UnservedNewsfeedRepository`, with their bindings
+  in both adapter sets.
+- **Keys:** the nine `newsfeed.*` keys, with the head's nine grants and the auditor's two. `PERMISSIONS`
+  goes from 84 keys to 75. The ten `event.*` keys `DL-122` added in the same act stay, as does every
+  role's grant of them.
+- **Resident contract:** `newsfeed.read`, `.react`, `.comment` and `.share`, `ResidentPostView`,
+  `ResidentCommentView` and the four post methods. Its events half stays.
+- **Gate:** `check:newsfeed`, from `package.json`, `verify` and `CLAUDE.md`.
+
+Seventeen files in all, and the module's page, `docs/newsfeed/README.md`. The compiler and the tests named nothing outside them that depended on the
+newsfeed: `discloseResident`, the image policy, `ImageFileField` and events' catalogs never did.
+
+### What stayed, and why
+
+- **Every `AuditAction`**, the newsfeed's seams included (`scheduled`, `pinned`, `unpinned`,
+  `comment-hidden`, `comment-restored`, `comment-replied`). The union is the API's trail vocabulary
+  as well as this console's: the spec's `category` and `action` filter enumerate all nineteen, and
+  the backend's governance test compares its `TRAIL_CATEGORIES` with this union, in order. Events,
+  releases and visits use `published`, `archived`, `cancelled` and `scheduled`; the rest are kinds
+  the office's trail holds no act of yet, and the API answers them with an empty page.
+- **The unserved mechanism** — `UnservedError` and `unserved()` (which still answer two
+  staff-directory methods from the served adapter), `UNSERVED_PORTS`, `ServedPorts`,
+  `servedGuard`, `/unavailable` and `<app-not-connected>`. The next port the console gains ahead of
+  its API needs them. `UNSERVED_HTTP_PORTS` is `[]`.
+- **The `me-admin.json` fixture** keeps the nine keys: it records what the API's `/me` still sends.
+  `fromServerIdentity` keeps only keys the console knows, so they are set aside as unknown and grant
+  nothing (`http-repositories.spec.ts` names all nine), and the session's once-per-session
+  developer warning about a drifted vocabulary lists them until the backend drops them.
+
+### What this supersedes
+
+- **`DL-122`, in part:** the nine newsfeed keys and the grants of them. One RBAC, kebab-case, roles
+  mapped rather than invented, insights and exports classified read-only — all stand for events.
+- **`DL-123`, in part:** a resident's post and comment capabilities and shapes. The asymmetry
+  stands: a resident reads and registers, and never publishes. `RESIDENT_MUST_NEVER` now names
+  `news.write` in place of the eight refused newsfeed keys, so the one news channel is the one a
+  resident is held away from.
+- **`DL-124` to `DL-127`, and `DL-134`'s terminal archive:** their subject is gone. What they held
+  about publishing outward lives where news goes out now:
+  - **A publish cannot be recalled, and the screen says so before the button** (`DL-124`). Balita's
+    publish, take-off and pin buttons each stand below their effects (`DL-171`, `check:balita`
+    rule 3).
+  - **An image is described before it is published** (`DL-125`). An event's cover is described
+    beside it, and a published event without the words is refused (`DL-193`). Balita's API keeps no
+    description of a cover; the screen says so rather than collecting words it would throw away
+    (`DL-171`). That is a gap in the API, recorded rather than closed here.
+  - **Reach is counts; hiding keeps the words and removal deletes them** (`DL-126`, `DL-127`). No
+    surface has either today. Comments and reactions on Balita (TOR T-17, OD-4, FR-RES-9,
+    FR-STAFF-34) remain a future Balita feature for the owner: this retirement removes a console
+    screen nobody could reach, not a TOR feature. Whoever builds them starts from these two entries.
+
+### The gates
+
+None was weakened; each was changed to hold the same intent with nothing unserved.
+
+- **`check:routes`:** the unserved ceiling goes from 1 to **0**, so a port bound to an unserved
+  adapter now fails the build. The red NO-GO line it printed on every run is now the count: 0 of 33
+  bound ports have no route.
+- **`check:unserved`:** unchanged, and passing with nothing unserved (32 ports named, 0 unserved,
+  all declared). With zero, the menu offers no "Not connected yet" link and the page says "Every
+  part of this console is served". One behaviour needed fixing: a staff account linked to no office
+  (`DL-168`) reached the sentence saying why it has no office inbox only through that link. The menu
+  now offers the link to such an account whatever is served (`app-nav.ts`), and
+  `unserved-modules.spec.ts` holds it. The spec holds the withholding mechanism against a port named
+  for the purpose (`event`) rather than against an http list that is now empty.
+- **`check:balita`:** its clause "not the newsfeed" is kept and made stronger rather than dropped.
+  Rule 1 requires the page to say Balita is the one news channel this console publishes to; rule 2
+  reads the whole of `src/app`, not just the Balita module, and fails on a newsfeed folder, port,
+  token, data port, permission key, route or menu entry — a second news channel is a defect, not a
+  neighbour. Validated against eight planted regressions, eight caught. Its two patterns are split so
+  that `check:scanners` (`DL-143`) does not read a welded key as a call.
+- **`check:community`:** holds `news.write` in `PERMISSIONS` and in `RESIDENT_MUST_NEVER` beside the
+  events keys, where it held the newsfeed's. Its check on `ResidentPostView` went with the type. It
+  still requires all ten audit seams. Two planted regressions, two caught.
+- **`check:access`:** the office reference, `docs/access/permission-matrix.md`, reads 75 permissions
+  × 7 roles.
+- **`check:permission-parity`:** still 0 unreachable guards; the three newsfeed guards went with
+  their routes.
+- **`check:port-adoption`:** 6 of 231 port methods reached from no screen, as before; the newsfeed's
+  eleven were all reached.
+- **`check:consumer-contract`** and **`check:contract-drift`:** unchanged. The consumer
+  expectations never named the newsfeed, and the vendored spec is the API's.
+
+### For the owner, and for the backend
+
+- **The backend still names the newsfeed's keys.** `taytay-backend` `src/auth/casework.ts` lists
+  the nine `newsfeed.*` keys in `CASEWORK_PERMISSIONS` and grants them to the head and the auditor,
+  so its OpenAPI `CaseworkPermission` enum and `/me` carry them. Its parity test
+  (`tests/casework.test.ts`, "parity with the staff console") reads this console's `permission.ts`
+  when the two are checked out side by side and requires the same casework keys in the same order,
+  so **it fails until the backend drops the nine keys and their grants**. This change touches no
+  backend file. The backend change is small — remove the keys and grants, regenerate the spec, then
+  re-vendor it here with `node tools/vendor-openapi.mjs` — and the two-repo sweep before any push
+  (`CLAUDE.md` rule 9) will fail on that test until it is made. Two backend comments also name the
+  newsfeed (`office-governance/trail.ts`, and the spec's `action` filter description).
+- **Comments and reactions on Balita** (OD-4) are the owner's decision with the LGU, as before.
+- **Launch gate line 05/07:** its unserved-port condition now holds. The line itself, and every
+  other line, still needs its evidence and its signature.

@@ -1,12 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, type Route } from '@angular/router';
-import { firstValueFrom, isObservable, of, type Observable } from 'rxjs';
+import { firstValueFrom, of, type Observable } from 'rxjs';
 
 import type { ServedGuard } from '@core/access/served-ports';
 import { SessionStore } from '@core/auth/session.store';
 import { NAVIGATION } from '@core/navigation/navigation';
 import { provideDataAccess } from '@data/data-access.providers.mock';
-import { UnservedNewsfeedRepository, UNSERVED_HTTP_PORTS } from '@data/http/unserved-repositories';
+import { UNSERVED_HTTP_PORTS } from '@data/http/unserved-repositories';
 import {
   asId,
   DATA_PORT_HOLDINGS,
@@ -37,6 +37,10 @@ import { AppNav } from './layout/navigation/app-nav';
  * The http set is read through `UNSERVED_HTTP_PORTS` rather than `provideDataAccess()`: the test
  * build swaps that file for the mock one, exactly as `local-mock` does. That the binding and the
  * list agree is `check:unserved`'s rule 1.
+ *
+ * That list is empty since the newsfeed was retired (`DL-194`), so the mechanism is held here
+ * against a port named for the purpose — events, the last to be served (`DL-192`) — rather than
+ * against whatever the http set happens to lack.
  */
 
 const ADMINISTRATOR: StaffUser = {
@@ -126,64 +130,23 @@ async function menuLinks(): Promise<readonly (string | null)[]> {
 
 const MENU = NAVIGATION.flatMap((section) => section.items);
 
-/**
- * The menu entries the http set withholds: every one whose primary port it does not serve. A
- * secondary panel's port is not in `reads` (`DL-175`), so it withholds nothing.
- */
-const WITHHELD = MENU.filter((item) =>
-  item.reads.some((port) => UNSERVED_HTTP_PORTS.includes(port)),
-);
-
-/**
- * What the http set offers. Derived rather than spelled out, so a port the Node API comes to serve
- * moves its module into the menu without this list being edited to match.
- */
-const OFFERED = MENU.filter((item) => !WITHHELD.includes(item)).map((item) => item.route);
-
 describe('the http adapter set', () => {
-  const adapters = [
-    UnservedNewsfeedRepository,
-    ] as const;
-
-  it('declares exactly the ports its unserved adapters stand in for, once each', () => {
-    expect(UNSERVED_HTTP_PORTS).toHaveLength(adapters.length);
-    expect(new Set(UNSERVED_HTTP_PORTS)).toEqual(new Set(adapters.map((adapter) => adapter.port)));
+  it('declares nothing unserved since the newsfeed was retired (DL-194)', () => {
+    expect(UNSERVED_HTTP_PORTS).toEqual([]);
   });
 
-  it.each(adapters.map((adapter) => [adapter.name, adapter] as const))(
-    '%s refuses in the words the unserved page uses for its port',
-    async (_name, Adapter) => {
-      const instance = new Adapter();
-      const prototype: unknown = Object.getPrototypeOf(instance);
-      const first =
-        prototype !== null && typeof prototype === 'object'
-          ? Object.getOwnPropertyNames(prototype).find((name) => name !== 'constructor')
-          : undefined;
-      const method: unknown = first === undefined ? undefined : Reflect.get(instance, first);
-      const result: unknown = typeof method === 'function' ? method.call(instance) : undefined;
-
-      expect(isObservable(result)).toBe(true);
-      if (isObservable(result)) {
-        const refusal: unknown = await firstValueFrom(result).catch((error: unknown) => error);
-        expect(refusal instanceof Error ? refusal.message : '').toContain(
-          `does not serve ${DATA_PORT_HOLDINGS[Adapter.port]}.`,
-        );
-      }
-    },
-  );
-
-  it('leaves no casework module in the menu, keeps what it serves, and links the page', async () => {
+  it('keeps every menu entry, and offers no page about withheld ones', async () => {
     await signIn(UNSERVED_HTTP_PORTS);
     const links = await menuLinks();
 
-    for (const item of WITHHELD) {
-      expect(links, `${item.route} reads a port this API does not serve`).not.toContain(item.route);
-    }
-    expect(links).toEqual([...OFFERED, '/unavailable']);
+    expect(links).toEqual(MENU.map((item) => item.route));
+    expect(links).not.toContain('/unavailable');
+    expect(links).not.toContain('/newsfeed');
     // The resident registry (DL-174), the household register and families (phase 1c), ID verification
     // (DL-167), the office inbox and users and roles (DL-168), the app directory and its home screen
-    // and settings (DL-170) and digital IDs, Balita and the audit trail (DL-171) are what the Node API
-    // serves, as are assistance requests (DL-177) and cases (DL-179); the rest of the casework is not.
+    // and settings (DL-170), digital IDs, Balita and the audit trail (DL-171), assistance requests
+    // (DL-177), cases (DL-179) and the rest of the casework through events (DL-192) are what the
+    // Node API serves: every module this console has.
     for (const route of [
       '/residents',
       '/households',
@@ -201,26 +164,31 @@ describe('the http adapter set', () => {
       '/resident-documents',
       '/work',
       '/reports',
+      '/events',
     ]) {
       expect(links, `${route} is served`).toContain(route);
     }
   });
 
-  it('offers the resident registry when only its secondary panels are unserved (DL-175)', async () => {
-    // Named here rather than read from the http list: those ports leave it as the API grows, and
-    // this is about what a secondary panel may not do whichever of them is still missing.
-    await signIn(['saved-view', 'family', 'field-visit', 'household']);
-    const links = await menuLinks();
+  it('says so on the page, rather than listing nothing', async () => {
+    await signIn(UNSERVED_HTTP_PORTS);
+    const fixture = TestBed.createComponent(UnservedPage);
+    await fixture.whenStable();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
 
-    expect(links).toContain('/residents');
-    expect(links).not.toContain('/families');
-    expect(links).not.toContain('/visits');
+    expect(text).toContain('Every part of this console is served');
+    expect(text).toContain('Balita —');
+    expect(text).toContain('Events —');
+    expect(text).not.toMatch(/no records|none found/i);
   });
 
   it('tells a staff account with no office why it has no inbox, and who can fix it (DL-168)', async () => {
     await signIn(UNSERVED_HTTP_PORTS, signedInUnassignedStaff);
+    const links = await menuLinks();
 
-    expect(await menuLinks()).not.toContain('/inbox');
+    expect(links).not.toContain('/inbox');
+    // With nothing withheld, the page is still linked for this account, or its reason is unreachable.
+    expect(links).toContain('/unavailable');
 
     const fixture = TestBed.createComponent(UnservedPage);
     await fixture.whenStable();
@@ -239,8 +207,39 @@ describe('the http adapter set', () => {
     );
   });
 
+});
+
+describe('a port the API does not serve', () => {
+  /** Named for the purpose: the http set serves every port since `DL-194`. */
+  const UNSERVED: readonly DataPort[] = ['event'];
+
+  /**
+   * The menu entries that set withholds: every one whose primary port it does not serve. A
+   * secondary panel's port is not in `reads` (`DL-175`), so it withholds nothing.
+   */
+  const WITHHELD = MENU.filter((item) => item.reads.some((port) => UNSERVED.includes(port)));
+  const OFFERED = MENU.filter((item) => !WITHHELD.includes(item)).map((item) => item.route);
+
+  it('withholds the module that reads it, keeps the rest, and links the page', async () => {
+    await signIn(UNSERVED);
+    const links = await menuLinks();
+
+    expect(WITHHELD.map((item) => item.route)).toEqual(['/events']);
+    expect(links).not.toContain('/events');
+    expect(links).toEqual([...OFFERED, '/unavailable']);
+  });
+
+  it('offers the resident registry when only its secondary panels are unserved (DL-175)', async () => {
+    await signIn(['saved-view', 'family', 'field-visit', 'household']);
+    const links = await menuLinks();
+
+    expect(links).toContain('/residents');
+    expect(links).not.toContain('/families');
+    expect(links).not.toContain('/visits');
+  });
+
   it('names every withheld module, and every port it lacks, on that page', async () => {
-    await signIn(UNSERVED_HTTP_PORTS);
+    await signIn(UNSERVED);
     const fixture = TestBed.createComponent(UnservedPage);
     await fixture.whenStable();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
@@ -265,7 +264,7 @@ describe('the http adapter set', () => {
     expect(text).toContain('Resident document requests —');
     expect(text).not.toContain('Residents.');
     expect(text).toContain('Residents —');
-    for (const port of UNSERVED_HTTP_PORTS) {
+    for (const port of UNSERVED) {
       expect(text.toLowerCase(), port).toContain(DATA_PORT_HOLDINGS[port].toLowerCase());
     }
     // It never claims the records are empty: the absence is a server's, not the office's.

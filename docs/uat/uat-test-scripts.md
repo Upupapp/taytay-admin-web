@@ -1,7 +1,10 @@
 # UAT test scripts: Taytay, Rizal LGU platform (staging)
 
-Version 1.5, 8 November 2026 (replaces 1.4 of the same day): an event's cover is a picture file
-uploaded through the API, never a typed address (DL-193), so EVT-01 and EVT-02 choose a file,
+Version 1.6, 9 November 2026 (replaces 1.5 of 8 November): the staff website's newsfeed was retired
+in favour of Balita (DL-194), so every part of the website is served and no menu ends with "Not
+connected yet" (ACC-04, NFR-08). No case tested the newsfeed: the NEWS cases test Balita and the
+office inbox, and stay as they were. Still 192 cases. Version 1.5 made an event's cover a picture
+file uploaded through the API, never a typed address (DL-193), so EVT-01 and EVT-02 choose a file,
 EVT-01 checks a wrong file is refused before it is sent, and EVT-02 and EVT-11 check when residents
 see the cover. Version 1.4 added events (EVT-01 to EVT-11), served
 by the API since 8 November (DL-192), whose resident steps need an app build that includes events
@@ -2932,8 +2935,9 @@ permission again: a hidden button is never the only protection.
   - AUDITOR: Dashboard, My work, Cases, Assistance requests, Residents, Beneficiaries, Households,
     Families, Field visits, Referrals, Programs, Releases, Reports, Events, Digital IDs, App audit
     trail, Staff and roles, Audit trail.
-  - Every menu may end with "Not connected yet". The footer shows the name, role and scope ("All
-    barangays", "Assigned cases" or "Barangay San Juan"), and "Sign out".
+  - No menu ends with "Not connected yet": every part of the website is served (DL-194). The footer
+    shows the name, role and scope ("All barangays", "Assigned cases" or "Barangay San Juan"), and
+    "Sign out".
 
 ### ACC-05 · Typing an address does not get past a role
 
@@ -3700,7 +3704,7 @@ starts, and EVT-09 while it runs and after it ends; run EVT-07 meanwhile. EVT-11
   1. Scroll the menu to its last entry.
   2. Set the browser zoom to 200% and repeat.
 - **Expected result:**
-  - Every entry down to "App audit trail" (and "Not connected yet") can be reached and clicked.
+  - Every entry, down to the last, can be reached and clicked.
   - The footer with "Sign out" stays visible and does not cover any entry.
 
 ### NFR-09 · The website works by keyboard alone

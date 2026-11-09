@@ -29,8 +29,6 @@ export type StaffUserId = Branded<string, 'StaffUserId'>;
 export type NotificationId = Branded<string, 'NotificationId'>;
 export type AuditEntryId = Branded<string, 'AuditEntryId'>;
 export type SavedViewId = Branded<string, 'SavedViewId'>;
-export type PostId = Branded<string, 'PostId'>;
-export type CommentId = Branded<string, 'CommentId'>;
 export type LguEventId = Branded<string, 'LguEventId'>;
 export type EventRegistrationId = Branded<string, 'EventRegistrationId'>;
 export type FamilyId = Branded<string, 'FamilyId'>;
@@ -94,7 +92,7 @@ export type HomeBannerId = Branded<string, 'HomeBannerId'>;
 export type QuickLinkId = Branded<string, 'QuickLinkId'>;
 /** A resident’s digital ID card, as the API numbers its record — not the card number (`DL-171`). */
 export type DigitalIdId = Branded<string, 'DigitalIdId'>;
-/** A Balita article in the residents' app — not a newsfeed post (`DL-171`, `DL-164`). */
+/** A Balita article in the residents' app — the console's one news channel (`DL-171`, `DL-194`). */
 export type BalitaArticleId = Branded<string, 'BalitaArticleId'>;
 /** A row of the Node API's audit trail — not the governance module's `AuditEntry` (`DL-171`). */
 export type PlatformAuditEntryId = Branded<string, 'PlatformAuditEntryId'>;

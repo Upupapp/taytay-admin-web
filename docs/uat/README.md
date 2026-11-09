@@ -123,14 +123,16 @@ owner. Nothing in the sheets is signed in advance.
 
 ## Not in this UAT round
 
-Not built yet, or not served by the API (the website lists these under "Not connected yet"):
+Not built yet. Every console module is served by the API since 9 November 2026, so the website's
+"Not connected yet" page lists none:
 
-- The newsfeed (FR-STAFF-26), which waits for OD-4. Events, served by the API since 8 November
-  2026 (`DL-192`), have their scripts since version 1.4 (EVT); their covers are uploaded since
-  version 1.5 (`DL-193`). Governance, the rest of
-  FR-STAFF-26, is served since 8 November 2026 (`DL-191`) and has its scripts since version 1.3
-  (GOV, AUD-07). Capturing a correction request is not built, and the governance page says so
-  (GOV-05).
+- The console's newsfeed (FR-STAFF-26) was retired on 9 November 2026 in favour of Balita, the news
+  residents read in the app (`DL-194`); it has no scripts because it no longer exists. Comments and
+  reactions on Balita (FR-RES-9, FR-STAFF-34) are not built and wait for OD-4. Events, served by the
+  API since 8 November 2026 (`DL-192`), have their scripts since version 1.4 (EVT); their covers are
+  uploaded since version 1.5 (`DL-193`). Governance, the rest of FR-STAFF-26, is served since
+  8 November 2026 (`DL-191`) and has its scripts since version 1.3 (GOV, AUD-07). Capturing a
+  correction request is not built, and the governance page says so (GOV-05).
 - Served by the API since 7 November 2026, but with no test script in this round yet:
   beneficiaries and duplicate review (FR-STAFF-12) and programme use counted from releases on the
   programme pages (FR-STAFF-14) (`DL-187`). Reports, My work and search have their scripts since

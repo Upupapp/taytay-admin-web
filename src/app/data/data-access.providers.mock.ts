@@ -9,7 +9,6 @@ import {
   REPORT_REPOSITORY,
   GOVERNANCE_REPOSITORY,
   EVENT_REPOSITORY,
-  NEWSFEED_REPOSITORY,
   SEARCH_REPOSITORY,
   WORK_REPOSITORY,
   RELEASE_REPOSITORY,
@@ -45,7 +44,6 @@ import { MockDashboardRepository } from './mock/mock-dashboard.repository';
 import { MockReportRepository } from './mock/mock-report.repository';
 import { MockGovernanceRepository } from './mock/mock-governance.repository';
 import { MockEventRepository } from './mock/mock-event.repository';
-import { MockNewsfeedRepository } from './mock/mock-newsfeed.repository';
 import { MockSearchRepository } from './mock/mock-search.repository';
 import { MockWorkRepository } from './mock/mock-work.repository';
 import { MockReleaseRepository } from './mock/mock-release.repository';
@@ -98,7 +96,6 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: REPORT_REPOSITORY, useClass: MockReportRepository },
     { provide: SEARCH_REPOSITORY, useClass: MockSearchRepository },
     { provide: GOVERNANCE_REPOSITORY, useClass: MockGovernanceRepository },
-    { provide: NEWSFEED_REPOSITORY, useClass: MockNewsfeedRepository },
     { provide: EVENT_REPOSITORY, useClass: MockEventRepository },
     { provide: SAVED_VIEW_REPOSITORY, useClass: MockSavedViewRepository },
     { provide: HOUSEHOLD_REPOSITORY, useClass: MockHouseholdRepository },

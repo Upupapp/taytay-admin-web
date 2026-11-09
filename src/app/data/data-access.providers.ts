@@ -10,7 +10,6 @@ import {
   REPORT_REPOSITORY,
   GOVERNANCE_REPOSITORY,
   EVENT_REPOSITORY,
-  NEWSFEED_REPOSITORY,
   SEARCH_REPOSITORY,
   WORK_REPOSITORY,
   RELEASE_REPOSITORY,
@@ -76,7 +75,7 @@ import {
   HttpWorkRepository,
 } from './http/http-repositories';
 import { identitySignInMethod } from './http/identity/identity.provider';
-import { UnservedNewsfeedRepository, UNSERVED_HTTP_PORTS } from './http/unserved-repositories';
+import { UNSERVED_HTTP_PORTS } from './http/unserved-repositories';
 /**
  * THE MOCK/HTTP SEAM — the HTTP half.
  *
@@ -101,7 +100,7 @@ import { UnservedNewsfeedRepository, UNSERVED_HTTP_PORTS } from './http/unserved
  * names no mock class at all, and `angular.json` swaps in `data-access.providers.mock.ts` for the
  * one configuration that wants them.
  *
- * ## Thirty-two ports served, one unserved
+ * ## Every port served
  *
  * The Node API serves the signed-in account, its inbox, residents' ID verification review
  * (`DL-167`), the office inbox, the office directory and app accounts with their roles (`DL-168`),
@@ -113,10 +112,12 @@ import { UnservedNewsfeedRepository, UNSERVED_HTTP_PORTS } from './http/unserved
  * dashboard (`DL-182`), residents’ document requests with their catalogue (`DL-184`), the
  * beneficiary registry (`DL-187`), search and the work queues (`DL-189`), reports (`DL-190`), and
  * governance — staff accounts, the office's audit trail and data policy (`DL-191`) — and events,
- * the office's side of the residents' registrations (`DL-192`), and nothing else this console has
- * a port for (`DL-164`). Every other port is bound to an `Unserved…` adapter that makes no request and
- * fails with a sentence saying so (`DL-165`). A port moves from that list to an `Http…` adapter
- * only when the API serves the thing the port names — not something with the same word on it.
+ * the office's side of the residents' registrations (`DL-192`) — every port this console has. The
+ * newsfeed, the last port bound to an `Unserved…` adapter, was retired with its screens in favour
+ * of Balita (`DL-194`), so `UNSERVED_HTTP_PORTS` is empty. The mechanism stays (`DL-165`,
+ * `DL-167`): a port the API does not serve is bound to an `Unserved…` adapter that makes no request
+ * and fails with a sentence saying so, and moves to an `Http…` adapter only when the API serves the
+ * thing the port names — not something with the same word on it.
  */
 
 export function provideDataAccess(): EnvironmentProviders {
@@ -145,7 +146,6 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: REPORT_REPOSITORY, useClass: HttpReportRepository },
     { provide: SEARCH_REPOSITORY, useClass: HttpSearchRepository },
     { provide: GOVERNANCE_REPOSITORY, useClass: HttpGovernanceRepository },
-    { provide: NEWSFEED_REPOSITORY, useClass: UnservedNewsfeedRepository },
     { provide: EVENT_REPOSITORY, useClass: HttpEventRepository },
     { provide: SAVED_VIEW_REPOSITORY, useClass: HttpSavedViewRepository },
     { provide: HOUSEHOLD_REPOSITORY, useClass: HttpHouseholdRepository },

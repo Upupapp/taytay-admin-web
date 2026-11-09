@@ -142,33 +142,21 @@ export const PERMISSIONS = [
   'visit.manage',
 
   /*
-   * Newsfeed and Events, added by the late-phase command.
+   * Events, added by the late-phase command.
    *
    * Extending this array rather than starting a second RBAC is the whole point
    * of the guardrail TAB: `check:access` already holds every key against the
    * office reference in `docs/access/permission-matrix.md`, and a parallel
    * permission system would be invisible to it (`DL-122`).
    *
-   * The command suggests `moderate_comments` and `view_insights` in snake_case.
-   * They are written here in the kebab-case every other key in this array uses,
-   * because "extend the existing model" governs the *shape* as well as the
-   * location — one array with two naming conventions is a model nobody can
-   * predict.
+   * The command suggests `view_insights` in snake_case. It is written here in
+   * the kebab-case every other key in this array uses, because "extend the
+   * existing model" governs the *shape* as well as the location — one array
+   * with two naming conventions is a model nobody can predict.
+   *
+   * The nine `newsfeed.*` keys that arrived beside these went with the newsfeed
+   * (`DL-194`): the news residents read is Balita, under `news.write`.
    */
-  'newsfeed.view',
-  'newsfeed.create',
-  'newsfeed.edit',
-  // Publishing is held apart from editing throughout this application, and a
-  // post is the one artefact here that reaches residents directly.
-  'newsfeed.publish',
-  'newsfeed.schedule',
-  'newsfeed.archive',
-  'newsfeed.pin',
-  // Hiding somebody's comment is a disclosure decision about a resident's own
-  // words, not a formatting one.
-  'newsfeed.moderate',
-  'newsfeed.view-insights',
-
   'event.view',
   'event.create',
   'event.edit',
@@ -256,10 +244,11 @@ export const PERMISSIONS = [
 
   /*
    * BALITA (`DL-171`) — the server's key, spelled as its `StaffCapability`. Writing, publishing and
-   * pinning the news residents read in the app. **Not** `newsfeed.*`, which belongs to the unserved
-   * newsfeed module (`DL-164`). The server gives it to `admin`, and to `staff` only while the
-   * account is assigned to an office — the same rule as `office-inbox.manage` — so the roles that
-   * hold that key hold this one. Mutating: a published article goes out in the municipality's name.
+   * pinning the news residents read in the app — the console's one news channel since the newsfeed
+   * and its `newsfeed.*` keys were retired (`DL-194`). The server gives it to `admin`, and to
+   * `staff` only while the account is assigned to an office — the same rule as
+   * `office-inbox.manage` — so the roles that hold that key hold this one. Mutating: a published
+   * article goes out in the municipality's name.
    */
   'news.write',
 
@@ -423,19 +412,9 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
    */
   'visit.view',
   'visit.manage',
-      // The head is the office's publishing authority: a post or an event goes
-      // out in the MSWDO's name, and the command's "Newsfeed Manager" and
-      // "Events Manager" map onto the role that already answers for what the
-      // office says.
-      'newsfeed.view',
-      'newsfeed.create',
-      'newsfeed.edit',
-      'newsfeed.publish',
-      'newsfeed.schedule',
-      'newsfeed.archive',
-      'newsfeed.pin',
-      'newsfeed.moderate',
-      'newsfeed.view-insights',
+      // The head is the office's publishing authority: an event goes out in the
+      // MSWDO's name, and the command's "Events Manager" maps onto the role that
+      // already answers for what the office says.
       'event.view',
       'event.create',
       'event.edit',
@@ -547,8 +526,6 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'staff.view',
       // Oversight of what the office published, and nothing that changes it.
       // The command's "Read-only Executive" maps here rather than to a new role.
-      'newsfeed.view',
-      'newsfeed.view-insights',
       'event.view',
       'event.view-insights',
       // Every staff account checks a resident's digital ID on the server (`DL-171`); a read.

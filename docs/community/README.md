@@ -5,6 +5,12 @@ themselves arrive in TABs 25 and 26.
 
 Decision records: `DL-122`, `DL-123`.
 
+> **Retired in part, 2026-11-09 (`DL-194`).** The newsfeed half of this guardrail went with the
+> newsfeed, which the owner retired in favour of Balita: its nine keys, a resident's post and
+> comment capabilities and shapes, and its navigation entry. The events half stands, and
+> `check:community` holds `news.write` — Balita's key — where it held the newsfeed's: in the one
+> permission array, and in what a resident may never hold. What follows is the TAB 24 record.
+
 ---
 
 ## What this TAB is, and is not

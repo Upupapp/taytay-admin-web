@@ -1,7 +1,6 @@
-import { Injectable } from '@angular/core';
 import { throwError, type Observable } from 'rxjs';
 
-import { type NewsfeedRepository, type DataPort } from '@domain/index';
+import { type DataPort } from '@domain/index';
 
 /**
  * THE PORTS THE API DOES NOT SERVE, AND WHAT THEY SAY INSTEAD.
@@ -10,8 +9,11 @@ import { type NewsfeedRepository, type DataPort } from '@domain/index';
  * residents' app (`DL-164`, `docs/integration/node-api-gap-map.md`). The casework has moved onto it
  * a phase at a time since — the registry, programmes, requests, cases, releases, referrals, visits
  * the dashboard, the beneficiary registry, search, the work queues, reports, governance and events
- * (`DL-174` to `DL-192`). What is left has no route yet: the newsfeed. In the `http` configuration
- * its port is bound to the class here.
+ * (`DL-174` to `DL-192`). The newsfeed, the last port with no route, was retired with its screens
+ * in favour of Balita (`DL-194`), so **no port is unserved** and no class stands here. The
+ * mechanism stays, because the next port the console gains ahead of its API needs it: in the `http`
+ * configuration such a port is bound to an `Unserved…` class declared here, with a
+ * `static readonly port`, and listed in `UNSERVED_HTTP_PORTS` (`check:unserved`, `check:routes`).
  *
  * ## What an unserved adapter does
  *
@@ -57,55 +59,6 @@ export function unserved(module: string): Observable<never> {
   return throwError(() => new UnservedError(module));
 }
 
-@Injectable()
-export class UnservedNewsfeedRepository implements NewsfeedRepository {
-  static readonly port: DataPort = 'newsfeed';
-
-  list(): Observable<never> {
-    return unserved('the newsfeed');
-  }
-
-  getById(): Observable<never> {
-    return unserved('the newsfeed');
-  }
-
-  saveDraft(): Observable<never> {
-    return unserved('the newsfeed');
-  }
-
-  publish(): Observable<never> {
-    return unserved('the newsfeed');
-  }
-
-  schedule(): Observable<never> {
-    return unserved('the newsfeed');
-  }
-
-  archive(): Observable<never> {
-    return unserved('the newsfeed');
-  }
-
-  setPinned(): Observable<never> {
-    return unserved('the newsfeed');
-  }
-
-  setCommentsEnabled(): Observable<never> {
-    return unserved('the newsfeed');
-  }
-
-  comments(): Observable<never> {
-    return unserved('the newsfeed');
-  }
-
-  moderate(): Observable<never> {
-    return unserved('the newsfeed');
-  }
-
-  history(): Observable<never> {
-    return unserved('the newsfeed');
-  }
-}
-
 /**
  * The ports this adapter set says it cannot serve, bound to `UNSERVED_PORTS` by
  * `data-access.providers.ts` (`DL-167`).
@@ -117,5 +70,8 @@ export class UnservedNewsfeedRepository implements NewsfeedRepository {
  *
  * Here rather than in `data-access.providers.ts` because the test build swaps that file for the
  * mock one: a spec can import this list, and could not import the binding.
+ *
+ * Empty since the newsfeed was retired (`DL-194`): the Node API serves every port this console has.
+ * An entry is written `UnservedSomethingRepository.port`, never a bare word.
  */
-export const UNSERVED_HTTP_PORTS: readonly DataPort[] = [UnservedNewsfeedRepository.port];
+export const UNSERVED_HTTP_PORTS: readonly DataPort[] = [];

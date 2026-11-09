@@ -473,37 +473,6 @@ export const routes: Routes = [
         ],
       },
       {
-        path: 'newsfeed',
-        // `new` must precede `:id`, or the composer is read as a post id.
-        children: [
-          {
-            path: '',
-            pathMatch: 'full',
-            title: 'Newsfeed — Taytay Social Welfare',
-            canActivate: [servedGuard('newsfeed'), permissionGuard('newsfeed.view')],
-            loadComponent: () =>
-              import('@features/newsfeed/post-list-page').then((m) => m.PostListPage),
-          },
-          {
-            path: 'new',
-            title: 'Write a post — Taytay Social Welfare',
-            // Writing costs `create`; putting it out costs `publish`, on the
-            // detail screen. A post reaches every resident and cannot be
-            // unsent (`DL-124`).
-            canActivate: [servedGuard('newsfeed'), permissionGuard('newsfeed.create')],
-            loadComponent: () =>
-              import('@features/newsfeed/post-composer-page').then((m) => m.PostComposerPage),
-          },
-          {
-            path: ':id',
-            title: 'Post — Taytay Social Welfare',
-            canActivate: [servedGuard('newsfeed'), permissionGuard('newsfeed.view')],
-            loadComponent: () =>
-              import('@features/newsfeed/post-detail-page').then((m) => m.PostDetailPage),
-          },
-        ],
-      },
-      {
         path: 'events',
         // `new` before `:id`, or the composer resolves as an event id.
         children: [

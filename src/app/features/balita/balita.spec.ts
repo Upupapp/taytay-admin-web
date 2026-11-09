@@ -128,14 +128,14 @@ function type(root: ParentNode, selector: string, value: string): void {
 const COPY = BALITA_COPY;
 
 describe('BalitaPage (DL-171)', () => {
-  it('says residents read it in the app, that it is not the newsfeed, and that more are available', async () => {
+  it('says residents read it in the app, that it is the one news channel, and that more are available', async () => {
     const news = configure();
     const element = await settle(TestBed.createComponent(BalitaPage));
 
     expect(element.querySelector('app-page-header')?.textContent).toContain(
       'Residents read these in the Taytay app’s Balita',
     );
-    expect(element.textContent).toContain('Not the console’s newsfeed');
+    expect(element.textContent).toContain('the one news channel this console publishes to');
     expect(news.calls).toEqual(['list:first']);
     expect(element.textContent).toContain('Showing 2 articles. More are available.');
     expect(element.textContent).toContain('(Pinned)');

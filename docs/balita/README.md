@@ -10,12 +10,13 @@ office. Built on what the Node API serves (`DL-164`, `DL-171`). One route, `/bal
 
 ## The things to understand first
 
-### 1. Not the newsfeed
+### 1. The one news channel
 
-The console's newsfeed module (`DL-122`–`DL-127`) is a different model — scheduling, archiving,
-image descriptions, moderation — that the API cannot serve, and it stays withheld (`DL-164`). Balita
-has its own domain, port, screen and key; nothing names the newsfeed's. The page says near its title
-that residents read it in the app and that it is not the newsfeed.
+The console's newsfeed module (`DL-122`–`DL-127`) was a different model — scheduling, archiving,
+image descriptions, moderation — that the API never served (`DL-164`). On 9 November 2026 the owner
+retired it in Balita's favour (`DL-194`): Balita is the console's one news channel, with its own
+domain, port, screen and key. The page says near its title that residents read it in the app and
+that it is the one news channel this console publishes to.
 
 ### 2. Publishing goes outward, and is warned about before its button
 
@@ -59,12 +60,14 @@ API's words. A category, once chosen, can be changed but not removed (the change
 
 `news.write` is the API's own key, added to `PERMISSIONS` unchanged (`DL-122`), mutating. The server
 gives it to administrators and to staff at an office — the rule of `office-inbox.manage` — so the
-roles holding that key hold this one in the mock. Not `newsfeed.*`.
+roles holding that key hold this one in the mock. The `newsfeed.*` keys were retired with the
+newsfeed (`DL-194`).
 
 ## Checks
 
-`check:balita` (in `verify`): residents told and the newsfeed disclaimed; nothing in the module names
-the newsfeed's port, model or keys; every publish, take-off and pin button stands below its effects;
+`check:balita` (in `verify`): residents told, and told it is the one news channel; nothing anywhere
+in the console names a newsfeed port, token, data port, key, route or menu entry (`DL-194`); every
+publish, take-off and pin button stands below its effects;
 every write leaves through `send`; the effects say publishing cannot be recalled and sends no
 notification, and taking off leaves what was read with its readers and keeps the first date; no cover
 address and no description field anywhere, and the screen says the API keeps none; nothing in web

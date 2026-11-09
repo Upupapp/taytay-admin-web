@@ -13,18 +13,6 @@ import {
   type ResidentCommunityContract,
 } from './resident-contract';
 
-const NEWSFEED_KEYS = [
-  'newsfeed.view',
-  'newsfeed.create',
-  'newsfeed.edit',
-  'newsfeed.publish',
-  'newsfeed.schedule',
-  'newsfeed.archive',
-  'newsfeed.pin',
-  'newsfeed.moderate',
-  'newsfeed.view-insights',
-] as const;
-
 const EVENT_KEYS = [
   'event.view',
   'event.create',
@@ -42,7 +30,7 @@ const EVENT_KEYS = [
 
 describe('the community permissions', () => {
   it('live in the one permission array, not a second RBAC', () => {
-    for (const key of [...NEWSFEED_KEYS, ...EVENT_KEYS]) {
+    for (const key of EVENT_KEYS) {
       expect(PERMISSIONS, `${key} is not in the central permission model`).toContain(key);
     }
   });
@@ -55,76 +43,72 @@ describe('the community permissions', () => {
     }
   });
 
-  it('adds both modules in full', () => {
-    expect(NEWSFEED_KEYS).toHaveLength(9);
+  it('adds events in full', () => {
     expect(EVENT_KEYS).toHaveLength(10);
+  });
+
+  it('holds no newsfeed key since the newsfeed was retired (DL-194)', () => {
+    // Balita is the one news channel, under the server's own `news.write`.
+    expect(PERMISSIONS.filter((permission) => permission.startsWith('newsfeed.'))).toEqual([]);
+    expect(PERMISSIONS).toContain('news.write');
   });
 });
 
 /* ── Criterion: unauthorised admin users cannot act ───────────────────────── */
 
 describe('who may publish', () => {
-  it('gives the head the publishing authority, because a post goes out in the office’s name', () => {
+  it('gives the head the publishing authority, because an event goes out in the office’s name', () => {
     const head = permissionsForRole('mswdo-head');
 
-    expect(head).toContain('newsfeed.publish');
     expect(head).toContain('event.publish');
-    expect(head).toContain('newsfeed.moderate');
+    expect(head).toContain('event.cancel');
   });
 
-  it('gives a caseworker neither module by default', () => {
+  it('gives a caseworker no events key by default', () => {
     // A social worker's remit is casework. Nothing about it implies speaking
     // for the municipality.
     const socialWorker = permissionsForRole('social-worker');
 
-    for (const key of [...NEWSFEED_KEYS, ...EVENT_KEYS]) {
+    for (const key of EVENT_KEYS) {
       expect(socialWorker, `a caseworker should not hold ${key}`).not.toContain(key);
     }
   });
 
-  it('gives an intake officer and a disbursing officer neither module', () => {
+  it('gives an intake officer and a disbursing officer no events key', () => {
     for (const role of ['intake-officer', 'release-officer'] as const) {
       const held = permissionsForRole(role);
-      for (const key of [...NEWSFEED_KEYS, ...EVENT_KEYS]) {
+      for (const key of EVENT_KEYS) {
         expect(held, `${role} should not hold ${key}`).not.toContain(key);
       }
     }
   });
-
-  it('lets a role hold one module without the other, as the command allows', () => {
-    // Demonstrated by construction: the keys are independent, and nothing in
-    // the model couples them.
-    const newsfeedOnly = NEWSFEED_KEYS.filter((key) => !EVENT_KEYS.includes(key as never));
-    expect(newsfeedOnly).toHaveLength(NEWSFEED_KEYS.length);
-  });
 });
 
 describe('the auditor stays read-only', () => {
-  it('sees both modules and can change neither', () => {
+  it('sees events and can change nothing about them, or about the news', () => {
     const auditor = permissionsForRole('auditor');
 
-    expect(auditor).toContain('newsfeed.view');
     expect(auditor).toContain('event.view');
-    expect(auditor).not.toContain('newsfeed.publish');
+    expect(auditor).toContain('event.view-insights');
     expect(auditor).not.toContain('event.cancel');
+    expect(auditor).not.toContain('news.write');
   });
 
   it('is still a read-only role after the additions', () => {
-    // The property that would break silently: `events.export-registrations`
-    // and the two `view-insights` keys must be classified as reads, or adding
-    // them turns oversight into a mutating role.
+    // The property that would break silently: `event.export-registrants` and
+    // `event.view-insights` must be classified as reads, or adding them turns
+    // oversight into a mutating role.
     expect(isReadOnlyRole('auditor')).toBe(true);
   });
 
   it('classifies insights and registration export as reads', () => {
-    expect(READ_ONLY_PERMISSIONS).toContain('newsfeed.view-insights');
     expect(READ_ONLY_PERMISSIONS).toContain('event.view-insights');
     expect(READ_ONLY_PERMISSIONS).toContain('event.export-registrants');
   });
 
-  it('does not classify publishing or moderation as a read', () => {
-    expect(READ_ONLY_PERMISSIONS).not.toContain('newsfeed.publish');
-    expect(READ_ONLY_PERMISSIONS).not.toContain('newsfeed.moderate');
+  it('does not classify publishing or attendance as a read', () => {
+    expect(READ_ONLY_PERMISSIONS).not.toContain('event.publish');
+    expect(READ_ONLY_PERMISSIONS).not.toContain('news.write');
     expect(READ_ONLY_PERMISSIONS).not.toContain('event.mark-attendance');
   });
 });
@@ -146,6 +130,8 @@ describe('nothing already built was disturbed', () => {
 /* ── Criterion: audit seams exist for the named acts ──────────────────────── */
 
 describe('the audit seams', () => {
+  // The comment acts outlived the newsfeed (`DL-194`): the API's audit trail still names every one
+  // of these kinds of act, and the vocabulary is the server's as much as this console's.
   const REQUIRED: readonly AuditAction[] = [
     'published',
     'scheduled',
@@ -183,16 +169,7 @@ describe('the audit seams', () => {
 
 describe('the resident contract', () => {
   it('lets a resident read and respond', () => {
-    for (const capability of [
-      'newsfeed.read',
-      'newsfeed.react',
-      'newsfeed.comment',
-      'newsfeed.share',
-      'events.read',
-      'events.register',
-    ] as const) {
-      expect(RESIDENT_CAPABILITIES).toContain(capability);
-    }
+    expect(RESIDENT_CAPABILITIES).toEqual(['events.read', 'events.register']);
   });
 
   it('never lets a resident publish or create', () => {
@@ -205,29 +182,14 @@ describe('the resident contract', () => {
   });
 
   it('names every admin permission it refuses, so an addition has to delete a line', () => {
-    for (const key of [...NEWSFEED_KEYS, ...EVENT_KEYS]) {
-      if (key === 'newsfeed.view' || key === 'event.view') {
+    for (const key of EVENT_KEYS) {
+      if (key === 'event.view') {
         continue;
       }
       expect(RESIDENT_MUST_NEVER, `${key} is not refused to residents`).toContain(key);
     }
-  });
-
-  it('shows a resident an office, not a member of staff', () => {
-    const post: import('./resident-contract').ResidentPostView = {
-      id: 'post-1',
-      title: 'Payout schedule for August',
-      body: 'Releases at the municipal hall on the tenth.',
-      publishedBy: 'MSWDO Taytay',
-      publishedAt: '2026-08-01T02:00:00.000Z' as never,
-      isPinned: false,
-      reactionCount: 4,
-      commentCount: 2,
-      hasReacted: false,
-    };
-
-    expect(post as unknown as Record<string, unknown>).not.toHaveProperty('publishedByStaffId');
-    expect(post as unknown as Record<string, unknown>).not.toHaveProperty('authorAccount');
+    // The one news channel (`DL-171`, `DL-194`): a resident never publishes to it.
+    expect(RESIDENT_MUST_NEVER).toContain('news.write');
   });
 
   it('does not tell a resident how many neighbours registered', () => {
@@ -255,24 +217,13 @@ describe('the resident contract', () => {
 
   it('offers a resident no way to publish, moderate or see a registration list', () => {
     const methods: readonly (keyof ResidentCommunityContract)[] = [
-      'listPublishedPosts',
-      'listComments',
-      'react',
-      'comment',
       'listPublishedEvents',
       'register',
     ];
 
-    // An exact allow-list rather than a keyword search: `listPublishedPosts`
+    // An exact allow-list rather than a keyword search: `listPublishedEvents`
     // contains "published" as an adjective and is a read, so a regex over the
     // name would flag the safest method on the interface.
-    expect(methods).toEqual([
-      'listPublishedPosts',
-      'listComments',
-      'react',
-      'comment',
-      'listPublishedEvents',
-      'register',
-    ]);
+    expect(methods).toEqual(['listPublishedEvents', 'register']);
   });
 });

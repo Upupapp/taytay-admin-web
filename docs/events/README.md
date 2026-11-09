@@ -76,7 +76,8 @@ unmarked separately, and the attendance rate is `null` until the list is final.
 - **No ticketing, pricing, seat maps, promo codes or payment.** An LGU medical
   mission is not a product being sold.
 - **No recurring events**, until somebody asks.
-- **No event chat and no event comments.** Moderation lives in the newsfeed.
+- **No event chat and no event comments.** The console moderates no comments since the newsfeed
+  was retired (`DL-194`); comments on Balita are a future feature for the owner (OD-4).
 - **No share link.** The command permits one *only if current deep-link
   contracts support it*; there is no deep-link contract, and a share button
   producing a URL nothing honours is worse than none (`DL-32`).

@@ -17,6 +17,8 @@ export const LAYOUT_COPY = {
   navUnserved: 'Not connected yet',
   navUnservedDescription: 'Parts of the console the API it is connected to does not serve.',
   navEmptyUnserved: 'Nothing this account may open is served by the API yet.',
+  // `DL-168`: the same link, for an account no office is linked to, when nothing is withheld.
+  navAwaitingOfficeDescription: 'Why this account cannot open the office inbox yet.',
 
   // Breadcrumb
   breadcrumbLandmark: 'Breadcrumb',

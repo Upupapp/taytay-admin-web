@@ -22,8 +22,16 @@ export type AuditAction =
    *
    * Added to the existing union rather than given their own, so the audit
    * explorer, its filters and `DL-114`'s row/detail split apply to a published
-   * post exactly as they do to a resident record. A second action vocabulary
+   * event exactly as they do to a resident record. A second action vocabulary
    * would need a second explorer.
+   *
+   * The newsfeed was retired (`DL-194`) and its acts stay: this union is the
+   * API's trail vocabulary too (its `category` and `action` filter name all
+   * nineteen, and its governance test compares them with this list). Events
+   * are published and cancelled, and releases and visits scheduled. Pinning,
+   * unpinning and the three comment acts are kinds nothing in the office's
+   * trail is yet, and the API answers them with an empty page. (No semicolon
+   * in this comment: the API's parity test reads this union up to the first.)
    */
   | 'published'
   | 'scheduled'

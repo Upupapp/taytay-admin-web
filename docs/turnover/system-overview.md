@@ -56,9 +56,10 @@ the API decides, and re-checks every permission whatever the app shows.
 
 ## Main modules and which part serves each
 
-"Console" gives the console's address path. "Served" means the API answers for it today; a module
-that is not served is hidden from the console's menu on staging and named on its "Not connected
-yet" page.
+"Console" gives the console's address path. "Served" means the API answers for it today. Every
+console module is served since 9 November 2026, when the newsfeed, the last that was not, was
+retired in favour of Balita (`DL-194`); a module that is not served would be hidden from the
+console's menu on staging and named on its "Not connected yet" page.
 
 | Module                                                     | Residents' app                                          | Staff console                                  | Served by the API        |
 | ---------------------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------- | ------------------------ |
@@ -80,18 +81,17 @@ yet" page.
 | Releases and payout sessions                               | —                                                       | `/releases`                                    | Yes                      |
 | Referrals and field visits                                 | —                                                       | `/referrals`, `/visits`                        | Yes                      |
 | Dashboard                                                  | —                                                       | `/dashboard`                                   | Yes                      |
-| Beneficiary registry and duplicate review                  | —                                                       | `/beneficiaries`                               | **No**                   |
-| Work queues                                                | —                                                       | `/work`                                        | **No**                   |
-| Reports                                                    | —                                                       | `/reports`                                     | **No**                   |
-| Search                                                     | —                                                       | `/search`                                      | **No**                   |
-| Governance: retention, corrections, recorded values        | —                                                       | `/administration`                              | **No**                   |
-| Newsfeed with engagement counts                            | —                                                       | `/newsfeed`                                    | **No**                   |
-| Events                                                     | —                                                       | `/events`                                      | **No**                   |
+| Beneficiary registry and duplicate review                  | —                                                       | `/beneficiaries`                               | Yes (`DL-187`)           |
+| Work queues                                                | —                                                       | `/work`                                        | Yes (`DL-189`)           |
+| Reports                                                    | —                                                       | `/reports`                                     | Yes (`DL-190`)           |
+| Search                                                     | —                                                       | `/search`                                      | Yes (`DL-189`)           |
+| Governance: staff, the audit trail, retention, corrections | —                                                       | `/administration`                              | Yes (`DL-191`)           |
+| Events                                                     | Reads, registers                                        | `/events`                                      | Yes (`DL-192`)           |
+| Newsfeed                                                   | —                                                       | Retired (`DL-194`); news is Balita             | —                        |
 
-The unserved modules run on sample data in the console's `local-mock` configuration only, for
-design and demonstration. Sample data never stands in for a missing server on staging or
-production. The list comes from `UNSERVED_HTTP_PORTS` in
-`src/app/data/http/unserved-repositories.ts`.
+Sample data runs only in the console's `local-mock` configuration, for design and demonstration,
+and never stands in for a missing server on staging or production. What the API does not serve is
+listed in `UNSERVED_HTTP_PORTS` in `src/app/data/http/unserved-repositories.ts`, which is empty.
 
 ## Design rules, in plain words
 

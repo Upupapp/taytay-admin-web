@@ -160,19 +160,12 @@ export const NAVIGATION: readonly NavSection[] = [
   },
   {
     // Added by the late-phase command. A new section rather than items squeezed
-    // into Casework or Delivery: these are the two modules that speak to
-    // residents rather than about them, and the command asked for them to be
-    // placed naturally without reorganising the sidebar.
+    // into Casework or Delivery: events speak to residents rather than about
+    // them, and the command asked for them to be placed naturally without
+    // reorganising the sidebar. The newsfeed that sat here was retired in
+    // favour of Balita, the news residents read in the app (`DL-194`).
     title: 'Community',
     items: [
-      {
-        label: 'Newsfeed',
-        route: '/newsfeed',
-        reads: ['newsfeed'],
-        glyph: 'NF',
-        permissions: ['newsfeed.view'],
-        description: 'What the office has published, and what residents said back.',
-      },
       {
         label: 'Events',
         route: '/events',
@@ -264,7 +257,7 @@ export const NAVIGATION: readonly NavSection[] = [
         description: 'Check the digital ID a resident shows, and issue, suspend or revoke cards.',
       },
       {
-        // `DL-171`. The news residents read in the app. Not the newsfeed, which has no server.
+        // `DL-171`. The news residents read in the app — the console's one news channel (`DL-194`).
         label: 'Balita',
         route: '/balita',
         reads: ['balita', 'office'],

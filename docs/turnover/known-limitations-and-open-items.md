@@ -1,8 +1,9 @@
 # Known limitations and open items
 
-As of 2026-11-07. Each item names its source so it can be checked and closed. Ids such as `GL-3`,
+As of 2026-11-07, with the newsfeed's retirement on 2026-11-09 (`DL-194`). Each item names its
+source so it can be checked and closed. Ids such as `GL-3`,
 `OD-3`, `FR-STAFF-4` and `T-5` refer to the requirements document,
-`docs/project/requirements-and-implementation-plan.md` (version 1.3, not approved).
+`docs/project/requirements-and-implementation-plan.md` (version 1.4, not approved).
 
 ## 1. The platform is not ready for production
 
@@ -20,14 +21,19 @@ As of 2026-11-07. Each item names its source so it can be checked and closed. Id
 
 ## 2. Console modules the API does not serve
 
-One of the console's 33 data ports is bound to an "unserved" adapter in the staging and
-production builds (`UNSERVED_HTTP_PORTS`, `src/app/data/http/unserved-repositories.ts`). Their
-screens make no request: they are hidden from the menu and named on the console's "Not connected
-yet" page, and they show sample data only in the `local-mock` configuration.
+**None since 9 November 2026.** The newsfeed was the last of the console's data ports bound to an
+"unserved" adapter. The owner retired it, with its screens, in favour of Balita, the news residents
+read in the app (`DL-194`), so all 32 ports are served by the API and `UNSERVED_HTTP_PORTS`
+(`src/app/data/http/unserved-repositories.ts`) is empty. `check:routes` now fails the build on any
+port bound to an unserved adapter.
 
-| Module (port)             | What staff cannot do yet                                                           | Plan                         |
-| ------------------------- | ---------------------------------------------------------------------------------- | ---------------------------- |
-| The newsfeed (`newsfeed`) | Posts with reaction and comment counts, and comment moderation                     | Waits for OD-4 (FR-STAFF-34) |
+The mechanism stays for a module built ahead of its API: such a screen makes no request, is hidden
+from the menu and is named on the console's "Not connected yet" page. With nothing unserved, that
+page says every part of the console is served, and the menu links it only for a staff account that
+is not assigned to an office, to tell it why it has no office inbox (`DL-168`).
+
+Comments and reactions on Balita, which the newsfeed would have counted, are not built (FR-RES-9,
+FR-STAFF-34, OD-4): see section 8.
 
 ## 3. Other things not built or not finished
 
@@ -75,8 +81,8 @@ From `docs/uat/README.md` ("Not in this UAT round") and the requirements documen
 | Confirming the Data Privacy Officer; NPC registration; retention schedule   | LGU leadership and the DPO                                 | GL-9, GL-15, R-5                                                | Launch gate line 14. Longest lead time of any item                                                                                      |
 | A breach-management procedure and response team                             | LGU (DPO) with the developer                               | GL-16 (Proposed)                                                | Go-live                                                                                                                                 |
 | Service targets and alerts that reach a named person                        | LGU with the developer                                     | GL-12                                                           | Launch gate line 15                                                                                                                     |
-| Events, Balita comments and reactions, and applying from the app            | Owner, with the LGU's agreement (the TOR names them)       | OD-4, R-11                                                      | Newsfeed, events, FR-RES-14                                                                                                             |
-| **Retire the console's newsfeed in favour of Balita** (recommended)         | Owner                                                      | OD-4, `DL-171`, `DL-192`                                        | The last unserved port. Residents read news only in Balita (`GET /news`); a newsfeed on the server would publish posts no resident sees. Retiring it brings the unserved count to zero; the other launch-gate lines still apply |
+| Events, Balita comments and reactions, and applying from the app            | Owner, with the LGU's agreement (the TOR names them)       | OD-4, R-11                                                      | Balita comments and reactions (FR-RES-9, FR-STAFF-34), events, FR-RES-14                                                                |
+| ~~Retire the console's newsfeed in favour of Balita~~ **Decided 2026-11-09: retired** | Owner ("do what's best")                         | OD-4, `DL-171`, `DL-192`, `DL-194`                              | Nothing now. No port is unserved; the other launch-gate lines still apply. The backend still lists the nine `newsfeed.*` keys, and its console-parity test fails until they go (`DL-194`) |
 | Whether the ID reviewer sees the account's name and birth date              | Owner and office                                           | OD-1                                                            | Deliverable D1's acceptance                                                                                                             |
 | Whether the office inbox names the resident, and closing notices            | Owner and office                                           | OD-2                                                            | —                                                                                                                                       |
 | Casework questions from phases 1 to 6f                                      | Owner                                                      | OD-5; `docs/integration/node-api-migration.md`, "For the owner" | —                                                                                                                                       |
@@ -149,7 +155,7 @@ The requirements document traces the Terms of Reference (TOR) through the develo
 | T-12 Audit trails                                               | Built (`DL-191`): the office's trail in words and the app's by id. No field, value or reason is recorded             | 6b                                                                 |
 | T-18 Analytics and reports, dashboards, exports                 | Built: the dashboard, search, the work queues (`DL-189`) and the fourteen reports with their exports (`DL-190`)      | 6b                                                                 |
 | T-16 Event and program postings                                 | Built for the office, on the API (`DL-192`) and wired in the residents' app (D-191)                            | 6b, after OD-4                                                     |
-| T-17 Engagement monitoring                                      | Deferred; newsfeed unserved                                                                                          | 6b, after OD-4                                                     |
+| T-17 Engagement monitoring                                      | Deferred: Balita has no comments or reactions to count. The console's newsfeed was retired (`DL-194`)                | A future Balita feature, after OD-4                                |
 | T-9 Tulong applications from the app                            | The staff side is built; applying from the app is not offered                                                        | After OD-4                                                         |
 | T-11 Barangay validation and endorsement                        | Not started                                                                                                          | 8, after OD-12                                                     |
 | T-15 Emergency alerts                                           | Partly built: hotlines and Balita advisories. No alert feature                                                       | 8, if OD-11 adopts it                                              |

@@ -232,6 +232,8 @@ not invent an endpoint to close one.
 
 ### NewsfeedRepository (11)
 
+> Retired on 2026-11-09 with the newsfeed (`DL-194`). Kept as the TAB 05 record.
+
 | Port method | Verb | Route | Permission | Status | Note |
 | --- | --- | --- | --- | --- | --- |
 | `list` | GET | `admin/newsfeed` | `newsfeed.manage` | maps cleanly |  |

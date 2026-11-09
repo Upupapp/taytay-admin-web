@@ -1,10 +1,15 @@
 #!/usr/bin/env node
 /**
  * check:balita — publishing goes outward and cannot be recalled from people who read it, so the
- * Balita screen says so before the button, and it never becomes the newsfeed it is not (`DL-171`).
+ * Balita screen says so before the button (`DL-171`), and it is the console's one news channel
+ * (`DL-194`).
  *
- *   1. The page says residents read it in the Taytay app's Balita, and that it is not the newsfeed.
- *   2. Not the newsfeed: nothing in the module names the newsfeed's port, model or keys.
+ *   1. The page says residents read it in the Taytay app's Balita, and that it is the one news
+ *      channel this console publishes to.
+ *   2. One news channel. Until `DL-194` this rule kept Balita apart from the unserved newsfeed
+ *      within the Balita module. The newsfeed was retired in Balita's favour, so the rule now holds
+ *      the whole console: no newsfeed folder, port, token, data port, permission key, route or menu
+ *      entry anywhere in `src/app` — a second news channel would publish posts no resident reads.
  *   3. Every publish button stands below the publishing effects; every "take it off" button below
  *      the unpublishing effects; the pin button below the pin effects.
  *   4. Every write leaves through `send`: the editor subscribes in `send` and `showCover` only.
@@ -78,21 +83,48 @@ function methodBody(text, name) {
 
 const moduleFiles = [...walk(FEATURE), FILES.domain, FILES.mapper, FILES.mock];
 
-/* ── 1. residents read it; not the newsfeed ─────────────────────────────── */
+/* ── 1. residents read it; the one news channel ──────────────────────────── */
 
 const copy = readFileSync(FILES.copy, 'utf8');
-if (!/subtitle:\s*\n?\s*'Residents read these in the Taytay app’s Balita\. Not the console’s newsfeed/.test(copy)) {
-  failures.push("The Balita page no longer says residents read it in the app, and that it is not the newsfeed.");
+if (
+  !/subtitle:\s*\n?\s*'Residents read these in the Taytay app’s Balita, the one news channel this console publishes to/.test(
+    copy,
+  )
+) {
+  failures.push(
+    'The Balita page no longer says residents read it in the app, and that it is the one news channel this console publishes to.',
+  );
 }
 if (!/\[subtitle\]="copy\.page\.subtitle"/.test(source(join(FEATURE, 'balita-page.html')))) {
   failures.push('The Balita page header no longer shows the sentence saying residents read it.');
 }
 
-/* ── 2. not the newsfeed ─────────────────────────────────────────────────── */
+/* ── 2. one news channel ─────────────────────────────────────────────────── */
 
-for (const file of moduleFiles.filter((file) => file !== FILES.copy)) {
-  const found = /\b(NEWSFEED_REPOSITORY|NewsfeedRepository|Newsfeed[A-Z]\w*|newsfeed\.[a-z-]+|features\/newsfeed|domain\/newsfeed)\b/.exec(source(file));
-  if (found !== null) failures.push(`${shown(file)} names ${found[1]}. Balita is not the newsfeed (DL-164).`);
+/*
+ * The whole console, not the Balita module alone: the newsfeed was retired in Balita's favour
+ * (`DL-194`), so a newsfeed anywhere is a second channel, not a neighbour Balita must stay apart
+ * from. Code only — comments may say what was retired and why. Specs are excluded, since a spec
+ * asserting that the newsfeed is gone has to name it.
+ */
+const NEWSFEED = [
+  // Its port, token, model, keys and files.
+  /\b(NEWSFEED_REPOSITORY|NewsfeedRepository|Newsfeed[A-Z]\w*|newsfeed\.[a-z-]+|features\/newsfeed|domain\/newsfeed|mock-newsfeed)\b/,
+  // Its route, its menu entry, and its name as a data port or as a guard's argument.
+  /path:\s*'newsfeed\b|route:\s*'\/newsfeed\b|['"]newsfeed['"]/,
+];
+for (const file of walk(APP)) {
+  const text = source(file);
+  const found = NEWSFEED.map((pattern) => pattern.exec(text)).find((match) => match !== null) ?? null;
+  if (found !== null) {
+    failures.push(
+      `${shown(file)} names ${found[0]}. The newsfeed was retired in favour of Balita, the one news ` +
+        'channel residents read (DL-194): a second channel would publish posts no resident sees.',
+    );
+  }
+}
+for (const dir of [join(APP, 'features', 'newsfeed'), join(APP, 'domain', 'newsfeed')]) {
+  if (existsSync(dir)) failures.push(`${shown(dir)} exists. The newsfeed was retired in favour of Balita (DL-194).`);
 }
 
 /* ── 3. each outward act below its effects ──────────────────────────────── */
@@ -203,7 +235,7 @@ function report() {
     process.exit(1);
   }
   console.log(
-    'Balita check passed (residents told, not the newsfeed, every outward act below its effects, ' +
+    'Balita check passed (residents told, one news channel, every outward act below its effects, ' +
       'every write through send, no cover address or description, drafts in memory, the server’s key).',
   );
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Newsfeed and Events scope guardrail.
+ * Events scope guardrail (written for Newsfeed and Events; the newsfeed was retired, `DL-194`).
  *
  * The late-phase command's acceptance criteria are that TABs 01–23 keep
  * working, that unauthorised admin users cannot execute restricted actions,
@@ -10,12 +10,13 @@
  * The last two are the ones a codebase drifts into rather than decides, so most
  * of this file is about them:
  *
- *   1. **One RBAC** (`DL-122`). Newsfeed and Events keys live in the existing
+ *   1. **One RBAC** (`DL-122`). Events keys live in the existing
  *      `PERMISSIONS` array, in the naming that array already uses.
  *   2. **No resident UI** (`DL-123`). The resident contract is types only —
  *      no component, no route, no template, anywhere.
  *   3. **A resident may never publish.** The capability list is reads and
- *      responses; every admin key it refuses is named.
+ *      responses; every admin key it refuses is named — every events key, and
+ *      `news.write`, the key of the one news channel (`DL-194`).
  *   4. **One audit vocabulary.** The new seams extend `AuditAction`.
  *   5. **The additions are additive** — no nav entry points at nothing, and
  *      the sidebar was not reorganised.
@@ -55,18 +56,6 @@ const contract = read('src/app/domain/community/resident-contract.ts');
 const navigation = read('src/app/core/navigation/navigation.ts');
 const routes = read('src/app/app.routes.ts');
 
-const NEWSFEED_KEYS = [
-  'newsfeed.view',
-  'newsfeed.create',
-  'newsfeed.edit',
-  'newsfeed.publish',
-  'newsfeed.schedule',
-  'newsfeed.archive',
-  'newsfeed.pin',
-  'newsfeed.moderate',
-  'newsfeed.view-insights',
-];
-
 const EVENT_KEYS = [
   'event.view',
   'event.create',
@@ -80,6 +69,13 @@ const EVENT_KEYS = [
   'event.view-insights',
 ];
 
+/*
+ * The key that publishes news to every resident. The nine `newsfeed.*` keys held this place until
+ * the newsfeed was retired in favour of Balita (`DL-194`); the doctrine they carried — a resident
+ * never publishes under the office's masthead — is held on the channel that remains.
+ */
+const NEWS_KEYS = ['news.write'];
+
 /* ── 1. One RBAC ─────────────────────────────────────────────────────────── */
 
 // Scoped to the union, not the file: a role grant below names the same keys,
@@ -89,7 +85,7 @@ const permissionUnion = block(
   /export const PERMISSIONS = \[[\s\S]*?\n\] as const;/,
   'PERMISSIONS',
 );
-for (const key of [...NEWSFEED_KEYS, ...EVENT_KEYS]) {
+for (const key of [...EVENT_KEYS, ...NEWS_KEYS]) {
   if (!permissionUnion.includes(`'${key}'`)) {
     problems.push(
       `${key} is not in the central PERMISSIONS array. The late-phase command is explicit that ` +
@@ -123,7 +119,7 @@ for (const file of walk('src/app/domain', new Set(['.ts']))) {
     );
   }
 }
-notes.push(`rbac: ${NEWSFEED_KEYS.length + EVENT_KEYS.length} keys in the one array, kebab-case`);
+notes.push(`rbac: ${EVENT_KEYS.length + NEWS_KEYS.length} keys in the one array, kebab-case`);
 
 /* ── 2. No resident UI ───────────────────────────────────────────────────── */
 
@@ -176,8 +172,8 @@ const mustNever = block(
   /export const RESIDENT_MUST_NEVER: readonly string\[\] = \[[\s\S]*?\n\];/,
   'RESIDENT_MUST_NEVER',
 );
-for (const key of [...NEWSFEED_KEYS, ...EVENT_KEYS]) {
-  if (key === 'newsfeed.view' || key === 'event.view') continue;
+for (const key of [...EVENT_KEYS, ...NEWS_KEYS]) {
+  if (key === 'event.view') continue;
   if (!mustNever.includes(`'${key}'`)) {
     problems.push(
       `RESIDENT_MUST_NEVER does not name ${key}. Listing every refused key is what makes an ` +
@@ -186,14 +182,9 @@ for (const key of [...NEWSFEED_KEYS, ...EVENT_KEYS]) {
   }
 }
 
-// The resident's view of a post must not name the member of staff who pressed
-// publish, and the event view must not count who signed up.
-const postView = block(contract, /export interface ResidentPostView\s*\{[\s\S]*?\n\}/, 'ResidentPostView');
-for (const leak of ['publishedByStaffId', 'authorAccount', 'authorId', 'staffId']) {
-  if (postView.includes(leak)) {
-    problems.push(`ResidentPostView names a member of staff (${leak}). A resident sees an office.`);
-  }
-}
+// The event view must not count who signed up. (`ResidentPostView`, which this
+// also held to naming an office rather than a member of staff, went with the
+// newsfeed, `DL-194`; a resident's Balita article is the API's shape.)
 const eventView = block(contract, /export interface ResidentEventView\s*\{[\s\S]*?\n\}/, 'ResidentEventView');
 if (/registrationCount|attendeeList|registrants/.test(eventView)) {
   problems.push(
@@ -254,10 +245,7 @@ for (const [, route] of navigation.matchAll(/route: '(\/[a-z-]+)'/g)) {
 // other resource in both vocabularies is singular, and TAB 03 made `events.*`
 // stop being the outlier. The URL did not change — a bookmarked link is a
 // promise to a caseworker, and renaming a permission is no reason to break one.
-for (const [module, resource] of [
-  ['newsfeed', 'newsfeed'],
-  ['events', 'event'],
-]) {
+for (const [module, resource] of [['events', 'event']]) {
   if (!new RegExp(`route: '/${module}'`).test(navigation)) {
     problems.push(`The ${module} module has no navigation entry.`);
   }
@@ -275,7 +263,7 @@ for (const section of ['Casework', 'Delivery', 'Administration']) {
     );
   }
 }
-notes.push('navigation: two modules added, four sections intact, every entry routed and guarded');
+notes.push('navigation: events added, four sections intact, every entry routed and guarded');
 
 /* ── Report ──────────────────────────────────────────────────────────────── */
 

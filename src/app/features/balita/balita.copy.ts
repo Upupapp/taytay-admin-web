@@ -3,7 +3,7 @@ export const BALITA_COPY = {
   page: {
     title: 'Balita',
     subtitle:
-      'Residents read these in the Taytay app’s Balita. Not the console’s newsfeed: this is what the app shows.',
+      'Residents read these in the Taytay app’s Balita, the one news channel this console publishes to: this is what the app shows.',
     write: 'Write an article',
     rules: 'Who writes what:',
   },

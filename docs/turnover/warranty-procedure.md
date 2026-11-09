@@ -37,7 +37,7 @@ A **defect** is the system not doing what the **approved** requirements and the 
 it does. The baseline is:
 
 - the requirements document, `docs/project/requirements-and-implementation-plan.md`, in the
-  version signed under its §9 (version 1.3 is not yet signed);
+  version signed under its §9 (version 1.4 is not yet signed);
 - the UAT test cases in `docs/uat/uat-test-scripts.md`, as they were run and signed in
   `docs/uat/uat-signoff.md`;
 - the design rules in [system-overview.md](system-overview.md), which are part of the requirements.

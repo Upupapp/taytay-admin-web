@@ -47,7 +47,8 @@ export const AUDIT_ACTION_LABELS: Readonly<Record<AuditAction, string>> = {
   'membership-changed': 'Membership changed',
   'factor-corrected': 'Indicator corrected',
   // Newsfeed and Events. Worded like the rest: what a person did, in the words
-  // an officer reading the trail would use.
+  // an officer reading the trail would use. Kept past the newsfeed's retirement
+  // (`DL-194`), because the API's trail still names every one of them.
   published: 'Published',
   scheduled: 'Scheduled',
   archived: 'Archived',

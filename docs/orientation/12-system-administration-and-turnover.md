@@ -209,8 +209,10 @@ description in this console for …" is a defect: report it.
 The turnover package is in [../turnover/](../turnover/). It is handed over in this session. Check
 with the trainer that you know where each part is kept, and who at the LGU holds it.
 
-The menu entry "Not connected yet" lists the parts of the console that have no server yet, so they
-do not work against the API. The
+Every part of the console is served by the API since 9 November 2026, when the newsfeed was retired
+in favour of Balita, so the menu has no "Not connected yet" entry. If a later part of the console is
+built before the API serves it, that entry returns and names it. A staff account that is not
+assigned to an office also sees the entry: its page says why the account has no office inbox. The
 [known limitations and open items](../turnover/known-limitations-and-open-items.md) list what is
 still open.
 

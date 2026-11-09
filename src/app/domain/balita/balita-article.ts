@@ -5,10 +5,10 @@ import type { BalitaArticleId, IsoDateTime, OfficeId } from '../shared/ids';
  * Balita — the news residents read in the Taytay app (`DL-171`), read from the Node API at `2736e28`
  * (`src/modules/news`).
  *
- * **Not the console's newsfeed** (`DL-164`). The newsfeed module keeps scheduling, archiving, image
- * descriptions and moderation the API has none of; it stays unserved, and nothing here borrows its
- * model, its port or its key. A Balita article is a title, words, an optional category and cover, an
- * office, and whether it is published or pinned.
+ * **The console's one news channel** (`DL-194`). The newsfeed module, which kept scheduling,
+ * archiving, image descriptions and moderation the API has none of (`DL-164`), was retired in its
+ * favour; nothing here borrowed its model, its port or its key. A Balita article is a title, words,
+ * an optional category and cover, an office, and whether it is published or pinned.
  *
  * **No image address.** The model knows whether there is a cover, never `cover_url`: the cover is
  * read as bytes through the data layer on request.

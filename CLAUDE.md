@@ -114,7 +114,7 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:vulnerability`, `check:case-audit`, `check:intake`, `check:programs`,
 `check:beneficiary`, `check:documents`, `check:referrals`, `check:visits`,
 `check:releases`, `check:money`, `check:work`, `check:reports`, `check:search` and
-`check:governance`, `check:hardening`, `check:community`, `check:newsfeed` and
+`check:governance`, `check:hardening`, `check:community` and
 `check:events`, `check:contract`, `check:contract-drift`, `check:consumer-contract`,
 `check:mapper-adoption`, `check:permission-parity`, `check:environments`,
 `check:bundle`, `check:routes`, `check:response-shape`, `check:wire-adoption`,
@@ -146,8 +146,9 @@ that can make every resident update the app or accept again (`DL-170`);
 logged or kept, the code emptied as it is sent, the photo only after a warning — and
 holds every act on a card behind a confirmation that says first what it does to the
 card in the app (`DL-171`); `check:balita` warns before every publish that a
-published article cannot be recalled from those who read it, keeps Balita apart from
-the unserved newsfeed, and says — rather than collects — that the API keeps no
+published article cannot be recalled from those who read it, holds Balita to being the
+console's one news channel — no newsfeed port, key, route or menu entry anywhere in
+the app (`DL-194`) — and says — rather than collects — that the API keeps no
 description of a cover (`DL-171`, `DL-124`, `DL-125`); `check:platform-audit` holds
 the app's audit trail to the six things a row records — no value, no reason, ids as
 given, nothing looked up beside a row, never the governance trail (`DL-171`, `DL-114`).
@@ -161,7 +162,8 @@ adapters that carried it.
 
 - `check:routes` resolves every composed request path against the spec at its verb. It also counts
   the ports bound to an **unserved** adapter in the `http` set — 18 of 20 at the move, 1 since
-  events were served (`DL-192`) — and fails if that number grows.
+  events were served (`DL-192`), **0** since the owner retired the newsfeed (`DL-194`) — and fails
+  if that number grows, so a port bound to an unserved adapter now fails the build.
 - `check:wire-adoption` requires every write body to go through an explicit `toWire…` mapper whose
   literal keys the operation's `requestBody` declares. The API validates `snake_case` and the domain
   is camelCase and differently shaped, which is why the generic converter this file forbids could
@@ -172,7 +174,9 @@ adapters that carried it.
   under-reports, which is the safe direction for a ratchet.
 
 A baseline is never an allow-list: nothing counted in one is acceptable, and the launch gate stays
-NO-GO while any port is unserved, unless the owner retires the screens behind it.
+NO-GO while any port is unserved, unless the owner retires the screens behind it. None is: the
+owner retired the newsfeed's screens in favour of Balita (`DL-194`). That clears one condition of
+gate line 05/07, not the gate — its other conditions and every other line still apply.
 
 **`check:scanners` is the one that watches the watchers** (`DL-143`). Four of
 these tools matched `this\.api\.` with the dots contiguous, so a call whose
@@ -266,10 +270,12 @@ is not a guarantee. The seam is two files swapped by `angular.json` rather than 
 a production build cannot reach the mock: it never imports it (`DL-136`). The API is the Node
 service (`DL-164`), and `data/http/api.contract.ts` describes what its `/api/v1` actually serves. At
 the move two ports were served — staff identity and notifications — and eighteen were not (`DL-165`);
-the casework phases have served the rest since (`DL-173` to `DL-192`), and **one** remains —
-the newsfeed — bound to an **unserved** adapter that makes no
-request and says, in a sentence, that this part of the console has no server yet. Mock data never
-stands in for a missing server.
+the casework phases have served the rest since (`DL-173` to `DL-192`), and the last — the
+newsfeed — was retired with its screens in favour of Balita (`DL-194`), so **no** port is bound to
+an **unserved** adapter. The mechanism stays for the next port the console gains ahead of its API:
+such a port is bound to an adapter that makes no request and says, in a sentence, that this part of
+the console has no server yet, and `check:unserved` takes its module out of the menu. Mock data
+never stands in for a missing server.
 
 `data/http` and `core/http` are the **transport seam**: the only two places
 allowed to name a `snake_case` wire field. Adapters map wire shapes into the
@@ -474,61 +480,52 @@ state means the office record has it, and a failed send says plainly that
 nothing was queued in the background. A worker who believes a visit was filed
 and returns to find it was not has been failed twice.
 
-### Newsfeed and Events extend what exists; residents never publish
+### Events extend what exists; residents never publish
 
-Nineteen keys join the **existing** `PERMISSIONS` array — there is no second
+Events' ten keys join the **existing** `PERMISSIONS` array — there is no second
 RBAC, because `check:access` generates the office reference from that array and
 would not see one (`DL-122`). They are kebab-case like every other key, and the
 audit seams extend `AuditAction` for the same reason: a second vocabulary would
-need a second explorer.
+need a second explorer. (Nine `newsfeed.*` keys arrived beside them and went
+with the newsfeed, `DL-194`. The audit seams stayed: the API's trail names all
+nineteen kinds of act.)
 
-Roles were **mapped, not invented**. Publishing and moderation sit with the
-MSWDO head, because a post goes out in the office's name; the auditor holds only
-`view` and `view-insights`; caseworkers hold neither module.
-`events.export-registrations` and both `view-insights` keys are classified
+Roles were **mapped, not invented**. Publishing sits with the MSWDO head,
+because an event goes out in the office's name; the auditor holds only
+`event.view` and `event.view-insights`; caseworkers hold no events key.
+`event.export-registrants` and `event.view-insights` are classified
 **read-only**, or the auditor silently becomes a mutating role.
 
 **The resident contract is types only** (`DL-123`). No resident component, route
-or template exists in this repository. A resident may read and respond — view,
-react, comment, share, register. A resident may **never** publish, moderate, see
-a registration list or mark attendance: the municipality speaks in its own name
-and residents answer. `ResidentPostView` names the office rather than the member
-of staff; `ResidentEventView` reports places left rather than how many
-neighbours signed up.
+or template exists in this repository. A resident may read and respond — view
+an event, register. A resident may **never** publish, see a registration list or
+mark attendance, and never holds `news.write`: the municipality speaks in its
+own name and residents answer. `ResidentEventView` reports a registration state
+rather than how many neighbours signed up.
 
-### A post goes outward, and nothing brings it back
+### The newsfeed is retired; Balita is the one news channel
 
-`published → archived` and nothing else (`DL-124`). No unpublish, no retract, no
-unsend: archiving removes a post from the feed **going forward** and reaches
-nobody who already read it, and the badge says so. The warning is shown **before
-the publish button**, not as a confirmation after — somebody deciding reads it,
-somebody who has decided dismisses it. `archived → published` is allowed,
-because taking a post down can itself be a mistake.
+The console's newsfeed was retired on the owner's decision (`DL-194`): the Node
+API never served it, residents read news only in the app's Balita (`GET /news`),
+and a newsfeed built here would publish posts no resident ever sees. Its
+screens, port, model, mock, keys and gate went; git history keeps them.
+`check:balita` fails the build on a newsfeed port, key, route or menu entry
+anywhere in the app — a second news channel is a defect, not a neighbour.
 
-**An image is described before it is published** (`DL-125`). `PostImage.altText`
-is a required `string`; `postProblems` refuses to publish without it and
-deliberately lets a **draft** save without it, because a half-written post is
-somebody working, not an accessibility failure. The field sits beside the image
-— a description behind an "advanced" disclosure is one that stays empty — and
-the message names the resident it fails rather than the rule it broke.
+What the newsfeed's entries held about publishing outward lives on where news
+and announcements now go out:
 
-**Reach is counts** (`DL-126`). `reactionCount` and `commentCount`, and no
-method anywhere that could answer *which* residents reacted, read or shared. A
-field held "for later" is a field somebody displays; the question is left
-unanswerable at the port, as with `SearchRepository.search` (`DL-109`).
-
-**Hiding keeps the words; removal deletes them** (`DL-127`). `Comment.body` is
-nullable for exactly that reason. This is the one place where the append-only
-doctrine is not followed for a record's *content*: keeping a comment that named
-a child, forever, so an append-only rule reads cleanly preserves the harm the
-removal was for. The **act** is append-only; the **words** are not. Removal is
-the only act on the screen behind a modal and its confirmation offers hiding as
-the alternative; hiding takes its reason inline. Nothing offers to restore what
-was removed.
-
-Scheduling is **derived from the clock**, never from a job having run, and there
-is no timer anywhere in the module. `npm run check:newsfeed` fails the build on
-any of the above.
+- **A publish cannot be recalled, and the screen says so before the button**
+  (`DL-124`, `DL-134`): Balita's publish, take-off and pin buttons each stand
+  below their effects, and `check:balita` holds them there.
+- **An image is described before it is published** (`DL-125`): an event's
+  cover is described beside it and refused at publication without one
+  (`DL-193`). Balita's API keeps no description of a cover, and the screen says
+  so rather than collecting one it would throw away (`DL-171`).
+- **Reach is counts** and **hiding keeps the words; removal deletes them**
+  (`DL-126`, `DL-127`) have no surface today. Comments and reactions on Balita
+  (TOR, OD-4, FR-RES-9) remain a future Balita feature for the owner; whoever
+  builds them starts from those two entries.
 
 ### An event is the office's side of somebody else's workflow
 

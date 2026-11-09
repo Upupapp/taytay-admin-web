@@ -81,6 +81,8 @@ collapsing it to the backend's coarser key would lose a rule somebody reasoned a
 
 ### 3.1 Newsfeed — console 7, backend 2
 
+> Retired on 2026-11-09 with the newsfeed (`DL-194`): the console holds none of these keys now. Kept as the TAB 03 record.
+
 Console: `newsfeed.view` `newsfeed.create` `newsfeed.edit` `newsfeed.schedule` `newsfeed.archive`
 `newsfeed.pin` `newsfeed.view-insights`, plus the shared `newsfeed.publish`.
 Backend: `newsfeed.manage`, `newsfeed.publish`.

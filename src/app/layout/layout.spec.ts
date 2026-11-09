@@ -260,7 +260,6 @@ describe('navigation when the API cannot serve a module', () => {
       'program',
       'release',
       'report',
-      'newsfeed',
       'event',
       'verification',
       'office-inbox',

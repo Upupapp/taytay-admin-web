@@ -92,6 +92,17 @@ refuses, and a method that works may be reachable from no screen. The three numb
 different questions and a green answer to one says nothing about the others — which is why they are
 counted apart.
 
+**Update 2026-11-09: no port is unserved; the line is still NO-GO.** Since the move to the Node API
+(`DL-164`, `DL-165`) the counters above are hard rules at zero, and a fourth was added: the ports
+bound to an adapter that makes no request because the API does not serve them — 18 of 20 at the
+move, 1 after events were served (`DL-192`). `CLAUDE.md` held this line NO-GO while that count was
+above zero, unless the owner retired the screens behind it. On 9 November 2026 the owner retired the
+last of them, the newsfeed, in favour of Balita (`DL-194`), and `check:routes` now holds the count
+at **0** and fails the build on any unserved binding. That is one condition met, measured by a
+check, not the line: "every screen serves real data" still needs every screen walked against the
+staging API and signed, and `check:port-adoption` still counts 6 port methods no screen calls.
+Every other line in this document stands as last measured.
+
 ### 08 — Money journey proven; idempotency and separation of duties server-side; concurrency on PostgreSQL
 **Still NO-GO, on one count rather than two.**
 
