@@ -2,15 +2,30 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-base);
-  max-inline-size: 92ch;
 }
 
 .event__back {
   margin: var(--space-base) 0 0;
 }
 
+// The reading measure belongs to the cards that hold prose, not to the column: held to 92ch, the
+// registrant table's seven columns need ~760px where its card had 710, and the Actions column — the
+// attendance buttons used at the venue — sat behind the scroll box's edge at every desktop width.
 .event__panel {
+  max-inline-size: 92ch;
   padding: var(--space-base);
+}
+
+// A table is data and takes the width the page has; it still scrolls inside its own box on a phone.
+.event__panel--registrants {
+  max-inline-size: none;
+}
+
+// Check-in mode is one search and one person, not a table: it keeps the measure of the hints above
+// it, so the Attended button stays beside the name rather than across a wide screen.
+.event__panel--registrants app-event-check-in {
+  display: block;
+  max-inline-size: 78ch;
 }
 
 .event__heading {
