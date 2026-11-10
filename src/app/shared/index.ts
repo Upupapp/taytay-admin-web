@@ -31,6 +31,7 @@ export * from './requirements/requirements.copy';
 export * from './residents/person-picker';
 export * from './residents/resident-summary-card';
 export * from './pipes/barangay-name.pipe';
+export * from './pipes/initials.pipe';
 export * from './pipes/person-name.pipe';
 export * from './pipes/peso.pipe';
 export * from './pipes/relative-time.pipe';

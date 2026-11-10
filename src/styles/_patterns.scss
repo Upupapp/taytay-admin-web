@@ -29,6 +29,28 @@
   border-radius: var(--r-panel);
 }
 
+.card--deep {
+  border-color: transparent;
+  background: var(--deep);
+  color: var(--on-deep);
+}
+
+/* A record's key facts on the deep card (the resident record's identity):
+   muted labels, white values, gold chips. */
+.card--deep .eyebrow,
+.card--deep .facts dt {
+  color: var(--on-deep-muted);
+}
+
+.card--deep .facts dd {
+  color: var(--on-deep);
+}
+
+.card--deep .chip {
+  background: var(--gold-tint2);
+  color: var(--gold);
+}
+
 .stack {
   display: flex;
   flex-direction: column;
@@ -63,6 +85,102 @@
 .status-line {
   color: var(--muted);
   font-size: var(--fs-label);
+}
+
+/* A destructive act that opens a confirmation (retiring a record): outlined
+   in the danger ink; the filled `.btn--danger` is for the confirmation. */
+.btn--danger-outline {
+  border-color: var(--red-ink);
+  background: transparent;
+  color: var(--red-ink);
+}
+
+.btn--danger-outline:hover:not(:disabled) {
+  background: var(--red-tint);
+  color: var(--red-ink2);
+}
+
+/* ── Form footer ──────────────────────────────────────────────────────────
+   The last row of a form panel: Cancel and the submit, end-aligned, as the
+   mock-ups' 48px pills, under a hairline. */
+.form-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-block-start: var(--space-4);
+  border-block-start: 1px solid var(--soft);
+}
+
+.form-footer .btn {
+  min-block-size: var(--h-btn-lg);
+  padding-inline: 22px;
+  font-size: var(--fs-body);
+}
+
+/* ── Plain tables ─────────────────────────────────────────────────────────
+   A short table written in a feature's own markup (a record's history), in
+   the DataTable's look: the soft header band, hairline rows. Wrap it in
+   `.table-scroll` so a narrow column scrolls inside its card. */
+.table-scroll {
+  overflow-x: auto;
+}
+
+.simple-table {
+  inline-size: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--fs-control);
+}
+
+.simple-table thead th {
+  padding: 10px var(--space-4);
+  background: var(--soft2);
+  color: var(--muted2);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-caps);
+  text-align: start;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.simple-table thead th:first-child {
+  border-start-start-radius: var(--r-md);
+  border-end-start-radius: var(--r-md);
+}
+
+.simple-table thead th:last-child {
+  border-start-end-radius: var(--r-md);
+  border-end-end-radius: var(--r-md);
+}
+
+.simple-table tbody th,
+.simple-table tbody td {
+  padding: 11px var(--space-4);
+  border-block-end: 1px solid var(--soft);
+  color: var(--text);
+  font-weight: var(--fw-regular);
+  text-align: start;
+  vertical-align: middle;
+}
+
+.simple-table tbody th {
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+}
+
+.simple-table tbody tr:last-child > * {
+  border-block-end: none;
+}
+
+.simple-table tbody tr:hover {
+  background: var(--field);
+}
+
+.simple-table .simple-table__num {
+  font-variant-numeric: tabular-nums;
+  text-align: end;
 }
 
 /* ── Chips ────────────────────────────────────────────────────────────────

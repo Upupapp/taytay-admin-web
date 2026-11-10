@@ -5,11 +5,12 @@
     class="btn btn--primary"
     routerLink="/residents/new"
   >
+    <app-icon name="plus" class="residents__cta-icon" [stroke]="2.2" />
     {{ copy.create }}
   </a>
 </app-page-header>
 
-<div class="card residents">
+<section class="card card--panel card--padded stack residents" [attr.aria-label]="copy.caption">
   @if (servesSavedViews) {
     <app-saved-views-bar
       resource="residents"
@@ -20,22 +21,25 @@
     <app-not-connected port="saved-view" />
   }
 
-  <div class="filters">
-    <label class="filters__field filters__field--wide">
-      <span class="filters__label">{{ copy.search }}</span>
-      <input
-        type="search"
-        class="filters__input"
-        [placeholder]="copy.searchPlaceholder"
-        [value]="searchText()"
-        [attr.aria-describedby]="'resident-search-hint'"
-        (input)="onSearch($event)"
-      />
+  <div class="toolbar">
+    <label class="field residents__search">
+      <span class="field__label">{{ copy.search }}</span>
+      <span class="search-field">
+        <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+        <input
+          type="search"
+          class="field__input field__input--pill"
+          [placeholder]="copy.searchPlaceholder"
+          [value]="searchText()"
+          [attr.aria-describedby]="'resident-search-hint'"
+          (input)="onSearch($event)"
+        />
+      </span>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.barangay }}</span>
-      <select class="filters__input" (change)="onBarangay($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.barangay }}</span>
+      <select class="field__input field__input--pill" (change)="onBarangay($event)">
         <option value="" [selected]="!filter().barangayId">{{ copy.allBarangays }}</option>
         @for (barangay of barangays; track barangay.id) {
           <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
@@ -45,9 +49,9 @@
       </select>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.sector }}</span>
-      <select class="filters__input" (change)="onSector($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.sector }}</span>
+      <select class="field__input field__input--pill" (change)="onSector($event)">
         <option value="" [selected]="!filter().sector">{{ copy.allSectors }}</option>
         @for (sector of sectors(); track sector) {
           <option [value]="sector" [selected]="filter().sector === sector">
@@ -57,9 +61,9 @@
       </select>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.ageGroup }}</span>
-      <select class="filters__input" (change)="onAgeGroup($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.ageGroup }}</span>
+      <select class="field__input field__input--pill" (change)="onAgeGroup($event)">
         <option value="" [selected]="!filter().ageGroup">{{ copy.allAges }}</option>
         @for (group of ageGroups; track group) {
           <option [value]="group" [selected]="filter().ageGroup === group">
@@ -69,7 +73,7 @@
       </select>
     </label>
 
-    <label class="filters__check">
+    <label class="residents__check">
       <input
         type="checkbox"
         [checked]="filter().includeInactive === true"
@@ -79,14 +83,16 @@
     </label>
 
     @if (hasFilters()) {
-      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+      <button type="button" class="btn residents__clear" (click)="clearFilters()">
+        {{ copy.clear }}
+      </button>
     }
   </div>
 
-  <p class="filters__hint" id="resident-search-hint">{{ copy.searchHint }} {{ copy.order }}</p>
+  <p class="status-line" id="resident-search-hint">{{ copy.searchHint }} {{ copy.order }}</p>
 
   @if (failure(); as message) {
-    <div class="residents__problem" role="alert">
+    <div class="callout callout--danger residents__problem" role="alert">
       <p>{{ message }}</p>
       <button type="button" class="btn" (click)="retry()">{{ copy.tryAgain }}</button>
     </div>
@@ -107,7 +113,7 @@
 
   @if (rows().length > 0) {
     <div class="residents__more">
-      <p class="filters__hint" role="status">
+      <p class="status-line" role="status">
         {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
       </p>
       @if (hasMore()) {
@@ -121,27 +127,41 @@
         </button>
       }
       @if (moreFailed()) {
-        <p class="residents__problem" role="alert">{{ copy.moreFailed }}</p>
+        <p class="callout callout--danger residents__problem" role="alert">
+          {{ copy.moreFailed }}
+        </p>
       }
     </div>
   }
-</div>
+</section>
 
 <!-- The name is the way into the record. Making it the link — rather than the
-     whole row — keeps a keyboard user's tab stop on the thing they meant. -->
+     whole row — keeps a keyboard user's tab stop on the thing they meant. The
+     initials repeat the listed name (masked or not), so they are hidden. -->
 <ng-template #nameCell let-view>
-  <a class="residents__name" [routerLink]="detailLink(view)">{{ view.listedName }}</a>
-  @if (view.isProtected) {
-    <span class="residents__protected">{{ copy.restricted }}</span>
-  }
+  <span class="residents__who">
+    <span class="avatar" aria-hidden="true">{{ view.listedName | initials }}</span>
+    <a class="residents__name" [routerLink]="detailLink(view)">{{ view.listedName }}</a>
+    @if (view.isProtected) {
+      <span class="chip chip--danger residents__protected">{{ copy.restricted }}</span>
+    }
+  </span>
 </ng-template>
 
 <ng-template #sectorsCell let-view>
-  <span class="sectors">
+  <span class="chip-list">
     @for (sector of view.resident.sectors; track sector) {
-      <span class="sectors__chip">{{ sectorLabel(sector) }}</span>
+      <span class="chip">{{ sectorLabel(sector) }}</span>
     } @empty {
-      <span class="sectors__none">{{ copy.none }}</span>
+      <span class="residents__none">{{ copy.none }}</span>
     }
+  </span>
+</ng-template>
+
+<!-- Active or retired, in words; the dot beside it is decoration. -->
+<ng-template #statusCell let-view>
+  <span class="residents__status" [class.residents__status--retired]="!view.resident.isActive">
+    <span class="residents__dot" aria-hidden="true"></span>
+    {{ view.resident.isActive ? copy.active : copy.retired }}
   </span>
 </ng-template>

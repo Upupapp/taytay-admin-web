@@ -72,6 +72,7 @@ const DEFINITIONS = {
   signOut: { d: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9' },
   close: { d: 'M6 6l12 12M18 6 6 18' },
   plus: { d: 'M12 5v14M5 12h14' },
+  pencil: { d: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z' },
   arrowRight: { d: 'M5 12h14M13 6l6 6-6 6' },
   arrowUpRight: { d: 'M7 17 17 7M8 7h9v9' },
   download: { d: 'M12 4v11M7 10l5 5 5-5M5 20h14' },

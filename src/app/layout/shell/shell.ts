@@ -27,6 +27,7 @@ import { AppNav } from '../navigation/app-nav';
 import { NotificationList } from '../notifications/notification-list';
 import { AppTopbar } from '../topbar/app-topbar';
 import { LAYOUT_COPY } from '../layout.copy';
+import { initialsOf } from '@shared/pipes/initials.pipe';
 
 /**
  * The authenticated application frame.
@@ -165,13 +166,5 @@ export class Shell {
   }
 }
 
-/** First letter of the first and the last word, e.g. "Marisol Alcantara" → "MA". */
-export function initialsOf(name: string): string {
-  const words = name.split(/[\s,]+/).filter((word) => /\p{L}/u.test(word));
-  const first = words[0];
-  const last = words.length > 1 ? words[words.length - 1] : undefined;
-  return [first, last]
-    .map((word) => (word === undefined ? '' : (/\p{L}/u.exec(word)?.[0] ?? '')))
-    .join('')
-    .toLocaleUpperCase();
-}
+// Moved to shared so a feature's avatar uses the same rule; re-exported for the shell's spec.
+export { initialsOf } from '@shared/pipes/initials.pipe';

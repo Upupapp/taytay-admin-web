@@ -38,6 +38,7 @@ import { failureReason } from '@shared/state/failure-reason';
 import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { ResidentSummaryCard } from '@shared/residents/resident-summary-card';
@@ -92,6 +93,7 @@ function panelRead<TItem>(source: Observable<readonly TItem[]>): Observable<Pane
     AsyncContent,
     DatePipe,
     HasPermissionDirective,
+    Icon,
     Modal,
     NotConnected,
     PageHeader,
@@ -134,6 +136,7 @@ export class ResidentDetailPage {
   readonly id = input.required<string>();
 
   protected readonly copy = RESIDENTS_COPY.detail;
+  protected readonly listCopy = RESIDENTS_COPY.list;
   protected readonly requestStatuses = ASSISTANCE_STATUS_CATALOG;
   protected readonly payoutStatuses = RELEASE_STATUS_CATALOG;
   protected readonly referralStatuses = REFERRAL_STATUS_CATALOG;

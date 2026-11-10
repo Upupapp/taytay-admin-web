@@ -1,182 +1,53 @@
+// ResidentRecord mock-up as a page: badges, notices and totals, then the panels in two columns.
+
+.detail__badges,
+.notice,
+.detail__totals {
+  margin-block-end: var(--space-4);
+}
+
+.detail__dot {
+  inline-size: 7px;
+  block-size: 7px;
+  border-radius: var(--r-pill);
+  background: currentcolor;
+}
+
+.notice__body {
+  margin-block-start: 2px;
+}
+
+.notice__list {
+  margin: var(--space-2) 0 0;
+  padding-inline-start: 18px;
+}
+
 .detail {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: var(--space-base);
-  margin-block-start: var(--space-base);
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+  align-items: start;
+  gap: var(--space-4);
 }
 
 .panel {
-  padding: var(--space-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-inline-size: 0;
 }
 
 .panel--wide {
   grid-column: 1 / -1;
 }
 
-.panel__heading {
-  margin-block-end: var(--space-snug);
-  font-size: 15px;
-}
-
 .panel__subheading {
-  margin-block: var(--space-base) var(--space-compact);
-  color: var(--c-text-muted);
-  font-size: 13px;
-  font-weight: 600;
+  margin-block-start: var(--space-2);
 }
 
-.panel__empty {
-  color: var(--c-text-subtle);
-  font-size: 13.5px;
-}
-
-.notice {
-  margin-block-start: var(--space-base);
-  padding: var(--space-base) var(--space-card);
-  border-inline-start: 4px solid var(--c-border-strong);
-}
-
-/* The left edge is reinforcement only. The heading says "Protected record" in
-   words, so nothing here depends on seeing the colour (WCAG 1.4.1). */
-.notice--protected {
-  border-inline-start-color: var(--tone-warning-fg);
-}
-
-.notice__heading {
-  font-size: 14px;
-}
-
-.notice__body {
-  margin-block-start: var(--space-micro);
-  color: var(--c-text-muted);
-  font-size: 13.5px;
-}
-
-.notice__list {
-  margin-block-start: var(--space-compact);
-  margin-inline-start: var(--space-base);
-  color: var(--c-text);
-  font-size: 13.5px;
-}
-
-.facts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--space-snug) var(--space-base);
-  margin: 0;
-}
-
-.facts__row--wide {
-  grid-column: 1 / -1;
-}
-
-.facts dt {
-  color: var(--c-text-muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.facts dd {
-  margin: 2px 0 0;
-  font-size: 14px;
-  overflow-wrap: anywhere;
-}
-
-.totals {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: var(--space-base);
-  margin: 0 0 var(--space-base);
-  padding-block-end: var(--space-base);
-  border-block-end: 1px solid var(--c-border);
-}
-
-.totals dt {
-  color: var(--c-text-muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.totals dd {
-  margin: 2px 0 0;
-  font-size: 18px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.totals .totals__goods {
-  font-size: 12.5px;
-  color: var(--c-text-muted);
-}
-
-.family {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--space-snug);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.history {
-  inline-size: 100%;
-  border-collapse: collapse;
-  font-size: 13.5px;
-}
-
-.history th,
-.history td {
-  padding: var(--space-compact) var(--space-compact) var(--space-compact) 0;
-  border-block-end: 1px solid var(--c-border);
-  text-align: start;
-  vertical-align: middle;
-}
-
-.history thead th {
-  color: var(--c-text-muted);
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.history tbody th {
-  font-weight: 600;
-}
-
-.history tbody th a {
-  display: inline-block;
-  min-block-size: var(--target-min);
-  line-height: var(--target-min);
-}
-
-.history__amount {
-  text-align: end;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.sectors {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-micro);
-}
-
-.sectors__chip {
-  padding: 1px var(--space-compact);
-  border-radius: var(--radius-sm);
-  background: var(--tone-neutral-bg);
-  color: var(--tone-neutral-fg);
-  font-size: 11.5px;
-  font-weight: 600;
-}
-
-.sectors__none {
-  color: var(--c-text-subtle);
-}
-
-.detail__back {
-  margin-block-start: var(--space-base);
+.panel__empty,
+.panel__hint {
+  color: var(--muted);
+  font-size: var(--fs-sm);
 }
 
 /*
@@ -186,35 +57,72 @@
  * and rendering them identically is the collapse this style exists to prevent.
  */
 .panel__unread {
-  margin: 0;
-  padding: var(--space-3);
-  border-left: 3px solid var(--c-border-strong);
-  background: var(--c-surface-muted);
-  color: var(--c-text);
-  font-size: 13px;
+  padding: var(--space-3) 14px;
+  border-inline-start: 3px solid var(--field-line);
+  border-radius: var(--r-md);
+  background: var(--soft2);
+  color: var(--text);
+  font-size: var(--fs-label);
+}
+
+.facts__row--wide {
+  grid-column: 1 / -1;
 }
 
 /*
  * A panel's list rows: the name or link, then its meta or action, kept apart. Without these the
  * name ran into "Head of this family" and the "Make head" button sat flush against it.
  */
-.panel__list {
+.family,
+.panel__list,
+.panel__timeline {
   display: grid;
-  gap: var(--space-compact);
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.panel__item {
+.panel__item,
+.panel__event {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-compact) var(--space-snug);
+  gap: var(--space-1) var(--space-3);
+  padding: 10px var(--space-3);
+  border-radius: var(--r-field);
+  background: var(--soft2);
 }
 
-.panel__meta {
-  color: var(--c-text-muted);
-  font-size: 12.5px;
+.panel__item a,
+.history a {
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+}
+
+.panel__meta,
+.panel__event-when,
+.panel__event-actor {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.panel__event-kind {
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+}
+
+.panel__event-reason {
+  flex: 1 0 100%;
+  color: var(--text2);
+  font-size: var(--fs-sm);
+}
+
+.history__amount {
+  white-space: nowrap;
+}
+
+.detail__back {
+  margin-block-start: var(--space-4);
 }

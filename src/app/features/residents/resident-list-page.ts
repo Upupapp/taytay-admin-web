@@ -33,9 +33,11 @@ import {
   type ResidentView,
   type VulnerabilitySector,
 } from '@domain/index';
+import { InitialsPipe } from '@shared/pipes/initials.pipe';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { SavedViewsBar } from '@shared/ui/saved-views/saved-views-bar';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
@@ -67,7 +69,16 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-resident-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, HasPermissionDirective, NotConnected, PageHeader, RouterLink, SavedViewsBar],
+  imports: [
+    DataTable,
+    HasPermissionDirective,
+    Icon,
+    InitialsPipe,
+    NotConnected,
+    PageHeader,
+    RouterLink,
+    SavedViewsBar,
+  ],
   templateUrl: './resident-list-page.html',
   styleUrl: './resident-list-page.scss',
 })
@@ -104,6 +115,8 @@ export class ResidentListPage {
     viewChild.required<TemplateRef<{ $implicit: ResidentView }>>('sectorsCell');
   private readonly nameCell =
     viewChild.required<TemplateRef<{ $implicit: ResidentView }>>('nameCell');
+  private readonly statusCell =
+    viewChild.required<TemplateRef<{ $implicit: ResidentView }>>('statusCell');
 
   private readonly query = toSignal(
     this.route.queryParamMap.pipe(map((params) => readResidentQuery(params))),
@@ -185,6 +198,7 @@ export class ResidentListPage {
       header: this.copy.columnStatus,
       width: '110px',
       value: (view) => (view.resident.isActive ? this.copy.active : this.copy.retired),
+      cell: this.statusCell(),
     },
   ]);
 

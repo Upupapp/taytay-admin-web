@@ -1,101 +1,131 @@
+// ResidentRegister mock-up as a page: one panel, two columns of bordered fieldsets, a footer.
+
 .form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-base);
-  margin-block-start: var(--space-base);
-  max-inline-size: 900px;
+  gap: var(--space-4);
+  padding: 20px var(--space-5) var(--space-4);
+}
+
+.form__problems {
+  flex-direction: column;
+  gap: var(--space-1);
+
+  ul {
+    margin: 0;
+    padding-inline-start: 18px;
+  }
+}
+
+.form__problems-heading {
+  font-size: var(--fs-control);
+  font-weight: var(--fw-bold);
+}
+
+.form__columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr));
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.form__column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-inline-size: 0;
 }
 
 .form__section {
-  padding: var(--space-card);
-  border: 1px solid var(--c-border);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
 }
 
 .form__legend {
-  padding-inline: var(--space-compact);
-  color: var(--c-text);
-  font-size: 14px;
-  font-weight: 600;
+  padding-inline: 6px;
+  color: var(--ink);
+  font-size: var(--fs-section);
+  font-weight: var(--fw-bold);
 }
 
 .form__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-base);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
 }
 
 .field--wide {
   grid-column: 1 / -1;
 }
 
-.field__hint,
 .form__hint {
-  color: var(--c-text-subtle);
-  font-size: 12.5px;
+  margin-block-end: var(--space-3);
+  color: var(--muted);
+  font-size: var(--fs-label);
 }
 
-.form__hint {
-  margin-block-end: var(--space-snug);
+.form__note {
+  margin-block: var(--space-3);
+  padding: 10px var(--space-3);
+  border-radius: var(--r-field);
+  background: var(--soft2);
+  color: var(--text2);
+  font-size: var(--fs-xs);
 }
 
+// Each sector a tile; a ticked one takes the selection tint and the accent edge.
 .form__sectors {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-compact);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
 }
 
 .check {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-compact);
-  min-block-size: var(--target-min);
-  font-size: 13.5px;
-}
-
-.check input {
-  inline-size: 18px;
-  block-size: 18px;
-}
-
-.form__problems {
-  padding: var(--space-base) var(--space-card);
-  border-inline-start: 4px solid var(--tone-danger-fg);
-}
-
-.form__problems-heading {
-  margin-block-end: var(--space-compact);
-  color: var(--tone-danger-fg);
-  font-size: 14px;
-}
-
-.form__problems ul {
-  margin: 0;
-  padding-inline-start: var(--space-base);
-  font-size: 13.5px;
-}
-
-.form__actions {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--space-compact);
+  align-items: center;
+  gap: 10px;
+  min-block-size: var(--h-btn);
+  padding: 0 var(--space-3);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-field);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+
+  &:has(input:checked) {
+    border-color: var(--accent-line);
+    background: var(--sel);
+  }
+
+  input {
+    flex: none;
+    inline-size: 18px;
+    block-size: 18px;
+    margin: 0;
+    accent-color: var(--link);
+  }
 }
 
 .form__blocked {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-snug);
-  margin-block-start: var(--space-base);
-  padding: var(--space-card);
+  gap: var(--space-3);
   max-inline-size: 640px;
 }
 
-.form__blocked-heading {
-  font-size: 15px;
+.form__blocked-body {
+  color: var(--muted);
+  font-size: var(--fs-sm);
 }
 
-.form__blocked-body {
-  color: var(--c-text-muted);
-  font-size: 13.5px;
+@media (width <= 560px) {
+  .form__grid,
+  .form__sectors {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

@@ -11,6 +11,7 @@
         [subtitle]="barangay(profile) + ' · ' + copy.subtitleFallback"
       >
         <a page-actions *appHasPermission="'resident.update'" class="btn" [routerLink]="editLink()">
+          <app-icon name="pencil" [size]="16" [stroke]="2" />
           {{ copy.edit }}
         </a>
         @if (profile.view.resident.isActive) {
@@ -18,7 +19,7 @@
             page-actions
             *appHasPermission="'resident.deactivate'"
             type="button"
-            class="btn"
+            class="btn btn--danger-outline"
             (click)="askRetire()"
           >
             {{ copy.retire }}
@@ -36,29 +37,82 @@
         }
       </app-page-header>
 
+      <!-- Where the record stands, in words; the dot is decoration. -->
+      <ul class="chip-list detail__badges">
+        @if (profile.view.resident.isActive) {
+          <li class="chip chip--success">
+            <span class="detail__dot" aria-hidden="true"></span>{{ listCopy.active }}
+          </li>
+        } @else {
+          <li class="chip">
+            <span class="detail__dot" aria-hidden="true"></span>{{ listCopy.retired }}
+          </li>
+        }
+        @if (profile.view.isProtected) {
+          <li class="chip chip--danger">{{ listCopy.restricted }}</li>
+        }
+      </ul>
+
       @if (profile.view.isProtected) {
-        <aside class="card notice notice--protected">
-          <h2 class="notice__heading">{{ copy.protectedHeading }}</h2>
-          <p class="notice__body">{{ copy.protectedBody }}</p>
+        <aside class="callout callout--danger notice notice--protected">
+          <app-icon name="lock" [size]="20" [stroke]="2" />
+          <div>
+            <h2 class="callout__title notice__heading">{{ copy.protectedHeading }}</h2>
+            <p class="notice__body">{{ copy.protectedBody }}</p>
+          </div>
         </aside>
       }
 
       @if (profile.view.withheld.length > 0) {
-        <aside class="card notice">
-          <h2 class="notice__heading">{{ copy.withheldHeading }}</h2>
-          <p class="notice__body">{{ copy.withheldBody }}</p>
-          <ul class="notice__list">
-            @for (field of profile.view.withheld; track field) {
-              <li>{{ withheldLabel(field) }}</li>
-            }
-          </ul>
+        <aside class="callout callout--warning notice">
+          <app-icon name="info" [size]="20" [stroke]="2" />
+          <div>
+            <h2 class="callout__title notice__heading">{{ copy.withheldHeading }}</h2>
+            <p class="notice__body">{{ copy.withheldBody }}</p>
+            <ul class="notice__list">
+              @for (field of profile.view.withheld; track field) {
+                <li>{{ withheldLabel(field) }}</li>
+              }
+            </ul>
+          </div>
         </aside>
+      }
+
+      <!-- The record's totals first, as the mock-up's tiles; read with the history or not shown. -->
+      @if (profile.history.kind === 'read') {
+        @let totals = profile.history.history;
+        <dl class="tally-row detail__totals">
+          <div class="tally tally--primary">
+            <dt class="tally__label">{{ copy.totalReleased }}</dt>
+            <dd class="tally__value">{{ totals.totalReleased | peso }}</dd>
+            <!-- Goods are counted beside the money, never valued into it (`DL-93`). -->
+            @if (totals.goodsReceivedCount > 0) {
+              <dd class="tally__hint totals__goods">
+                {{ copy.goodsReceived(totals.goodsReceivedCount) }}
+              </dd>
+            }
+          </div>
+          <div class="tally tally--gold">
+            <dt class="tally__label">{{ copy.openCases }}</dt>
+            <dd class="tally__value">{{ totals.openCaseCount }}</dd>
+          </div>
+          <div class="tally">
+            <dt class="tally__label">{{ copy.caseCount }}</dt>
+            <dd class="tally__value">{{ totals.cases.length }}</dd>
+          </div>
+          <div class="tally">
+            <dt class="tally__label">{{ copy.lastActivity }}</dt>
+            <dd class="tally__value">
+              {{ totals.lastActivityAt ? (totals.lastActivityAt | date: 'mediumDate') : '—' }}
+            </dd>
+          </div>
+        </dl>
       }
 
       <div class="detail">
         <!-- ── Identity ─────────────────────────────────────────────────── -->
-        <section class="card panel" aria-labelledby="identity-heading">
-          <h2 class="panel__heading" id="identity-heading">{{ copy.identityHeading }}</h2>
+        <section class="card card--padded card--deep panel" aria-labelledby="identity-heading">
+          <h2 class="eyebrow panel__heading" id="identity-heading">{{ copy.identityHeading }}</h2>
           <dl class="facts">
             <div class="facts__row">
               <dt>{{ copy.born }}</dt>
@@ -87,11 +141,11 @@
             <div class="facts__row facts__row--wide">
               <dt>{{ copy.sectors }}</dt>
               <dd>
-                <span class="sectors">
+                <span class="chip-list">
                   @for (sector of profile.view.resident.sectors; track sector) {
-                    <span class="sectors__chip">{{ sectorLabel(sector) }}</span>
+                    <span class="chip">{{ sectorLabel(sector) }}</span>
                   } @empty {
-                    <span class="sectors__none">—</span>
+                    <span>—</span>
                   }
                 </span>
               </dd>
@@ -100,8 +154,10 @@
         </section>
 
         <!-- ── Address and contact ──────────────────────────────────────── -->
-        <section class="card panel" aria-labelledby="address-heading">
-          <h2 class="panel__heading" id="address-heading">{{ copy.addressHeading }}</h2>
+        <section class="card card--padded panel" aria-labelledby="address-heading">
+          <h2 class="section-title panel__heading" id="address-heading">
+            {{ copy.addressHeading }}
+          </h2>
           <dl class="facts">
             <div class="facts__row">
               <dt>{{ copy.barangay }}</dt>
@@ -127,8 +183,10 @@
         </section>
 
         <!-- ── Household and family ─────────────────────────────────────── -->
-        <section class="card panel panel--wide" aria-labelledby="household-heading">
-          <h2 class="panel__heading" id="household-heading">{{ copy.householdHeading }}</h2>
+        <section class="card card--padded panel panel--wide" aria-labelledby="household-heading">
+          <h2 class="section-title panel__heading" id="household-heading">
+            {{ copy.householdHeading }}
+          </h2>
 
           @if (profile.household; as household) {
             <dl class="facts">
@@ -149,7 +207,7 @@
             <p class="panel__empty">{{ copy.noHousehold }}</p>
           }
 
-          <h3 class="panel__subheading">{{ copy.familyHeading }}</h3>
+          <h3 class="section-title panel__subheading">{{ copy.familyHeading }}</h3>
           @switch (profile.householdMembers.kind) {
             @case ('unavailable') {
               <!--
@@ -162,7 +220,10 @@
             @default {
               @if (membersOf(profile.householdMembers).length > 0) {
                 <ul class="family">
-                  @for (member of membersOf(profile.householdMembers); track member.view.resident.id) {
+                  @for (
+                    member of membersOf(profile.householdMembers);
+                    track member.view.resident.id
+                  ) {
                     <li>
                       <app-resident-summary-card
                         compact
@@ -186,8 +247,8 @@
           Not on the profile, and not a duplicate of anything: a visit is often the only record of
           what the office actually saw, and it was reachable from no screen at all.
         -->
-        <section class="card panel panel--wide" aria-labelledby="visits-heading">
-          <h2 class="panel__heading" id="visits-heading">{{ copy.visitsHeading }}</h2>
+        <section class="card card--padded panel panel--wide" aria-labelledby="visits-heading">
+          <h2 class="section-title panel__heading" id="visits-heading">{{ copy.visitsHeading }}</h2>
 
           <!-- The heading stays when the port is not served, so the gap is named where it is (DL-175). -->
           @let visits = visitsFor();
@@ -223,8 +284,10 @@
           person may belong to more than one. Folding these into the household panel is exactly the
           assumption that rule exists to remove.
         -->
-        <section class="card panel panel--wide" aria-labelledby="families-heading">
-          <h2 class="panel__heading" id="families-heading">{{ copy.familiesHeading }}</h2>
+        <section class="card card--padded panel panel--wide" aria-labelledby="families-heading">
+          <h2 class="section-title panel__heading" id="families-heading">
+            {{ copy.familiesHeading }}
+          </h2>
 
           @let families = familiesOf();
           @let kinship = kinshipHistory();
@@ -252,7 +315,7 @@
               </ul>
             }
 
-            <h3 class="panel__subheading">{{ copy.kinshipHeading }}</h3>
+            <h3 class="section-title panel__subheading">{{ copy.kinshipHeading }}</h3>
             <p class="panel__hint">{{ copy.kinshipHint }}</p>
 
             @if (kinship.kind === 'refused') {
@@ -288,175 +351,169 @@
         -->
         @switch (profile.history.kind) {
           @case ('unavailable') {
-            <section class="card panel panel--wide" aria-labelledby="history-heading">
-              <h2 class="panel__heading" id="history-heading">{{ copy.historyHeading }}</h2>
+            <section class="card card--padded panel panel--wide" aria-labelledby="history-heading">
+              <h2 class="section-title panel__heading" id="history-heading">
+                {{ copy.historyHeading }}
+              </h2>
               <p class="panel__unread" role="note">{{ profile.history.because }}</p>
             </section>
           }
           @case ('read') {
             @let history = profile.history.history;
-            <section class="card panel panel--wide" aria-labelledby="cases-heading">
-              <h2 class="panel__heading" id="cases-heading">{{ copy.casesHeading }}</h2>
-
-              <dl class="totals">
-                <div>
-                  <dt>{{ copy.caseCount }}</dt>
-                  <dd>{{ history.cases.length }}</dd>
-                </div>
-                <div>
-                  <dt>{{ copy.openCases }}</dt>
-                  <dd>{{ history.openCaseCount }}</dd>
-                </div>
-                <div>
-                  <dt>{{ copy.totalReleased }}</dt>
-                  <dd>{{ history.totalReleased | peso }}</dd>
-                  <!-- Goods are counted beside the money, never valued into it (`DL-93`). -->
-                  @if (history.goodsReceivedCount > 0) {
-                    <dd class="totals__goods">
-                      {{ copy.goodsReceived(history.goodsReceivedCount) }}
-                    </dd>
-                  }
-                </div>
-                <div>
-                  <dt>{{ copy.lastActivity }}</dt>
-                  <dd>
-                    {{
-                      history.lastActivityAt ? (history.lastActivityAt | date: 'mediumDate') : '—'
-                    }}
-                  </dd>
-                </div>
-              </dl>
+            <section class="card card--padded panel panel--wide" aria-labelledby="cases-heading">
+              <h2 class="section-title panel__heading" id="cases-heading">
+                {{ copy.casesHeading }}
+              </h2>
 
               @if (history.cases.length > 0) {
-                <table class="history">
-                  <caption class="visually-hidden">
-                    {{
-                      copy.casesHeading
-                    }}
-                  </caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Reference</th>
-                      <th scope="col">Programme</th>
-                      <th scope="col">Status</th>
-                      <th scope="col" class="history__amount">Amount approved</th>
-                      <th scope="col">Updated</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (entry of history.cases; track entry.id) {
+                <div class="table-scroll">
+                  <table class="simple-table history">
+                    <caption class="visually-hidden">
+                      {{
+                        copy.casesHeading
+                      }}
+                    </caption>
+                    <thead>
                       <tr>
-                        <th scope="row">
-                          <a
-                            [routerLink]="['/assistance-requests']"
-                            [queryParams]="{ q: entry.referenceNumber }"
-                          >
-                            {{ entry.referenceNumber }}
-                          </a>
+                        <th scope="col">Reference</th>
+                        <th scope="col">Programme</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="simple-table__num history__amount">
+                          Amount approved
                         </th>
-                        <td>{{ entry.programName }}</td>
-                        <td>
-                          <app-status-badge [catalog]="requestStatuses" [status]="entry.status" />
-                        </td>
-                        <td class="history__amount">{{ entry.approvedAmount | peso }}</td>
-                        <td>{{ entry.updatedAt | date: 'mediumDate' }}</td>
+                        <th scope="col">Updated</th>
                       </tr>
-                    }
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      @for (entry of history.cases; track entry.id) {
+                        <tr>
+                          <th scope="row">
+                            <a
+                              [routerLink]="['/assistance-requests']"
+                              [queryParams]="{ q: entry.referenceNumber }"
+                            >
+                              {{ entry.referenceNumber }}
+                            </a>
+                          </th>
+                          <td>{{ entry.programName }}</td>
+                          <td>
+                            <app-status-badge [catalog]="requestStatuses" [status]="entry.status" />
+                          </td>
+                          <td class="simple-table__num history__amount">
+                            {{ entry.approvedAmount | peso }}
+                          </td>
+                          <td>{{ entry.updatedAt | date: 'mediumDate' }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
               } @else {
                 <p class="panel__empty">{{ copy.noCases }}</p>
               }
             </section>
 
             <!-- ── Payouts ──────────────────────────────────────────────────── -->
-            <section class="card panel panel--wide" aria-labelledby="payouts-heading">
-              <h2 class="panel__heading" id="payouts-heading">{{ copy.payoutsHeading }}</h2>
+            <section class="card card--padded panel panel--wide" aria-labelledby="payouts-heading">
+              <h2 class="section-title panel__heading" id="payouts-heading">
+                {{ copy.payoutsHeading }}
+              </h2>
               @if (history.payouts.length > 0) {
-                <table class="history">
-                  <caption class="visually-hidden">
-                    {{
-                      copy.payoutsHeading
-                    }}
-                  </caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Reference</th>
-                      <th scope="col">Method</th>
-                      <th scope="col">Status</th>
-                      <th scope="col" class="history__amount">Amount</th>
-                      <th scope="col">Released</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (payout of history.payouts; track payout.id) {
+                <div class="table-scroll">
+                  <table class="simple-table history">
+                    <caption class="visually-hidden">
+                      {{
+                        copy.payoutsHeading
+                      }}
+                    </caption>
+                    <thead>
                       <tr>
-                        <th scope="row">
-                          <a
-                            [routerLink]="['/releases']"
-                            [queryParams]="{ q: payout.referenceNumber }"
-                          >
-                            {{ payout.referenceNumber }}
-                          </a>
-                        </th>
-                        <td>{{ methodLabel(payout.method) }}</td>
-                        <td>
-                          <app-status-badge [catalog]="payoutStatuses" [status]="payout.status" />
-                        </td>
-                        <td class="history__amount">{{ payout.amount | peso }}</td>
-                        <td>
-                          {{ payout.releasedAt ? (payout.releasedAt | date: 'mediumDate') : '—' }}
-                        </td>
+                        <th scope="col">Reference</th>
+                        <th scope="col">Method</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="simple-table__num history__amount">Amount</th>
+                        <th scope="col">Released</th>
                       </tr>
-                    }
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      @for (payout of history.payouts; track payout.id) {
+                        <tr>
+                          <th scope="row">
+                            <a
+                              [routerLink]="['/releases']"
+                              [queryParams]="{ q: payout.referenceNumber }"
+                            >
+                              {{ payout.referenceNumber }}
+                            </a>
+                          </th>
+                          <td>{{ methodLabel(payout.method) }}</td>
+                          <td>
+                            <app-status-badge [catalog]="payoutStatuses" [status]="payout.status" />
+                          </td>
+                          <td class="simple-table__num history__amount">
+                            {{ payout.amount | peso }}
+                          </td>
+                          <td>
+                            {{ payout.releasedAt ? (payout.releasedAt | date: 'mediumDate') : '—' }}
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
               } @else {
                 <p class="panel__empty">{{ copy.noPayouts }}</p>
               }
             </section>
 
             <!-- ── Referrals ────────────────────────────────────────────────── -->
-            <section class="card panel panel--wide" aria-labelledby="referrals-heading">
-              <h2 class="panel__heading" id="referrals-heading">{{ copy.referralsHeading }}</h2>
+            <section
+              class="card card--padded panel panel--wide"
+              aria-labelledby="referrals-heading"
+            >
+              <h2 class="section-title panel__heading" id="referrals-heading">
+                {{ copy.referralsHeading }}
+              </h2>
               @if (history.referrals.length > 0) {
-                <table class="history">
-                  <caption class="visually-hidden">
-                    {{
-                      copy.referralsHeading
-                    }}
-                  </caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Reference</th>
-                      <th scope="col">Sent to</th>
-                      <th scope="col">Status</th>
-                      <th scope="col">Referred</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (referral of history.referrals; track referral.id) {
+                <div class="table-scroll">
+                  <table class="simple-table history">
+                    <caption class="visually-hidden">
+                      {{
+                        copy.referralsHeading
+                      }}
+                    </caption>
+                    <thead>
                       <tr>
-                        <th scope="row">
-                          <a
-                            [routerLink]="['/referrals']"
-                            [queryParams]="{ q: referral.referenceNumber }"
-                          >
-                            {{ referral.referenceNumber }}
-                          </a>
-                        </th>
-                        <td>{{ referral.destinationName }}</td>
-                        <td>
-                          <app-status-badge
-                            [catalog]="referralStatuses"
-                            [status]="referral.status"
-                          />
-                        </td>
-                        <td>{{ referral.referredAt | date: 'mediumDate' }}</td>
+                        <th scope="col">Reference</th>
+                        <th scope="col">Sent to</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Referred</th>
                       </tr>
-                    }
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      @for (referral of history.referrals; track referral.id) {
+                        <tr>
+                          <th scope="row">
+                            <a
+                              [routerLink]="['/referrals']"
+                              [queryParams]="{ q: referral.referenceNumber }"
+                            >
+                              {{ referral.referenceNumber }}
+                            </a>
+                          </th>
+                          <td>{{ referral.destinationName }}</td>
+                          <td>
+                            <app-status-badge
+                              [catalog]="referralStatuses"
+                              [status]="referral.status"
+                            />
+                          </td>
+                          <td>{{ referral.referredAt | date: 'mediumDate' }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
               } @else {
                 <p class="panel__empty">{{ copy.noReferrals }}</p>
               }
@@ -465,8 +522,8 @@
         }
 
         <!-- ── Record provenance ────────────────────────────────────────── -->
-        <section class="card panel" aria-labelledby="record-heading">
-          <h2 class="panel__heading" id="record-heading">{{ copy.recordHeading }}</h2>
+        <section class="card card--padded panel" aria-labelledby="record-heading">
+          <h2 class="section-title panel__heading" id="record-heading">{{ copy.recordHeading }}</h2>
           <dl class="facts">
             <div class="facts__row">
               <dt>{{ copy.created }}</dt>
@@ -487,7 +544,9 @@
         size="small"
       >
         <div modal-body class="field">
-          <label class="field__label" for="resident-retire-reason">{{ copy.statusReasonLabel }}</label>
+          <label class="field__label" for="resident-retire-reason">{{
+            copy.statusReasonLabel
+          }}</label>
           <textarea
             id="resident-retire-reason"
             class="field__input"
@@ -520,7 +579,9 @@
         size="small"
       >
         <div modal-body class="field">
-          <label class="field__label" for="resident-restore-reason">{{ copy.statusReasonLabel }}</label>
+          <label class="field__label" for="resident-restore-reason">{{
+            copy.statusReasonLabel
+          }}</label>
           <textarea
             id="resident-restore-reason"
             class="field__input"

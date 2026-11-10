@@ -1,29 +1,32 @@
+/* One resident, said the same way on every screen: the mock-ups' member row
+   (ResidentRecord "Family members") — a soft tile, the name, a pill for the
+   relationship, chips for sectors. Tokens only (DL-200). */
 .rsc {
   display: flex;
   flex-direction: column;
-  gap: var(--space-compact);
-  padding: var(--space-base);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
+  gap: var(--space-2);
+  padding: 14px var(--space-4);
+  border-radius: var(--r-box);
+  background: var(--soft2);
 }
 
 .rsc--compact {
-  padding: var(--space-snug);
-  gap: var(--space-micro);
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--r-field);
 }
 
 .rsc__heading {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--space-compact);
+  gap: var(--space-2);
 }
 
 .rsc__name {
-  color: var(--c-text);
-  font-size: 15px;
-  font-weight: 600;
+  color: var(--ink);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
   overflow-wrap: anywhere;
 }
 
@@ -32,25 +35,29 @@ a.rsc__name {
   display: inline-block;
   min-block-size: var(--target-min);
   line-height: var(--target-min);
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-color: var(--line2);
+  text-underline-offset: 3px;
 }
 
 a.rsc__name:hover {
-  text-decoration: underline;
+  text-decoration-color: currentcolor;
 }
 
-.rsc__relationship {
-  padding: 2px var(--space-compact);
-  border-radius: var(--radius-sm);
+.rsc__relationship,
+.rsc__protected-tag,
+.rsc__sector {
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
   background: var(--tone-neutral-bg);
   color: var(--tone-neutral-fg);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
 }
 
 .rsc__meta {
-  color: var(--c-text-muted);
-  font-size: 13px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
 }
 
 /* Colour is never the signal here: the tag says "Protected record" in words,
@@ -60,45 +67,28 @@ a.rsc__name:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-compact);
+  gap: var(--space-2);
 }
 
 .rsc__protected-tag {
-  padding: 2px var(--space-compact);
-  border-radius: var(--radius-sm);
-  background: var(--tone-warning-bg);
-  color: var(--tone-warning-fg);
-  font-size: 12px;
-  font-weight: 600;
+  background: var(--tone-danger-bg);
+  color: var(--tone-danger-fg);
 }
 
-.rsc__protected-note {
-  color: var(--c-text-muted);
-  font-size: 12.5px;
+.rsc__protected-note,
+.rsc__inactive,
+.rsc__withheld {
+  color: var(--muted);
+  font-size: var(--fs-xs);
 }
 
 .rsc__sectors {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-micro);
+  gap: 6px;
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.rsc__sector {
-  padding: 2px var(--space-compact);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-sm);
-  background: var(--c-surface-muted);
-  color: var(--c-text-muted);
-  font-size: 12px;
-}
-
-.rsc__inactive,
-.rsc__withheld {
-  color: var(--c-text-subtle);
-  font-size: 12.5px;
 }
 
 .rsc__actions:empty {
@@ -108,6 +98,6 @@ a.rsc__name:hover {
 .rsc__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-compact);
-  margin-block-start: var(--space-micro);
+  gap: var(--space-2);
+  margin-block-start: var(--space-1);
 }
