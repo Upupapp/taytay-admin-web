@@ -1,0 +1,143 @@
+// What needs attention now (Main mock-up): figures grouped under their urgency.
+:host {
+  display: block;
+  min-inline-size: 0;
+}
+
+.attention {
+  display: flex;
+  block-size: 100%;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 20px 20px var(--space-3);
+}
+
+.attention__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block-end: var(--space-1);
+}
+
+.attention__group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px var(--space-2) 6px;
+  color: var(--muted);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.attention__dot {
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: var(--r-pill);
+  background: var(--field-line);
+}
+
+.attention__group-total {
+  color: var(--muted2);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0;
+}
+
+.attention__group--critical {
+  color: var(--red-ink);
+
+  .attention__dot {
+    background: var(--red);
+  }
+}
+
+.attention__group--warning {
+  color: var(--gold-ink);
+
+  .attention__dot {
+    background: var(--gold);
+  }
+}
+
+.attention__items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Figure, words, Review; the rule it counted by on its own line (DL-98). */
+.attention__item {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px var(--space-2);
+  padding: 7px 6px;
+  border-block-start: 1px solid var(--soft);
+  border-radius: var(--r-field);
+
+  &:hover {
+    background: var(--field);
+  }
+}
+
+.attention__count {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-title-lg);
+  font-weight: var(--fw-medium);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.attention__item--critical .attention__count {
+  color: var(--red-ink);
+}
+
+.attention__message {
+  color: var(--text);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-medium);
+}
+
+.attention__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-block-size: 34px;
+  padding: 0 var(--space-3);
+  border-radius: var(--r-pill);
+  background: var(--sel);
+  color: var(--link);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+
+  &:hover {
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+}
+
+.attention__basis {
+  grid-column: 2 / -1;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  text-wrap: pretty;
+}
+
+.attention__totals {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-block-start: auto;
+  padding-block-start: var(--space-3);
+}
+
+.attention__clear-body {
+  margin-block-start: var(--space-1);
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}

@@ -143,6 +143,7 @@ require('--on-primary', '--red-ink2', TEXT_MINIMUM, 'danger button label on hove
 // ── text on the deep panel (sign-in artwork, the dashboard's dark card) ────
 require('--on-deep', '--deep', TEXT_MINIMUM, 'text on the deep panel');
 require('--on-deep-muted', '--deep', TEXT_MINIMUM, 'muted text on the deep panel');
+require('--on-deep-muted', '--primary', TEXT_MINIMUM, 'muted text on a primary panel');
 
 // ── brand, which carries links and primary buttons ─────────────────────────
 require('--c-brand', '--c-surface', TEXT_MINIMUM, 'brand text');

@@ -3,52 +3,52 @@
 </app-page-header>
 
 <!-- Filter first: it governs every figure below, so it reads before them. -->
-<section class="card filters" [attr.aria-label]="copy.filterHeading">
-  <div class="filters__controls">
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.filterBarangay }}</span>
-      <select class="filters__input" (change)="onBarangay($event)">
-        <option value="" [selected]="!filter().barangayId">{{ copy.filterAll }}</option>
-        @for (barangay of barangays; track barangay.id) {
-          <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
-            {{ barangay.name }}
-          </option>
-        }
-      </select>
-    </label>
+<section class="filter-bar" [attr.aria-label]="copy.filterHeading">
+  <label class="filter-bar__field">
+    <span>{{ copy.filterBarangay }}</span>
+    <select class="field__input field__input--pill" (change)="onBarangay($event)">
+      <option value="" [selected]="!filter().barangayId">{{ copy.filterAll }}</option>
+      @for (barangay of barangays; track barangay.id) {
+        <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
+          {{ barangay.name }}
+        </option>
+      }
+    </select>
+  </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.filterCategory }}</span>
-      <select class="filters__input" (change)="onCategory($event)">
-        <option value="" [selected]="!filter().category">{{ copy.filterAll }}</option>
-        @for (category of categories; track category) {
-          <option [value]="category" [selected]="filter().category === category">
-            {{ categoryLabel(category) }}
-          </option>
-        }
-      </select>
-    </label>
+  <label class="filter-bar__field filters__wide">
+    <span>{{ copy.filterCategory }}</span>
+    <select class="field__input field__input--pill" (change)="onCategory($event)">
+      <option value="" [selected]="!filter().category">{{ copy.filterAll }}</option>
+      @for (category of categories; track category) {
+        <option [value]="category" [selected]="filter().category === category">
+          {{ categoryLabel(category) }}
+        </option>
+      }
+    </select>
+  </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.filterPeriod }}</span>
-      <select class="filters__input" (change)="onPeriod($event)">
-        @for (period of periods; track period) {
-          <option [value]="period" [selected]="(filter().period ?? 'all-time') === period">
-            {{ periodLabel(period) }}
-          </option>
-        }
-      </select>
-    </label>
-
-    @if (filterActive()) {
-      <button type="button" class="btn" (click)="clearFilter()">{{ copy.clearFilter }}</button>
-    }
-  </div>
+  <label class="filter-bar__field">
+    <span>{{ copy.filterPeriod }}</span>
+    <select class="field__input field__input--pill" (change)="onPeriod($event)">
+      @for (period of periods; track period) {
+        <option [value]="period" [selected]="(filter().period ?? 'all-time') === period">
+          {{ periodLabel(period) }}
+        </option>
+      }
+    </select>
+  </label>
 
   @if (filterActive()) {
-    <p class="filters__notice">{{ copy.filterAppliedNotice }}</p>
+    <button type="button" class="btn btn--primary" (click)="clearFilter()">
+      {{ copy.clearFilter }}
+    </button>
   }
 </section>
+
+@if (filterActive()) {
+  <p class="filter-bar__note filters__note">{{ copy.filterAppliedNotice }}</p>
+}
 
 <app-async-content
   [state]="state()"
@@ -59,142 +59,148 @@
 />
 
 <ng-template #dashboardTemplate let-summary>
-  <!-- ── What needs attention now ───────────────────────────────────────── -->
-  <section class="attention" aria-labelledby="attention-heading">
-    <h2 id="attention-heading" class="attention__heading">{{ copy.attentionHeading }}</h2>
+  <div class="dash">
+    <!-- ── What needs attention now ───────────────────────────────────────── -->
+    <app-dashboard-attention
+      class="dash__attention"
+      [groups]="attentionGroups()"
+      [hiddenByRole]="attentionHiddenByRole()"
+    />
 
-    @if (attention().length > 0) {
-      <ul class="attention__list">
-        @for (card of attention(); track card.signal.kind) {
-          <li class="attention__item" [class]="'attention__item--' + card.signal.severity">
-            <!-- Severity is stated in words as well as shown by tone, so the
-                 ranking survives without colour. -->
-            <span class="attention__severity">{{ card.severityLabel }}</span>
-            <span class="attention__message">{{ card.message }}</span>
-            <!-- The rule the server counted by, so the figure can be checked (DL-98). -->
-            <p class="attention__basis">{{ copy.attentionBasis }} {{ card.signal.basis }}</p>
-            <a
-              class="btn attention__action"
-              [routerLink]="card.drillDown.route"
-              [queryParams]="card.drillDown.queryParams"
-            >
-              {{ copy.attentionAction }}
-              <span class="visually-hidden">— {{ card.message }}</span>
-            </a>
-          </li>
-        }
-      </ul>
-    } @else {
-      <div class="card attention__clear">
-        <h3 class="attention__clear-heading">{{ copy.attentionEmptyHeading }}</h3>
-        <p class="attention__clear-body">
-          {{ attentionHiddenByRole() ? copy.attentionNothingForRole : copy.attentionEmptyBody }}
+    <!-- ── Headline figures, each a link to its own records ───────────────── -->
+    <section class="metrics" aria-label="Headline figures">
+      <a
+        class="kpi metric"
+        [routerLink]="openRequestsLink(summary).route"
+        [queryParams]="openRequestsLink(summary).queryParams"
+      >
+        <span class="kpi__label">
+          {{ copy.openRequests }}
+          <span class="kpi__arrow" aria-hidden="true">
+            <app-icon name="arrowUpRight" [size]="13" [stroke]="2.4" />
+          </span>
+        </span>
+        <span class="kpi__value metric__value">{{ summary.openRequests }}</span>
+        <span class="kpi__hint">{{ copy.openRequestsHint }}</span>
+        <span class="visually-hidden">{{ copy.viewRecords }}</span>
+      </a>
+
+      <a
+        class="kpi metric"
+        [routerLink]="awaitingApprovalLink(summary).route"
+        [queryParams]="awaitingApprovalLink(summary).queryParams"
+      >
+        <span class="kpi__label">
+          {{ copy.awaitingApproval }}
+          <span class="kpi__arrow" aria-hidden="true">
+            <app-icon name="arrowUpRight" [size]="13" [stroke]="2.4" />
+          </span>
+        </span>
+        <span class="kpi__value metric__value">{{ summary.awaitingApproval }}</span>
+        <span class="kpi__hint">{{ copy.awaitingApprovalHint }}</span>
+        <span class="visually-hidden">{{ copy.viewRecords }}</span>
+      </a>
+
+      <!-- Payouts only for a reader who may open the releases they count: absent, not zero (DL-182). -->
+      @if (summary.payouts; as payouts) {
+        <a
+          class="kpi metric"
+          [routerLink]="scheduledPayoutsLink(summary).route"
+          [queryParams]="scheduledPayoutsLink(summary).queryParams"
+        >
+          <span class="kpi__label">
+            {{ copy.scheduledPayouts }}
+            <span class="kpi__arrow" aria-hidden="true">
+              <app-icon name="arrowUpRight" [size]="13" [stroke]="2.4" />
+            </span>
+          </span>
+          <span class="kpi__value metric__value">{{ payouts.scheduledPayouts }}</span>
+          <span class="kpi__hint">{{ copy.scheduledPayoutsHint }}</span>
+          <span class="visually-hidden">{{ copy.viewRecords }}</span>
+        </a>
+
+        <a
+          class="kpi metric"
+          [routerLink]="disbursedLink(summary).route"
+          [queryParams]="disbursedLink(summary).queryParams"
+        >
+          <span class="kpi__label">
+            {{ copy.disbursed }}
+            <span class="kpi__arrow" aria-hidden="true">
+              <app-icon name="arrowUpRight" [size]="13" [stroke]="2.4" />
+            </span>
+          </span>
+          <span class="kpi__value kpi__value--long metric__value">{{
+            payouts.disbursedInPeriod | peso
+          }}</span>
+          <span class="kpi__hint">{{
+            copy.disbursedHint(payouts.residentsServedInPeriod, payouts.goodsReleasedInPeriod)
+          }}</span>
+          <span class="visually-hidden">{{ copy.viewRecords }}</span>
+        </a>
+      } @else {
+        <p class="callout metrics__note">
+          <app-icon name="lock" [size]="18" [stroke]="2" />
+          {{ copy.payoutsNotShown }}
         </p>
-      </div>
-    }
-  </section>
-
-  <!-- ── Headline figures, each a link to its own records ───────────────── -->
-  <section class="metrics" aria-label="Headline figures">
-    <a
-      class="card metric"
-      [routerLink]="openRequestsLink(summary).route"
-      [queryParams]="openRequestsLink(summary).queryParams"
-    >
-      <span class="metric__label">{{ copy.openRequests }}</span>
-      <span class="metric__value">{{ summary.openRequests }}</span>
-      <span class="metric__hint">{{ copy.openRequestsHint }}</span>
-      <span class="visually-hidden">{{ copy.viewRecords }}</span>
-    </a>
-
-    <a
-      class="card metric"
-      [routerLink]="awaitingApprovalLink(summary).route"
-      [queryParams]="awaitingApprovalLink(summary).queryParams"
-    >
-      <span class="metric__label">{{ copy.awaitingApproval }}</span>
-      <span class="metric__value">{{ summary.awaitingApproval }}</span>
-      <span class="metric__hint">{{ copy.awaitingApprovalHint }}</span>
-      <span class="visually-hidden">{{ copy.viewRecords }}</span>
-    </a>
-
-    <!-- Payouts only for a reader who may open the releases they count: absent, not zero (DL-182). -->
-    @if (summary.payouts; as payouts) {
-      <a
-        class="card metric"
-        [routerLink]="scheduledPayoutsLink(summary).route"
-        [queryParams]="scheduledPayoutsLink(summary).queryParams"
-      >
-        <span class="metric__label">{{ copy.scheduledPayouts }}</span>
-        <span class="metric__value">{{ payouts.scheduledPayouts }}</span>
-        <span class="metric__hint">{{ copy.scheduledPayoutsHint }}</span>
-        <span class="visually-hidden">{{ copy.viewRecords }}</span>
-      </a>
-
-      <a
-        class="card metric"
-        [routerLink]="disbursedLink(summary).route"
-        [queryParams]="disbursedLink(summary).queryParams"
-      >
-        <span class="metric__label">{{ copy.disbursed }}</span>
-        <span class="metric__value">{{ payouts.disbursedInPeriod | peso }}</span>
-        <span class="metric__hint">{{
-          copy.disbursedHint(payouts.residentsServedInPeriod, payouts.goodsReleasedInPeriod)
-        }}</span>
-        <span class="visually-hidden">{{ copy.viewRecords }}</span>
-      </a>
-    } @else {
-      <p class="metrics__note">{{ copy.payoutsNotShown }}</p>
-    }
-  </section>
-
-  <!-- ── Breakdowns. Every one is a real table with decorative bars. ────── -->
-  <div class="panels">
-    <section class="card panel">
-      <app-chart-table
-        [caption]="copy.byStatusCaption"
-        [summary]="copy.byStatusSummary"
-        [labelHeader]="copy.statusHeader"
-        [valueHeader]="copy.requestsHeader"
-        [rows]="statusRows()"
-      />
+      }
     </section>
 
-    <section class="card panel">
-      <app-chart-table
-        [caption]="copy.byBarangayCaption"
-        [summary]="copy.byBarangaySummary"
-        [labelHeader]="copy.barangayHeader"
-        [valueHeader]="copy.requestsHeader"
-        [rows]="barangayRows()"
-      />
-    </section>
-
-    @if (summary.payouts) {
-      <section class="card panel">
+    <!-- ── Breakdowns. Every one is a real table with decorative bars. ────── -->
+    <div class="panels">
+      <section class="card card--panel card--padded panel">
         <app-chart-table
-          [caption]="copy.byCategoryCaption"
-          [summary]="copy.byCategorySummary"
-          [labelHeader]="copy.categoryHeader"
-          [valueHeader]="copy.amountHeader"
-          [rows]="categoryRows()"
+          [caption]="copy.byStatusCaption"
+          [summary]="copy.byStatusSummary"
+          [labelHeader]="copy.statusHeader"
+          [valueHeader]="copy.requestsHeader"
+          [rows]="statusRows()"
         />
       </section>
-    }
-  </div>
 
-  <!-- ── The residents' app: only for whoever administers it, each figure behind its own key ── -->
-  @if (summary.residentApp; as app) {
-    <section class="app-figures" aria-labelledby="app-figures-heading">
-      <h2 id="app-figures-heading" class="app-figures__heading">{{ copy.residentAppHeading }}</h2>
-      <p class="app-figures__notice">{{ copy.residentAppNotice }}</p>
+      <section class="card card--panel card--padded panel">
+        <app-chart-table
+          [caption]="copy.byBarangayCaption"
+          [summary]="copy.byBarangaySummary"
+          [labelHeader]="copy.barangayHeader"
+          [valueHeader]="copy.requestsHeader"
+          [rows]="barangayRows()"
+        />
+      </section>
 
-      <div class="metrics">
+      @if (summary.payouts) {
+        <section class="card card--panel card--padded panel">
+          <app-chart-table
+            [caption]="copy.byCategoryCaption"
+            [summary]="copy.byCategorySummary"
+            [labelHeader]="copy.categoryHeader"
+            [valueHeader]="copy.amountHeader"
+            [rows]="categoryRows()"
+          />
+        </section>
+      }
+    </div>
+
+    <!-- ── The residents' app: only for whoever administers it, each figure behind its own key ── -->
+    @if (summary.residentApp; as app) {
+      <section class="app-figures" aria-labelledby="app-figures-heading">
+        <div class="app-figures__intro">
+          <h2 id="app-figures-heading" class="app-figures__heading">
+            {{ copy.residentAppHeading }}
+          </h2>
+          <p class="app-figures__notice">{{ copy.residentAppNotice }}</p>
+        </div>
+
         @if (app.accounts; as accounts) {
-          <a class="card metric" routerLink="/users">
-            <span class="metric__label">{{ copy.accounts }}</span>
-            <span class="metric__value">{{ accounts.registered }}</span>
-            <span class="metric__hint">
+          <a class="kpi metric" routerLink="/users">
+            <span class="kpi__label">
+              {{ copy.accounts }}
+              <span class="kpi__arrow" aria-hidden="true">
+                <app-icon name="arrowUpRight" [size]="13" [stroke]="2.4" />
+              </span>
+            </span>
+            <span class="kpi__value metric__value">{{ accounts.registered }}</span>
+            <span class="kpi__hint">
               {{ copy.accountsHint }}
               @if (accountsNew(summary, accounts.registeredInPeriod); as fresh) {
                 {{ fresh }}
@@ -204,61 +210,95 @@
           </a>
         }
         @if (app.verificationsWaiting !== null) {
-          <a class="card metric" routerLink="/verification">
-            <span class="metric__label">{{ copy.verificationsWaiting }}</span>
-            <span class="metric__value">{{ app.verificationsWaiting }}</span>
-            <span class="metric__hint">{{ copy.verificationsWaitingHint }}</span>
+          <a class="kpi metric" routerLink="/verification">
+            <span class="kpi__label">
+              {{ copy.verificationsWaiting }}
+              <span class="kpi__arrow" aria-hidden="true">
+                <app-icon name="arrowUpRight" [size]="13" [stroke]="2.4" />
+              </span>
+            </span>
+            <span class="kpi__value metric__value">{{ app.verificationsWaiting }}</span>
+            <span class="kpi__hint">{{ copy.verificationsWaitingHint }}</span>
             <span class="visually-hidden">{{ copy.viewRecords }}</span>
           </a>
         }
         @if (app.digitalIdsActive !== null) {
-          <a class="card metric" routerLink="/digital-ids">
-            <span class="metric__label">{{ copy.digitalIdsActive }}</span>
-            <span class="metric__value">{{ app.digitalIdsActive }}</span>
-            <span class="metric__hint">{{ copy.digitalIdsActiveHint }}</span>
+          <a class="kpi metric" routerLink="/digital-ids">
+            <span class="kpi__label">
+              {{ copy.digitalIdsActive }}
+              <span class="kpi__arrow" aria-hidden="true">
+                <app-icon name="arrowUpRight" [size]="13" [stroke]="2.4" />
+              </span>
+            </span>
+            <span class="kpi__value metric__value">{{ app.digitalIdsActive }}</span>
+            <span class="kpi__hint">{{ copy.digitalIdsActiveHint }}</span>
             <span class="visually-hidden">{{ copy.viewRecords }}</span>
           </a>
         }
+
+        @if (app.accounts) {
+          <section class="card card--panel card--padded panel app-figures__breakdown">
+            <app-chart-table
+              [caption]="copy.byVerificationCaption"
+              [summary]="copy.byVerificationSummary"
+              [labelHeader]="copy.verificationHeader"
+              [valueHeader]="copy.accountsHeader"
+              [rows]="verificationRows()"
+            />
+          </section>
+        }
+      </section>
+    }
+
+    <!-- ── Quick actions, gated on what the user may actually do ──────────── -->
+    <section class="card card--panel card--padded quick" aria-labelledby="quick-heading">
+      <h2 id="quick-heading" class="section-title section-title--display">
+        {{ copy.quickActionsHeading }}
+      </h2>
+      <div class="quick__actions">
+        <a
+          *appHasPermission="'request.create'"
+          class="action-link action-link--primary"
+          [routerLink]="recordRequest.route"
+        >
+          <span class="icon-tile icon-tile--sm icon-tile--gold" aria-hidden="true">
+            <app-icon name="plus" [size]="16" [stroke]="2.6" />
+          </span>
+          <span class="action-link__label">{{ copy.recordRequest }}</span>
+          <span class="action-link__arrow" aria-hidden="true">
+            <app-icon name="arrowRight" [size]="14" [stroke]="2.2" />
+          </span>
+        </a>
+        <a
+          *appHasPermission="'release.schedule'"
+          class="action-link"
+          [routerLink]="schedulePayouts.route"
+          [queryParams]="schedulePayouts.queryParams"
+        >
+          <span class="icon-tile icon-tile--sm icon-tile--blue-soft" aria-hidden="true">
+            <app-icon name="calendar" [size]="16" [stroke]="2" />
+          </span>
+          <span class="action-link__label">{{ copy.schedulePayouts }}</span>
+          <span class="action-link__arrow" aria-hidden="true">
+            <app-icon name="arrowRight" [size]="14" [stroke]="2.2" />
+          </span>
+        </a>
+        <a
+          *appHasPermission="'report.export-person-level'"
+          class="action-link"
+          routerLink="/reports"
+        >
+          <span class="icon-tile icon-tile--sm icon-tile--blue-soft" aria-hidden="true">
+            <app-icon name="download" [size]="16" [stroke]="2" />
+          </span>
+          <span class="action-link__label">{{ copy.exportReport }}</span>
+          <span class="action-link__arrow" aria-hidden="true">
+            <app-icon name="arrowRight" [size]="14" [stroke]="2.2" />
+          </span>
+        </a>
       </div>
-
-      @if (app.accounts) {
-        <section class="card panel">
-          <app-chart-table
-            [caption]="copy.byVerificationCaption"
-            [summary]="copy.byVerificationSummary"
-            [labelHeader]="copy.verificationHeader"
-            [valueHeader]="copy.accountsHeader"
-            [rows]="verificationRows()"
-          />
-        </section>
-      }
     </section>
-  }
-
-  <!-- ── Quick actions, gated on what the user may actually do ──────────── -->
-  <section class="card quick" aria-labelledby="quick-heading">
-    <h2 id="quick-heading" class="quick__heading">{{ copy.quickActionsHeading }}</h2>
-    <div class="quick__actions">
-      <a
-        *appHasPermission="'request.create'"
-        class="btn btn--primary"
-        [routerLink]="recordRequest.route"
-      >
-        {{ copy.recordRequest }}
-      </a>
-      <a
-        *appHasPermission="'release.schedule'"
-        class="btn"
-        [routerLink]="schedulePayouts.route"
-        [queryParams]="schedulePayouts.queryParams"
-      >
-        {{ copy.schedulePayouts }}
-      </a>
-      <a *appHasPermission="'report.export-person-level'" class="btn" routerLink="/reports">
-        {{ copy.exportReport }}
-      </a>
-    </div>
-  </section>
+  </div>
 
   <p class="generated">{{ copy.generatedAt }} {{ summary.generatedAt | date: 'medium' }}</p>
 </ng-template>

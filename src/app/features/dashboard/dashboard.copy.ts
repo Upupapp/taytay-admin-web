@@ -5,6 +5,23 @@ function goodsCount(goods: number): string {
   return goods === 1 ? '1 release of goods' : `${goods} releases of goods`;
 }
 
+const ATTENTION_NOUN = {
+  'awaiting-approval': (n: number) =>
+    n === 1 ? 'request waiting for approval' : 'requests waiting for approval',
+  'returned-to-applicant': (n: number) =>
+    n === 1 ? 'request returned to the applicant' : 'requests returned to the applicant',
+  'missing-requirements': (n: number) =>
+    n === 1
+      ? 'open request missing a required document'
+      : 'open requests missing a required document',
+  'payout-due': (n: number) =>
+    n === 1 ? 'payout scheduled and not yet released' : 'payouts scheduled and not yet released',
+  'unclaimed-payout': (n: number) =>
+    n === 1 ? 'released payout not collected' : 'released payouts not collected',
+  'referral-unanswered': (n: number) =>
+    n === 1 ? 'referral sent with no acknowledgement' : 'referrals sent with no acknowledgement',
+} satisfies Record<AttentionKind, (count: number) => string>;
+
 /**
  * Dashboard copy (`DL-23`).
  *
@@ -24,25 +41,18 @@ export const DASHBOARD_COPY = {
     'Nothing here needs action from your role. Other staff may still have work outstanding.',
 
   /** `count` is always rendered as text, so meaning never rests on colour. */
+  /*
+   * What a signal counts, without the count: the screen sets the figure large beside it, and the
+   * two read as one sentence ("3 requests waiting for approval").
+   */
+  attentionNoun: ATTENTION_NOUN,
   attention: {
-    'awaiting-approval': (n: number) =>
-      n === 1 ? '1 request waiting for approval' : `${n} requests waiting for approval`,
-    'returned-to-applicant': (n: number) =>
-      n === 1 ? '1 request returned to the applicant' : `${n} requests returned to the applicant`,
-    'missing-requirements': (n: number) =>
-      n === 1
-        ? '1 open request missing a required document'
-        : `${n} open requests missing a required document`,
-    'payout-due': (n: number) =>
-      n === 1
-        ? '1 payout scheduled and not yet released'
-        : `${n} payouts scheduled and not yet released`,
-    'unclaimed-payout': (n: number) =>
-      n === 1 ? '1 released payout not collected' : `${n} released payouts not collected`,
-    'referral-unanswered': (n: number) =>
-      n === 1
-        ? '1 referral sent with no acknowledgement'
-        : `${n} referrals sent with no acknowledgement`,
+    'awaiting-approval': (n: number) => `${n} ${ATTENTION_NOUN['awaiting-approval'](n)}`,
+    'returned-to-applicant': (n: number) => `${n} ${ATTENTION_NOUN['returned-to-applicant'](n)}`,
+    'missing-requirements': (n: number) => `${n} ${ATTENTION_NOUN['missing-requirements'](n)}`,
+    'payout-due': (n: number) => `${n} ${ATTENTION_NOUN['payout-due'](n)}`,
+    'unclaimed-payout': (n: number) => `${n} ${ATTENTION_NOUN['unclaimed-payout'](n)}`,
+    'referral-unanswered': (n: number) => `${n} ${ATTENTION_NOUN['referral-unanswered'](n)}`,
   } satisfies Record<AttentionKind, (count: number) => string>,
 
   attentionAction: 'Review',

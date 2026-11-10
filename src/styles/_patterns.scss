@@ -204,6 +204,60 @@ select.field__input.field__input--pill {
   padding-inline-end: 46px;
 }
 
+/* A glass pill of filters whose labels sit inline (the dashboard's): one row
+   at console widths, a rounded box when it wraps on a narrow screen. Its
+   note line says what the filter governs, after a gold dot. */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--card-edge);
+  border-radius: var(--r-pill);
+  background: var(--card);
+}
+
+.filter-bar__field {
+  display: flex;
+  flex: 1 1 170px;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  padding-inline-start: var(--space-3);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+}
+
+.filter-bar__field .field__input {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.filter-bar__note {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-inline: 14px;
+  color: var(--text2);
+  font-size: var(--fs-label);
+}
+
+.filter-bar__note::before {
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: var(--r-pill);
+  background: var(--gold);
+  content: '';
+}
+
+@media (width <= 700px) {
+  .filter-bar {
+    border-radius: var(--r-card);
+  }
+}
+
 /* A search field with the magnifier inside it: wrap the input, and put an
    <app-icon name="search" class="search-field__icon" /> before it. Any other
    field with a leading glyph (an envelope on the sign-in email) is the same
@@ -276,14 +330,174 @@ select.field__input.field__input--pill {
   text-wrap: pretty;
 }
 
-a.kpi:hover {
+/* A money figure is longer than a count: the smaller size keeps it on one line. */
+.kpi__value--long {
+  font-size: var(--fs-title-lg);
+  line-height: var(--lh-snug);
+}
+
+/* The arrow chip at the end of a linked KPI's label (aria-hidden). */
+.kpi__arrow {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: var(--r-pill);
+  background: var(--soft);
+  color: var(--ink);
+}
+
+a.kpi:hover,
+a.kpi:focus-visible {
   background: var(--primary);
   color: var(--on-primary);
 }
 
 a.kpi:hover .kpi__label,
-a.kpi:hover .kpi__hint {
+a.kpi:hover .kpi__hint,
+a.kpi:focus-visible .kpi__label,
+a.kpi:focus-visible .kpi__hint {
   color: var(--on-primary);
+}
+
+a.kpi:hover .kpi__arrow,
+a.kpi:focus-visible .kpi__arrow {
+  background: var(--gold);
+  color: var(--navy);
+}
+
+/* ── Action links ─────────────────────────────────────────────────────────
+   A large link to a task (the dashboard's quick actions): an icon tile, the
+   label, an arrow chip. The first is usually `--primary`. */
+.action-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-block-size: 58px;
+  padding: 0 var(--space-3) 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-box);
+  background: var(--soft2);
+  color: var(--ink);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+}
+
+.action-link:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.action-link__label {
+  flex: 1 1 auto;
+}
+
+.action-link__arrow {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: var(--r-pill);
+  background: var(--soft);
+}
+
+.action-link--primary {
+  border-color: transparent;
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.action-link--primary:hover {
+  background: var(--primary-hover);
+  color: var(--on-primary);
+}
+
+.action-link--primary .action-link__arrow {
+  background: var(--on-deep-chip);
+}
+
+/* ── Tallies ──────────────────────────────────────────────────────────────
+   Small tinted figure tiles in a row: a record's totals, a panel's footing.
+   Label, figure, optional hint; `--figure-first` draws the figure above the
+   label (for a dt/dd pair whose markup keeps the dt first). */
+.tally-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.tally {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
+  padding: 14px var(--space-4);
+  border-radius: var(--r-box);
+  background: var(--soft2);
+  color: var(--ink);
+}
+
+.tally--figure-first {
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+}
+
+.tally__label {
+  color: var(--text2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+}
+
+.tally__value {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: var(--fw-medium);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.tally__hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-2xs);
+}
+
+.tally--soft {
+  background: var(--soft);
+}
+
+.tally--primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.tally--primary .tally__label,
+.tally--primary .tally__hint {
+  color: var(--on-deep-muted);
+}
+
+.tally--gold {
+  background: var(--gold-tint);
+}
+
+.tally--gold,
+.tally--gold .tally__label {
+  color: var(--gold-ink2);
+}
+
+.tally--red {
+  background: var(--red-tint);
+}
+
+.tally--red,
+.tally--red .tally__label {
+  color: var(--red-ink);
 }
 
 /* ── Icon tiles ───────────────────────────────────────────────────────────
@@ -342,6 +556,17 @@ a.kpi:hover .kpi__hint {
 .icon-tile--soft {
   background: var(--blue-50);
   color: var(--primary);
+}
+
+/* Tinted tiles: the tone's tint with its ink (an urgent section's mark). */
+.icon-tile--blue-soft {
+  background: var(--blue-tint);
+  color: var(--link);
+}
+
+.icon-tile--red-soft {
+  background: var(--red-tint);
+  color: var(--red-ink);
 }
 
 /* Initials in a circle, beside a printed name (so `aria-hidden="true"`). */

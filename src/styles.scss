@@ -118,8 +118,8 @@
   --header-shape-b-bottom: -60px;
   --header-shape-b-left: -40px;
 
-  /* The deep panel: the sign-in artwork and the dashboard's dark card. Its
-     inks are audited on --deep (check:contrast). */
+  /* The deep panel (the sign-in artwork; the mock-ups' dark dashboard card).
+     Its inks are audited on --deep (check:contrast). */
   --deep-panel:
     radial-gradient(520px 380px at 90% 0%, rgb(45 84 224 / 55%), transparent 65%),
     radial-gradient(420px 320px at 0% 100%, rgb(245 218 24 / 12%), transparent 60%), var(--deep);

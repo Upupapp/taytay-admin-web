@@ -16,7 +16,7 @@ import {
   PROGRAM_CATEGORY_LABELS,
   TAYTAY_BARANGAYS,
   toDecimal,
-  type AttentionSignal,
+  type AttentionSeverity,
   type BarangayId,
   type DashboardFilter,
   type DashboardPeriod,
@@ -26,9 +26,11 @@ import {
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { ChartTable, type ChartRow } from '@shared/ui/chart-table/chart-table';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 
+import { DashboardAttention, type AttentionCard, type AttentionGroup } from './dashboard-attention';
 import { DASHBOARD_COPY } from './dashboard.copy';
 import {
   attentionDrillDown,
@@ -51,37 +53,18 @@ import {
  */
 const PESO = new PesoPipe();
 
-interface AttentionCard {
-  readonly signal: AttentionSignal;
-  readonly message: string;
-  readonly severityLabel: string;
-  readonly drillDown: DrillDown;
-}
+const SEVERITIES: readonly AttentionSeverity[] = ['critical', 'warning', 'info'];
 
-/**
- * The executive dashboard.
- *
- * Built to answer one question first — *what needs attention now?* — and to
- * make every figure traceable. Three properties hold it together:
- *
- * 1. **Attention before analytics.** The top of the screen is a ranked list of
- *    things a person can act on, filtered to what *this* user may act on. A
- *    disbursing officer is not told about approvals they cannot give.
- * 2. **Filter state lives in the URL.** Drill-down is shareable, survives the
- *    back button, and — because the same filter is passed to the repository and
- *    into every link — a metric and the records behind it cannot disagree.
- * 3. **Charts are tables.** Every breakdown renders through `ChartTable`, which
- *    is a real `<table>` with decorative bars, so nothing depends on colour and
- *    there is no separate "accessible version" to fall out of date.
- */
 @Component({
   selector: 'app-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AsyncContent,
     ChartTable,
+    DashboardAttention,
     DatePipe,
     HasPermissionDirective,
+    Icon,
     PageHeader,
     PesoPipe,
     RouterLink,
@@ -135,12 +118,29 @@ export class DashboardPage {
       .map((signal) => ({
         signal,
         message: this.copy.attention[signal.kind](signal.count),
+        noun: this.copy.attentionNoun[signal.kind](signal.count),
         severityLabel: this.copy.severityLabel[signal.severity],
         drillDown: attentionDrillDown(signal.kind, summary.appliedFilter),
       }));
   });
 
   /** True when something needed attention but none of it was this user's. */
+  /**
+   * The same cards, under one heading per severity in the order `sortAttention` gave them, each
+   * heading with the sum of its figures. Presentation only: nothing is dropped or re-ranked.
+   */
+  protected readonly attentionGroups = computed<readonly AttentionGroup[]>(() =>
+    SEVERITIES.map((severity) => {
+      const cards = this.attention().filter((card) => card.signal.severity === severity);
+      return {
+        severity,
+        label: this.copy.severityLabel[severity],
+        total: cards.reduce((sum, card) => sum + card.signal.count, 0),
+        cards,
+      };
+    }),
+  );
+
   protected readonly attentionHiddenByRole = computed(() => {
     const summary = valueOf(this.state());
     return summary !== null && summary.attention.length > 0 && this.attention().length === 0;
