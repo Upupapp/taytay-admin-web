@@ -27,6 +27,7 @@ import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/vie
 import { DataTable } from '@shared/ui/data-table/data-table';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { FAMILIES_COPY } from './families.copy';
 import { readFamilyQuery } from './family-query';
@@ -51,7 +52,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-family-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, HasPermissionDirective, PageHeader, RouterLink],
+  imports: [DataTable, HasPermissionDirective, Icon, PageHeader, RouterLink],
   templateUrl: './family-list-page.html',
   styleUrl: './family-list-page.scss',
 })

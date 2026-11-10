@@ -1,14 +1,18 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
-<form class="family-form" novalidate (submit)="submit($event)">
+<form
+  class="card card--panel card--padded form-panel family-form"
+  novalidate
+  (submit)="submit($event)"
+>
   @if (refusal(); as message) {
-    <div class="card family-form__problems" role="alert">
+    <div class="callout callout--danger family-form__problems" role="alert">
       <p>{{ message }}</p>
     </div>
   }
 
-  <fieldset class="card family-form__section">
-    <legend class="family-form__legend">{{ copy.familyHeading }}</legend>
+  <fieldset class="form-section family-form__section">
+    <legend class="form-section__legend">{{ copy.familyHeading }}</legend>
     <div class="family-form__grid">
       <label class="field family-form__wide">
         <span class="field__label">{{ copy.name }}</span>
@@ -37,19 +41,19 @@
     </div>
   </fieldset>
 
-  <fieldset class="card family-form__section">
-    <legend class="family-form__legend">{{ copy.membersHeading }}</legend>
+  <fieldset class="form-section family-form__section">
+    <legend class="form-section__legend">{{ copy.membersHeading }}</legend>
 
     @if (members().length === 0) {
-      <p class="family-form__note">{{ copy.noMembersYet }}</p>
+      <p class="form-section__note family-form__note">{{ copy.noMembersYet }}</p>
     } @else {
-      <ul class="family-form__members">
+      <ul class="soft-list family-form__members">
         @for (member of members(); track member.view.resident.id; let index = $index) {
-          <li class="family-form__member">
+          <li class="soft-row family-form__member">
             <span class="family-form__member-name">
               {{ member.view.listedName }}
               @if (member.view.isProtected) {
-                <span class="family-form__protected">Protected record</span>
+                <span class="chip chip--danger family-form__protected">Protected record</span>
               }
             </span>
             <label class="family-form__role">
@@ -85,18 +89,18 @@
         />
       }
     } @else {
-      <p class="family-form__note">{{ copy.tooManyMembers }}</p>
+      <p class="form-section__note family-form__note">{{ copy.tooManyMembers }}</p>
     }
     <p class="visually-hidden family-form__notice" role="status">
       {{ memberNotice() }}
     </p>
   </fieldset>
 
-  <fieldset class="card family-form__section">
-    <legend class="family-form__legend">{{ copy.householdHeading }}</legend>
+  <fieldset class="form-section family-form__section">
+    <legend class="form-section__legend">{{ copy.householdHeading }}</legend>
 
     @if (household(); as chosen) {
-      <div class="family-form__chosen">
+      <div class="soft-row family-form__chosen">
         <p>
           <span class="family-form__chosen-label">{{ copy.householdChosen }}</span>
           {{ householdLabel(chosen) }}
@@ -106,9 +110,9 @@
         </button>
       </div>
     } @else {
-      <p class="family-form__chosen-none">{{ copy.noHousehold }}</p>
+      <p class="status-line family-form__chosen-none">{{ copy.noHousehold }}</p>
       <!-- Said beside the choice, before anybody invents an address to fill a gap (DL-47). -->
-      <p class="family-form__note">{{ copy.noHouseholdNote }}</p>
+      <p class="form-section__note family-form__note">{{ copy.noHouseholdNote }}</p>
 
       <label class="field">
         <span class="field__label">{{ copy.findHousehold }}</span>
@@ -126,23 +130,23 @@
       <div role="status">
         @switch (householdState()) {
           @case ('loading') {
-            <p class="family-form__note">{{ copy.householdSearching }}</p>
+            <p class="form-section__note family-form__note">{{ copy.householdSearching }}</p>
           }
           @case ('error') {
-            <p class="family-form__note">{{ copy.householdFailed }}</p>
+            <p class="form-section__note family-form__note">{{ copy.householdFailed }}</p>
           }
           @case ('ready') {
             @if (householdOptions().length === 0) {
-              <p class="family-form__note">{{ copy.householdNoneFound }}</p>
+              <p class="form-section__note family-form__note">{{ copy.householdNoneFound }}</p>
             }
           }
         }
       </div>
 
       @if (householdOptions().length > 0) {
-        <ul class="family-form__households">
+        <ul class="soft-list family-form__households">
           @for (option of householdOptions(); track option.household.id) {
-            <li class="family-form__household">
+            <li class="soft-row family-form__household">
               <span>{{ householdLabel(option) }}</span>
               <button type="button" class="btn btn--secondary" (click)="chooseHousehold(option)">
                 {{ copy.chooseHousehold }}
@@ -152,14 +156,14 @@
           }
         </ul>
         @if (householdHasMore()) {
-          <p class="family-form__note">{{ copy.householdMore }}</p>
+          <p class="form-section__note family-form__note">{{ copy.householdMore }}</p>
         }
       }
     }
   </fieldset>
 
-  <fieldset class="card family-form__section">
-    <legend class="family-form__legend">{{ copy.reason }}</legend>
+  <fieldset class="form-section family-form__section">
+    <legend class="form-section__legend">{{ copy.reason }}</legend>
     <label class="field">
       <span class="field__label">{{ copy.reason }}</span>
       <textarea
@@ -177,14 +181,14 @@
   </fieldset>
 
   @if (attempted() && missing().length > 0) {
-    <ul class="family-form__missing" role="alert">
+    <ul class="callout callout--danger family-form__missing" role="alert">
       @for (line of missing(); track line) {
         <li>{{ line }}</li>
       }
     </ul>
   }
 
-  <div class="family-form__actions">
+  <div class="form-footer">
     <a class="btn" routerLink="/families">{{ copy.back }}</a>
     <button type="submit" class="btn btn--primary" [disabled]="saving()">
       {{ saving() ? copy.submitting : copy.submit }}

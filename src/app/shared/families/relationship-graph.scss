@@ -4,62 +4,80 @@
 .graph {
   display: flex;
   flex-direction: column;
-  gap: var(--space-snug);
+  gap: var(--space-3);
 }
 
 .graph__heading {
-  font-size: 15px;
+  color: var(--ink);
+  font-size: var(--fs-section);
+  font-weight: var(--fw-bold);
 }
 
 .graph__summary,
 .graph__no-edges,
 .graph__empty {
-  color: var(--c-text-muted);
-  font-size: 12.5px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
 }
 
+/* The two views as a segmented pill, like the console's tabs. */
 .graph__views {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-snug);
+  align-self: flex-start;
+  gap: 6px;
   margin: 0;
-  padding: var(--space-compact) var(--space-snug);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
+  padding: 5px 5px 5px var(--space-3);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--r-pill);
+  background: var(--card);
 }
 
 .graph__views-legend {
-  padding-inline: var(--space-compact);
-  color: var(--c-text-muted);
-  font-size: 12px;
-  font-weight: 600;
+  float: inline-start;
+  padding-inline-end: var(--space-2);
+  color: var(--muted);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
 }
 
 .graph__view {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-compact);
-  min-block-size: var(--target-min);
-  font-size: 13px;
+  gap: var(--space-2);
+  min-block-size: var(--h-btn-sm);
+  padding: 0 14px;
+  border-radius: var(--r-pill);
+  color: var(--text2);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+
+.graph__view:has(input:checked) {
+  background: var(--primary);
+  color: var(--on-primary);
 }
 
 .graph__view input {
-  inline-size: 18px;
-  block-size: 18px;
+  inline-size: 16px;
+  block-size: 16px;
+  margin: 0;
+  accent-color: var(--gold);
 }
 
 .graph__row {
-  padding-block-start: var(--space-compact);
-  border-block-start: 1px solid var(--c-border);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--soft);
 }
 
 .graph__row-heading {
-  margin-block-end: var(--space-compact);
-  color: var(--c-text-muted);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  margin-block-end: var(--space-2);
+  color: var(--muted2);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-caps);
   text-transform: uppercase;
 }
 
@@ -68,8 +86,8 @@
    relationship it would represent is already a sentence inside the box. */
 .graph__people {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--space-snug);
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: var(--space-3);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -78,50 +96,52 @@
 .graph__person {
   display: flex;
   flex-direction: column;
-  gap: var(--space-micro);
-  padding: var(--space-snug);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
+  gap: var(--space-1);
+  padding: var(--space-3) 14px;
+  border: 1px solid transparent;
+  border-radius: var(--r-field);
+  background: var(--soft2);
 }
 
 /* A former member is labelled "Former member" in the markup. The dashed edge
    repeats that; it never carries it. */
 .graph__person--former {
-  border-style: dashed;
-  background: var(--c-surface-muted);
+  border: 1px dashed var(--field-line);
+  background: transparent;
 }
 
 .graph__name {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--space-compact);
+  gap: var(--space-2);
 }
 
 .graph__name-link {
   display: inline-block;
   min-block-size: var(--target-min);
   line-height: var(--target-min);
-  color: var(--c-text);
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
+  color: var(--ink);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
+  text-decoration: underline;
+  text-decoration-color: var(--line2);
+  text-underline-offset: 3px;
   overflow-wrap: anywhere;
 }
 
 .graph__name-link:hover {
-  text-decoration: underline;
+  text-decoration-color: currentcolor;
 }
 
 .graph__role,
 .graph__former {
-  padding: 1px var(--space-compact);
-  border-radius: var(--radius-sm);
+  padding: 2px var(--space-2);
+  border-radius: var(--r-pill);
   background: var(--tone-neutral-bg);
   color: var(--tone-neutral-fg);
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
 }
 
 .graph__former {
@@ -134,18 +154,19 @@
   flex-direction: column;
   gap: 2px;
   margin: 0;
-  padding-inline-start: var(--space-base);
-  font-size: 13px;
+  padding-inline-start: 18px;
+  color: var(--text);
+  font-size: var(--fs-label);
 }
 
 .graph__edge--ended {
-  color: var(--c-text-muted);
+  color: var(--muted);
 }
 
 .graph__edge-state {
-  margin-inline-start: var(--space-compact);
-  color: var(--c-text-subtle);
-  font-size: 12px;
+  margin-inline-start: var(--space-2);
+  color: var(--muted);
+  font-size: var(--fs-2xs);
 }
 
 .graph__edge a {
@@ -154,46 +175,24 @@
   line-height: var(--target-min);
 }
 
-.graph__table {
-  inline-size: 100%;
-  border-collapse: collapse;
-  font-size: 13.5px;
-}
-
 .graph__caption {
-  margin-block-end: var(--space-compact);
-  color: var(--c-text);
-  font-size: 13px;
-  font-weight: 600;
+  margin-block-end: var(--space-2);
+  color: var(--ink);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
   text-align: start;
-}
-
-.graph__table th,
-.graph__table td {
-  padding: var(--space-compact) var(--space-compact) var(--space-compact) 0;
-  border-block-end: 1px solid var(--c-border);
-  text-align: start;
-  vertical-align: middle;
-}
-
-.graph__table thead th {
-  color: var(--c-text-muted);
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
 }
 
 .graph__empty-cell {
-  color: var(--c-text-subtle);
+  color: var(--muted);
 }
 
 .graph__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-compact);
+  gap: var(--space-2);
 }
 
 .graph__end {
-  margin-inline-start: var(--space-compact);
+  margin-inline-start: var(--space-2);
 }

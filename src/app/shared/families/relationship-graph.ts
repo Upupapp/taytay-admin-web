@@ -138,7 +138,7 @@ export interface EndRelationshipRequest {
           }
         }
       } @else {
-        <table class="graph__table">
+        <table class="simple-table graph__table">
           <caption class="graph__caption">
             {{
               copy.edgeView

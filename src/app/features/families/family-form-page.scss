@@ -1,119 +1,41 @@
+// ResidentRegister mock-up: one panel of framed sections (family, members, household, reason).
+
 .family-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-base);
-  margin-block-start: var(--space-base);
-  max-inline-size: 900px;
-}
-
-.family-form__section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-snug);
-  padding: var(--space-card);
-  border: 1px solid var(--c-border);
-}
-
-.family-form__legend {
-  padding-inline: var(--space-compact);
-  color: var(--c-text);
-  font-size: 14px;
-  font-weight: 600;
+  max-inline-size: 960px;
 }
 
 .family-form__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-base);
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: var(--space-3) var(--space-4);
 }
 
 .family-form__wide {
   grid-column: 1 / -1;
 }
 
-.family-form__note {
-  margin: 0;
-  color: var(--c-text-muted);
-  font-size: 13.5px;
-}
-
-.family-form__members,
-.family-form__households {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-compact);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.family-form__member,
-.family-form__household {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-snug);
-  padding: var(--space-compact) var(--space-snug);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-}
-
-.family-form__member-name,
-.family-form__household > span {
-  flex: 1 1 220px;
-}
-
-.family-form__role {
-  flex: 0 1 200px;
+.family-form__member-name {
+  flex: 1 1 180px;
+  font-weight: var(--fw-semibold);
+  overflow-wrap: anywhere;
 }
 
 .family-form__protected {
-  display: inline-block;
-  margin-inline-start: var(--space-compact);
-  padding: 1px var(--space-compact);
-  border-radius: var(--radius-sm);
-  background: var(--tone-warning-bg);
-  color: var(--tone-warning-fg);
-  font-size: 12px;
-  font-weight: 600;
+  margin-inline-start: var(--space-2);
 }
 
-.family-form__chosen {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-snug);
-
-  p {
-    margin: 0;
-  }
+.family-form__role .field__input {
+  min-block-size: var(--h-btn-sm);
 }
 
 .family-form__chosen-label {
-  font-weight: 600;
-}
-
-.family-form__chosen-none {
-  margin: 0;
-  font-weight: 600;
-}
-
-.family-form__problems {
-  padding: var(--space-base) var(--space-card);
-  border-inline-start: 4px solid var(--tone-danger-fg);
+  color: var(--muted);
+  font-weight: var(--fw-semibold);
 }
 
 .family-form__missing {
+  flex-direction: column;
+  gap: var(--space-1);
   margin: 0;
-  padding-inline-start: var(--space-base);
-  color: var(--tone-danger-fg);
-  font-size: 13.5px;
-}
-
-.family-form__actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--space-compact);
+  padding-inline-start: 34px;
 }
