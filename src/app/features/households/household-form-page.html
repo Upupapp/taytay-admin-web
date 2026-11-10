@@ -1,19 +1,23 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
-<form class="household-form" novalidate (submit)="submit($event)">
+<form
+  class="card card--panel card--padded form-panel household-form"
+  novalidate
+  (submit)="submit($event)"
+>
   @if (refusal(); as message) {
-    <div class="card household-form__problems" role="alert">
+    <div class="callout callout--danger household-form__problems" role="alert">
       <p>{{ message }}</p>
     </div>
   }
 
-  <fieldset class="card household-form__section">
-    <legend class="household-form__legend">{{ copy.head }}</legend>
+  <fieldset class="form-section household-form__section">
+    <legend class="form-section__legend">{{ copy.head }}</legend>
     <app-person-picker [label]="copy.head" [hint]="copy.headHint" [(selected)]="head" />
   </fieldset>
 
-  <fieldset class="card household-form__section">
-    <legend class="household-form__legend">{{ copy.addressHeading }}</legend>
+  <fieldset class="form-section household-form__section">
+    <legend class="form-section__legend">{{ copy.addressHeading }}</legend>
     <div class="household-form__grid">
       <label class="field">
         <span class="field__label">{{ copy.barangay }}</span>
@@ -55,8 +59,8 @@
     </div>
   </fieldset>
 
-  <fieldset class="card household-form__section">
-    <legend class="household-form__legend">{{ copy.meansHeading }}</legend>
+  <fieldset class="form-section household-form__section">
+    <legend class="form-section__legend">{{ copy.meansHeading }}</legend>
     <div class="household-form__grid">
       @if (mayRecordIncome()) {
         <label class="field">
@@ -75,7 +79,7 @@
           </span>
         </label>
       } @else {
-        <p class="household-form__note">{{ copy.incomeNotYours }}</p>
+        <p class="form-section__note">{{ copy.incomeNotYours }}</p>
       }
       <label class="check household-form__wide">
         <input
@@ -86,24 +90,26 @@
         />
         <span>{{ copy.indigent }}</span>
       </label>
-      <p class="household-form__note household-form__wide" id="household-indigent-hint">
+      <p class="form-section__note household-form__wide" id="household-indigent-hint">
         {{ copy.indigentHint }}
       </p>
     </div>
   </fieldset>
 
   <!-- Said before the button, where somebody deciding reads it, not after. -->
-  <p class="household-form__note" id="household-membership-note">{{ copy.membership }}</p>
+  <p class="effects household-form__membership" id="household-membership-note">
+    {{ copy.membership }}
+  </p>
 
   @if (attempted() && missing().length > 0) {
-    <ul class="household-form__missing" role="alert">
+    <ul class="callout callout--danger household-form__missing" role="alert">
       @for (line of missing(); track line) {
         <li>{{ line }}</li>
       }
     </ul>
   }
 
-  <div class="household-form__actions">
+  <div class="form-footer">
     <a class="btn" routerLink="/households">{{ copy.back }}</a>
     <button
       type="submit"

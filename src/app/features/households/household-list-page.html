@@ -5,31 +5,38 @@
     class="btn btn--primary"
     routerLink="/households/new"
   >
+    <app-icon name="plus" class="households__cta-icon" [stroke]="2.2" />
     {{ copy.create }}
   </a>
 </app-page-header>
 
-<div class="card households">
+<section class="card card--panel card--padded stack households" [attr.aria-label]="copy.caption">
   <!-- Said before the table, not in a tooltip on it. A band read without this
        sentence turns into a queue, and a queue turns into a rule. -->
-  <p class="households__advisory">{{ copy.advisoryBanner }}</p>
+  <p class="callout households__advisory">
+    <app-icon name="info" [size]="18" [stroke]="2" />
+    <span>{{ copy.advisoryBanner }}</span>
+  </p>
 
-  <div class="filters">
-    <label class="filters__field filters__field--wide">
-      <span class="filters__label">{{ copy.search }}</span>
-      <input
-        type="search"
-        class="filters__input"
-        [placeholder]="copy.searchPlaceholder"
-        [value]="searchText()"
-        aria-describedby="household-search-hint"
-        (input)="onSearch($event)"
-      />
+  <div class="toolbar">
+    <label class="field households__search">
+      <span class="field__label">{{ copy.search }}</span>
+      <span class="search-field">
+        <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+        <input
+          type="search"
+          class="field__input field__input--pill"
+          [placeholder]="copy.searchPlaceholder"
+          [value]="searchText()"
+          aria-describedby="household-search-hint"
+          (input)="onSearch($event)"
+        />
+      </span>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.barangay }}</span>
-      <select class="filters__input" (change)="onBarangay($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.barangay }}</span>
+      <select class="field__input field__input--pill" (change)="onBarangay($event)">
         <option value="" [selected]="!filter().barangayId">{{ copy.allBarangays }}</option>
         @for (barangay of barangays; track barangay.id) {
           <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
@@ -39,9 +46,9 @@
       </select>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.band }}</span>
-      <select class="filters__input" (change)="onBand($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.band }}</span>
+      <select class="field__input field__input--pill" (change)="onBand($event)">
         <option value="" [selected]="!filter().minimumBand">{{ copy.anyBand }}</option>
         @for (band of bands; track band) {
           <option [value]="band" [selected]="filter().minimumBand === band">
@@ -51,7 +58,7 @@
       </select>
     </label>
 
-    <label class="filters__check">
+    <label class="check-pill">
       <input
         type="checkbox"
         [checked]="filter().indigentOnly === true"
@@ -61,14 +68,16 @@
     </label>
 
     @if (hasFilters()) {
-      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+      <button type="button" class="btn households__clear" (click)="clearFilters()">
+        {{ copy.clear }}
+      </button>
     }
   </div>
 
-  <p class="households__hint" id="household-search-hint">{{ copy.searchHint }} {{ copy.order }}</p>
+  <p class="status-line" id="household-search-hint">{{ copy.searchHint }} {{ copy.order }}</p>
 
   @if (failure(); as message) {
-    <div class="households__problem" role="alert">
+    <div class="callout callout--danger households__problem" role="alert">
       <p>{{ message }}</p>
       <button type="button" class="btn" (click)="retry()">{{ copy.tryAgain }}</button>
     </div>
@@ -88,8 +97,8 @@
   />
 
   @if (rows().length > 0) {
-    <div class="households__more">
-      <p class="households__hint" role="status">
+    <div class="list-more households__more">
+      <p class="status-line" role="status">
         {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
       </p>
       @if (hasMore()) {
@@ -103,24 +112,26 @@
         </button>
       }
       @if (moreFailed()) {
-        <p class="households__problem" role="alert">{{ copy.moreFailed }}</p>
+        <p class="callout callout--danger households__problem" role="alert">
+          {{ copy.moreFailed }}
+        </p>
       }
     </div>
   }
-</div>
+</section>
 
 <ng-template #referenceCell let-summary>
-  <a class="households__reference" [routerLink]="detailLink(summary)">
+  <a class="record-link households__reference" [routerLink]="detailLink(summary)">
     {{ summary.household.referenceNumber }}
   </a>
   @if (summary.isProtected) {
-    <span class="households__protected">{{ copy.protected }}</span>
+    <span class="chip chip--danger households__protected">{{ copy.protected }}</span>
   }
 </ng-template>
 
 <!-- The band is named in words. The fill only repeats what the text says. -->
 <ng-template #bandCell let-summary>
-  <span class="households__band" [class]="'households__band--' + summary.band">
+  <span class="chip households__band" [class]="'households__band--' + summary.band">
     {{ bandLabel(summary.band) }}
   </span>
   @if (summary.presentFactorCount > 0) {

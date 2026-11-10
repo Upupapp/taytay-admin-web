@@ -29,6 +29,7 @@ import { VULNERABILITY_COPY } from '@shared/households/vulnerability.copy';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { HOUSEHOLDS_COPY } from './households.copy';
 import { isHouseholdFilterActive, readHouseholdQuery } from './household-query';
@@ -52,7 +53,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-household-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, HasPermissionDirective, PageHeader, RouterLink],
+  imports: [DataTable, HasPermissionDirective, Icon, PageHeader, RouterLink],
   templateUrl: './household-list-page.html',
   styleUrl: './household-list-page.scss',
 })

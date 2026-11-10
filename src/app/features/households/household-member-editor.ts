@@ -52,8 +52,10 @@ interface Row {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [PersonPicker],
   template: `
-    <section class="editor" aria-labelledby="member-editor-heading">
-      <h3 class="editor__heading" id="member-editor-heading">{{ copy.editHeading }}</h3>
+    <section class="subpanel editor" aria-labelledby="member-editor-heading">
+      <h3 class="section-title editor__heading" id="member-editor-heading">
+        {{ copy.editHeading }}
+      </h3>
 
       <ul class="editor__rows">
         @for (row of rows(); track row.residentId) {
@@ -61,14 +63,14 @@ interface Row {
             <span class="editor__name">
               {{ row.name }}
               @if (row.isNew) {
-                <span class="editor__pending-tag">{{ copy.pending }}</span>
+                <span class="chip chip--info editor__pending-tag">{{ copy.pending }}</span>
               }
             </span>
 
             <label class="editor__role">
               <span class="visually-hidden">{{ copy.role }} — {{ row.name }}</span>
               <select
-                class="editor__select"
+                class="field__input editor__select"
                 [disabled]="row.isHead"
                 (change)="changeRole(row.residentId, $event)"
               >
@@ -105,8 +107,8 @@ interface Row {
       </div>
 
       @if (problems().length > 0) {
-        <div class="editor__problems" role="alert">
-          <h4 class="editor__problems-heading">{{ copy.problemsHeading }}</h4>
+        <div class="callout callout--danger editor__problems" role="alert">
+          <h4 class="callout__title editor__problems-heading">{{ copy.problemsHeading }}</h4>
           <ul>
             @for (problem of problems(); track problem.code + (problem.residentId ?? '')) {
               <li>{{ problemText(problem) }}</li>
@@ -116,7 +118,7 @@ interface Row {
       }
 
       @if (pending().length > 0) {
-        <div class="editor__commit">
+        <div class="subpanel subpanel--soft editor__commit">
           <h4 class="editor__subheading">{{ copy.pendingHeading }}</h4>
           <ul class="editor__pending">
             @for (change of pending(); track $index) {
@@ -124,16 +126,16 @@ interface Row {
             }
           </ul>
 
-          <label class="editor__reason">
-            <span class="editor__reason-label">{{ copy.reason }}</span>
+          <label class="field editor__reason">
+            <span class="field__label editor__reason-label">{{ copy.reason }}</span>
             <input
-              class="editor__reason-input"
+              class="field__input editor__reason-input"
               type="text"
               [placeholder]="copy.reasonPlaceholder"
               [value]="reason()"
               (input)="onReason($event)"
             />
-            <span class="editor__reason-hint">{{ copy.reasonHint }}</span>
+            <span class="field__hint editor__reason-hint">{{ copy.reasonHint }}</span>
           </label>
 
           <div class="editor__buttons">
@@ -149,7 +151,7 @@ interface Row {
           </div>
         </div>
       } @else {
-        <p class="editor__idle">{{ copy.noPending }}</p>
+        <p class="status-line editor__idle">{{ copy.noPending }}</p>
       }
     </section>
   `,

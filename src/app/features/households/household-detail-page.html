@@ -21,10 +21,12 @@
         </button>
       </app-page-header>
 
-      <div class="household">
+      <div class="record-grid household">
         <!-- ── The record ───────────────────────────────────────────────── -->
-        <section class="card panel" aria-labelledby="household-heading">
-          <h2 class="panel__heading" id="household-heading">{{ copy.detailsHeading }}</h2>
+        <section class="card card--padded panel" aria-labelledby="household-heading">
+          <h2 class="section-title panel__heading" id="household-heading">
+            {{ copy.detailsHeading }}
+          </h2>
           <dl class="facts">
             <div class="facts__row">
               <dt>{{ copy.reference }}</dt>
@@ -79,14 +81,21 @@
             </div>
           </dl>
           @if (detail.isProtected) {
-            <p class="panel__note household__protected">{{ copy.protectedNote }}</p>
+            <p class="callout callout--danger panel__note household__protected">
+              {{ copy.protectedNote }}
+            </p>
           }
-          <p class="panel__note">{{ copy.classifiedNote }}</p>
+          <p class="status-line panel__note">{{ copy.classifiedNote }}</p>
         </section>
 
         <!-- ── Who lives here ───────────────────────────────────────────── -->
-        <section class="card panel panel--wide" aria-labelledby="members-heading">
-          <h2 class="panel__heading" id="members-heading">{{ copy.membersHeading }}</h2>
+        <section
+          class="card card--padded panel record-grid__wide"
+          aria-labelledby="members-heading"
+        >
+          <h2 class="section-title panel__heading" id="members-heading">
+            {{ copy.membersHeading }}
+          </h2>
 
           <ul class="members">
             @for (member of detail.members; track member.view.resident.id) {
@@ -111,7 +120,7 @@
         </section>
 
         <!-- ── Why it looks exposed ─────────────────────────────────────── -->
-        <section class="card panel panel--wide">
+        <section class="card card--padded panel record-grid__wide">
           <app-vulnerability-snapshot
             [snapshot]="detail.snapshot"
             [canCorrect]="canCorrect()"
@@ -121,14 +130,14 @@
         </section>
 
         <!-- ── What has been done to it ─────────────────────────────────── -->
-        <section class="card panel panel--wide" aria-labelledby="audit-heading">
-          <h2 class="panel__heading" id="audit-heading">{{ copy.auditHeading }}</h2>
+        <section class="card card--padded panel record-grid__wide" aria-labelledby="audit-heading">
+          <h2 class="section-title panel__heading" id="audit-heading">{{ copy.auditHeading }}</h2>
           @if (detail.audit.length > 0) {
-            <ol class="trail">
+            <ol class="soft-list trail">
               @for (entry of detail.audit; track entry.id) {
-                <li class="trail__entry">
+                <li class="soft-row soft-row--stacked trail__entry">
                   <p class="trail__summary">{{ entry.summary }}</p>
-                  <p class="trail__meta">
+                  <p class="soft-row__meta trail__meta">
                     {{ entry.actorName }} · {{ entry.occurredAt | date: 'medium' }}
                   </p>
                   @if (entry.reason; as reason) {
@@ -138,7 +147,7 @@
               }
             </ol>
           } @else {
-            <p class="panel__empty">{{ copy.noAudit }}</p>
+            <p class="status-line panel__empty">{{ copy.noAudit }}</p>
           }
         </section>
       </div>
@@ -151,10 +160,10 @@
         size="small"
         (dismissed)="cancelCorrection()"
       >
-        <div modal-body class="dialogue">
-          <label class="dialogue__field">
-            <span class="dialogue__label">{{ correctionCopy.stateLabel }}</span>
-            <select class="dialogue__input" (change)="onCorrectionState($event)">
+        <div modal-body class="stack">
+          <label class="field">
+            <span class="field__label">{{ correctionCopy.stateLabel }}</span>
+            <select class="field__input dialogue__input" (change)="onCorrectionState($event)">
               @for (option of correctableStates; track option) {
                 <option [value]="option" [selected]="correctionState() === option">
                   {{ stateLabel(option) }}
@@ -163,16 +172,16 @@
             </select>
           </label>
 
-          <label class="dialogue__field">
-            <span class="dialogue__label">{{ correctionCopy.reason }}</span>
+          <label class="field">
+            <span class="field__label">{{ correctionCopy.reason }}</span>
             <input
-              class="dialogue__input"
+              class="field__input dialogue__input"
               type="text"
               [placeholder]="correctionCopy.reasonPlaceholder"
               [value]="correctionReason()"
               (input)="onCorrectionReason($event)"
             />
-            <span class="dialogue__hint">{{ correctionCopy.reasonHint }}</span>
+            <span class="field__hint">{{ correctionCopy.reasonHint }}</span>
           </label>
         </div>
 
@@ -198,15 +207,15 @@
         size="small"
         (dismissed)="cancelCorrection()"
       >
-        <label modal-body class="dialogue__field">
-          <span class="dialogue__label">{{ correctionCopy.reason }}</span>
+        <label modal-body class="field">
+          <span class="field__label">{{ correctionCopy.reason }}</span>
           <input
-            class="dialogue__input"
+            class="field__input dialogue__input"
             type="text"
             [value]="correctionReason()"
             (input)="onCorrectionReason($event)"
           />
-          <span class="dialogue__hint">{{ correctionCopy.reasonHint }}</span>
+          <span class="field__hint">{{ correctionCopy.reasonHint }}</span>
         </label>
 
         <button modal-actions type="button" class="btn" (click)="cancelCorrection()">

@@ -1,87 +1,36 @@
+// Residents mock-up as the household registry: advisory note, filters, table, "more".
+
+.households__cta-icon {
+  color: var(--gold);
+}
+
 .households__advisory {
-  padding: var(--space-snug) var(--space-base);
-  border-block-end: 1px solid var(--c-border);
-  color: var(--c-text-muted);
-  font-size: 13px;
+  align-items: flex-start;
 }
 
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-base);
-  padding: var(--space-base);
-  border-block-end: 1px solid var(--c-border);
-}
-
-.filters__field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-micro);
-  min-inline-size: 180px;
-}
-
-.filters__field--wide {
+.households__search {
   flex: 1 1 260px;
 }
 
-.filters__label {
-  color: var(--c-text-muted);
-  font-size: 12px;
-  font-weight: 600;
+.toolbar select.field__input {
+  min-inline-size: 170px;
 }
 
-.filters__input {
-  padding: var(--space-compact) var(--space-snug);
-  /* Comfortably over the 24px pointer-target minimum (WCAG 2.5.8). */
-  min-block-size: 36px;
-  border: 1px solid var(--c-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
-  color: var(--c-text);
-  font: inherit;
-  font-size: 14px;
+.households__clear {
+  min-block-size: var(--h-btn);
 }
 
-.filters__check {
-  display: inline-flex;
+.households__problem {
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-compact);
-  min-block-size: var(--target-min);
-  font-size: 13px;
+  justify-content: space-between;
 }
 
-.filters__check input {
-  inline-size: 18px;
-  block-size: 18px;
+.households__protected {
+  margin-inline-start: var(--space-2);
 }
 
-.households__reference {
-  display: inline-block;
-  min-block-size: var(--target-min);
-  line-height: var(--target-min);
-  color: var(--c-text);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.households__reference:hover {
-  text-decoration: underline;
-}
-
-.households__band {
-  display: inline-block;
-  padding: 1px var(--space-compact);
-  border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: 600;
-}
-
-.households__band--none {
-  background: var(--tone-neutral-bg);
-  color: var(--tone-neutral-fg);
-}
-
+/* The band is named in words; the tint only repeats it. */
 .households__band--watch {
   background: var(--tone-info-bg);
   color: var(--tone-info-fg);
@@ -98,39 +47,7 @@
 }
 
 .households__factors {
-  margin-inline-start: var(--space-compact);
-  color: var(--c-text-subtle);
-  font-size: 12px;
-}
-
-.households__hint {
-  margin: 0;
-  padding: 0 var(--space-base);
-  font-size: 13px;
-  color: var(--c-text-subtle);
-}
-
-.households__more {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-base);
-  padding: var(--space-base);
-}
-
-.households__problem {
-  margin: 0;
-  padding: 0 var(--space-base);
-  font-size: 13px;
-}
-
-.households__protected {
-  display: inline-block;
-  margin-inline-start: var(--space-compact);
-  padding: 1px var(--space-compact);
-  border-radius: var(--radius-sm);
-  background: var(--tone-warning-bg);
-  color: var(--tone-warning-fg);
-  font-size: 12px;
-  font-weight: 600;
+  margin-inline-start: var(--space-2);
+  color: var(--muted);
+  font-size: var(--fs-2xs);
 }

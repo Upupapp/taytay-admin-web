@@ -1022,3 +1022,116 @@ a.kpi:focus-visible .kpi__arrow {
 .form-problem:empty {
   display: none;
 }
+
+/* ── Checkbox filter ──────────────────────────────────────────────────────
+   A checkbox in a `.toolbar` ("Indigent only"): a soft pill the height of the
+   pill fields beside it. */
+.check-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-block-size: var(--h-btn);
+  padding: 0 14px;
+  border-radius: var(--r-pill);
+  background: var(--soft2);
+  color: var(--text2);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+
+.check-pill input {
+  inline-size: 18px;
+  block-size: 18px;
+  margin: 0;
+  accent-color: var(--link);
+}
+
+/* A record's reference or name as the way into it, in a table cell. */
+.record-link {
+  display: inline-block;
+  min-block-size: var(--target-min);
+  line-height: var(--target-min);
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+  text-decoration: underline;
+  text-decoration-color: var(--line2);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.record-link:hover {
+  text-decoration-color: currentcolor;
+}
+
+/* "Show more" under a cursor-paged list: the count line, the button. */
+.list-more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* ── Record page ──────────────────────────────────────────────────────────
+   The ResidentRecord mock-up as a routed page: padded cards in an auto-fit
+   two-column grid; a wide one spans both. A panel's list of entries (members,
+   a trail, links) is `.soft-list` of `.soft-row`s: soft fill, the title then
+   its meta. A fact that needs the whole row is `.facts__row--wide`. */
+.record-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.record-grid > * {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.record-grid > .record-grid__wide {
+  grid-column: 1 / -1;
+}
+
+.facts .facts__row--wide {
+  grid-column: 1 / -1;
+}
+
+.soft-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.soft-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  padding: 10px var(--space-3);
+  border-radius: var(--r-field);
+  background: var(--soft2);
+  color: var(--ink);
+  font-size: var(--fs-label);
+}
+
+.soft-row--stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.soft-row a {
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+}
+
+.soft-row__meta {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
