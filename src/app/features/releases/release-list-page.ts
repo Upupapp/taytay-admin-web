@@ -40,6 +40,7 @@ import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/vie
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { RELEASES_COPY } from './releases.copy';
 
@@ -67,7 +68,7 @@ const HANDED_OVER_OPTION = 'group:handed-over';
 @Component({
   selector: 'app-release-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, NgTemplateOutlet, PageHeader, PesoPipe, RouterLink, StatusBadge],
+  imports: [AsyncContent, Icon, NgTemplateOutlet, PageHeader, PesoPipe, RouterLink, StatusBadge],
   templateUrl: './release-list-page.html',
   styleUrl: './release-list-page.scss',
 })
@@ -191,7 +192,9 @@ export class ReleaseListPage {
   protected readonly settled = computed(() =>
     this.releases().filter(
       (release) =>
-        isReleased(release.status) || !isReleaseOpen(release.status) || release.status === 'unclaimed',
+        isReleased(release.status) ||
+        !isReleaseOpen(release.status) ||
+        release.status === 'unclaimed',
     ),
   );
 

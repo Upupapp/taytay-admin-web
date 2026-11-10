@@ -2,22 +2,25 @@
   <a page-actions class="btn" routerLink="/releases/sessions">{{ copy.batches }}</a>
 </app-page-header>
 
-<div class="card releases">
-  <div class="filters">
-    <label class="filters__field filters__field--wide">
-      <span class="filters__label">{{ copy.search }}</span>
-      <input
-        type="search"
-        class="filters__input"
-        [placeholder]="copy.searchPlaceholder"
-        [value]="searchText()"
-        (input)="onSearch($event)"
-      />
+<section class="card card--panel card--padded stack releases" [attr.aria-label]="copy.caption">
+  <div class="toolbar filters">
+    <label class="field releases__search">
+      <span class="field__label">{{ copy.search }}</span>
+      <span class="search-field">
+        <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+        <input
+          type="search"
+          class="field__input field__input--pill"
+          [placeholder]="copy.searchPlaceholder"
+          [value]="searchText()"
+          (input)="onSearch($event)"
+        />
+      </span>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.status }}</span>
-      <select class="filters__input" (change)="onStatus($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.status }}</span>
+      <select class="field__input field__input--pill" (change)="onStatus($event)">
         <option value="" [selected]="!filter().status && !filter().statusGroup">
           {{ copy.allStatuses }}
         </option>
@@ -35,10 +38,10 @@
       </select>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.periodField }}</span>
+    <label class="field">
+      <span class="field__label">{{ copy.periodField }}</span>
       <select
-        class="filters__input"
+        class="field__input field__input--pill"
         aria-describedby="release-period-hint"
         (change)="onPeriod($event)"
       >
@@ -51,9 +54,9 @@
     </label>
 
     @if (filtersByBarangay()) {
-      <label class="filters__field">
-        <span class="filters__label">{{ copy.barangay }}</span>
-        <select class="filters__input" (change)="onBarangay($event)">
+      <label class="field">
+        <span class="field__label">{{ copy.barangay }}</span>
+        <select class="field__input field__input--pill" (change)="onBarangay($event)">
           <option value="" [selected]="!filter().barangayId">{{ copy.anyBarangay }}</option>
           @for (barangay of barangays; track barangay.id) {
             <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
@@ -64,9 +67,9 @@
       </label>
     }
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.category }}</span>
-      <select class="filters__input" (change)="onCategory($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.category }}</span>
+      <select class="field__input field__input--pill" (change)="onCategory($event)">
         <option value="" [selected]="!filter().category">{{ copy.anyCategory }}</option>
         @for (value of categories; track value) {
           <option [value]="value" [selected]="filter().category === value">
@@ -76,9 +79,9 @@
       </select>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.kind }}</span>
-      <select class="filters__input" (change)="onKind($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.kind }}</span>
+      <select class="field__input field__input--pill" (change)="onKind($event)">
         <option value="" [selected]="!filter().kind">{{ copy.allKinds }}</option>
         @for (value of kinds; track value) {
           <option [value]="value" [selected]="filter().kind === value">
@@ -88,17 +91,19 @@
       </select>
     </label>
 
-    <label class="filters__check">
+    <label class="check-pill">
       <input type="checkbox" [checked]="filter().openOnly === true" (change)="onOpenOnly($event)" />
       <span>{{ copy.openOnly }}</span>
     </label>
 
     @if (hasFilters()) {
-      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+      <button type="button" class="btn releases__clear" (click)="clearFilters()">
+        {{ copy.clear }}
+      </button>
     }
   </div>
 
-  <p class="releases__hint" id="release-period-hint">{{ copy.periodHint }}</p>
+  <p class="status-line releases__hint" id="release-period-hint">{{ copy.periodHint }}</p>
 
   <app-async-content
     [state]="state()"
@@ -108,8 +113,8 @@
   >
     <ng-template #queueContent>
       @if (!hasAny()) {
-        <div class="releases__empty">
-          <h2 class="releases__empty-heading">
+        <div class="subpanel subpanel--soft releases__empty">
+          <h2 class="section-title releases__empty-heading">
             {{ hasFilters() ? copy.noResultsHeading : copy.emptyHeading }}
           </h2>
           <p class="releases__empty-message">
@@ -121,11 +126,11 @@
              hides these among everything else. -->
         @if (needsOffice().length > 0) {
           <section class="bucket bucket--office" aria-labelledby="office-heading">
-            <h2 class="bucket__heading" id="office-heading">
+            <h2 class="section-title bucket__heading" id="office-heading">
               {{ copy.needsOffice }}
-              <span class="bucket__count">{{ needsOffice().length }}</span>
+              <span class="tab__count bucket__count">{{ needsOffice().length }}</span>
             </h2>
-            <p class="bucket__hint">{{ copy.needsOfficeHint }}</p>
+            <p class="status-line bucket__hint">{{ copy.needsOfficeHint }}</p>
             <ng-container
               [ngTemplateOutlet]="rows"
               [ngTemplateOutletContext]="{ $implicit: needsOffice() }"
@@ -135,9 +140,9 @@
 
         @if (waiting().length > 0) {
           <section class="bucket" aria-labelledby="waiting-heading">
-            <h2 class="bucket__heading" id="waiting-heading">
+            <h2 class="section-title bucket__heading" id="waiting-heading">
               {{ copy.waiting }}
-              <span class="bucket__count">{{ waiting().length }}</span>
+              <span class="tab__count bucket__count">{{ waiting().length }}</span>
             </h2>
             <ng-container
               [ngTemplateOutlet]="rows"
@@ -148,9 +153,9 @@
 
         @if (settled().length > 0) {
           <section class="bucket" aria-labelledby="settled-heading">
-            <h2 class="bucket__heading" id="settled-heading">
+            <h2 class="section-title bucket__heading" id="settled-heading">
               {{ copy.settled }}
-              <span class="bucket__count">{{ settled().length }}</span>
+              <span class="tab__count bucket__count">{{ settled().length }}</span>
             </h2>
             <ng-container
               [ngTemplateOutlet]="rows"
@@ -163,9 +168,9 @@
   </app-async-content>
 
   @if (hasAny()) {
-    <div class="releases__more">
+    <div class="list-more releases__more">
       <!-- The groups above sort what has been read; they never claim to be the whole office. -->
-      <p class="releases__hint" role="status">
+      <p class="status-line releases__hint" role="status">
         {{ copy.shown(releases().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
       </p>
       @if (hasMore()) {
@@ -174,18 +179,18 @@
         </button>
       }
       @if (moreFailed()) {
-        <p class="releases__problem" role="alert">{{ copy.moreFailed }}</p>
+        <p class="callout callout--danger releases__problem" role="alert">{{ copy.moreFailed }}</p>
       }
     </div>
   }
-</div>
+</section>
 
 <ng-template #rows let-releases>
-  <ul class="release-rows">
+  <ul class="soft-list release-rows">
     @for (release of releases; track release.id) {
-      <li class="release-rows__item">
+      <li class="soft-row soft-row--stacked release-rows__item">
         <p class="release-rows__head">
-          <a class="release-rows__reference" [routerLink]="detailLink(release)">
+          <a class="record-link release-rows__reference" [routerLink]="detailLink(release)">
             {{ release.referenceNumber }}
           </a>
           <app-status-badge [catalog]="statusCatalog" [status]="release.status" />

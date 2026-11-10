@@ -1,16 +1,23 @@
-<app-async-content [state]="state()" [content]="releaseContent" [skeletonLines]="8" (retryRequested)="retry()">
+<app-async-content
+  [state]="state()"
+  [content]="releaseContent"
+  [skeletonLines]="8"
+  (retryRequested)="retry()"
+>
   <ng-template #releaseContent let-release>
     @if (release === null) {
       <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
-      <p class="release__back"><a class="btn" routerLink="/releases">{{ copy.back }}</a></p>
+      <p class="release__back">
+        <a class="btn" routerLink="/releases">{{ copy.back }}</a>
+      </p>
     } @else {
       <app-page-header [title]="release.referenceNumber" [subtitle]="kindLabel(release)">
         <a page-actions class="btn" routerLink="/releases">{{ copy.back }}</a>
       </app-page-header>
 
-      <div class="release">
-        <section class="card release__panel" aria-labelledby="about-heading">
-          <h2 class="release__heading" id="about-heading">{{ copy.aboutHeading }}</h2>
+      <div class="record-grid release">
+        <section class="card card--padded release__panel" aria-labelledby="about-heading">
+          <h2 class="section-title release__heading" id="about-heading">{{ copy.aboutHeading }}</h2>
           <p class="release__status">
             <app-status-badge [catalog]="statusCatalog" [status]="release.status" />
           </p>
@@ -65,17 +72,21 @@
           <!-- Stated on the screen, not only in a decision log: an office that
                believes this is the book of record will reconcile against the
                treasury system and find out the hard way. -->
-          <p class="release__boundary">{{ copy.boundaryNotice }}</p>
+          <p class="callout release__boundary">{{ copy.boundaryNotice }}</p>
         </section>
 
         @if (canRelease()) {
-          <section class="card release__panel" aria-labelledby="record-heading">
-            <h2 class="release__heading" id="record-heading">{{ copy.releaseHeading }}</h2>
+          <section class="card card--padded release__panel" aria-labelledby="record-heading">
+            <h2 class="section-title release__heading" id="record-heading">
+              {{ copy.releaseHeading }}
+            </h2>
 
             <!-- Computed against who actually approved, not against a role. -->
             @if (wouldSelfRelease()) {
-              <p class="release__warning" role="status">
-                <span class="release__warning-title">{{ copy.selfReleaseHeading }}</span>
+              <p class="callout callout--warning release__warning" role="status">
+                <span class="callout__title release__warning-title">{{
+                  copy.selfReleaseHeading
+                }}</span>
                 {{ selfReleaseWarning }}
               </p>
             }
@@ -161,8 +172,10 @@
           </section>
 
           @if (canDefer()) {
-            <section class="card release__panel" aria-labelledby="defer-heading">
-              <h2 class="release__heading" id="defer-heading">{{ copy.deferHeading }}</h2>
+            <section class="card card--padded release__panel" aria-labelledby="defer-heading">
+              <h2 class="section-title release__heading" id="defer-heading">
+                {{ copy.deferHeading }}
+              </h2>
               <!-- Every reason is the office's. If they did not come, that is
                    unclaimed, and blaming them for our missing signature is the
                    failure this separation exists to prevent. -->
@@ -189,12 +202,7 @@
                 ></textarea>
               </label>
 
-              <button
-                type="button"
-                class="btn"
-                [disabled]="!canSaveDeferral()"
-                (click)="defer()"
-              >
+              <button type="button" class="btn" [disabled]="!canSaveDeferral()" (click)="defer()">
                 {{ copy.defer }}
               </button>
             </section>
@@ -203,7 +211,10 @@
 
         <!-- Unclaimed is recorded here with a reason, and never a guess at why they did not come. -->
         @if (permittedMoves().length > 0) {
-          <section class="card release__panel" aria-labelledby="release-status-heading">
+          <section
+            class="card card--padded release__panel"
+            aria-labelledby="release-status-heading"
+          >
             <app-status-transition
               idPrefix="release-status"
               [heading]="copy.moveHeading"

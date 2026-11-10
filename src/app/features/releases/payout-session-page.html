@@ -13,17 +13,19 @@
 -->
 <section
   *appHasPermission="'release.schedule'"
-  class="card sessions__open"
+  class="card card--panel card--padded form-panel sessions__open"
   aria-labelledby="open-heading"
 >
-  <h2 class="sessions__heading" id="open-heading">{{ copy.openHeading }}</h2>
-  <p class="sessions__hint">{{ copy.openHint }}</p>
+  <h2 class="section-title section-title--display sessions__heading" id="open-heading">
+    {{ copy.openHeading }}
+  </h2>
+  <p class="status-line sessions__hint">{{ copy.openHint }}</p>
 
   <label class="field" for="session-title">
     <span class="field__label">{{ copy.nameLabel }}</span>
     <input
       id="session-title"
-      class="field__control"
+      class="field__input"
       type="text"
       [value]="draftTitle()"
       (input)="onTitle($event)"
@@ -35,7 +37,7 @@
     <span class="field__label">{{ copy.venueLabel }}</span>
     <input
       id="session-venue"
-      class="field__control"
+      class="field__input"
       type="text"
       [value]="draftVenue()"
       (input)="onVenue($event)"
@@ -46,14 +48,14 @@
     <span class="field__label">{{ copy.whenLabel }}</span>
     <input
       id="session-date"
-      class="field__control"
+      class="field__input"
       type="date"
       [value]="draftDate()"
       (input)="onDate($event)"
     />
   </label>
 
-  <fieldset class="field">
+  <fieldset class="field sessions__members">
     <legend class="field__label">{{ copy.membersLabel }}</legend>
     <p class="field__hint">{{ copy.membersHint }}</p>
 
@@ -75,18 +77,23 @@
 </section>
 
 <div class="sessions">
-  <app-async-content [state]="state()" [content]="sessionContent" [skeletonLines]="5" (retryRequested)="retry()">
+  <app-async-content
+    [state]="state()"
+    [content]="sessionContent"
+    [skeletonLines]="5"
+    (retryRequested)="retry()"
+  >
     <ng-template #sessionContent>
       @if (batches().length === 0) {
-        <div class="card sessions__empty">
-          <h2 class="sessions__empty-heading">{{ copy.emptyHeading }}</h2>
+        <div class="card card--padded sessions__empty">
+          <h2 class="section-title sessions__empty-heading">{{ copy.emptyHeading }}</h2>
           <p class="sessions__empty-message">{{ copy.emptyMessage }}</p>
         </div>
       } @else {
         <ul class="sessions__list">
           @for (batch of batches(); track batch.id) {
-            <li class="card sessions__item">
-              <h2 class="sessions__title">{{ batch.title }}</h2>
+            <li class="card card--padded sessions__item">
+              <h2 class="section-title sessions__title">{{ batch.title }}</h2>
               <p class="sessions__reference">{{ batch.referenceNumber }}</p>
 
               <dl class="facts">
@@ -122,58 +129,64 @@
 
   <!-- The list carried to the table. Composed by the data layer. -->
   @if (manifest(); as sheet) {
-    <section class="card manifest" aria-labelledby="manifest-heading">
+    <section class="card card--panel card--padded manifest" aria-labelledby="manifest-heading">
       <div class="manifest__header">
         <div>
-          <h2 class="manifest__heading" id="manifest-heading">{{ copy.manifestHeading }}</h2>
-          <p class="manifest__hint">{{ copy.manifestHint }}</p>
+          <h2 class="section-title section-title--display manifest__heading" id="manifest-heading">
+            {{ copy.manifestHeading }}
+          </h2>
+          <p class="status-line manifest__hint">{{ copy.manifestHint }}</p>
         </div>
         <button type="button" class="btn" (click)="print()">{{ copy.print }}</button>
       </div>
 
-      <p class="manifest__meta">
-        {{ sheet.title }} · {{ sheet.scheduledFor }} · {{ sheet.venue }}
-      </p>
+      <p class="manifest__meta">{{ sheet.title }} · {{ sheet.scheduledFor }} · {{ sheet.venue }}</p>
 
-      <table class="manifest__table">
-        <caption class="manifest__caption">{{ sheet.title }}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{{ copy.columnRow }}</th>
-            <th scope="col">{{ copy.columnName }}</th>
-            <th scope="col">{{ copy.columnVoucher }}</th>
-            <th scope="col">{{ copy.columnWhat }}</th>
-            <th scope="col">{{ copy.columnSignature }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (line of sheet.lines; track line.position) {
+      <div class="table-scroll">
+        <table class="manifest__table">
+          <caption class="manifest__caption">
+            {{
+              sheet.title
+            }}
+          </caption>
+          <thead>
             <tr>
-              <td class="manifest__row">{{ line.position }}</td>
-              <th scope="row" class="manifest__name">{{ line.beneficiaryName }}</th>
-              <td class="manifest__voucher">{{ line.maskedReference }}</td>
-              <td>
-                @if (line.amount) {
-                  <span class="manifest__amount">{{ line.amount | peso }}</span>
-                } @else {
-                  {{ line.goods }}
-                }
-              </td>
-              <!-- Left blank on purpose. Pre-filling how somebody will
+              <th scope="col">{{ copy.columnRow }}</th>
+              <th scope="col">{{ copy.columnName }}</th>
+              <th scope="col">{{ copy.columnVoucher }}</th>
+              <th scope="col">{{ copy.columnWhat }}</th>
+              <th scope="col">{{ copy.columnSignature }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of sheet.lines; track line.position) {
+              <tr>
+                <td class="manifest__row">{{ line.position }}</td>
+                <th scope="row" class="manifest__name">{{ line.beneficiaryName }}</th>
+                <td class="manifest__voucher">{{ line.maskedReference }}</td>
+                <td>
+                  @if (line.amount) {
+                    <span class="manifest__amount">{{ line.amount | peso }}</span>
+                  } @else {
+                    {{ line.goods }}
+                  }
+                </td>
+                <!-- Left blank on purpose. Pre-filling how somebody will
                    acknowledge is how a sheet comes back signed for a person
                    who was never there. -->
-              <td class="manifest__signature"></td>
-            </tr>
-          }
-        </tbody>
-      </table>
+                <td class="manifest__signature"></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
 
       <p class="manifest__totals">
         <span>{{ copy.totalMoney }}: {{ sheet.moneyTotal | peso }}</span>
         <span>{{ copy.goodsCount }}: {{ sheet.inKindLineCount }}</span>
       </p>
 
-      <p class="manifest__notice">{{ sheet.handlingNotice }}</p>
+      <p class="callout callout--warning manifest__notice">{{ sheet.handlingNotice }}</p>
     </section>
   }
 </div>
