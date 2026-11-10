@@ -1,115 +1,151 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
 <div class="search">
-  <form class="search__form" role="search" (submit)="onSubmit($event)">
-    <label class="search__field">
-      <span class="search__label">{{ copy.label }}</span>
-      <input
-        type="search"
-        class="search__input"
-        name="q"
-        [value]="term()"
-        [placeholder]="copy.placeholder"
-        aria-describedby="search-safe-notice"
-      />
-    </label>
-    <button type="submit" class="btn btn--primary">{{ copy.submit }}</button>
-  </form>
+  <section class="card card--panel card--padded search__panel" [attr.aria-label]="copy.label">
+    <form class="search__form" role="search" (submit)="onSubmit($event)">
+      <label class="field search__field">
+        <span class="field__label search__label">{{ copy.label }}</span>
+        <span class="search-field">
+          <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+          <input
+            type="search"
+            class="field__input field__input--pill search__input"
+            name="q"
+            [value]="term()"
+            [placeholder]="copy.placeholder"
+            aria-describedby="search-safe-notice"
+          />
+        </span>
+      </label>
+      <button type="submit" class="btn btn--primary search__submit">{{ copy.submit }}</button>
+    </form>
 
-  <!-- Said where it is read, not only in a decision log: an officer needs to
-       know that a case note will never surface here. -->
-  <p class="search__notice" id="search-safe-notice">{{ copy.safeNotice }}</p>
+    <!-- Said where it is read, not only in a decision log: an officer needs to
+         know that a case note will never surface here. -->
+    <p class="note-box search__notice" id="search-safe-notice">{{ copy.safeNotice }}</p>
 
-  @if (recent().length > 0) {
-    <section class="recent" [attr.aria-label]="copy.recentHeading">
-      <div class="recent__head">
-        <h2 class="recent__heading">{{ copy.recentHeading }}</h2>
-        <button type="button" class="recent__clear" (click)="clearRecent()">
-          {{ copy.clearRecent }}
-        </button>
-      </div>
-      <ul class="recent__list">
-        @for (entry of recent(); track entry) {
-          <li>
-            <button type="button" class="recent__chip" (click)="run(entry)">{{ entry }}</button>
-          </li>
-        }
-      </ul>
-      <!-- Stated plainly. On a shared office machine there is no other way to
-           know what is and is not kept. -->
-      <p class="recent__notice">{{ copy.recentNotice }}</p>
-    </section>
-  }
+    @if (recent().length > 0) {
+      <section class="recent" [attr.aria-label]="copy.recentHeading">
+        <div class="recent__head">
+          <h2 class="eyebrow recent__heading">{{ copy.recentHeading }}</h2>
+          <button type="button" class="btn btn--subtle recent__clear" (click)="clearRecent()">
+            {{ copy.clearRecent }}
+          </button>
+        </div>
+        <ul class="chip-list recent__list">
+          @for (entry of recent(); track entry) {
+            <li>
+              <button type="button" class="recent__chip" (click)="run(entry)">
+                <app-icon name="history" [size]="14" [stroke]="2" />
+                {{ entry }}
+              </button>
+            </li>
+          }
+        </ul>
+        <!-- Stated plainly. On a shared office machine there is no other way to
+             know what is and is not kept. -->
+        <p class="status-line recent__notice">{{ copy.recentNotice }}</p>
+      </section>
+    }
+  </section>
 
   @if (!hasTerm()) {
-    <div class="card search__idle">
-      <h2 class="search__idle-heading">{{ copy.idleHeading }}</h2>
-      <p class="search__idle-message">{{ copy.idleMessage }}</p>
+    <div class="card card--padded search__idle">
+      <span class="icon-tile icon-tile--blue-soft" aria-hidden="true">
+        <app-icon name="search" [size]="22" [stroke]="2" />
+      </span>
+      <h2 class="section-title search__idle-heading">{{ copy.idleHeading }}</h2>
+      <p class="status-line search__idle-message">{{ copy.idleMessage }}</p>
     </div>
   } @else {
-    <app-async-content [state]="state()" [content]="resultContent" [skeletonLines]="6">
+    <app-async-content
+      [state]="state()"
+      [content]="resultContent"
+      [skeletonLines]="6"
+      (retryRequested)="retry()"
+    >
       <ng-template #resultContent let-results>
-        <p class="search__summary" role="status">
-          <span class="search__summary-label">{{ copy.resultsFor }} {{ results.term }}:</span>
-          {{ summary() }}
-        </p>
-
-        @if (withheld(); as notice) {
-          <!-- "You cannot see cases" and "no cases matched" are different
-               answers, and a user told the wrong one concludes the record does
-               not exist. -->
-          <p class="search__withheld">
-            <span class="search__withheld-heading">{{ copy.withheldHeading }}</span>
-            {{ notice }}
+        <div class="search__results">
+          <p class="search__summary" role="status">
+            <span class="search__summary-label">{{ copy.resultsFor }} {{ results.term }}:</span>
+            {{ summary() }}
           </p>
-        }
 
-        @if (results.total === 0) {
-          <div class="card search__empty">
-            <h2 class="search__empty-heading">{{ copy.emptyHeading }}</h2>
-            <p class="search__empty-message">{{ copy.emptyMessage }}</p>
-          </div>
-        } @else {
-          @for (group of results.groups; track group.type) {
-            <section class="card group" [attr.aria-label]="group.label">
-              <div class="group__head">
-                <h2 class="group__heading">{{ group.label }}</h2>
-                <span class="group__count">{{ group.total }}</span>
-              </div>
-
-              <ul class="group__list">
-                @for (hit of group.hits; track hit.key) {
-                  <li class="group__item">
-                    <a class="group__title" [routerLink]="hit.routerLink">{{ hit.title }}</a>
-                    <p class="group__meta">
-                      @if (hit.reference) {
-                        <span class="group__reference">{{ hit.reference }}</span>
-                      }
-                      @if (hit.barangayLabel) {
-                        <span class="group__barangay">{{ hit.barangayLabel }}</span>
-                      }
-                      @if (hit.statusLabel) {
-                        <span class="group__status">{{ hit.statusLabel }}</span>
-                      }
-                    </p>
-                  </li>
-                }
-              </ul>
-
-              @if (group.isTruncated) {
-                <p class="group__more">
-                  <a
-                    class="btn"
-                    [routerLink]="group.seeAllLink"
-                    [queryParams]="group.seeAllParams"
-                  >
-                    {{ copy.seeAll }} ({{ group.total }})
-                  </a>
-                </p>
-              }
-            </section>
+          @if (withheld(); as notice) {
+            <!-- "You cannot see cases" and "no cases matched" are different
+                 answers, and a user told the wrong one concludes the record does
+                 not exist. -->
+            <p class="note-box search__withheld">
+              <span class="eyebrow search__withheld-heading">{{ copy.withheldHeading }}</span>
+              {{ notice }}
+            </p>
           }
-        }
+
+          @if (results.total === 0) {
+            <div class="card card--padded search__empty">
+              <img
+                class="search__empty-art"
+                src="illustrations/empty-no-results.svg"
+                alt=""
+                aria-hidden="true"
+                width="168"
+                height="132"
+              />
+              <h2 class="section-title search__empty-heading">{{ copy.emptyHeading }}</h2>
+              <p class="status-line search__empty-message">{{ copy.emptyMessage }}</p>
+            </div>
+          } @else {
+            <div class="search__groups">
+              @for (group of results.groups; track group.type) {
+                <section class="card card--padded group" [attr.aria-label]="group.label">
+                  <div class="group__head">
+                    <span class="icon-tile icon-tile--sm" aria-hidden="true">
+                      <app-icon [name]="iconFor(group.type)" [size]="16" [stroke]="2" />
+                    </span>
+                    <h2 class="section-title group__heading">{{ group.label }}</h2>
+                    <span class="tab__count group__count">{{ group.total }}</span>
+                  </div>
+
+                  <ul class="soft-list group__list">
+                    @for (hit of group.hits; track hit.key) {
+                      <li class="soft-row soft-row--stacked group__item">
+                        <a class="record-link group__title" [routerLink]="hit.routerLink">{{
+                          hit.title
+                        }}</a>
+                        <p class="soft-row__meta group__meta">
+                          @if (hit.reference) {
+                            <span class="group__reference">{{ hit.reference }}</span>
+                          }
+                          @if (hit.barangayLabel) {
+                            <span class="group__barangay">{{ hit.barangayLabel }}</span>
+                          }
+                          @if (hit.statusLabel) {
+                            <span class="group__status">{{ hit.statusLabel }}</span>
+                          }
+                        </p>
+                      </li>
+                    }
+                  </ul>
+
+                  @if (group.isTruncated) {
+                    <p class="group__more">
+                      <a
+                        class="btn btn--arrow"
+                        [routerLink]="group.seeAllLink"
+                        [queryParams]="group.seeAllParams"
+                      >
+                        {{ copy.seeAll }} ({{ group.total }})
+                        <span class="btn__arrow" aria-hidden="true">
+                          <app-icon name="arrowRight" [size]="14" [stroke]="2.2" />
+                        </span>
+                      </a>
+                    </p>
+                  }
+                </section>
+              }
+            </div>
+          }
+        </div>
       </ng-template>
     </app-async-content>
   }

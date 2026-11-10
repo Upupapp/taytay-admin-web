@@ -9,13 +9,25 @@ import {
   describeResults,
   describeWithheld,
   isSearchable,
+  type SearchEntityType,
   type SearchResults,
 } from '@domain/index';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { Icon } from '@shared/ui/icon/icon';
+import type { IconName } from '@shared/ui/icon/icons';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { SEARCH_COPY } from './search.copy';
+
+const SEARCH_ICONS: Readonly<Record<SearchEntityType, IconName>> = {
+  resident: 'user',
+  household: 'home',
+  family: 'users',
+  case: 'folder',
+  'assistance-request': 'file',
+  program: 'layers',
+};
 
 /**
  * Global search.
@@ -33,7 +45,7 @@ import { SEARCH_COPY } from './search.copy';
 @Component({
   selector: 'app-search-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, PageHeader, RouterLink],
+  imports: [AsyncContent, Icon, PageHeader, RouterLink],
   templateUrl: './search-page.html',
   styleUrl: './search-page.scss',
 })
@@ -61,15 +73,29 @@ export class SearchPage {
    */
   protected readonly typedTerm = signal('');
 
-  protected readonly term = toSignal(
-    toObservable(this.typedTerm).pipe(map((value) => value)),
-    { initialValue: '' },
-  );
+  protected readonly term = toSignal(toObservable(this.typedTerm).pipe(map((value) => value)), {
+    initialValue: '',
+  });
+
+  /** Bumped by the error panel's Try again, so the same term can be asked again. */
+  private readonly attempts = signal(0);
+  private readonly request = computed(() => ({ term: this.term(), attempt: this.attempts() }));
 
   protected readonly state = toSignal(
-    toObservable(this.term).pipe(switchMap((term) => toViewState(this.repository.search(term)))),
+    toObservable(this.request).pipe(
+      switchMap(({ term }) => toViewState(this.repository.search(term))),
+    ),
     { initialValue: LOADING as ViewState<SearchResults> },
   );
+
+  protected retry(): void {
+    this.attempts.update((value) => value + 1);
+  }
+
+  /** The same glyph each record type has in the navigation. */
+  protected iconFor(type: SearchEntityType): IconName {
+    return SEARCH_ICONS[type];
+  }
 
   protected readonly results = computed(() => valueOf(this.state()) ?? null);
   protected readonly hasTerm = computed(() => isSearchable(this.term()));
