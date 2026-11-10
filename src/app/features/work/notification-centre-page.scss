@@ -1,156 +1,156 @@
+// The notification centre as an inbox page: the "nothing here is a job"
+// sentence first, as a notice; then one padded card per kind of event.
+
 .centre {
   display: flex;
   flex-direction: column;
-  gap: var(--space-base);
+  gap: var(--space-4);
 }
 
 .centre__notice {
-  margin: 0;
-  padding: var(--space-snug) var(--space-base);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-base);
-  background: var(--c-surface-muted, transparent);
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-  max-inline-size: 78ch;
+  align-items: flex-start;
+  max-inline-size: 90ch;
+}
+
+.centre__notice app-icon {
+  flex: none;
+  margin-block-start: 1px;
+  color: var(--link);
 }
 
 .centre__empty {
-  padding: var(--space-loose);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding-block: var(--space-6);
   text-align: center;
 }
 
-.centre__empty-heading {
-  margin: 0;
-  font-size: 15px;
-}
-
-.centre__empty-message {
-  margin: var(--space-compact) 0 0;
-  color: var(--c-text-muted);
-  font-size: 13px;
-}
-
 .group {
-  padding: var(--space-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .group__head {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--space-snug);
-}
-
-.group__heading {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.group__unread {
-  color: var(--c-text-muted);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
+  gap: var(--space-2);
 }
 
 .group__items {
-  margin: var(--space-snug) 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .group__item {
-  padding-block: var(--space-snug);
-  border-block-start: 1px solid var(--c-border);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding-block: 14px;
+  border-block-start: 1px solid var(--soft);
 }
 
 .group__item:first-child {
   border-block-start: none;
 }
 
-.group__item--unread .group__title {
-  font-weight: 700;
+.group__item:last-child {
+  padding-block-end: 0;
+}
+
+/* Shape as well as colour: the icon differs per severity, the tone repeats it. */
+.group__severity {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 28px;
+  block-size: 28px;
+  border-radius: var(--r-pill);
+  background: var(--tone-neutral-bg);
+  color: var(--tone-neutral-fg);
+}
+
+.group__severity--info {
+  background: var(--tone-info-bg);
+  color: var(--tone-info-fg);
+}
+
+.group__severity--success {
+  background: var(--tone-success-bg);
+  color: var(--tone-success-fg);
+}
+
+.group__severity--warning {
+  background: var(--tone-warning-bg);
+  color: var(--tone-warning-fg);
+}
+
+.group__severity--error {
+  background: var(--tone-danger-bg);
+  color: var(--tone-danger-fg);
+}
+
+.group__main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 0;
 }
 
 .group__item-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-snug);
-  margin: 0;
-}
-
-.group__severity {
-  inline-size: 8px;
-  block-size: 8px;
-  border-radius: 50%;
-  background: var(--c-text-subtle);
-}
-
-.group__severity--warning {
-  background: var(--c-warning, #b26b00);
-}
-
-.group__severity--error {
-  background: var(--c-danger, #a4262c);
-}
-
-.group__severity--success {
-  background: var(--c-success, #1c7a4d);
+  gap: var(--space-2);
 }
 
 .group__title {
-  font-size: 13.5px;
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
 }
 
-/*
- * Unread is carried by a word, a weight and a marker — never by colour alone.
- * The dot repeats the severity that the text already states.
- */
-.group__badge {
-  padding: 1px 7px;
-  border: 1px solid var(--c-border);
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+/* Unread is carried by a word, a weight and a marker — never by colour alone. */
+.group__item--unread .group__title {
+  font-weight: var(--fw-bold);
 }
 
 .group__time {
   margin-inline-start: auto;
-  color: var(--c-text-subtle);
-  font-size: 12px;
+  color: var(--muted2);
+  font-size: var(--fs-2xs);
 }
 
 .group__body {
-  margin: var(--space-micro) 0 0;
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-  max-inline-size: 78ch;
+  max-inline-size: 80ch;
+  color: var(--text2);
+  font-size: var(--fs-label);
 }
 
 .group__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-base);
-  margin: var(--space-compact) 0 0;
+  align-items: center;
+  gap: var(--space-4);
 }
 
-.group__link,
-.group__mark {
-  font-size: 12.5px;
+.group__actions:empty {
+  display: none;
 }
 
-.group__mark {
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--c-link, inherit);
-  font: inherit;
-  font-size: 12.5px;
-  text-decoration: underline;
-  cursor: pointer;
+.group__link {
+  font-size: var(--fs-xs);
+}
+
+.btn.group__mark {
+  min-block-size: var(--target-min);
+  padding-inline: 0;
+  color: var(--link);
+  font-size: var(--fs-xs);
 }

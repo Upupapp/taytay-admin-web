@@ -29,6 +29,7 @@ import {
 } from '@domain/index';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -55,7 +56,7 @@ import { WORK_COPY } from './work.copy';
 @Component({
   selector: 'app-work-queue-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, NgTemplateOutlet, PageHeader, RouterLink, StatusBadge],
+  imports: [AsyncContent, Icon, NgTemplateOutlet, PageHeader, RouterLink, StatusBadge],
   templateUrl: './work-queue-page.html',
   styleUrl: './work-queue-page.scss',
 })
@@ -89,6 +90,11 @@ export class WorkQueuePage {
     toObservable(this.reloads).pipe(switchMap(() => toViewState(this.work.alerts()))),
     { initialValue: LOADING as ViewState<readonly OfficeAlert[]> },
   );
+
+  /** Reads the queue and the alerts again, after a failure the panel offers to retry. */
+  protected retry(): void {
+    this.reloads.update((value) => value + 1);
+  }
 
   protected readonly items = computed<readonly WorkItem[]>(() => valueOf(this.state())?.items ?? []);
   protected readonly buckets = computed(() => bucketWork(this.items(), this.today));

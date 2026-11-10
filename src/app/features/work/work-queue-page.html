@@ -1,111 +1,142 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a page-actions class="btn" routerLink="/notifications">{{ copy.centre }}</a>
+  <a page-actions class="btn" routerLink="/notifications">
+    <app-icon name="bell" [size]="16" [stroke]="2" />
+    {{ copy.centre }}
+  </a>
   @if (canSeeTeam()) {
-    <a page-actions class="btn" routerLink="/work/team">{{ copy.team }}</a>
+    <a page-actions class="btn" routerLink="/work/team">
+      <app-icon name="users" [size]="16" [stroke]="2" />
+      {{ copy.team }}
+    </a>
   }
 </app-page-header>
 
 <div class="work">
-  <app-async-content [state]="state()" [content]="queueContent" [skeletonLines]="6">
-    <ng-template #queueContent>
-      <!-- Counts, never a verdict: "3 late, 2 due today" is actionable where
-           "behind schedule" names nothing. -->
-      <p class="work__summary">
-        <span class="work__summary-label">{{ copy.summaryLabel }}:</span>
-        {{ summary() }}
-        <span class="work__as-of">{{ copy.asOf }} {{ today }}</span>
-      </p>
+  <!-- What a named person owes. The alerts below are a different surface (DL-96). -->
+  <section class="card card--panel card--padded work__queue" [attr.aria-label]="copy.title">
+    <app-async-content
+      [state]="state()"
+      [content]="queueContent"
+      [skeletonLines]="6"
+      (retryRequested)="retry()"
+    >
+      <ng-template #queueContent>
+        <div class="work__body">
+          <!-- Counts, never a verdict: "3 late, 2 due today" is actionable where
+               "behind schedule" names nothing. -->
+          <p class="work__summary">
+            <span class="eyebrow work__summary-label">{{ copy.summaryLabel }}:</span>
+            <span class="work__summary-text">{{ summary() }}</span>
+            <span class="work__as-of">{{ copy.asOf }} {{ today }}</span>
+          </p>
 
-      @if (total() === 0) {
-        <div class="card work__empty">
-          <h2 class="work__empty-heading">{{ copy.emptyHeading }}</h2>
-          <p class="work__empty-message">{{ copy.emptyMessage }}</p>
+          @if (total() === 0) {
+            <div class="subpanel subpanel--soft work__empty">
+              <span class="icon-tile icon-tile--blue-soft" aria-hidden="true">
+                <app-icon name="checkSquare" [size]="22" />
+              </span>
+              <h2 class="section-title work__empty-heading">{{ copy.emptyHeading }}</h2>
+              <p class="status-line work__empty-message">{{ copy.emptyMessage }}</p>
+            </div>
+          } @else {
+            @if (buckets().overdue.length > 0) {
+              <section class="bucket bucket--late" aria-labelledby="late-heading">
+                <h2 class="section-title bucket__heading" id="late-heading">
+                  {{ copy.overdue }}
+                  <span class="tab__count bucket__count">{{ buckets().overdue.length }}</span>
+                </h2>
+                <p class="status-line bucket__hint">{{ copy.overdueHint }}</p>
+                <ng-container
+                  [ngTemplateOutlet]="rows"
+                  [ngTemplateOutletContext]="{ $implicit: buckets().overdue }"
+                />
+              </section>
+            }
+
+            @if (buckets().dueToday.length > 0) {
+              <section class="bucket" aria-labelledby="today-heading">
+                <h2 class="section-title bucket__heading" id="today-heading">
+                  {{ copy.dueToday }}
+                  <span class="tab__count bucket__count">{{ buckets().dueToday.length }}</span>
+                </h2>
+                <ng-container
+                  [ngTemplateOutlet]="rows"
+                  [ngTemplateOutletContext]="{ $implicit: buckets().dueToday }"
+                />
+              </section>
+            }
+
+            @if (buckets().dueSoon.length > 0) {
+              <section class="bucket" aria-labelledby="soon-heading">
+                <h2 class="section-title bucket__heading" id="soon-heading">
+                  {{ copy.dueSoon }}
+                  <span class="tab__count bucket__count">{{ buckets().dueSoon.length }}</span>
+                </h2>
+                <ng-container
+                  [ngTemplateOutlet]="rows"
+                  [ngTemplateOutletContext]="{ $implicit: buckets().dueSoon }"
+                />
+              </section>
+            }
+
+            @if (buckets().later.length > 0) {
+              <section class="bucket" aria-labelledby="later-heading">
+                <h2 class="section-title bucket__heading" id="later-heading">
+                  {{ copy.later }}
+                  <span class="tab__count bucket__count">{{ buckets().later.length }}</span>
+                </h2>
+                <ng-container
+                  [ngTemplateOutlet]="rows"
+                  [ngTemplateOutletContext]="{ $implicit: buckets().later }"
+                />
+              </section>
+            }
+
+            @if (buckets().undated.length > 0) {
+              <section class="bucket" aria-labelledby="undated-heading">
+                <h2 class="section-title bucket__heading" id="undated-heading">
+                  {{ copy.undated }}
+                  <span class="tab__count bucket__count">{{ buckets().undated.length }}</span>
+                </h2>
+                <!-- Says plainly why these have no date, rather than leaving an
+                     officer to assume the system lost one. -->
+                <p class="status-line bucket__hint">{{ copy.undatedHint }}</p>
+                <ng-container
+                  [ngTemplateOutlet]="rows"
+                  [ngTemplateOutletContext]="{ $implicit: buckets().undated }"
+                />
+              </section>
+            }
+          }
         </div>
-      } @else {
-        @if (buckets().overdue.length > 0) {
-          <section class="bucket bucket--late" aria-labelledby="late-heading">
-            <h2 class="bucket__heading" id="late-heading">
-              {{ copy.overdue }}
-              <span class="bucket__count">{{ buckets().overdue.length }}</span>
-            </h2>
-            <p class="bucket__hint">{{ copy.overdueHint }}</p>
-            <ng-container
-              [ngTemplateOutlet]="rows"
-              [ngTemplateOutletContext]="{ $implicit: buckets().overdue }"
-            />
-          </section>
-        }
-
-        @if (buckets().dueToday.length > 0) {
-          <section class="bucket" aria-labelledby="today-heading">
-            <h2 class="bucket__heading" id="today-heading">
-              {{ copy.dueToday }}
-              <span class="bucket__count">{{ buckets().dueToday.length }}</span>
-            </h2>
-            <ng-container
-              [ngTemplateOutlet]="rows"
-              [ngTemplateOutletContext]="{ $implicit: buckets().dueToday }"
-            />
-          </section>
-        }
-
-        @if (buckets().dueSoon.length > 0) {
-          <section class="bucket" aria-labelledby="soon-heading">
-            <h2 class="bucket__heading" id="soon-heading">
-              {{ copy.dueSoon }}
-              <span class="bucket__count">{{ buckets().dueSoon.length }}</span>
-            </h2>
-            <ng-container
-              [ngTemplateOutlet]="rows"
-              [ngTemplateOutletContext]="{ $implicit: buckets().dueSoon }"
-            />
-          </section>
-        }
-
-        @if (buckets().later.length > 0) {
-          <section class="bucket" aria-labelledby="later-heading">
-            <h2 class="bucket__heading" id="later-heading">
-              {{ copy.later }}
-              <span class="bucket__count">{{ buckets().later.length }}</span>
-            </h2>
-            <ng-container
-              [ngTemplateOutlet]="rows"
-              [ngTemplateOutletContext]="{ $implicit: buckets().later }"
-            />
-          </section>
-        }
-
-        @if (buckets().undated.length > 0) {
-          <section class="bucket" aria-labelledby="undated-heading">
-            <h2 class="bucket__heading" id="undated-heading">
-              {{ copy.undated }}
-              <span class="bucket__count">{{ buckets().undated.length }}</span>
-            </h2>
-            <!-- Says plainly why these have no date, rather than leaving an
-                 officer to assume the system lost one. -->
-            <p class="bucket__hint">{{ copy.undatedHint }}</p>
-            <ng-container
-              [ngTemplateOutlet]="rows"
-              [ngTemplateOutletContext]="{ $implicit: buckets().undated }"
-            />
-          </section>
-        }
-      }
-    </ng-template>
-  </app-async-content>
+      </ng-template>
+    </app-async-content>
+  </section>
 
   <!-- Conditions of the data. Nobody completes one. -->
-  <app-async-content [state]="alertState()" [content]="alertContent" [skeletonLines]="3">
+  <app-async-content
+    [state]="alertState()"
+    [content]="alertContent"
+    [skeletonLines]="3"
+    (retryRequested)="retry()"
+  >
     <ng-template #alertContent>
       @if (alerts().length > 0) {
-        <section class="card alerts" aria-labelledby="alerts-heading">
-          <h2 class="alerts__heading" id="alerts-heading">{{ alertCopy.heading }}</h2>
-          <p class="alerts__hint">{{ alertCopy.hint }}</p>
+        <section class="card card--padded alerts" aria-labelledby="alerts-heading">
+          <div class="alerts__head">
+            <span class="icon-tile icon-tile--sm icon-tile--soft" aria-hidden="true">
+              <app-icon name="info" [size]="16" [stroke]="2" />
+            </span>
+            <h2 class="section-title alerts__heading" id="alerts-heading">
+              {{ alertCopy.heading }}
+            </h2>
+          </div>
+          <p class="status-line alerts__hint">{{ alertCopy.hint }}</p>
           <p class="alerts__summary">{{ alertSummary() }}</p>
 
-          <ul class="alerts__list">
+          <ul class="soft-list alerts__list">
             @for (alert of alerts(); track alert.id) {
-              <li class="alerts__item">
+              <li class="soft-row soft-row--stacked alerts__item">
                 <p class="alerts__item-head">
                   <app-status-badge [catalog]="severityCatalog" [status]="alert.severity" />
                   <span class="alerts__summary-text">{{ alert.summary }}</span>
@@ -116,7 +147,7 @@
                   <span class="alerts__basis-label">{{ alertCopy.basis }}:</span>
                   {{ alert.basis }}
                 </p>
-                <a class="alerts__link" [routerLink]="alert.link.routerLink">
+                <a class="record-link alerts__link" [routerLink]="alert.link.routerLink">
                   {{ alert.link.label }}
                 </a>
               </li>
@@ -133,7 +164,7 @@
     @for (item of items; track item.id) {
       <li class="work-rows__item">
         <p class="work-rows__head">
-          <span class="work-rows__source">{{ sourceLabel(item) }}</span>
+          <span class="chip work-rows__source">{{ sourceLabel(item) }}</span>
           <app-status-badge [catalog]="priorityCatalog" [status]="item.priority" />
           <!-- Lateness in words, always. Colour reinforces; it never carries. -->
           @if (lateness(item); as late) {
@@ -158,9 +189,19 @@
         </p>
 
         <p class="work-rows__actions">
-          <a class="btn" [routerLink]="item.link.routerLink">{{ item.link.label }}</a>
+          <a class="btn btn--arrow" [routerLink]="item.link.routerLink">
+            {{ item.link.label }}
+            <span class="btn__arrow" aria-hidden="true">
+              <app-icon name="arrowRight" [size]="14" [stroke]="2.2" />
+            </span>
+          </a>
           @if (item.isManageable) {
-            <button type="button" class="btn" (click)="toggle(item)">
+            <button
+              type="button"
+              class="btn"
+              [attr.aria-expanded]="isOpen(item)"
+              (click)="toggle(item)"
+            >
               {{ isOpen(item) ? copy.cancel : copy.complete }}
             </button>
           } @else if (item.source === 'case-task') {
@@ -176,53 +217,59 @@
 
         @if (item.isManageable && isOpen(item)) {
           <div class="task-panel">
-            <label class="field">
-              <span class="field__label">{{ copy.outcome }}</span>
-              <textarea
-                class="field__input"
-                rows="2"
-                aria-describedby="outcome-hint"
-                [value]="outcome()"
-                (input)="onOutcome($event)"
-              ></textarea>
-              <span class="field__hint" id="outcome-hint">{{ copy.outcomeHint }}</span>
-            </label>
-            <button
-              type="button"
-              class="btn btn--primary"
-              [disabled]="!canComplete()"
-              (click)="complete(item)"
-            >
-              {{ copy.complete }}
-            </button>
+            <div class="task-panel__part">
+              <label class="field">
+                <span class="field__label">{{ copy.outcome }}</span>
+                <textarea
+                  class="field__input"
+                  rows="2"
+                  aria-describedby="outcome-hint"
+                  [value]="outcome()"
+                  (input)="onOutcome($event)"
+                ></textarea>
+                <span class="field__hint" id="outcome-hint">{{ copy.outcomeHint }}</span>
+              </label>
+              <button
+                type="button"
+                class="btn btn--primary"
+                [disabled]="!canComplete()"
+                (click)="complete(item)"
+              >
+                {{ copy.complete }}
+              </button>
+            </div>
 
-            <h4 class="task-panel__subheading">{{ copy.reschedule }}</h4>
-            <label class="field">
-              <span class="field__label">{{ copy.newDate }}</span>
-              <input
-                type="date"
-                class="field__input"
-                [value]="newDate()"
-                (input)="onNewDate($event)"
-              />
-            </label>
-            <label class="field">
-              <span class="field__label">{{ copy.reason }}</span>
-              <input
-                type="text"
-                class="field__input"
-                [value]="reason()"
-                (input)="onReason($event)"
-              />
-            </label>
-            <button
-              type="button"
-              class="btn"
-              [disabled]="!canReschedule()"
-              (click)="reschedule(item)"
-            >
-              {{ copy.reschedule }}
-            </button>
+            <div class="task-panel__part">
+              <h4 class="task-panel__subheading">{{ copy.reschedule }}</h4>
+              <div class="task-panel__fields">
+                <label class="field">
+                  <span class="field__label">{{ copy.newDate }}</span>
+                  <input
+                    type="date"
+                    class="field__input"
+                    [value]="newDate()"
+                    (input)="onNewDate($event)"
+                  />
+                </label>
+                <label class="field task-panel__reason">
+                  <span class="field__label">{{ copy.reason }}</span>
+                  <input
+                    type="text"
+                    class="field__input"
+                    [value]="reason()"
+                    (input)="onReason($event)"
+                  />
+                </label>
+              </div>
+              <button
+                type="button"
+                class="btn"
+                [disabled]="!canReschedule()"
+                (click)="reschedule(item)"
+              >
+                {{ copy.reschedule }}
+              </button>
+            </div>
           </div>
         }
       </li>

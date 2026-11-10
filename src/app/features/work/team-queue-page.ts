@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { switchMap } from 'rxjs';
 
 import {
   WORK_PRIORITY_CATALOG,
@@ -12,8 +13,10 @@ import {
   type TeamQueue,
   type WorkItem,
 } from '@domain/index';
+import { InitialsPipe } from '@shared/pipes/initials.pipe';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -34,7 +37,7 @@ import { WORK_COPY } from './work.copy';
 @Component({
   selector: 'app-team-queue-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, PageHeader, RouterLink, StatusBadge],
+  imports: [AsyncContent, Icon, InitialsPipe, PageHeader, RouterLink, StatusBadge],
   templateUrl: './team-queue-page.html',
   styleUrl: './team-queue-page.scss',
 })
@@ -46,9 +49,17 @@ export class TeamQueuePage {
   protected readonly priorityCatalog = WORK_PRIORITY_CATALOG;
   protected readonly today = todayAsIsoDate();
 
-  protected readonly state = toSignal(toViewState(this.work.teamQueue(this.today)), {
-    initialValue: LOADING as ViewState<TeamQueue>,
-  });
+  private readonly reloads = signal(0);
+
+  protected readonly state = toSignal(
+    toObservable(this.reloads).pipe(switchMap(() => toViewState(this.work.teamQueue(this.today)))),
+    { initialValue: LOADING as ViewState<TeamQueue> },
+  );
+
+  /** Reads the team queue again, after a failure the panel offers to retry. */
+  protected retry(): void {
+    this.reloads.update((value) => value + 1);
+  }
 
   protected readonly members = computed(() => valueOf(this.state())?.members ?? []);
   protected readonly hasAny = computed(() => this.members().length > 0);

@@ -8,6 +8,8 @@ import {
   type NotificationId,
 } from '@domain/index';
 import { RelativeTimePipe } from '@shared/pipes/relative-time.pipe';
+import { Icon } from '@shared/ui/icon/icon';
+import { SEVERITY_ICONS } from '@shared/ui/icon/severity-icons';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { WORK_COPY } from './work.copy';
@@ -32,7 +34,7 @@ import { WORK_COPY } from './work.copy';
 @Component({
   selector: 'app-notification-centre-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeader, RelativeTimePipe, RouterLink],
+  imports: [Icon, PageHeader, RelativeTimePipe, RouterLink],
   templateUrl: './notification-centre-page.html',
   styleUrl: './notification-centre-page.scss',
 })
@@ -40,6 +42,7 @@ export class NotificationCentrePage {
   private readonly notifications = inject(NotificationStore);
 
   protected readonly copy = WORK_COPY.centre;
+  protected readonly severityIcons = SEVERITY_ICONS;
 
   protected readonly groups = computed(() => groupNotifications(this.notifications.inbox()));
   protected readonly unreadCount = this.notifications.unreadCount;

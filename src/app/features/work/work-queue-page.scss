@@ -1,263 +1,241 @@
+// My work as a list page (Residents pattern): the queue in a panel card,
+// bucketed by when it is owed, then the office alerts in their own card —
+// a different surface, worded as one (DL-96).
+
 .work {
   display: flex;
   flex-direction: column;
-  gap: var(--space-base);
+  gap: var(--space-4);
+}
+
+.work__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
 .work__summary {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--space-snug);
+  gap: var(--space-2);
   margin: 0;
-  font-size: 14px;
-}
-
-.work__summary-label {
-  color: var(--c-text-muted);
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  padding-block-end: var(--space-3);
+  border-block-end: 1px solid var(--soft);
+  color: var(--ink);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
 }
 
 .work__as-of {
   margin-inline-start: auto;
-  color: var(--c-text-subtle);
-  font-size: 12px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
   font-variant-numeric: tabular-nums;
 }
 
 .work__empty {
-  padding: var(--space-loose);
+  align-items: center;
+  padding-block: var(--space-6);
   text-align: center;
 }
 
-.work__empty-heading {
-  margin: 0;
-  font-size: 15px;
-}
-
-.work__empty-message {
-  margin: var(--space-compact) 0 0;
-  color: var(--c-text-muted);
-  font-size: 13px;
-}
-
-/* ── Buckets ──────────────────────────────────────────────────────────────── */
+/* ── Buckets ──────────────────────────────────────────────────────────── */
 
 .bucket {
-  padding-block-start: var(--space-base);
-  border-block-start: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block-start: var(--space-4);
+  border-block-start: 1px solid var(--soft);
 }
 
 .bucket:first-of-type {
-  border-block-start: none;
   padding-block-start: 0;
+  border-block-start: none;
+}
+
+/*
+ * The late bucket: its heading and every row's "Late by N days" say it; the
+ * gold frame repeats it, and the rule at its edge survives a monochrome
+ * printout. Colour is the last of four carriers (DL-102).
+ */
+.bucket.bucket--late {
+  padding: var(--space-4);
+  border: 0;
+  border-inline-start: 4px solid var(--gold-ink);
+  border-radius: var(--r-xl);
+  background: var(--gold-tint);
 }
 
 .bucket__heading {
   display: flex;
   align-items: center;
-  gap: var(--space-snug);
-  margin: 0;
-  font-size: 14px;
-  font-weight: 700;
+  gap: var(--space-2);
 }
 
-/*
- * The late bucket gets a left rule as well as its heading and its per-row
- * "Late by N days" text. Three carriers, only one of which is colour: the
- * heading survives a screen reader, the rule survives a monochrome printout.
- */
-.bucket--late {
-  padding-inline-start: var(--space-base);
-  border-inline-start: 3px solid var(--c-danger, #a4262c);
-}
-
-.bucket__count {
-  padding: 1px 8px;
-  border: 1px solid var(--c-border);
-  border-radius: 999px;
-  color: var(--c-text-muted);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-
-.bucket__hint {
-  margin: var(--space-micro) 0 0;
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-  max-inline-size: 68ch;
-}
-
-/* ── Rows ─────────────────────────────────────────────────────────────────── */
+/* ── Rows ─────────────────────────────────────────────────────────────── */
 
 .work-rows {
-  margin: var(--space-snug) 0 0;
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-1) 0 0;
   padding: 0;
   list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-snug);
 }
 
 .work-rows__item {
-  padding: var(--space-base);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-base);
-  background: var(--c-surface);
-}
-
-.work-rows__head {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-snug);
-  margin: 0;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px var(--space-4);
+  border-radius: var(--r-lg);
+  background: var(--soft2);
 }
 
-.work-rows__source {
-  padding: 1px 8px;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-tight, 4px);
-  color: var(--c-text-muted);
-  font-size: 11.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.bucket--late .work-rows__item {
+  background: var(--card-solid);
 }
 
-.work-rows__timing {
-  margin-inline-start: auto;
-  font-size: 12.5px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.work-rows__timing--waiting {
-  color: var(--c-text-muted);
-  font-weight: 600;
-}
-
-.work-rows__title {
-  margin: var(--space-compact) 0 0;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.work-rows__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-snug);
-  margin: var(--space-micro) 0 0;
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-}
-
-.work-rows__subject {
-  font-weight: 600;
-  color: var(--c-text);
-}
-
+.work-rows__head,
+.work-rows__meta,
 .work-rows__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-snug);
-  margin: var(--space-snug) 0 0;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.work-rows__timing {
+  margin-inline-start: auto;
+  color: var(--ink);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.work-rows__timing--waiting {
+  color: var(--muted);
+  font-weight: var(--fw-semibold);
+}
+
+.work-rows__title {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--fs-section);
+  font-weight: var(--fw-semibold);
+}
+
+.work-rows__meta {
+  gap: var(--space-1) var(--space-3);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.work-rows__subject {
+  color: var(--text);
+  font-weight: var(--fw-semibold);
+}
+
+.work-rows__actions {
+  margin-block-start: var(--space-1);
 }
 
 .work-rows__note {
-  color: var(--c-text-subtle);
-  font-size: 12px;
-  max-inline-size: 52ch;
+  max-inline-size: 60ch;
+  color: var(--muted);
+  font-size: var(--fs-2xs);
 }
 
-/* ── Acting on a task ─────────────────────────────────────────────────────── */
+/* ── Acting on a task ─────────────────────────────────────────────────── */
 
 .task-panel {
-  margin-block-start: var(--space-base);
-  padding-block-start: var(--space-base);
-  border-block-start: 1px solid var(--c-border);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: var(--space-4);
+  margin-block-start: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  background: var(--card-solid);
+}
+
+.task-panel__part {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.task-panel__part > .field,
+.task-panel__fields {
+  align-self: stretch;
+}
+
+.task-panel__fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.task-panel__reason {
+  flex: 1 1 200px;
 }
 
 .task-panel__subheading {
-  margin: var(--space-base) 0 var(--space-compact);
-  font-size: 13px;
-  font-weight: 700;
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
 }
 
-/* ── Alerts ───────────────────────────────────────────────────────────────── */
+/* ── Alerts ───────────────────────────────────────────────────────────── */
 
 .alerts {
-  padding: var(--space-base);
-}
-
-.alerts__heading {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.alerts__hint {
-  margin: var(--space-micro) 0 0;
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-  max-inline-size: 68ch;
-}
-
-.alerts__summary {
-  margin: var(--space-snug) 0 0;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.alerts__list {
-  margin: var(--space-base) 0 0;
-  padding: 0;
-  list-style: none;
   display: flex;
   flex-direction: column;
-  gap: var(--space-base);
+  gap: var(--space-2);
 }
 
-.alerts__item {
-  padding-block-start: var(--space-base);
-  border-block-start: 1px solid var(--c-border);
-}
-
-.alerts__item:first-child {
-  padding-block-start: 0;
-  border-block-start: none;
-}
-
+.alerts__head,
 .alerts__item-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-snug);
+  gap: var(--space-2) var(--space-3);
   margin: 0;
 }
 
+.alerts__summary {
+  color: var(--ink);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+}
+
+.alerts__list {
+  margin-block-start: var(--space-2);
+}
+
 .alerts__summary-text {
-  font-size: 13.5px;
-  font-weight: 600;
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
 }
 
 .alerts__basis {
-  margin: var(--space-compact) 0 0;
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-  max-inline-size: 72ch;
+  max-inline-size: 80ch;
+  color: var(--text2);
+  font-size: var(--fs-xs);
 }
 
 .alerts__basis-label {
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .alerts__link {
-  display: inline-block;
-  margin-block-start: var(--space-compact);
-  font-size: 12.5px;
+  align-self: flex-start;
+  font-size: var(--fs-xs);
 }
