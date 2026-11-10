@@ -14,9 +14,11 @@ import {
   ROLE_DEFINITIONS,
   type StaffAccount,
 } from '@domain/index';
+import { InitialsPipe } from '@shared/pipes/initials.pipe';
 import { debouncedTerm } from '@shared/state/debounced';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { ADMIN_COPY } from './administration.copy';
@@ -36,7 +38,7 @@ import { ADMIN_COPY } from './administration.copy';
 @Component({
   selector: 'app-staff-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, PageHeader, RouterLink],
+  imports: [AsyncContent, DatePipe, Icon, InitialsPipe, PageHeader, RouterLink],
   templateUrl: './staff-page.html',
   styleUrl: './staff-page.scss',
 })
@@ -111,9 +113,7 @@ export class StaffPage {
   protected readonly reason = signal('');
 
   protected toggle(account: StaffAccount): void {
-    this.openAccountId.update((current) =>
-      current === account.staffId ? null : account.staffId,
-    );
+    this.openAccountId.update((current) => (current === account.staffId ? null : account.staffId));
     this.reason.set('');
   }
 
@@ -156,9 +156,7 @@ export class StaffPage {
     this.reason.set((event.target as HTMLInputElement).value);
   }
 
-  protected readonly canSave = computed(
-    () => this.reason().trim().length > 0 && !this.saving(),
-  );
+  protected readonly canSave = computed(() => this.reason().trim().length > 0 && !this.saving());
 
   protected async apply(account: StaffAccount): Promise<void> {
     if (!this.canSave()) {
@@ -167,11 +165,7 @@ export class StaffPage {
     this.saving.set(true);
     try {
       await firstValueFrom(
-        this.repository.setAccountActive(
-          account.staffId,
-          !account.isActive,
-          this.reason().trim(),
-        ),
+        this.repository.setAccountActive(account.staffId, !account.isActive, this.reason().trim()),
       );
       this.notifications.success(this.copy.statusChanged);
       this.openAccountId.set(null);

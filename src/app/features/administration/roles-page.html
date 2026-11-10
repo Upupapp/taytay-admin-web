@@ -3,9 +3,9 @@
 </app-page-header>
 
 <div class="roles">
-  <p class="roles__notice">{{ copy.notice }}</p>
+  <p class="callout roles__notice">{{ copy.notice }}</p>
 
-  <section class="card separation" aria-labelledby="separation-heading">
+  <section class="card card--padded separation" aria-labelledby="separation-heading">
     <h2 class="separation__heading" id="separation-heading">{{ copy.separationHeading }}</h2>
     <p class="separation__body">{{ copy.separationBody }}</p>
     @if (separationBreaches().length > 0) {
@@ -15,10 +15,20 @@
     }
   </section>
 
-  <div class="matrix__scroll">
+  <div class="card card--panel card--padded matrix__scroll">
     <table class="matrix">
       <caption class="matrix__caption">
-        {{ copy.title }}: {{ permissions.length }} permissions across {{ roles.length }} roles
+        {{
+          copy.title
+        }}:
+        {{
+          permissions.length
+        }}
+        permissions across
+        {{
+          roles.length
+        }}
+        roles
       </caption>
       <thead>
         <tr>

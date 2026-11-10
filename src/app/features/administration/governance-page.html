@@ -3,7 +3,7 @@
 </app-page-header>
 
 <div class="governance">
-  <section class="card section" aria-labelledby="classification-heading">
+  <section class="card card--padded section" aria-labelledby="classification-heading">
     <h2 class="section__heading" id="classification-heading">
       {{ copy.classificationHeading }}
     </h2>
@@ -15,9 +15,13 @@
       [skeletonLines]="5"
     >
       <ng-template #classificationContent>
-        <div class="table__scroll">
-          <table class="table">
-            <caption class="table__caption">{{ copy.classificationHeading }}</caption>
+        <div class="table-scroll table__scroll">
+          <table class="simple-table table">
+            <caption class="table__caption">
+              {{
+                copy.classificationHeading
+              }}
+            </caption>
             <thead>
               <tr>
                 <th scope="col">{{ copy.columnRecord }}</th>
@@ -55,21 +59,15 @@
     </app-async-content>
   </section>
 
-  <section class="card section" aria-labelledby="retention-heading">
+  <section class="card card--padded section" aria-labelledby="retention-heading">
     <h2 class="section__heading" id="retention-heading">{{ copy.retentionHeading }}</h2>
     <!-- Empty on purpose. An invented retention period is the one invented
          policy an office cannot undo once it has acted on it. -->
     <p class="section__notice">{{ retentionNotice }}</p>
 
-    <app-async-content
-      [state]="retentionState()"
-      [content]="retentionContent"
-      [skeletonLines]="4"
-    >
+    <app-async-content [state]="retentionState()" [content]="retentionContent" [skeletonLines]="4">
       <ng-template #retentionContent>
-        <p class="section__count">
-          {{ awaitingPolicy() }} {{ copy.retentionAwaiting }}.
-        </p>
+        <p class="section__count">{{ awaitingPolicy() }} {{ copy.retentionAwaiting }}.</p>
         <ul class="retention">
           @for (rule of retention(); track rule.recordTypeKey) {
             <li class="retention__item">
@@ -83,7 +81,7 @@
     </app-async-content>
   </section>
 
-  <section class="card section" aria-labelledby="correction-heading">
+  <section class="card card--padded section" aria-labelledby="correction-heading">
     <h2 class="section__heading" id="correction-heading">{{ copy.correctionHeading }}</h2>
     <p class="section__notice">{{ copy.correctionNotice }}</p>
 
@@ -100,10 +98,7 @@
             @for (request of corrections(); track request.id) {
               <li class="corrections__item">
                 <p class="corrections__head">
-                  <app-status-badge
-                    [catalog]="correctionCatalog"
-                    [status]="request.status"
-                  />
+                  <app-status-badge [catalog]="correctionCatalog" [status]="request.status" />
                   <!--
                     The fields, NAMED and never valued.
                     A birth date, a mobile number and a street address are all correctable, so

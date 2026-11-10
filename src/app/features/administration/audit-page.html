@@ -5,22 +5,25 @@
 <div class="audit">
   <!-- Said at the top, so the absence of values reads as a rule rather than as
        a missing feature. -->
-  <p class="audit__notice">{{ copy.valuesNotice }}</p>
+  <p class="callout callout--warning audit__notice">{{ copy.valuesNotice }}</p>
 
-  <div class="card filters">
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.search }}</span>
-      <input
-        type="search"
-        class="filters__input"
-        [placeholder]="copy.searchPlaceholder"
-        (input)="onSearch($event)"
-      />
+  <div class="card card--panel card--padded filters">
+    <label class="field filters__field">
+      <span class="field__label">{{ copy.search }}</span>
+      <span class="search-field">
+        <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+        <input
+          type="search"
+          class="field__input field__input--pill"
+          [placeholder]="copy.searchPlaceholder"
+          (input)="onSearch($event)"
+        />
+      </span>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.action }}</span>
-      <select class="filters__input" (change)="onAction($event)">
+    <label class="field filters__field">
+      <span class="field__label">{{ copy.action }}</span>
+      <select class="field__input field__input--pill" (change)="onAction($event)">
         <option value="">{{ copy.allActions }}</option>
         @for (value of actions; track value) {
           <option [value]="value">{{ actionLabel(value) }}</option>
@@ -28,7 +31,7 @@
       </select>
     </label>
 
-    <label class="filters__check">
+    <label class="check filters__check">
       <input type="checkbox" [checked]="sensitiveOnly()" (change)="onSensitiveOnly($event)" />
       <span>{{ copy.sensitiveOnly }}</span>
     </label>
@@ -40,26 +43,26 @@
 
   <app-async-content [state]="state()" [content]="auditContent" [skeletonLines]="6">
     <ng-template #auditContent>
-      <p class="audit__summary" role="status">
+      <p class="status-line audit__summary" role="status">
         <span class="audit__coverage">{{ coverage() }}</span>
         {{ summary() }}
       </p>
 
       @if (rows().length === 0) {
-        <div class="card audit__empty">
+        <div class="card card--padded audit__empty">
           <h2 class="audit__empty-heading">{{ copy.emptyHeading }}</h2>
           <p class="audit__empty-message">{{ copy.emptyMessage }}</p>
         </div>
       } @else {
         <ul class="entries">
           @for (row of rows(); track row.id) {
-            <li class="card entry" [class.entry--sensitive]="row.touchesSensitive">
+            <li class="card card--padded entry" [class.entry--sensitive]="row.touchesSensitive">
               <p class="entry__head">
                 <span class="entry__action">{{ actionLabel(row.action) }}</span>
                 <span class="entry__entity">{{ row.entityLabel }}</span>
                 @if (row.touchesSensitive) {
                   <!-- The word, not only the border. -->
-                  <span class="entry__sensitive">{{ copy.sensitiveBadge }}</span>
+                  <span class="chip chip--danger entry__sensitive">{{ copy.sensitiveBadge }}</span>
                 }
                 <time class="entry__time">{{ row.occurredAt | date: 'd MMM y, HH:mm' }}</time>
               </p>

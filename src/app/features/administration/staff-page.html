@@ -6,17 +6,20 @@
 </app-page-header>
 
 <div class="staff">
-  <div class="card filters">
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.search }}</span>
-      <input
-        type="search"
-        class="filters__input"
-        [placeholder]="copy.searchPlaceholder"
-        (input)="onSearch($event)"
-      />
+  <div class="card card--panel card--padded filters">
+    <label class="field filters__field">
+      <span class="field__label">{{ copy.search }}</span>
+      <span class="search-field">
+        <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+        <input
+          type="search"
+          class="field__input field__input--pill"
+          [placeholder]="copy.searchPlaceholder"
+          (input)="onSearch($event)"
+        />
+      </span>
     </label>
-    <label class="filters__check">
+    <label class="check filters__check">
       <input type="checkbox" [checked]="includeInactive()" (change)="onIncludeInactive($event)" />
       <span>{{ copy.includeInactive }}</span>
     </label>
@@ -25,23 +28,24 @@
   <app-async-content [state]="state()" [content]="staffContent" [skeletonLines]="6">
     <ng-template #staffContent>
       @if (!hasAny()) {
-        <div class="card staff__empty">
+        <div class="card card--padded staff__empty">
           <h2 class="staff__empty-heading">{{ copy.emptyHeading }}</h2>
           <p class="staff__empty-message">{{ copy.emptyMessage }}</p>
         </div>
       } @else {
         <ul class="accounts">
           @for (account of accounts(); track account.staffId) {
-            <li class="card account" [class.account--inactive]="!account.isActive">
+            <li class="card card--padded account" [class.account--inactive]="!account.isActive">
               <div class="account__head">
+                <span class="avatar" aria-hidden="true">{{ account.displayName | initials }}</span>
                 <h2 class="account__name">{{ account.displayName }}</h2>
                 <!-- Status said in a word, not by colour alone. -->
-                <span class="account__status">
+                <span class="chip account__status" [class.chip--success]="account.isActive">
                   {{ account.isActive ? copy.active : copy.inactive }}
                 </span>
               </div>
 
-              <dl class="account__facts">
+              <dl class="facts account__facts">
                 <div>
                   <dt>{{ copy.columnRole }}</dt>
                   <dd>{{ account.roleLabel }}</dd>
@@ -129,7 +133,7 @@
 
   <!-- Said plainly rather than implied by a disabled button: an administrator
        who fills in a form reasonably believes it worked. -->
-  <section class="card not-built" aria-labelledby="provisioning-heading">
+  <section class="callout not-built" aria-labelledby="provisioning-heading">
     <h2 class="not-built__heading" id="provisioning-heading">{{ copy.provisioningHeading }}</h2>
     <p class="not-built__body">{{ provisioningNotice }}</p>
 

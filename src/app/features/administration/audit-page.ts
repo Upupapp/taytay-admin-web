@@ -31,6 +31,7 @@ import {
 import { debouncedTerm } from '@shared/state/debounced';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { ADMIN_COPY } from './administration.copy';
@@ -56,7 +57,7 @@ const PAGE_SIZE = 50;
 @Component({
   selector: 'app-audit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, PageHeader, RouterLink],
+  imports: [AsyncContent, DatePipe, Icon, PageHeader, RouterLink],
   templateUrl: './audit-page.html',
   styleUrl: './audit-page.scss',
 })
@@ -82,9 +83,7 @@ export class AuditPage {
   protected readonly action = signal<AuditAction | null>(null);
   protected readonly sensitiveOnly = signal(false);
 
-  protected readonly canOpenValues = computed(() =>
-    this.permissions.has('audit.view-detail'),
-  );
+  protected readonly canOpenValues = computed(() => this.permissions.has('audit.view-detail'));
 
   private readonly filter = computed<AuditFilter>(() => ({
     ...(this.settledSearch() ? { search: this.settledSearch() } : {}),
@@ -204,9 +203,7 @@ export class AuditPage {
       return;
     }
     // Fetched only when asked for. The list response never carries values.
-    const detail = await firstValueFrom(
-      this.repository.auditDetail(asId<AuditEntryId>(row.id)),
-    );
+    const detail = await firstValueFrom(this.repository.auditDetail(asId<AuditEntryId>(row.id)));
     this.openRowId.set(row.id);
     this.detail.set(detail);
   }
