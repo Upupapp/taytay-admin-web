@@ -1,17 +1,21 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
   @if (canCompose()) {
-    <a page-actions class="btn btn--primary" routerLink="/events/new">{{ copy.compose }}</a>
+    <a page-actions class="btn btn--primary" routerLink="/events/new">
+      <app-icon name="plus" class="events__cta-icon" [stroke]="2.2" />
+      {{ copy.compose }}
+    </a>
   }
 </app-page-header>
 
 <div class="events">
   <nav class="views" [attr.aria-label]="copy.title">
-    <ul class="views__list">
+    <ul class="tabs views__list">
       @for (value of views; track value) {
         <li>
           <button
             type="button"
-            class="views__tab"
+            class="tab views__tab"
+            [class.tab--active]="view() === value"
             [class.views__tab--current]="view() === value"
             [attr.aria-current]="view() === value ? 'true' : null"
             (click)="onView(value)"
@@ -23,20 +27,23 @@
     </ul>
   </nav>
 
-  <div class="card filters">
-    <label class="filters__field filters__field--wide">
-      <span class="filters__label">{{ copy.search }}</span>
-      <input
-        type="search"
-        class="filters__input"
-        [placeholder]="copy.searchPlaceholder"
-        (input)="onSearch($event)"
-      />
+  <div class="card card--padded toolbar filters">
+    <label class="field events__search">
+      <span class="field__label">{{ copy.search }}</span>
+      <span class="search-field">
+        <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+        <input
+          type="search"
+          class="field__input field__input--pill"
+          [placeholder]="copy.searchPlaceholder"
+          (input)="onSearch($event)"
+        />
+      </span>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.category }}</span>
-      <select class="filters__input" (change)="onCategory($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.category }}</span>
+      <select class="field__input field__input--pill" (change)="onCategory($event)">
         <option value="">{{ copy.allCategories }}</option>
         @for (value of categories; track value) {
           <option [value]="value">{{ categoryLabel(value) }}</option>
@@ -44,14 +51,24 @@
       </select>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.from }}</span>
-      <input type="date" class="filters__input" [value]="from()" (input)="onFrom($event)" />
+    <label class="field">
+      <span class="field__label">{{ copy.from }}</span>
+      <input
+        type="date"
+        class="field__input field__input--pill"
+        [value]="from()"
+        (input)="onFrom($event)"
+      />
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.to }}</span>
-      <input type="date" class="filters__input" [value]="to()" (input)="onTo($event)" />
+    <label class="field">
+      <span class="field__label">{{ copy.to }}</span>
+      <input
+        type="date"
+        class="field__input field__input--pill"
+        [value]="to()"
+        (input)="onTo($event)"
+      />
     </label>
 
     @if (hasFilters()) {
@@ -64,26 +81,26 @@
   <app-async-content [state]="state()" [content]="rows" [skeletonLines]="6">
     <ng-template #rows>
       @if (events().length === 0) {
-        <div class="card empty">
+        <div class="card card--padded stack empty">
           <!-- An empty filter result is a different fact from an empty feed. -->
-          <h2 class="empty__heading">
+          <h2 class="section-title empty__heading">
             {{ hasFilters() ? copy.noResultsHeading : copy.emptyHeading }}
           </h2>
-          <p class="empty__message">
+          <p class="status-line empty__message">
             {{ hasFilters() ? copy.noResultsMessage : copy.emptyMessage }}
           </p>
         </div>
       } @else {
         <ul class="cards">
           @for (event of events(); track event.id) {
-            <li class="card event">
+            <li class="card card--padded event">
               <div class="event__body">
                 <p class="event__head">
                   <a class="event__title" [routerLink]="['/events', event.id]">{{ event.title }}</a>
                   <app-status-badge [catalog]="statusCatalog" [status]="event.status" />
                 </p>
 
-                <p class="event__summary">{{ event.summary }}</p>
+                <p class="status-line event__summary">{{ event.summary }}</p>
 
                 <dl class="event__facts">
                   <div class="event__fact">
@@ -114,7 +131,12 @@
                 </dl>
               </div>
 
-              <a class="btn event__open" [routerLink]="['/events', event.id]">{{ copy.open }}</a>
+              <a class="btn btn--arrow event__open" [routerLink]="['/events', event.id]">
+                {{ copy.open }}
+                <span class="btn__arrow" aria-hidden="true">
+                  <app-icon name="arrowRight" [size]="14" [stroke]="2.2" />
+                </span>
+              </a>
             </li>
           }
         </ul>

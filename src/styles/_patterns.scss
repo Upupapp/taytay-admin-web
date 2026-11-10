@@ -199,6 +199,12 @@
   text-align: end;
 }
 
+/* The same look for a table whose class a repository check reads by its exact
+   value (the events registrant list): put it in `.table-scroll.table-scroll--simple`. */
+.table-scroll--simple > table {
+  @extend .simple-table;
+}
+
 /* ── Chips ────────────────────────────────────────────────────────────────
    Sectors, categories, flags. A status is never a chip: it is a StatusBadge,
    because its label and tone come from the domain catalog. */

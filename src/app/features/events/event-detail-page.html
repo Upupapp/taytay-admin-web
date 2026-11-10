@@ -2,247 +2,274 @@
   <ng-template #eventContent let-event>
     @if (event === null) {
       <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
-      <p class="event__back"><a class="btn" routerLink="/events">{{ copy.back }}</a></p>
+      <p class="event__back">
+        <a class="btn" routerLink="/events">{{ copy.back }}</a>
+      </p>
     } @else {
       <app-page-header [title]="event.title">
         <a page-actions class="btn" routerLink="/events">{{ copy.back }}</a>
       </app-page-header>
 
       <div class="event">
-        <section class="card event__panel" aria-labelledby="preview-heading">
-          <h2 class="event__heading" id="preview-heading">{{ copy.previewHeading }}</h2>
-          <p class="event__hint">{{ copy.previewNote }}</p>
+        <div class="split event__top">
+          <div class="split__main">
+            <section class="card card--padded stack event__panel" aria-labelledby="preview-heading">
+              <h2 class="section-title event__heading" id="preview-heading">
+                {{ copy.previewHeading }}
+              </h2>
+              <p class="status-line event__hint">{{ copy.previewNote }}</p>
 
-          <p class="event__status">
-            <app-status-badge [catalog]="statusCatalog" [status]="event.status" />
-            <span class="event__category">{{ categoryLabel(event) }}</span>
-          </p>
+              <p class="event__status">
+                <app-status-badge [catalog]="statusCatalog" [status]="event.status" />
+                <span class="chip event__category">{{ categoryLabel(event) }}</span>
+              </p>
 
-          @if (event.image; as cover) {
-            @if (coverUrl(); as url) {
-              <figure class="event__figure">
-                <img class="event__image" [src]="url" [alt]="cover.altText" />
-                <figcaption class="event__caption">{{ cover.altText }}</figcaption>
-              </figure>
-              <button type="button" class="btn" (click)="hideCover()">{{ copy.coverHide }}</button>
-            } @else {
-              @if (coverState() === 'loading') {
-                <p class="event__hint" role="status">{{ copy.coverLoading }}</p>
-              } @else {
-                @if (coverState() === 'failed') {
-                  <p class="event__hint" role="alert">{{ copy.coverFailed }}</p>
+              @if (event.image; as cover) {
+                @if (coverUrl(); as url) {
+                  <figure class="event__figure">
+                    <img class="event__image" [src]="url" [alt]="cover.altText" />
+                    <figcaption class="event__caption">{{ cover.altText }}</figcaption>
+                  </figure>
+                  <button type="button" class="btn" (click)="hideCover()">
+                    {{ copy.coverHide }}
+                  </button>
+                } @else {
+                  @if (coverState() === 'loading') {
+                    <p class="status-line event__hint" role="status">{{ copy.coverLoading }}</p>
+                  } @else {
+                    @if (coverState() === 'failed') {
+                      <p class="status-line event__hint" role="alert">{{ copy.coverFailed }}</p>
+                    }
+                    <button type="button" class="btn" (click)="showCover(event)">
+                      {{ copy.coverShow }}
+                    </button>
+                  }
                 }
-                <button type="button" class="btn" (click)="showCover(event)">
-                  {{ copy.coverShow }}
+                @if (event.status !== 'published' && event.status !== 'completed') {
+                  <p class="status-line event__hint">{{ copy.coverNotShown }}</p>
+                }
+              }
+
+              <p class="event__summary">{{ event.summary }}</p>
+
+              <h3 class="event__subheading">{{ copy.whenHeading }}</h3>
+              <p class="event__line">
+                {{ event.startsAt | date: 'EEEE d MMMM y, HH:mm' }} —
+                {{ event.endsAt | date: 'HH:mm' }}
+              </p>
+
+              <h3 class="event__subheading">{{ copy.whereHeading }}</h3>
+              <p class="event__line">{{ event.venue.name }}</p>
+              <p class="event__line event__line--muted">{{ event.venue.address }}</p>
+              @if (venueBarangay(event); as barangay) {
+                <p class="event__line event__line--muted">{{ barangay }}</p>
+              }
+              @if (event.venue.mapUrl) {
+                <p class="event__line">
+                  <a [href]="event.venue.mapUrl" rel="noopener">{{ copy.mapLink }}</a>
+                </p>
+              }
+
+              <h3 class="event__subheading">{{ copy.contactHeading }}</h3>
+              <p class="event__line">{{ event.contact.name }} — {{ event.contact.office }}</p>
+              @if (event.contact.phone) {
+                <p class="event__line event__line--muted">{{ event.contact.phone }}</p>
+              }
+
+              <h3 class="event__subheading">{{ copy.detailsHeading }}</h3>
+              <p class="event__body">{{ event.details }}</p>
+
+              @if (event.registration.participationNote) {
+                <h3 class="event__subheading">{{ copy.participationHeading }}</h3>
+                <p class="event__line event__line--muted">
+                  {{ event.registration.participationNote }}
+                </p>
+              }
+
+              @if (event.registration.isRequired) {
+                <h3 class="event__subheading">{{ copy.eligibilityHeading }}</h3>
+                <p class="event__line event__line--muted">{{ eligibilityLabel(event) }}</p>
+              }
+              @if (event.registration.givesOutBenefit) {
+                <p class="event__line event__line--muted">{{ copy.givesOutBenefit }}</p>
+              }
+
+              @if (event.reminders) {
+                <h3 class="event__subheading">{{ copy.remindersHeading }}</h3>
+                <p class="event__line event__line--muted">{{ event.reminders }}</p>
+              }
+            </section>
+          </div>
+
+          <div class="split__side">
+            <section class="card card--padded stack event__panel" aria-labelledby="meta-heading">
+              <h2 class="section-title event__heading" id="meta-heading">{{ copy.metaHeading }}</h2>
+              <dl class="facts event__facts">
+                @if (event.publishedAt) {
+                  <div class="facts__item">
+                    <dt>{{ copy.publishedOn }}</dt>
+                    <dd>{{ event.publishedAt | date: 'd MMM y, HH:mm' }}</dd>
+                  </div>
+                }
+                <div class="facts__item">
+                  <dt>{{ copy.lastUpdated }}</dt>
+                  <dd>{{ event.audit.updatedAt | date: 'd MMM y, HH:mm' }}</dd>
+                </div>
+                @if (event.cancelledAt) {
+                  <div class="facts__item">
+                    <dt>{{ copy.cancelledOn }}</dt>
+                    <dd>{{ event.cancelledAt | date: 'd MMM y, HH:mm' }}</dd>
+                  </div>
+                }
+              </dl>
+
+              @if (event.cancellationReason) {
+                <h3 class="event__subheading">{{ copy.cancellationReason }}</h3>
+                <p class="event__line event__line--muted">{{ event.cancellationReason }}</p>
+              }
+              @if (event.replacesEventId) {
+                <p class="event__line">
+                  <a [routerLink]="['/events', event.replacesEventId]">{{ copy.replaces }}</a>
+                </p>
+              }
+            </section>
+
+            <section
+              class="card card--padded stack event__panel"
+              aria-labelledby="capacity-heading"
+            >
+              <h2 class="section-title event__heading" id="capacity-heading">
+                {{ copy.capacityHeading }}
+              </h2>
+
+              <app-async-content
+                [state]="capacityState()"
+                [content]="capacityContent"
+                [skeletonLines]="3"
+              >
+                <ng-template #capacityContent let-summary>
+                  <p class="event__counts">{{ capacityLine() }}</p>
+                  <dl class="facts event__facts">
+                    <div class="facts__item">
+                      <dt>{{ copy.registration }}</dt>
+                      <dd>{{ availabilityLabel(event) }}</dd>
+                    </div>
+                    @if (remaining() !== null) {
+                      <div class="facts__item">
+                        <dt>{{ copy.remaining }}</dt>
+                        <dd>{{ remaining() }}</dd>
+                      </div>
+                    }
+                    @if (event.registration.closesAt) {
+                      <div class="facts__item">
+                        <dt>{{ copy.deadline }}</dt>
+                        <dd>{{ event.registration.closesAt | date: 'd MMM y, HH:mm' }}</dd>
+                      </div>
+                    }
+                    <div class="facts__item">
+                      <dt>{{ copy.asOf }}</dt>
+                      <dd>{{ summary.asOf | date: 'd MMM y, HH:mm:ss' }}</dd>
+                    </div>
+                  </dl>
+                  @if (event.registration.safeLimit !== null) {
+                    <p class="event__line">{{ copy.safeLimit(event.registration.safeLimit) }}</p>
+                  }
+                  <!-- The sentence the whole capacity design exists to make true. -->
+                  <p class="status-line event__hint">{{ copy.snapshotNote }}</p>
+
+                  <h3 class="event__subheading">{{ copy.attendanceHeading }}</h3>
+                  <p class="event__counts">{{ attendanceLine() }}</p>
+                  <p class="status-line event__hint">
+                    {{
+                      event.status === 'completed'
+                        ? copy.attendanceFinalNote
+                        : copy.attendanceOpenNote
+                    }}
+                  </p>
+                </ng-template>
+              </app-async-content>
+            </section>
+
+            <section class="card card--padded stack event__panel" aria-labelledby="actions-heading">
+              <h2 class="section-title event__heading" id="actions-heading">
+                {{ copy.actionsHeading }}
+              </h2>
+
+              <label class="field">
+                <span class="field__label">{{ copy.reason }}</span>
+                <input
+                  type="text"
+                  class="field__input"
+                  aria-describedby="reason-hint"
+                  [value]="reason()"
+                  (input)="onReason($event)"
+                />
+                <span class="field__hint" id="reason-hint">{{ copy.reasonHint }}</span>
+              </label>
+
+              @if (canPublish() && can(event, 'published')) {
+                <p class="callout callout--warning event__warning">{{ copy.publishWarning }}</p>
+                <button
+                  type="button"
+                  class="btn btn--primary"
+                  [disabled]="!canAct()"
+                  (click)="publish(event)"
+                >
+                  {{ copy.publish }}
                 </button>
               }
-            }
-            @if (event.status !== 'published' && event.status !== 'completed') {
-              <p class="event__hint">{{ copy.coverNotShown }}</p>
-            }
-          }
 
-          <p class="event__summary">{{ event.summary }}</p>
-
-          <h3 class="event__subheading">{{ copy.whenHeading }}</h3>
-          <p class="event__line">
-            {{ event.startsAt | date: 'EEEE d MMMM y, HH:mm' }} —
-            {{ event.endsAt | date: 'HH:mm' }}
-          </p>
-
-          <h3 class="event__subheading">{{ copy.whereHeading }}</h3>
-          <p class="event__line">{{ event.venue.name }}</p>
-          <p class="event__line event__line--muted">{{ event.venue.address }}</p>
-          @if (venueBarangay(event); as barangay) {
-            <p class="event__line event__line--muted">{{ barangay }}</p>
-          }
-          @if (event.venue.mapUrl) {
-            <p class="event__line">
-              <a [href]="event.venue.mapUrl" rel="noopener">{{ copy.mapLink }}</a>
-            </p>
-          }
-
-          <h3 class="event__subheading">{{ copy.contactHeading }}</h3>
-          <p class="event__line">{{ event.contact.name }} — {{ event.contact.office }}</p>
-          @if (event.contact.phone) {
-            <p class="event__line event__line--muted">{{ event.contact.phone }}</p>
-          }
-
-          <h3 class="event__subheading">{{ copy.detailsHeading }}</h3>
-          <p class="event__body">{{ event.details }}</p>
-
-          @if (event.registration.participationNote) {
-            <h3 class="event__subheading">{{ copy.participationHeading }}</h3>
-            <p class="event__line event__line--muted">
-              {{ event.registration.participationNote }}
-            </p>
-          }
-
-          @if (event.registration.isRequired) {
-            <h3 class="event__subheading">{{ copy.eligibilityHeading }}</h3>
-            <p class="event__line event__line--muted">{{ eligibilityLabel(event) }}</p>
-          }
-          @if (event.registration.givesOutBenefit) {
-            <p class="event__line event__line--muted">{{ copy.givesOutBenefit }}</p>
-          }
-
-          @if (event.reminders) {
-            <h3 class="event__subheading">{{ copy.remindersHeading }}</h3>
-            <p class="event__line event__line--muted">{{ event.reminders }}</p>
-          }
-        </section>
-
-        <section class="card event__panel" aria-labelledby="meta-heading">
-          <h2 class="event__heading" id="meta-heading">{{ copy.metaHeading }}</h2>
-          <dl class="facts">
-            @if (event.publishedAt) {
-              <div class="facts__item">
-                <dt>{{ copy.publishedOn }}</dt>
-                <dd>{{ event.publishedAt | date: 'd MMM y, HH:mm' }}</dd>
-              </div>
-            }
-            <div class="facts__item">
-              <dt>{{ copy.lastUpdated }}</dt>
-              <dd>{{ event.audit.updatedAt | date: 'd MMM y, HH:mm' }}</dd>
-            </div>
-            @if (event.cancelledAt) {
-              <div class="facts__item">
-                <dt>{{ copy.cancelledOn }}</dt>
-                <dd>{{ event.cancelledAt | date: 'd MMM y, HH:mm' }}</dd>
-              </div>
-            }
-          </dl>
-
-          @if (event.cancellationReason) {
-            <h3 class="event__subheading">{{ copy.cancellationReason }}</h3>
-            <p class="event__line event__line--muted">{{ event.cancellationReason }}</p>
-          }
-          @if (event.replacesEventId) {
-            <p class="event__line">
-              <a [routerLink]="['/events', event.replacesEventId]">{{ copy.replaces }}</a>
-            </p>
-          }
-        </section>
-
-        <section class="card event__panel" aria-labelledby="capacity-heading">
-          <h2 class="event__heading" id="capacity-heading">{{ copy.capacityHeading }}</h2>
-
-          <app-async-content
-            [state]="capacityState()"
-            [content]="capacityContent"
-            [skeletonLines]="3"
-          >
-            <ng-template #capacityContent let-summary>
-              <p class="event__counts">{{ capacityLine() }}</p>
-              <dl class="facts">
-                <div class="facts__item">
-                  <dt>{{ copy.registration }}</dt>
-                  <dd>{{ availabilityLabel(event) }}</dd>
-                </div>
-                @if (remaining() !== null) {
-                  <div class="facts__item">
-                    <dt>{{ copy.remaining }}</dt>
-                    <dd>{{ remaining() }}</dd>
-                  </div>
-                }
-                @if (event.registration.closesAt) {
-                  <div class="facts__item">
-                    <dt>{{ copy.deadline }}</dt>
-                    <dd>{{ event.registration.closesAt | date: 'd MMM y, HH:mm' }}</dd>
-                  </div>
-                }
-                <div class="facts__item">
-                  <dt>{{ copy.asOf }}</dt>
-                  <dd>{{ summary.asOf | date: 'd MMM y, HH:mm:ss' }}</dd>
-                </div>
-              </dl>
-              @if (event.registration.safeLimit !== null) {
-                <p class="event__line">{{ copy.safeLimit(event.registration.safeLimit) }}</p>
+              @if (isHeldNotCompleted(event) && canEdit() && can(event, 'completed')) {
+                <!-- Read before the button: this sweeps nothing (`DL-131`). -->
+                <p class="callout callout--warning event__warning">{{ copy.completeWarning }}</p>
+                <button type="button" class="btn" [disabled]="!canAct()" (click)="complete(event)">
+                  {{ copy.complete }}
+                </button>
               }
-              <!-- The sentence the whole capacity design exists to make true. -->
-              <p class="event__hint">{{ copy.snapshotNote }}</p>
 
-              <h3 class="event__subheading">{{ copy.attendanceHeading }}</h3>
-              <p class="event__counts">{{ attendanceLine() }}</p>
-              <p class="event__hint">
-                {{ event.status === 'completed' ? copy.attendanceFinalNote : copy.attendanceOpenNote }}
+              @if (canCancel() && can(event, 'cancelled')) {
+                <p class="callout callout--warning event__warning">{{ copy.cancelWarning }}</p>
+                <button
+                  type="button"
+                  class="btn btn--danger"
+                  [disabled]="!canAct()"
+                  (click)="askToCancel(event)"
+                >
+                  {{ copy.cancelEvent }}
+                </button>
+              }
+
+              @if (canCorrectEvent(event)) {
+                <!-- A correction is kept and residents are told; the form says how before its button. -->
+                <p class="status-line event__hint">{{ copy.correctNote }}</p>
+                <p class="event__actions">
+                  <a class="btn" [routerLink]="['/events', event.id, 'correct']">{{
+                    copy.correct
+                  }}</a>
+                </p>
+              }
+
+              <p class="event__actions">
+                @if (canArchive() && can(event, 'archived')) {
+                  <button type="button" class="btn" [disabled]="!canAct()" (click)="archive(event)">
+                    {{ copy.archive }}
+                  </button>
+                }
               </p>
-            </ng-template>
-          </app-async-content>
-        </section>
-
-        <section class="card event__panel" aria-labelledby="actions-heading">
-          <h2 class="event__heading" id="actions-heading">{{ copy.actionsHeading }}</h2>
-
-          <label class="field">
-            <span class="field__label">{{ copy.reason }}</span>
-            <input
-              type="text"
-              class="field__input"
-              aria-describedby="reason-hint"
-              [value]="reason()"
-              (input)="onReason($event)"
-            />
-            <span class="field__hint" id="reason-hint">{{ copy.reasonHint }}</span>
-          </label>
-
-          @if (canPublish() && can(event, 'published')) {
-            <p class="event__warning">{{ copy.publishWarning }}</p>
-            <button
-              type="button"
-              class="btn btn--primary"
-              [disabled]="!canAct()"
-              (click)="publish(event)"
-            >
-              {{ copy.publish }}
-            </button>
-          }
-
-          @if (isHeldNotCompleted(event) && canEdit() && can(event, 'completed')) {
-            <!-- Read before the button: this sweeps nothing (`DL-131`). -->
-            <p class="event__warning">{{ copy.completeWarning }}</p>
-            <button type="button" class="btn" [disabled]="!canAct()" (click)="complete(event)">
-              {{ copy.complete }}
-            </button>
-          }
-
-          @if (canCancel() && can(event, 'cancelled')) {
-            <p class="event__warning">{{ copy.cancelWarning }}</p>
-            <button
-              type="button"
-              class="btn btn--danger"
-              [disabled]="!canAct()"
-              (click)="askToCancel(event)"
-            >
-              {{ copy.cancelEvent }}
-            </button>
-          }
-
-          @if (canCorrectEvent(event)) {
-            <!-- A correction is kept and residents are told; the form says how before its button. -->
-            <p class="event__hint">{{ copy.correctNote }}</p>
-            <p class="event__actions">
-              <a class="btn" [routerLink]="['/events', event.id, 'correct']">{{ copy.correct }}</a>
-            </p>
-          }
-
-          <p class="event__actions">
-            @if (canArchive() && can(event, 'archived')) {
-              <button type="button" class="btn" [disabled]="!canAct()" (click)="archive(event)">
-                {{ copy.archive }}
-              </button>
-            }
-          </p>
-        </section>
+            </section>
+          </div>
+        </div>
 
         <section
-          class="card event__panel event__panel--registrants"
+          class="card card--padded stack event__panel event__panel--registrants"
           aria-labelledby="registrants-heading"
         >
-          <h2 class="event__heading" id="registrants-heading">{{ copy.registrantsHeading }}</h2>
+          <h2 class="section-title event__heading" id="registrants-heading">
+            {{ copy.registrantsHeading }}
+          </h2>
           <!-- Nobody is registered from this console (`DL-123`). -->
-          <p class="event__hint">{{ copy.registrantsNote }}</p>
-          <p class="event__hint">{{ copy.namesNote }}</p>
+          <p class="status-line event__hint">{{ copy.registrantsNote }}</p>
+          <p class="status-line event__hint">{{ copy.namesNote }}</p>
 
           @if (canMarkAttendance() && event.status === 'published') {
             <p class="event__actions">
@@ -261,196 +288,215 @@
           @if (checkInMode()) {
             <app-event-check-in [eventId]="event.id" (marked)="onCheckedIn()" />
           } @else {
-          <div class="registrant-filters">
-            <label class="field">
-              <span class="field__label">{{ copy.registrantSearch }}</span>
-              <input
-                type="search"
-                class="field__input"
-                [value]="registrantSearch()"
-                (input)="onRegistrantSearch($event)"
-              />
-            </label>
-            <label class="field">
-              <span class="field__label">{{ copy.status }}</span>
-              <select class="field__input" (change)="onStatusFilter($event)">
-                <option value="">{{ copy.anyStatus }}</option>
-                @for (value of statuses; track value) {
-                  <option [value]="value">{{ registrationCatalog[value].label }}</option>
-                }
-              </select>
-            </label>
-            <label class="field">
-              <span class="field__label">{{ copy.attendance }}</span>
-              <select class="field__input" (change)="onAttendanceFilter($event)">
-                <option value="">{{ copy.anyAttendance }}</option>
-                @for (value of attendances; track value) {
-                  <option [value]="value">{{ attendanceCatalog[value].label }}</option>
-                }
-              </select>
-            </label>
+            <div class="toolbar registrant-filters">
+              <label class="field">
+                <span class="field__label">{{ copy.registrantSearch }}</span>
+                <input
+                  type="search"
+                  class="field__input field__input--pill"
+                  [value]="registrantSearch()"
+                  (input)="onRegistrantSearch($event)"
+                />
+              </label>
+              <label class="field">
+                <span class="field__label">{{ copy.status }}</span>
+                <select class="field__input field__input--pill" (change)="onStatusFilter($event)">
+                  <option value="">{{ copy.anyStatus }}</option>
+                  @for (value of statuses; track value) {
+                    <option [value]="value">{{ registrationCatalog[value].label }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field">
+                <span class="field__label">{{ copy.attendance }}</span>
+                <select
+                  class="field__input field__input--pill"
+                  (change)="onAttendanceFilter($event)"
+                >
+                  <option value="">{{ copy.anyAttendance }}</option>
+                  @for (value of attendances; track value) {
+                    <option [value]="value">{{ attendanceCatalog[value].label }}</option>
+                  }
+                </select>
+              </label>
+              @if (canExport()) {
+                <button
+                  type="button"
+                  class="btn registrant-filters__export"
+                  [disabled]="saving()"
+                  (click)="exportList(event)"
+                >
+                  {{ copy.export }}
+                </button>
+              }
+            </div>
+
             @if (canExport()) {
-              <button
-                type="button"
-                class="btn registrant-filters__export"
-                [disabled]="saving()"
-                (click)="exportList(event)"
-              >
-                {{ copy.export }}
-              </button>
-            }
-          </div>
-
-          @if (canExport()) {
-            <p class="event__hint">{{ copy.exportWarning }}</p>
-            @if (fileReady(); as file) {
-              <p class="event__hint" role="status">
-                {{ copy.fileReady }}
-                <a [href]="file.url" [attr.download]="file.filename">{{ copy.saveFile(file.filename) }}</a>
-              </p>
-            }
-          }
-
-          <app-async-content
-            [state]="registrantState()"
-            [content]="registrantContent"
-            [skeletonLines]="4"
-          >
-            <ng-template #registrantContent>
-              @if (registrants().length === 0) {
-                <p class="event__hint">
-                  {{ hasRegistrantFilters() ? copy.noMatchingRegistrants : copy.noRegistrants }}
+              <p class="status-line event__hint">{{ copy.exportWarning }}</p>
+              @if (fileReady(); as file) {
+                <p class="status-line event__hint" role="status">
+                  {{ copy.fileReady }}
+                  <a [href]="file.url" [attr.download]="file.filename">{{
+                    copy.saveFile(file.filename)
+                  }}</a>
                 </p>
-              } @else {
-                <div class="registrants__scroll">
-                  <table class="registrants">
-                    <caption class="visually-hidden">{{ copy.registrantsHeading }}</caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">{{ copy.reference }}</th>
-                        <th scope="col">{{ copy.name }}</th>
-                        <th scope="col">{{ copy.barangay }}</th>
-                        <th scope="col">{{ copy.registeredOn }}</th>
-                        <th scope="col">{{ copy.status }}</th>
-                        <th scope="col">{{ copy.attendance }}</th>
-                        @if (canManage() || canMarkAttendance()) {
-                          <th scope="col">{{ copy.actionsHeading }}</th>
-                        }
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (row of registrants(); track row.id) {
+              }
+            }
+
+            <app-async-content
+              [state]="registrantState()"
+              [content]="registrantContent"
+              [skeletonLines]="4"
+            >
+              <ng-template #registrantContent>
+                @if (registrants().length === 0) {
+                  <p class="status-line event__hint">
+                    {{ hasRegistrantFilters() ? copy.noMatchingRegistrants : copy.noRegistrants }}
+                  </p>
+                } @else {
+                  <div class="table-scroll table-scroll--simple registrants__scroll">
+                    <table class="registrants">
+                      <caption class="visually-hidden">
+                        {{
+                          copy.registrantsHeading
+                        }}
+                      </caption>
+                      <thead>
                         <tr>
-                          <td class="registrants__reference">{{ row.reference }}</td>
-                          <td>
-                            {{ row.displayName }}
-                            @if (!row.identityVerified) {
-                              <span class="registrants__unverified">{{ copy.notVerified }}</span>
-                            } @else if (row.nameSource === 'account') {
-                              <span class="registrants__note">{{ copy.nameSources.account }}</span>
-                            }
-                            @if (row.notes) {
-                              <span class="registrants__note">{{ row.notes }}</span>
-                            }
-                          </td>
-                          <td>{{ registrantBarangay(row) }}</td>
-                          <td>{{ row.registeredAt | date: 'd MMM y' }}</td>
-                          <td>
-                            <app-status-badge
-                              [catalog]="registrationCatalog"
-                              [status]="row.status"
-                            />
-                          </td>
-                          <td>
-                            <app-status-badge
-                              [catalog]="attendanceCatalog"
-                              [status]="row.attendance"
-                            />
-                          </td>
+                          <th scope="col">{{ copy.reference }}</th>
+                          <th scope="col">{{ copy.name }}</th>
+                          <th scope="col">{{ copy.barangay }}</th>
+                          <th scope="col">{{ copy.registeredOn }}</th>
+                          <th scope="col">{{ copy.status }}</th>
+                          <th scope="col">{{ copy.attendance }}</th>
                           @if (canManage() || canMarkAttendance()) {
-                            <td>
-                              <div class="registrants__actions">
-                                @if (canMarkAttendance() && row.status !== 'cancelled') {
-                                  <button
-                                    type="button"
-                                    class="btn btn--small"
-                                    [disabled]="saving()"
-                                    (click)="mark(event, row, 'attended')"
-                                  >
-                                    {{ copy.markAttended }}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    class="btn btn--small"
-                                    [disabled]="saving()"
-                                    (click)="mark(event, row, 'no-show')"
-                                  >
-                                    {{ copy.markNoShow }}
-                                  </button>
-                                }
-                                @if (canPromote(row)) {
-                                  <button
-                                    type="button"
-                                    class="btn btn--small"
-                                    [disabled]="!canAct()"
-                                    (click)="moveRegistration(event, row, 'promote')"
-                                  >
-                                    {{ copy.promote }}
-                                  </button>
-                                }
-                                @if (canManage() && row.status !== 'cancelled') {
-                                  <button
-                                    type="button"
-                                    class="btn btn--small"
-                                    [disabled]="!canAct()"
-                                    (click)="moveRegistration(event, row, 'cancel')"
-                                  >
-                                    {{ copy.cancelRegistration }}
-                                  </button>
-                                }
-                                @if (canManage() && row.status === 'cancelled') {
-                                  <button
-                                    type="button"
-                                    class="btn btn--small"
-                                    [disabled]="!canAct()"
-                                    (click)="moveRegistration(event, row, 'restore')"
-                                  >
-                                    {{ copy.restoreRegistration }}
-                                  </button>
-                                }
-                              </div>
-                            </td>
+                            <th scope="col">{{ copy.actionsHeading }}</th>
                           }
                         </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        @for (row of registrants(); track row.id) {
+                          <tr>
+                            <td class="registrants__reference">{{ row.reference }}</td>
+                            <td>
+                              {{ row.displayName }}
+                              @if (!row.identityVerified) {
+                                <span class="chip chip--warning registrants__unverified">{{
+                                  copy.notVerified
+                                }}</span>
+                              } @else if (row.nameSource === 'account') {
+                                <span class="registrants__note">{{
+                                  copy.nameSources.account
+                                }}</span>
+                              }
+                              @if (row.notes) {
+                                <span class="registrants__note">{{ row.notes }}</span>
+                              }
+                            </td>
+                            <td>{{ registrantBarangay(row) }}</td>
+                            <td>{{ row.registeredAt | date: 'd MMM y' }}</td>
+                            <td>
+                              <app-status-badge
+                                [catalog]="registrationCatalog"
+                                [status]="row.status"
+                              />
+                            </td>
+                            <td>
+                              <app-status-badge
+                                [catalog]="attendanceCatalog"
+                                [status]="row.attendance"
+                              />
+                            </td>
+                            @if (canManage() || canMarkAttendance()) {
+                              <td>
+                                <div class="registrants__actions">
+                                  @if (canMarkAttendance() && row.status !== 'cancelled') {
+                                    <button
+                                      type="button"
+                                      class="btn btn--small"
+                                      [disabled]="saving()"
+                                      (click)="mark(event, row, 'attended')"
+                                    >
+                                      {{ copy.markAttended }}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      class="btn btn--small"
+                                      [disabled]="saving()"
+                                      (click)="mark(event, row, 'no-show')"
+                                    >
+                                      {{ copy.markNoShow }}
+                                    </button>
+                                  }
+                                  @if (canPromote(row)) {
+                                    <button
+                                      type="button"
+                                      class="btn btn--small"
+                                      [disabled]="!canAct()"
+                                      (click)="moveRegistration(event, row, 'promote')"
+                                    >
+                                      {{ copy.promote }}
+                                    </button>
+                                  }
+                                  @if (canManage() && row.status !== 'cancelled') {
+                                    <button
+                                      type="button"
+                                      class="btn btn--small"
+                                      [disabled]="!canAct()"
+                                      (click)="moveRegistration(event, row, 'cancel')"
+                                    >
+                                      {{ copy.cancelRegistration }}
+                                    </button>
+                                  }
+                                  @if (canManage() && row.status === 'cancelled') {
+                                    <button
+                                      type="button"
+                                      class="btn btn--small"
+                                      [disabled]="!canAct()"
+                                      (click)="moveRegistration(event, row, 'restore')"
+                                    >
+                                      {{ copy.restoreRegistration }}
+                                    </button>
+                                  }
+                                </div>
+                              </td>
+                            }
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
 
-                @if (overCapacity() && canManage()) {
-                  <!-- Warned, never blocked: the backend decides (`DL-129`). -->
-                  <p class="event__warning">{{ copy.promoteOverCapacity }}</p>
+                  @if (overCapacity() && canManage()) {
+                    <!-- Warned, never blocked: the backend decides (`DL-129`). -->
+                    <p class="callout callout--warning event__warning">
+                      {{ copy.promoteOverCapacity }}
+                    </p>
+                  }
+                  @if (atSafeLimit(event) && canManage()) {
+                    <!-- The backend refuses past the safe limit; said before the button (`DL-195`). -->
+                    <p class="callout callout--warning event__warning">
+                      {{ copy.promoteAtSafeLimit }}
+                    </p>
+                  }
                 }
-                @if (atSafeLimit(event) && canManage()) {
-                  <!-- The backend refuses past the safe limit; said before the button (`DL-195`). -->
-                  <p class="event__warning">{{ copy.promoteAtSafeLimit }}</p>
-                }
-              }
-            </ng-template>
-          </app-async-content>
+              </ng-template>
+            </app-async-content>
           }
         </section>
 
-        <section class="card event__panel" aria-labelledby="history-heading">
-          <h2 class="event__heading" id="history-heading">{{ copy.historyHeading }}</h2>
+        <section class="card card--padded stack event__panel" aria-labelledby="history-heading">
+          <h2 class="section-title event__heading" id="history-heading">
+            {{ copy.historyHeading }}
+          </h2>
           @if (history().length === 0) {
-            <p class="event__hint">{{ copy.noHistory }}</p>
+            <p class="status-line event__hint">{{ copy.noHistory }}</p>
           } @else {
-            <ul class="history">
+            <ul class="soft-list history">
               @for (row of history(); track row.id) {
-                <li class="history__item">
+                <li class="soft-row soft-row--stacked history__item">
                   <p class="history__head">
-                    <span class="history__action">{{ actionLabel(row) }}</span>
+                    <span class="chip chip--info history__action">{{ actionLabel(row) }}</span>
                     <time class="history__time">
                       {{ row.occurredAt | date: 'd MMM y, HH:mm' }}
                     </time>

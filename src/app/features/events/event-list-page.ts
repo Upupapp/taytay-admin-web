@@ -24,6 +24,7 @@ import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/vie
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { EVENTS_COPY } from './events.copy';
 
@@ -42,7 +43,7 @@ import { EVENTS_COPY } from './events.copy';
 @Component({
   selector: 'app-event-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, PageHeader, RouterLink, StatusBadge],
+  imports: [AsyncContent, DatePipe, Icon, PageHeader, RouterLink, StatusBadge],
   templateUrl: './event-list-page.html',
   styleUrl: './event-list-page.scss',
 })

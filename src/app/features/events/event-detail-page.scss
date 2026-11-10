@@ -1,190 +1,98 @@
+/* ResidentRecord as an event: what residents see in the wide column, the
+   record, the office's count (with its `asOf`, DL-129) and the acts beside it;
+   the composed registrant list (DL-130) and the history full width below. */
+
 .event {
   display: flex;
   flex-direction: column;
-  gap: var(--space-base);
+  gap: var(--space-4);
 }
 
 .event__back {
-  margin: var(--space-base) 0 0;
-}
-
-// The reading measure belongs to the cards that hold prose, not to the column: held to 92ch, the
-// registrant table's seven columns need ~760px where its card had 710, and the Actions column — the
-// attendance buttons used at the venue — sat behind the scroll box's edge at every desktop width.
-.event__panel {
-  max-inline-size: 92ch;
-  padding: var(--space-base);
-}
-
-// A table is data and takes the width the page has; it still scrolls inside its own box on a phone.
-.event__panel--registrants {
-  max-inline-size: none;
-}
-
-// Check-in mode is one search and one person, not a table: it keeps the measure of the hints above
-// it, so the Attended button stays beside the name rather than across a wide screen.
-.event__panel--registrants app-event-check-in {
-  display: block;
-  max-inline-size: 78ch;
-}
-
-.event__heading {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
+  margin-block-start: var(--space-4);
 }
 
 .event__subheading {
-  margin: var(--space-loose) 0 var(--space-compact);
-  font-size: 13px;
-  font-weight: 700;
+  margin-block-start: var(--space-2);
+  color: var(--ink);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
 }
 
-.event__status {
+.event__status,
+.event__actions,
+.registrants__actions,
+.history__head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-snug);
-  margin: var(--space-snug) 0 0;
-}
-
-.event__category {
-  padding: 1px 8px;
-  border: 1px solid var(--c-border);
-  border-radius: 999px;
-  color: var(--c-text-muted);
-  font-size: 11.5px;
-  font-weight: 600;
+  gap: var(--space-2);
 }
 
 .event__figure {
-  margin: var(--space-base) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
 }
 
 .event__image {
   display: block;
   inline-size: 100%;
-  max-inline-size: 100%;
   block-size: auto;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-base);
+  border-radius: var(--r-xl);
 }
 
-.event__caption {
-  margin-block-start: var(--space-compact);
-  color: var(--c-text-muted);
-  font-size: 12px;
+.event__caption,
+.registrants__note,
+.history__time {
+  color: var(--muted);
+  font-size: var(--fs-xs);
 }
 
 .event__summary {
-  margin: var(--space-base) 0 0;
-  font-size: 14px;
-  font-weight: 600;
+  color: var(--ink);
+  font-size: var(--fs-section);
+  font-weight: var(--fw-semibold);
+}
+
+.event__body,
+.event__line {
+  color: var(--text);
+  font-size: var(--fs-label);
 }
 
 .event__body {
-  margin: 0;
-  font-size: 13.5px;
+  max-inline-size: 78ch;
   white-space: pre-line;
-  max-inline-size: 78ch;
 }
 
-.event__line {
-  margin: 0 0 var(--space-micro);
-  font-size: 13px;
+.event__line--muted,
+.history__reason,
+.history__actor {
+  color: var(--muted);
+  font-size: var(--fs-xs);
 }
 
-.event__line--muted {
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-}
-
-.event__hint {
-  margin: var(--space-snug) 0 0;
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-  max-inline-size: 78ch;
-}
-
+/* "How many registered" as a figure; the sentence beside it says who decides. */
 .event__counts {
-  margin: var(--space-snug) 0 0;
-  font-size: 14px;
-  font-weight: 700;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-title-sm);
+  font-weight: var(--fw-medium);
   font-variant-numeric: tabular-nums;
 }
 
-.event__warning {
-  margin: var(--space-snug) 0;
-  padding: var(--space-snug) var(--space-base);
-  border-inline-start: 3px solid var(--c-warning, #b26b00);
-  font-size: 12.5px;
-  max-inline-size: 78ch;
+.event__facts {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
-.event__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-snug);
-  margin: var(--space-base) 0 0;
-}
-
-.facts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: var(--space-compact) var(--space-base);
-  margin: var(--space-snug) 0 0;
-}
-
-.facts__item dt {
-  color: var(--c-text-muted);
-  font-size: 11.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.facts__item dd {
-  margin: 0;
-  font-size: 13px;
+.event__facts dd {
   font-variant-numeric: tabular-nums;
-}
-
-.registrant-filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-base);
-  margin-block-start: var(--space-snug);
 }
 
 .registrant-filters__export {
   margin-inline-start: auto;
-}
-
-/* Wide content scrolls inside its own box; the page never scrolls sideways. */
-.registrants__scroll {
-  overflow-x: auto;
-  margin-block-start: var(--space-base);
-}
-
-.registrants {
-  inline-size: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.registrants th,
-.registrants td {
-  padding: var(--space-compact) var(--space-snug);
-  border-block-end: 1px solid var(--c-border);
-  text-align: start;
-  vertical-align: top;
-}
-
-.registrants th {
-  color: var(--c-text-muted);
-  font-size: 11.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .registrants__reference {
@@ -194,73 +102,17 @@
 
 .registrants__note {
   display: block;
-  margin-block-start: var(--space-micro);
-  color: var(--c-text-muted);
-  font-size: 12px;
 }
 
-.registrants__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-compact);
-}
-
-.history {
-  margin: var(--space-snug) 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.history__item {
-  padding-block: var(--space-snug);
-  border-block-start: 1px solid var(--c-border);
-}
-
-.history__item:first-child {
-  border-block-start: none;
-}
-
-.history__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-snug);
-  margin: 0;
-}
-
-.history__action {
-  padding: 1px 8px;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-tight, 4px);
-  font-size: 11.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.registrants__unverified {
+  margin-inline-start: var(--space-1);
 }
 
 .history__time {
   margin-inline-start: auto;
-  color: var(--c-text-subtle);
-  font-size: 12px;
 }
 
-.history__summary {
-  margin: var(--space-compact) 0 0;
-  font-size: 13px;
-}
-
-.history__reason,
-.history__actor {
-  margin: var(--space-micro) 0 0;
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-}
-
-// A registrant nobody has ID-checked, said in words beside the name (`DL-195`).
-.registrants__unverified {
-  display: inline-block;
-  margin-inline-start: var(--space-micro);
-  padding: 0 var(--space-micro);
-  border: 1px solid var(--c-warning);
-  border-radius: var(--radius-tight);
+.event__panel--registrants app-event-check-in {
+  display: block;
+  max-inline-size: 78ch;
 }

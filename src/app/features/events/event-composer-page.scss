@@ -1,89 +1,35 @@
+/* ResidentRegister as the event composer: one panel of hairline sections, the
+   problems and what saving does before the one submit (DL-124, DL-195). */
+
 .composer {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-base);
-  max-inline-size: 78ch;
+  max-inline-size: 880px;
 }
 
-.composer__panel {
-  padding: var(--space-base);
+.composer .field + .field {
+  margin-block-start: 0;
 }
 
-.composer__heading {
-  margin: 0 0 var(--space-snug);
-  font-size: 15px;
-  font-weight: 700;
+.composer__toggle.check {
+  align-self: flex-start;
+  font-size: var(--fs-sm);
 }
 
-.composer__hint {
-  margin: 0 0 var(--space-snug);
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-  max-inline-size: 72ch;
-}
-
-.composer__toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-compact);
-  min-block-size: var(--target-min);
-  font-size: 13px;
-}
-
-.problems {
-  padding: var(--space-base);
-  border-inline-start: 3px solid var(--c-border);
+.composer__unavailable {
+  max-inline-size: 880px;
 }
 
 /* Something that cannot be saved at all reads differently from something that
-   is merely not ready to publish. */
-.problems--blocking {
-  border-inline-start-color: var(--c-danger, #a4262c);
-}
-
-.problems__heading {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+   is merely not ready to publish: the heading says which, the tint agrees. */
+.problems {
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .problems__list {
-  margin: var(--space-snug) 0 0;
-  padding-inline-start: var(--space-base);
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-}
-
-.problems__list li + li {
-  margin-block-start: var(--space-compact);
-}
-
-.composer__effects {
-  padding: var(--space-base);
-  border-inline-start: 3px solid var(--c-border);
-  font-size: 13px;
-}
-
-.composer__effects p {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
   margin: 0;
-}
-
-.composer__effects ul {
-  margin: var(--space-snug) 0 0;
-  padding-inline-start: var(--space-base);
-}
-
-.composer__actions {
-  margin: 0;
-}
-
-// The choice of who may register, laid out as the other toggles are (`DL-195`).
-.composer__choices {
-  display: grid;
-  gap: var(--space-compact);
-  margin: 0;
-  padding: 0;
-  border: 0;
+  padding-inline-start: 18px;
+  font-size: var(--fs-label);
 }

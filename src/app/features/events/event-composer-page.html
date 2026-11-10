@@ -9,15 +9,20 @@
 }
 
 @if (correcting() && original() === undefined) {
-  <p class="composer__hint" role="status">{{ copy.correctLoading }}</p>
+  <p class="status-line composer__hint" role="status">{{ copy.correctLoading }}</p>
 } @else if (correcting() && !correctable()) {
-  <p class="card composer__panel" role="status">{{ copy.correctUnavailable }}</p>
+  <p class="callout composer__unavailable" role="status">{{ copy.correctUnavailable }}</p>
 } @else {
-  <form class="composer" (submit)="$event.preventDefault(); submit()">
+  <form
+    class="card card--panel card--padded form-panel composer"
+    (submit)="$event.preventDefault(); submit()"
+  >
     @if (correcting()) {
-      <section class="card composer__panel" aria-labelledby="correction-heading">
-        <h2 class="composer__heading" id="correction-heading">{{ copy.correctionHeading }}</h2>
-        <p class="composer__hint">{{ copy.correctionNote }}</p>
+      <section class="form-section composer__panel" aria-labelledby="correction-heading">
+        <h2 class="section-title composer__heading" id="correction-heading">
+          {{ copy.correctionHeading }}
+        </h2>
+        <p class="form-section__note composer__hint">{{ copy.correctionNote }}</p>
         <label class="field">
           <span class="field__label">{{ copy.correctionReason }}</span>
           <input
@@ -34,8 +39,8 @@
       </section>
     }
 
-    <section class="card composer__panel" aria-labelledby="about-heading">
-      <h2 class="composer__heading" id="about-heading">{{ copy.aboutHeading }}</h2>
+    <section class="form-section composer__panel" aria-labelledby="about-heading">
+      <h2 class="section-title composer__heading" id="about-heading">{{ copy.aboutHeading }}</h2>
 
       <label class="field">
         <span class="field__label">{{ copy.eventTitle }}</span>
@@ -78,9 +83,9 @@
       </label>
     </section>
 
-    <section class="card composer__panel" aria-labelledby="image-heading">
-      <h2 class="composer__heading" id="image-heading">{{ copy.imageHeading }}</h2>
-      <p class="composer__hint">{{ copy.imageNote }}</p>
+    <section class="form-section composer__panel" aria-labelledby="image-heading">
+      <h2 class="section-title composer__heading" id="image-heading">{{ copy.imageHeading }}</h2>
+      <p class="form-section__note composer__hint">{{ copy.imageNote }}</p>
 
       <!-- Refuses a file the API would refuse before anything is sent (`DL-193`). -->
       <app-image-file-field
@@ -105,9 +110,9 @@
       </label>
     </section>
 
-    <section class="card composer__panel" aria-labelledby="when-heading">
-      <h2 class="composer__heading" id="when-heading">{{ copy.whenHeading }}</h2>
-      <p class="composer__hint">{{ timezone }}</p>
+    <section class="form-section composer__panel" aria-labelledby="when-heading">
+      <h2 class="section-title composer__heading" id="when-heading">{{ copy.whenHeading }}</h2>
+      <p class="form-section__note composer__hint">{{ timezone }}</p>
 
       <label class="field">
         <span class="field__label">{{ copy.startsAt }}</span>
@@ -130,8 +135,8 @@
       </label>
     </section>
 
-    <section class="card composer__panel" aria-labelledby="where-heading">
-      <h2 class="composer__heading" id="where-heading">{{ copy.whereHeading }}</h2>
+    <section class="form-section composer__panel" aria-labelledby="where-heading">
+      <h2 class="section-title composer__heading" id="where-heading">{{ copy.whereHeading }}</h2>
 
       <label class="field">
         <span class="field__label">{{ copy.venueName }}</span>
@@ -180,8 +185,10 @@
       </label>
     </section>
 
-    <section class="card composer__panel" aria-labelledby="contact-heading">
-      <h2 class="composer__heading" id="contact-heading">{{ copy.contactHeading }}</h2>
+    <section class="form-section composer__panel" aria-labelledby="contact-heading">
+      <h2 class="section-title composer__heading" id="contact-heading">
+        {{ copy.contactHeading }}
+      </h2>
 
       <label class="field">
         <span class="field__label">{{ copy.contactName }}</span>
@@ -214,13 +221,15 @@
       </label>
     </section>
 
-    <section class="card composer__panel" aria-labelledby="registration-heading">
-      <h2 class="composer__heading" id="registration-heading">{{ copy.registrationHeading }}</h2>
+    <section class="form-section composer__panel" aria-labelledby="registration-heading">
+      <h2 class="section-title composer__heading" id="registration-heading">
+        {{ copy.registrationHeading }}
+      </h2>
       <!-- Said on the form, because it is the thing an admin most reasonably
          assumes otherwise. -->
-      <p class="composer__hint">{{ copy.registrationHint }}</p>
+      <p class="form-section__note composer__hint">{{ copy.registrationHint }}</p>
 
-      <label class="composer__toggle">
+      <label class="check composer__toggle">
         <input
           type="checkbox"
           [checked]="registrationRequired()"
@@ -279,15 +288,15 @@
           <span class="field__hint" id="safe-limit-hint">{{ copy.safeLimitHint }}</span>
         </label>
 
-        <label class="composer__toggle">
+        <label class="check composer__toggle">
           <input type="checkbox" [checked]="waitlist()" (change)="onWaitlist($event)" />
           <span>{{ copy.waitlist }}</span>
         </label>
 
-        <fieldset class="composer__choices" aria-describedby="eligibility-hint">
+        <fieldset class="choice-list composer__choices" aria-describedby="eligibility-hint">
           <legend class="field__label">{{ copy.eligibilityLegend }}</legend>
           @for (value of eligibilities; track value) {
-            <label class="composer__toggle">
+            <label class="choice composer__toggle">
               <input
                 type="radio"
                 name="eligibility"
@@ -301,7 +310,7 @@
           <span class="field__hint" id="eligibility-hint">{{ copy.eligibilityHint }}</span>
         </fieldset>
 
-        <label class="composer__toggle">
+        <label class="check composer__toggle">
           <input
             type="checkbox"
             aria-describedby="benefit-hint"
@@ -330,8 +339,10 @@
       }
     </section>
 
-    <section class="card composer__panel" aria-labelledby="reminders-heading">
-      <h2 class="composer__heading" id="reminders-heading">{{ copy.remindersHeading }}</h2>
+    <section class="form-section composer__panel" aria-labelledby="reminders-heading">
+      <h2 class="section-title composer__heading" id="reminders-heading">
+        {{ copy.remindersHeading }}
+      </h2>
       <label class="field">
         <span class="field__label">{{ copy.reminders }}</span>
         <textarea
@@ -344,9 +355,11 @@
     </section>
 
     @if (correcting()) {
-      <section class="card composer__panel" aria-labelledby="tell-heading">
-        <h2 class="composer__heading" id="tell-heading">{{ copy.tellRegistrants }}</h2>
-        <label class="composer__toggle">
+      <section class="form-section composer__panel" aria-labelledby="tell-heading">
+        <h2 class="section-title composer__heading" id="tell-heading">
+          {{ copy.tellRegistrants }}
+        </h2>
+        <label class="check composer__toggle">
           <input
             type="checkbox"
             aria-describedby="tell-hint"
@@ -359,8 +372,8 @@
       </section>
 
       @if (correctionBlocks().length > 0) {
-        <div class="card problems problems--blocking" role="alert">
-          <h2 class="problems__heading">{{ copy.correctionProblemsHeading }}</h2>
+        <div class="callout callout--danger problems problems--blocking" role="alert">
+          <h2 class="callout__title problems__heading">{{ copy.correctionProblemsHeading }}</h2>
           <ul class="problems__list">
             @for (problem of correctionBlocks(); track problem) {
               <li>{{ problem }}</li>
@@ -370,8 +383,8 @@
       }
 
       <!-- What the correction does, before the button that does it (`DL-195`, as `DL-124`). -->
-      <div class="card composer__effects" role="status">
-        <p>{{ copy.correctionEffectsLead }}</p>
+      <div class="effects composer__effects" role="status">
+        <p class="effects__lead">{{ copy.correctionEffectsLead }}</p>
         <ul>
           @for (effect of correctionEffects(); track $index) {
             <li>{{ effect }}</li>
@@ -379,8 +392,8 @@
         </ul>
       </div>
     } @else if (blockingProblems().length > 0) {
-      <div class="card problems problems--blocking" role="alert">
-        <h2 class="problems__heading">{{ copy.problemsHeading }}</h2>
+      <div class="callout callout--danger problems problems--blocking" role="alert">
+        <h2 class="callout__title problems__heading">{{ copy.problemsHeading }}</h2>
         <ul class="problems__list">
           @for (problem of blockingProblems(); track problem) {
             <li>{{ problem }}</li>
@@ -388,8 +401,8 @@
         </ul>
       </div>
     } @else if (publishProblems().length > 0) {
-      <div class="card problems" role="status">
-        <h2 class="problems__heading">{{ copy.problemsHeading }}</h2>
+      <div class="callout callout--warning problems" role="status">
+        <h2 class="callout__title problems__heading">{{ copy.problemsHeading }}</h2>
         <ul class="problems__list">
           @for (problem of publishProblems(); track problem) {
             <li>{{ problem }}</li>
@@ -400,8 +413,8 @@
 
     @if (cover() !== null && !correcting()) {
       <!-- What saving does to the image, before the button that does it. -->
-      <div class="card composer__effects" role="status">
-        <p>{{ copy.coverEffectsLead }}</p>
+      <div class="effects composer__effects" role="status">
+        <p class="effects__lead">{{ copy.coverEffectsLead }}</p>
         <ul>
           @for (effect of copy.coverEffects; track $index) {
             <li>{{ effect }}</li>
@@ -410,7 +423,7 @@
       </div>
     }
 
-    <p class="composer__actions">
+    <p class="form-footer composer__actions">
       @if (correcting()) {
         <button type="submit" class="btn btn--primary" [disabled]="!canCorrect()">
           {{ copy.saveCorrection }}
