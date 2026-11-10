@@ -1,40 +1,103 @@
-/* Layout only. `.field`, `.card` and `.btn` are styles.scss's (DL-120) and are not redefined. */
+/* Layout only. `.field`, `.card` and `.btn` are styles.scss's (DL-120) and are not redefined.
+   The list shows subjects and counts; what a resident wrote is read in the conversation. */
 
 .inbox {
   display: flex;
   flex-direction: column;
-  gap: var(--space-base);
-}
-
-.inbox__heading {
-  margin: 0;
-  font-size: 15px;
+  gap: 14px;
 }
 
 .inbox__no-office {
-  display: flex;
   flex-direction: column;
-  gap: var(--space-snug);
+  gap: var(--space-2);
 }
 
 .inbox__no-office p {
   margin: 0;
 }
 
-.inbox__note,
-.inbox__problem {
-  margin: 0;
-  font-size: 13px;
+.inbox__intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
 }
 
-.inbox__note {
-  color: var(--c-text-muted);
+.inbox__notice {
+  flex: 1 1 360px;
+  margin: 0;
+  padding-block: 10px;
+  font-size: var(--fs-label);
+  text-wrap: pretty;
+}
+
+.inbox__order {
+  margin: 0;
+}
+
+.inbox__subject {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.inbox__subject-text {
+  text-decoration: underline;
+  text-decoration-color: var(--line2);
+  text-underline-offset: 3px;
+}
+
+.inbox__subject:hover .inbox__subject-text {
+  text-decoration-color: currentColor;
+}
+
+/* Unread is said by the "Unread by the office" column; the dot and the weight repeat it. */
+.inbox__dot {
+  flex: none;
+  inline-size: 10px;
+  block-size: 10px;
+  border-radius: var(--r-pill);
+  background: var(--line2);
+}
+
+.inbox__subject--unread {
+  font-weight: var(--fw-bold);
+}
+
+.inbox__subject--unread .inbox__dot {
+  background: var(--link);
+}
+
+.inbox__office {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text2);
+}
+
+.inbox__office .icon-tile {
+  background: var(--soft);
+  color: var(--link);
+}
+
+.inbox__latest {
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
 }
 
 .inbox__more {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-snug);
-  margin-block-start: var(--space-snug);
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-block-start: var(--space-3);
+}
+
+.inbox__problem {
+  margin: 0;
+  color: var(--red-ink);
+  font-size: var(--fs-label);
 }

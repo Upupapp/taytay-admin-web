@@ -1,6 +1,6 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
-<section class="card inbox" aria-labelledby="inbox-heading">
+<section class="card card--panel card--padded inbox" aria-labelledby="inbox-heading">
   <h2 id="inbox-heading" class="visually-hidden">{{ copy.caption }}</h2>
 
   <app-async-content
@@ -12,16 +12,19 @@
     <ng-template #inboxContent>
       @if (firstPage() === null) {
         <!-- The server's empty answer to an account with no office: said, never shown as empty. -->
-        <div class="inbox__no-office" role="status">
-          <h3 class="inbox__heading">{{ noOffice.heading }}</h3>
+        <div class="callout inbox__no-office" role="status">
+          <h3 class="callout__title">{{ noOffice.heading }}</h3>
           @for (sentence of noOffice.body; track $index) {
             <p>{{ sentence }}</p>
           }
         </div>
       } @else {
-        <p class="inbox__note">{{ copy.order }} {{ copy.noName }}</p>
+        <div class="inbox__intro">
+          <p class="callout callout--warning inbox__notice">{{ copy.noName }}</p>
+          <p class="status-line inbox__order">{{ copy.order }}</p>
+        </div>
         @if (officesUnnamed()) {
-          <p class="inbox__note" role="status">{{ copy.officesUnnamed }}</p>
+          <p class="status-line" role="status">{{ copy.officesUnnamed }}</p>
         }
 
         <app-data-table
@@ -35,7 +38,7 @@
 
         @if (rows().length > 0) {
           <div class="inbox__more">
-            <p class="inbox__note" role="status">
+            <p class="status-line" role="status">
               {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
             </p>
             @if (hasMore()) {
@@ -59,12 +62,34 @@
 </section>
 
 <ng-template #subjectCell let-thread>
-  <a [routerLink]="['/inbox', thread.id]">{{ thread.subject }}</a>
+  <a
+    class="inbox__subject"
+    [class.inbox__subject--unread]="thread.unreadCount > 0"
+    [routerLink]="['/inbox', thread.id]"
+  >
+    <span class="inbox__dot" aria-hidden="true"></span>
+    <span class="inbox__subject-text">{{ thread.subject }}</span>
+  </a>
+</ng-template>
+
+<ng-template #officeCell let-thread>
+  <span class="inbox__office">
+    <span class="icon-tile icon-tile--sm icon-tile--soft" aria-hidden="true">
+      <app-icon name="building" [size]="16" />
+    </span>
+    {{ officeName(thread) }}
+  </span>
+</ng-template>
+
+<ng-template #unreadCell let-thread>
+  <span class="chip" [class.chip--warning]="thread.unreadCount > 0">
+    {{ copy.unread(thread.unreadCount) }}
+  </span>
 </ng-template>
 
 <ng-template #latestCell let-thread>
   @if (thread.lastMessageAt; as at) {
-    <time [attr.datetime]="at">{{ at | date: 'd MMM y, HH:mm' }}</time>
+    <time class="inbox__latest" [attr.datetime]="at">{{ at | date: 'd MMM y, HH:mm' }}</time>
   } @else {
     {{ copy.noMessageYet }}
   }

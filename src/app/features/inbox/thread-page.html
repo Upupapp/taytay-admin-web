@@ -1,4 +1,6 @@
-<p class="thread__back"><a routerLink="/inbox">{{ copy.back }}</a></p>
+<p class="thread__back">
+  <a class="btn" routerLink="/inbox">{{ copy.back }}</a>
+</p>
 
 <app-async-content
   [state]="thread()"
@@ -10,181 +12,209 @@
     @if (current(); as conversation) {
       <app-page-header [title]="conversation.subject" />
 
-      <section class="card thread__block" aria-labelledby="thread-details">
-        <h2 id="thread-details" class="thread__heading">{{ copy.detailsHeading }}</h2>
-        <dl class="thread__facts">
-          <div>
-            <dt>{{ copy.office }}</dt>
-            <dd>{{ officeName() }}</dd>
-          </div>
-          <div>
-            <dt>{{ copy.status }}</dt>
-            <dd><app-status-badge [catalog]="catalog" [status]="conversation.status" /></dd>
-          </div>
-          <div>
-            <dt>{{ copy.started }}</dt>
-            <dd>
-              <time [attr.datetime]="conversation.createdAt">
-                {{ conversation.createdAt | date: 'd MMM y, HH:mm' }}
-              </time>
-            </dd>
-          </div>
-          <div>
-            <dt>{{ copy.unread }}</dt>
-            <dd>{{ listCopy.unread(conversation.unreadCount) }}</dd>
-          </div>
-        </dl>
-        <p class="thread__note">{{ copy.resident }}</p>
-
-        <div class="thread__acts">
-          @if (conversation.unreadCount > 0) {
-            <p class="thread__note">{{ readEffect }}</p>
-            <button
-              type="button"
-              class="btn btn--secondary"
-              [disabled]="busy()"
-              (click)="markRead()"
-            >
-              {{ busy() ? copy.markingRead : copy.markRead }}
-            </button>
-          } @else {
-            <p class="thread__note">{{ copy.alreadyRead }}</p>
-          }
-          @if (open()) {
-            <button
-              type="button"
-              class="btn btn--secondary"
-              [disabled]="busy()"
-              (click)="askToClose()"
-            >
-              {{ copy.closeOpen }}
-            </button>
-          } @else {
-            <p class="thread__note">{{ copy.closedNote }}</p>
-          }
-        </div>
-      </section>
-
-      <section class="card thread__block" aria-labelledby="thread-messages">
-        <h2 id="thread-messages" class="thread__heading">{{ copy.messagesHeading }}</h2>
-        <p class="thread__note">{{ copy.order }}</p>
-
-        <app-async-content
-          [state]="newest()"
-          [content]="messagesContent"
-          [skeletonLines]="4"
-          (retryRequested)="reload()"
+      <div class="thread__layout">
+        <section
+          class="card card--padded thread__block thread__details"
+          aria-labelledby="thread-details"
         >
-          <ng-template #messagesContent>
-            @if (hasEarlier()) {
+          <h2 id="thread-details" class="thread__heading">{{ copy.detailsHeading }}</h2>
+          <dl class="facts thread__facts">
+            <div>
+              <dt>{{ copy.office }}</dt>
+              <dd>{{ officeName() }}</dd>
+            </div>
+            <div>
+              <dt>{{ copy.status }}</dt>
+              <dd><app-status-badge [catalog]="catalog" [status]="conversation.status" /></dd>
+            </div>
+            <div>
+              <dt>{{ copy.started }}</dt>
+              <dd>
+                <time [attr.datetime]="conversation.createdAt">
+                  {{ conversation.createdAt | date: 'd MMM y, HH:mm' }}
+                </time>
+              </dd>
+            </div>
+            <div>
+              <dt>{{ copy.unread }}</dt>
+              <dd>{{ listCopy.unread(conversation.unreadCount) }}</dd>
+            </div>
+          </dl>
+          <p class="thread__note">{{ copy.resident }}</p>
+
+          <div class="thread__acts">
+            @if (conversation.unreadCount > 0) {
+              <p class="thread__note">{{ readEffect }}</p>
               <button
                 type="button"
-                class="btn btn--secondary"
-                [disabled]="loadingEarlier()"
-                (click)="showEarlier()"
+                class="btn btn--primary"
+                [disabled]="busy()"
+                (click)="markRead()"
               >
-                {{ loadingEarlier() ? copy.loadingEarlier : copy.earlier }}
+                {{ busy() ? copy.markingRead : copy.markRead }}
               </button>
+            } @else {
+              <p class="thread__note">{{ copy.alreadyRead }}</p>
             }
-            @if (earlierFailed()) {
-              <p class="thread__problem" role="alert">{{ copy.earlierFailed }}</p>
-            }
-
-            <ol class="thread__messages">
-              @for (message of messages(); track message.id) {
-                <li
-                  class="thread__message"
-                  [class.thread__message--office]="!fromResident(conversation, message)"
-                >
-                  <p class="thread__meta">
-                    <strong>{{ authorLabel(conversation, message) }}</strong>
-                    <time [attr.datetime]="message.sentAt">
-                      {{ message.sentAt | date: 'd MMM y, HH:mm' }}
-                    </time>
-                  </p>
-                  <p class="thread__body">{{ message.body }}</p>
-
-                  @if (message.attachments.length > 0) {
-                    <div class="thread__images">
-                      <p class="thread__note">
-                        {{ copy.imagesHeading(message.attachments.length) }}.
-                        {{ copy.imagesClosed }}
-                      </p>
-                      @for (media of message.attachments; track media; let n = $index) {
-                        @let image = imageState(media);
-                        @if (image === null) {
-                          <button
-                            type="button"
-                            class="btn btn--secondary"
-                            (click)="askToOpen(message, media)"
-                          >
-                            {{ copy.showImage(n + 1) }}
-                          </button>
-                        } @else if (image.kind === 'loading') {
-                          <p class="thread__note" role="status">{{ copy.imageLoading }}</p>
-                        } @else if (image.kind === 'error') {
-                          <p class="thread__problem" role="alert">{{ copy.imageFailed }}</p>
-                          <button
-                            type="button"
-                            class="btn btn--secondary"
-                            (click)="askToOpen(message, media)"
-                          >
-                            {{ copy.showImage(n + 1) }}
-                          </button>
-                        } @else if (image.kind === 'ready') {
-                          <figure class="thread__figure">
-                            <img class="thread__image" [src]="image.value" [alt]="copy.imageAlt(n + 1)" />
-                            <figcaption>{{ copy.imageLabel(n + 1) }}. {{ copy.imageKept }}</figcaption>
-                          </figure>
-                          <button type="button" class="btn btn--secondary" (click)="hideImage(media)">
-                            {{ copy.hideImage(n + 1) }}
-                          </button>
-                        }
-                      }
-                    </div>
-                  }
-                </li>
-              } @empty {
-                <li class="thread__note">{{ copy.noMessages }}</li>
-              }
-            </ol>
-          </ng-template>
-        </app-async-content>
-      </section>
-
-      <section class="card thread__block" aria-labelledby="thread-reply">
-        <h2 id="thread-reply" class="thread__heading">{{ copy.replyHeading }}</h2>
-        @if (open()) {
-          <div class="field">
-            <label class="field__label" for="thread-reply-body">{{ copy.replyLabel }}</label>
-            <textarea
-              id="thread-reply-body"
-              class="field__input thread__draft"
-              rows="5"
-              [attr.maxlength]="limits.maximum"
-              [attr.aria-describedby]="'thread-reply-hint thread-reply-count'"
-              [attr.aria-invalid]="attempted() && draftProblem() !== null"
-              [value]="draft()"
-              (input)="onDraft($event)"
-            ></textarea>
-            <p id="thread-reply-hint" class="field__hint">{{ copy.replyHint }}</p>
-            <p id="thread-reply-count" class="field__hint">
-              {{ copy.replyCount(draftLength(), limits.maximum) }}
-            </p>
-            @if (attempted() && draftProblem() === 'empty') {
-              <p class="thread__problem" role="alert">{{ copy.replyEmpty }}</p>
-            } @else if (attempted() && draftProblem() === 'too-long') {
-              <p class="thread__problem" role="alert">{{ copy.replyTooLong }}</p>
+            @if (open()) {
+              <button
+                type="button"
+                class="btn btn--danger-soft"
+                [disabled]="busy()"
+                (click)="askToClose()"
+              >
+                {{ copy.closeOpen }}
+              </button>
+            } @else {
+              <p class="thread__note">{{ copy.closedNote }}</p>
             }
           </div>
-          <p class="thread__note">{{ copy.replyNoImages }}</p>
-          <button type="button" class="btn btn--primary" [disabled]="busy()" (click)="send()">
-            {{ busy() ? copy.sending : copy.send }}
-          </button>
-        } @else {
-          <p class="thread__note">{{ copy.closedNote }}</p>
-        }
-      </section>
+        </section>
+
+        <section
+          class="card card--padded thread__block thread__messages-block"
+          aria-labelledby="thread-messages"
+        >
+          <div class="thread__head">
+            <h2 id="thread-messages" class="thread__heading">{{ copy.messagesHeading }}</h2>
+            <p class="thread__note">{{ copy.order }}</p>
+          </div>
+
+          <app-async-content
+            [state]="newest()"
+            [content]="messagesContent"
+            [skeletonLines]="4"
+            (retryRequested)="reload()"
+          >
+            <ng-template #messagesContent>
+              @if (hasEarlier()) {
+                <button
+                  type="button"
+                  class="btn btn--secondary"
+                  [disabled]="loadingEarlier()"
+                  (click)="showEarlier()"
+                >
+                  {{ loadingEarlier() ? copy.loadingEarlier : copy.earlier }}
+                </button>
+              }
+              @if (earlierFailed()) {
+                <p class="thread__problem" role="alert">{{ copy.earlierFailed }}</p>
+              }
+
+              <ol class="thread__messages">
+                @for (message of messages(); track message.id) {
+                  <li
+                    class="thread__message"
+                    [class.thread__message--office]="!fromResident(conversation, message)"
+                  >
+                    <p class="thread__meta">
+                      <strong>{{ authorLabel(conversation, message) }}</strong>
+                      <time [attr.datetime]="message.sentAt">
+                        {{ message.sentAt | date: 'd MMM y, HH:mm' }}
+                      </time>
+                    </p>
+                    <p class="thread__body">{{ message.body }}</p>
+
+                    @if (message.attachments.length > 0) {
+                      <div class="thread__images">
+                        <p class="thread__note">
+                          {{ copy.imagesHeading(message.attachments.length) }}.
+                          {{ copy.imagesClosed }}
+                        </p>
+                        @for (media of message.attachments; track media; let n = $index) {
+                          @let image = imageState(media);
+                          @if (image === null) {
+                            <button
+                              type="button"
+                              class="btn btn--secondary"
+                              (click)="askToOpen(message, media)"
+                            >
+                              {{ copy.showImage(n + 1) }}
+                            </button>
+                          } @else if (image.kind === 'loading') {
+                            <p class="thread__note" role="status">{{ copy.imageLoading }}</p>
+                          } @else if (image.kind === 'error') {
+                            <p class="thread__problem" role="alert">{{ copy.imageFailed }}</p>
+                            <button
+                              type="button"
+                              class="btn btn--secondary"
+                              (click)="askToOpen(message, media)"
+                            >
+                              {{ copy.showImage(n + 1) }}
+                            </button>
+                          } @else if (image.kind === 'ready') {
+                            <figure class="thread__figure">
+                              <img
+                                class="thread__image"
+                                [src]="image.value"
+                                [alt]="copy.imageAlt(n + 1)"
+                              />
+                              <figcaption>
+                                {{ copy.imageLabel(n + 1) }}. {{ copy.imageKept }}
+                              </figcaption>
+                            </figure>
+                            <button
+                              type="button"
+                              class="btn btn--secondary"
+                              (click)="hideImage(media)"
+                            >
+                              {{ copy.hideImage(n + 1) }}
+                            </button>
+                          }
+                        }
+                      </div>
+                    }
+                  </li>
+                } @empty {
+                  <li class="thread__note">{{ copy.noMessages }}</li>
+                }
+              </ol>
+            </ng-template>
+          </app-async-content>
+        </section>
+
+        <section
+          class="card card--padded thread__block thread__reply"
+          aria-labelledby="thread-reply"
+        >
+          <h2 id="thread-reply" class="thread__heading">{{ copy.replyHeading }}</h2>
+          @if (open()) {
+            <div class="field">
+              <label class="field__label" for="thread-reply-body">{{ copy.replyLabel }}</label>
+              <textarea
+                id="thread-reply-body"
+                class="field__input thread__draft"
+                rows="5"
+                [attr.maxlength]="limits.maximum"
+                [attr.aria-describedby]="'thread-reply-hint thread-reply-count'"
+                [attr.aria-invalid]="attempted() && draftProblem() !== null"
+                [value]="draft()"
+                (input)="onDraft($event)"
+              ></textarea>
+              <p id="thread-reply-hint" class="field__hint">{{ copy.replyHint }}</p>
+              <p id="thread-reply-count" class="field__hint">
+                {{ copy.replyCount(draftLength(), limits.maximum) }}
+              </p>
+              @if (attempted() && draftProblem() === 'empty') {
+                <p class="thread__problem" role="alert">{{ copy.replyEmpty }}</p>
+              } @else if (attempted() && draftProblem() === 'too-long') {
+                <p class="thread__problem" role="alert">{{ copy.replyTooLong }}</p>
+              }
+            </div>
+            <p class="thread__note thread__aside-note">{{ copy.replyNoImages }}</p>
+            <button
+              type="button"
+              class="btn btn--primary thread__send"
+              [disabled]="busy()"
+              (click)="send()"
+            >
+              {{ busy() ? copy.sending : copy.send }}
+            </button>
+          } @else {
+            <p class="thread__note thread__aside-note">{{ copy.closedNote }}</p>
+          }
+        </section>
+      </div>
     }
   </ng-template>
 </app-async-content>
@@ -205,7 +235,7 @@
     <button type="button" modal-actions class="btn btn--secondary" (click)="cancelClose()">
       {{ copy.closeCancel }}
     </button>
-    <button type="button" modal-actions class="btn btn--primary" (click)="confirmClose()">
+    <button type="button" modal-actions class="btn btn--danger" (click)="confirmClose()">
       {{ copy.closeConfirm }}
     </button>
   </app-modal>

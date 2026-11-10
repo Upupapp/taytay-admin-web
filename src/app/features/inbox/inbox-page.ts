@@ -26,6 +26,7 @@ import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/vie
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -52,7 +53,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-inbox-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DataTable, DatePipe, PageHeader, RouterLink, StatusBadge],
+  imports: [AsyncContent, DataTable, DatePipe, Icon, PageHeader, RouterLink, StatusBadge],
   templateUrl: './inbox-page.html',
   styleUrl: './inbox-page.scss',
 })
@@ -69,6 +70,10 @@ export class InboxPage {
     viewChild.required<TemplateRef<{ $implicit: OfficeThread }>>('subjectCell');
   private readonly latestCell =
     viewChild.required<TemplateRef<{ $implicit: OfficeThread }>>('latestCell');
+  private readonly officeCell =
+    viewChild.required<TemplateRef<{ $implicit: OfficeThread }>>('officeCell');
+  private readonly unreadCell =
+    viewChild.required<TemplateRef<{ $implicit: OfficeThread }>>('unreadCell');
   private readonly statusCell =
     viewChild.required<TemplateRef<{ $implicit: OfficeThread }>>('statusCell');
 
@@ -117,16 +122,22 @@ export class InboxPage {
     {
       key: 'office',
       header: this.copy.columnOffice,
-      value: (thread) => this.directory.name(thread.officeId, thread.officeSlug),
+      value: (thread) => this.officeName(thread),
+      cell: this.officeCell(),
     },
     { key: 'latest', header: this.copy.columnLatest, cell: this.latestCell() },
     {
       key: 'unread',
       header: this.copy.columnUnread,
       value: (thread) => this.copy.unread(thread.unreadCount),
+      cell: this.unreadCell(),
     },
     { key: 'status', header: this.copy.columnStatus, cell: this.statusCell() },
   ]);
+
+  protected officeName(thread: OfficeThread): string {
+    return this.directory.name(thread.officeId, thread.officeSlug);
+  }
 
   protected reload(): void {
     this.generation.update((n) => n + 1);
