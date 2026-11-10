@@ -27,7 +27,7 @@ export interface PlaceholderRouteData extends Data {
   imports: [EmptyState, PageHeader],
   template: `
     <app-page-header [title]="title()" [subtitle]="subtitle()" />
-    <div class="card">
+    <div class="card card--panel card--padded notice-page notice-page--under-header">
       <app-empty-state
         heading="Not built yet"
         [message]="
