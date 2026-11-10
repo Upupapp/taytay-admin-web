@@ -1,5 +1,5 @@
-<section class="panel__block" aria-labelledby="account-office-role">
-  <h3 id="account-office-role" class="panel__heading">{{ copy.heading }}</h3>
+<section class="subpanel panel__block" aria-labelledby="account-office-role">
+  <h3 id="account-office-role" class="section-title">{{ copy.heading }}</h3>
 
   @if (current(); as role) {
     <p class="panel__note">{{ copy.now(label(role)) }}</p>
@@ -19,10 +19,10 @@
   } @else if (!canChange()) {
     <p class="panel__note">{{ copy.noGrant }}</p>
   } @else {
-    <fieldset class="panel__choices">
+    <fieldset class="choice-list">
       <legend>{{ copy.legend }}</legend>
       @for (role of roles; track role) {
-        <label class="panel__choice">
+        <label class="choice">
           <input
             type="radio"
             name="account-office-role"
@@ -31,14 +31,18 @@
             [disabled]="role === current() || busy()"
             (change)="choose(role)"
           />
-          {{ label(role) }}
-          @if (role === current()) {
-            {{ copy.current }}
-          }
-          <span class="panel__hint">{{ description(role) }} {{ scopeOf(role) }}</span>
+          <span class="choice__text">
+            <span>
+              {{ label(role) }}
+              @if (role === current()) {
+                <span class="choice__hint">{{ copy.current }}</span>
+              }
+            </span>
+            <span class="choice__hint">{{ description(role) }} {{ scopeOf(role) }}</span>
+          </span>
         </label>
       }
-      <label class="panel__choice">
+      <label class="choice">
         <input
           type="radio"
           name="account-office-role"
@@ -47,8 +51,10 @@
           [disabled]="current() === null || busy()"
           (change)="choose('none')"
         />
-        {{ copy.none }}
-        <span class="panel__hint">{{ copy.noneHint }}</span>
+        <span class="choice__text">
+          <span>{{ copy.none }}</span>
+          <span class="choice__hint">{{ copy.noneHint }}</span>
+        </span>
       </label>
     </fieldset>
 
@@ -81,11 +87,11 @@
       }
 
       <!-- What the server does, between the choice and the button that does it. -->
-      <div class="panel__effects">
+      <div class="effects panel__effects">
         @if (choice === 'none') {
-          <p>{{ copy.leadNone }}</p>
+          <p class="effects__lead">{{ copy.leadNone }}</p>
         } @else {
-          <p>{{ copy.lead(label(choice)) }}</p>
+          <p class="effects__lead">{{ copy.lead(label(choice)) }}</p>
         }
         <ul>
           @for (effect of choice === 'none' ? effects.clear : effects.assign; track $index) {
@@ -95,7 +101,7 @@
             <li>{{ description(choice) }} {{ scopeOf(choice) }}</li>
           }
         </ul>
-        <p>{{ copy.always }}</p>
+        <p class="effects__lead">{{ copy.always }}</p>
         <ul>
           @for (effect of always; track $index) {
             <li>{{ effect }}</li>
@@ -115,7 +121,7 @@
           [disabled]="busy()"
           (input)="typeReason($event)"
         ></textarea>
-        <span id="account-office-role-reason-hint" class="panel__hint">
+        <span id="account-office-role-reason-hint" class="field__hint">
           {{ copy.reasonHint(reasonMax) }}
         </span>
       </div>

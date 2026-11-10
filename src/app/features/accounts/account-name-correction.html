@@ -1,6 +1,6 @@
 @if (applies() && canCorrect()) {
-  <section class="panel__block" aria-labelledby="account-name-correction">
-    <h3 id="account-name-correction" class="panel__heading">{{ copy.heading }}</h3>
+  <section class="subpanel panel__block" aria-labelledby="account-name-correction">
+    <h3 id="account-name-correction" class="section-title">{{ copy.heading }}</h3>
     <p class="panel__note">{{ copy.intro }}</p>
 
     @if (own()) {
@@ -19,12 +19,12 @@
           [disabled]="busy()"
           (input)="type($event)"
         />
-        <span id="account-name-correction-hint" class="panel__hint">{{ copy.nameHint }}</span>
+        <span id="account-name-correction-hint" class="field__hint">{{ copy.nameHint }}</span>
       </div>
 
       <!-- What the server does, between the field and the button that does it. -->
-      <div class="panel__effects">
-        <p>{{ copy.lead }}</p>
+      <div class="effects panel__effects">
+        <p class="effects__lead">{{ copy.lead }}</p>
         <ul>
           @for (effect of effects; track $index) {
             <li>{{ effect }}</li>
@@ -32,7 +32,7 @@
         </ul>
       </div>
 
-      <label class="check">
+      <label class="check panel__check">
         <input
           type="checkbox"
           [checked]="seen()"

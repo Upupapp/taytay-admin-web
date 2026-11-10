@@ -3,35 +3,66 @@
 .accounts {
   display: flex;
   flex-direction: column;
-  gap: var(--space-base);
+  gap: 14px;
 }
 
-.accounts__note,
-.accounts__problem {
+.accounts__lead {
   margin: 0;
-  font-size: 13px;
+  text-wrap: pretty;
 }
 
-.accounts__note {
-  color: var(--c-text-muted);
+.accounts__filter .field__input {
+  min-inline-size: 280px;
+}
+
+.accounts__notice {
+  flex: 1 1 320px;
+  margin: 0;
+  padding-block: 10px;
+  font-size: var(--fs-label);
+}
+
+.accounts__person {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.accounts__name {
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+}
+
+.accounts__avatar-blank {
+  background: var(--soft);
+}
+
+.accounts__missing {
+  color: var(--muted);
 }
 
 .accounts__you {
-  font-weight: 600;
+  color: var(--link);
+  font-weight: var(--fw-bold);
+}
+
+.accounts__manage {
+  min-block-size: 40px;
+  padding-inline: var(--space-4);
+  font-size: var(--fs-control);
 }
 
 .accounts__more {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-snug);
-  margin-block-start: var(--space-snug);
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-block-start: var(--space-3);
 }
 
-.accounts__filter {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-snug);
-  margin-block-end: var(--space-base);
+.accounts__problem {
+  margin: 0;
+  color: var(--red-ink);
+  font-size: var(--fs-label);
 }

@@ -1,157 +1,172 @@
-<section class="panel__block" aria-labelledby="account-details">
-  <h3 id="account-details" class="panel__heading">{{ copy.detailsHeading }}</h3>
-  <dl class="panel__facts">
-    <div>
-      <dt>{{ copy.name }}</dt>
-      <dd>{{ account().name ?? listCopy.noName }}</dd>
-    </div>
-    <div>
-      <dt>{{ copy.email }}</dt>
-      <dd>{{ account().email ?? listCopy.noEmail }}</dd>
-    </div>
-    <div>
-      <dt>{{ copy.role }}</dt>
-      <dd><app-status-badge [catalog]="catalog" [status]="account().role" /></dd>
-    </div>
-    <div>
-      <dt>{{ copy.office }}</dt>
-      <dd>{{ currentOfficeName() ?? listCopy.noOffice }}</dd>
-    </div>
-  </dl>
-</section>
+<div class="panel">
+  <div class="panel__column">
+    <section class="subpanel subpanel--deep" aria-labelledby="account-details">
+      <h3 id="account-details" class="eyebrow">{{ copy.detailsHeading }}</h3>
+      <dl class="facts panel__facts">
+        <div>
+          <dt>{{ copy.name }}</dt>
+          <dd class="panel__name">{{ account().name ?? listCopy.noName }}</dd>
+        </div>
+        <div>
+          <dt>{{ copy.email }}</dt>
+          <dd class="panel__email">{{ account().email ?? listCopy.noEmail }}</dd>
+        </div>
+        <div>
+          <dt>{{ copy.role }}</dt>
+          <dd><app-status-badge [catalog]="catalog" [status]="account().role" /></dd>
+        </div>
+        <div>
+          <dt>{{ copy.office }}</dt>
+          <dd>{{ currentOfficeName() ?? listCopy.noOffice }}</dd>
+        </div>
+      </dl>
+    </section>
 
-<section class="panel__block" aria-labelledby="account-role">
-  <h3 id="account-role" class="panel__heading">{{ copy.roleHeading }}</h3>
+    <section class="subpanel panel__block" aria-labelledby="account-role">
+      <h3 id="account-role" class="section-title">{{ copy.roleHeading }}</h3>
 
-  @if (own()) {
-    <p class="panel__note">{{ copy.ownAccount }}</p>
-  } @else if (!canChangeRole()) {
-    <p class="panel__note">{{ copy.noRoleGrant }}</p>
-  } @else {
-    <fieldset class="panel__choices">
-      <legend>{{ copy.roleLegend }}</legend>
-      @for (role of roles; track role) {
-        <label class="panel__choice">
-          <input
-            type="radio"
-            name="account-role"
-            [value]="role"
-            [checked]="chosenRole() === role"
-            [disabled]="role === account().role || busy()"
-            (change)="chooseRole(role)"
-          />
-          {{ catalog[role].label }}
-          @if (role === account().role) {
-            {{ copy.current }}
+      @if (own()) {
+        <p class="panel__note">{{ copy.ownAccount }}</p>
+      } @else if (!canChangeRole()) {
+        <p class="panel__note">{{ copy.noRoleGrant }}</p>
+      } @else {
+        <fieldset class="choice-list">
+          <legend>{{ copy.roleLegend }}</legend>
+          @for (role of roles; track role) {
+            <label class="choice">
+              <input
+                type="radio"
+                name="account-role"
+                [value]="role"
+                [checked]="chosenRole() === role"
+                [disabled]="role === account().role || busy()"
+                (change)="chooseRole(role)"
+              />
+              <span class="choice__text">
+                <span>
+                  {{ catalog[role].label }}
+                  @if (role === account().role) {
+                    <span class="choice__hint">{{ copy.current }}</span>
+                  }
+                </span>
+                <span class="choice__hint">{{ catalog[role].description }}</span>
+              </span>
+            </label>
           }
-          <span class="panel__hint">{{ catalog[role].description }}</span>
-        </label>
+        </fieldset>
+
+        @if (chosenRole(); as role) {
+          <!-- What the server does, between the choice and the button that does it. -->
+          <div class="effects panel__effects">
+            <p class="effects__lead">{{ copy.roleLead }} {{ catalog[role].label }}:</p>
+            <ul>
+              @for (effect of roleEffects[role]; track $index) {
+                <li>{{ effect }}</li>
+              }
+            </ul>
+            <p class="effects__lead">{{ copy.roleAlways }}</p>
+            <ul>
+              @for (effect of roleAlways; track $index) {
+                <li>{{ effect }}</li>
+              }
+            </ul>
+          </div>
+          <button type="button" class="btn btn--primary" [disabled]="busy()" (click)="changeRole()">
+            {{ busy() ? copy.roleChanging : copy.roleConfirm(catalog[role].label) }}
+          </button>
+        }
       }
-    </fieldset>
+    </section>
+  </div>
 
-    @if (chosenRole(); as role) {
-      <!-- What the server does, between the choice and the button that does it. -->
-      <div class="panel__effects">
-        <p>{{ copy.roleLead }} {{ catalog[role].label }}:</p>
-        <ul>
-          @for (effect of roleEffects[role]; track $index) {
-            <li>{{ effect }}</li>
-          }
-        </ul>
-        <p>{{ copy.roleAlways }}</p>
-        <ul>
-          @for (effect of roleAlways; track $index) {
-            <li>{{ effect }}</li>
-          }
-        </ul>
-      </div>
-      <button type="button" class="btn btn--primary" [disabled]="busy()" (click)="changeRole()">
-        {{ busy() ? copy.roleChanging : copy.roleConfirm(catalog[role].label) }}
-      </button>
-    }
-  }
-</section>
+  <div class="panel__column">
+    <section class="subpanel panel__block" aria-labelledby="account-office">
+      <h3 id="account-office" class="section-title">{{ copy.officeHeading }}</h3>
 
-<section class="panel__block" aria-labelledby="account-office">
-  <h3 id="account-office" class="panel__heading">{{ copy.officeHeading }}</h3>
-
-  @if (!takesAnOffice()) {
-    @if (currentOfficeName(); as office) {
-      <p class="panel__note">{{ copy.officeKept(office) }}</p>
-    }
-    <p class="panel__note">{{ copy.officeNotStaff }}</p>
-  } @else if (!canAssignOffice()) {
-    <p class="panel__note">{{ copy.noOfficeGrant }}</p>
-  } @else if (offices().kind === 'error') {
-    <p class="panel__problem" role="alert">{{ copy.officesFailed }}</p>
-  } @else if (offices().kind !== 'ready') {
-    <p class="panel__note" role="status">{{ copy.officesLoading }}</p>
-  } @else {
-    <div class="field">
-      <label class="field__label" for="account-office-choice">{{ copy.officeLabel }}</label>
-      <select
-        id="account-office-choice"
-        class="field__input"
-        [disabled]="busy()"
-        (change)="chooseOffice($event)"
-      >
-        <option value="" [selected]="(chosenOffice() ?? account().officeId ?? '') === ''">
-          {{ copy.officeNone }}
-        </option>
-        @for (office of directory(); track office.id) {
-          <option
-            [value]="office.id"
-            [selected]="(chosenOffice() ?? account().officeId ?? '') === office.id"
+      @if (!takesAnOffice()) {
+        @if (currentOfficeName(); as office) {
+          <p class="panel__note">{{ copy.officeKept(office) }}</p>
+        }
+        <p class="panel__note">{{ copy.officeNotStaff }}</p>
+      } @else if (!canAssignOffice()) {
+        <p class="panel__note">{{ copy.noOfficeGrant }}</p>
+      } @else if (offices().kind === 'error') {
+        <p class="panel__problem" role="alert">{{ copy.officesFailed }}</p>
+      } @else if (offices().kind !== 'ready') {
+        <p class="panel__note" role="status">{{ copy.officesLoading }}</p>
+      } @else {
+        <div class="field">
+          <label class="field__label" for="account-office-choice">{{ copy.officeLabel }}</label>
+          <select
+            id="account-office-choice"
+            class="field__input"
+            [disabled]="busy()"
+            (change)="chooseOffice($event)"
           >
-            {{ label(office) }}
-          </option>
-        }
-      </select>
-    </div>
+            <option value="" [selected]="(chosenOffice() ?? account().officeId ?? '') === ''">
+              {{ copy.officeNone }}
+            </option>
+            @for (office of directory(); track office.id) {
+              <option
+                [value]="office.id"
+                [selected]="(chosenOffice() ?? account().officeId ?? '') === office.id"
+              >
+                {{ label(office) }}
+              </option>
+            }
+          </select>
+        </div>
 
-    @if (officeChange(); as change) {
-      <!-- What the server does, between the choice and the button that does it. -->
-      <div class="panel__effects">
-        <p>{{ copy.officeLead }}</p>
-        <ul>
-          @for (
-            effect of change.to === null ? officeEffects.clear : officeEffects.assign;
-            track $index
-          ) {
-            <li>{{ effect }}</li>
-          }
-        </ul>
-      </div>
-      <button type="button" class="btn btn--primary" [disabled]="busy()" (click)="assignOffice()">
-        @if (busy()) {
-          {{ copy.officeSaving }}
-        } @else if (change.to === null) {
-          {{ copy.officeConfirmClear }}
+        @if (officeChange(); as change) {
+          <!-- What the server does, between the choice and the button that does it. -->
+          <div class="effects panel__effects">
+            <p class="effects__lead">{{ copy.officeLead }}</p>
+            <ul>
+              @for (
+                effect of change.to === null ? officeEffects.clear : officeEffects.assign;
+                track $index
+              ) {
+                <li>{{ effect }}</li>
+              }
+            </ul>
+          </div>
+          <button
+            type="button"
+            class="btn btn--primary"
+            [disabled]="busy()"
+            (click)="assignOffice()"
+          >
+            @if (busy()) {
+              {{ copy.officeSaving }}
+            } @else if (change.to === null) {
+              {{ copy.officeConfirmClear }}
+            } @else {
+              {{ copy.officeConfirmAssign(label(change.to)) }}
+            }
+          </button>
         } @else {
-          {{ copy.officeConfirmAssign(label(change.to)) }}
+          <p class="panel__note">{{ copy.officeUnchanged }}</p>
         }
-      </button>
-    } @else {
-      <p class="panel__note">{{ copy.officeUnchanged }}</p>
-    }
-  }
-</section>
+      }
+    </section>
 
-<!-- Its own section: unlike the two above, an office role change carries a reason (DL-173). -->
-<app-account-office-role
-  [account]="account()"
-  [own]="own()"
-  (changed)="changed.emit($event)"
-  (announced)="outcome.set($event)"
-/>
+    <!-- Its own section: unlike the two above, an office role change carries a reason (DL-173). -->
+    <app-account-office-role
+      [account]="account()"
+      [own]="own()"
+      (changed)="changed.emit($event)"
+      (announced)="outcome.set($event)"
+    />
 
-<!-- Its own section, for a verified account only: a checked name changes here alone (DL-198). -->
-<app-account-name-correction
-  [account]="account()"
-  [own]="own()"
-  (changed)="changed.emit($event)"
-  (announced)="outcome.set($event)"
-/>
+    <!-- Its own section, for a verified account only: a checked name changes here alone (DL-198). -->
+    <app-account-name-correction
+      [account]="account()"
+      [own]="own()"
+      (changed)="changed.emit($event)"
+      (announced)="outcome.set($event)"
+    />
 
-<!-- Always in the DOM, so a screen reader hears the outcome when the text arrives. -->
-<p class="panel__outcome" role="status" aria-live="polite">{{ outcome() }}</p>
+    <!-- Always in the DOM, so a screen reader hears the outcome when the text arrives. -->
+    <p class="panel__outcome" role="status" aria-live="polite">{{ outcome() }}</p>
+  </div>
+</div>

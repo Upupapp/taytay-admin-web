@@ -38,11 +38,14 @@
 /* A record's key facts on the deep card (the resident record's identity):
    muted labels, white values, gold chips. */
 .card--deep .eyebrow,
-.card--deep .facts dt {
+.card--deep .facts dt,
+.subpanel--deep .eyebrow,
+.subpanel--deep .facts dt {
   color: var(--on-deep-muted);
 }
 
-.card--deep .facts dd {
+.card--deep .facts dd,
+.subpanel--deep .facts dd {
   color: var(--on-deep);
 }
 
@@ -766,6 +769,81 @@ a.kpi:focus-visible .kpi__arrow {
 .effects b,
 .effects strong {
   color: var(--ink);
+}
+
+.effects p {
+  margin: 0;
+}
+
+/* The lead line of a list of effects ("What the server does:"). */
+.effects .effects__lead {
+  color: var(--ink);
+  font-weight: var(--fw-bold);
+}
+
+/* ── Choice tiles ─────────────────────────────────────────────────────────
+   A radio or checkbox as a framed tile: the input, then the label and a hint
+   stacked beside it. Chosen = accent frame on the selection fill; a choice
+   that cannot be taken (the current role) is dimmed. */
+.choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.choice-list legend {
+  margin-block-end: var(--space-2);
+  padding: 0;
+  color: var(--text2);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+}
+
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--card-flat);
+  color: var(--ink);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+
+.choice input {
+  flex: none;
+  inline-size: 18px;
+  block-size: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--link);
+}
+
+.choice:has(input:checked) {
+  border-color: var(--accent-line);
+  background: var(--sel);
+}
+
+.choice:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.choice__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.choice__hint {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-regular);
 }
 
 /* ── Facts ────────────────────────────────────────────────────────────────

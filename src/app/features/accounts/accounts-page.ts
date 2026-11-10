@@ -26,11 +26,12 @@ import {
   type CursorPage,
 } from '@domain/index';
 import { officeDirectory } from '@shared/offices/office-directory';
+import { InitialsPipe } from '@shared/pipes/initials.pipe';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
-import { Drawer } from '@shared/ui/drawer/drawer';
+import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -50,13 +51,13 @@ const PAGE_SIZE = 20;
  * **A browsable list, a page at a time** (`DL-161`): "more are available", never "page 1 of N".
  *
  * **No record by address.** The API has no read of one account, so an account is managed in a
- * drawer beside the list, as an ID review is, and after a change the list is read again from the
+ * dialog over the list, as an ID review is, and after a change the list is read again from the
  * server rather than patched.
  */
 @Component({
   selector: 'app-accounts-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AccountPanel, AsyncContent, DataTable, Drawer, PageHeader, StatusBadge],
+  imports: [AccountPanel, AsyncContent, DataTable, InitialsPipe, Modal, PageHeader, StatusBadge],
   templateUrl: './accounts-page.html',
   styleUrl: './accounts-page.scss',
 })
@@ -216,7 +217,7 @@ export class AccountsPage {
     this.selected.set(null);
   }
 
-  /** Keeps the changed account in the drawer, and reads the list again from the server. */
+  /** Keeps the changed account in the dialog, and reads the list again from the server. */
   protected onChanged(account: AppAccount): void {
     this.selected.set(account);
     this.reload();
