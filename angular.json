@@ -30,6 +30,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "OFL-*.txt",
+                "input": "src/styles/fonts",
+                "output": "licenses"
               }
             ],
             "styles": [

@@ -9323,3 +9323,85 @@ the sidebar lockup show the seal with no component change — the swap `DL-22` d
 
 **Not changed.** The residents' app (already shows the same artwork) and the website. Easiest to
 reverse: set the manifest entry back to `not-acquired`, and the placeholder renders again.
+
+## DL-200 — the console adopts the redesign, and its typefaces are served from its own origin
+
+**Status:** Settled (10 November 2026). Supersedes the colour values of `DL-21` (not its audit), and
+every earlier visual choice the design draws differently. Presentation only.
+
+**Why.** The owner commissioned a redesign of the console and the residents' app together, and
+handed over the reference: the console mock-ups (Sign-in, Main, Residents, Resident record and
+register, Verification queue and review, Users, App directory and its editor, Office inbox and
+thread), a README of tokens and screen patterns, icons and images. It lives in `design/` while the
+work runs (git-ignored) and moves to `docs/design/` when it ends. Where the README (written mostly
+for the app) and the console mock-ups differ, the console mock-ups win here; the README fills what
+they leave open.
+
+**What it overrides, and what it does not.** It overrides the console's older *visual* rules —
+palette, type, radii, control sizes, the dark sidebar, shadows. Nothing else moves: ports,
+adapters, routes, guards, validators, component inputs and outputs, every wording the checks or
+this log require (warnings before buttons, privacy statements), and every non-visual check. Data
+still comes from the API; nothing in the mock-ups' sample text is copied.
+
+**Phase 1 — the global layer.**
+
+- **Tokens** (`src/styles.scss`): the README palette; the console theme under the mock-ups' own
+  names (`--page`, `--card`, `--primary`, `--ink`, `--text`, `--muted`, `--line`, `--field`, the
+  tints and their inks), so a screen translated from a mock-up keeps `var(--card)` as written; the
+  header gradient and shapes; the icon-tile gradients; a type scale (`--fs-*`), radii (`--r-*`)
+  and control heights (`--h-*`). **No shadows**: `--shadow-*` resolve to `none`.
+- **Old names keep working.** Every name a stylesheet used before is declared and points at the new
+  value (`--c-text` → `--text`, `--c-brand` → `--primary`, `--radius-md` → `--r-field`, …), so a
+  screen not yet restyled draws in the new palette rather than breaking. A few names features used
+  without anybody declaring them (`--c-danger`, `--c-link`, `--radius-base`, `--space-loose`, …)
+  are declared now too.
+- **Shared primitives** (`DL-120`): `.btn` is the design's pill — the plain button is its secondary
+  style, `.btn--primary` the filled one — and `.btn--secondary` and `.btn--danger`, used by screens
+  but never defined, are defined. `.field__input` is the 46-pixel rounded field; `.field__error` is
+  defined; `.card` is white glass over the page's colour wash.
+- **The card has no backdrop blur**, although the mock-ups give one. A backdrop filter makes its
+  element the containing block of every fixed-position descendant, and two dialogs open inside a
+  card (the saved-views bar's, and the card-photo warning on Digital IDs): blurred, the card would
+  trap their overlay inside itself. Over the page's smooth wash a blur shows next to nothing. Anybody
+  who has asked the system for less transparency gets solid cards.
+- **Focus is two rings**: the design's gold outline around a navy inner ring. Gold alone measures
+  about 1.2:1 against the light page and could not meet WCAG 1.4.11 (`DL-20`); navy carries the
+  ring on every light surface, gold on the navy fills where navy disappears.
+
+**Contrast, measured rather than assumed (`DL-21` still applies).** Two of the mock-ups' colours
+fail AA on the page's base colour and were darkened to the nearest shade that passes: the field
+border (`#8a93a6` → `#7a8399`, 2.6 → 3.2:1), the secondary muted ink (`#6b7489` → `#5e687c`, 3.9 →
+4.7:1). The audit (`brand-palette.ts`, `check:contrast`, `check:brand`) now covers the heading and
+secondary inks, the lighter hover of a primary button, the danger button and both focus rings.
+Both checks now follow `var()` aliases to the colour a name lands on; before, they read only
+literal hex, and an aliased token would have been skipped in silence — `check:contrast` now fails
+on a pair it cannot resolve instead of skipping it. **Open:** cards are translucent, so the colour
+under a line of muted text depends on where the card sits over the wash. A static audit cannot see
+that; the redesign's final phase measures it on the rendered screens.
+
+**Typefaces: Inter and Inter Tight, served from this origin.** The mock-ups load them from a font
+service. The console does not: a request to a third party on every page load tells it who opens
+the console and when, and the console's CSP (`default-src 'self'`, no `font-src`) would refuse it
+anyway. The files are the Fontsource builds of the upstream variable fonts
+(`@fontsource-variable/inter` and `/inter-tight` 5.3.0, from jsDelivr), one file per subset
+carrying every weight — smaller than the four static weights the design uses. Latin always;
+Latin Extended only on a page that draws one of its characters, which matters because the peso
+sign (U+20B1) lives there and begins every amount. They sit in `src/styles/fonts/`, the build
+hashes them into `/media` (already cached as immutable), and no npm dependency was added for them.
+Licence: SIL Open Font License 1.1; the texts sit beside the files and ship at `/licenses/`.
+
+| File | SHA-256 |
+| --- | --- |
+| `inter-latin-wght-normal.woff2` | `3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62` |
+| `inter-latin-ext-wght-normal.woff2` | `34b9c504cab7a73e37b746343a449132e56cf7b5481af2cb81dc74dcff25c956` |
+| `inter-tight-latin-wght-normal.woff2` | `77fefe8ca19b9f69b5284832c519e0493127c1f091f0a8936884be7721c4e618` |
+| `inter-tight-latin-ext-wght-normal.woff2` | `fd9beddaaec644945809da574cf1caf342073c7e4b46a2ea5bd136c8cf1a9eca` |
+
+**Light only, for now.** The mock-ups also draw a dark theme behind an appearance switch. The
+console ships light (`color-scheme: light`, as before); a switch is a feature, and the audit
+compares one value per name. Adding it later means a second token block and a second audited
+palette, not a change to any screen.
+
+**Not changed.** Component, layout and feature stylesheets (the redesign's later phases restyle
+them, one commit each), the residents' app, and the seal (`DL-199`). Easiest to reverse: the old
+values are in git history at `17911eb`, and the tokens are the only place they live.

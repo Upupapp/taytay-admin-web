@@ -34,11 +34,43 @@ const COMPONENT_MINIMUM = 3;
 
 const source = readFileSync(join(ROOT, 'src/styles.scss'), 'utf8');
 
+/*
+ * Each token is followed through its `var()` aliases to the colour it lands on. Since the
+ * redesign (DL-200) the pre-redesign names (`--c-text`, `--c-brand`, …) point at the design
+ * tokens instead of repeating their hex; reading only literal hex would have skipped them, and a
+ * skipped pair is a pair nobody measured.
+ */
+/** @type {Map<string, string>} */
+const declared = new Map();
+
+for (const [, name, value] of source
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .matchAll(/(--[a-z0-9-]+):\s*([^;{}]+);/g)) {
+  declared.set(name, value.trim());
+}
+
+function resolve(name, seen = new Set()) {
+  const value = declared.get(name);
+
+  if (value === undefined || seen.has(name)) {
+    return undefined;
+  }
+
+  seen.add(name);
+  const alias = /^var\((--[a-z0-9-]+)\)$/.exec(value);
+
+  return alias ? resolve(alias[1], seen) : value;
+}
+
 /** @type {Record<string, string>} */
 const tokens = {};
 
-for (const [, name, hex] of source.matchAll(/(--[a-z0-9-]+):\s*(#[0-9a-fA-F]{3,8})/g)) {
-  tokens[name] = hex;
+for (const name of declared.keys()) {
+  const value = resolve(name);
+
+  if (value !== undefined && /^#[0-9a-fA-F]{3,8}$/.test(value)) {
+    tokens[name] = value;
+  }
 }
 
 function channel(value) {
@@ -69,7 +101,14 @@ const failures = [];
 let checked = 0;
 
 function require(foreground, background, minimum, what) {
+  // A pair whose colour cannot be found used to be skipped in silence. It fails now: a rename
+  // that left a token behind would otherwise turn this check green by measuring less.
   if (tokens[foreground] === undefined || tokens[background] === undefined) {
+    failures.push(
+      `${what}: ${foreground} on ${background} does not resolve to a hex colour in ` +
+        'src/styles.scss, so it cannot be measured.',
+    );
+
     return;
   }
 
@@ -91,7 +130,15 @@ for (const background of ['--c-bg', '--c-surface', '--c-surface-muted']) {
   require('--c-text', background, TEXT_MINIMUM, 'body text');
   require('--c-text-muted', background, TEXT_MINIMUM, 'muted text');
   require('--c-text-subtle', background, TEXT_MINIMUM, 'subtle text');
+  require('--ink', background, TEXT_MINIMUM, 'heading ink');
+  require('--text2', background, TEXT_MINIMUM, 'secondary text');
 }
+
+// ── white text on the filled buttons (DL-200) ──────────────────────────────
+require('--on-primary', '--primary', TEXT_MINIMUM, 'primary button label');
+require('--on-primary', '--primary-hover', TEXT_MINIMUM, 'primary button label on hover');
+require('--on-primary', '--red-ink', TEXT_MINIMUM, 'danger button label');
+require('--on-primary', '--red-ink2', TEXT_MINIMUM, 'danger button label on hover');
 
 // ── brand, which carries links and primary buttons ─────────────────────────
 require('--c-brand', '--c-surface', TEXT_MINIMUM, 'brand text');

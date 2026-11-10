@@ -42,3 +42,6 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Redesign reference (local only; Phase 5 copies it into docs/design/)
+/design/

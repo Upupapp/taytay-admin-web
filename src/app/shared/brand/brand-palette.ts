@@ -13,26 +13,34 @@ import type { ContrastRequirement } from './contrast';
  * equivalence is asserted — see `DL-21`.
  */
 export const BRAND_PALETTE = {
-  // Surfaces
-  bg: '#f4f6f8',
+  // Surfaces (DL-200: the page wash's base colour, the solid card, the soft fill)
+  bg: '#e7ecf7',
   surface: '#ffffff',
-  surfaceMuted: '#f8fafc',
+  surfaceMuted: '#f2f4f8',
 
   // Borders
-  borderDecorative: '#dfe4ea',
-  borderInteractive: '#7d8894',
+  borderDecorative: '#e1e6f0',
+  borderInteractive: '#7a8399',
 
   // Ink
-  text: '#1b2733',
-  textMuted: '#5b6b7c',
-  textSubtle: '#606b78',
+  ink: '#08124a',
+  text: '#1b2540',
+  text2: '#2b3550',
+  textMuted: '#5a6478',
+  textSubtle: '#5e687c',
 
   // Brand
-  brandPrimary: '#10559a',
-  brandPrimaryHover: '#0b3f74',
-  brandPrimarySoft: '#e8f0f9',
+  brandPrimary: '#0a2071',
+  brandPrimaryHover: '#08124a',
+  // A primary button's hover, which the design draws lighter than the button.
+  primaryHover: '#3a63f0',
+  brandPrimarySoft: '#ecf1fc',
   brandOnPrimary: '#ffffff',
-  accent: '#b45309',
+  accent: '#5c4d00',
+
+  // Focus: a gold outline around a navy inner ring.
+  focusRing: '#f5da18',
+  focusRingInner: '#08124a',
 
   // Sidebar ink, used on the brand-hover fill.
   sidebarInk: '#dce8f4',
@@ -49,12 +57,12 @@ export type BrandColourName = keyof typeof BRAND_PALETTE;
 
 /** Status-tone pairs, consumed by `StatusBadge`. Foreground carries the label. */
 export const TONE_PALETTE = {
-  neutral: { fg: '#46525f', bg: '#eceff2' },
-  info: { fg: '#0b4f8a', bg: '#e2eefb' },
+  neutral: { fg: '#2b3550', bg: '#f0f2f7' },
+  info: { fg: '#0a2071', bg: '#e2e7fb' },
   progress: { fg: '#6b3fa0', bg: '#efe7fb' },
-  success: { fg: '#1a6b3c', bg: '#e2f4e9' },
-  warning: { fg: '#8a5a06', bg: '#fcf1dc' },
-  danger: { fg: '#98231d', bg: '#fbe6e4' },
+  success: { fg: '#17663a', bg: '#def0e5' },
+  warning: { fg: '#5c4d00', bg: '#fcf5be' },
+  danger: { fg: '#b00708', bg: '#fbe2e2' },
 } as const;
 
 export type ToneName = keyof typeof TONE_PALETTE;
@@ -81,7 +89,7 @@ const SURFACES: readonly (readonly [string, string])[] = [
 export const AUDITED_PAIRS: readonly AuditedPair[] = [
   // Body ink on each surface.
   ...SURFACES.flatMap(([surfaceName, background]): AuditedPair[] =>
-    (['text', 'textMuted', 'textSubtle'] as const).map((ink) => ({
+    (['ink', 'text', 'text2', 'textMuted', 'textSubtle'] as const).map((ink) => ({
       label: `${ink} on ${surfaceName}`,
       foreground: BRAND_PALETTE[ink],
       background,
@@ -119,6 +127,12 @@ export const AUDITED_PAIRS: readonly AuditedPair[] = [
     requirement: 'text',
   },
   {
+    label: 'on-primary text on a primary button under the pointer',
+    foreground: BRAND_PALETTE.brandOnPrimary,
+    background: BRAND_PALETTE.primaryHover,
+    requirement: 'text',
+  },
+  {
     label: 'brand text on brand soft',
     foreground: BRAND_PALETTE.brandPrimaryHover,
     background: BRAND_PALETTE.brandPrimarySoft,
@@ -153,9 +167,24 @@ export const AUDITED_PAIRS: readonly AuditedPair[] = [
     background,
     requirement: 'nonText',
   })),
+  // The focus ring is two rings (DL-200). The navy inner ring carries it on
+  // every light surface; the gold outline carries it on the navy fills, where
+  // the inner ring disappears; and the two must stay distinct from each other.
   ...SURFACES.map(([surfaceName, background]): AuditedPair => ({
-    label: `focus ring on ${surfaceName}`,
-    foreground: BRAND_PALETTE.brandPrimary,
+    label: `focus ring (inner) on ${surfaceName}`,
+    foreground: BRAND_PALETTE.focusRingInner,
+    background,
+    requirement: 'nonText',
+  })),
+  ...(
+    [
+      ['brand primary', BRAND_PALETTE.brandPrimary],
+      ['brand hover', BRAND_PALETTE.brandPrimaryHover],
+      ['its inner ring', BRAND_PALETTE.focusRingInner],
+    ] as const
+  ).map(([fillName, background]): AuditedPair => ({
+    label: `focus ring (outline) against ${fillName}`,
+    foreground: BRAND_PALETTE.focusRing,
     background,
     requirement: 'nonText',
   })),

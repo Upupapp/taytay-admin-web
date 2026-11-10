@@ -4,10 +4,15 @@
  * nowhere else: the brand colour ramp, the semantic spacing aliases, and the
  * brand-surface sizing used by the logo/seal components.
  *
+ * Since the redesign (DL-200) the ramp points at the design tokens in
+ * styles.scss rather than holding colours of its own, so the two cannot
+ * disagree.
+ *
  * IMPORTANT — these colours are this application's palette. They are NOT
  * claimed to be the official colours of the Municipality of Taytay, and no
  * Pantone, CMYK or spot-colour equivalence is asserted anywhere in this
- * repository. See docs/brand/README.md and DL-21.
+ * repository.
+ * See docs/brand/README.md and DL-21.
  *
  * Every foreground/background pair declared here is asserted against WCAG 2.2
  * Level AA by `src/app/shared/brand/brand-palette.spec.ts`. Change a value and
@@ -16,11 +21,13 @@
 
 :root {
   /* ── Brand ramp ───────────────────────────────────────────────────────── */
-  --brand-primary: #10559a;
-  --brand-primary-hover: #0b3f74;
-  --brand-primary-soft: #e8f0f9;
+  --brand-primary: var(--primary);
+  /* The dark end of the ramp (the sidebar fill until the shell is restyled).
+     A primary button's hover is lighter in the design: --primary-hover. */
+  --brand-primary-hover: var(--deep);
+  --brand-primary-soft: var(--blue-50);
   /* Ink used for text placed ON the primary brand colour. */
-  --brand-on-primary: #ffffff;
+  --brand-on-primary: var(--on-primary);
 
   /* Sidebar ink, on the brand-hover fill. All three are audited against that
      fill in brand-palette.spec.ts. */
@@ -29,10 +36,13 @@
   --brand-nav-section: #8fb0cf;
 
   /* ── Focus ring ───────────────────────────────────────────────────────── */
-  /* One token so every focus style is identical and auditable.
-     Meets WCAG 1.4.11 (3:1 non-text) against every app surface. */
-  --focus-ring-color: #10559a;
-  --focus-ring-width: 2px;
+  /* Two rings, one set of tokens, so every focus style is identical and
+     auditable: a gold outline (the design's) around a navy inner ring. The
+     inner ring meets WCAG 1.4.11 (3:1) against every light surface; the gold
+     meets it against the navy fills, where the inner ring disappears. */
+  --focus-ring-color: var(--gold);
+  --focus-ring-inner: var(--navy);
+  --focus-ring-width: 3px;
   --focus-ring-offset: 2px;
 
   /* ── Semantic spacing (DL-17) ─────────────────────────────────────────── */
@@ -44,6 +54,7 @@
   --space-snug: var(--space-3);
   --space-base: var(--space-4);
   --space-card: var(--space-5);
+  --space-loose: var(--space-5);
   --space-section: var(--space-6);
   --space-page: var(--space-7);
 
@@ -68,4 +79,5 @@
 .focus-ring {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
+  box-shadow: 0 0 0 var(--focus-ring-offset) var(--focus-ring-inner);
 }

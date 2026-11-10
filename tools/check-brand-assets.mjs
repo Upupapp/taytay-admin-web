@@ -49,18 +49,40 @@ const TOKEN_MAP = {
   '--brand-nav-ink-muted': 'sidebarInkMuted',
   '--brand-nav-section': 'sidebarSectionTitle',
   '--c-accent': 'accent',
-  '--focus-ring-color': 'brandPrimary',
+  '--focus-ring-color': 'focusRing',
+  '--focus-ring-inner': 'focusRingInner',
+  '--primary-hover': 'primaryHover',
+  '--ink': 'ink',
+  '--text2': 'text2',
   '--seal-placeholder-bg': 'sealPlaceholderBg',
   '--seal-placeholder-fg': 'sealPlaceholderFg',
   '--seal-placeholder-border': 'sealPlaceholderBorder',
 };
 
 const styleSources = ['src/styles.scss', 'src/styles/_brand-tokens.scss'];
-const cssTokens = new Map();
+// Every declaration, then each one followed through its `var()` aliases. Since the
+// redesign (DL-200) the pre-redesign names point at the design tokens rather than
+// repeating their hex, and a parser that read only literal hex would silently stop
+// comparing them — which is the drift this check exists to catch.
+const declared = new Map();
 for (const file of styleSources) {
-  const text = read(file);
-  for (const match of text.matchAll(/(--[\w-]+):\s*(#[0-9a-fA-F]{3,8})\s*;/g)) {
-    cssTokens.set(match[1], match[2].toLowerCase());
+  const text = read(file).replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const match of text.matchAll(/(--[\w-]+):\s*([^;{}]+);/g)) {
+    declared.set(match[1], match[2].trim());
+  }
+}
+const resolve = (name, seen = new Set()) => {
+  const value = declared.get(name);
+  if (value === undefined || seen.has(name)) return undefined;
+  seen.add(name);
+  const alias = /^var\((--[\w-]+)\)$/.exec(value);
+  return alias ? resolve(alias[1], seen) : value;
+};
+const cssTokens = new Map();
+for (const name of declared.keys()) {
+  const value = resolve(name);
+  if (value !== undefined && /^#[0-9a-fA-F]{3,8}$/.test(value)) {
+    cssTokens.set(name, value.toLowerCase());
   }
 }
 
@@ -83,7 +105,10 @@ for (const [cssName, tsName] of Object.entries(TOKEN_MAP)) {
   const tsValue = tsTokens.get(tsName);
 
   if (cssValue === undefined) {
-    problems.push(`Token ${cssName} is mapped but not declared in any stylesheet.`);
+    problems.push(
+      `Token ${cssName} is mapped but is not declared in any stylesheet as a hex colour, ` +
+        'directly or through var() aliases.',
+    );
     continue;
   }
   if (tsValue === undefined) {

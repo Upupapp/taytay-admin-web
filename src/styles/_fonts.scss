@@ -1,0 +1,64 @@
+/* The console's two typefaces, served from this origin (DL-200).
+ *
+ * Inter for text and Inter Tight for titles and figures, as the design draws
+ * them. Both are the Fontsource builds of the upstream variable fonts
+ * (@fontsource-variable/inter and /inter-tight 5.3.0): one file per subset
+ * carries every weight, which is smaller than the four static weights the
+ * design uses.
+ *
+ * Self-hosted rather than fetched from a font service, because a request to a
+ * third party on every page load tells that party who opens the console and
+ * when — and the CSP (`default-src 'self'`) would refuse it anyway. The build
+ * hashes the files into /media, which the host already caches as immutable.
+ *
+ * Latin is always used. Latin Extended is fetched only by a page that draws one
+ * of its characters; it is here for the peso sign (U+20B1), which every amount
+ * on a money screen begins with.
+ *
+ * Licence: SIL Open Font License 1.1, in ./fonts/OFL-*.txt, shipped beside the
+ * build under /licenses/.
+ */
+
+$latin:
+  U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+  U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+$latin-ext:
+  U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+  U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+  U+A720-A7FF;
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./fonts/inter-latin-ext-wght-normal.woff2') format('woff2');
+  unicode-range: $latin-ext;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./fonts/inter-latin-wght-normal.woff2') format('woff2');
+  unicode-range: $latin;
+}
+
+@font-face {
+  font-family: 'Inter Tight';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./fonts/inter-tight-latin-ext-wght-normal.woff2') format('woff2');
+  unicode-range: $latin-ext;
+}
+
+@font-face {
+  font-family: 'Inter Tight';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./fonts/inter-tight-latin-wght-normal.woff2') format('woff2');
+  unicode-range: $latin;
+}
