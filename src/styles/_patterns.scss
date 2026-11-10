@@ -205,14 +205,18 @@ select.field__input.field__input--pill {
 }
 
 /* A search field with the magnifier inside it: wrap the input, and put an
-   <app-icon name="search" class="search-field__icon" /> before it. */
-.search-field {
+   <app-icon name="search" class="search-field__icon" /> before it. Any other
+   field with a leading glyph (an envelope on the sign-in email) is the same
+   shape under its own name, `.icon-field` / `.icon-field__icon`. */
+.search-field,
+.icon-field {
   position: relative;
   display: flex;
   min-inline-size: 0;
 }
 
-.search-field__icon {
+.search-field__icon,
+.icon-field__icon {
   position: absolute;
   inset-block-start: 50%;
   inset-inline-start: var(--space-4);
@@ -221,7 +225,8 @@ select.field__input.field__input--pill {
   pointer-events: none;
 }
 
-.search-field .field__input {
+.search-field .field__input,
+.icon-field .field__input {
   flex: 1 1 auto;
   min-inline-size: 0;
   padding-inline-start: 42px;

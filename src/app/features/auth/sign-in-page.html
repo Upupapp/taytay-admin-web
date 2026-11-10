@@ -1,166 +1,201 @@
 <div class="sign-in">
-  <main class="card sign-in__panel">
-    <header class="sign-in__header">
-      <app-municipal-seal size="lg" priority />
-      <h1 class="sign-in__title">{{ brand.organisationName }}</h1>
-      <p class="sign-in__subtitle">{{ copy.subtitle }}</p>
-    </header>
+  <div class="card sign-in__frame">
+    <app-sign-in-art />
 
-    @if (errors().length > 0) {
-      <div class="sign-in__errors" role="alert" tabindex="-1">
-        <h2 class="sign-in__errors-heading">{{ copy.errorSummaryHeading }}</h2>
-        <ul class="sign-in__errors-list">
-          @for (message of errors(); track message) {
-            <li>{{ message }}</li>
-          }
-        </ul>
-      </div>
-    }
+    <main class="sign-in__main">
+      <app-municipal-seal size="md" priority />
 
-    @if (notConfigured; as unavailable) {
-      <!-- No identity provider is configured for this build. A form here could only fail, so
-           there is none: the screen says what is true and who to ask. -->
-      <section class="sign-in__notice" aria-labelledby="sign-in-not-configured">
-        <h2 id="sign-in-not-configured" class="sign-in__step-title">{{ copy.notConfiguredHeading }}</h2>
-        <p>{{ unavailable.explanation }}</p>
-      </section>
-    } @else if (awaitingCode()) {
-      <!-- The second factor. One labelled field, paste-friendly, nothing that
-           auto-advances: six boxes that move focus per digit are announced as
-           six unlabelled inputs and strand anybody who mistypes. -->
-      <h2 class="sign-in__step-title">{{ copy.codeTitle }}</h2>
-      <p class="sign-in__step-subtitle">{{ copy.codeSubtitle }}</p>
+      <div class="sign-in__column">
+        <header class="sign-in__header">
+          <h1 class="sign-in__title">{{ brand.organisationName }}</h1>
+          <p class="sign-in__subtitle">{{ copy.subtitle }}</p>
+        </header>
 
-      @if (challenge(); as pending) {
-        @if (pending.expiresInMinutes > 0) {
-          <p class="sign-in__expiry">{{ copy.codeExpiry(pending.expiresInMinutes) }}</p>
+        @if (errors().length > 0) {
+          <div class="sign-in__errors" role="alert" tabindex="-1">
+            <h2 class="sign-in__errors-heading">{{ copy.errorSummaryHeading }}</h2>
+            <ul class="sign-in__errors-list">
+              @for (message of errors(); track message) {
+                <li>{{ message }}</li>
+              }
+            </ul>
+          </div>
         }
-      }
 
-      <form class="sign-in__form" novalidate (submit)="submitCode($event)">
-        <div class="field">
-          <label class="field__label" for="sign-in-code">{{ copy.codeLabel }}</label>
-          <input
-            id="sign-in-code"
-            class="field__input"
-            type="text"
-            name="one-time-code"
-            autocomplete="one-time-code"
-            inputmode="numeric"
-            autocapitalize="none"
-            spellcheck="false"
-            required
-            aria-describedby="sign-in-code-hint"
-            [value]="code()"
-            (input)="onCode($event)"
-          />
-          <p id="sign-in-code-hint" class="field__hint">{{ copy.codeHint }}</p>
-        </div>
+        @if (notConfigured; as unavailable) {
+          <!-- No identity provider is configured for this build. A form here could only fail, so
+               there is none: the screen says what is true and who to ask. -->
+          <section class="callout sign-in__notice" aria-labelledby="sign-in-not-configured">
+            <app-icon name="info" [size]="18" [stroke]="2" />
+            <div>
+              <h2 id="sign-in-not-configured" class="callout__title">
+                {{ copy.notConfiguredHeading }}
+              </h2>
+              <p>{{ unavailable.explanation }}</p>
+            </div>
+          </section>
+        } @else if (awaitingCode()) {
+          <!-- The second factor. One labelled field, paste-friendly, nothing that
+               auto-advances: six boxes that move focus per digit are announced as
+               six unlabelled inputs and strand anybody who mistypes. -->
+          <div class="sign-in__step">
+            <h2 class="sign-in__step-title">{{ copy.codeTitle }}</h2>
+            <p class="sign-in__step-subtitle">{{ copy.codeSubtitle }}</p>
 
-        <button type="submit" class="btn btn--primary sign-in__submit" [disabled]="submitting()">
-          {{ submitting() ? copy.codeSubmitting : copy.codeSubmit }}
-        </button>
+            @if (challenge(); as pending) {
+              @if (pending.expiresInMinutes > 0) {
+                <p class="sign-in__expiry">{{ copy.codeExpiry(pending.expiresInMinutes) }}</p>
+              }
+            }
+          </div>
 
-        <button type="button" class="btn btn--subtle sign-in__start-over" (click)="startOver()">
-          {{ copy.codeStartOver }}
-        </button>
-      </form>
-
-      <p class="sign-in__recovery">{{ copy.recoveryHelp }}</p>
-    } @else {
-    <!-- No onpaste handler anywhere in this form: blocking paste would defeat
-         password managers, which is the Mechanism this screen relies on to
-         satisfy WCAG 3.3.8. -->
-    @if (development; as dev) {
-      <section class="sign-in__notice" aria-labelledby="sign-in-development">
-        <h2 id="sign-in-development" class="sign-in__step-title">{{ copy.developmentHeading }}</h2>
-        @for (line of dev.explanation; track line) {
-          <p>{{ line }}</p>
-        }
-      </section>
-    }
-
-    <form class="sign-in__form" novalidate (submit)="submit($event)">
-      <div class="field">
-        <label class="field__label" for="sign-in-email">{{ copy.emailLabel }}</label>
-        <input
-          id="sign-in-email"
-          class="field__input"
-          type="email"
-          name="email"
-          autocomplete="username"
-          inputmode="email"
-          autocapitalize="none"
-          spellcheck="false"
-          required
-          aria-describedby="sign-in-email-hint"
-          [value]="email()"
-          (input)="onEmail($event)"
-        />
-        <p id="sign-in-email-hint" class="field__hint">{{ copy.emailHint }}</p>
-      </div>
-
-      <div class="field">
-        <label class="field__label" for="sign-in-password">{{ copy.passwordLabel }}</label>
-        <div class="field__control">
-          <input
-            id="sign-in-password"
-            class="field__input"
-            [type]="passwordVisible() ? 'text' : 'password'"
-            name="password"
-            autocomplete="current-password"
-            spellcheck="false"
-            [required]="development === null"
-            [attr.aria-describedby]="development ? 'sign-in-password-hint' : null"
-            [value]="password()"
-            (input)="onPassword($event)"
-          />
-          <button
-            type="button"
-            class="btn btn--subtle field__toggle"
-            [attr.aria-pressed]="passwordVisible()"
-            (click)="togglePasswordVisible()"
-          >
-            {{ passwordVisible() ? copy.hidePassword : copy.showPassword }}
-          </button>
-        </div>
-        @if (development) {
-          <p id="sign-in-password-hint" class="field__hint">{{ copy.passwordNotCheckedHint }}</p>
-        }
-      </div>
-
-      @if (development; as dev) {
-        <fieldset class="field sign-in__role-claim">
-          <legend class="field__label">{{ copy.roleClaimLegend }}</legend>
-          @for (claim of dev.roleClaims; track claim) {
-            <label class="sign-in__role-option">
+          <form class="sign-in__form sign-in__form--code" novalidate (submit)="submitCode($event)">
+            <div class="field">
+              <label class="field__label" for="sign-in-code">{{ copy.codeLabel }}</label>
               <input
-                type="radio"
-                name="role-claim"
-                [value]="claim"
-                [checked]="roleClaim() === claim"
-                (change)="onRoleClaim(claim)"
+                id="sign-in-code"
+                class="field__input sign-in__input sign-in__code"
+                type="text"
+                name="one-time-code"
+                autocomplete="one-time-code"
+                inputmode="numeric"
+                autocapitalize="none"
+                spellcheck="false"
+                required
+                aria-describedby="sign-in-code-hint"
+                [value]="code()"
+                (input)="onCode($event)"
               />
-              {{ copy.roleClaimLabels[claim] }}
-            </label>
+              <p id="sign-in-code-hint" class="field__hint">{{ copy.codeHint }}</p>
+            </div>
+
+            <button
+              type="submit"
+              class="btn btn--primary sign-in__submit"
+              [disabled]="submitting()"
+            >
+              {{ submitting() ? copy.codeSubmitting : copy.codeSubmit }}
+            </button>
+
+            <button type="button" class="sign-in__start-over" (click)="startOver()">
+              {{ copy.codeStartOver }}
+            </button>
+          </form>
+
+          <p class="sign-in__recovery">{{ copy.recoveryHelp }}</p>
+        } @else {
+          <!-- No onpaste handler anywhere in this form: blocking paste would defeat
+               password managers, which is the Mechanism this screen relies on to
+               satisfy WCAG 3.3.8. -->
+          @if (development; as dev) {
+            <section class="callout sign-in__notice" aria-labelledby="sign-in-development">
+              <app-icon name="info" [size]="18" [stroke]="2" />
+              <div>
+                <h2 id="sign-in-development" class="callout__title">
+                  {{ copy.developmentHeading }}
+                </h2>
+                @for (line of dev.explanation; track line) {
+                  <p>{{ line }}</p>
+                }
+              </div>
+            </section>
           }
-        </fieldset>
-      }
 
-      <button type="submit" class="btn btn--primary sign-in__submit" [disabled]="submitting()">
-        {{ submitting() ? copy.submitting : copy.submit }}
-      </button>
-    </form>
-    }
+          <form class="sign-in__form" novalidate (submit)="submit($event)">
+            <div class="field">
+              <label class="field__label" for="sign-in-email">{{ copy.emailLabel }}</label>
+              <span class="icon-field">
+                <app-icon name="mail" class="icon-field__icon" [size]="18" />
+                <input
+                  id="sign-in-email"
+                  class="field__input sign-in__input"
+                  type="email"
+                  name="email"
+                  autocomplete="username"
+                  inputmode="email"
+                  autocapitalize="none"
+                  spellcheck="false"
+                  required
+                  aria-describedby="sign-in-email-hint"
+                  [value]="email()"
+                  (input)="onEmail($event)"
+                />
+              </span>
+              <p id="sign-in-email-hint" class="field__hint">{{ copy.emailHint }}</p>
+            </div>
 
-    <footer class="sign-in__footer">
-      <details class="sign-in__help">
-        <summary>{{ copy.forgotPassword }}</summary>
-        <p class="sign-in__help-body">{{ copy.forgotPasswordHelp }}</p>
-      </details>
+            <div class="field">
+              <label class="field__label" for="sign-in-password">{{ copy.passwordLabel }}</label>
+              <span class="icon-field">
+                <app-icon name="lock" class="icon-field__icon" [size]="18" />
+                <input
+                  id="sign-in-password"
+                  class="field__input sign-in__input sign-in__password"
+                  [type]="passwordVisible() ? 'text' : 'password'"
+                  name="password"
+                  autocomplete="current-password"
+                  spellcheck="false"
+                  [required]="development === null"
+                  [attr.aria-describedby]="development ? 'sign-in-password-hint' : null"
+                  [value]="password()"
+                  (input)="onPassword($event)"
+                />
+                <button
+                  type="button"
+                  class="field__toggle"
+                  [attr.aria-pressed]="passwordVisible()"
+                  (click)="togglePasswordVisible()"
+                >
+                  {{ passwordVisible() ? copy.hidePassword : copy.showPassword }}
+                </button>
+              </span>
+              @if (development) {
+                <p id="sign-in-password-hint" class="field__hint">
+                  {{ copy.passwordNotCheckedHint }}
+                </p>
+              }
+            </div>
+
+            @if (development; as dev) {
+              <fieldset class="field sign-in__role-claim">
+                <legend class="field__label">{{ copy.roleClaimLegend }}</legend>
+                @for (claim of dev.roleClaims; track claim) {
+                  <label class="sign-in__role-option">
+                    <input
+                      type="radio"
+                      name="role-claim"
+                      [value]="claim"
+                      [checked]="roleClaim() === claim"
+                      (change)="onRoleClaim(claim)"
+                    />
+                    {{ copy.roleClaimLabels[claim] }}
+                  </label>
+                }
+              </fieldset>
+            }
+
+            <button
+              type="submit"
+              class="btn btn--primary sign-in__submit"
+              [disabled]="submitting()"
+            >
+              {{ submitting() ? copy.submitting : copy.submit }}
+              <app-icon name="arrowRight" [size]="16" [stroke]="2.2" />
+            </button>
+          </form>
+        }
+
+        <details class="sign-in__help">
+          <summary>{{ copy.forgotPassword }}</summary>
+          <p class="sign-in__help-body">{{ copy.forgotPasswordHelp }}</p>
+        </details>
+      </div>
 
       <!-- Stated, not linked. There is no registration route to link to. -->
-      <p class="sign-in__provisioning">{{ copy.noSelfRegistration }}</p>
-    </footer>
-  </main>
+      <footer class="sign-in__footer">
+        <app-icon name="info" class="sign-in__footer-icon" [size]="18" [stroke]="2" />
+        <p class="sign-in__provisioning">{{ copy.noSelfRegistration }}</p>
+      </footer>
+    </main>
+  </div>
 </div>

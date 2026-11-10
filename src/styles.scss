@@ -118,6 +118,19 @@
   --header-shape-b-bottom: -60px;
   --header-shape-b-left: -40px;
 
+  /* The deep panel: the sign-in artwork and the dashboard's dark card. Its
+     inks are audited on --deep (check:contrast). */
+  --deep-panel:
+    radial-gradient(520px 380px at 90% 0%, rgb(45 84 224 / 55%), transparent 65%),
+    radial-gradient(420px 320px at 0% 100%, rgb(245 218 24 / 12%), transparent 60%), var(--deep);
+  --on-deep: #ffffff;
+  --on-deep-muted: #c3cde6;
+  --on-deep-fill: rgb(255 255 255 / 7%);
+  --on-deep-edge: rgb(255 255 255 / 12%);
+  --on-deep-chip: rgb(255 255 255 / 10%);
+  /* The sign-in frame's outer corner (a panel inside it keeps --r-panel). */
+  --r-frame: 36px;
+
   /* Icon tiles: white glyph on every tile except gold, which takes navy. */
   --tile-blue: linear-gradient(135deg, #0a2071, #2d54e0);
   --tile-green: linear-gradient(135deg, #17663a, #2ea05a);
@@ -135,8 +148,10 @@
 
   --fs-display: 42px; /* page title */
   --fs-kpi: 38px; /* headline figure */
+  --fs-title-xl: 32px; /* sign-in title */
   --fs-title-lg: 26px; /* record title */
   --fs-title: 24px; /* card or dialog title */
+  --fs-title-md: 22px; /* step title, feature panel title */
   --fs-title-sm: 20px;
   --fs-heading: 18px;
   --fs-subheading: 16px;

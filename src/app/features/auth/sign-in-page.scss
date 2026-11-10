@@ -1,118 +1,215 @@
+// SignIn mock-up: a glass frame holding the deep artwork panel and the form.
 .sign-in {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   min-block-size: 100vh;
-  padding: var(--space-card);
-  background: linear-gradient(160deg, var(--brand-primary-hover), #123a63 60%, var(--c-bg));
+  padding: var(--space-5);
 }
 
-.sign-in__panel {
+.sign-in__frame {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
   inline-size: 100%;
-  max-inline-size: 460px;
-  padding: var(--space-section);
+  max-inline-size: 1180px;
+  min-block-size: min(820px, calc(100vh - 48px));
+  padding: var(--space-3);
+  border-radius: var(--r-frame);
+  backdrop-filter: var(--glass-filter);
 }
 
-.sign-in__header {
-  text-align: center;
+.sign-in__main {
+  display: flex;
+  flex: 1 1 420px;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-inline-size: 0;
+  padding: 20px 28px var(--space-5);
 }
 
-.sign-in__header app-municipal-seal {
-  display: inline-block;
-  margin-block-end: var(--space-snug);
+.sign-in__column {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+  inline-size: 100%;
+  max-inline-size: 400px;
+  align-self: center;
+}
+
+.sign-in__header,
+.sign-in__step {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .sign-in__title {
-  font-size: 20px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-title-xl);
+  font-weight: var(--fw-medium);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
-.sign-in__subtitle {
+.sign-in__subtitle,
+.sign-in__step-subtitle,
+.sign-in__recovery {
+  color: var(--muted);
+  font-size: var(--fs-body);
+  text-wrap: pretty;
+}
+
+.sign-in__step-title {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-title-md);
+  font-weight: var(--fw-medium);
+}
+
+.sign-in__expiry {
   margin-block-start: var(--space-1);
-  color: var(--c-text-muted);
-  font-size: 13.5px;
+  padding: 10px 14px;
+  border-radius: var(--r-field);
+  background: var(--gold-tint);
+  color: var(--gold-ink);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-medium);
 }
 
 .sign-in__errors {
-  margin-block-start: var(--space-base);
-  padding: var(--space-snug) var(--space-base);
-  border: 1px solid var(--tone-danger-fg);
-  border-radius: var(--radius-md);
-  background: var(--tone-danger-bg);
-  color: var(--tone-danger-fg);
-}
+  padding: 14px var(--space-4);
+  border-radius: var(--r-box);
+  background: var(--red-tint);
+  color: var(--red-ink2);
 
-.sign-in__errors:focus {
-  outline: none;
+  &:focus {
+    outline: none;
+  }
 }
 
 .sign-in__errors-heading {
-  font-size: 14px;
+  font-size: var(--fs-section);
+  font-weight: var(--fw-bold);
 }
 
 .sign-in__errors-list {
-  margin: var(--space-1) 0 0;
-  padding-inline-start: var(--space-base);
-  font-size: 13.5px;
+  margin: 6px 0 0;
+  padding-inline-start: 18px;
+  font-size: var(--fs-control);
+}
+
+.sign-in__notice p + p {
+  margin-block-start: var(--space-1);
 }
 
 .sign-in__form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-base);
-  margin-block-start: var(--space-card);
+  gap: 18px;
 }
 
-.field__control {
-  display: flex;
-  gap: var(--space-compact);
-  min-inline-size: 0;
+.sign-in__form--code {
+  gap: 14px;
 }
 
+.sign-in__input {
+  min-block-size: 52px;
+  border-radius: var(--r-lg);
+  font-size: var(--fs-section);
+}
+
+.sign-in__password {
+  padding-inline-end: 132px;
+}
+
+.sign-in__code {
+  min-block-size: 58px;
+  padding-inline: 20px;
+  font-size: var(--fs-title);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.3em;
+}
+
+// "Show password" sits inside the field's box, at its end.
 .field__toggle {
-  flex: none;
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: 6px;
+  min-block-size: var(--h-btn-sm);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--link);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
   white-space: nowrap;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.field__toggle:hover,
+.sign-in__start-over:hover {
+  background: var(--hover);
 }
 
 .sign-in__submit {
-  justify-content: center;
-  min-block-size: 44px;
+  min-block-size: 52px;
+  margin-block-start: var(--space-1);
+  border-radius: var(--r-lg);
+  font-size: var(--fs-section);
 }
 
-.sign-in__footer {
-  margin-block-start: var(--space-card);
-  padding-block-start: var(--space-base);
-  border-block-start: 1px solid var(--c-border);
-}
-
-.sign-in__help summary {
+.sign-in__start-over {
+  min-block-size: var(--h-field);
+  border: 0;
+  border-radius: var(--r-lg);
+  background: transparent;
+  color: var(--link);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
-  font-size: 13.5px;
+}
+
+.sign-in__help {
+  font-size: var(--fs-sm);
+
+  summary {
+    color: var(--link);
+    font-weight: var(--fw-semibold);
+    cursor: pointer;
+  }
 }
 
 .sign-in__help-body {
-  margin-block-start: var(--space-compact);
-  color: var(--c-text-muted);
-  font-size: 13px;
+  margin-block-start: var(--space-2);
+  padding: var(--space-3) 14px;
+  border-radius: var(--r-field);
+  background: var(--soft2);
+  color: var(--text2);
+}
+
+.sign-in__footer {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px var(--space-4);
+  border-radius: var(--r-box);
+  background: var(--soft2);
+  color: var(--muted);
+  font-size: var(--fs-label);
+}
+
+.sign-in__footer-icon {
+  margin-block-start: 1px;
+  color: var(--link);
 }
 
 .sign-in__provisioning {
-  margin-block-start: var(--space-snug);
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-}
-
-// How this build signs in (DL-166): stated in the page's own voice, not as an error, because
-// nothing has gone wrong — it is a fact about this installation.
-.sign-in__notice {
-  margin-block-start: var(--space-base);
-  padding: var(--space-snug) var(--space-base);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  font-size: 13.5px;
-}
-
-.sign-in__notice p + p {
-  margin-block-start: var(--space-1);
+  text-wrap: pretty;
 }
 
 .sign-in__role-claim {
@@ -124,6 +221,17 @@
 .sign-in__role-option {
   display: flex;
   align-items: center;
-  gap: var(--space-compact);
-  min-block-size: 44px;
+  gap: var(--space-2);
+  min-block-size: var(--h-btn);
+}
+
+// The artwork hides itself on a narrow screen (sign-in-art.scss); the frame tightens.
+@media (width <= 760px) {
+  .sign-in {
+    padding: var(--space-3);
+  }
+
+  .sign-in__main {
+    padding: var(--space-4);
+  }
 }

@@ -9,6 +9,19 @@ export const AUTH_COPY = {
   title: 'Sign in',
   subtitle: 'Municipal Social Welfare and Development Office — staff console.',
 
+  /*
+   * The artwork beside the form. Decorative and hidden from assistive technology: the console's
+   * own name and the names of a few of its modules, nothing about any record.
+   */
+  artTitle: 'Staff console',
+  artModules: {
+    requests: 'Assistance requests',
+    verification: 'ID verification',
+    releases: 'Releases',
+    visits: 'Field visits',
+    balita: 'Balita',
+  },
+
   emailLabel: 'Work email address',
   emailHint: 'The address issued to you by the municipality.',
   passwordLabel: 'Password',

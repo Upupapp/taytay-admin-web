@@ -14,8 +14,10 @@ import {
 } from '@domain/index';
 import { BRAND_COPY } from '@shared/brand/brand.copy';
 import { MunicipalSeal } from '@shared/brand/municipal-seal';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { AUTH_COPY } from './auth.copy';
+import { SignInArt } from './sign-in-art';
 
 /**
  * Credential sign-in.
@@ -45,7 +47,7 @@ import { AUTH_COPY } from './auth.copy';
 @Component({
   selector: 'app-sign-in-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MunicipalSeal],
+  imports: [MunicipalSeal, Icon, SignInArt],
   templateUrl: './sign-in-page.html',
   styleUrl: './sign-in-page.scss',
 })

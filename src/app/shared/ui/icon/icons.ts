@@ -66,6 +66,7 @@ const DEFINITIONS = {
 
   // ── Shell controls (console mock-ups) ──────────────────────────────────
   menu: { d: 'M4 6h16M4 12h16M4 18h16' },
+  mail: { d: 'M4 5h16v14H4zM4 6l8 7 8-7' },
   search: { d: 'M18 11a7 7 0 1 1-14 0 7 7 0 0 1 14 0zM20 20l-3.5-3.5' },
   bell: { d: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0' },
   signOut: { d: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9' },
