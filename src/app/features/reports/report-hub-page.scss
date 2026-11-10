@@ -1,45 +1,28 @@
+/* Main as the report hub: the aggregate notice once at the top, then each area
+   as a grid of report cards (question first, the person-level one flagged
+   before it is opened, DL-104). */
+
 .hub {
   display: flex;
   flex-direction: column;
-  gap: var(--space-loose);
+  gap: var(--space-5);
 }
 
 .hub__notice {
-  margin: 0;
-  padding: var(--space-snug) var(--space-base);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-base);
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-  max-inline-size: 78ch;
+  align-items: flex-start;
+  max-inline-size: 90ch;
 }
 
 .hub__empty {
-  padding: var(--space-loose);
+  align-items: center;
+  padding-block: var(--space-6);
   text-align: center;
-}
-
-.hub__empty-heading {
-  margin: 0;
-  font-size: 15px;
-}
-
-.hub__empty-message {
-  margin: var(--space-compact) 0 0;
-  color: var(--c-text-muted);
-  font-size: 13px;
-}
-
-.area__heading {
-  margin: 0 0 var(--space-snug);
-  font-size: 14px;
-  font-weight: 700;
 }
 
 .area__list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--space-base);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -48,40 +31,38 @@
 .report-card {
   display: flex;
   flex-direction: column;
-  padding: var(--space-base);
+  gap: var(--space-2);
+}
+
+.report-card__tile {
+  margin-block-end: var(--space-1);
 }
 
 .report-card__title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-family: var(--font-body);
+  font-size: var(--fs-section);
+  font-weight: var(--fw-bold);
 }
 
-.report-card__question {
-  margin: var(--space-compact) 0 0;
-  color: var(--c-text-muted);
-  font-size: 12.5px;
+.report-card__title a {
+  color: var(--ink);
+  text-decoration: none;
 }
 
-/* The one report that names people says so before it is opened. */
+.report-card__title a:hover {
+  text-decoration: underline;
+}
+
 .report-card__names {
-  margin: var(--space-snug) 0 0;
-  color: var(--c-text-muted);
-  font-size: 12px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
 }
 
 .report-card__names-flag {
-  display: inline-block;
-  margin-inline-end: var(--space-micro);
-  padding: 1px 7px;
-  border: 1px solid var(--c-border);
-  border-radius: 999px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: 11px;
+  margin-inline-end: var(--space-1);
 }
 
 .report-card__actions {
-  margin: var(--space-base) 0 0;
+  margin-block-start: auto;
+  padding-block-start: var(--space-2);
 }

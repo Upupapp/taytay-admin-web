@@ -2,20 +2,22 @@
   <ng-template #reportContent let-result>
     @if (result === null) {
       <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
-      <p class="report__back"><a class="btn" routerLink="/reports">{{ copy.back }}</a></p>
+      <p class="report__back">
+        <a class="btn" routerLink="/reports">{{ copy.back }}</a>
+      </p>
     } @else {
       <app-page-header [title]="result.definition.title">
         <a page-actions class="btn" routerLink="/reports">{{ copy.back }}</a>
       </app-page-header>
 
-      <div class="report">
-        <section class="card report__about" aria-labelledby="about-heading">
-          <h2 class="report__heading" id="about-heading">{{ copy.question }}</h2>
+      <div class="record-grid report">
+        <section class="card card--padded report__about" aria-labelledby="about-heading">
+          <h2 class="section-title report__heading" id="about-heading">{{ copy.question }}</h2>
           <p class="report__question">{{ result.definition.question }}</p>
 
           <!-- The conditions travel with the figures, on screen and in the
                export. A number without them is a number nobody can check. -->
-          <dl class="report__conditions">
+          <dl class="facts report__conditions">
             <div>
               <dt>{{ copy.coverage }}</dt>
               <dd class="report__coverage">{{ result.appliedFilterDescription }}</dd>
@@ -29,27 +31,31 @@
           @if (result.caution) {
             <!-- Above the numbers, not in a footnote: this is what they do not
                  show, and a reader needs it before they read them. -->
-            <p class="report__caution">
-              <span class="report__caution-heading">{{ copy.cautionHeading }}</span>
+            <p class="callout callout--warning report__caution">
+              <span class="callout__title report__caution-heading">{{ copy.cautionHeading }}</span>
               {{ result.caution }}
             </p>
           }
 
           @if (result.grain === 'person-level') {
-            <p class="report__names">
-              <span class="report__names-heading">{{ copy.namesPeopleHeading }}</span>
+            <p class="callout callout--danger report__names">
+              <span class="callout__title report__names-heading">{{
+                copy.namesPeopleHeading
+              }}</span>
               {{ personLevelWarning }}
             </p>
           }
         </section>
 
-        <section class="card filters" aria-labelledby="filters-heading">
-          <h2 class="report__heading" id="filters-heading">{{ copy.filtersHeading }}</h2>
-          <div class="filters__row">
+        <section class="card card--padded filters" aria-labelledby="filters-heading">
+          <h2 class="section-title report__heading" id="filters-heading">
+            {{ copy.filtersHeading }}
+          </h2>
+          <div class="toolbar filters__row">
             @if (result.definition.filters.period) {
-              <label class="filters__field">
-                <span class="filters__label">{{ copy.period }}</span>
-                <select class="filters__input" (change)="onPeriod($event)">
+              <label class="field">
+                <span class="field__label">{{ copy.period }}</span>
+                <select class="field__input field__input--pill" (change)="onPeriod($event)">
                   @for (value of periods; track value) {
                     <option [value]="value" [selected]="period() === value">
                       {{ periodLabel(value) }}
@@ -60,9 +66,9 @@
             }
 
             @if (result.definition.filters.barangay) {
-              <label class="filters__field">
-                <span class="filters__label">{{ copy.barangay }}</span>
-                <select class="filters__input" (change)="onBarangay($event)">
+              <label class="field">
+                <span class="field__label">{{ copy.barangay }}</span>
+                <select class="field__input field__input--pill" (change)="onBarangay($event)">
                   <option value="">{{ copy.allBarangays }}</option>
                   @for (barangay of barangays; track barangay.id) {
                     <option [value]="barangay.id" [selected]="barangayId() === barangay.id">
@@ -80,18 +86,23 @@
         </section>
 
         @if (populated(result).length === 0) {
-          <div class="card report__empty">
-            <h2 class="report__empty-heading">{{ copy.emptyHeading }}</h2>
-            <p class="report__empty-message">{{ copy.emptyMessage }}</p>
+          <div class="card card--padded record-grid__wide report__empty">
+            <h2 class="section-title report__empty-heading">{{ copy.emptyHeading }}</h2>
+            <p class="status-line report__empty-message">{{ copy.emptyMessage }}</p>
           </div>
         } @else {
           @for (series of populated(result); track series.key) {
-            <section class="card series" [attr.aria-label]="series.title">
+            <section
+              class="card card--panel card--padded record-grid__wide series"
+              [attr.aria-label]="series.title"
+            >
               @if (series.suppressionNotice) {
                 <!-- Said above the table. A reader who does not know figures are
                      missing will total the column and defend the answer. -->
-                <p class="series__withheld" role="note">
-                  <span class="series__withheld-heading">{{ copy.withheldHeading }}</span>
+                <p class="callout callout--warning series__withheld" role="note">
+                  <span class="callout__title series__withheld-heading">{{
+                    copy.withheldHeading
+                  }}</span>
                   {{ series.suppressionNotice }}
                 </p>
               }
@@ -116,9 +127,14 @@
           @if (result.limits.length > 0) {
             <!-- Said, never shown as a zero: a figure the records cannot give is not
                  a figure of none (DL-175, DL-190). -->
-            <section class="card limits" aria-labelledby="limits-heading">
-              <h2 class="report__heading" id="limits-heading">{{ copy.limitsHeading }}</h2>
-              <ul class="limits__list">
+            <section
+              class="card card--padded record-grid__wide limits"
+              aria-labelledby="limits-heading"
+            >
+              <h2 class="section-title report__heading" id="limits-heading">
+                {{ copy.limitsHeading }}
+              </h2>
+              <ul class="note-box limits__list">
                 @for (limit of result.limits; track limit) {
                   <li>{{ limit }}</li>
                 }
@@ -126,20 +142,26 @@
             </section>
           }
 
-          <section class="card disclosure" aria-labelledby="disclosure-heading">
-            <h2 class="report__heading" id="disclosure-heading">{{ copy.disclosureHeading }}</h2>
+          <section class="card card--padded disclosure" aria-labelledby="disclosure-heading">
+            <h2 class="section-title report__heading" id="disclosure-heading">
+              {{ copy.disclosureHeading }}
+            </h2>
             <p class="disclosure__basis">{{ result.disclosureBasis }}</p>
           </section>
         }
 
-        <section class="card export" aria-labelledby="export-heading">
-          <h2 class="report__heading" id="export-heading">{{ copy.exportHeading }}</h2>
+        <section class="card card--padded export" aria-labelledby="export-heading">
+          <h2 class="section-title report__heading" id="export-heading">
+            {{ copy.exportHeading }}
+          </h2>
 
           @if (!canExport()) {
-            <p class="export__denied">{{ copy.noExportPermission }}</p>
+            <p class="status-line export__denied">{{ copy.noExportPermission }}</p>
           } @else if (awaitingConfirmation()) {
-            <p class="export__warning" role="alert">
-              <span class="export__warning-heading">{{ copy.exportWarningHeading }}</span>
+            <p class="callout callout--danger export__warning" role="alert">
+              <span class="callout__title export__warning-heading">{{
+                copy.exportWarningHeading
+              }}</span>
               {{ personLevelWarning }}
             </p>
             <p class="export__actions">
@@ -156,11 +178,13 @@
               </button>
             </p>
           } @else {
-            <p class="export__hint">{{ copy.exportHint }}</p>
+            <p class="status-line export__hint">{{ copy.exportHint }}</p>
             @if (fileReady(); as file) {
-              <p class="export__ready" role="status">
+              <p class="callout callout--success export__ready" role="status">
                 {{ copy.fileReady }}
-                <a [href]="file.url" [attr.download]="file.filename">{{ copy.saveFile(file.filename) }}</a>
+                <a [href]="file.url" [attr.download]="file.filename">{{
+                  copy.saveFile(file.filename)
+                }}</a>
               </p>
             }
             <button

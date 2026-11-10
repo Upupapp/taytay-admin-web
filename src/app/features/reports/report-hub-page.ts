@@ -11,6 +11,7 @@ import {
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { REPORTS_COPY } from './reports.copy';
 
@@ -29,7 +30,7 @@ import { REPORTS_COPY } from './reports.copy';
 @Component({
   selector: 'app-report-hub-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, PageHeader, RouterLink],
+  imports: [AsyncContent, Icon, PageHeader, RouterLink],
   templateUrl: './report-hub-page.html',
   styleUrl: './report-hub-page.scss',
 })
