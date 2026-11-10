@@ -1,10 +1,13 @@
-<app-async-content [state]="state()" [content]="body" [skeletonLines]="8"
+<app-async-content
+  [state]="state()"
+  [content]="body"
+  [skeletonLines]="8"
   (retryRequested)="retry()"
 />
 
 <ng-template #body let-request>
   @if (!request) {
-    <div class="card assessment__missing">
+    <div class="card card--padded stack assessment__missing">
       <h1>{{ copy.notFoundHeading }}</h1>
       <p>{{ copy.notFoundMessage }}</p>
       <a class="btn" routerLink="/assistance-requests">{{ copy.back }}</a>
@@ -15,14 +18,19 @@
       [subtitle]="copy.subtitle"
     />
 
-    <div class="assessment">
-      <div class="assessment__main">
-        <section class="card assessment__block" aria-labelledby="request-heading">
-          <h2 class="assessment__heading" id="request-heading">{{ copy.requestHeading }}</h2>
+    <div class="split assessment">
+      <div class="split__main assessment__main">
+        <section
+          class="card card--padded stack assessment__block"
+          aria-labelledby="request-heading"
+        >
+          <h2 class="section-title assessment__heading" id="request-heading">
+            {{ copy.requestHeading }}
+          </h2>
           @if (request.withheld.includes('reasonForRequest')) {
-            <p class="assessment__note" role="note">{{ copy.protectedNote }}</p>
+            <p class="status-line assessment__note" role="note">{{ copy.protectedNote }}</p>
           }
-          <dl class="assessment__facts">
+          <dl class="facts facts--pairs assessment__facts">
             <dt>{{ copy.programme }}</dt>
             <dd>{{ programmeName(request) }}</dd>
             <dt>Status</dt>
@@ -55,14 +63,14 @@
             <dd>{{ channelLabel(request) }}</dd>
             @if (withheld(request, 'referredBy')) {
               <dt>{{ copy.referredBy }}</dt>
-              <dd class="assessment__withheld">{{ copy.withheld }}</dd>
+              <dd class="withheld assessment__withheld">{{ copy.withheld }}</dd>
             } @else if (request.referredBy; as referrer) {
               <dt>{{ copy.referredBy }}</dt>
               <dd>{{ referrer }}</dd>
             }
             <dt>{{ copy.reason }}</dt>
             @if (withheld(request, 'reasonForRequest')) {
-              <dd class="assessment__withheld">{{ copy.withheld }}</dd>
+              <dd class="withheld assessment__withheld">{{ copy.withheld }}</dd>
             } @else {
               <dd>{{ request.reasonForRequest || copy.notSet }}</dd>
             }
@@ -70,8 +78,13 @@
         </section>
 
         <!-- Who is working it, and how it came to them (DL-178). Appended, never edited. -->
-        <section class="card assessment__block" aria-labelledby="assignment-heading">
-          <h2 class="assessment__heading" id="assignment-heading">{{ copy.assignmentHeading }}</h2>
+        <section
+          class="card card--padded stack assessment__block"
+          aria-labelledby="assignment-heading"
+        >
+          <h2 class="section-title assessment__heading" id="assignment-heading">
+            {{ copy.assignmentHeading }}
+          </h2>
           <p class="assessment__fact">
             @if (assigneeName(request); as name) {
               {{ copy.assignedTo }} <strong>{{ name }}</strong>
@@ -81,18 +94,18 @@
           </p>
 
           @if (request.assignments.length > 0) {
-            <ol class="history">
+            <ol class="soft-list history">
               @for (assignment of request.assignments; track $index) {
-                <li class="history__item">
+                <li class="soft-row soft-row--stacked history__item">
                   <p class="history__move">{{ copy.assignedLine(assignment.assigneeName) }}</p>
-                  <p class="history__who">
+                  <p class="soft-row__meta history__who">
                     <time [attr.datetime]="assignment.occurredAt">
                       {{ assignment.occurredAt | date: 'd MMM y, HH:mm' }}
                     </time>
                     · {{ assignment.actorName }}
                   </p>
                   @if (withheld(request, 'assignmentReasons')) {
-                    <p class="history__reason assessment__withheld">{{ copy.withheld }}</p>
+                    <p class="history__reason withheld assessment__withheld">{{ copy.withheld }}</p>
                   } @else if (assignment.reason) {
                     <p class="history__reason">{{ assignment.reason }}</p>
                   } @else {
@@ -105,19 +118,17 @@
 
           @if (canAssign()) {
             @if (!workable(request)) {
-              <p class="assessment__note" role="note">
+              <p class="status-line assessment__note" role="note">
                 {{ uncleared(request) ? protectedWriteRefusal : copy.assignNotWorkable }}
               </p>
             } @else if (workersUnavailable(); as message) {
-              <p class="assessment__notconnected" role="note">{{ copy.workersFailed }} {{ message }}</p>
+              <p class="note-box assessment__notconnected" role="note">
+                {{ copy.workersFailed }} {{ message }}
+              </p>
             } @else {
               <label class="field field--narrow">
                 <span class="field__label">{{ copy.assignTo }}</span>
-                <select
-                  class="field__input"
-                  [value]="assignee()"
-                  (change)="onAssignee($event)"
-                >
+                <select class="field__input" [value]="assignee()" (change)="onAssignee($event)">
                   <option value="">{{ copy.notSet }}</option>
                   @for (worker of socialWorkers(); track worker.id) {
                     <option [value]="worker.id" [selected]="worker.id === assignee()">
@@ -148,31 +159,36 @@
           }
         </section>
 
-        <section class="card assessment__block" aria-labelledby="documents-heading">
-          <h2 class="assessment__heading" id="documents-heading">{{ copy.documentsHeading }}</h2>
-          <p class="assessment__note">{{ copy.documentsNote }}</p>
+        <section
+          class="card card--padded stack assessment__block"
+          aria-labelledby="documents-heading"
+        >
+          <h2 class="section-title assessment__heading" id="documents-heading">
+            {{ copy.documentsHeading }}
+          </h2>
+          <p class="status-line assessment__note">{{ copy.documentsNote }}</p>
 
           <!-- Counts, and the sentence that keeps them from reading as a
                verdict. The wording comes from the domain so a template cannot
                shorten it to "Complete" (`DL-78`). -->
-          <p class="completion">
+          <p class="note-box completion">
             <span class="completion__counts">{{ completionSummary(request) }}</span>
             <span class="completion__hint">{{ documentCopy.completionHint }}</span>
           </p>
 
           @if (uncleared(request)) {
             <!-- Said once, in place of every act the server would refuse (DL-178). -->
-            <p class="assessment__note" role="note">{{ protectedWriteRefusal }}</p>
+            <p class="status-line assessment__note" role="note">{{ protectedWriteRefusal }}</p>
           } @else if (!workable(request)) {
-            <p class="assessment__note" role="note">{{ copy.documentsNotWorkable }}</p>
+            <p class="status-line assessment__note" role="note">{{ copy.documentsNotWorkable }}</p>
           }
 
-          <ul class="documents">
+          <ul class="soft-list documents">
             @for (requirement of request.requirements; track requirement.id) {
-              <li class="documents__item">
+              <li class="subpanel documents__item">
                 <p class="documents__label">
                   {{ requirement.label }}
-                  <span class="documents__obligation">{{ obligationLabel(requirement) }}</span>
+                  <span class="chip documents__obligation">{{ obligationLabel(requirement) }}</span>
                   <app-status-badge [catalog]="requirementCatalog" [status]="requirement.status" />
                 </p>
 
@@ -181,12 +197,16 @@
                 @if (needsApplicabilityDecision(requirement)) {
                   <div class="applicability">
                     <p class="applicability__prompt">
-                      <span class="applicability__tag">{{ documentCopy.awaitingDecision }}</span>
+                      <span class="chip chip--info applicability__tag">{{
+                        documentCopy.awaitingDecision
+                      }}</span>
                       {{ documentCopy.awaitingDecisionHint }}
                     </p>
                     @if (requirement.appliesWhen) {
                       <p class="applicability__when">
-                        <span class="applicability__when-label">{{ documentCopy.appliesWhen }}</span>
+                        <span class="applicability__when-label">{{
+                          documentCopy.appliesWhen
+                        }}</span>
                         {{ requirement.appliesWhen }}
                       </p>
                     }
@@ -222,14 +242,14 @@
                     }
                   </div>
                 } @else if (requirement.obligation === 'conditional') {
-                  <p class="assessment__note">
+                  <p class="status-line assessment__note">
                     {{ applicabilityLabel(requirement) }}
                     @if (rulingWhen(requirement); as when) {
                       · <time [attr.datetime]="when">{{ when | date: 'd MMM y' }}</time>
                     }
                     —
                     @if (withheld(request, 'requirementRemarks')) {
-                      <span class="assessment__withheld">{{ copy.withheld }}</span>
+                      <span class="withheld assessment__withheld">{{ copy.withheld }}</span>
                     } @else {
                       {{ requirement.applicabilityReason || copy.noReasonGiven }}
                     }
@@ -248,7 +268,7 @@
                   (versionSubmitted)="recordDocument(request, requirement.id, $event)"
                 />
                 @if (canDownloadDocuments() && uncleared(request) && requirement.document) {
-                  <p class="assessment__note" role="note">{{ protectedFileRefusal }}</p>
+                  <p class="status-line assessment__note" role="note">{{ protectedFileRefusal }}</p>
                 }
 
                 <!--
@@ -258,25 +278,27 @@
                   (`DL-151`).
                 -->
                 <div class="asked">
-                  <p class="asked__heading">{{ documentCopy.askHeading }}</p>
+                  <p class="eyebrow asked__heading">{{ documentCopy.askHeading }}</p>
 
                   @if (documentWorkUnavailable(); as message) {
                     <!-- Said in place: an empty list here would read as "never asked". -->
-                    <p class="assessment__notconnected" role="note">{{ message }}</p>
+                    <p class="note-box assessment__notconnected" role="note">{{ message }}</p>
                   } @else {
                     @let asked = requestsFor(requirement.id);
                     @if (asked.length === 0) {
-                      <p class="asked__none">{{ documentCopy.noRequests }}</p>
+                      <p class="status-line asked__none">{{ documentCopy.noRequests }}</p>
                     } @else {
-                      <ul class="asked__list">
+                      <ul class="soft-list asked__list">
                         @for (entry of asked; track entry.id) {
-                          <li class="asked__item">
+                          <li class="soft-row soft-row--stacked asked__item">
                             @if (entry.isWithheld) {
-                              <p class="asked__message assessment__withheld">{{ copy.withheld }}</p>
+                              <p class="asked__message withheld assessment__withheld">
+                                {{ copy.withheld }}
+                              </p>
                             } @else {
                               <p class="asked__message">{{ entry.message }}</p>
                             }
-                            <p class="asked__meta">
+                            <p class="soft-row__meta asked__meta">
                               {{ requestStateLabels[entry.state] }} &middot;
                               {{ channelLabels[entry.channel] }}
                               @if (entry.neededBy) {
@@ -284,7 +306,7 @@
                                 {{ entry.neededBy | date: 'd MMM y' }}
                               }
                             </p>
-                            <p class="asked__meta">
+                            <p class="soft-row__meta asked__meta">
                               {{ documentCopy.requestedOn }}
                               <time [attr.datetime]="entry.requestedAt">
                                 {{ entry.requestedAt | date: 'd MMM y' }}
@@ -293,14 +315,20 @@
                             </p>
                             @if (entry.state === 'withdrawn') {
                               @if (entry.isWithheld) {
-                                <p class="asked__meta assessment__withheld">{{ copy.withheld }}</p>
+                                <p class="soft-row__meta asked__meta withheld assessment__withheld">
+                                  {{ copy.withheld }}
+                                </p>
                               } @else if (entry.withdrawnReason) {
-                                <p class="asked__meta">{{ entry.withdrawnReason }}</p>
+                                <p class="soft-row__meta asked__meta">
+                                  {{ entry.withdrawnReason }}
+                                </p>
                               }
                             }
-                            @if (entry.state === 'open' && canRecordDocuments() && workable(request)) {
+                            @if (
+                              entry.state === 'open' && canRecordDocuments() && workable(request)
+                            ) {
                               @if (withdrawing() === entry.id) {
-                                <div class="asked__form">
+                                <div class="subpanel subpanel--soft asked__form">
                                   <label class="field">
                                     <span class="field__label">
                                       {{ documentCopy.withdrawHeading }}
@@ -344,8 +372,8 @@
 
                     @if (canRecordDocuments() && workable(request)) {
                       @if (askingFor() === requirement.id) {
-                        <div class="asked__form">
-                          <p class="asked__intro">{{ documentCopy.askIntro }}</p>
+                        <div class="subpanel subpanel--soft asked__form">
+                          <p class="status-line asked__intro">{{ documentCopy.askIntro }}</p>
 
                           <label class="field field--narrow">
                             <span class="field__label">{{ documentCopy.askChannel }}</span>
@@ -419,9 +447,11 @@
                 </div>
 
                 @if (withheld(request, 'requirementRemarks')) {
-                  <p class="assessment__note assessment__withheld">{{ copy.remarksWithheld }}</p>
+                  <p class="status-line withheld assessment__note assessment__withheld">
+                    {{ copy.remarksWithheld }}
+                  </p>
                 } @else if (requirement.remarks) {
-                  <p class="assessment__note">{{ requirement.remarks }}</p>
+                  <p class="status-line assessment__note">{{ requirement.remarks }}</p>
                 }
                 @if (canReviewDocuments() && workable(request)) {
                   <label class="field">
@@ -492,21 +522,28 @@
           </ul>
         </section>
 
-        <section class="card assessment__block" aria-labelledby="study-heading">
-          <h2 class="assessment__heading" id="study-heading">{{ copy.studyHeading }}</h2>
-          <p class="assessment__note">{{ copy.studyNote }}</p>
+        <section class="card card--padded stack assessment__block" aria-labelledby="study-heading">
+          <h2 class="section-title assessment__heading" id="study-heading">
+            {{ copy.studyHeading }}
+          </h2>
+          <p class="status-line assessment__note">{{ copy.studyNote }}</p>
 
           <!-- The latest completed study, as the server disclosed it. Read by everybody who can
                open the request; its words withheld where the reader may not have them (DL-178). -->
           @if (request.assessment; as study) {
             <h3 class="assessment__subheading">{{ copy.completedHeading }}</h3>
-            <dl class="assessment__facts">
+            <dl class="facts facts--pairs assessment__facts">
               <dt>{{ copy.studyForm }}</dt>
-              <dd>{{ templateLabel(study.templateCode) }} · {{ copy.versionLabel(study.templateVersion) }}</dd>
+              <dd>
+                {{ templateLabel(study.templateCode) }} ·
+                {{ copy.versionLabel(study.templateVersion) }}
+              </dd>
               <dt>{{ copy.studyBy }}</dt>
               <dd>
                 {{ study.assessedByName }} ·
-                <time [attr.datetime]="study.assessedAt">{{ study.assessedAt | date: 'd MMM y' }}</time>
+                <time [attr.datetime]="study.assessedAt">{{
+                  study.assessedAt | date: 'd MMM y'
+                }}</time>
               </dd>
               <dt>{{ copy.recommendation }}</dt>
               <dd>{{ recommendationLabel(study) }}</dd>
@@ -522,46 +559,50 @@
               <dd>{{ study.homeVisitConducted ? copy.yes : copy.no }}</dd>
               <dt>{{ copy.findings }}</dt>
               @if (withheld(request, 'assessment')) {
-                <dd class="assessment__withheld">{{ copy.studyWithheld }}</dd>
+                <dd class="withheld assessment__withheld">{{ copy.studyWithheld }}</dd>
               } @else {
                 <dd>{{ study.findings }}</dd>
               }
               @if (withheld(request, 'assessment')) {
                 <dt>{{ copy.recommendationReason }}</dt>
-                <dd class="assessment__withheld">{{ copy.studyWithheld }}</dd>
+                <dd class="withheld assessment__withheld">{{ copy.studyWithheld }}</dd>
               } @else if (study.recommendationReason; as why) {
                 <dt>{{ copy.recommendationReason }}</dt>
                 <dd>{{ why }}</dd>
               }
             </dl>
           } @else {
-            <p class="assessment__note">{{ copy.noStudyYet }}</p>
+            <p class="status-line assessment__note">{{ copy.noStudyYet }}</p>
           }
 
           @if (canAssess()) {
             @if (request.status !== 'assessment') {
-              <p class="assessment__note" role="note">{{ copy.notInAssessment }}</p>
+              <p class="status-line assessment__note" role="note">{{ copy.notInAssessment }}</p>
             } @else if (uncleared(request)) {
-              <p class="assessment__note" role="note">{{ protectedWriteRefusal }}</p>
+              <p class="status-line assessment__note" role="note">{{ protectedWriteRefusal }}</p>
             } @else if (studyUnavailable(); as message) {
               <!-- Never a form whose save goes nowhere (DL-32). -->
-              <p class="assessment__notconnected" role="note">{{ message }}</p>
+              <p class="note-box assessment__notconnected" role="note">{{ message }}</p>
             } @else {
               <h3 class="assessment__subheading">{{ copy.formHeading }}</h3>
-              <p class="assessment__note">{{ copy.formIntro }}</p>
+              <p class="status-line assessment__note">{{ copy.formIntro }}</p>
 
               @if (openAssessment(); as opened) {
-                <p class="assessment__pinned">
+                <p class="status-line assessment__pinned">
                   {{ template()?.label ?? opened.templateCode }} &middot;
                   {{ copy.versionLabel(opened.templateVersion) }}
                 </p>
                 @if (alreadyOpenFrom(); as label) {
-                  <p class="assessment__note" role="status">{{ copy.alreadyOpen(label) }}</p>
+                  <p class="status-line assessment__note" role="status">
+                    {{ copy.alreadyOpen(label) }}
+                  </p>
                 }
 
                 @if (template(); as form) {
                   @if (form.status === 'placeholder-pending-lgu-approval') {
-                    <p class="assessment__provisional" role="note">{{ copy.formProvisional }}</p>
+                    <p class="callout callout--warning assessment__provisional" role="note">
+                      {{ copy.formProvisional }}
+                    </p>
                   }
 
                   @for (question of form.questions; track question.code) {
@@ -573,7 +614,10 @@
                     -->
                     <label class="field" [attr.for]="'answer-' + question.code">
                       <span class="field__label">
-                        {{ question.label }}@if (question.required) {<span aria-hidden="true">&nbsp;*</span>}
+                        {{ question.label }}
+                        @if (question.required) {
+                          <span aria-hidden="true">&nbsp;*</span>
+                        }
                       </span>
                       @switch (question.kind) {
                         @case ('choice') {
@@ -585,7 +629,10 @@
                           >
                             <option value="">{{ copy.notSet }}</option>
                             @for (choice of question.choices; track choice) {
-                              <option [value]="choice" [selected]="answers()[question.code] === choice">
+                              <option
+                                [value]="choice"
+                                [selected]="answers()[question.code] === choice"
+                              >
                                 {{ choice }}
                               </option>
                             }
@@ -629,7 +676,7 @@
                   </div>
                 }
               } @else {
-                <p class="assessment__note">{{ copy.notOpened }}</p>
+                <p class="status-line assessment__note">{{ copy.notOpened }}</p>
 
                 <label class="field field--narrow">
                   <span class="field__label">{{ copy.chooseTemplate }}</span>
@@ -717,7 +764,7 @@
               }
 
               @if (unanswered().length > 0 || assessmentProblems().length > 0) {
-                <div class="assessment__blockers" role="status">
+                <div class="note-box assessment__blockers" role="status">
                   <p>{{ copy.stillNeeded }}</p>
                   <ul>
                     @for (question of unanswered(); track question.code) {
@@ -731,7 +778,7 @@
               }
 
               <!-- Completing moves the request nowhere: endorsing is the status move (DL-178). -->
-              <p class="assessment__note">{{ copy.completeMovesNothing }}</p>
+              <p class="status-line assessment__note">{{ copy.completeMovesNothing }}</p>
               <div class="assessment__actions">
                 <button
                   type="button"
@@ -747,28 +794,32 @@
         </section>
 
         <!-- The notes: listed whole, a withheld body said as withheld (DL-58). -->
-        <section class="card assessment__block" aria-labelledby="notes-heading">
-          <h2 class="assessment__heading" id="notes-heading">{{ copy.notesHeading }}</h2>
+        <section class="card card--padded stack assessment__block" aria-labelledby="notes-heading">
+          <h2 class="section-title assessment__heading" id="notes-heading">
+            {{ copy.notesHeading }}
+          </h2>
           @switch (notesView().kind) {
             @case ('error') {
-              <p class="assessment__notconnected" role="note">{{ copy.notesFailed }}</p>
+              <p class="note-box assessment__notconnected" role="note">{{ copy.notesFailed }}</p>
             }
             @case ('ready') {
               @let notes = notesList();
               @if (notes.length === 0) {
-                <p class="assessment__note">{{ copy.noNotes }}</p>
+                <p class="status-line assessment__note">{{ copy.noNotes }}</p>
               } @else {
-                <ol class="history">
+                <ol class="soft-list history">
                   @for (note of notes; track note.id) {
-                    <li class="history__item">
-                      <p class="history__who">
+                    <li class="soft-row soft-row--stacked history__item">
+                      <p class="soft-row__meta history__who">
                         <time [attr.datetime]="note.createdAt">
                           {{ note.createdAt | date: 'd MMM y, HH:mm' }}
                         </time>
                         · {{ note.authorName }} · {{ copy.noteSensitivityLabels[note.sensitivity] }}
                       </p>
                       @if (note.isWithheld) {
-                        <p class="history__reason assessment__withheld">{{ copy.noteWithheld }}</p>
+                        <p class="history__reason withheld assessment__withheld">
+                          {{ copy.noteWithheld }}
+                        </p>
                       } @else {
                         <p class="history__reason">{{ note.body }}</p>
                       }
@@ -778,13 +829,13 @@
               }
             }
             @default {
-              <p class="assessment__note" role="status">{{ copy.notesLoading }}</p>
+              <p class="status-line assessment__note" role="status">{{ copy.notesLoading }}</p>
             }
           }
 
           @if (canNote()) {
             @if (withheld(request, 'notes')) {
-              <p class="assessment__note" role="note">{{ protectedWriteRefusal }}</p>
+              <p class="status-line assessment__note" role="note">{{ protectedWriteRefusal }}</p>
             } @else {
               <label class="field">
                 <span class="field__label">{{ copy.noteBody }}</span>
@@ -824,15 +875,22 @@
         </section>
       </div>
 
-      <aside class="assessment__side">
-        <section class="card assessment__block" aria-labelledby="applicant-heading">
-          <h2 class="assessment__heading" id="applicant-heading">{{ copy.applicantHeading }}</h2>
+      <aside class="split__side assessment__side">
+        <section
+          class="card card--padded stack assessment__block"
+          aria-labelledby="applicant-heading"
+        >
+          <h2 class="section-title assessment__heading" id="applicant-heading">
+            {{ copy.applicantHeading }}
+          </h2>
           @if (!readsRegistry()) {
-            <p class="assessment__note" role="note">{{ copy.registryNotRead }}</p>
+            <p class="status-line assessment__note" role="note">{{ copy.registryNotRead }}</p>
           } @else if (profileFailure(); as message) {
-            <p class="assessment__notconnected" role="note">{{ copy.profileFailed }} {{ message }}</p>
+            <p class="note-box assessment__notconnected" role="note">
+              {{ copy.profileFailed }} {{ message }}
+            </p>
           } @else {
-            <p class="assessment__note">{{ copy.applicantNote }}</p>
+            <p class="status-line assessment__note">{{ copy.applicantNote }}</p>
             @if (profile(); as context) {
               @if (linksRegistry()) {
                 <app-resident-summary-card
@@ -841,7 +899,9 @@
                 />
                 @if (context.household; as household) {
                   <p class="assessment__fact">
-                    <a [routerLink]="'/households/' + household.id">{{ household.referenceNumber }}</a>
+                    <a [routerLink]="'/households/' + household.id">{{
+                      household.referenceNumber
+                    }}</a>
                   </p>
                 }
               } @else {
@@ -855,23 +915,30 @@
           }
         </section>
 
-        <section class="card assessment__block">
+        <section class="card card--padded stack assessment__block">
           @if (!readsAdvisory()) {
-            <p class="assessment__note" role="note">{{ copy.advisoryNotRead }}</p>
+            <p class="status-line assessment__note" role="note">{{ copy.advisoryNotRead }}</p>
           } @else if (advisoryFailure(); as message) {
             <!-- Never the empty panel: a check that could not be read is not "nothing found". -->
-            <p class="assessment__notconnected" role="alert">{{ copy.advisoryFailed }} {{ message }}</p>
+            <p class="note-box assessment__notconnected" role="alert">
+              {{ copy.advisoryFailed }} {{ message }}
+            </p>
           } @else {
             <app-advisory-panel [advisory]="advisory()" />
           }
         </section>
 
-        <section class="card assessment__block" aria-labelledby="readiness-heading">
-          <h2 class="assessment__heading" id="readiness-heading">{{ copy.readinessHeading }}</h2>
+        <section
+          class="card card--padded stack assessment__block"
+          aria-labelledby="readiness-heading"
+        >
+          <h2 class="section-title assessment__heading" id="readiness-heading">
+            {{ copy.readinessHeading }}
+          </h2>
           <!-- Stated, never enforced: none of this withholds the move (DL-60). -->
-          <p class="assessment__note">{{ copy.readinessNote }}</p>
+          <p class="status-line assessment__note">{{ copy.readinessNote }}</p>
           @if (readiness(request).length === 0) {
-            <p class="assessment__ready">{{ copy.readinessClear }}</p>
+            <p class="callout callout--success assessment__ready">{{ copy.readinessClear }}</p>
           } @else {
             <ul class="assessment__readiness">
               @for (code of readiness(request); track code) {
@@ -881,18 +948,18 @@
           }
         </section>
 
-        <div class="assessment__block">
+        <div class="card card--padded stack assessment__block">
           @if (endsUnderPayout(request.status)) {
             <!-- Said before the button, never as a refusal after it (DL-183). -->
             @if (!servesReleases) {
               <app-not-connected port="release" />
             } @else if (openRelease(); as release) {
-              <p class="assessment__note" role="note">
+              <p class="status-line assessment__note" role="note">
                 {{ releaseStands(release) }}
                 <a [routerLink]="'/releases/' + release.id">{{ copy.openReleaseLink }}</a>
               </p>
             } @else if (unknownRelease()) {
-              <p class="assessment__note" role="note">{{ copy.releaseMayStand }}</p>
+              <p class="status-line assessment__note" role="note">{{ copy.releaseMayStand }}</p>
             }
           }
           <app-status-transition
@@ -907,23 +974,25 @@
           />
           @if (request.status === 'approved' || request.status === 'scheduled') {
             <!-- Scheduled and released are recorded with the payout, never moved here (DL-180). -->
-            <p class="assessment__note">{{ copy.payoutMoves }}</p>
+            <p class="status-line assessment__note">{{ copy.payoutMoves }}</p>
           }
           @if (request.status === 'endorsed' && canApprove()) {
-            <section class="assessment__approve" aria-labelledby="approve-heading">
-              <h3 class="assessment__heading" id="approve-heading">{{ copy.approveHeading }}</h3>
-              <p class="assessment__note">{{ copy.approveNote }}</p>
-              <p class="assessment__note">
+            <section class="subpanel assessment__approve" aria-labelledby="approve-heading">
+              <h3 class="section-title assessment__heading" id="approve-heading">
+                {{ copy.approveHeading }}
+              </h3>
+              <p class="status-line assessment__note">{{ copy.approveNote }}</p>
+              <p class="status-line assessment__note">
                 {{
                   copy.approveContext(
-                    (request.requestedAmount | peso: copy.notSet),
-                    (request.assessment?.recommendedAmount | peso: copy.notSet)
+                    request.requestedAmount | peso: copy.notSet,
+                    request.assessment?.recommendedAmount | peso: copy.notSet
                   )
                 }}
               </p>
-              <fieldset class="field">
-                <legend class="field__label">{{ copy.approveKindLegend }}</legend>
-                <label>
+              <fieldset class="choice-list assessment__kind">
+                <legend>{{ copy.approveKindLegend }}</legend>
+                <label class="choice">
                   <input
                     type="radio"
                     name="approval-kind"
@@ -933,7 +1002,7 @@
                   />
                   {{ copy.approveKindMoney }}
                 </label>
-                <label>
+                <label class="choice">
                   <input
                     type="radio"
                     name="approval-kind"
@@ -984,7 +1053,12 @@
                 <p class="field__error" role="alert">{{ problem }}</p>
               }
               <div class="assessment__actions">
-                <button type="button" class="btn btn--primary" [disabled]="submitting()" (click)="approve()">
+                <button
+                  type="button"
+                  class="btn btn--primary"
+                  [disabled]="submitting()"
+                  (click)="approve()"
+                >
                   {{ copy.approveSubmit }}
                 </button>
               </div>
@@ -997,24 +1071,29 @@
           }
         </div>
 
-        <section class="card assessment__block" aria-labelledby="history-heading">
-          <h2 class="assessment__heading" id="history-heading">{{ copy.historyHeading }}</h2>
+        <section
+          class="card card--padded stack assessment__block"
+          aria-labelledby="history-heading"
+        >
+          <h2 class="section-title assessment__heading" id="history-heading">
+            {{ copy.historyHeading }}
+          </h2>
           @if (request.statusHistory.length === 0) {
-            <p class="assessment__note">{{ copy.noHistory }}</p>
+            <p class="status-line assessment__note">{{ copy.noHistory }}</p>
           } @else {
             <!-- An ordered list, oldest first, no connectors (DL-56). -->
-            <ol class="history">
+            <ol class="soft-list history">
               @for (change of request.statusHistory; track $index) {
-                <li class="history__item">
+                <li class="soft-row soft-row--stacked history__item">
                   <p class="history__move">{{ moveLabel(change) }}</p>
-                  <p class="history__who">
+                  <p class="soft-row__meta history__who">
                     <time [attr.datetime]="change.occurredAt">
                       {{ change.occurredAt | date: 'd MMM y, HH:mm' }}
                     </time>
                     · {{ change.actorName }}
                   </p>
                   @if (withheld(request, 'statusReasons')) {
-                    <p class="history__reason assessment__withheld">{{ copy.withheld }}</p>
+                    <p class="history__reason withheld assessment__withheld">{{ copy.withheld }}</p>
                   } @else if (change.reason) {
                     <p class="history__reason">{{ change.reason }}</p>
                   } @else {
@@ -1034,21 +1113,19 @@
      composed by the server — it names the file and says whether the record is
      protected — so the sentence is true rather than reassuring. -->
 @if (pendingAccess(); as grant) {
-  <app-modal
-    [open]="true"
-    [heading]="accessCopy.warningHeading"
-    (dismissed)="cancelOpen()"
-  >
-    <div modal-body class="access">
+  <app-modal [open]="true" [heading]="accessCopy.warningHeading" (dismissed)="cancelOpen()">
+    <div modal-body class="stack access">
       <p class="access__file">{{ grant.fileName }}</p>
-      <p class="access__warning">{{ grant.warning }}</p>
+      <p class="callout callout--warning access__warning">{{ grant.warning }}</p>
       @if (grant.redactedForSharing) {
-        <p class="access__redacted">{{ accessCopy.redacted }}</p>
+        <p class="status-line access__redacted">{{ accessCopy.redacted }}</p>
       }
       @if (fileReady(); as file) {
         <p class="access__ready" role="status">
           {{ accessCopy.ready }}
-          <a [href]="file.url" [attr.download]="file.fileName">{{ accessCopy.save(file.fileName) }}</a>
+          <a [href]="file.url" [attr.download]="file.fileName">{{
+            accessCopy.save(file.fileName)
+          }}</a>
         </p>
       }
     </div>

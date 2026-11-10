@@ -1,27 +1,37 @@
+/* One requirement's document: the version the office holds, its masked facts,
+   the superseded versions (append-only, DL-77) and, last, the upload. */
+
 .document {
-  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--text);
+  font-size: var(--fs-label);
 }
 
-.document__line {
+.document__line,
+.document__file,
+.document__history-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-compact);
-  margin: 0;
+  gap: var(--space-2);
 }
 
-.document__source {
-  font-weight: 600;
+.document__source,
+.document__history-version {
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
 }
 
 /* The word carries the meaning; the tint only reinforces it (WCAG 1.4.1). */
 .document__validity {
-  padding: 1px var(--space-compact);
-  border-radius: var(--radius-sm);
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
   background: var(--tone-neutral-bg);
   color: var(--tone-neutral-fg);
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
 }
 
 .document__validity[data-validity='valid'] {
@@ -39,48 +49,41 @@
   color: var(--tone-danger-fg);
 }
 
-.document__file {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-compact);
-  margin: var(--space-micro) 0 0;
-}
-
 .document__name {
   overflow-wrap: anywhere;
 }
 
 .document__size,
-.document__no-file {
-  color: var(--c-text-subtle);
-  font-size: 12px;
-}
-
-.document__no-file {
-  margin: var(--space-micro) 0 0;
-}
-
-.document__none {
-  margin: 0;
-  color: var(--c-text-muted);
+.document__no-file,
+.document__none,
+.document__history-date,
+.document__history-line {
+  color: var(--muted);
+  font-size: var(--fs-xs);
 }
 
 .document__facts {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-snug) var(--space-base);
-  margin: var(--space-snug) 0;
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+  padding: var(--space-3) 14px;
+  border-radius: var(--r-field);
+  background: var(--soft2);
 }
 
 .document__fact dt {
-  color: var(--c-text-muted);
-  font-size: 11.5px;
-  font-weight: 600;
+  color: var(--muted);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
 }
 
 .document__fact dd {
   margin: 0;
-  font-size: 12.5px;
+  color: var(--ink);
+  font-size: var(--fs-xs);
 }
 
 .document__masked {
@@ -90,68 +93,78 @@
 
 .document__masked-note {
   display: block;
-  color: var(--c-text-subtle);
-  font-size: 11px;
+  color: var(--muted);
+  font-size: var(--fs-micro);
   letter-spacing: normal;
 }
 
 .document__history {
-  margin-block-start: var(--space-snug);
-  padding-block-start: var(--space-snug);
-  border-block-start: 1px solid var(--c-border);
+  padding-block-start: var(--space-2);
+  border-block-start: 1px solid var(--soft);
 }
 
 .document__history-summary {
   min-block-size: var(--target-min);
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-  font-weight: 600;
+  color: var(--text2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  line-height: var(--target-min);
   cursor: pointer;
 }
 
 .document__history-list {
-  margin: var(--space-snug) 0 0;
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
   padding: 0;
   list-style: none;
 }
 
 .document__history-item {
-  padding-block: var(--space-compact);
-  border-block-start: 1px solid var(--c-border);
-}
-
-.document__history-item:first-child {
-  border-block-start: none;
-}
-
-.document__history-head {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-compact);
-  margin: 0;
-}
-
-.document__history-version {
-  font-weight: 600;
-}
-
-.document__history-date {
-  color: var(--c-text-subtle);
-  font-size: 12px;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 10px var(--space-3);
+  border-radius: var(--r-field);
+  background: var(--soft2);
 }
 
 .document__history-reason {
-  margin: var(--space-micro) 0 var(--space-compact);
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
 }
 
 .document__history-reason-label {
-  color: var(--c-text-muted);
-  font-weight: 600;
+  color: var(--muted);
+  font-weight: var(--fw-semibold);
 }
 
-.document__history-line {
-  margin: 0;
-  font-size: 12.5px;
-  color: var(--c-text-muted);
+/* The upload, below what it would supersede: hairline-framed fields. */
+.document__upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+}
+
+.document__upload .field + .field {
+  margin-block-start: 0;
+}
+
+.document__upload > .btn {
+  align-self: flex-end;
+}
+
+.document__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.document__progress progress {
+  flex: 1 1 auto;
+  accent-color: var(--primary);
 }

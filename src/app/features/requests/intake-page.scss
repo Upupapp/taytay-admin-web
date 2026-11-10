@@ -1,270 +1,82 @@
 /* Layout only. The stepper, the problems list and the context panel all say in
-   words what they mean; removing this file changes the shape, not the sense. */
+   words what they mean; removing this file changes the shape, not the sense.
+   Form pattern (ResidentRegister): the steps as numbered pills, the step in a
+   wide card, the applicant's context beside it (DL-62). */
 
 .stepper {
-  margin-block-end: var(--space-base);
-  padding: var(--space-snug) var(--space-base);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
-}
-
-.stepper__position {
-  margin: 0 0 var(--space-compact);
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-}
-
-.stepper__list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-compact);
-}
-
-.stepper__button {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 2px;
-  min-block-size: 36px;
-  padding: var(--space-compact) var(--space-snug);
-  border: 1px solid var(--c-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
-  color: var(--c-text);
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-/* `aria-current="step"` carries this for anyone not reading the shading. */
-.stepper__button--active {
-  border-color: var(--c-brand);
-  background: var(--c-brand-soft);
-  font-weight: 600;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  margin-block-end: var(--space-4);
 }
 
 .stepper__todo {
-  color: var(--c-text-muted);
-  font-size: 11.5px;
-  font-weight: 400;
-}
-
-.intake {
-  display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: var(--space-base);
-  align-items: start;
-}
-
-@media (max-width: 1000px) {
-  .intake {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.intake__main,
-.intake__side {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-base);
-  min-inline-size: 0;
-}
-
-.intake__block {
-  padding: var(--space-base);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-snug);
-}
-
-.intake__heading {
-  margin: 0;
-  font-size: 15px;
+  background: var(--gold-tint2);
+  color: var(--gold-ink2);
 }
 
 .intake__subheading {
-  margin: var(--space-compact) 0 0;
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--ink);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
 }
 
-.intake__note,
-.intake__none,
-.intake__aside {
-  margin: 0;
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-}
-
-.intake__ready {
-  margin: 0;
-  color: var(--tone-success-fg);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.intake__problem {
-  margin: 0;
-  color: var(--tone-danger-fg);
-  font-size: 12.5px;
-}
-
-.intake__problems {
-  margin: 0;
-  padding-inline-start: var(--space-base);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-compact);
-  font-size: 13px;
-}
-
-.intake__problem-link {
-  min-block-size: var(--target-min);
-  padding: 0 var(--space-compact);
-  border: 1px solid var(--c-border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--c-surface-muted);
-  color: var(--c-text);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.intake__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-compact);
-}
-
-.intake__members,
-.intake__history {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-compact);
-}
-
+.intake__fact,
 .intake__history-item {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-compact);
-  font-size: 12.5px;
+  font-size: var(--fs-label);
 }
 
 .intake__history-ref {
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .intake__history-status {
-  color: var(--c-text-muted);
+  color: var(--muted);
 }
 
-.intake__fact {
-  margin: 0;
-  font-size: 13px;
-}
-
-.intake__figures,
-.review {
-  margin: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-compact) var(--space-snug);
-  font-size: 13px;
-}
-
-.intake__figures dt,
-.review dt {
-  color: var(--c-text-muted);
-  font-weight: 600;
-}
-
-.intake__figures dd,
-.review dd {
-  margin: 0;
-}
-
-.acknowledge {
+.intake__problems {
   display: flex;
   flex-direction: column;
-  gap: var(--space-compact);
-  padding: var(--space-snug);
-  border: 1px solid var(--tone-warning-fg);
-  border-radius: var(--radius-md);
-  background: var(--tone-warning-bg);
+  gap: var(--space-2);
+  margin: 0;
+  padding-inline-start: 18px;
+  font-size: var(--fs-label);
 }
 
-.acknowledge__heading {
-  margin: 0;
-  font-size: 14px;
+.intake__problem-link {
+  margin-inline-end: var(--space-2);
 }
 
-.acknowledge__note {
-  margin: 0;
-  font-size: 12.5px;
+.intake__ready {
+  font-weight: var(--fw-semibold);
 }
 
-.documents {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
+.acknowledge,
+.intake__refusal {
   flex-direction: column;
-  gap: var(--space-compact);
+  gap: var(--space-2);
 }
 
-.documents__item {
-  padding: var(--space-snug);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-compact);
+.acknowledge .field + .field {
+  margin-block-start: 0;
 }
 
 .documents__label {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.documents__tag {
-  margin-inline-start: var(--space-compact);
-  padding: 1px var(--space-compact);
-  border-radius: var(--radius-sm);
-  background: var(--c-surface-muted);
-  color: var(--c-text-muted);
-  font-size: 11.5px;
-  font-weight: 600;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--fw-semibold);
 }
 
 .documents__controls {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-base);
+  gap: var(--space-4);
 }
 
-/* See `.panel__unread` on the resident profile — the same third answer, said the same way. */
-.intake__unread {
-  margin: var(--space-2) 0 0;
-  padding: var(--space-3);
-  border-left: 3px solid var(--c-border-strong);
-  background: var(--c-surface-muted);
-  font-size: 13px;
-}
-
-/* The refusal is said in words before it is said in colour. */
-.intake__refusal {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-compact);
-  margin-block-start: var(--space-base);
-  padding: var(--space-base);
-  border-inline-start: 3px solid var(--tone-danger-fg);
-  background: var(--c-surface);
+.intake__actions {
+  padding-block-start: 0;
+  border-block-start: 0;
 }

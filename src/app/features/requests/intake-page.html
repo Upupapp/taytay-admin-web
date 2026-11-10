@@ -3,20 +3,22 @@
 <!-- The stepper moves between sections of this page. It is a list of buttons,
      not links: nothing is fetched again and nothing is lost (DL-62). -->
 <nav class="stepper" [attr.aria-label]="copy.stepperLabel">
-  <p class="stepper__position">{{ copy.stepOf(stepNumber(), totalSteps) }}</p>
-  <ol class="stepper__list">
+  <p class="status-line stepper__position">{{ copy.stepOf(stepNumber(), totalSteps) }}</p>
+  <ol class="tabs stepper__list">
     @for (item of steps; track item) {
       <li class="stepper__item">
         <button
           type="button"
-          class="stepper__button"
+          class="tab stepper__button"
+          [class.tab--active]="step() === item"
           [class.stepper__button--active]="step() === item"
           [attr.aria-current]="step() === item ? 'step' : null"
           (click)="goTo(item)"
         >
+          <span class="step-number" aria-hidden="true">{{ $index + 1 }}</span>
           <span class="stepper__name">{{ stepShort(item) }}</span>
           @if (problemsIn(item).length > 0) {
-            <span class="stepper__todo">{{ problemsIn(item).length }} to do</span>
+            <span class="tab__count stepper__todo">{{ problemsIn(item).length }} to do</span>
           }
         </button>
       </li>
@@ -24,26 +26,32 @@
   </ol>
 </nav>
 
-<div class="intake">
-  <div class="intake__main">
+<div class="split intake">
+  <div class="split__main intake__main">
     @if (withheldDraft()) {
-      <section class="card intake__block" aria-labelledby="withheld-heading">
-        <h2 class="intake__heading" id="withheld-heading">{{ copy.withheldHeading }}</h2>
-        <p class="intake__note" role="note">{{ copy.withheldDraft }}</p>
+      <section class="card card--padded stack intake__block" aria-labelledby="withheld-heading">
+        <h2 class="section-title intake__heading" id="withheld-heading">
+          {{ copy.withheldHeading }}
+        </h2>
+        <p class="status-line intake__note" role="note">{{ copy.withheldDraft }}</p>
         <a class="btn" routerLink="/assistance-requests">{{ copy.backToList }}</a>
       </section>
     } @else if (resumeFailure(); as message) {
-      <section class="card intake__block" aria-labelledby="unread-heading">
-        <h2 class="intake__heading" id="unread-heading">{{ copy.resumeFailedHeading }}</h2>
-        <p class="intake__problem" role="alert">{{ message }}</p>
+      <section class="card card--padded stack intake__block" aria-labelledby="unread-heading">
+        <h2 class="section-title intake__heading" id="unread-heading">
+          {{ copy.resumeFailedHeading }}
+        </h2>
+        <p class="callout callout--danger intake__problem" role="alert">{{ message }}</p>
         <a class="btn" routerLink="/assistance-requests">{{ copy.backToList }}</a>
       </section>
     } @else {
       @switch (step()) {
         @case ('person') {
-          <section class="card intake__block" aria-labelledby="person-heading">
-            <h2 class="intake__heading" id="person-heading">{{ copy.personHeading }}</h2>
-            <p class="intake__note">{{ copy.personNote }}</p>
+          <section class="card card--padded stack intake__block" aria-labelledby="person-heading">
+            <h2 class="section-title intake__heading" id="person-heading">
+              {{ copy.personHeading }}
+            </h2>
+            <p class="status-line intake__note">{{ copy.personNote }}</p>
 
             <app-person-picker
               [selected]="chosen()"
@@ -51,7 +59,7 @@
               label="Applicant"
             />
 
-            <p class="intake__aside">
+            <p class="status-line intake__aside">
               {{ copy.personMissing }}
               <a routerLink="/residents/new">{{ copy.personMissingLink }}</a>
             </p>
@@ -59,8 +67,10 @@
         }
 
         @case ('request') {
-          <section class="card intake__block" aria-labelledby="request-heading">
-            <h2 class="intake__heading" id="request-heading">{{ copy.requestHeading }}</h2>
+          <section class="card card--padded stack intake__block" aria-labelledby="request-heading">
+            <h2 class="section-title intake__heading" id="request-heading">
+              {{ copy.requestHeading }}
+            </h2>
 
             <label class="field">
               <span class="field__label">{{ copy.channel }}</span>
@@ -75,7 +85,7 @@
             </label>
             <!-- Said in words, so the absence of the online option is a decision
                  the reader can see rather than a gap they wonder about. -->
-            <p class="intake__aside">{{ copy.channelOnlineNote }}</p>
+            <p class="status-line intake__aside">{{ copy.channelOnlineNote }}</p>
 
             @if (draft().channel === 'barangay-referral') {
               <label class="field">
@@ -138,18 +148,24 @@
         }
 
         @case ('checks') {
-          <section class="card intake__block" aria-labelledby="checks-heading">
-            <h2 class="intake__heading" id="checks-heading">{{ copy.checksHeading }}</h2>
+          <section class="card card--padded stack intake__block" aria-labelledby="checks-heading">
+            <h2 class="section-title intake__heading" id="checks-heading">
+              {{ copy.checksHeading }}
+            </h2>
             @if (advisoryFailure(); as message) {
               <!-- Never the empty panel: a check that could not be read is not "nothing found". -->
-              <p class="intake__problem" role="alert">{{ copy.advisoryFailed }} {{ message }}</p>
+              <p class="callout callout--danger intake__problem" role="alert">
+                {{ copy.advisoryFailed }} {{ message }}
+              </p>
             } @else {
               <app-advisory-panel [advisory]="advisory()" />
             }
 
             @if (mustAcknowledge()) {
-              <div class="acknowledge">
-                <h3 class="acknowledge__heading">{{ shared.acknowledgement.heading }}</h3>
+              <div class="callout callout--warning acknowledge">
+                <h3 class="callout__title acknowledge__heading">
+                  {{ shared.acknowledgement.heading }}
+                </h3>
                 <p class="acknowledge__note">{{ shared.acknowledgement.description }}</p>
                 <label class="field">
                   <span class="field__label">{{ shared.acknowledgement.reason }}</span>
@@ -163,25 +179,32 @@
                   <span class="field__hint">{{ shared.acknowledgement.reasonHint }}</span>
                 </label>
                 @if (acknowledgementReason().length > 0 && !acknowledgementOk()) {
-                  <p class="intake__problem" role="alert">{{ shared.acknowledgement.tooShort }}</p>
+                  <p class="callout callout--danger intake__problem" role="alert">
+                    {{ shared.acknowledgement.tooShort }}
+                  </p>
                 }
               </div>
             }
           </section>
 
-          <section class="card intake__block" aria-labelledby="documents-heading">
-            <h3 class="intake__heading" id="documents-heading">{{ copy.requirementsHeading }}</h3>
-            <p class="intake__note">{{ copy.requirementsNote }}</p>
+          <section
+            class="card card--padded stack intake__block"
+            aria-labelledby="documents-heading"
+          >
+            <h3 class="section-title intake__heading" id="documents-heading">
+              {{ copy.requirementsHeading }}
+            </h3>
+            <p class="status-line intake__note">{{ copy.requirementsNote }}</p>
 
             @if (draft().requirements.length === 0) {
-              <p class="intake__none">{{ copy.noRequirements }}</p>
+              <p class="status-line intake__none">{{ copy.noRequirements }}</p>
             } @else {
-              <ul class="documents">
+              <ul class="soft-list documents">
                 @for (entry of draft().requirements; track entry.code) {
-                  <li class="documents__item">
+                  <li class="soft-row soft-row--stacked documents__item">
                     <p class="documents__label">
                       {{ entry.label }}
-                      <span class="documents__tag">{{ obligationLabel(entry) }}</span>
+                      <span class="chip documents__tag">{{ obligationLabel(entry) }}</span>
                     </p>
                     <div class="documents__controls">
                       <label class="check">
@@ -220,11 +243,13 @@
         }
 
         @case ('review') {
-          <section class="card intake__block" aria-labelledby="review-heading">
-            <h2 class="intake__heading" id="review-heading">{{ copy.reviewHeading }}</h2>
-            <p class="intake__note">{{ copy.reviewNote }}</p>
+          <section class="card card--padded stack intake__block" aria-labelledby="review-heading">
+            <h2 class="section-title intake__heading" id="review-heading">
+              {{ copy.reviewHeading }}
+            </h2>
+            <p class="status-line intake__note">{{ copy.reviewNote }}</p>
 
-            <dl class="review">
+            <dl class="facts facts--pairs review">
               <dt>{{ copy.personHeading }}</dt>
               <dd>{{ chosen()?.listedName ?? '—' }}</dd>
               <dt>{{ copy.programme }}</dt>
@@ -249,20 +274,26 @@
 
             @if (advisoryFailure(); as message) {
               <!-- Never the empty panel: a check that could not be read is not "nothing found". -->
-              <p class="intake__problem" role="alert">{{ copy.advisoryFailed }} {{ message }}</p>
+              <p class="callout callout--danger intake__problem" role="alert">
+                {{ copy.advisoryFailed }} {{ message }}
+              </p>
             } @else {
               <app-advisory-panel [advisory]="advisory()" />
             }
 
             @if (problems().length === 0) {
-              <p class="intake__ready">{{ copy.readyToFile }}</p>
+              <p class="callout callout--success intake__ready">{{ copy.readyToFile }}</p>
             } @else {
               <div class="intake__outstanding">
-                <h3 class="intake__subheading">{{ copy.outstandingHeading }}</h3>
+                <h3 class="section-title intake__subheading">{{ copy.outstandingHeading }}</h3>
                 <ul class="intake__problems">
                   @for (problem of problems(); track problem.code) {
                     <li>
-                      <button type="button" class="intake__problem-link" (click)="goTo(problem.step)">
+                      <button
+                        type="button"
+                        class="btn btn--small intake__problem-link"
+                        (click)="goTo(problem.step)"
+                      >
                         {{ stepShort(problem.step) }}
                       </button>
                       {{ problemText(problem) }}
@@ -275,7 +306,7 @@
         }
       }
 
-      <div class="intake__actions">
+      <div class="form-footer intake__actions">
         @if (stepNumber() > 1) {
           <button type="button" class="btn" (click)="onBack()">{{ copy.back }}</button>
         }
@@ -293,8 +324,8 @@
 
       @if (refusal().length > 0) {
         <!-- The server's words, kept beside the buttons they answer (DL-177). -->
-        <div class="intake__refusal" role="alert">
-          <p class="intake__subheading">{{ copy.refused }}</p>
+        <div class="callout callout--danger intake__refusal" role="alert">
+          <p class="callout__title intake__subheading">{{ copy.refused }}</p>
           <ul class="intake__problems">
             @for (sentence of refusal(); track $index) {
               <li>{{ sentence }}</li>
@@ -308,9 +339,9 @@
   <!-- The context panel is outside the step switch on purpose: it is fetched
        once when the person is chosen and stays visible for every later step,
        which is what "without retyping" means in practice. -->
-  <aside class="intake__side">
-    <section class="card intake__block" aria-labelledby="context-heading">
-      <h2 class="intake__heading" id="context-heading">{{ copy.contextHeading }}</h2>
+  <aside class="split__side intake__side">
+    <section class="card card--padded stack intake__block" aria-labelledby="context-heading">
+      <h2 class="section-title intake__heading" id="context-heading">{{ copy.contextHeading }}</h2>
 
       @if (context(); as profile) {
         <app-resident-summary-card
@@ -324,10 +355,12 @@
             <a [routerLink]="'/households/' + household.id">{{ household.referenceNumber }}</a>
           </p>
           @if (profile.householdMembers.kind === 'unavailable') {
-            <p class="intake__unread" role="note">{{ profile.householdMembers.because }}</p>
+            <p class="note-box intake__unread" role="note">
+              {{ profile.householdMembers.because }}
+            </p>
           } @else if (membersOf(profile.householdMembers).length > 0) {
             <h4 class="intake__subheading">{{ copy.membersLabel }}</h4>
-            <ul class="intake__members">
+            <ul class="soft-list intake__members">
               @for (member of membersOf(profile.householdMembers); track member.view.resident.id) {
                 <li>
                   <app-resident-summary-card
@@ -340,7 +373,7 @@
             </ul>
           }
         } @else {
-          <p class="intake__none">{{ copy.noHousehold }}</p>
+          <p class="status-line intake__none">{{ copy.noHousehold }}</p>
         }
 
         <h3 class="intake__subheading">{{ copy.historyLabel }}</h3>
@@ -349,11 +382,11 @@
           history must not answer it with "No assistance recorded" (DL-112).
         -->
         @if (profile.history.kind === 'unavailable') {
-          <p class="intake__unread" role="note">{{ profile.history.because }}</p>
+          <p class="note-box intake__unread" role="note">{{ profile.history.because }}</p>
         } @else if (profile.history.history.cases.length === 0) {
-          <p class="intake__none">{{ copy.noHistory }}</p>
+          <p class="status-line intake__none">{{ copy.noHistory }}</p>
         } @else {
-          <dl class="intake__figures">
+          <dl class="facts facts--pairs intake__figures">
             <dt>{{ copy.totalReleased }}</dt>
             <dd>{{ profile.history.history.totalReleased | peso }}</dd>
             <dt>{{ copy.openCases }}</dt>
@@ -365,9 +398,9 @@
               </dd>
             }
           </dl>
-          <ul class="intake__history">
+          <ul class="soft-list intake__history">
             @for (record of profile.history.history.cases; track record.id) {
-              <li class="intake__history-item">
+              <li class="soft-row intake__history-item">
                 <span class="intake__history-ref">{{ record.referenceNumber }}</span>
                 <span>{{ record.programName }}</span>
                 <span class="intake__history-status">{{ statusLabel(record.status) }}</span>
@@ -376,7 +409,7 @@
           </ul>
         }
       } @else {
-        <p class="intake__none">{{ shared.advisory.notCheckedYet }}</p>
+        <p class="status-line intake__none">{{ shared.advisory.notCheckedYet }}</p>
       }
     </section>
   </aside>

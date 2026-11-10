@@ -1147,3 +1147,104 @@ a.kpi:focus-visible .kpi__arrow {
 .facts--pairs dd {
   margin: 0;
 }
+
+/* ── Work page with a context column ──────────────────────────────────────
+   Intake, assessment, an event: the work in a wide column, what it is about
+   beside it (the applicant, the record). One column under 1100px. */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.split__main,
+.split__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+@media (width <= 1100px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── Quiet note ───────────────────────────────────────────────────────────
+   A source that could not be read, a part with no server yet, a count that
+   decides nothing: said where the content would be, in a register that
+   cannot read as an error (DL-112, DL-177). */
+.note-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) 14px;
+  border-inline-start: 3px solid var(--field-line);
+  border-radius: var(--r-md);
+  background: var(--soft2);
+  color: var(--text);
+  font-size: var(--fs-label);
+}
+
+.note-box ul {
+  margin: 0;
+  padding-inline-start: 18px;
+}
+
+/* Words withheld from this reader, said in words; the style only sets them
+   apart from text somebody wrote. */
+.withheld {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ── File pickers ─────────────────────────────────────────────────────────
+   A file input in a `.field`: a dashed drop-zone look with the browser's own
+   button drawn as a soft pill. */
+.field input[type='file'] {
+  display: block;
+  inline-size: 100%;
+  min-block-size: var(--h-field);
+  padding: 5px;
+  border: 1px dashed var(--field-line);
+  border-radius: var(--r-field);
+  background: var(--field);
+  color: var(--text2);
+  font: inherit;
+  font-size: var(--fs-label);
+}
+
+.field input[type='file']::file-selector-button {
+  min-block-size: 34px;
+  margin-inline-end: var(--space-3);
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--blue-50);
+  color: var(--primary);
+  font: inherit;
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+
+/* ── Step list ────────────────────────────────────────────────────────────
+   The sections of one form as numbered pills in a `.tabs` strip (intake).
+   The current step is `.tab--active` and `aria-current="step"`. */
+.step-number {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 22px;
+  block-size: 22px;
+  border-radius: var(--r-pill);
+  background: var(--soft);
+  color: var(--ink);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
+}
+
+.tab--active .step-number {
+  background: var(--gold);
+  color: var(--deep);
+}

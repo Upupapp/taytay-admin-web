@@ -7,6 +7,7 @@
       class="btn btn--primary"
       routerLink="/assistance-requests/new"
     >
+      <app-icon name="plus" class="requests__cta-icon" [stroke]="2.2" />
       {{ copy.startIntake }}
     </a>
   }
@@ -15,23 +16,26 @@
 <!-- Drafts sit apart from the table on purpose: nothing here has been filed,
      and counting them as requests would inflate the office's workload. -->
 @if (isCaseload()) {
-  <p class="card requests__caseload" role="note">{{ copy.caseloadNote }}</p>
+  <p class="callout requests__caseload" role="note">
+    <app-icon name="info" [size]="18" [stroke]="2" />
+    <span>{{ copy.caseloadNote }}</span>
+  </p>
 } @else {
-  <section class="card drafts" aria-labelledby="drafts-heading">
-    <h2 class="drafts__heading" id="drafts-heading">{{ copy.draftsHeading }}</h2>
-    <p class="drafts__note">{{ copy.draftsNote }}</p>
+  <section class="card card--padded stack drafts" aria-labelledby="drafts-heading">
+    <h2 class="section-title drafts__heading" id="drafts-heading">{{ copy.draftsHeading }}</h2>
+    <p class="status-line drafts__note">{{ copy.draftsNote }}</p>
 
     @if (draftFailure(); as message) {
-      <p class="drafts__problem" role="alert">{{ message }}</p>
+      <p class="callout callout--danger drafts__problem" role="alert">{{ message }}</p>
     } @else if (draftState().kind === 'loading') {
-      <p class="drafts__empty" role="status">{{ copy.loadingDrafts }}</p>
+      <p class="status-line drafts__empty" role="status">{{ copy.loadingDrafts }}</p>
     } @else if (drafts().length === 0) {
-      <p class="drafts__empty">{{ copy.noDrafts }}</p>
+      <p class="status-line drafts__empty">{{ copy.noDrafts }}</p>
     } @else {
-      <ul class="drafts__list">
+      <ul class="soft-list drafts__list">
         @for (draft of drafts(); track draft.id) {
-          <li class="drafts__item">
-            <span class="drafts__label">{{ copy.unnamedDraft }}</span>
+          <li class="soft-row drafts__item">
+            <span class="chip drafts__label">{{ copy.unnamedDraft }}</span>
             <span class="drafts__reason">{{ reasonText(draft) }}</span>
             <a
               *appHasPermission="'request.create'"
@@ -45,29 +49,32 @@
       </ul>
       @if (moreDrafts()) {
         <!-- Said, never hidden: a draft left off the list is one nobody resumes. -->
-        <p class="drafts__more" role="note">{{ copy.moreDrafts(drafts().length) }}</p>
+        <p class="status-line drafts__more" role="note">{{ copy.moreDrafts(drafts().length) }}</p>
       }
     }
   </section>
 }
 
-<div class="card requests">
-  <div class="filters">
-    <label class="filters__field filters__field--wide">
-      <span class="filters__label">{{ copy.search }}</span>
-      <input
-        type="search"
-        class="filters__input"
-        aria-describedby="request-search-hint"
-        [placeholder]="copy.searchPlaceholder"
-        [value]="searchText()"
-        (input)="onSearch($event)"
-      />
+<section class="card card--panel card--padded stack requests" [attr.aria-label]="copy.caption">
+  <div class="toolbar">
+    <label class="field requests__search">
+      <span class="field__label">{{ copy.search }}</span>
+      <span class="search-field">
+        <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+        <input
+          type="search"
+          class="field__input field__input--pill"
+          aria-describedby="request-search-hint"
+          [placeholder]="copy.searchPlaceholder"
+          [value]="searchText()"
+          (input)="onSearch($event)"
+        />
+      </span>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.status }}</span>
-      <select class="filters__input" (change)="onStatus($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.status }}</span>
+      <select class="field__input field__input--pill" (change)="onStatus($event)">
         <option value="" [selected]="!filter().status">{{ copy.allStatuses }}</option>
         @for (status of statuses; track status) {
           <option [value]="status" [selected]="filter().status === status">
@@ -78,9 +85,9 @@
     </label>
 
     @if (filtersByBarangay()) {
-      <label class="filters__field">
-        <span class="filters__label">{{ copy.barangay }}</span>
-        <select class="filters__input" (change)="onBarangay($event)">
+      <label class="field">
+        <span class="field__label">{{ copy.barangay }}</span>
+        <select class="field__input field__input--pill" (change)="onBarangay($event)">
           <option value="" [selected]="!filter().barangayId">{{ copy.anyBarangay }}</option>
           @for (barangay of barangays; track barangay.id) {
             <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
@@ -93,11 +100,13 @@
 
     @if (filtersByAssignee()) {
       @if (workersFailure(); as message) {
-        <p class="filters__problem" role="note">{{ copy.workersFailed }} {{ message }}</p>
+        <p class="status-line filters__problem" role="note">
+          {{ copy.workersFailed }} {{ message }}
+        </p>
       } @else {
-        <label class="filters__field">
-          <span class="filters__label">{{ copy.assignedTo }}</span>
-          <select class="filters__input" (change)="onAssignee($event)">
+        <label class="field">
+          <span class="field__label">{{ copy.assignedTo }}</span>
+          <select class="field__input field__input--pill" (change)="onAssignee($event)">
             <option value="" [selected]="!filter().assignedTo">{{ copy.anyone }}</option>
             @for (worker of socialWorkers(); track worker.id) {
               <option [value]="worker.id" [selected]="filter().assignedTo === worker.id">
@@ -109,9 +118,9 @@
       }
     }
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.category }}</span>
-      <select class="filters__input" (change)="onCategory($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.category }}</span>
+      <select class="field__input field__input--pill" (change)="onCategory($event)">
         <option value="" [selected]="!filter().category">{{ copy.anyCategory }}</option>
         @for (category of categories; track category) {
           <option [value]="category" [selected]="filter().category === category">
@@ -121,12 +130,12 @@
       </select>
     </label>
 
-    <label class="filters__check">
+    <label class="check-pill">
       <input type="checkbox" [checked]="filter().openOnly === true" (change)="onOpenOnly($event)" />
       <span>{{ copy.openOnly }}</span>
     </label>
 
-    <label class="filters__check">
+    <label class="check-pill">
       <input
         type="checkbox"
         aria-describedby="request-owing-hint"
@@ -137,15 +146,19 @@
     </label>
 
     @if (hasFilters()) {
-      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+      <button type="button" class="btn requests__clear" (click)="clearFilters()">
+        {{ copy.clear }}
+      </button>
     }
   </div>
 
-  <p class="requests__hint" id="request-search-hint">{{ copy.searchHint }} {{ copy.order }}</p>
-  <p class="requests__hint" id="request-owing-hint">{{ copy.owingDocumentHint }}</p>
+  <p class="status-line requests__hint" id="request-search-hint">
+    {{ copy.searchHint }} {{ copy.order }}
+  </p>
+  <p class="status-line requests__hint" id="request-owing-hint">{{ copy.owingDocumentHint }}</p>
 
   @if (failure(); as message) {
-    <div class="requests__problem" role="alert">
+    <div class="callout callout--danger requests__problem" role="alert">
       <p>{{ message }}</p>
       <button type="button" class="btn" (click)="retry()">{{ copy.tryAgain }}</button>
     </div>
@@ -165,8 +178,8 @@
   />
 
   @if (rows().length > 0) {
-    <div class="requests__more">
-      <p class="requests__hint" role="status">
+    <div class="list-more requests__more">
+      <p class="status-line requests__hint" role="status">
         {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
       </p>
       @if (hasMore()) {
@@ -180,14 +193,14 @@
         </button>
       }
       @if (moreFailed()) {
-        <p class="requests__problem" role="alert">{{ copy.moreFailed }}</p>
+        <p class="callout callout--danger requests__problem" role="alert">{{ copy.moreFailed }}</p>
       }
     </div>
   }
-</div>
+</section>
 
 <ng-template #referenceCell let-request>
-  <a class="requests__reference" [routerLink]="detailLink(request)">
+  <a class="record-link requests__reference" [routerLink]="detailLink(request)">
     {{ request.referenceNumber || copy.unnamedDraft }}
   </a>
 </ng-template>

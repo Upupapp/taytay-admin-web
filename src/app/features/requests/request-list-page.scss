@@ -1,161 +1,62 @@
+// Residents mock-up as the request register: unfiled drafts apart, then filters, table, "more".
+
+.requests__cta-icon {
+  color: var(--gold);
+}
+
+.requests__caseload,
 .drafts {
-  margin-block-end: var(--space-base);
-  padding: var(--space-base);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-compact);
+  margin-block-end: var(--space-4);
 }
 
-.drafts__heading {
-  margin: 0;
-  font-size: 15px;
+.requests__caseload {
+  align-items: flex-start;
 }
 
+.drafts__heading,
 .drafts__note,
+.drafts__empty,
 .drafts__more,
-.drafts__empty {
+.drafts__problem {
   margin: 0;
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-}
-
-.drafts__list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-compact);
-}
-
-.drafts__item {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-snug);
-  padding: var(--space-snug);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-}
-
-.drafts__label {
-  padding: 1px var(--space-compact);
-  border-radius: var(--radius-sm);
-  background: var(--c-surface-muted);
-  color: var(--c-text-muted);
-  font-size: 11.5px;
-  font-weight: 600;
 }
 
 .drafts__reason {
   flex: 1 1 240px;
+  color: var(--text2);
   overflow-wrap: anywhere;
 }
 
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-base);
-  padding: var(--space-base);
-  border-block-end: 1px solid var(--c-border);
-}
-
-.filters__field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-micro);
-  min-inline-size: 180px;
-}
-
-.filters__field--wide {
+.requests__search {
   flex: 1 1 260px;
 }
 
-.filters__label {
-  color: var(--c-text-muted);
-  font-size: 12px;
-  font-weight: 600;
+.toolbar select.field__input {
+  min-inline-size: 170px;
 }
 
-.filters__input {
-  padding: var(--space-compact) var(--space-snug);
-  /* Comfortably over the 24px pointer-target minimum (WCAG 2.5.8). */
-  min-block-size: 36px;
-  border: 1px solid var(--c-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
-  color: var(--c-text);
-  font: inherit;
-  font-size: 14px;
+.requests__clear {
+  min-block-size: var(--h-btn);
 }
 
-.filters__check {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-compact);
-  min-block-size: var(--target-min);
-  font-size: 13px;
-}
-
-.filters__check input {
-  inline-size: 18px;
-  block-size: 18px;
-}
-
-.requests__reference {
-  display: inline-block;
-  min-block-size: var(--target-min);
-  line-height: var(--target-min);
-  color: var(--c-text);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.requests__reference:hover {
-  text-decoration: underline;
-}
-
-.drafts__problem {
+.requests__hint,
+.requests__problem,
+.filters__problem {
   margin: 0;
-  font-size: 12.5px;
-}
-
-.requests__hint {
-  margin: 0;
-  padding: 0 var(--space-base) var(--space-compact);
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-}
-
-.requests__more {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-base);
-  padding: var(--space-base);
-}
-
-.requests__more .requests__hint {
-  padding: 0;
 }
 
 .requests__problem {
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.requests__problem p {
   margin: 0;
-  padding: 0 var(--space-base);
-  font-size: 13px;
 }
 
 /* Said where the narrowing would be, never as an empty choice that reads as "nobody". */
 .filters__problem {
-  margin: 0;
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-}
-
-.requests__caseload {
-  margin: 0;
-  padding: var(--space-snug) var(--space-base);
-  font-size: 13px;
+  align-self: center;
+  max-inline-size: 320px;
 }

@@ -1,402 +1,97 @@
 /* Layout only. The readiness list, the advisory and the transition control all
-   state their meaning in words. */
-
-.assessment__missing {
-  padding: var(--space-base);
-}
-
-.assessment {
-  display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: var(--space-base);
-  align-items: start;
-}
-
-@media (max-width: 1000px) {
-  .assessment {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.assessment__main,
-.assessment__side {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-base);
-  min-inline-size: 0;
-}
-
-.assessment__block {
-  padding: var(--space-base);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-snug);
-}
-
-.assessment__heading {
-  margin: 0;
-  font-size: 15px;
-}
-
-.assessment__note {
-  margin: 0;
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-}
-
-.assessment__ready {
-  margin: 0;
-  color: var(--tone-success-fg);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.assessment__readiness {
-  margin: 0;
-  padding-inline-start: var(--space-base);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-micro);
-  font-size: 13px;
-}
-
-.assessment__facts {
-  margin: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-compact) var(--space-snug);
-  font-size: 13px;
-}
-
-.assessment__facts dt {
-  color: var(--c-text-muted);
-  font-weight: 600;
-}
-
-.assessment__facts dd {
-  margin: 0;
-}
-
-.assessment__fact {
-  margin: 0;
-  font-size: 13px;
-}
-
-.assessment__actions {
-  display: flex;
-  gap: var(--space-compact);
-}
-
-.documents {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-compact);
-}
-
-.documents__item {
-  padding: var(--space-snug);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-compact);
-}
-
-.documents__label {
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-compact);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.documents__controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-compact);
-}
-
-/* ── documents (TAB 14) ───────────────────────────────────────────────────── */
-
-.completion {
-  margin: 0 0 var(--space-base);
-  padding: var(--space-compact) var(--space-snug);
-  border-inline-start: 3px solid var(--c-border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--c-surface-sunken, var(--c-surface));
-}
-
-.completion__counts {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-/* Never abbreviated to "Complete": the sentence is the boundary (DL-78). */
-.completion__hint {
-  display: block;
-  margin-block-start: var(--space-micro);
-  color: var(--c-text-subtle);
-  font-size: 12px;
-}
-
-.documents__obligation {
-  padding: 1px var(--space-compact);
-  border-radius: var(--radius-sm);
-  background: var(--tone-neutral-bg);
-  color: var(--tone-neutral-fg);
-  font-size: 11.5px;
-  font-weight: 600;
-}
-
-.applicability {
-  margin-block: var(--space-compact);
-  padding: var(--space-snug);
-  border: 1px dashed var(--c-border-strong);
-  border-radius: var(--radius-md);
-}
-
-.applicability__prompt {
-  margin: 0;
-  font-size: 12.5px;
-}
-
-.applicability__tag {
-  margin-inline-end: var(--space-compact);
-  padding: 1px var(--space-compact);
-  border-radius: var(--radius-sm);
-  background: var(--tone-info-bg);
-  color: var(--tone-info-fg);
-  font-size: 11.5px;
-  font-weight: 700;
-}
-
-.applicability__when {
-  margin: var(--space-compact) 0 0;
-  font-size: 12.5px;
-}
-
-.applicability__when-label {
-  color: var(--c-text-muted);
-  font-weight: 600;
-}
-
-.access__file {
-  margin: 0;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-.access__warning {
-  margin: var(--space-compact) 0 0;
-  font-size: 13px;
-}
-
-.access__redacted {
-  margin: var(--space-compact) 0 0;
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-}
+   state their meaning in words. ResidentRecord as a work page: the request in
+   the wide column (`.split`), the applicant and the decision beside it. Shared
+   looks (notes, facts, rows, withheld words) come from the global patterns. */
 
 .assessment__subheading {
-  margin: var(--space-5) 0 var(--space-2);
-  font-size: 15px;
-  font-weight: 600;
+  margin-block-start: var(--space-2);
+  color: var(--ink);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-bold);
 }
 
-.assessment__pinned {
-  margin: 0 0 var(--space-3);
-  color: var(--c-text-muted);
-  font-size: 13px;
-}
-
-/*
- * A form the office has not adopted says so, in the same visual register as the review windows
- * and the small-cell threshold (`DL-68`, `DL-105`). Deliberately not styled as an error: nothing
- * is wrong, and a caveat that looks like a failure is one people learn to dismiss.
- */
-.assessment__provisional {
-  margin: 0 0 var(--space-4);
-  padding: var(--space-3);
-  border-left: 3px solid var(--tone-warning-fg);
-  background: var(--tone-warning-bg);
-  color: var(--tone-warning-fg);
-  font-size: 13px;
-}
-
-.assessment__blockers {
-  margin: var(--space-4) 0;
-  padding: var(--space-3);
-  border-left: 3px solid var(--c-border-strong);
-  background: var(--c-surface-muted);
-  font-size: 13px;
-
-  p {
-    margin: 0 0 var(--space-2);
-    font-weight: 600;
-  }
-
-  ul {
-    margin: 0;
-    padding-left: var(--space-5);
-  }
-}
-
-/*
- * Not an error, and styled so it cannot read as one.
- *
- * Nothing has gone wrong: the office asked for these two figures and the system of record has
- * nowhere to put them. A notice dressed as a failure is one people learn to dismiss, which is the
- * opposite of what this has to achieve.
- */
-.assessment__notrecorded {
-  margin: var(--space-4) 0;
-  padding: var(--space-3);
-  border-left: 3px solid var(--c-border-strong);
-  background: var(--c-surface-muted);
-  font-size: 13px;
-
-  p {
-    margin: 0;
-  }
-}
-
-.assessment__notrecorded-heading {
-  margin-bottom: var(--space-2) !important;
-  font-weight: 600;
-}
-
-/* ── what the office asked for ───────────────────────────────────────────── */
-
-.asked {
-  margin: var(--space-3) 0 0;
-  padding-top: var(--space-3);
-  border-top: 1px dashed var(--c-border);
-}
-
-.asked__heading {
-  margin: 0 0 var(--space-2);
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--c-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.asked__none {
-  margin: 0;
-  color: var(--c-text-subtle);
-  font-size: 13px;
-}
-
-.asked__list {
-  margin: 0 0 var(--space-3);
-  padding: 0;
-  list-style: none;
-}
-
-.asked__item + .asked__item {
-  margin-top: var(--space-3);
-}
-
-.asked__message {
-  margin: 0;
-  font-size: 13px;
-}
-
-/*
- * The state and the channel, not a badge.
- *
- * "Waiting on the applicant" is a sentence a clerk reads at a counter with somebody in front of
- * them. A coloured pill would be faster to scan and slower to say out loud, and this line exists to
- * be said out loud.
- */
-.asked__meta {
-  margin: var(--space-1) 0 0;
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-}
-
-.asked__intro {
-  margin: 0 0 var(--space-3);
-  color: var(--c-text-muted);
-  font-size: 13px;
-}
-
-.asked__form {
-  margin-top: var(--space-2);
-  padding: var(--space-3);
-  background: var(--c-surface-muted);
-  border-radius: var(--radius-sm);
-}
-
-.asked__actions {
-  display: flex;
-  gap: var(--space-2);
-  justify-content: flex-end;
-  margin-top: var(--space-3);
-}
-
-.asked__problems {
-  margin: var(--space-2) 0 0;
-  padding-left: var(--space-5);
-  color: var(--c-text);
-  font-size: 13px;
-}
-
-/* Not connected yet, said where the section would be — a note, not an alarm (DL-177). */
-.assessment__notconnected {
-  margin: 0;
-  padding: var(--space-3);
-  border-left: 3px solid var(--c-border-strong);
-  background: var(--c-surface-muted);
-  color: var(--c-text);
-  font-size: 13px;
-}
-
-/* Withheld is said in words; the style only sets it apart from text somebody wrote. */
-.assessment__withheld {
-  color: var(--c-text-muted);
-  font-style: italic;
-}
-
-.history {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-compact);
-}
-
-.history__item {
-  padding-block-end: var(--space-compact);
-  border-block-end: 1px solid var(--c-border);
+.assessment__fact,
+.history__reason,
+.asked__message,
+.access__ready {
+  color: var(--text);
+  font-size: var(--fs-label);
 }
 
 .history__move,
-.history__who,
-.history__reason {
-  margin: 0;
-  font-size: 13px;
+.access__file,
+.documents__label {
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+  overflow-wrap: anywhere;
 }
 
-.history__move {
-  font-weight: 600;
-}
-
-.history__who,
 .history__reason--absent {
-  color: var(--c-text-muted);
-  font-size: 12.5px;
+  color: var(--muted);
 }
 
-.access__ready {
+.assessment__actions,
+.asked__actions,
+.documents__label,
+.documents__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.asked__actions {
+  justify-content: flex-end;
+}
+
+.assessment__readiness,
+.asked__problems {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
   margin: 0;
-  font-size: 13px;
+  padding-inline-start: 18px;
+  font-size: var(--fs-label);
+}
+
+/* The counts, then the sentence that keeps them a count. Never abbreviated to
+   "Complete": the sentence is the boundary (DL-78). */
+.completion__counts {
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+}
+
+.completion__hint {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+/* A conditional document nobody has ruled on yet: a decision the office owes. */
+.applicability {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) 14px;
+  border: 1px dashed var(--field-line);
+  border-radius: var(--r-field);
+  font-size: var(--fs-xs);
+}
+
+.applicability__when-label {
+  color: var(--muted);
+  font-weight: var(--fw-semibold);
+}
+
+/* What the office asked the applicant for, under the document. The state and
+   the channel are a sentence a clerk says out loud, not a badge. */
+.asked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px dashed var(--line2);
+}
+
+.assessment__blockers > p {
+  font-weight: var(--fw-semibold);
 }

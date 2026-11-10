@@ -166,7 +166,7 @@ let nextPanelId = 0;
           <label class="field" [attr.for]="fieldId('source')">
             <span class="field__label">{{ copy.sourceLabel }}</span>
             <select
-              class="field__control"
+              class="field__input"
               [id]="fieldId('source')"
               [value]="source()"
               (change)="onSource($event)"
@@ -183,7 +183,7 @@ let nextPanelId = 0;
             <label class="field" [attr.for]="fieldId('file')">
               <span class="field__label">{{ copy.uploadLabel }}</span>
               <input
-                class="field__control"
+                class="field__input"
                 type="file"
                 [id]="fieldId('file')"
                 [accept]="acceptAttribute()"
@@ -202,7 +202,7 @@ let nextPanelId = 0;
           <label class="field" [attr.for]="fieldId('number')">
             <span class="field__label">{{ copy.numberLabel }}</span>
             <input
-              class="field__control"
+              class="field__input"
               type="text"
               autocomplete="off"
               [id]="fieldId('number')"
@@ -214,7 +214,7 @@ let nextPanelId = 0;
           <label class="field" [attr.for]="fieldId('issued')">
             <span class="field__label">{{ copy.issuedLabel }}</span>
             <input
-              class="field__control"
+              class="field__input"
               type="date"
               [id]="fieldId('issued')"
               [value]="issuedOn()"
@@ -224,7 +224,7 @@ let nextPanelId = 0;
           <label class="field" [attr.for]="fieldId('expires')">
             <span class="field__label">{{ copy.expiresLabel }}</span>
             <input
-              class="field__control"
+              class="field__input"
               type="date"
               [id]="fieldId('expires')"
               [value]="expiresOn()"
@@ -240,7 +240,7 @@ let nextPanelId = 0;
               <span class="field__label">{{ copy.replacesBecauseLabel }}</span>
               <input
                 [id]="fieldId('because')"
-                class="field__control"
+                class="field__input"
                 type="text"
                 [value]="replacesBecause()"
                 (input)="onReason($event)"

@@ -37,6 +37,7 @@ import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { REQUESTS_COPY } from './requests.copy';
 
@@ -84,7 +85,7 @@ const DRAFT_LIMIT = 50;
 @Component({
   selector: 'app-request-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, HasPermissionDirective, PageHeader, PesoPipe, RouterLink, StatusBadge],
+  imports: [DataTable, HasPermissionDirective, Icon, PageHeader, PesoPipe, RouterLink, StatusBadge],
   templateUrl: './request-list-page.html',
   styleUrl: './request-list-page.scss',
 })
