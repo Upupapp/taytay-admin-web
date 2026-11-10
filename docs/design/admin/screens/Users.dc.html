@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Users and roles — Taytay Social Welfare</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Inter+Tight:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#EEF1F6}
+.theme-light{--page:radial-gradient(620px 520px at 6% 4%, rgba(45,84,224,0.55), transparent 70%), radial-gradient(560px 460px at 96% 10%, rgba(245,218,24,0.55), transparent 70%), radial-gradient(640px 520px at 88% 72%, rgba(224,9,10,0.22), transparent 70%), radial-gradient(700px 560px at 18% 78%, rgba(10,32,113,0.30), transparent 70%), radial-gradient(520px 420px at 52% 40%, rgba(91,130,255,0.25), transparent 70%), #E7ECF7;--card:linear-gradient(135deg, rgba(255,255,255,0.62), rgba(255,255,255,0.28));--card-solid:#FFFFFF;--card-flat:rgba(255,255,255,0.4);--card-edge:rgba(255,255,255,0.7);--card-shadow:none;--primary:#0A2071;--deep:#08124A;--ink:#08124A;--text:#1B2540;--text2:#2B3550;--muted:#5A6478;--muted2:#6B7489;--soft:rgba(10,32,113,0.06);--soft2:rgba(255,255,255,0.42);--field:rgba(255,255,255,0.55);--sel:rgba(45,84,224,0.12);--hover:rgba(255,255,255,0.55);--line:rgba(10,32,113,0.10);--line2:rgba(10,32,113,0.18);--field-line:#8A93A6;--axis:rgba(10,32,113,0.16);--dash:#9AA3B5;--area:rgba(45,84,224,0.16);--bar:#1D3A9C;--gold-tint:rgba(245,218,24,0.28);--gold-tint2:rgba(245,218,24,0.18);--gold-ink:#5C4D00;--gold-ink2:#3D3505;--red-tint:rgba(224,9,10,0.12);--red-ink:#B00708;--red-ink2:#7A0506;--green-tint:rgba(46,160,90,0.16);--green-ink:#17663A;--blue-tint:rgba(45,84,224,0.14);--link:#0A2071;--link-hover:#1D3A9C;--accent-line:#0A2071;--chart-line:#0A2071;--glow:none;--scrim:rgba(8,18,74,0.5);--scrim2:rgba(8,18,74,0.55);--ring:#FFFFFF;--option-bg:#FFFFFF;--option-ink:#08124A;color-scheme:light}
+.theme-dark{--page:radial-gradient(640px 520px at 6% 4%, rgba(45,84,224,0.65), transparent 70%), radial-gradient(520px 440px at 96% 8%, rgba(245,218,24,0.22), transparent 70%), radial-gradient(640px 520px at 88% 74%, rgba(224,9,10,0.30), transparent 70%), radial-gradient(700px 560px at 16% 80%, rgba(91,130,255,0.35), transparent 70%), radial-gradient(520px 420px at 52% 40%, rgba(10,32,113,0.9), transparent 70%), #040A22;--card:linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));--card-solid:#0C1A4F;--card-flat:rgba(255,255,255,0.05);--card-edge:rgba(255,255,255,0.16);--card-shadow:none;--primary:#2D54E0;--deep:#0A2071;--ink:#FFFFFF;--text:#E6EBF7;--text2:#C9D2E8;--muted:#9AA6C4;--muted2:#8C98B8;--soft:rgba(255,255,255,0.06);--soft2:rgba(255,255,255,0.04);--field:rgba(255,255,255,0.05);--sel:rgba(91,130,255,0.14);--hover:rgba(255,255,255,0.08);--line:rgba(255,255,255,0.08);--line2:rgba(255,255,255,0.16);--field-line:rgba(255,255,255,0.24);--axis:rgba(255,255,255,0.12);--dash:rgba(255,255,255,0.3);--area:rgba(45,84,224,0.35);--bar:#3A63F0;--gold-tint:rgba(245,218,24,0.14);--gold-tint2:rgba(245,218,24,0.10);--gold-ink:#F5DA18;--gold-ink2:#F7E27A;--red-tint:rgba(224,9,10,0.18);--red-ink:#FF8A8A;--red-ink2:#FFB3B3;--green-tint:rgba(46,160,90,0.18);--green-ink:#6EE7A0;--blue-tint:rgba(91,130,255,0.18);--link:#9DB6FF;--link-hover:#C4D3FF;--accent-line:#5B82FF;--chart-line:#7C9BFF;--glow:none;--scrim:rgba(2,6,20,0.72);--scrim2:rgba(2,6,20,0.78);--ring:#040A22;--option-bg:#0B1640;--option-ink:#FFFFFF;color-scheme:dark}
+body:has(.theme-dark){background:#040A22}
+select{-webkit-appearance:none;appearance:none;padding-right:46px !important;cursor:pointer;background-image:linear-gradient(45deg, transparent 50%, currentColor 50%),linear-gradient(135deg, currentColor 50%, transparent 50%) !important;background-position:calc(100% - 24px) 50%,calc(100% - 18px) 50% !important;background-size:6px 6px,6px 6px !important;background-repeat:no-repeat !important}
+option{background:var(--option-bg);color:var(--option-ink)}
+[style*="var(--card)"]{border:1px solid var(--card-edge);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%)}
+.theme-btn[aria-pressed="false"]:hover{background:var(--hover) !important}
+a{color:var(--link)}a:hover{color:var(--link-hover)}
+button,select,input,textarea{font:inherit}
+:focus-visible{outline:3px solid #F5DA18;outline-offset:2px}
+.skip{position:absolute;left:-9999px}.skip:focus{left:24px;top:24px;z-index:10;background:#FFFFFF;padding:10px 16px;border-radius:999px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.nav-item:hover{background:var(--hover)}
+.pill:hover{background:var(--hover)}
+.pill-dark:hover{background:#3A63F0}
+.trow:hover{background:var(--field)}
+.kpi{transition:background-color 160ms ease,color 160ms ease,box-shadow 160ms ease}
+.kpi:hover{background:var(--primary) !important;color:#FFFFFF !important}
+.kpi:hover span{color:#FFFFFF !important}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="position: relative; min-height: 100vh; box-sizing: border-box; display: flex; flex-wrap: wrap; gap: 16px; padding: 16px; background: var(--page); font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14.5px; line-height: 1.5; color: var(--text)">
+  <a href="#main-content" class="skip">Skip to main content</a>
+
+  <aside aria-label="Main navigation" style="flex: 1 1 256px; max-width: 100%; box-sizing: border-box; background: var(--card); border-radius: 24px; padding: 20px 14px 16px; display: flex; flex-direction: column; gap: 16px">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 2px 6px; text-decoration: none">
+      <span role="img" aria-label="Municipal seal not available" title="The official seal has not been supplied to this application. A neutral placeholder is shown in its place." style="width: 46px; height: 46px; flex: 0 0 46px; border-radius: 999px; border: 1.5px dashed var(--dash); background: var(--soft2); display: grid; place-items: center; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: var(--muted)"><span aria-hidden="true">TR</span></span>
+      <span style="display: flex; flex-direction: column; line-height: 1.25; min-width: 0">
+        <span style="font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 16px; font-weight: 600; color: var(--ink)">Taytay Social Welfare</span>
+        <span style="font-size: 11.5px; color: var(--muted)">Municipal Social Welfare and Development Office</span>
+      </span>
+    </a>
+    <nav aria-label="Main navigation" style="display: flex; flex-direction: column; gap: 4px">
+      <sc-for list="{{nav}}" as="section" hint-placeholder-count="5">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <button type="button" class="nav-item" onClick="{{section.toggle}}" aria-expanded="{{section.open}}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 34px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: var(--muted2); font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; cursor: pointer; text-align: left">
+            <span>{{section.title}}</span>
+            <sc-if value="{{section.open}}" hint-placeholder-val="{{true}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></sc-if>
+            <sc-if value="{{section.closed}}" hint-placeholder-val="{{false}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg></sc-if>
+          </button>
+          <sc-if value="{{section.open}}" hint-placeholder-val="{{true}}">
+            <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px">
+              <sc-for list="{{section.items}}" as="item" hint-placeholder-count="4">
+                <li>
+                  <sc-if value="{{item.active}}" hint-placeholder-val="{{false}}">
+                    <a href="{{item.href}}" aria-current="page" style="display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 0 12px; border-radius: 12px; background: var(--primary); color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none">
+                      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5DA18" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: 0 0 18px"><path d="{{item.icon}}"></path></svg>
+                      <span>{{item.label}}</span>
+                    </a>
+                  </sc-if>
+                  <sc-if value="{{item.inactive}}" hint-placeholder-val="{{true}}">
+                    <a href="{{item.href}}" class="nav-item" style="display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 12px; border-radius: 12px; color: var(--text2); font-size: 14px; font-weight: 500; text-decoration: none">
+                      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: 0 0 18px"><path d="{{item.icon}}"></path></svg>
+                      <span>{{item.label}}</span>
+                    </a>
+                  </sc-if>
+                </li>
+              </sc-for>
+            </ul>
+          </sc-if>
+        </div>
+      </sc-for>
+    </nav>
+    <footer style="margin-top: auto; display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 18px; background: var(--soft2)">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span aria-hidden="true" style="width: 38px; height: 38px; flex: 0 0 38px; border-radius: 999px; background: var(--primary); color: #F5DA18; display: grid; place-items: center; font-size: 13px; font-weight: 700">MA</span>
+        <span style="display: flex; flex-direction: column; line-height: 1.3; min-width: 0">
+          <span style="font-size: 14px; font-weight: 600; color: var(--ink)">Marisol Alcantara</span>
+          <span style="font-size: 12.5px; color: var(--muted)">Administrator · All barangays</span>
+        </span>
+      </div>
+      <a href="SignIn.dc.html" class="pill" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; border-radius: 999px; border: 1px solid var(--line2); background: var(--card); color: var(--ink); font-size: 13.5px; font-weight: 600; text-decoration: none">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path></svg>Sign out</a>
+    </footer>
+  </aside>
+
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+    <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 4px 8px 0">
+      <nav aria-label="Breadcrumb" style="flex: 1 1 180px; font-size: 13.5px; color: var(--muted)">
+        <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+          <li><a href="Main.dc.html" style="color: var(--muted); text-decoration: none">Dashboard</a></li>
+          <li aria-hidden="true">/</li>
+          <li aria-current="page" style="color: var(--ink); font-weight: 600">Users and roles</li>
+        </ol>
+      </nav>
+      <a href="#" class="pill" style="flex: 0 1 380px; display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 8px 0 16px; border-radius: 999px; background: var(--card); color: var(--muted); text-decoration: none; font-size: 14px">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <span style="flex: 1 1 auto"><span class="vh">Search: </span>Search residents, requests, programmes…</span>
+        <kbd style="font-family: inherit; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--soft); color: var(--text2)">Ctrl K</kbd>
+      </a>
+      <div role="group" aria-label="Appearance" style="display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--card)"><button type="button" class="theme-btn" aria-pressed="{{isLight}}" onClick="{{setLight}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: {{lightBg}}; color: {{lightFg}}; font-size: 13.5px; font-weight: 600; cursor: pointer"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>Light</button><button type="button" class="theme-btn" aria-pressed="{{isDark}}" onClick="{{setDark}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: {{darkBg}}; color: {{darkFg}}; font-size: 13.5px; font-weight: 600; cursor: pointer"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>Dark</button></div>
+      <button type="button" aria-label="Notifications, 3 unread notifications" class="pill" style="position: relative; width: 46px; height: 46px; display: grid; place-items: center; border: 0; border-radius: 999px; background: var(--card); color: var(--ink); cursor: pointer">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+        <span aria-hidden="true" style="position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: #E0090A; color: #FFFFFF; font-size: 11px; font-weight: 700; display: grid; place-items: center; border: 2px solid var(--ring)">3</span>
+      </button>
+    </header>
+
+    <main id="main-content" style="display: flex; flex-direction: column; gap: 20px; padding: 0 8px 8px">
+      <div style="display: flex; flex-direction: column; gap: 8px; max-width: 820px">
+        <h1 style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 42px; line-height: 1.05; font-weight: 500; letter-spacing: -0.025em; color: var(--ink)">Users and roles</h1>
+        <p style="margin: 0; font-size: 15px; color: var(--muted); text-wrap: pretty">Every account in the residents’ app — residents and staff — and who may use this console.</p>
+      </div>
+
+      <section aria-label="Accounts by role" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); gap: 16px">
+        <sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+          <div class="kpi" style="display: flex; flex-direction: column; gap: 4px; padding: 18px 20px; border-radius: 24px; background: {{k.bg}}; color: {{k.fg}}">
+            <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13.5px; font-weight: 600">{{k.label}}<span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 999px; background: {{k.dot}}"></span></span>
+            <span style="font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 38px; line-height: 1.05; font-weight: 500; letter-spacing: -0.02em">{{k.value}}</span>
+            <span style="font-size: 12.5px; opacity: 0.85">{{k.hint}}</span>
+          </div>
+        </sc-for>
+      </section>
+
+      <section aria-labelledby="accounts-heading" style="padding: 22px; border-radius: 28px; background: var(--card); display: flex; flex-direction: column; gap: 14px">
+        <h2 id="accounts-heading" class="vh">Accounts</h2>
+        <p style="margin: 0; font-size: 13px; color: var(--muted); text-wrap: pretty">Newest accounts first, as the server sends them. Shown: name, email, role and office — what deciding who is staff needs. The server also sends a mobile number and a home barangay, which this screen does not show.</p>
+        <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px">
+          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted)">Verification
+            <select value="{{verification}}" onChange="{{onVerification}}" style="min-height: 44px; min-width: 280px; padding: 0 14px; border: 1px solid var(--field-line); border-radius: 999px; background: var(--field); color: var(--ink); font-size: 14px; font-weight: 500">
+              <option value="">Every account, residents and staff</option><option value="unverified">Not verified</option><option value="pending">Waiting for an ID review</option><option value="verified">Verified</option><option value="rejected">Not accepted</option>
+            </select>
+          </label>
+          <sc-if value="{{narrowed}}" hint-placeholder-val="{{false}}"><p role="status" style="flex: 1 1 320px; margin: 0; padding: 10px 14px; border-radius: 14px; background: var(--gold-tint2); font-size: 13px; color: var(--gold-ink2)">{{verificationNote}}</p></sc-if>
+        </div>
+        <div style="overflow-x: auto">
+          <table style="width: 100%; min-width: 760px; border-collapse: separate; border-spacing: 0; font-size: 14px">
+            <caption class="vh">Accounts</caption>
+            <thead>
+              <tr>
+                <th scope="col" style="text-align: left; padding: 10px 16px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted2); background: var(--soft2); border-radius: 12px 0 0 12px">Name</th>
+                <th scope="col" style="text-align: left; padding: 10px 16px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted2); background: var(--soft2)">Email</th>
+                <th scope="col" style="text-align: left; padding: 10px 16px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted2); background: var(--soft2)">Role</th>
+                <th scope="col" style="text-align: left; padding: 10px 16px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted2); background: var(--soft2)">Office</th>
+                <th scope="col" style="text-align: right; padding: 10px 16px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted2); background: var(--soft2); border-radius: 0 12px 12px 0">Manage</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{rows}}" as="a" hint-placeholder-count="8">
+                <tr class="trow" style="background: {{a.rowBg}}">
+                  <td style="padding: 12px 16px; border-bottom: 1px solid var(--soft)">
+                    <span style="display: inline-flex; align-items: center; gap: 10px">
+                      <span aria-hidden="true" style="width: 34px; height: 34px; flex: 0 0 34px; border-radius: 999px; background: {{a.avatarBg}}; color: {{a.avatarFg}}; display: grid; place-items: center; font-size: 12.5px; font-weight: 700">{{a.initials}}</span>
+                      <span style="font-weight: 600; color: {{a.nameColor}}">{{a.name}}<sc-if value="{{a.you}}" hint-placeholder-val="{{false}}"> <strong style="color: var(--link)">(You)</strong></sc-if></span>
+                    </span>
+                  </td>
+                  <td style="padding: 12px 16px; border-bottom: 1px solid var(--soft); color: {{a.emailColor}}">{{a.email}}</td>
+                  <td style="padding: 12px 16px; border-bottom: 1px solid var(--soft)"><span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 12px; border-radius: 999px; background: {{a.roleBg}}; color: {{a.roleFg}}; font-size: 12.5px; font-weight: 600; white-space: nowrap">{{a.roleLabel}}</span></td>
+                  <td style="padding: 12px 16px; border-bottom: 1px solid var(--soft); color: {{a.officeColor}}">{{a.office}}</td>
+                  <td style="padding: 12px 16px; border-bottom: 1px solid var(--soft); text-align: right">
+                    <button type="button" onClick="{{a.pick}}" aria-label="Manage {{a.name}}" class="pill" style="min-height: 40px; padding: 0 16px; border: 1px solid var(--line2); border-radius: 999px; background: var(--card); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer">Manage</button>
+                  </td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+          <div style="padding: 28px; border-radius: 20px; background: var(--soft2); text-align: center"><p style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 18px; font-weight: 500; color: var(--ink)">No accounts</p><p style="margin: 4px 0 0; font-size: 13.5px; color: var(--muted)">The server returned no accounts.</p></div>
+        </sc-if>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+          <p role="status" style="margin: 0; font-size: 13px; color: var(--muted)">{{shown}} More are available.</p>
+          <button type="button" class="pill" style="min-height: 42px; padding: 0 20px; border: 1px solid var(--field-line); border-radius: 999px; background: var(--card); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer">Show more</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <sc-if value="{{drawerOpen}}" hint-placeholder-val="{{true}}">
+    <div style="position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 24px; box-sizing: border-box; background: var(--scrim)">
+      <button type="button" aria-label="Close" tabindex="-1" onClick="{{close}}" style="position: absolute; inset: 0; border: 0; background: transparent; cursor: default"></button>
+      <section role="dialog" aria-modal="true" aria-labelledby="drawer-heading" style="position: relative; width: 100%; max-width: 1060px; max-height: calc(100vh - 48px); box-sizing: border-box; border-radius: 28px; background: var(--card-solid); display: flex; flex-direction: column; overflow: hidden">
+        <header style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 24px; border-bottom: 1px solid var(--soft)">
+          <h2 id="drawer-heading" style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 24px; font-weight: 500; letter-spacing: -0.01em; color: var(--ink)">Manage an account</h2>
+          <button type="button" onClick="{{close}}" class="pill" style="width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 999px; background: var(--soft); color: var(--ink); cursor: pointer"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg><span class="vh">Close</span></button>
+        </header>
+        <div style="flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 20px 24px 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px; align-items: start">
+          <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+
+          <section aria-labelledby="account-details" style="padding: 18px; border-radius: 20px; background: var(--deep); color: #FFFFFF; display: flex; flex-direction: column; gap: 12px">
+            <h3 id="account-details" style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: #C3CDE6">The account</h3>
+            <dl style="margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 12px 16px; font-size: 14px">
+              <div><dt style="font-size: 12px; color: #C3CDE6">Name</dt><dd style="margin: 2px 0 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 20px; font-weight: 500">{{s.name}}</dd></div>
+              <div><dt style="font-size: 12px; color: #C3CDE6">Email</dt><dd style="margin: 2px 0 0; font-weight: 500; word-break: break-all">{{s.email}}</dd></div>
+              <div><dt style="font-size: 12px; color: #C3CDE6">Role</dt><dd style="margin: 4px 0 0"><span style="display: inline-flex; padding: 3px 12px; border-radius: 999px; background: {{s.roleBg}}; color: {{s.roleFg}}; font-size: 12.5px; font-weight: 600">{{s.roleLabel}}</span></dd></div>
+              <div><dt style="font-size: 12px; color: #C3CDE6">Office</dt><dd style="margin: 2px 0 0; font-weight: 500">{{s.officeName}}</dd></div>
+            </dl>
+          </section>
+
+          <section aria-labelledby="account-role" style="padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+            <h3 id="account-role" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--ink)">Role</h3>
+            <sc-if value="{{s.own}}" hint-placeholder-val="{{false}}"><p style="margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--soft2); font-size: 13.5px; color: var(--text2)">This is your own account. The server refuses a change to your own role; another administrator can make it.</p></sc-if>
+            <sc-if value="{{s.notOwn}}" hint-placeholder-val="{{true}}">
+              <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
+                <legend style="margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--text2)">Change the role to</legend>
+                <sc-for list="{{roles}}" as="r" hint-placeholder-count="4">
+                  <label style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 1.5px solid {{r.border}}; border-radius: 16px; background: {{r.bg}}; cursor: {{r.cursor}}; opacity: {{r.opacity}}">
+                    <input type="radio" name="account-role" checked="{{r.checked}}" disabled="{{r.current}}" onChange="{{r.pick}}" style="width: 18px; height: 18px; margin: 2px 0 0; flex: 0 0 18px; accent-color: var(--link)">
+                    <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; color: var(--ink)">{{r.label}}<sc-if value="{{r.current}}" hint-placeholder-val="{{false}}"> <span style="font-weight: 500; color: var(--muted)">(current)</span></sc-if></span><span style="font-size: 12.5px; color: var(--muted)">{{r.description}}</span></span>
+                  </label>
+                </sc-for>
+              </fieldset>
+              <sc-if value="{{roleChosen}}" hint-placeholder-val="{{false}}">
+                <div style="padding: 14px 16px; border-radius: 16px; background: var(--soft2); display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; color: var(--text2)">
+                  <p style="margin: 0; font-weight: 700; color: var(--ink)">What the server does if you change it to {{roleChosenLabel}}:</p>
+                  <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px"><sc-for list="{{roleEffects}}" as="e" hint-placeholder-count="3"><li>{{e}}</li></sc-for></ul>
+                  <p style="margin: 6px 0 0; font-weight: 700; color: var(--ink)">Whichever role you choose:</p>
+                  <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px"><sc-for list="{{roleAlways}}" as="e" hint-placeholder-count="4"><li>{{e}}</li></sc-for></ul>
+                </div>
+                <button type="button" onClick="{{confirmRole}}" class="pill-dark" style="min-height: 48px; border: 0; border-radius: 999px; background: var(--primary); color: #FFFFFF; font-size: 14.5px; font-weight: 600; cursor: pointer">Change the role to {{roleChosenLabel}}</button>
+              </sc-if>
+            </sc-if>
+          </section>
+
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+          <section aria-labelledby="account-office" style="padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+            <h3 id="account-office" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--ink)">Office</h3>
+            <sc-if value="{{s.notStaff}}" hint-placeholder-val="{{false}}">
+              <sc-if value="{{s.officeKept}}" hint-placeholder-val="{{false}}"><p style="margin: 0; font-size: 13.5px; color: var(--text2)">{{s.officeKeptText}}</p></sc-if>
+              <p style="margin: 0; font-size: 13.5px; color: var(--text2)">Only a staff account can be linked to an office. Change the role to Staff first.</p>
+            </sc-if>
+            <sc-if value="{{s.staff}}" hint-placeholder-val="{{true}}">
+              <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text2)">Office this staff account answers for
+                <select value="{{officeValue}}" onChange="{{onOffice}}" style="min-height: 46px; padding: 0 14px; border: 1px solid var(--field-line); border-radius: 14px; background: var(--card); color: var(--ink); font-size: 14px; font-weight: 500">
+                  <option value="">No office</option>
+                  <option value="mswdo">Municipal Social Welfare and Development Office (MSWDO)</option>
+                  <option value="mho">Municipal Health Office (MHO)</option>
+                  <option value="mcr">Municipal Civil Registrar</option>
+                  <option value="pdao">Persons with Disability Affairs Office (PDAO)</option>
+                </select>
+              </label>
+              <sc-if value="{{officeChanged}}" hint-placeholder-val="{{false}}">
+                <div style="padding: 14px 16px; border-radius: 16px; background: var(--soft2); display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; color: var(--text2)">
+                  <p style="margin: 0; font-weight: 700; color: var(--ink)">What the server does:</p>
+                  <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px"><sc-for list="{{officeEffects}}" as="e" hint-placeholder-count="3"><li>{{e}}</li></sc-for></ul>
+                </div>
+                <button type="button" class="pill-dark" style="min-height: 48px; border: 0; border-radius: 999px; background: var(--primary); color: #FFFFFF; font-size: 14.5px; font-weight: 600; cursor: pointer">{{officeCta}}</button>
+              </sc-if>
+              <sc-if value="{{officeUnchanged}}" hint-placeholder-val="{{true}}"><p style="margin: 0; font-size: 13px; color: var(--muted)">Choose a different office to change it.</p></sc-if>
+            </sc-if>
+          </section>
+
+          <section aria-labelledby="account-office-role" style="padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+            <h3 id="account-office-role" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--ink)">Office role</h3>
+            <sc-if value="{{s.hasNow}}" hint-placeholder-val="{{true}}"><p style="margin: 0; display: inline-flex; align-self: flex-start; padding: 4px 12px; border-radius: 999px; background: var(--soft); font-size: 13px; font-weight: 600; color: var(--ink)">{{s.nowText}}</p></sc-if>
+            <sc-if value="{{s.admin}}" hint-placeholder-val="{{false}}"><p style="margin: 0; font-size: 13.5px; color: var(--text2)">An administrator is the system administrator: it holds every permission by holding the Administrator role. That is the account role, above, not an office role.</p></sc-if>
+            <sc-if value="{{s.resident}}" hint-placeholder-val="{{false}}"><p style="margin: 0; font-size: 13.5px; color: var(--text2)">Only a staff account holds an office role. Change the role to Staff first.</p></sc-if>
+            <sc-if value="{{s.staff}}" hint-placeholder-val="{{true}}">
+              <fieldset style="margin: 0; padding: 0; border: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: 8px">
+                <legend style="margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--text2)">Give the account the office role</legend>
+                <sc-for list="{{officeRoles}}" as="o" hint-placeholder-count="7">
+                  <label style="display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1.5px solid {{o.border}}; border-radius: 16px; background: {{o.bg}}; cursor: {{o.cursor}}; opacity: {{o.opacity}}">
+                    <input type="radio" name="account-office-role" checked="{{o.checked}}" disabled="{{o.disabled}}" onChange="{{o.pick}}" style="width: 18px; height: 18px; margin: 2px 0 0; flex: 0 0 18px; accent-color: var(--link)">
+                    <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; color: var(--ink)">{{o.label}}<sc-if value="{{o.current}}" hint-placeholder-val="{{false}}"> <span style="font-weight: 500; color: var(--muted)">(current)</span></sc-if></span><span style="font-size: 12.5px; color: var(--muted)">{{o.hint}}</span></span>
+                  </label>
+                </sc-for>
+              </fieldset>
+              <sc-if value="{{orChosen}}" hint-placeholder-val="{{false}}">
+                <sc-if value="{{needsBarangay}}" hint-placeholder-val="{{false}}">
+                  <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text2)">The barangay this barangay link works in
+                    <select style="min-height: 46px; padding: 0 14px; border: 1px solid var(--field-line); border-radius: 14px; background: var(--card); color: var(--ink); font-size: 14px; font-weight: 500"><option value="">Choose a barangay</option><option>Dolores</option><option>Muzon</option><option>San Isidro</option><option>San Juan</option><option>Santa Ana</option></select>
+                  </label>
+                </sc-if>
+                <div style="padding: 14px 16px; border-radius: 16px; background: var(--soft2); display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; color: var(--text2)">
+                  <p style="margin: 0; font-weight: 700; color: var(--ink)">{{orLead}}</p>
+                  <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px"><sc-for list="{{orEffects}}" as="e" hint-placeholder-count="3"><li>{{e}}</li></sc-for></ul>
+                  <p style="margin: 6px 0 0; font-weight: 700; color: var(--ink)">Whichever you choose:</p>
+                  <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px">
+                    <li>The server keeps your reason with the change, together with who made it and when, in a history that is never edited or deleted. It is not shown to the account holder.</li>
+                    <li>The server refuses a role that would let one person both approve a request and release its money.</li>
+                  </ul>
+                </div>
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text2)">Why (required)
+                  <textarea rows="3" maxlength="500" style="padding: 12px 14px; border: 1px solid var(--field-line); border-radius: 14px; font-size: 14px; font-weight: 400; color: var(--ink); resize: vertical"></textarea>
+                  <span style="font-size: 12.5px; font-weight: 400; color: var(--muted)">Kept by the server with the change, with your name and the time. Up to 500 characters.</span>
+                </label>
+                <button type="button" class="pill-dark" style="min-height: 48px; border: 0; border-radius: 999px; background: var(--primary); color: #FFFFFF; font-size: 14.5px; font-weight: 600; cursor: pointer">{{orCta}}</button>
+              </sc-if>
+            </sc-if>
+          </section>
+
+          <sc-if value="{{s.correctable}}" hint-placeholder-val="{{false}}">
+            <section aria-labelledby="account-name-correction" style="padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+              <h3 id="account-name-correction" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--ink)">Correct the name</h3>
+              <p style="margin: 0; font-size: 13.5px; color: var(--text2); text-wrap: pretty">This account’s name was checked against the resident’s ID, so the resident cannot change it in the app. Correct it here only with a government ID in front of you that shows the new name — after a marriage or a court order, for example.</p>
+              <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text2)">The name as the ID shows it
+                <input type="text" autocomplete="off" maxlength="120" onInput="{{onNewName}}" style="min-height: 46px; padding: 0 14px; border: 1px solid var(--field-line); border-radius: 14px; font-size: 14px; font-weight: 400; color: var(--ink)">
+                <span style="font-size: 12.5px; font-weight: 400; color: var(--muted)">Exactly as printed on the ID, up to 120 characters.</span>
+              </label>
+              <div style="padding: 14px 16px; border-radius: 16px; background: var(--soft2); display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; color: var(--text2)">
+                <p style="margin: 0; font-weight: 700; color: var(--ink)">What the server does if you correct it:</p>
+                <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px">
+                  <li>The account’s name becomes the one you type. The resident’s digital ID shows it, and so do the office’s event lists.</li>
+                  <li>The earlier name is kept in the account’s name history, with who corrected it and when.</li>
+                  <li>The ID is not reviewed again: the account stays verified and keeps its digital ID.</li>
+                  <li>The audit trail records that the name was corrected, not the names. The server keeps no reason.</li>
+                  <li>The resident is not told in the app. Tell them at the counter.</li>
+                </ul>
+              </div>
+              <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer"><input type="checkbox" checked="{{seen}}" onChange="{{onSeen}}" style="width: 18px; height: 18px; margin: 2px 0 0; flex: 0 0 18px; accent-color: var(--link)">I have seen a government ID that shows this name.</label>
+              <sc-if value="{{canCorrect}}" hint-placeholder-val="{{false}}"><button type="button" class="pill-dark" style="min-height: 48px; border: 0; border-radius: 999px; background: var(--primary); color: #FFFFFF; font-size: 14.5px; font-weight: 600; cursor: pointer">Correct the name</button></sc-if>
+              <sc-if value="{{cannotCorrect}}" hint-placeholder-val="{{true}}"><button type="button" disabled style="min-height: 48px; border: 0; border-radius: 999px; background: var(--line); color: var(--muted); font-size: 14.5px; font-weight: 600; cursor: not-allowed">Correct the name</button></sc-if>
+            </section>
+          </sc-if>
+
+          <p role="status" aria-live="polite" style="margin: 0; font-size: 14px; font-weight: 600; color: var(--green-ink)">{{outcome}}</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1060}}'>
+class Component extends DCLogic {
+  nav(activeLabel) {
+    var self = this;
+    var I = {
+      grid: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z', check: 'M9 11l3 3 8-8M20 12v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11',
+      folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', file: 'M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M9 13h6M9 17h6',
+      user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0', heart: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
+      home: 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-5h4v5', users: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-4-6.3',
+      pin: 'M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', share: 'M15 4h5v5M20 4l-8 8M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
+      layers: 'M12 3l9 5-9 5-9-5zM3 13l9 5 9-5', cash: 'M3 7h18v10H3zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 10v.01M18 14v.01', chart: 'M4 20V10M10 20V4M16 20v-7M2 20h20',
+      cal: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4', shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4', inbox: 'M3 13l3-8h12l3 8v6H3zM3 13h5l1 3h6l1-3h5',
+      doc: 'M14 3H6v18h12V7zM14 3v4h4M12 11v6M9 14h6', ucog: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 11-5.7M18 15v6M15 18h6',
+      building: 'M4 21V5l8-2v18M12 7l8 2v12M7 9h2M7 13h2M7 17h2M15 12h2M15 16h2M2 21h20', phone: 'M7 2h10a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM11 18h2',
+      sliders: 'M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4', idcard: 'M3 5h18v14H3zM8 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM5 16c.6-1.6 1.7-2 3-2s2.4.4 3 2M14 9h4M14 13h4',
+      news: 'M4 5h13v14a1 1 0 0 0 1 1H5a1 1 0 0 1-1-1zM17 9h3v10a1 1 0 0 1-2 0M7 9h7M7 13h7M7 17h4', history: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2',
+      staff: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6', clip: 'M9 4h6v3H9zM7 5H5v16h14V5h-2M9 12h6M9 16h4',
+      gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1'
+    };
+    var NAV = [
+      { title: 'Casework', items: [['Dashboard', 'grid', 'Main.dc.html'], ['My work', 'check'], ['Cases', 'folder'], ['Assistance requests', 'file'], ['Residents', 'user', 'Residents.dc.html'], ['Beneficiaries', 'heart'], ['Households', 'home'], ['Families', 'users'], ['Field visits', 'pin'], ['Referrals', 'share']] },
+      { title: 'Delivery', items: [['Programs', 'layers'], ['Releases', 'cash'], ['Reports', 'chart']] },
+      { title: 'Community', items: [['Events', 'cal']] },
+      { title: 'Residents’ app', items: [['ID verification', 'shield', 'VerificationQueue.dc.html'], ['Office inbox', 'inbox', 'OfficeInbox.dc.html'], ['Resident document requests', 'doc'], ['Users and roles', 'ucog', 'Users.dc.html'], ['App directory', 'building', 'AppDirectory.dc.html'], ['Home screen', 'phone'], ['App settings', 'sliders'], ['Digital IDs', 'idcard'], ['Balita', 'news'], ['App audit trail', 'history']] },
+      { title: 'Administration', items: [['Staff and roles', 'staff'], ['Audit trail', 'clip'], ['Settings', 'gear']] }
+    ];
+    var open = (this.state && this.state.open) || {};
+    return NAV.map(function (s) {
+      var hasActive = s.items.some(function (i) { return i[0] === activeLabel; });
+      var isOpen = open[s.title] === undefined ? hasActive : open[s.title];
+      return {
+        title: s.title, open: isOpen, closed: !isOpen,
+        toggle: function () { var next = Object.assign({}, open); next[s.title] = !isOpen; self.setState({ open: next }); },
+        items: s.items.map(function (i) { var active = i[0] === activeLabel; return { label: i[0], icon: I[i[1]], href: i[2] || '#', active: active, inactive: !active }; })
+      };
+    });
+  }
+  renderVals() {
+    var self = this;
+    var st = this.state || {};
+    var theme = st.theme || (function () { try { return localStorage.getItem('taytay-theme') || 'light'; } catch (e) { return 'light'; } })();
+    var setTheme = function (v) { try { localStorage.setItem('taytay-theme', v); } catch (e) {} self.setState({ theme: v }); };
+    var D = '@accounts.example.test';
+    var OFFICES = { mswdo: 'Municipal Social Welfare and Development Office (MSWDO)', mho: 'Municipal Health Office (MHO)', mcr: 'Municipal Civil Registrar', pdao: 'Persons with Disability Affairs Office (PDAO)' };
+    var ROLE = {
+      registered: { label: 'Resident', bg: 'var(--soft)', fg: 'var(--text2)', description: 'A residents’ app account whose identity has not been verified.' },
+      verified: { label: 'Verified resident', bg: 'var(--green-tint)', fg: 'var(--green-ink)', description: 'A resident whose identity the office has verified.' },
+      staff: { label: 'Staff', bg: 'var(--blue-tint)', fg: 'var(--link)', description: 'Signs in to this console. Answers an office’s residents once assigned to an office.' },
+      admin: { label: 'Administrator', bg: '#F5DA18', fg: '#08124A', description: 'Signs in to this console with every capability, including this screen.' }
+    };
+    var ROLE_EFFECTS = {
+      registered: ['The account becomes an unverified resident account. The server marks it unverified, so the person must be verified again before anything that needs a verified identity.', 'Any digital ID the account holds is revoked.', 'It can no longer use this console, if it could.'],
+      verified: ['The account is marked verified now, without an ID review. Do this only where the office has verified the person some other way.', 'No digital ID is issued by this change: an approved ID review issues one, a role change does not.', 'It can no longer use this console, if it could.'],
+      staff: ['The account can sign in to this console as staff.', 'It answers an office’s residents and posts that office’s news only once it is assigned to an office. Assign one below after the change.', 'It holds no casework permission until it is given an office role, below, after the change.', 'Its verification status is unchanged. Any digital ID it holds is revoked.'],
+      admin: ['The account can sign in to this console as an administrator, with every capability: deciding ID reviews, changing other accounts’ roles and offices, and every office’s conversations.', 'Its verification status is unchanged. Any digital ID it holds is revoked.']
+    };
+    var ROLE_ALWAYS = ['The server applies it at that person’s next request. A console or app they already have open keeps showing what it showed until it is reloaded, but the server refuses whatever the new role does not allow.', 'An office link is kept, unused, when an account stops being staff, and applies again if it becomes staff again.', 'An office role is not kept: the server clears it when the account stops being staff, records that it did, and does not bring it back if the account becomes staff again.', 'The server records that you made the change, and when. It keeps no reason, so none is asked for.'];
+    var OFFICE_EFFECTS = {
+      assign: ['The account answers this office’s residents in the office inbox, and may post news for it, from its next request. A console it already has open shows the inbox once reloaded.', 'It sees only this office’s conversations. Moving it from another office takes that office’s conversations away from it.', 'The server records that you made the change, and when. It keeps no reason, so none is asked for.'],
+      clear: ['The account stays staff but answers no office: the office inbox and news posting close to it from its next request.', 'When that person next signs in, the console tells them they are not assigned to an office, and that an administrator assigns one.', 'The server records that you made the change, and when. It keeps no reason, so none is asked for.']
+    };
+    var OR = [
+      ['mswdo-head', 'MSWDO head', 'Approves or rejects endorsed requests and oversees the office.', 'Sees every barangay.'],
+      ['social-worker', 'Social worker', 'Conducts assessments and case studies, then endorses requests.', 'Sees only the cases assigned to it.'],
+      ['intake-officer', 'Intake officer', 'Receives applicants, records requests and validates requirements.', 'Sees every barangay.'],
+      ['release-officer', 'Release officer', 'Schedules payouts and releases approved assistance.', 'Sees every barangay.'],
+      ['barangay-link', 'Barangay link', 'Barangay-based encoder. Sees only their own barangay.', 'Sees one barangay only, chosen below.'],
+      ['auditor', 'Auditor', 'Read-only oversight across the whole municipality.', 'Sees every barangay.']
+    ];
+    var OR_EFFECTS = {
+      assign: ['From the account’s next request the server grants it this role’s casework permissions, as listed for the role under Roles and permissions, and confines what it may see to the role’s scope. A console it already has open shows the change once reloaded.', 'It replaces any office role the account had. Nobody holds two.', 'Its platform permissions — the office inbox, news, digital ID checks — are unchanged: they follow the account role and its office, not the office role.'],
+      clear: ['From the account’s next request the server withdraws every casework permission it held. It stays staff, with the platform permissions of a staff account.', 'Its data scope becomes the narrowest, its assigned cases only.']
+    };
+    var ACC = [
+      { id: 'a1', name: 'Marisol Alcantara', h: 'marisol.alcantara', role: 'admin', office: '', officeRole: 'system-administrator', own: true, v: '' },
+      { id: 'a2', name: 'Teresita Valdez', h: 'teresita.valdez', role: 'staff', office: 'mswdo', officeRole: 'intake-officer', v: '' },
+      { id: 'a3', name: 'Rogelio Manalo', h: 'rogelio.manalo', role: 'staff', office: '', officeRole: '', v: '' },
+      { id: 'a4', name: 'Jocelyn Pascual', h: 'jocelyn.pascual', role: 'staff', office: 'mho', officeRole: '', v: '' },
+      { id: 'a5', name: 'Danilo Ferrer', h: 'danilo.ferrer', role: 'verified', office: '', officeRole: '', v: 'verified' },
+      { id: 'a6', name: 'Maricel Robles', h: 'maricel.robles', role: 'registered', office: '', officeRole: '', v: 'pending' },
+      { id: 'a7', name: '', h: 'resident-0006', role: 'registered', office: '', officeRole: '', v: 'pending' },
+      { id: 'a8', name: 'Arnel Villanueva', h: 'arnel.villanueva', role: 'verified', office: 'mswdo', officeRole: '', v: 'verified' }
+    ];
+    var V_LABEL = { unverified: 'Not verified', pending: 'Waiting for an ID review', verified: 'Verified', rejected: 'Not accepted' };
+    var verification = st.verification || '';
+    var list = ACC.filter(function (a) { return verification === '' || a.v === verification; });
+    var selId = st.sel === undefined ? 'a2' : st.sel;
+    var a = ACC.filter(function (x) { return x.id === selId; })[0] || null;
+    var orLabel = function (k) { if (k === 'system-administrator') { return 'System administrator'; } var f = OR.filter(function (o) { return o[0] === k; })[0]; return f ? f[1] : ''; };
+    var officeOf = function (x) { if (!x.office) { return 'None'; } return x.role === 'staff' ? OFFICES[x.office] : OFFICES[x.office] + ' (unused while not staff)'; };
+    var reset = { roleChoice: '', officeChoice: undefined, orChoice: '', newName: '', seen: false };
+    var roleChoice = st.roleChoice || '';
+    var officeChoice = st.officeChoice === undefined ? (a ? a.office : '') : st.officeChoice;
+    var orChoice = st.orChoice || '';
+    var initials = function (n) { return n ? n.split(' ').map(function (p) { return p[0]; }).slice(0, 2).join('') : '?'; };
+    var s = {};
+    if (a) {
+      var r = ROLE[a.role];
+      s = {
+        name: a.name || 'No name given', email: a.h + D, roleLabel: r.label, roleBg: r.bg, roleFg: r.fg,
+        officeName: a.office ? OFFICES[a.office] : 'None',
+        own: !!a.own, notOwn: !a.own,
+        staff: a.role === 'staff', notStaff: a.role !== 'staff', admin: a.role === 'admin', resident: a.role === 'registered' || a.role === 'verified',
+        officeKept: a.role !== 'staff' && !!a.office,
+        officeKeptText: a.office ? 'Linked to ' + OFFICES[a.office] + ', unused while the account is not staff. It applies again if the account becomes staff.' : '',
+        hasNow: a.role === 'staff' || a.role === 'admin',
+        nowText: a.officeRole ? 'Now: ' + orLabel(a.officeRole) + '.' : 'Now: none. The account holds no casework permission.',
+        correctable: a.role === 'verified' && !a.own
+      };
+    }
+    var newName = st.newName || '';
+    var seen = !!st.seen;
+    return {
+      themeClass: 'theme-' + theme, isLight: theme === 'light', isDark: theme === 'dark',
+      setLight: function () { setTheme('light'); }, setDark: function () { setTheme('dark'); },
+      lightBg: theme === 'light' ? 'var(--primary)' : 'transparent', lightFg: theme === 'light' ? '#FFFFFF' : 'var(--text2)',
+      darkBg: theme === 'dark' ? 'var(--primary)' : 'transparent', darkFg: theme === 'dark' ? '#FFFFFF' : 'var(--text2)',
+      nav: this.nav('Users and roles'),
+      kpis: [
+        { label: 'Resident accounts', value: '1,240', hint: 'Residents and verified residents.', bg: 'var(--card)', fg: 'var(--ink)', dot: '#F5DA18' },
+        { label: 'Verified residents', value: '612', hint: 'Verified through an ID review.', bg: 'var(--card)', fg: 'var(--ink)', dot: 'var(--green-ink)' },
+        { label: 'Staff and administrators', value: '19', hint: '18 staff · 1 administrator', bg: 'var(--card)', fg: 'var(--ink)', dot: 'var(--bar)' },
+        { label: 'Staff with no office', value: '2', hint: 'They answer no office’s inbox yet.', bg: 'var(--card)', fg: 'var(--ink)', dot: '#E0090A' }
+      ],
+      verification: verification,
+      onVerification: function (e) { self.setState({ verification: e.target.value }); },
+      narrowed: verification !== '',
+      verificationNote: verification ? 'Showing residents’ app accounts that are not closed and whose verification is “' + V_LABEL[verification] + '” — the accounts the dashboard counts under it. Staff accounts are not listed while a verification is chosen.' : '',
+      rows: list.map(function (x) {
+        var r = ROLE[x.role];
+        return {
+          name: x.name || 'No name given', nameColor: x.name ? 'var(--ink)' : 'var(--muted)', you: !!x.own, initials: initials(x.name),
+          avatarBg: x.role === 'staff' || x.role === 'admin' ? 'var(--primary)' : 'var(--soft)', avatarFg: x.role === 'staff' || x.role === 'admin' ? '#F5DA18' : 'var(--text2)',
+          email: x.h + D, emailColor: 'var(--text2)',
+          roleLabel: r.label, roleBg: r.bg, roleFg: r.fg,
+          office: officeOf(x), officeColor: x.office ? 'var(--text2)' : 'var(--muted)',
+          rowBg: a && x.id === a.id ? 'var(--sel)' : 'transparent',
+          pick: function () { self.setState(Object.assign({ sel: x.id }, reset)); }
+        };
+      }),
+      empty: list.length === 0,
+      shown: list.length === 1 ? 'Showing 1 account.' : 'Showing ' + list.length + ' accounts.',
+      drawerOpen: !!a,
+      close: function () { self.setState(Object.assign({ sel: null }, reset)); },
+      s: s,
+      roles: ['registered', 'verified', 'staff', 'admin'].map(function (k) {
+        var cur = a && a.role === k; var on = roleChoice === k;
+        return { label: ROLE[k].label, description: ROLE[k].description, current: !!cur, checked: on,
+          border: on ? 'var(--accent-line)' : 'var(--line)', bg: on ? 'var(--sel)' : 'var(--card-flat)', cursor: cur ? 'not-allowed' : 'pointer', opacity: cur ? '0.7' : '1',
+          pick: function () { self.setState({ roleChoice: k }); } };
+      }),
+      roleChosen: roleChoice !== '',
+      roleChosenLabel: roleChoice ? ROLE[roleChoice].label : '',
+      roleEffects: roleChoice ? ROLE_EFFECTS[roleChoice] : [],
+      roleAlways: ROLE_ALWAYS,
+      confirmRole: function () { self.setState({ outcome: 'Role changed to ' + ROLE[roleChoice].label + '.' }); },
+      officeValue: officeChoice,
+      onOffice: function (e) { self.setState({ officeChoice: e.target.value }); },
+      officeChanged: !!a && officeChoice !== a.office,
+      officeUnchanged: !a || officeChoice === a.office,
+      officeEffects: officeChoice === '' ? OFFICE_EFFECTS.clear : OFFICE_EFFECTS.assign,
+      officeCta: officeChoice === '' ? 'Remove the office link' : 'Assign to ' + (OFFICES[officeChoice] || ''),
+      officeRoles: OR.map(function (o) {
+        var cur = a && a.officeRole === o[0]; var on = orChoice === o[0];
+        return { label: o[1], hint: o[2] + ' ' + o[3], current: !!cur, checked: on, disabled: !!cur,
+          border: on ? 'var(--accent-line)' : 'var(--line)', bg: on ? 'var(--sel)' : 'var(--card-flat)', cursor: cur ? 'not-allowed' : 'pointer', opacity: cur ? '0.7' : '1',
+          pick: function () { self.setState({ orChoice: o[0] }); } };
+      }).concat([{ label: 'No office role', hint: 'Withdraws every casework permission. The account stays staff.', current: false, checked: orChoice === 'none', disabled: !(a && a.officeRole),
+        border: orChoice === 'none' ? 'var(--accent-line)' : 'var(--line)', bg: orChoice === 'none' ? 'var(--sel)' : 'var(--card-flat)', cursor: a && a.officeRole ? 'pointer' : 'not-allowed', opacity: a && a.officeRole ? '1' : '0.7',
+        pick: function () { self.setState({ orChoice: 'none' }); } }]),
+      orChosen: orChoice !== '',
+      needsBarangay: orChoice === 'barangay-link',
+      orLead: orChoice === 'none' ? 'What the server does if you take the office role away:' : 'What the server does if you give the account ' + orLabel(orChoice) + ':',
+      orEffects: orChoice === 'none' ? OR_EFFECTS.clear : (orChoice ? OR_EFFECTS.assign.concat([OR.filter(function (o) { return o[0] === orChoice; }).map(function (o) { return o[2] + ' ' + o[3]; })[0]]) : []),
+      orCta: orChoice === 'none' ? 'Take the office role away' : 'Give the office role ' + orLabel(orChoice),
+      onNewName: function (e) { self.setState({ newName: e.target.value }); },
+      seen: seen,
+      onSeen: function () { self.setState({ seen: !seen }); },
+      canCorrect: newName.trim() !== '' && seen, cannotCorrect: !(newName.trim() !== '' && seen),
+      outcome: st.outcome || ''
+    };
+  }
+}
+</script>
+</body>
+</html>

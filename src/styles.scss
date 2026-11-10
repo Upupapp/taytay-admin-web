@@ -290,7 +290,7 @@ body::before {
 
 @media print {
   body {
-    background: #fff;
+    background: var(--card-solid);
   }
 
   body::before {

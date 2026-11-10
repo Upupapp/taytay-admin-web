@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Residents — Taytay Social Welfare</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Inter+Tight:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#EEF1F6}
+.theme-light{--page:radial-gradient(620px 520px at 6% 4%, rgba(45,84,224,0.55), transparent 70%), radial-gradient(560px 460px at 96% 10%, rgba(245,218,24,0.55), transparent 70%), radial-gradient(640px 520px at 88% 72%, rgba(224,9,10,0.22), transparent 70%), radial-gradient(700px 560px at 18% 78%, rgba(10,32,113,0.30), transparent 70%), radial-gradient(520px 420px at 52% 40%, rgba(91,130,255,0.25), transparent 70%), #E7ECF7;--card:linear-gradient(135deg, rgba(255,255,255,0.62), rgba(255,255,255,0.28));--card-solid:#FFFFFF;--card-flat:rgba(255,255,255,0.4);--card-edge:rgba(255,255,255,0.7);--card-shadow:none;--primary:#0A2071;--deep:#08124A;--ink:#08124A;--text:#1B2540;--text2:#2B3550;--muted:#5A6478;--muted2:#6B7489;--soft:rgba(10,32,113,0.06);--soft2:rgba(255,255,255,0.42);--field:rgba(255,255,255,0.55);--sel:rgba(45,84,224,0.12);--hover:rgba(255,255,255,0.55);--line:rgba(10,32,113,0.10);--line2:rgba(10,32,113,0.18);--field-line:#8A93A6;--axis:rgba(10,32,113,0.16);--dash:#9AA3B5;--area:rgba(45,84,224,0.16);--bar:#1D3A9C;--gold-tint:rgba(245,218,24,0.28);--gold-tint2:rgba(245,218,24,0.18);--gold-ink:#5C4D00;--gold-ink2:#3D3505;--red-tint:rgba(224,9,10,0.12);--red-ink:#B00708;--red-ink2:#7A0506;--green-tint:rgba(46,160,90,0.16);--green-ink:#17663A;--blue-tint:rgba(45,84,224,0.14);--link:#0A2071;--link-hover:#1D3A9C;--accent-line:#0A2071;--chart-line:#0A2071;--glow:none;--scrim:rgba(8,18,74,0.5);--scrim2:rgba(8,18,74,0.55);--ring:#FFFFFF;--option-bg:#FFFFFF;--option-ink:#08124A;color-scheme:light}
+.theme-dark{--page:radial-gradient(640px 520px at 6% 4%, rgba(45,84,224,0.65), transparent 70%), radial-gradient(520px 440px at 96% 8%, rgba(245,218,24,0.22), transparent 70%), radial-gradient(640px 520px at 88% 74%, rgba(224,9,10,0.30), transparent 70%), radial-gradient(700px 560px at 16% 80%, rgba(91,130,255,0.35), transparent 70%), radial-gradient(520px 420px at 52% 40%, rgba(10,32,113,0.9), transparent 70%), #040A22;--card:linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));--card-solid:#0C1A4F;--card-flat:rgba(255,255,255,0.05);--card-edge:rgba(255,255,255,0.16);--card-shadow:none;--primary:#2D54E0;--deep:#0A2071;--ink:#FFFFFF;--text:#E6EBF7;--text2:#C9D2E8;--muted:#9AA6C4;--muted2:#8C98B8;--soft:rgba(255,255,255,0.06);--soft2:rgba(255,255,255,0.04);--field:rgba(255,255,255,0.05);--sel:rgba(91,130,255,0.14);--hover:rgba(255,255,255,0.08);--line:rgba(255,255,255,0.08);--line2:rgba(255,255,255,0.16);--field-line:rgba(255,255,255,0.24);--axis:rgba(255,255,255,0.12);--dash:rgba(255,255,255,0.3);--area:rgba(45,84,224,0.35);--bar:#3A63F0;--gold-tint:rgba(245,218,24,0.14);--gold-tint2:rgba(245,218,24,0.10);--gold-ink:#F5DA18;--gold-ink2:#F7E27A;--red-tint:rgba(224,9,10,0.18);--red-ink:#FF8A8A;--red-ink2:#FFB3B3;--green-tint:rgba(46,160,90,0.18);--green-ink:#6EE7A0;--blue-tint:rgba(91,130,255,0.18);--link:#9DB6FF;--link-hover:#C4D3FF;--accent-line:#5B82FF;--chart-line:#7C9BFF;--glow:none;--scrim:rgba(2,6,20,0.72);--scrim2:rgba(2,6,20,0.78);--ring:#040A22;--option-bg:#0B1640;--option-ink:#FFFFFF;color-scheme:dark}
+body:has(.theme-dark){background:#040A22}
+select{-webkit-appearance:none;appearance:none;padding-right:46px !important;cursor:pointer;background-image:linear-gradient(45deg, transparent 50%, currentColor 50%),linear-gradient(135deg, currentColor 50%, transparent 50%) !important;background-position:calc(100% - 24px) 50%,calc(100% - 18px) 50% !important;background-size:6px 6px,6px 6px !important;background-repeat:no-repeat !important}
+option{background:var(--option-bg);color:var(--option-ink)}
+[style*="var(--card)"]{border:1px solid var(--card-edge);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%)}
+.theme-btn[aria-pressed="false"]:hover{background:var(--hover) !important}
+a{color:var(--link)}a:hover{color:var(--link-hover)}
+button,select,input,textarea{font:inherit}
+:focus-visible{outline:3px solid #F5DA18;outline-offset:2px}
+.skip{position:absolute;left:-9999px}.skip:focus{left:24px;top:24px;z-index:10;background:#FFFFFF;padding:10px 16px;border-radius:999px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.nav-item:hover{background:var(--hover)}
+.pill:hover{background:var(--hover)}
+.pill-dark:hover{background:#3A63F0}
+.trow:hover{background:var(--field)}
+.kpi{transition:background-color 160ms ease,color 160ms ease,box-shadow 160ms ease}
+.kpi:hover{background:var(--primary) !important;color:#FFFFFF !important}
+.kpi:hover span{color:#FFFFFF !important}
+.bento-r{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
+@media (max-width:1100px){.bento-r>*{grid-column:span 6 !important}}
+@media (max-width:700px){.bento-r>*{grid-column:span 12 !important}}
+.barrow:hover{background:var(--hover) !important}
+.fld{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--text2);min-width:0}
+.opt{font-weight:500;color:var(--muted)}
+.hint{font-size:12.5px;font-weight:400;color:var(--muted)}
+.inp{min-height:46px;box-sizing:border-box;width:100%;padding:0 14px;border:1px solid var(--field-line);border-radius:14px;background:var(--field);color:var(--ink);font-size:14px;font-weight:400}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="position: relative; min-height: 100vh; box-sizing: border-box; display: flex; flex-wrap: wrap; gap: 16px; padding: 16px; background: var(--page); font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14.5px; line-height: 1.5; color: var(--text)">
+  <a href="#main-content" class="skip">Skip to main content</a>
+
+  <aside aria-label="Main navigation" style="flex: 1 1 256px; max-width: 100%; box-sizing: border-box; background: var(--card); border-radius: 24px; padding: 20px 14px 16px; display: flex; flex-direction: column; gap: 16px">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 2px 6px; text-decoration: none">
+      <span role="img" aria-label="Municipal seal not available" title="The official seal has not been supplied to this application. A neutral placeholder is shown in its place." style="width: 46px; height: 46px; flex: 0 0 46px; border-radius: 999px; border: 1.5px dashed var(--dash); background: var(--soft2); display: grid; place-items: center; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: var(--muted)"><span aria-hidden="true">TR</span></span>
+      <span style="display: flex; flex-direction: column; line-height: 1.25; min-width: 0">
+        <span style="font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 16px; font-weight: 600; color: var(--ink)">Taytay Social Welfare</span>
+        <span style="font-size: 11.5px; color: var(--muted)">Municipal Social Welfare and Development Office</span>
+      </span>
+    </a>
+    <nav aria-label="Main navigation" style="display: flex; flex-direction: column; gap: 4px">
+      <sc-for list="{{nav}}" as="section" hint-placeholder-count="5">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <button type="button" class="nav-item" onClick="{{section.toggle}}" aria-expanded="{{section.open}}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 34px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: var(--muted2); font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; cursor: pointer; text-align: left">
+            <span>{{section.title}}</span>
+            <sc-if value="{{section.open}}" hint-placeholder-val="{{true}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></sc-if>
+            <sc-if value="{{section.closed}}" hint-placeholder-val="{{false}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg></sc-if>
+          </button>
+          <sc-if value="{{section.open}}" hint-placeholder-val="{{true}}">
+            <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px">
+              <sc-for list="{{section.items}}" as="item" hint-placeholder-count="4">
+                <li>
+                  <sc-if value="{{item.active}}" hint-placeholder-val="{{false}}">
+                    <a href="{{item.href}}" aria-current="page" style="display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 0 12px; border-radius: 12px; background: var(--primary); color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none">
+                      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5DA18" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: 0 0 18px"><path d="{{item.icon}}"></path></svg>
+                      <span>{{item.label}}</span>
+                    </a>
+                  </sc-if>
+                  <sc-if value="{{item.inactive}}" hint-placeholder-val="{{true}}">
+                    <a href="{{item.href}}" class="nav-item" style="display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 12px; border-radius: 12px; color: var(--text2); font-size: 14px; font-weight: 500; text-decoration: none">
+                      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: 0 0 18px"><path d="{{item.icon}}"></path></svg>
+                      <span>{{item.label}}</span>
+                    </a>
+                  </sc-if>
+                </li>
+              </sc-for>
+            </ul>
+          </sc-if>
+        </div>
+      </sc-for>
+    </nav>
+    <footer style="margin-top: auto; display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 18px; background: var(--soft2)">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span aria-hidden="true" style="width: 38px; height: 38px; flex: 0 0 38px; border-radius: 999px; background: var(--primary); color: #F5DA18; display: grid; place-items: center; font-size: 13px; font-weight: 700">MA</span>
+        <span style="display: flex; flex-direction: column; line-height: 1.3; min-width: 0">
+          <span style="font-size: 14px; font-weight: 600; color: var(--ink)">Marisol Alcantara</span>
+          <span style="font-size: 12.5px; color: var(--muted)">Administrator · All barangays</span>
+        </span>
+      </div>
+      <a href="SignIn.dc.html" class="pill" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; border-radius: 999px; border: 1px solid var(--line2); background: var(--card); color: var(--ink); font-size: 13.5px; font-weight: 600; text-decoration: none">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path></svg>Sign out</a>
+    </footer>
+  </aside>
+
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+    <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 4px 8px 0">
+      <nav aria-label="Breadcrumb" style="flex: 1 1 180px; font-size: 13.5px; color: var(--muted)">
+        <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+          <li><a href="Main.dc.html" style="color: var(--muted); text-decoration: none">Dashboard</a></li>
+          <li aria-hidden="true">/</li>
+          <li aria-current="page" style="color: var(--ink); font-weight: 600">Residents</li>
+        </ol>
+      </nav>
+      <a href="#" class="pill" style="flex: 0 1 380px; display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 8px 0 16px; border-radius: 999px; background: var(--card); color: var(--muted); text-decoration: none; font-size: 14px">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <span style="flex: 1 1 auto"><span class="vh">Search: </span>Search residents, requests, programmes…</span>
+      </a>
+      <div role="group" aria-label="Appearance" style="display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--card)"><button type="button" class="theme-btn" aria-pressed="{{isLight}}" onClick="{{setLight}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: {{lightBg}}; color: {{lightFg}}; font-size: 13.5px; font-weight: 600; cursor: pointer"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>Light</button><button type="button" class="theme-btn" aria-pressed="{{isDark}}" onClick="{{setDark}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: {{darkBg}}; color: {{darkFg}}; font-size: 13.5px; font-weight: 600; cursor: pointer"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>Dark</button></div>
+      <button type="button" aria-label="Notifications, 3 unread notifications" class="pill" style="position: relative; width: 46px; height: 46px; display: grid; place-items: center; border: 0; border-radius: 999px; background: var(--card); color: var(--ink); cursor: pointer">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+        <span aria-hidden="true" style="position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: #E0090A; color: #FFFFFF; font-size: 11px; font-weight: 700; display: grid; place-items: center; border: 2px solid var(--ring)">3</span>
+      </button>
+    </header>
+
+
+    <main id="main-content" style="display: flex; flex-direction: column; gap: 20px; padding: 0 8px 8px">
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+        <div style="flex: 1 1 420px; display: flex; flex-direction: column; gap: 8px; max-width: 820px">
+          <h1 style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 42px; line-height: 1.05; font-weight: 500; letter-spacing: -0.025em; color: var(--ink)">Residents</h1>
+          <p style="margin: 0; font-size: 15px; color: var(--muted); text-wrap: pretty">The registry every case, payout and referral is filed against.</p>
+        </div>
+        <button type="button" onClick="{{openRegister}}" class="pill-dark" style="display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 22px; border: 0; border-radius: 999px; background: var(--primary); color: #FFFFFF; font-size: 14.5px; font-weight: 600; cursor: pointer"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F5DA18" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>Register a resident</button>
+      </div>
+
+      <div class="bento-r">
+        <sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+          <div class="kpi" tabindex="0" style="grid-column: span 3; display: flex; flex-direction: column; gap: 4px; padding: 18px 20px; border-radius: 24px; background: var(--card); color: var(--ink)">
+            <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13.5px; font-weight: 600">{{k.label}}<span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 999px; background: {{k.dot}}"></span></span>
+            <span style="font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 38px; line-height: 1.05; font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums">{{k.value}}</span>
+            <span style="font-size: 12.5px; opacity: 0.85">{{k.hint}}</span>
+          </div>
+        </sc-for>
+
+        <section aria-labelledby="by-barangay" style="grid-column: span 7; padding: 20px 22px; border-radius: 24px; background: var(--card); display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px">
+            <h2 id="by-barangay" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--ink)">Active records by barangay</h2>
+            <span style="font-size: 12.5px; color: var(--muted)">Click a bar to filter the list</span>
+          </div>
+          <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px">
+            <sc-for list="{{byBarangay}}" as="b" hint-placeholder-count="5">
+              <li>
+                <button type="button" onClick="{{b.pick}}" aria-pressed="{{b.on}}" class="barrow" style="width: 100%; display: grid; grid-template-columns: 110px minmax(0, 1fr) 64px; align-items: center; gap: 12px; padding: 4px 6px; border: 0; border-radius: 10px; background: transparent; color: var(--text2); font-size: 13.5px; font-weight: 600; text-align: left; cursor: pointer">
+                  <span style="color: {{b.ink}}">{{b.name}}</span>
+                  <span aria-hidden="true" style="height: 14px; border-radius: 999px; background: var(--soft); overflow: hidden"><span style="display: block; height: 100%; width: {{b.pct}}; border-radius: 999px; background: {{b.fill}}"></span></span>
+                  <span style="text-align: right; font-variant-numeric: tabular-nums; color: var(--ink)">{{b.count}}</span>
+                </button>
+              </li>
+            </sc-for>
+          </ul>
+        </section>
+
+        <section aria-labelledby="by-age" style="grid-column: span 5; padding: 20px 22px; border-radius: 24px; background: var(--card); display: flex; flex-direction: column; gap: 14px">
+          <h2 id="by-age" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--ink)">Active records by age group</h2>
+          <div aria-hidden="true" style="display: flex; height: 18px; border-radius: 999px; overflow: hidden; gap: 3px">
+            <sc-for list="{{byAge}}" as="g" hint-placeholder-count="4"><span style="flex: {{g.flex}} 1 0; background: {{g.color}}"></span></sc-for>
+          </div>
+          <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px">
+            <sc-for list="{{byAge}}" as="g" hint-placeholder-count="4">
+              <div style="display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--soft2)">
+                <span aria-hidden="true" style="width: 10px; height: 10px; margin-top: 5px; flex: 0 0 10px; border-radius: 999px; background: {{g.color}}"></span>
+                <span style="display: flex; flex-direction: column; min-width: 0"><dt style="font-size: 12.5px; color: var(--muted)">{{g.label}}</dt><dd style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 20px; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums">{{g.count}} <span style="font-family: 'Inter', sans-serif; font-size: 12.5px; color: var(--muted)">{{g.share}}</span></dd></span>
+              </div>
+            </sc-for>
+          </dl>
+        </section>
+      </div>
+
+      <section aria-labelledby="registry-heading" style="padding: 22px; border-radius: 28px; background: var(--card); display: flex; flex-direction: column; gap: 14px">
+        <h2 id="registry-heading" class="vh">Residents registered with the MSWDO</h2>
+        <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px">
+          <label style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted)">Search
+            <span style="position: relative; display: flex">
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; left: 16px; top: 14px; color: var(--muted)"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+              <input type="search" value="{{q}}" onInput="{{onQ}}" placeholder="Surname or given name" aria-describedby="resident-search-hint" style="flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 16px 0 42px; border: 1px solid var(--field-line); border-radius: 999px; background: var(--field); color: var(--ink); font-size: 14px; font-weight: 500">
+            </span>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted)">Barangay
+            <select value="{{brgy}}" onChange="{{onBrgy}}" style="min-height: 44px; min-width: 170px; padding: 0 16px; border: 1px solid var(--field-line); border-radius: 999px; background: var(--field); color: var(--ink); font-size: 14px; font-weight: 500">
+              <option value="">All barangays</option><option>Dolores</option><option>Muzon</option><option>San Isidro</option><option>San Juan</option><option>Santa Ana</option>
+            </select>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted)">Sector
+            <select value="{{sector}}" onChange="{{onSector}}" style="min-height: 44px; min-width: 200px; padding: 0 16px; border: 1px solid var(--field-line); border-radius: 999px; background: var(--field); color: var(--ink); font-size: 14px; font-weight: 500">
+              <option value="">All sectors</option><option>Senior citizen</option><option>Person with disability</option><option>Solo parent</option><option>4Ps beneficiary</option><option>Indigenous people</option><option>Unemployed</option><option>Out-of-school youth</option><option>VAWC survivor</option><option>Child in conflict with the law</option><option>Displaced worker</option>
+            </select>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted)">Age group
+            <select value="{{age}}" onChange="{{onAge}}" style="min-height: 44px; min-width: 190px; padding: 0 16px; border: 1px solid var(--field-line); border-radius: 999px; background: var(--field); color: var(--ink); font-size: 14px; font-weight: 500">
+              <option value="">All ages</option><option value="child">Children (under 18)</option><option value="youth">Youth (18–30)</option><option value="adult">Adults (31–59)</option><option value="senior">Senior citizens (60+)</option>
+            </select>
+          </label>
+          <label style="display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; border-radius: 999px; background: var(--soft2); font-size: 13.5px; font-weight: 600; color: var(--text2); cursor: pointer"><input type="checkbox" checked="{{inactive}}" onChange="{{onInactive}}" style="width: 18px; height: 18px; margin: 0; accent-color: var(--link)">Include retired records</label>
+          <sc-if value="{{hasFilters}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{clear}}" class="pill" style="min-height: 44px; padding: 0 18px; border: 1px solid var(--line2); border-radius: 999px; background: var(--card); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer">Clear filters</button></sc-if>
+        </div>
+        <p id="resident-search-hint" style="margin: 0; font-size: 13px; color: var(--muted); text-wrap: pretty">Searches surnames and given names — every word you type must match. Addresses and numbers are not searched. Alphabetical by surname, then given name.</p>
+
+        <sc-if value="{{hasRows}}" hint-placeholder-val="{{true}}">
+          <div style="overflow-x: auto">
+            <table style="width: 100%; min-width: 820px; border-collapse: separate; border-spacing: 0; font-size: 14px">
+              <caption class="vh">Residents registered with the MSWDO</caption>
+              <thead>
+                <tr>
+                  <th scope="col" style="text-align: left; padding: 10px 16px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted2); background: var(--soft2); border-radius: 12px 0 0 12px">Resident</th>
+                  <th scope="col" style="text-align: left; padding: 10px 16px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted2); background: var(--soft2)">Barangay</th>
+                  <th scope="col" style="width: 80px; text-align: right; padding: 10px 16px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted2); background: var(--soft2)">Age</th>
+                  <th scope="col" style="text-align: left; padding: 10px 16px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted2); background: var(--soft2)">Sectors</th>
+                  <th scope="col" style="width: 110px; text-align: left; padding: 10px 16px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted2); background: var(--soft2); border-radius: 0 12px 12px 0">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+                  <tr class="trow" style="background: {{r.rowBg}}">
+                    <td style="padding: 11px 16px; border-bottom: 1px solid var(--soft)">
+                      <span style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 10px">
+                        <span aria-hidden="true" style="width: 34px; height: 34px; flex: 0 0 34px; border-radius: 999px; background: {{r.avatarBg}}; color: {{r.avatarFg}}; display: grid; place-items: center; font-size: 12.5px; font-weight: 700">{{r.initials}}</span>
+                        <a href="#" onClick="{{r.pick}}" style="font-weight: 600; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line2); text-underline-offset: 3px">{{r.listed}}</a>
+                        <sc-if value="{{r.restricted}}" hint-placeholder-val="{{false}}"><span style="padding: 2px 10px; border-radius: 999px; background: var(--red-tint); color: var(--red-ink); font-size: 12px; font-weight: 700">Restricted</span></sc-if>
+                      </span>
+                    </td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid var(--soft); color: var(--text2)">{{r.brgy}}</td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid var(--soft); text-align: right; color: var(--text2); font-variant-numeric: tabular-nums">{{r.age}}</td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid var(--soft)">
+                      <span style="display: flex; flex-wrap: wrap; gap: 6px">
+                        <sc-for list="{{r.sectors}}" as="c" hint-placeholder-count="2"><span style="padding: 2px 10px; border-radius: 999px; background: {{c.bg}}; color: {{c.fg}}; font-size: 12.5px; font-weight: 600; white-space: nowrap">{{c.label}}</span></sc-for>
+                        <sc-if value="{{r.noSectors}}" hint-placeholder-val="{{false}}"><span style="color: var(--muted)">—</span></sc-if>
+                      </span>
+                    </td>
+                    <td style="padding: 11px 16px; border-bottom: 1px solid var(--soft)"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: {{r.statusFg}}"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 999px; background: {{r.statusDot}}"></span>{{r.status}}</span></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+            <p role="status" style="margin: 0; font-size: 13px; color: var(--muted)">{{shown}} More are available.</p>
+            <button type="button" class="pill" style="min-height: 42px; padding: 0 20px; border: 1px solid var(--field-line); border-radius: 999px; background: var(--card); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer">Show more</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{noRows}}" hint-placeholder-val="{{false}}">
+          <div style="padding: 32px; border-radius: 20px; background: var(--soft2); display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center">
+            <p style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 20px; font-weight: 500; color: var(--ink)">No residents match those filters</p>
+            <p style="margin: 0; font-size: 13.5px; color: var(--muted)">Try a different spelling, or clear the filters to see every record.</p>
+            <button type="button" onClick="{{clear}}" class="pill" style="margin-top: 6px; min-height: 42px; padding: 0 20px; border: 1px solid var(--line2); border-radius: 999px; background: var(--card); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer">Clear filters</button>
+          </div>
+        </sc-if>
+      </section>
+      <p style="margin: 0; padding: 0 4px; font-size: 12px; color: var(--muted)">Counts and records on this screen are sample figures for the design.</p>
+    </main>
+  </div>
+
+  <sc-if value="{{recordOpen}}" hint-placeholder-val="{{false}}">
+    <div style="position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 24px; box-sizing: border-box; background: var(--scrim)">
+      <button type="button" aria-label="Close" tabindex="-1" onClick="{{close}}" style="position: absolute; inset: 0; border: 0; background: transparent; cursor: default"></button>
+      <section role="dialog" aria-modal="true" aria-labelledby="record-heading" style="position: relative; width: 100%; max-width: 1060px; max-height: calc(100vh - 48px); box-sizing: border-box; border-radius: 28px; background: var(--card-solid); display: flex; flex-direction: column; overflow: hidden">
+        <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 20px 24px; border-bottom: 1px solid var(--soft)">
+          <span aria-hidden="true" style="width: 52px; height: 52px; flex: 0 0 52px; border-radius: 999px; background: var(--primary); color: #F5DA18; display: grid; place-items: center; font-size: 17px; font-weight: 700">{{p.initials}}</span>
+          <div style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted2)">Resident record</span>
+            <h2 id="record-heading" style="margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 26px; font-weight: 500; letter-spacing: -0.01em; color: var(--ink)">{{p.full}}
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 12px; border-radius: 999px; background: {{p.statusBg}}; color: {{p.statusFg}}; font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 700"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 999px; background: currentColor"></span>{{p.status}}</span>
+              <sc-if value="{{p.restricted}}" hint-placeholder-val="{{false}}"><span style="padding: 3px 12px; border-radius: 999px; background: var(--red-tint); color: var(--red-ink); font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 700">Restricted</span></sc-if>
+            </h2>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <button type="button" class="pill" style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 18px; border: 1px solid var(--line2); border-radius: 999px; background: var(--card-flat); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>Edit record</button>
+            <sc-if value="{{p.active}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{askRetire}}" class="pill" style="min-height: 44px; padding: 0 18px; border: 1px solid var(--red-ink); border-radius: 999px; background: transparent; color: var(--red-ink); font-size: 14px; font-weight: 600; cursor: pointer">Retire record</button></sc-if>
+            <sc-if value="{{p.retired}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{askRetire}}" class="pill" style="min-height: 44px; padding: 0 18px; border: 1px solid var(--line2); border-radius: 999px; background: transparent; color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer">Restore to active registry</button></sc-if>
+            <button type="button" onClick="{{close}}" class="pill" style="width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 999px; background: var(--soft); color: var(--ink); cursor: pointer"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg><span class="vh">Close</span></button>
+          </div>
+        </header>
+
+        <div style="flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 16px">
+          <sc-if value="{{confirming}}" hint-placeholder-val="{{false}}">
+            <section aria-labelledby="confirm-heading" style="padding: 18px; border-radius: 20px; border: 1.5px solid {{confirmLine}}; background: {{confirmBg}}; display: flex; flex-direction: column; gap: 10px">
+              <h3 id="confirm-heading" style="margin: 0; font-size: 16px; font-weight: 700; color: var(--ink)">{{confirmHeading}}</h3>
+              <p style="margin: 0; font-size: 13.5px; color: var(--text2)">{{confirmBody}}</p>
+              <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text2)">Reason
+                <textarea rows="2" onInput="{{onReason}}" style="padding: 12px 14px; border: 1px solid var(--field-line); border-radius: 14px; background: var(--field); font-size: 14px; font-weight: 400; color: var(--ink); resize: vertical"></textarea>
+                <span style="font-size: 12.5px; font-weight: 400; color: var(--muted)">Required. Kept with the change on the record, with your name, for whoever reads it next.</span>
+              </label>
+              <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px">
+                <button type="button" onClick="{{cancelConfirm}}" class="pill" style="min-height: 44px; padding: 0 18px; border: 1px solid var(--line2); border-radius: 999px; background: transparent; color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer">Cancel</button>
+                <button type="button" disabled="{{reasonMissing}}" onClick="{{doConfirm}}" style="min-height: 44px; padding: 0 20px; border: 0; border-radius: 999px; background: {{confirmBtnBg}}; color: {{confirmBtnFg}}; font-size: 14px; font-weight: 600; cursor: {{confirmCursor}}">{{confirmCta}}</button>
+              </div>
+            </section>
+          </sc-if>
+
+          <sc-if value="{{p.restricted}}" hint-placeholder-val="{{false}}">
+            <div role="note" style="display: flex; gap: 12px; padding: 14px 16px; border-radius: 16px; background: var(--red-tint); color: var(--red-ink2)">
+              <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: 0 0 20px; color: var(--red-ink)"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"></path></svg>
+              <span style="display: flex; flex-direction: column; gap: 2px; font-size: 13.5px"><strong style="font-size: 14px; color: var(--ink)">Protected record</strong>This person is recorded under a sector protected by RA 9262 or RA 9344. Handle the record accordingly.</span>
+            </div>
+          </sc-if>
+
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+            <sc-for list="{{p.tiles}}" as="t" hint-placeholder-count="4">
+              <div style="display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: 18px; background: {{t.bg}}; color: {{t.fg}}">
+                <span style="font-size: 12.5px; font-weight: 600; opacity: 0.85">{{t.label}}</span>
+                <span style="font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 24px; font-weight: 500; font-variant-numeric: tabular-nums">{{t.value}}</span>
+                <span style="font-size: 12px; opacity: 0.8">{{t.hint}}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px; align-items: start">
+            <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+              <section aria-labelledby="sec-identity" style="padding: 18px; border-radius: 20px; background: var(--deep); color: #FFFFFF; display: flex; flex-direction: column; gap: 12px">
+                <h3 id="sec-identity" style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: #C3CDE6">Identity</h3>
+                <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; font-size: 14px">
+                  <sc-for list="{{p.identity}}" as="f" hint-placeholder-count="6"><div><dt style="font-size: 12px; color: #C3CDE6">{{f.k}}</dt><dd style="margin: 2px 0 0; font-weight: 600; font-variant-numeric: tabular-nums">{{f.v}}</dd></div></sc-for>
+                </dl>
+                <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; color: #C3CDE6">Sectors</span><span style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{p.sectors}}" as="c" hint-placeholder-count="2"><span style="padding: 3px 12px; border-radius: 999px; background: rgba(245,218,24,0.18); color: #F5DA18; font-size: 12.5px; font-weight: 600">{{c.label}}</span></sc-for><sc-if value="{{p.noSectors}}" hint-placeholder-val="{{false}}"><span>—</span></sc-if></span></div>
+              </section>
+              <section aria-labelledby="sec-address" style="padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+                <h3 id="sec-address" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--ink)">Address</h3>
+                <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; font-size: 14px">
+                  <sc-for list="{{p.address}}" as="f" hint-placeholder-count="3"><div style="grid-column: {{f.span}}"><dt style="font-size: 12px; color: var(--muted)">{{f.k}}</dt><dd style="margin: 2px 0 0; font-weight: 600; color: var(--ink)">{{f.v}}</dd></div></sc-for>
+                </dl>
+              </section>
+              <section aria-labelledby="sec-contact" style="padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+                <h3 id="sec-contact" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--ink)">Contact</h3>
+                <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; font-size: 14px">
+                  <sc-for list="{{p.contact}}" as="f" hint-placeholder-count="2"><div><dt style="font-size: 12px; color: var(--muted)">{{f.k}}</dt><dd style="margin: 2px 0 0; font-weight: 600; color: var(--ink); word-break: break-word">{{f.v}}</dd></div></sc-for>
+                </dl>
+              </section>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+              <section aria-labelledby="sec-household" style="padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+                <h3 id="sec-household" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--ink)">Household</h3>
+                <dl style="margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 16px; font-size: 14px">
+                  <sc-for list="{{p.household}}" as="f" hint-placeholder-count="3"><div><dt style="font-size: 12px; color: var(--muted)">{{f.k}}</dt><dd style="margin: 2px 0 0; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums">{{f.v}}</dd></div></sc-for>
+                </dl>
+              </section>
+              <section aria-labelledby="sec-family" style="padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+                <h3 id="sec-family" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--ink)">Family members</h3>
+                <sc-for list="{{p.family}}" as="m" hint-placeholder-count="2">
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; background: var(--soft2)">
+                    <span aria-hidden="true" style="width: 30px; height: 30px; flex: 0 0 30px; border-radius: 999px; background: var(--soft); color: var(--text2); display: grid; place-items: center; font-size: 11.5px; font-weight: 700">{{m.initials}}</span>
+                    <span style="flex: 1 1 auto; font-size: 14px; font-weight: 600; color: var(--ink)">{{m.name}}</span>
+                    <span style="font-size: 12.5px; color: var(--muted)">{{m.note}}</span>
+                  </div>
+                </sc-for>
+                <sc-if value="{{p.noFamily}}" hint-placeholder-val="{{false}}"><p style="margin: 0; font-size: 13.5px; color: var(--muted)">No other members are recorded in this household.</p></sc-if>
+              </section>
+              <section aria-labelledby="sec-requests" style="padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+                <h3 id="sec-requests" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--ink)">Assistance requests</h3>
+                <sc-for list="{{p.requests}}" as="q" hint-placeholder-count="2">
+                  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border-radius: 14px; background: var(--soft2)">
+                    <span style="flex: 1 1 200px; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600; color: var(--ink)">{{q.title}}</span><span style="font-size: 12.5px; color: var(--muted)">{{q.meta}}</span></span>
+                    <span style="padding: 2px 10px; border-radius: 999px; background: {{q.bg}}; color: {{q.fg}}; font-size: 12px; font-weight: 700">{{q.status}}</span>
+                  </div>
+                </sc-for>
+                <sc-if value="{{p.noRequests}}" hint-placeholder-val="{{false}}"><p style="margin: 0; font-size: 13.5px; color: var(--muted)">No assistance request has been filed for this resident.</p></sc-if>
+              </section>
+              <section aria-labelledby="sec-record" style="padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+                <h3 id="sec-record" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--ink)">Record</h3>
+                <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; font-size: 14px">
+                  <sc-for list="{{p.record}}" as="f" hint-placeholder-count="2"><div><dt style="font-size: 12px; color: var(--muted)">{{f.k}}</dt><dd style="margin: 2px 0 0; font-weight: 600; color: var(--ink)">{{f.v}}</dd></div></sc-for>
+                </dl>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{registerOpen}}" hint-placeholder-val="{{false}}">
+    <div style="position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 24px; box-sizing: border-box; background: var(--scrim)">
+      <button type="button" aria-label="Close" tabindex="-1" onClick="{{close}}" style="position: absolute; inset: 0; border: 0; background: transparent; cursor: default"></button>
+      <form role="dialog" aria-modal="true" aria-labelledby="register-heading" style="position: relative; width: 100%; max-width: 1060px; max-height: calc(100vh - 48px); box-sizing: border-box; border-radius: 28px; background: var(--card-solid); display: flex; flex-direction: column; overflow: hidden">
+        <header style="display: flex; align-items: center; gap: 14px; padding: 20px 24px; border-bottom: 1px solid var(--soft)">
+          <span aria-hidden="true" style="width: 48px; height: 48px; flex: 0 0 48px; border-radius: 16px; background: var(--gold-tint); color: var(--gold-ink); display: grid; place-items: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 11-5.7M18 15v6M15 18h6"></path></svg></span>
+          <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px">
+            <h2 id="register-heading" style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 24px; font-weight: 500; letter-spacing: -0.01em; color: var(--ink)">Register a resident</h2>
+            <p style="margin: 0; font-size: 13.5px; color: var(--muted)">Add a person to the municipal registry.</p>
+          </div>
+          <button type="button" onClick="{{close}}" class="pill" style="width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 999px; background: var(--soft); color: var(--ink); cursor: pointer"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg><span class="vh">Close</span></button>
+        </header>
+        <div style="flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 20px 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr)); gap: 16px; align-items: start">
+          <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+            <fieldset style="margin: 0; padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+              <legend style="padding: 0 6px; font-size: 15px; font-weight: 700; color: var(--ink)">Name</legend>
+              <label class="fld">First name<input type="text" class="inp"></label>
+              <label class="fld">Middle name <span class="opt">Optional</span><input type="text" class="inp"></label>
+              <label class="fld">Last name<input type="text" class="inp"></label>
+              <label class="fld">Suffix <span class="opt">Optional</span><input type="text" class="inp"></label>
+            </fieldset>
+            <fieldset style="margin: 0; padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+              <legend style="padding: 0 6px; font-size: 15px; font-weight: 700; color: var(--ink)">Personal details</legend>
+              <label class="fld">Date of birth<input type="date" class="inp"></label>
+              <label class="fld">Sex<select class="inp"><option></option><option>Female</option><option>Male</option></select></label>
+              <label class="fld">Civil status<select class="inp"><option></option><option>Single</option><option>Married</option><option>Widowed</option><option>Separated</option><option>Annulled</option><option>Living together</option></select></label>
+              <label class="fld">Monthly income (₱) <span class="opt">Optional</span><input type="text" inputmode="numeric" class="inp"></label>
+              <label class="fld" style="grid-column: 1 / -1">PhilSys — last four digits only <span class="opt">Optional</span><input type="text" inputmode="numeric" maxlength="4" class="inp" style="max-width: 200px"><span class="hint">The full PhilSys number is never recorded here (RA 11055).</span></label>
+            </fieldset>
+            <fieldset style="margin: 0; padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+              <legend style="padding: 0 6px; font-size: 15px; font-weight: 700; color: var(--ink)">Contact</legend>
+              <label class="fld">Mobile number <span class="opt">Optional</span><input type="tel" class="inp"></label>
+              <label class="fld">Email address <span class="opt">Optional</span><input type="email" class="inp"></label>
+            </fieldset>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+            <fieldset style="margin: 0; padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+              <legend style="padding: 0 6px; font-size: 15px; font-weight: 700; color: var(--ink)">Address</legend>
+              <label class="fld">Barangay<select class="inp"><option></option><option>Dolores</option><option>Muzon</option><option>San Isidro</option><option>San Juan</option><option>Santa Ana</option></select></label>
+              <label class="fld">Purok or sitio <span class="opt">Optional</span><input type="text" class="inp"></label>
+              <label class="fld" style="grid-column: 1 / -1">Street address<input type="text" class="inp"></label>
+            </fieldset>
+            <fieldset style="margin: 0; padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+              <legend style="padding: 0 6px; font-size: 15px; font-weight: 700; color: var(--ink)">Sectors</legend>
+              <p style="margin: 0; font-size: 13px; color: var(--muted)">Tick every sector that applies. These drive programme eligibility.</p>
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+                <sc-for list="{{regSectors}}" as="c" hint-placeholder-count="8">
+                  <label style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border: 1.5px solid {{c.line}}; border-radius: 14px; background: {{c.bg}}; font-size: 13.5px; font-weight: 600; color: var(--ink); cursor: pointer"><input type="checkbox" checked="{{c.on}}" onChange="{{c.toggle}}" style="width: 18px; height: 18px; margin: 0; flex: 0 0 18px; accent-color: var(--link)">{{c.label}}</label>
+                </sc-for>
+              </div>
+              <p style="margin: 0; padding: 10px 12px; border-radius: 14px; background: var(--soft2); font-size: 12.5px; color: var(--text2)">Protected sectors are not offered here. Recording one requires the sensitive-records permission.</p>
+              <sc-if value="{{anySector}}" hint-placeholder-val="{{false}}">
+                <label class="fld">How was this established?<input type="text" class="inp"><span class="hint">Name what you saw — a Senior Citizen ID, a PWD card, a Solo Parent ID. This is recorded against your name with the sector.</span></label>
+              </sc-if>
+            </fieldset>
+          </div>
+        </div>
+        <footer style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--soft)">
+          <button type="button" onClick="{{close}}" class="pill" style="min-height: 48px; padding: 0 22px; border: 1px solid var(--line2); border-radius: 999px; background: transparent; color: var(--ink); font-size: 14.5px; font-weight: 600; cursor: pointer">Cancel</button>
+          <button type="button" class="pill-dark" style="min-height: 48px; padding: 0 26px; border: 0; border-radius: 999px; background: var(--primary); color: #FFFFFF; font-size: 14.5px; font-weight: 600; cursor: pointer">Save record</button>
+        </footer>
+      </form>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1060}}'>
+class Component extends DCLogic {
+  nav(activeLabel) {
+    var self = this;
+    var I = {
+      grid: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z', check: 'M9 11l3 3 8-8M20 12v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11',
+      folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', file: 'M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M9 13h6M9 17h6',
+      user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0', heart: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
+      home: 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-5h4v5', users: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-4-6.3',
+      pin: 'M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', share: 'M15 4h5v5M20 4l-8 8M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
+      layers: 'M12 3l9 5-9 5-9-5zM3 13l9 5 9-5', cash: 'M3 7h18v10H3zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 10v.01M18 14v.01', chart: 'M4 20V10M10 20V4M16 20v-7M2 20h20',
+      cal: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4', shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4', inbox: 'M3 13l3-8h12l3 8v6H3zM3 13h5l1 3h6l1-3h5',
+      doc: 'M14 3H6v18h12V7zM14 3v4h4M12 11v6M9 14h6', ucog: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 11-5.7M18 15v6M15 18h6',
+      building: 'M4 21V5l8-2v18M12 7l8 2v12M7 9h2M7 13h2M7 17h2M15 12h2M15 16h2M2 21h20', phone: 'M7 2h10a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM11 18h2',
+      sliders: 'M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4', idcard: 'M3 5h18v14H3zM8 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM5 16c.6-1.6 1.7-2 3-2s2.4.4 3 2M14 9h4M14 13h4',
+      news: 'M4 5h13v14a1 1 0 0 0 1 1H5a1 1 0 0 1-1-1zM17 9h3v10a1 1 0 0 1-2 0M7 9h7M7 13h7M7 17h4', history: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2',
+      staff: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6', clip: 'M9 4h6v3H9zM7 5H5v16h14V5h-2M9 12h6M9 16h4',
+      gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1'
+    };
+    var NAV = [
+      { title: 'Casework', items: [['Dashboard', 'grid', 'Main.dc.html'], ['My work', 'check'], ['Cases', 'folder'], ['Assistance requests', 'file'], ['Residents', 'user', 'Residents.dc.html'], ['Beneficiaries', 'heart'], ['Households', 'home'], ['Families', 'users'], ['Field visits', 'pin'], ['Referrals', 'share']] },
+      { title: 'Delivery', items: [['Programs', 'layers'], ['Releases', 'cash'], ['Reports', 'chart']] },
+      { title: 'Community', items: [['Events', 'cal']] },
+      { title: 'Residents’ app', items: [['ID verification', 'shield', 'VerificationQueue.dc.html'], ['Office inbox', 'inbox', 'OfficeInbox.dc.html'], ['Resident document requests', 'doc'], ['Users and roles', 'ucog', 'Users.dc.html'], ['App directory', 'building', 'AppDirectory.dc.html'], ['Home screen', 'phone'], ['App settings', 'sliders'], ['Digital IDs', 'idcard'], ['Balita', 'news'], ['App audit trail', 'history']] },
+      { title: 'Administration', items: [['Staff and roles', 'staff'], ['Audit trail', 'clip'], ['Settings', 'gear']] }
+    ];
+    var open = (this.state && this.state.open) || {};
+    return NAV.map(function (s) {
+      var hasActive = s.items.some(function (i) { return i[0] === activeLabel; });
+      var isOpen = open[s.title] === undefined ? hasActive : open[s.title];
+      return {
+        title: s.title, open: isOpen, closed: !isOpen,
+        toggle: function () { var next = Object.assign({}, open); next[s.title] = !isOpen; self.setState({ open: next }); },
+        items: s.items.map(function (i) { var active = i[0] === activeLabel; return { label: i[0], icon: I[i[1]], href: i[2] || '#', active: active, inactive: !active }; })
+      };
+    });
+  }
+  renderVals() {
+    var self = this;
+    var st = this.state || {};
+    var START = null, START_MODE = '';
+    var theme = st.theme || (function () { try { return localStorage.getItem('taytay-theme') || 'light'; } catch (e) { return 'light'; } })();
+    var setTheme = function (v) { try { localStorage.setItem('taytay-theme', v); } catch (e) {} self.setState({ theme: v }); };
+    var TODAY = new Date(2026, 10, 10);
+    var ageOf = function (iso) { var d = new Date(iso + 'T00:00:00'); var a = TODAY.getFullYear() - d.getFullYear(); var m = TODAY.getMonth() - d.getMonth(); if (m < 0 || (m === 0 && TODAY.getDate() < d.getDate())) { a--; } return a; };
+    var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var fmt = function (iso) { var d = new Date(iso + 'T00:00:00'); return MON[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear(); };
+    var PROTECTED = ['VAWC survivor', 'Child in conflict with the law'];
+    var chip = function (label) {
+      if (PROTECTED.indexOf(label) >= 0) { return { label: label, bg: 'var(--red-tint)', fg: 'var(--red-ink)' }; }
+      if (label === 'Senior citizen') { return { label: label, bg: 'var(--gold-tint)', fg: 'var(--gold-ink)' }; }
+      if (label === 'Person with disability') { return { label: label, bg: 'var(--blue-tint)', fg: 'var(--link)' }; }
+      if (label === 'Solo parent') { return { label: label, bg: 'var(--green-tint)', fg: 'var(--green-ink)' }; }
+      return { label: label, bg: 'var(--soft)', fg: 'var(--text2)' };
+    };
+    // Sample records for the design.
+    var R = [
+      { id: 'r1', last: 'Bautista', first: 'Aldrin', mid: 'Santos', brgy: 'Dolores', born: '2014-03-18', sex: 'Male', civil: 'Single', sectors: ['4Ps beneficiary'], hh: 'HH-DOL-0412', purok: 'Purok 3', street: '17 Sampaguita St.', mobile: '—', email: '—', ps: '—', income: '—', hhIncome: '₱ 9,500', indigent: 'Yes', reg: '2024-02-12', upd: '2026-08-04' },
+      { id: 'r2', last: 'Bautista', first: 'Marilou', mid: 'Santos', brgy: 'Dolores', born: '1988-07-02', sex: 'Female', civil: 'Married', sectors: ['4Ps beneficiary'], hh: 'HH-DOL-0412', purok: 'Purok 3', street: '17 Sampaguita St.', mobile: '0917 555 0118', email: '—', ps: '•••• 3307', income: '₱ 6,000', hhIncome: '₱ 9,500', indigent: 'Yes', reg: '2024-02-12', upd: '2026-08-04' },
+      { id: 'r3', last: 'Bautista', suffix: 'Jr.', first: 'Reynaldo', mid: 'Aquino', brgy: 'San Juan', born: '1981-05-11', sex: 'Male', civil: 'Married', sectors: ['Person with disability', 'Unemployed'], hh: 'HH-SJN-1190', purok: 'Sitio Bangiad', street: '4 Kalayaan Rd.', mobile: '0928 555 0164', email: '—', ps: '•••• 9025', income: '—', hhIncome: '₱ 7,200', indigent: 'Yes', reg: '2025-01-20', upd: '2026-10-02' },
+      { id: 'r4', last: 'Cordero', first: 'Michelle', mid: 'Reyes', brgy: 'Muzon', born: '1992-01-25', sex: 'Female', civil: 'Separated', sectors: ['Solo parent', '4Ps beneficiary'], hh: 'HH-MZN-0277', purok: 'Purok 1', street: '22 Ilang-Ilang St.', mobile: '0939 555 0120', email: 'm.cordero@example.test', ps: '•••• 1148', income: '₱ 8,000', hhIncome: '₱ 8,000', indigent: 'Yes', reg: '2023-11-06', upd: '2026-09-17' },
+      { id: 'r5', last: 'Estrella', first: 'Danilo', mid: '', brgy: 'Santa Ana', born: '1974-09-30', sex: 'Male', civil: 'Married', sectors: ['Displaced worker'], hh: 'HH-STA-0835', purok: 'Purok 5', street: '9 Rizal Ave. Ext.', mobile: '0915 555 0177', email: '—', ps: '•••• 6612', income: '—', hhIncome: '₱ 11,000', indigent: 'No', reg: '2026-06-30', upd: '2026-07-14' },
+      { id: 'r6', last: 'Gonzales', suffix: 'III', first: 'Fernando', mid: 'Uy', brgy: 'San Isidro', born: '1997-04-14', sex: 'Male', civil: 'Single', sectors: ['Unemployed'], hh: '—', purok: 'Purok 2', street: '31 Mabini St.', mobile: '0906 555 0133', email: '—', ps: '—', income: '—', hhIncome: '—', indigent: 'No', reg: '2022-05-09', upd: '2025-12-01', retired: true },
+      { id: 'r7', last: 'Manalo', first: 'Cristina', mid: 'Yap', brgy: 'Muzon', born: '1995-02-08', sex: 'Female', civil: 'Separated', sectors: ['VAWC survivor', 'Solo parent'], hh: 'HH-MZN-0310', purok: 'Purok 4', street: '6 Dahlia St.', mobile: '0947 555 0189', email: '—', ps: '•••• 2459', income: '₱ 5,500', hhIncome: '₱ 5,500', indigent: 'Yes', reg: '2026-03-03', upd: '2026-10-28', restricted: true },
+      { id: 'r8', last: 'Mercado', first: 'Aurora', mid: 'Dizon', brgy: 'San Juan', born: '1958-06-21', sex: 'Female', civil: 'Widowed', sectors: ['Senior citizen'], hh: 'HH-SJN-0058', purok: 'Purok 6', street: '12 Bonifacio St.', mobile: '0917 555 0106', email: '—', ps: '•••• 7781', income: '₱ 1,000', hhIncome: '₱ 4,000', indigent: 'Yes', reg: '2023-04-17', upd: '2026-10-21' },
+      { id: 'r9', last: 'Mercado', first: 'Joselito', mid: 'Morales', brgy: 'Dolores', born: '2010-10-03', sex: 'Male', civil: 'Single', sectors: ['Out-of-school youth'], hh: 'HH-DOL-0640', purok: 'Purok 2', street: '5 Luna St.', mobile: '—', email: '—', ps: '—', income: '—', hhIncome: '₱ 10,500', indigent: 'No', reg: '2025-08-22', upd: '2026-06-09' },
+      { id: 'r10', last: 'Sarmiento', first: 'Elena', mid: 'Tolentino', brgy: 'Santa Ana', born: '1953-12-01', sex: 'Female', civil: 'Widowed', sectors: ['Senior citizen', 'Person with disability'], hh: 'HH-STA-0119', purok: 'Sitio Pag-asa', street: '2 Del Pilar St.', mobile: '0998 555 0151', email: '—', ps: '•••• 5036', income: '₱ 1,000', hhIncome: '₱ 6,500', indigent: 'Yes', reg: '2022-09-26', upd: '2026-09-30' }
+    ];
+    var REQ = {
+      r8: [{ title: 'Social pension for indigent senior citizens', meta: 'Filed Oct 21, 2026 · Intake: Teresita Valdez', status: 'Endorsed', bg: 'var(--blue-tint)', fg: 'var(--link)' }, { title: 'Medical assistance', meta: 'Filed Mar 4, 2026 · Released Mar 18, 2026', status: 'Released', bg: 'var(--green-tint)', fg: 'var(--green-ink)' }],
+      r3: [{ title: 'PWD Cash Gift', meta: 'Filed Jul 9, 2026 · Released Jul 31, 2026', status: 'Released', bg: 'var(--green-tint)', fg: 'var(--green-ink)' }],
+      r4: [{ title: 'Educational assistance', meta: 'Filed Sep 17, 2026', status: 'Under assessment', bg: 'var(--gold-tint)', fg: 'var(--gold-ink)' }],
+      r7: [{ title: 'Crisis intervention', meta: 'Filed Oct 28, 2026', status: 'Under assessment', bg: 'var(--gold-tint)', fg: 'var(--gold-ink)' }],
+      r10: [{ title: 'Medical assistance', meta: 'Filed Sep 30, 2026', status: 'Approved', bg: 'var(--blue-tint)', fg: 'var(--link)' }]
+    };
+    var TILES = { r8: ['₱ 5,000', '1', '2', 'Oct 21, 2026'], r3: ['₱ 3,000', '0', '1', 'Oct 2, 2026'], r4: ['₱ 0', '1', '1', 'Sep 17, 2026'], r7: ['₱ 0', '1', '1', 'Oct 28, 2026'], r10: ['₱ 0', '1', '1', 'Sep 30, 2026'] };
+    var listed = function (x) { return x.last + (x.suffix ? ' ' + x.suffix : '') + ', ' + x.first + (x.mid ? ' ' + x.mid[0] + '.' : ''); };
+    var full = function (x) { return x.first + (x.mid ? ' ' + x.mid : '') + ' ' + x.last + (x.suffix ? ' ' + x.suffix : ''); };
+    var ini = function (x) { return x.first[0] + x.last[0]; };
+    var group = function (a) { return a < 18 ? 'child' : a <= 30 ? 'youth' : a <= 59 ? 'adult' : 'senior'; };
+
+    var q = st.q || '', brgy = st.brgy || '', sector = st.sector || '', age = st.age || '', inactive = !!st.inactive;
+    var retiredMap = st.retiredMap || {};
+    var isRetired = function (x) { return retiredMap[x.id] !== undefined ? retiredMap[x.id] : !!x.retired; };
+    var words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    var list = R.filter(function (x) {
+      if (!inactive && isRetired(x)) { return false; }
+      if (brgy && x.brgy !== brgy) { return false; }
+      if (sector && x.sectors.indexOf(sector) < 0) { return false; }
+      if (age && group(ageOf(x.born)) !== age) { return false; }
+      var hay = (x.last + ' ' + (x.suffix || '') + ' ' + x.first + ' ' + x.mid).toLowerCase();
+      return words.every(function (w) { return hay.indexOf(w) >= 0; });
+    });
+    var hasFilters = !!(q || brgy || sector || age || inactive);
+    var mode = st.mode !== undefined ? st.mode : (START ? 'record' : START_MODE);
+    var selId = st.sel !== undefined ? st.sel : START;
+    var x = mode === 'record' ? (R.filter(function (r) { return r.id === selId; })[0] || null) : null;
+    var reset = { confirm: false, reason: '' };
+    var p = {};
+    if (x) {
+      var retired = isRetired(x);
+      var t = TILES[x.id] || ['₱ 0', '0', '0', fmt(x.upd)];
+      var fam = R.filter(function (o) { return o.id !== x.id && o.hh === x.hh && x.hh !== '—'; });
+      p = {
+        initials: ini(x), full: full(x), restricted: !!x.restricted,
+        status: retired ? 'Retired' : 'Active', active: !retired, retired: retired,
+        statusBg: retired ? 'var(--soft)' : 'var(--green-tint)', statusFg: retired ? 'var(--muted)' : 'var(--green-ink)',
+        tiles: [
+          { label: 'Total released', value: t[0], hint: 'Cash released to this resident.', bg: 'var(--primary)', fg: '#FFFFFF' },
+          { label: 'Open requests', value: t[1], hint: 'Not yet released or closed.', bg: 'var(--gold-tint)', fg: 'var(--gold-ink2)' },
+          { label: 'Requests on file', value: t[2], hint: 'Every request, any status.', bg: 'var(--soft2)', fg: 'var(--ink)' },
+          { label: 'Last activity', value: t[3], hint: 'Newest change on the record.', bg: 'var(--soft2)', fg: 'var(--ink)' }
+        ],
+        identity: [{ k: 'Date of birth', v: fmt(x.born) }, { k: 'Age', v: String(ageOf(x.born)) }, { k: 'Sex', v: x.sex }, { k: 'Civil status', v: x.civil }, { k: 'PhilSys (last 4)', v: x.ps }, { k: 'Monthly income', v: x.income }],
+        sectors: x.sectors.map(function (s) { return { label: s }; }), noSectors: x.sectors.length === 0,
+        address: [{ k: 'Barangay', v: x.brgy, span: 'auto' }, { k: 'Purok or sitio', v: x.purok, span: 'auto' }, { k: 'Street address', v: x.street, span: '1 / -1' }],
+        contact: [{ k: 'Mobile', v: x.mobile }, { k: 'Email', v: x.email }],
+        household: [{ k: 'Household number', v: x.hh }, { k: 'Household income', v: x.hhIncome }, { k: 'Classified indigent', v: x.indigent }],
+        family: fam.map(function (o) { return { initials: ini(o), name: listed(o), note: 'Age ' + ageOf(o.born) }; }), noFamily: fam.length === 0,
+        requests: REQ[x.id] || [], noRequests: !REQ[x.id],
+        record: [{ k: 'Registered', v: fmt(x.reg) }, { k: 'Last updated', v: fmt(x.upd) }]
+      };
+    }
+    var confirming = !!st.confirm && !!x;
+    var reason = st.reason || '';
+    var retiring = x ? !isRetired(x) : true;
+    var regSel = st.regSel || {};
+    var REG_SECTORS = ['Senior citizen', 'Person with disability', 'Solo parent', '4Ps beneficiary', 'Indigenous people', 'Unemployed', 'Out-of-school youth', 'Displaced worker'];
+    var BRGY = [['Dolores', 1618], ['Muzon', 1101], ['San Isidro', 1402], ['San Juan', 2964], ['Santa Ana', 1327]];
+    var maxB = 2964;
+    var AGE = [['Children (under 18)', 2355, '28%', 'var(--primary)'], ['Youth (18–30)', 1767, '21%', '#5B82FF'], ['Adults (31–59)', 2384, '28%', '#9DB6FF'], ['Senior citizens (60+)', 1906, '23%', '#F5DA18']];
+    var n = function (v) { return v.toLocaleString('en-US'); };
+    return {
+      themeClass: 'theme-' + theme, isLight: theme === 'light', isDark: theme === 'dark',
+      setLight: function () { setTheme('light'); }, setDark: function () { setTheme('dark'); },
+      lightBg: theme === 'light' ? 'var(--primary)' : 'transparent', lightFg: theme === 'light' ? '#FFFFFF' : 'var(--text2)',
+      darkBg: theme === 'dark' ? 'var(--primary)' : 'transparent', darkFg: theme === 'dark' ? '#FFFFFF' : 'var(--text2)',
+      nav: this.nav('Residents'),
+      kpis: [
+        { label: 'Active records', value: '8,412', hint: 'On the active registry.', dot: 'var(--bar)' },
+        { label: 'Senior citizens', value: '1,906', hint: 'Senior citizen sector.', dot: '#F5DA18' },
+        { label: 'Persons with disability', value: '734', hint: 'Person with disability sector.', dot: '#5B82FF' },
+        { label: 'Solo parents', value: '418', hint: 'Solo parent sector.', dot: 'var(--green-ink)' }
+      ],
+      byBarangay: BRGY.map(function (b) {
+        var on = brgy === b[0];
+        return { name: b[0], count: n(b[1]), pct: Math.round(b[1] / maxB * 100) + '%', on: on, fill: on || !brgy ? 'var(--primary)' : 'var(--line2)', ink: on ? 'var(--ink)' : 'var(--text2)',
+          pick: function () { self.setState({ brgy: on ? '' : b[0] }); } };
+      }),
+      byAge: AGE.map(function (g) { return { label: g[0], count: n(g[1]), share: g[2], color: g[3], flex: g[1] }; }),
+      q: q, onQ: function (e) { self.setState({ q: e.target.value }); },
+      brgy: brgy, onBrgy: function (e) { self.setState({ brgy: e.target.value }); },
+      sector: sector, onSector: function (e) { self.setState({ sector: e.target.value }); },
+      age: age, onAge: function (e) { self.setState({ age: e.target.value }); },
+      inactive: inactive, onInactive: function () { self.setState({ inactive: !inactive }); },
+      hasFilters: hasFilters,
+      clear: function () { self.setState({ q: '', brgy: '', sector: '', age: '', inactive: false }); },
+      hasRows: list.length > 0, noRows: list.length === 0,
+      rows: list.map(function (r) {
+        var ret = isRetired(r); var a = ageOf(r.born);
+        return {
+          listed: listed(r), initials: ini(r), restricted: !!r.restricted, brgy: r.brgy, age: String(a),
+          avatarBg: a >= 60 ? 'var(--gold-tint)' : 'var(--soft)', avatarFg: a >= 60 ? 'var(--gold-ink)' : 'var(--text2)',
+          sectors: r.sectors.map(chip), noSectors: r.sectors.length === 0,
+          status: ret ? 'Retired' : 'Active', statusFg: ret ? 'var(--muted)' : 'var(--green-ink)', statusDot: ret ? 'var(--dash)' : 'var(--green-ink)',
+          rowBg: x && x.id === r.id ? 'var(--sel)' : 'transparent',
+          pick: function (e) { if (e && e.preventDefault) { e.preventDefault(); } self.setState(Object.assign({ mode: 'record', sel: r.id }, reset)); }
+        };
+      }),
+      shown: list.length + ' shown.',
+      recordOpen: !!x, registerOpen: mode === 'register',
+      openRegister: function () { self.setState(Object.assign({ mode: 'register', sel: null, regSel: {} }, reset)); },
+      close: function () { self.setState(Object.assign({ mode: '', sel: null }, reset)); },
+      p: p,
+      askRetire: function () { self.setState({ confirm: true, reason: '' }); },
+      confirming: confirming,
+      confirmHeading: retiring ? 'Retire this record?' : 'Restore this record?',
+      confirmBody: retiring ? 'The record stays on file and keeps its history. It is hidden from the active registry until it is restored.' : 'The resident will appear in the active registry again.',
+      confirmCta: retiring ? 'Retire record' : 'Restore record',
+      confirmLine: retiring ? 'var(--red-ink)' : 'var(--accent-line)', confirmBg: retiring ? 'var(--red-tint)' : 'var(--sel)',
+      onReason: function (e) { self.setState({ reason: e.target.value }); },
+      reasonMissing: reason.trim() === '',
+      confirmBtnBg: reason.trim() === '' ? 'var(--line)' : (retiring ? '#B00708' : 'var(--primary)'),
+      confirmBtnFg: reason.trim() === '' ? 'var(--muted)' : '#FFFFFF',
+      confirmCursor: reason.trim() === '' ? 'not-allowed' : 'pointer',
+      cancelConfirm: function () { self.setState(reset); },
+      doConfirm: function () { if (!x || reason.trim() === '') { return; } var m = Object.assign({}, retiredMap); m[x.id] = retiring; self.setState(Object.assign({ retiredMap: m }, reset)); },
+      regSectors: REG_SECTORS.map(function (s) {
+        var on = !!regSel[s];
+        return { label: s, on: on, line: on ? 'var(--accent-line)' : 'var(--line)', bg: on ? 'var(--sel)' : 'transparent',
+          toggle: function () { var m = Object.assign({}, regSel); m[s] = !on; self.setState({ regSel: m }); } };
+      }),
+      anySector: Object.keys(regSel).some(function (k) { return regSel[k]; })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -120,8 +120,8 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:bundle`, `check:routes`, `check:response-shape`, `check:wire-adoption`,
 `check:port-adoption`, `check:scanners`, `check:unserved`, `check:verification`,
 `check:inbox`, `check:accounts`, `check:directory`, `check:home`,
-`check:app-settings`, `check:digital-ids`, `check:balita` and
-`check:platform-audit`.
+`check:app-settings`, `check:digital-ids`, `check:balita`,
+`check:platform-audit` and `check:styles`.
 `check:unserved` keeps a module whose primary port the active adapter set cannot
 serve out of the navigation and names it on one page (`DL-167`), and holds every
 secondary panel whose port is unserved to saying so in place — no request, and
@@ -154,7 +154,10 @@ console's one news channel — no newsfeed port, key, route or menu entry anywhe
 the app (`DL-194`) — and says — rather than collects — that the API keeps no
 description of a cover (`DL-171`, `DL-124`, `DL-125`); `check:platform-audit` holds
 the app's audit trail to the six things a row records — no value, no reason, ids as
-given, nothing looked up beside a row, never the governance trail (`DL-171`, `DL-114`).
+given, nothing looked up beside a row, never the governance trail (`DL-171`, `DL-114`);
+`check:styles` holds every stylesheet under `src/` — component files and inline `styles` — to the
+design tokens: no colour literal, no px font size, no shadow or glow but the focus ring, except as a
+token's own value in `styles.scss` or `_brand-tokens.scss` (`DL-203`).
 Each enforces a rule a comment could not, and each was validated against planted
 regressions. Do not weaken one to make a change pass.
 
@@ -856,31 +859,60 @@ an invented working number.
 
 ## 7. UI primitives — use these, do not re-invent
 
-All but the last two rows live in `src/app/shared/` and are exported from
-`@shared/index`. `HasPermissionDirective` is in `@core/access/` because it
-depends on the session.
+### Design
 
-| Primitive                                                            | Use for                                                                  |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `StatusBadge`                                                        | Any workflow status. Pass the domain catalog + value.                    |
-| `DataTable`                                                          | Any list. Presentational only: rows in, intent out.                      |
-| `Modal`                                                              | Focused decisions — confirmations, short forms.                          |
-| `Drawer`                                                             | Context beside a list, when the user must keep their place.              |
-| `LoadingIndicator` / `Skeleton`                                      | Busy states. Prefer skeletons for tables.                                |
-| `EmptyState`                                                         | Nothing to show. Distinguish `empty` from `no-results`.                  |
-| `AsyncContent`                                                       | Wraps a `ViewState<T>`: skeleton, error panel, or content.               |
-| `PageHeader`                                                         | Page title block + primary actions.                                      |
-| `ChartTable`                                                         | A breakdown. It **is** a real table; never add a second one.             |
-| `SavedViewsBar`                                                      | Named filters above any list whose filters live in the URL.              |
-| `ResidentSummaryCard`                                                | One resident, said the same way on every screen.                         |
-| `PersonPicker`                                                       | "Who is this for?" — the only sanctioned resident search.                |
-| `VulnerabilitySnapshotPanel`                                         | Household indicators. Advisory only — see `DL-42`.                       |
-| `RelationshipGraph`                                                  | Family relationships. The graph **is** the list — see `DL-50`.           |
-| `StatusTransition`                                                   | Any lifecycle move. Generic; captures the reason and refuses without it. |
-| `CaseTimeline`                                                       | A record's history. An ordered list, no connectors — see `DL-56`.        |
-| `ToastHost`                                                          | Mounted once by `App`. Never place toast markup in a feature.            |
-| `PesoPipe`, `BarangayNamePipe`, `PersonNamePipe`, `RelativeTimePipe` | Formatting.                                                              |
-| `HasPermissionDirective` (`@core/access/`)                           | `*appHasPermission="'request.approve'"`.                                 |
+The console's look is the redesign of `DL-200` to `DL-203`, written down in
+[`docs/design/DESIGN_SYSTEM.md`](./docs/design/DESIGN_SYSTEM.md): the tokens, the
+shared components, the pattern classes, the page patterns and the rules. The
+mock-ups it was drawn from are in `docs/design/admin/screens/`, with **sample
+data** that never goes into the app.
+
+- **Use the CSS variables and the `shared/ui` components only.** Colours, type
+  sizes, radii, heights and the focus ring are tokens in `src/styles.scss` and
+  `src/styles/_brand-tokens.scss`; repeated shapes are the primitives in
+  `styles.scss`, the pattern classes in `src/styles/_patterns.scss`, or a
+  component below.
+- **No hard-coded colours, sizes or radii in feature styles.** A value the scale
+  lacks becomes a token, not a number in a component. No shadows or glows;
+  dialogs are centred. `npm run check:styles` fails the build on a colour
+  literal, a px font size or a shadow outside a token's own declaration.
+- **A new page picks a pattern** — list, detail, form, dashboard or inbox — and
+  starts from that pattern's reference page and skeleton in DESIGN_SYSTEM.md,
+  with all four data states (loading, empty, error, offline) and real data only.
+- A repository check or a decision-log entry outranks a mock-up. Commands for
+  this work are in `.claude/commands/` (`new-page`, `restyle-page`,
+  `change-token`, `redesign`).
+
+### Components
+
+All but the last two rows live in `src/app/shared/` and are exported from
+`@shared/index`. `NotConnected` and `HasPermissionDirective` are in
+`@core/access/` because they depend on the served ports and the session.
+
+| Primitive                                                                            | Use for                                                                                          |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `StatusBadge`                                                                        | Any workflow status. Pass the domain catalog + value.                                            |
+| `DataTable`                                                                          | Any list. Presentational only: rows in, intent out.                                              |
+| `Modal`                                                                              | Focused decisions — confirmations, short forms, review dialogs. Centred.                         |
+| `Drawer`                                                                             | Context beside a list, when the user must keep their place.                                      |
+| `LoadingIndicator` / `Skeleton`                                                      | Busy states. Prefer skeletons for tables.                                                        |
+| `EmptyState`                                                                         | Nothing to show: `empty`, `no-results`, `error`, `forbidden`. Never merge the first two.         |
+| `AsyncContent`                                                                       | Wraps a `ViewState<T>`: skeleton, error panel, or content.                                       |
+| `PageHeader`                                                                         | Page title block + primary actions.                                                              |
+| `ChartTable`                                                                         | A breakdown. It **is** a real table; never add a second one.                                     |
+| `SavedViewsBar`                                                                      | Named filters above any list whose filters live in the URL.                                      |
+| `Icon`                                                                               | `<app-icon name="…">`, always `aria-hidden`; an icon-only button is `.icon-button` with a label. |
+| `ResidentSummaryCard`                                                                | One resident, said the same way on every screen.                                                 |
+| `PersonPicker`                                                                       | "Who is this for?" — the only sanctioned resident search.                                        |
+| `VulnerabilitySnapshotPanel`                                                         | Household indicators. Advisory only — see `DL-42`.                                               |
+| `RelationshipGraph`                                                                  | Family relationships. The graph **is** the list — see `DL-50`.                                   |
+| `StatusTransition`                                                                   | Any lifecycle move. Generic; captures the reason and refuses without it.                         |
+| `CaseTimeline`                                                                       | A record's history. An ordered list, no connectors — see `DL-56`.                                |
+| `ToastHost`                                                                          | Mounted once by `App`. Never place toast markup in a feature.                                    |
+| `ConnectionBanner`, `RouteProgress`                                                  | Mounted once by the shell. Never place them in a feature.                                        |
+| `PesoPipe`, `BarangayNamePipe`, `PersonNamePipe`, `RelativeTimePipe`, `InitialsPipe` | Formatting. `InitialsPipe` feeds an `.avatar` from the name already shown.                       |
+| `NotConnected` (`@core/access/`)                                                     | `<app-not-connected port="…">` where a panel whose port is unserved would be.                    |
+| `HasPermissionDirective` (`@core/access/`)                                           | `*appHasPermission="'request.approve'"`.                                                         |
 
 ### Async screens
 

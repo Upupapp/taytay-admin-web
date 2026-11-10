@@ -1,10 +1,14 @@
 // @ts-check
 const eslint = require('@eslint/js');
-const { defineConfig } = require('eslint/config');
+const { defineConfig, globalIgnores } = require('eslint/config');
 const tseslint = require('typescript-eslint');
 const angular = require('angular-eslint');
 
 module.exports = defineConfig([
+  // The redesign's reference mock-ups (DL-203): standalone HTML and a support
+  // script kept as they were drawn, never part of the app. `ng lint` reads only
+  // src/, but a bare `eslint .` would parse them as Angular templates.
+  globalIgnores(['docs/design/admin/']),
   {
     files: ['**/*.ts'],
     extends: [

@@ -3,3 +3,10 @@
 /.angular
 /coverage
 package-lock.json
+
+# The redesign's reference, copied as drawn (DL-203): `prettier --write .` must
+# not reformat the mock-ups. DESIGN_SYSTEM.md and INDEX.md beside them are ours.
+docs/design/README.md
+docs/design/admin/
+docs/design/icons/
+docs/design/images/

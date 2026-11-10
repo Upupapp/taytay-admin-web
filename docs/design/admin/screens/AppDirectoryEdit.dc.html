@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Edit office — App directory — Taytay Social Welfare</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Inter+Tight:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#EEF1F6}
+.theme-light{--page:radial-gradient(620px 520px at 6% 4%, rgba(45,84,224,0.55), transparent 70%), radial-gradient(560px 460px at 96% 10%, rgba(245,218,24,0.55), transparent 70%), radial-gradient(640px 520px at 88% 72%, rgba(224,9,10,0.22), transparent 70%), radial-gradient(700px 560px at 18% 78%, rgba(10,32,113,0.30), transparent 70%), radial-gradient(520px 420px at 52% 40%, rgba(91,130,255,0.25), transparent 70%), #E7ECF7;--card:linear-gradient(135deg, rgba(255,255,255,0.62), rgba(255,255,255,0.28));--card-solid:#FFFFFF;--card-flat:rgba(255,255,255,0.4);--card-edge:rgba(255,255,255,0.7);--card-shadow:none;--primary:#0A2071;--deep:#08124A;--ink:#08124A;--text:#1B2540;--text2:#2B3550;--muted:#5A6478;--muted2:#6B7489;--soft:rgba(10,32,113,0.06);--soft2:rgba(255,255,255,0.42);--field:rgba(255,255,255,0.55);--sel:rgba(45,84,224,0.12);--hover:rgba(255,255,255,0.55);--line:rgba(10,32,113,0.10);--line2:rgba(10,32,113,0.18);--field-line:#8A93A6;--axis:rgba(10,32,113,0.16);--dash:#9AA3B5;--area:rgba(45,84,224,0.16);--bar:#1D3A9C;--gold-tint:rgba(245,218,24,0.28);--gold-tint2:rgba(245,218,24,0.18);--gold-ink:#5C4D00;--gold-ink2:#3D3505;--red-tint:rgba(224,9,10,0.12);--red-ink:#B00708;--red-ink2:#7A0506;--green-tint:rgba(46,160,90,0.16);--green-ink:#17663A;--blue-tint:rgba(45,84,224,0.14);--link:#0A2071;--link-hover:#1D3A9C;--accent-line:#0A2071;--chart-line:#0A2071;--glow:none;--scrim:rgba(8,18,74,0.5);--scrim2:rgba(8,18,74,0.55);--ring:#FFFFFF;--option-bg:#FFFFFF;--option-ink:#08124A;color-scheme:light}
+.theme-dark{--page:radial-gradient(640px 520px at 6% 4%, rgba(45,84,224,0.65), transparent 70%), radial-gradient(520px 440px at 96% 8%, rgba(245,218,24,0.22), transparent 70%), radial-gradient(640px 520px at 88% 74%, rgba(224,9,10,0.30), transparent 70%), radial-gradient(700px 560px at 16% 80%, rgba(91,130,255,0.35), transparent 70%), radial-gradient(520px 420px at 52% 40%, rgba(10,32,113,0.9), transparent 70%), #040A22;--card:linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));--card-solid:#0C1A4F;--card-flat:rgba(255,255,255,0.05);--card-edge:rgba(255,255,255,0.16);--card-shadow:none;--primary:#2D54E0;--deep:#0A2071;--ink:#FFFFFF;--text:#E6EBF7;--text2:#C9D2E8;--muted:#9AA6C4;--muted2:#8C98B8;--soft:rgba(255,255,255,0.06);--soft2:rgba(255,255,255,0.04);--field:rgba(255,255,255,0.05);--sel:rgba(91,130,255,0.14);--hover:rgba(255,255,255,0.08);--line:rgba(255,255,255,0.08);--line2:rgba(255,255,255,0.16);--field-line:rgba(255,255,255,0.24);--axis:rgba(255,255,255,0.12);--dash:rgba(255,255,255,0.3);--area:rgba(45,84,224,0.35);--bar:#3A63F0;--gold-tint:rgba(245,218,24,0.14);--gold-tint2:rgba(245,218,24,0.10);--gold-ink:#F5DA18;--gold-ink2:#F7E27A;--red-tint:rgba(224,9,10,0.18);--red-ink:#FF8A8A;--red-ink2:#FFB3B3;--green-tint:rgba(46,160,90,0.18);--green-ink:#6EE7A0;--blue-tint:rgba(91,130,255,0.18);--link:#9DB6FF;--link-hover:#C4D3FF;--accent-line:#5B82FF;--chart-line:#7C9BFF;--glow:none;--scrim:rgba(2,6,20,0.72);--scrim2:rgba(2,6,20,0.78);--ring:#040A22;--option-bg:#0B1640;--option-ink:#FFFFFF;color-scheme:dark}
+body:has(.theme-dark){background:#040A22}
+select{-webkit-appearance:none;appearance:none;padding-right:46px !important;cursor:pointer;background-image:linear-gradient(45deg, transparent 50%, currentColor 50%),linear-gradient(135deg, currentColor 50%, transparent 50%) !important;background-position:calc(100% - 24px) 50%,calc(100% - 18px) 50% !important;background-size:6px 6px,6px 6px !important;background-repeat:no-repeat !important}
+option{background:var(--option-bg);color:var(--option-ink)}
+[style*="var(--card)"]{border:1px solid var(--card-edge);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%)}
+.theme-btn[aria-pressed="false"]:hover{background:var(--hover) !important}
+a{color:var(--link)}a:hover{color:var(--link-hover)}
+button,select,input,textarea{font:inherit}
+:focus-visible{outline:3px solid #F5DA18;outline-offset:2px}
+.skip{position:absolute;left:-9999px}.skip:focus{left:24px;top:24px;z-index:10;background:#FFFFFF;padding:10px 16px;border-radius:999px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.nav-item:hover{background:var(--hover)}
+.pill:hover{background:var(--hover)}
+.pill-dark:hover{background:#3A63F0}
+.trow:hover{background:var(--field)}
+.kpi{transition:background-color 160ms ease,color 160ms ease,box-shadow 160ms ease}
+.kpi:hover{background:var(--primary) !important;color:#FFFFFF !important}
+.kpi:hover span{color:#FFFFFF !important}
+.bento-r{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
+@media (max-width:1100px){.bento-r>*{grid-column:span 6 !important}}
+@media (max-width:700px){.bento-r>*{grid-column:span 12 !important}}
+.barrow:hover{background:var(--hover) !important}
+.fld{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--text2);min-width:0}
+.opt{font-weight:500;color:var(--muted)}
+.hint{font-size:12.5px;font-weight:400;color:var(--muted)}
+.inp{min-height:46px;box-sizing:border-box;width:100%;padding:0 14px;border:1px solid var(--field-line);border-radius:14px;background:var(--field);color:var(--ink);font-size:14px;font-weight:400}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;padding:5px;border-radius:999px;background:var(--card);align-self:flex-start}
+.tab{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 18px;border:0;border-radius:999px;background:transparent;color:var(--text2);font-size:14px;font-weight:600;cursor:pointer}
+.tab:hover{background:var(--hover)}
+.tab.on{background:var(--primary);color:#FFFFFF}
+.tab .n{min-width:22px;padding:1px 7px;border-radius:999px;background:var(--soft);font-size:12px;font-weight:700}
+.tab.on .n{background:rgba(255,255,255,0.2)}
+.btnp{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border:0;border-radius:999px;background:var(--primary);color:#FFFFFF;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none}
+.btnp:hover{background:#3A63F0;color:#FFFFFF}
+.btnp.red{background:#B00708}
+.btnp.off{background:var(--line);color:var(--muted);cursor:not-allowed}
+.btns{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:0 14px;border:1px solid var(--line2);border-radius:999px;background:var(--card-flat);color:var(--ink);font-size:13.5px;font-weight:600;cursor:pointer;text-decoration:none}
+.btns:hover{background:var(--hover);color:var(--ink)}
+.btns.danger{color:var(--red-ink);border-color:var(--red-tint)}
+.th{text-align:left;padding:10px 16px;font-size:11.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted2);background:var(--soft2)}
+.td{padding:12px 16px;border-bottom:1px solid var(--soft);vertical-align:middle}
+.chipst{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.effects{padding:14px 16px;border-radius:16px;background:var(--soft2);display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:var(--text2)}
+.effects ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.effects b{color:var(--ink)}
+.fixed dt{font-size:12px;color:var(--muted)}
+.fixed dd{margin:2px 0 0;font-weight:600;color:var(--ink)}
+.msg{max-width:78%;display:flex;flex-direction:column;gap:4px}
+.msg .who{font-size:12px;font-weight:600;color:var(--muted)}
+.msg .bub{padding:12px 14px;border-radius:18px;font-size:14px;line-height:1.5}
+.msg.res{align-self:flex-start}
+.msg.res .bub{background:var(--card-flat);border:1px solid var(--line);color:var(--ink);border-radius:18px 18px 18px 6px}
+.msg.off{align-self:flex-end;align-items:flex-end}
+.msg.off .bub{background:var(--primary);color:#FFFFFF;border-radius:18px 18px 6px 18px}
+.imgbox{margin-top:8px;padding:10px 12px;border-radius:12px;background:var(--soft2);border:1px dashed var(--line2);display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--text2)}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="position: relative; min-height: 100vh; box-sizing: border-box; display: flex; flex-wrap: wrap; gap: 16px; padding: 16px; background: var(--page); font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14.5px; line-height: 1.5; color: var(--text)">
+  <a href="#main-content" class="skip">Skip to main content</a>
+
+  <aside aria-label="Main navigation" style="flex: 1 1 256px; max-width: 100%; box-sizing: border-box; background: var(--card); border-radius: 24px; padding: 20px 14px 16px; display: flex; flex-direction: column; gap: 16px">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 2px 6px; text-decoration: none">
+      <span role="img" aria-label="Municipal seal not available" title="The official seal has not been supplied to this application. A neutral placeholder is shown in its place." style="width: 46px; height: 46px; flex: 0 0 46px; border-radius: 999px; border: 1.5px dashed var(--dash); background: var(--soft2); display: grid; place-items: center; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: var(--muted)"><span aria-hidden="true">TR</span></span>
+      <span style="display: flex; flex-direction: column; line-height: 1.25; min-width: 0">
+        <span style="font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 16px; font-weight: 600; color: var(--ink)">Taytay Social Welfare</span>
+        <span style="font-size: 11.5px; color: var(--muted)">Municipal Social Welfare and Development Office</span>
+      </span>
+    </a>
+    <nav aria-label="Main navigation" style="display: flex; flex-direction: column; gap: 4px">
+      <sc-for list="{{nav}}" as="section" hint-placeholder-count="5">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <button type="button" class="nav-item" onClick="{{section.toggle}}" aria-expanded="{{section.open}}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 34px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: var(--muted2); font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; cursor: pointer; text-align: left">
+            <span>{{section.title}}</span>
+            <sc-if value="{{section.open}}" hint-placeholder-val="{{true}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></sc-if>
+            <sc-if value="{{section.closed}}" hint-placeholder-val="{{false}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg></sc-if>
+          </button>
+          <sc-if value="{{section.open}}" hint-placeholder-val="{{true}}">
+            <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px">
+              <sc-for list="{{section.items}}" as="item" hint-placeholder-count="4">
+                <li>
+                  <sc-if value="{{item.active}}" hint-placeholder-val="{{false}}">
+                    <a href="{{item.href}}" aria-current="page" style="display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 0 12px; border-radius: 12px; background: var(--primary); color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none">
+                      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5DA18" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: 0 0 18px"><path d="{{item.icon}}"></path></svg>
+                      <span>{{item.label}}</span>
+                    </a>
+                  </sc-if>
+                  <sc-if value="{{item.inactive}}" hint-placeholder-val="{{true}}">
+                    <a href="{{item.href}}" class="nav-item" style="display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 12px; border-radius: 12px; color: var(--text2); font-size: 14px; font-weight: 500; text-decoration: none">
+                      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: 0 0 18px"><path d="{{item.icon}}"></path></svg>
+                      <span>{{item.label}}</span>
+                    </a>
+                  </sc-if>
+                </li>
+              </sc-for>
+            </ul>
+          </sc-if>
+        </div>
+      </sc-for>
+    </nav>
+    <footer style="margin-top: auto; display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 18px; background: var(--soft2)">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span aria-hidden="true" style="width: 38px; height: 38px; flex: 0 0 38px; border-radius: 999px; background: var(--primary); color: #F5DA18; display: grid; place-items: center; font-size: 13px; font-weight: 700">MA</span>
+        <span style="display: flex; flex-direction: column; line-height: 1.3; min-width: 0">
+          <span style="font-size: 14px; font-weight: 600; color: var(--ink)">Marisol Alcantara</span>
+          <span style="font-size: 12.5px; color: var(--muted)">Administrator · All barangays</span>
+        </span>
+      </div>
+      <a href="SignIn.dc.html" class="pill" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; border-radius: 999px; border: 1px solid var(--line2); background: var(--card); color: var(--ink); font-size: 13.5px; font-weight: 600; text-decoration: none">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path></svg>Sign out</a>
+    </footer>
+  </aside>
+
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+    <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 4px 8px 0">
+      <nav aria-label="Breadcrumb" style="flex: 1 1 180px; font-size: 13.5px; color: var(--muted)">
+        <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+          <li><a href="Main.dc.html" style="color: var(--muted); text-decoration: none">Dashboard</a></li>
+          <li aria-hidden="true">/</li>
+          <li aria-current="page" style="color: var(--ink); font-weight: 600">App directory</li>
+        </ol>
+      </nav>
+      <a href="#" class="pill" style="flex: 0 1 380px; display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 8px 0 16px; border-radius: 999px; background: var(--card); color: var(--muted); text-decoration: none; font-size: 14px">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <span style="flex: 1 1 auto"><span class="vh">Search: </span>Search residents, requests, programmes…</span>
+      </a>
+      <div role="group" aria-label="Appearance" style="display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--card)"><button type="button" class="theme-btn" aria-pressed="{{isLight}}" onClick="{{setLight}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: {{lightBg}}; color: {{lightFg}}; font-size: 13.5px; font-weight: 600; cursor: pointer"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>Light</button><button type="button" class="theme-btn" aria-pressed="{{isDark}}" onClick="{{setDark}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: {{darkBg}}; color: {{darkFg}}; font-size: 13.5px; font-weight: 600; cursor: pointer"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>Dark</button></div>
+      <button type="button" aria-label="Notifications, 3 unread notifications" class="pill" style="position: relative; width: 46px; height: 46px; display: grid; place-items: center; border: 0; border-radius: 999px; background: var(--card); color: var(--ink); cursor: pointer">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+        <span aria-hidden="true" style="position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: #E0090A; color: #FFFFFF; font-size: 11px; font-weight: 700; display: grid; place-items: center; border: 2px solid var(--ring)">3</span>
+      </button>
+    </header>
+
+
+    <main id="main-content" style="display: flex; flex-direction: column; gap: 20px; padding: 0 8px 8px">
+      <div style="display: flex; flex-direction: column; gap: 8px; max-width: 900px">
+        <h1 style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 42px; line-height: 1.05; font-weight: 500; letter-spacing: -0.025em; color: var(--ink)">App directory</h1>
+        <p style="margin: 0; font-size: 15px; color: var(--muted); text-wrap: pretty">Residents see this in the Taytay app: the offices they can find, the Tulong pages that tell them about a service, and the numbers they can call. A change here reaches every resident the next time the app loads.</p>
+      </div>
+
+      <div class="bento-r">
+        <sc-for list="{{kpis}}" as="k" hint-placeholder-count="3">
+          <button type="button" class="kpi" onClick="{{k.pick}}" style="grid-column: span 4; text-align: left; border: 0; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 18px 20px; border-radius: 24px; background: var(--card); color: var(--ink); font: inherit">
+            <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13.5px; font-weight: 600">{{k.label}}<span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 999px; background: {{k.dot}}"></span></span>
+            <span style="font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 38px; line-height: 1.05; font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums">{{k.value}}</span>
+            <span style="font-size: 12.5px; opacity: 0.85">{{k.hint}}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <div role="tablist" aria-label="Directory sections" class="tabs">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+          <button type="button" role="tab" aria-selected="{{t.on}}" class="{{t.cls}}" onClick="{{t.pick}}">{{t.label}}<span class="n">{{t.count}}</span></button>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{isOffices}}" hint-placeholder-val="{{true}}">
+        <section aria-labelledby="sec-offices" style="padding: 22px; border-radius: 28px; background: var(--card); display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px">
+            <div style="flex: 1 1 520px; display: flex; flex-direction: column; gap: 4px"><h2 id="sec-offices" style="margin: 0; font-size: 18px; font-weight: 700; color: var(--ink)">Offices</h2><p style="margin: 0; font-size: 13.5px; color: var(--muted); text-wrap: pretty">The offices residents find in the app’s directory. An office named by a staff account, a Balita article, a Tulong page or a conversation cannot be deleted until those are moved.</p></div>
+            <button type="button" class="btnp" onClick="{{openCreate}}"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F5DA18" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>Add an office</button>
+          </div>
+          <div style="overflow-x: auto">
+            <table style="width: 100%; min-width: 860px; border-collapse: separate; border-spacing: 0; font-size: 14px">
+              <caption class="vh">Offices in the app’s directory</caption>
+              <thead><tr><th scope="col" class="th" style="border-radius: 12px 0 0 12px">Office</th><th scope="col" class="th">Address in the app</th><th scope="col" class="th">Category</th><th scope="col" class="th">Banner</th><th scope="col" class="th" style="text-align: right; border-radius: 0 12px 12px 0">Actions</th></tr></thead>
+              <tbody>
+                <sc-for list="{{offices}}" as="o" hint-placeholder-count="9">
+                  <tr class="trow" style="background: {{o.rowBg}}">
+                    <td class="td"><span style="display: flex; align-items: center; gap: 12px"><span aria-hidden="true" style="width: 38px; height: 38px; flex: 0 0 38px; border-radius: 12px; background: {{o.tint}}; color: {{o.ink}}; display: grid; place-items: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="{{o.icon}}"></path></svg></span><span style="display: flex; flex-direction: column; min-width: 0"><span style="font-weight: 600; color: var(--ink)">{{o.name}}</span><span style="font-size: 12.5px; color: var(--muted)">{{o.short}}</span></span></span></td>
+                    <td class="td" style="color: var(--text2); font-family: ui-monospace, Menlo, monospace; font-size: 13px">offices/{{o.slug}}</td>
+                    <td class="td" style="color: {{o.catInk}}">{{o.cat}}</td>
+                    <td class="td"><span class="chipst" style="background: {{o.bannerBg}}; color: {{o.bannerFg}}">{{o.banner}}</span></td>
+                    <td class="td" style="text-align: right; white-space: nowrap"><span style="display: inline-flex; gap: 8px"><button type="button" class="btns" aria-label="{{o.editLabel}}" onClick="{{o.edit}}">Edit</button><button type="button" class="btns danger" aria-label="{{o.removeLabel}}" onClick="{{o.remove}}">Delete</button></span></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <p role="status" style="margin: 0; font-size: 13px; color: var(--muted)">Showing {{officeCount}} offices. That is all of them. Newest first, as the server sends them.</p>
+          <sc-if value="{{hasOutcome}}" hint-placeholder-val="{{false}}"><p role="status" style="margin: 0; padding: 10px 14px; border-radius: 14px; background: var(--green-tint); color: var(--green-ink); font-size: 13.5px; font-weight: 600">{{outcome}}</p></sc-if>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isServices}}" hint-placeholder-val="{{false}}">
+        <section aria-labelledby="sec-services" style="padding: 22px; border-radius: 28px; background: var(--card); display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px">
+            <div style="flex: 1 1 520px; display: flex; flex-direction: column; gap: 4px"><h2 id="sec-services" style="margin: 0; font-size: 18px; font-weight: 700; color: var(--ink)">Tulong pages</h2><p style="margin: 0; font-size: 13.5px; color: var(--muted); text-wrap: pretty">What the app tells residents about a service — what it is, who it is for, what to bring and whom to call. A Tulong page is information only: residents read it, and cannot apply through it. It is not one of the office’s assistance programmes.</p></div>
+            <button type="button" class="btnp"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F5DA18" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>Add a page</button>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 14px 16px; border-radius: 18px; background: var(--soft2)">
+            <label style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted)">Open a page by its address
+              <span style="display: flex; align-items: center; min-height: 44px; border: 1px solid var(--field-line); border-radius: 999px; background: var(--field); overflow: hidden"><span style="padding: 0 4px 0 16px; font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: var(--muted)">services/</span><input type="text" placeholder="senior-citizen-id" style="flex: 1 1 auto; min-width: 0; min-height: 42px; border: 0; background: transparent; color: var(--ink); font-size: 14px; font-family: ui-monospace, Menlo, monospace; outline: none"></span>
+              <span style="font-weight: 400">The part after services/ — such as senior-citizen-id. Finds hidden pages too.</span>
+            </label>
+            <button type="button" class="btns" style="min-height: 44px; margin-bottom: 20px">Open</button>
+          </div>
+          <div style="overflow-x: auto">
+            <table style="width: 100%; min-width: 860px; border-collapse: separate; border-spacing: 0; font-size: 14px">
+              <caption class="vh">Tulong pages in the app’s catalogue</caption>
+              <thead><tr><th scope="col" class="th" style="border-radius: 12px 0 0 12px">Page</th><th scope="col" class="th">Catalogue</th><th scope="col" class="th">Home screen</th><th scope="col" class="th">Office</th><th scope="col" class="th" style="text-align: right; border-radius: 0 12px 12px 0">Actions</th></tr></thead>
+              <tbody>
+                <sc-for list="{{services}}" as="s" hint-placeholder-count="5">
+                  <tr class="trow">
+                    <td class="td"><span style="display: flex; flex-direction: column"><span style="font-weight: 600; color: var(--ink)">{{s.name}}</span><span style="font-size: 12.5px; color: var(--muted); font-family: ui-monospace, Menlo, monospace">services/{{s.slug}}</span></span></td>
+                    <td class="td"><span class="chipst" style="background: {{s.listBg}}; color: {{s.listFg}}">{{s.listing}}</span></td>
+                    <td class="td"><span class="chipst" style="background: {{s.featBg}}; color: {{s.featFg}}">{{s.feat}}</span></td>
+                    <td class="td" style="color: var(--text2)">{{s.office}}</td>
+                    <td class="td" style="text-align: right; white-space: nowrap"><span style="display: inline-flex; gap: 8px"><button type="button" class="btns">Edit</button><button type="button" class="btns danger">Delete</button></span></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <p style="margin: 0; font-size: 13px; color: var(--muted); text-wrap: pretty">A page hidden from the catalogue is not listed here unless it is featured, because the API lists only what residents can browse. Open one by its address below.</p>
+          <p role="status" style="margin: 0; font-size: 13px; color: var(--muted)">Showing {{serviceCount}} pages. That is all of them.</p>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isHotlines}}" hint-placeholder-val="{{false}}">
+        <section aria-labelledby="sec-hotlines" style="padding: 22px; border-radius: 28px; background: var(--card); display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px">
+            <div style="flex: 1 1 520px; display: flex; flex-direction: column; gap: 4px"><h2 id="sec-hotlines" style="margin: 0; font-size: 18px; font-weight: 700; color: var(--ink)">Hotlines</h2><p style="margin: 0; font-size: 13.5px; color: var(--muted); text-wrap: pretty">The numbers residents can call from the app’s hotline list and home screen. The app lists active lines by order, lowest first, then by name.</p></div>
+            <button type="button" class="btnp"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F5DA18" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>Add a hotline</button>
+          </div>
+          <div style="overflow-x: auto">
+            <table style="width: 100%; min-width: 860px; border-collapse: separate; border-spacing: 0; font-size: 14px">
+              <caption class="vh">Hotlines in the app</caption>
+              <thead><tr><th scope="col" class="th" style="border-radius: 12px 0 0 12px">Line</th><th scope="col" class="th">Number</th><th scope="col" class="th">Kind</th><th scope="col" class="th" style="text-align: right">Order</th><th scope="col" class="th">In the app</th><th scope="col" class="th" style="text-align: right; border-radius: 0 12px 12px 0">Actions</th></tr></thead>
+              <tbody>
+                <sc-for list="{{hotlines}}" as="h" hint-placeholder-count="6">
+                  <tr class="trow">
+                    <td class="td" style="font-weight: 600; color: var(--ink)">{{h.name}}</td>
+                    <td class="td" style="font-variant-numeric: tabular-nums; color: var(--ink)">{{h.number}}</td>
+                    <td class="td"><span class="chipst" style="background: {{h.kindBg}}; color: {{h.kindFg}}">{{h.kind}}</span></td>
+                    <td class="td" style="text-align: right; font-variant-numeric: tabular-nums; color: var(--text2)">{{h.order}}</td>
+                    <td class="td"><label style="display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--text2); cursor: pointer"><input type="checkbox" checked="{{h.shown}}" onChange="{{h.toggle}}" style="width: 18px; height: 18px; margin: 0; accent-color: var(--link)">{{h.shownLabel}}</label></td>
+                    <td class="td" style="text-align: right; white-space: nowrap"><span style="display: inline-flex; gap: 8px"><button type="button" class="btns">Edit</button><button type="button" class="btns danger">Delete</button></span></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <p role="status" style="margin: 0; font-size: 13px; color: var(--muted)">{{hotlineCount}}</p>
+        </section>
+      </sc-if>
+      <p style="margin: 0; padding: 0 4px; font-size: 12px; color: var(--muted)">Offices, pages and numbers on this screen are sample data for the design, taken from the residents’ app.</p>
+    </main>
+  </div>
+
+  <sc-if value="{{editOpen}}" hint-placeholder-val="{{false}}">
+    <div style="position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 24px; box-sizing: border-box; background: var(--scrim)">
+      <button type="button" aria-label="Close" tabindex="-1" onClick="{{close}}" style="position: absolute; inset: 0; border: 0; background: transparent; cursor: default"></button>
+      <section role="dialog" aria-modal="true" aria-labelledby="edit-h" style="position: relative; width: 100%; max-width: 1040px; max-height: calc(100vh - 48px); box-sizing: border-box; border-radius: 28px; background: var(--card-solid); display: flex; flex-direction: column; overflow: hidden">
+        <header style="display: flex; align-items: center; gap: 14px; padding: 20px 24px; border-bottom: 1px solid var(--soft)">
+          <span aria-hidden="true" style="width: 48px; height: 48px; flex: 0 0 48px; border-radius: 16px; background: {{e.tint}}; color: {{e.ink}}; display: grid; place-items: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="{{e.icon}}"></path></svg></span>
+          <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 12px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted2)">{{e.kicker}}</span><h2 id="edit-h" style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 24px; font-weight: 500; letter-spacing: -0.01em; color: var(--ink)">{{e.heading}}</h2></div>
+          <button type="button" onClick="{{close}}" class="pill" style="width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 999px; background: var(--soft); color: var(--ink); cursor: pointer"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg><span class="vh">Close</span></button>
+        </header>
+        <div style="flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 20px 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 18px; align-items: start">
+          <div style="display: flex; flex-direction: column; gap: 14px; min-width: 0">
+            <label class="fld">Name<input class="inp" type="text" value="{{e.name}}" onInput="{{onName}}"></label>
+            <label class="fld">Address in the app
+              <span style="display: flex; align-items: center; border: 1px solid var(--field-line); border-radius: 14px; background: var(--field); overflow: hidden"><span style="padding: 0 2px 0 14px; font-family: ui-monospace, Menlo, monospace; font-size: 13.5px; color: var(--muted)">offices/</span><input type="text" value="{{e.slug}}" onInput="{{onSlug}}" style="flex: 1 1 auto; min-width: 0; min-height: 44px; border: 0; background: transparent; color: var(--ink); font-family: ui-monospace, Menlo, monospace; font-size: 13.5px; outline: none"></span>
+              <span class="hint">Lower-case words joined by hyphens. The app opens the office’s page at offices/ and this.</span>
+            </label>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+              <label class="fld">Short name<input class="inp" type="text" value="{{e.short}}" onInput="{{onOther}}"><span class="hint">A label such as MSWDO. Optional.</span></label>
+              <label class="fld">Category<input class="inp" type="text" value="{{e.cat}}" onInput="{{onOther}}"></label>
+            </div>
+            <sc-if value="{{isCreate}}" hint-placeholder-val="{{false}}">
+              <div style="display: flex; flex-direction: column; gap: 12px">
+                <label class="fld"><span>Description <span class="opt">Optional.</span></span><textarea class="inp" rows="3" style="padding: 10px 14px; resize: vertical"></textarea></label>
+                <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+                  <label class="fld"><span>Head of office <span class="opt">Optional.</span></span><input class="inp" type="text"></label>
+                  <label class="fld"><span>Office hours <span class="opt">Optional.</span></span><input class="inp" type="text"></label>
+                  <label class="fld"><span>Phone <span class="opt">Optional.</span></span><input class="inp" type="tel"></label>
+                  <label class="fld"><span>Email <span class="opt">Optional.</span></span><input class="inp" type="email"></label>
+                </div>
+                <label class="fld"><span>Street address <span class="opt">Optional.</span></span><input class="inp" type="text"></label>
+                <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 6px"><legend class="fld" style="padding: 0; margin-bottom: 6px">Map position</legend>
+                  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px"><label class="fld">Latitude<input class="inp" type="text" inputmode="decimal" placeholder="14.5574"></label><label class="fld">Longitude<input class="inp" type="text" inputmode="decimal" placeholder="121.1323"></label></div>
+                  <span class="hint">Decimal degrees, such as 14.5574 and 121.1323. Leave both empty for no pin.</span>
+                </fieldset>
+              </div>
+            </sc-if>
+            <div style="display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 16px; border: 1px dashed var(--line2)">
+              <span class="fld" style="gap: 2px">Banner<span class="hint">Shown across the top of the office’s page in the app.</span></span>
+              <div style="display: flex; align-items: center; gap: 12px">
+                <span aria-hidden="true" style="width: 96px; height: 56px; flex: 0 0 96px; border-radius: 10px; overflow: hidden; background: var(--soft)"><sc-if value="{{e.hasBanner}}" hint-placeholder-val="{{true}}"><img src="../../images/municipal_hall.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block"></sc-if></span>
+                <span style="flex: 1 1 auto; font-size: 13px; color: var(--text2)">{{e.bannerNote}}</span>
+                <button type="button" class="btns" onClick="{{onBanner}}">Choose an image</button>
+              </div>
+              <span class="hint">A banner can be replaced but not removed: the API has no way to take one away.</span>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 14px; min-width: 0">
+            <sc-if value="{{isEdit}}" hint-placeholder-val="{{true}}">
+              <section style="padding: 16px 18px; border-radius: 20px; background: var(--deep); color: #FFFFFF; display: flex; flex-direction: column; gap: 10px">
+                <h3 style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: #C3CDE6">Set when the office was created</h3>
+                <p style="margin: 0; font-size: 13px; color: #C9D2E8">The API’s published contract declares no way to change an office’s description, head, hours, phone, email, address and map position, so they are shown here and cannot be edited.</p>
+                <dl class="fixed" style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; font-size: 13.5px">
+                  <sc-for list="{{e.fixed}}" as="f" hint-placeholder-count="7"><div style="grid-column: {{f.span}}"><dt style="color: #C3CDE6">{{f.k}}</dt><dd style="color: {{f.ink}}">{{f.v}}</dd></div></sc-for>
+                </dl>
+              </section>
+            </sc-if>
+            <div class="effects"><b>What this does:</b><ul><sc-for list="{{effects}}" as="x" hint-placeholder-count="3"><li>{{x}}</li></sc-for></ul></div>
+          </div>
+        </div>
+        <footer style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px; border-top: 1px solid var(--soft)">
+          <span role="status" style="font-size: 13.5px; color: var(--muted)">{{dirtyNote}}</span>
+          <span style="display: inline-flex; gap: 10px"><button type="button" class="btns" style="min-height: 44px" onClick="{{close}}">Cancel</button><button type="button" class="{{saveCls}}" onClick="{{save}}">{{saveLabel}}</button></span>
+        </footer>
+      </section>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{removeOpen}}" hint-placeholder-val="{{false}}">
+    <div style="position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 24px; box-sizing: border-box; background: var(--scrim)">
+      <button type="button" aria-label="Close" tabindex="-1" onClick="{{close}}" style="position: absolute; inset: 0; border: 0; background: transparent; cursor: default"></button>
+      <section role="alertdialog" aria-modal="true" aria-labelledby="rm-h" style="position: relative; width: 100%; max-width: 560px; box-sizing: border-box; padding: 24px; border-radius: 28px; background: var(--card-solid); display: flex; flex-direction: column; gap: 14px">
+        <h2 id="rm-h" style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 24px; font-weight: 500; color: var(--ink)">{{rm.heading}}</h2>
+        <div class="effects"><b>What this does:</b><ul><sc-for list="{{rmEffects}}" as="x" hint-placeholder-count="5"><li>{{x}}</li></sc-for></ul></div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px"><button type="button" class="btns" style="min-height: 44px" onClick="{{close}}">Keep it</button><button type="button" class="btnp red" onClick="{{doRemove}}">{{rm.confirm}}</button></div>
+      </section>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1060}}'>
+class Component extends DCLogic {
+  nav(activeLabel) {
+    var self = this;
+    var I = {
+      grid: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z', check: 'M9 11l3 3 8-8M20 12v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11',
+      folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', file: 'M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M9 13h6M9 17h6',
+      user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0', heart: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
+      home: 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-5h4v5', users: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-4-6.3',
+      pin: 'M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', share: 'M15 4h5v5M20 4l-8 8M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
+      layers: 'M12 3l9 5-9 5-9-5zM3 13l9 5 9-5', cash: 'M3 7h18v10H3zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 10v.01M18 14v.01', chart: 'M4 20V10M10 20V4M16 20v-7M2 20h20',
+      cal: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4', shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4', inbox: 'M3 13l3-8h12l3 8v6H3zM3 13h5l1 3h6l1-3h5',
+      doc: 'M14 3H6v18h12V7zM14 3v4h4M12 11v6M9 14h6', ucog: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 11-5.7M18 15v6M15 18h6',
+      building: 'M4 21V5l8-2v18M12 7l8 2v12M7 9h2M7 13h2M7 17h2M15 12h2M15 16h2M2 21h20', phone: 'M7 2h10a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM11 18h2',
+      sliders: 'M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4', idcard: 'M3 5h18v14H3zM8 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM5 16c.6-1.6 1.7-2 3-2s2.4.4 3 2M14 9h4M14 13h4',
+      news: 'M4 5h13v14a1 1 0 0 0 1 1H5a1 1 0 0 1-1-1zM17 9h3v10a1 1 0 0 1-2 0M7 9h7M7 13h7M7 17h4', history: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2',
+      staff: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6', clip: 'M9 4h6v3H9zM7 5H5v16h14V5h-2M9 12h6M9 16h4',
+      gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1'
+    };
+    var NAV = [
+      { title: 'Casework', items: [['Dashboard', 'grid', 'Main.dc.html'], ['My work', 'check'], ['Cases', 'folder'], ['Assistance requests', 'file'], ['Residents', 'user', 'Residents.dc.html'], ['Beneficiaries', 'heart'], ['Households', 'home'], ['Families', 'users'], ['Field visits', 'pin'], ['Referrals', 'share']] },
+      { title: 'Delivery', items: [['Programs', 'layers'], ['Releases', 'cash'], ['Reports', 'chart']] },
+      { title: 'Community', items: [['Events', 'cal']] },
+      { title: 'Residents’ app', items: [['ID verification', 'shield', 'VerificationQueue.dc.html'], ['Office inbox', 'inbox', 'OfficeInbox.dc.html'], ['Resident document requests', 'doc'], ['Users and roles', 'ucog', 'Users.dc.html'], ['App directory', 'building', 'AppDirectory.dc.html'], ['Home screen', 'phone'], ['App settings', 'sliders'], ['Digital IDs', 'idcard'], ['Balita', 'news'], ['App audit trail', 'history']] },
+      { title: 'Administration', items: [['Staff and roles', 'staff'], ['Audit trail', 'clip'], ['Settings', 'gear']] }
+    ];
+    var open = (this.state && this.state.open) || {};
+    return NAV.map(function (s) {
+      var hasActive = s.items.some(function (i) { return i[0] === activeLabel; });
+      var isOpen = open[s.title] === undefined ? hasActive : open[s.title];
+      return {
+        title: s.title, open: isOpen, closed: !isOpen,
+        toggle: function () { var next = Object.assign({}, open); next[s.title] = !isOpen; self.setState({ open: next }); },
+        items: s.items.map(function (i) { var active = i[0] === activeLabel; return { label: i[0], icon: I[i[1]], href: i[2] || '#', active: active, inactive: !active }; })
+      };
+    });
+  }
+  renderVals() {
+    var self = this;
+    var st = this.state || {};
+    var START = 'edit:o1';
+    var theme = st.theme || (function () { try { return localStorage.getItem('taytay-theme') || 'light'; } catch (e) { return 'light'; } })();
+    var setTheme = function (v) { try { localStorage.setItem('taytay-theme', v); } catch (e) {} self.setState({ theme: v }); };
+    var IC = {
+      heart: 'M11 14h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 16M7 20l1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.8-2.8l-4.2 3.9M2 15l6 6',
+      bank: 'M3 21h18M5 21V10M19 21V10M9 21V10M15 21V10M12 3l9 5H3z', file: 'M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M9 13h6M9 17h6',
+      brief: 'M4 8h16v12H4zM9 8V5h6v3M4 13h16', siren: 'M7 18v-6a5 5 0 0 1 10 0v6M5 21h14M12 3v2M4.2 6.2l1.4 1.4M19.8 6.2l-1.4 1.4M3 12h2M19 12h2',
+      cap: 'M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5', mega: 'M3 11v3l12 5V6L3 11zM15 8.5a4 4 0 0 1 0 8M7 15.5V20h3v-3',
+      users: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-4-6.3', steth: 'M6 3v6a4 4 0 0 0 8 0V3M10 13v3a5 5 0 0 0 10 0v-2M20 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
+      plus: 'M12 5v14M5 12h14'
+    };
+    var T = { g: ['var(--green-tint)', 'var(--green-ink)'], b: ['var(--blue-tint)', 'var(--link)'], y: ['var(--gold-tint)', 'var(--gold-ink)'], r: ['var(--red-tint)', 'var(--red-ink)'] };
+    var NG = 'Not given';
+    // Sample offices, taken from the residents' app directory.
+    var O = [
+      { id: 'o1', name: 'Municipal Social Welfare and Development Office', short: 'MSWDO', slug: 'mswdo', cat: 'Social services', icon: 'heart', t: 'g', banner: true,
+        fixed: ['Social welfare programmes for PWDs, senior citizens, solo parents, families in crisis, women and children.', NG, 'Mon–Fri, 8:00 AM – 5:00 PM', '(02) 8284-4710 · 0921-284-3685', NG, 'Ground Floor, Taytay Municipal Hall', NG] },
+      { id: 'o2', name: 'Municipal Treasurer’s Office', short: '', slug: 'treasury', cat: 'Taxes & payments', icon: 'bank', t: 'b', banner: true, fixed: [NG, NG, NG, '8284-4715 / 4717 / 4709', NG, '2nd Floor, Municipal Hall', NG] },
+      { id: 'o3', name: 'Municipal Assessor’s Office', short: '', slug: 'assessor', cat: 'Taxes & payments', icon: 'file', t: 'b', banner: false, fixed: [NG, NG, NG, '8284-4708 · 8537-1100', NG, NG, NG] },
+      { id: 'o4', name: 'Business Permits and Licensing Office', short: 'BPLO', slug: 'bplo', cat: 'Business', icon: 'brief', t: 'y', banner: true, fixed: [NG, NG, NG, '(02) 8284-4788 / 4789', NG, 'Ground Floor, Municipal Hall', NG] },
+      { id: 'o5', name: 'MDRRMO & Sagip Taytay Command Center', short: 'MDRRMO', slug: 'mdrrmo', cat: 'Emergency', icon: 'siren', t: 'r', banner: true, fixed: [NG, NG, '24/7', '0985-488-3352', NG, NG, NG] },
+      { id: 'o6', name: 'Public Employment Service Office', short: 'PESO', slug: 'peso', cat: 'Jobs', icon: 'cap', t: 'y', banner: false, fixed: [NG, NG, NG, NG, NG, NG, NG] },
+      { id: 'o7', name: 'Public Information Office', short: 'PIO', slug: 'pio', cat: '', icon: 'mega', t: 'b', banner: false, fixed: [NG, NG, NG, NG, NG, NG, NG] },
+      { id: 'o8', name: 'Youth Development Office', short: '', slug: 'youth', cat: '', icon: 'users', t: 'b', banner: false, fixed: [NG, NG, NG, NG, NG, NG, NG] },
+      { id: 'o9', name: 'Municipal Health Office', short: 'MHO', slug: 'health', cat: 'Health', icon: 'steth', t: 'r', banner: false, fixed: [NG, NG, NG, NG, NG, NG, NG] }
+    ];
+    var FIXED_K = ['Description', 'Head of office', 'Office hours', 'Phone', 'Email', 'Street address', 'Map position'];
+    var S = [
+      ['Senior Citizen ID', 'senior-citizen-id', true, true, 'MSWDO'],
+      ['PWD ID and Cash Gift', 'pwd-id', true, true, 'MSWDO'],
+      ['Solo Parent ID', 'solo-parent-id', true, false, 'MSWDO'],
+      ['Business permit renewal (BOSS)', 'business-permit-renewal', true, false, 'BPLO'],
+      ['Community Tax Certificate (cedula)', 'cedula', true, false, 'Municipal Treasurer’s Office']
+    ];
+    var H = [
+      ['MDRRMO & Command Center', '0985-488-3352', 'Emergency', 0, true, 'r'],
+      ['MDRRMO', '0952-619-9511', 'Emergency', 1, true, 'r'],
+      ['MSWDO', '(02) 8284-4710', 'Social services', 10, true, 'g'],
+      ['Treasury', '8284-4715', 'Taxes', 20, true, 'b'],
+      ['BPLO', '(02) 8284-4788', 'Business', 30, true, 'y'],
+      ['Assessor', '8284-4708', 'Taxes', 40, false, 'b']
+    ];
+    var EFFECTS = {
+      create: ['The office appears in the app’s office directory, where any resident can find it and open its page.', 'Its description, head, hours, phone, email, address and map position can be set only now. The API’s published contract declares no way to change them afterwards.', 'The server records that you created it, and when.'],
+      update: ['Residents see the change in the app’s directory the next time the app loads it.', 'The server records that you changed it, and when. It keeps no reason, so none is asked for.'],
+      slug: ['The app opens the office’s page by this address. Anything that kept the old one — a link, a shortcut in the app — stops finding it.'],
+      bannerReplaced: ['The new image replaces the banner on the office’s page in the app. The server deletes the old one.'],
+      bannerAdded: ['The image becomes the banner on the office’s page in the app.'],
+      remove: ['The office leaves the app’s directory. Residents can no longer find it or open its page.', 'The server refuses while anything still names the office: a staff account assigned to it, a Balita article, a Tulong page, or a conversation with a resident. Its refusal does not say which; move or remove those first.', 'Nothing brings it back. Creating it again makes a new office that nothing already written points to.', 'Its banner image stays stored on the server; nothing removes it.', 'The server records that you deleted it, and when.']
+    };
+    var removed = st.removed || {};
+    var tab = st.tab || 'offices';
+    var modal = st.modal !== undefined ? st.modal : START;
+    var parts = modal ? modal.split(':') : [];
+    var kind = parts[0] || '', oid = parts[1] || '';
+    var o = O.filter(function (x) { return x.id === oid; })[0] || null;
+    var shown = st.shown || {};
+    var list = O.filter(function (x) { return !removed[x.id]; });
+    var nameV = st.nameV, slugV = st.slugV;
+    var changedName = nameV !== undefined && o && nameV !== o.name, changedSlug = slugV !== undefined && o && slugV !== o.slug;
+    var dirty = !!(st.other || st.banner || changedName || changedSlug);
+    var isCreate = kind === 'create', isEdit = kind === 'edit' && !!o;
+    var eff = isCreate ? EFFECTS.create : EFFECTS.update.concat(changedSlug ? EFFECTS.slug : []).concat(st.banner ? (o && o.banner ? EFFECTS.bannerReplaced : EFFECTS.bannerAdded) : []);
+    var hotShown = function (h, i) { return shown[i] !== undefined ? shown[i] : h[4]; };
+    var reset = { nameV: undefined, slugV: undefined, other: false, banner: false };
+    return {
+      themeClass: 'theme-' + theme, isLight: theme === 'light', isDark: theme === 'dark',
+      setLight: function () { setTheme('light'); }, setDark: function () { setTheme('dark'); },
+      lightBg: theme === 'light' ? 'var(--primary)' : 'transparent', lightFg: theme === 'light' ? '#FFFFFF' : 'var(--text2)',
+      darkBg: theme === 'dark' ? 'var(--primary)' : 'transparent', darkFg: theme === 'dark' ? '#FFFFFF' : 'var(--text2)',
+      nav: this.nav('App directory'),
+      kpis: [
+        { label: 'Offices in the app', value: String(list.length), hint: list.filter(function (x) { return x.banner; }).length + ' have a banner', dot: 'var(--bar)', pick: function () { self.setState({ tab: 'offices' }); } },
+        { label: 'Tulong pages', value: String(S.length), hint: S.filter(function (s) { return s[3]; }).length + ' featured on the home screen', dot: '#F5DA18', pick: function () { self.setState({ tab: 'services' }); } },
+        { label: 'Hotlines shown', value: String(H.filter(hotShown).length), hint: 'of ' + H.length + ' lines kept here', dot: '#E0090A', pick: function () { self.setState({ tab: 'hotlines' }); } }
+      ],
+      tabs: [['offices', 'Offices', list.length], ['services', 'Tulong pages', S.length], ['hotlines', 'Hotlines', H.length]].map(function (t) { var on = tab === t[0]; return { label: t[1], count: String(t[2]), on: on ? 'true' : 'false', cls: on ? 'tab on' : 'tab', pick: function () { self.setState({ tab: t[0] }); } }; }),
+      isOffices: tab === 'offices', isServices: tab === 'services', isHotlines: tab === 'hotlines',
+      offices: list.map(function (x) {
+        var c = T[x.t];
+        return { name: x.name, short: x.short || '—', slug: x.slug, cat: x.cat || 'None given', catInk: x.cat ? 'var(--text2)' : 'var(--muted)', icon: IC[x.icon], tint: c[0], ink: c[1],
+          banner: x.banner ? 'Has a banner' : 'No banner', bannerBg: x.banner ? 'var(--green-tint)' : 'var(--soft)', bannerFg: x.banner ? 'var(--green-ink)' : 'var(--muted)',
+          rowBg: o && o.id === x.id ? 'var(--sel)' : 'transparent', editLabel: 'Edit ' + x.name, removeLabel: 'Delete ' + x.name,
+          edit: function () { self.setState(Object.assign({ modal: 'edit:' + x.id }, reset)); }, remove: function () { self.setState({ modal: 'remove:' + x.id }); } };
+      }),
+      officeCount: String(list.length),
+      services: S.map(function (s) { return { name: s[0], slug: s[1], listing: s[2] ? 'Listed' : 'Hidden', listBg: s[2] ? 'var(--blue-tint)' : 'var(--soft)', listFg: s[2] ? 'var(--link)' : 'var(--muted)', feat: s[3] ? 'Featured' : 'Not featured', featBg: s[3] ? 'var(--gold-tint)' : 'var(--soft)', featFg: s[3] ? 'var(--gold-ink)' : 'var(--muted)', office: s[4] }; }),
+      serviceCount: String(S.length),
+      hotlines: H.map(function (h, i) { var on = hotShown(h, i); var c = T[h[5]]; return { name: h[0], number: h[1], kind: h[2], kindBg: c[0], kindFg: c[1], order: String(h[3]), shown: on, shownLabel: on ? 'Shown' : 'Hidden', toggle: function () { var m = Object.assign({}, shown); m[i] = !on; self.setState({ shown: m }); } }; }),
+      hotlineCount: H.length + ' lines, shown and hidden.',
+      hasOutcome: !!st.outcome, outcome: st.outcome || '',
+      openCreate: function () { self.setState(Object.assign({ modal: 'create:' }, reset)); },
+      editOpen: isCreate || isEdit, isCreate: isCreate, isEdit: isEdit,
+      e: isCreate ? { kicker: 'App directory', heading: 'Add an office', name: '', slug: '', short: '', cat: '', icon: IC.plus, tint: 'var(--gold-tint)', ink: 'var(--gold-ink)', hasBanner: false, bannerNote: 'This office has no banner.', fixed: [] }
+        : o ? { kicker: o.short || 'Office', heading: 'Edit office', name: nameV !== undefined ? nameV : o.name, slug: slugV !== undefined ? slugV : o.slug, short: o.short, cat: o.cat, icon: IC[o.icon], tint: T[o.t][0], ink: T[o.t][1],
+          hasBanner: !!(o.banner || st.banner), bannerNote: st.banner ? 'municipal_hall.jpg chosen. It replaces the banner when you save.' : (o.banner ? 'This office has a banner. Choosing an image replaces it.' : 'This office has no banner.'),
+          fixed: FIXED_K.map(function (k, i) { return { k: k, v: o.fixed[i], ink: o.fixed[i] === NG ? '#9AA6C4' : '#FFFFFF', span: i === 0 || i === 5 ? '1 / -1' : 'auto' }; }) } : {},
+      effects: eff,
+      onName: function (ev) { self.setState({ nameV: ev.target.value }); }, onSlug: function (ev) { self.setState({ slugV: ev.target.value }); },
+      onOther: function () { self.setState({ other: true }); }, onBanner: function () { self.setState({ banner: true }); },
+      dirtyNote: isCreate ? 'Name and address are needed to add it.' : (dirty ? 'Changes not saved yet.' : 'Nothing has changed yet.'),
+      saveLabel: isCreate ? 'Add the office' : 'Save changes', saveCls: isCreate || dirty ? 'btnp' : 'btnp off',
+      save: function () { if (!isCreate && !dirty) { return; } self.setState(Object.assign({ modal: '', outcome: isCreate ? 'The office was added to the app’s directory.' : (nameV || o.name) + ' was saved.' }, reset)); },
+      close: function () { self.setState(Object.assign({ modal: '' }, reset)); },
+      removeOpen: kind === 'remove' && !!o,
+      rm: o ? { heading: 'Delete ' + o.name + '?', confirm: 'Delete ' + (o.short || o.name) } : {},
+      rmEffects: EFFECTS.remove,
+      doRemove: function () { var m = Object.assign({}, removed); m[o.id] = true; self.setState({ removed: m, modal: '', outcome: o.name + ' was deleted from the app’s directory.' }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

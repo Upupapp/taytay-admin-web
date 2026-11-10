@@ -9519,3 +9519,51 @@ instead. The roles matrix (every permission against every role) still scrolls in
 both widths, by design. The event check-in's Find button no longer sits on a fixed 25px offset: the
 field's label, input and hint are rows of a subgrid, so the button stays on the input's row whatever
 the label's height.
+
+## DL-203 — the redesign is written down, its reference is kept, and a check keeps literals out of the stylesheets
+
+**Status:** Settled (11 November 2026). Phase 5 of `DL-200`, closing the redesign. No screen, selector,
+input, output, route or wording changed; one rule changed value without changing what it paints.
+
+**The reference is kept, as drawn.** The redesign's admin mock-ups, icons and images, and the design
+pack's README, are copied to `docs/design/` from the local, ignored `design/` folder (the mobile half
+stays in `taytay-mobile-app`). They are drawings with sample data, and the README now says so first:
+nothing in them is copied into the app. They are excluded from what would otherwise read them as
+source — ESLint (`globalIgnores(['docs/design/admin/'])`; `ng lint` reads only `src/`, but a bare
+`eslint .` would parse the mock-ups as Angular templates) and Prettier (`.prettierignore` lists the
+README, `admin/`, `icons/` and `images/`, so `npm run format` cannot rewrite them). No build, bundle or
+repository check reads them: the build's assets are `public/` and the font licences, `check:brand`'s
+image rule covers `public/brand/` only, and its colour-claim scan of `docs/` passes over them.
+
+**The system is written from the code.** `docs/design/DESIGN_SYSTEM.md` lists the tokens, the
+primitives, the pattern classes, every shared component with its inputs and an example, the five page
+patterns with a reference page and a skeleton each, the rules and the browser sweep. Where it and the
+code disagree, the code is right. The Phase 4 sweep script is described rather than committed: it needs
+`playwright-core` and `axe-core`, and a dependency is not added for a script the gate does not run.
+`CLAUDE.md` §7 gains a "Design" part pointing to it, and `.claude/commands/` gains `new-page`,
+`restyle-page`, `change-token` and `redesign`.
+
+**`check:styles` keeps literals out.** Phase 4 swept every colour literal, px font size and shadow out of
+the component stylesheets by hand; nothing kept them out. The check reads every stylesheet under `src/`
+— component files and inline `styles` — and fails on a colour literal (hex, `rgb()`, `hsl()` and the
+other colour functions, or a CSS named colour in a property that takes a colour), a px font size (in
+`font-size`, the `font` shorthand or a local `--fs-*` token), and a shadow or glow (`box-shadow` other
+than `none` or the focus ring built from the focus tokens; any `text-shadow`; `drop-shadow()`).
+
+- **Who is exempt.** Only `styles.scss` and `_brand-tokens.scss`, and only as the value of a custom
+  property: that is what declaring a token is. `shared/ui` and the global partials get no exemption —
+  they were already clean and they are what features copy. The one literal the first run found was
+  in `styles.scss` itself, the print background `#fff`; it is `var(--card-solid)` now (the same white).
+- **Named colours are included** because `white` is `#fff` spelled differently, and the obvious way
+  round a hex-only rule. System colours, `transparent` and `currentcolor` pass.
+- **Radii and heights are not checked.** Hairlines, `50%` and small offsets are legitimate non-token
+  lengths, and a rule that cannot tell them from a stray `14px` radius would be edited rather than
+  read. DESIGN_SYSTEM.md asks for the tokens; review holds that line.
+- **Validated against planted regressions** in a feature, the layout, `shared/`, `shared/ui`, an
+  inline-styled component and a token file's rule: 21 planted violations of every kind, all reported
+  with file and line; the allowed forms beside them (the focus ring, `none`, a token declaration, `%`
+  and `inherit` sizes, system colours, an id selector, a media query, `url(#…)`) not reported. A walk
+  that finds fewer than 60 stylesheets fails as broken rather than reporting clean.
+
+stylelint was not added: one more dependency and configuration for three rules a short script states
+in the vocabulary of the other checks.

@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Review an ID verification — Taytay Social Welfare</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Inter+Tight:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#EEF1F6}
+.theme-light{--page:radial-gradient(620px 520px at 6% 4%, rgba(45,84,224,0.55), transparent 70%), radial-gradient(560px 460px at 96% 10%, rgba(245,218,24,0.55), transparent 70%), radial-gradient(640px 520px at 88% 72%, rgba(224,9,10,0.22), transparent 70%), radial-gradient(700px 560px at 18% 78%, rgba(10,32,113,0.30), transparent 70%), radial-gradient(520px 420px at 52% 40%, rgba(91,130,255,0.25), transparent 70%), #E7ECF7;--card:linear-gradient(135deg, rgba(255,255,255,0.62), rgba(255,255,255,0.28));--card-solid:#FFFFFF;--card-flat:rgba(255,255,255,0.4);--card-edge:rgba(255,255,255,0.7);--card-shadow:none;--primary:#0A2071;--deep:#08124A;--ink:#08124A;--text:#1B2540;--text2:#2B3550;--muted:#5A6478;--muted2:#6B7489;--soft:rgba(10,32,113,0.06);--soft2:rgba(255,255,255,0.42);--field:rgba(255,255,255,0.55);--sel:rgba(45,84,224,0.12);--hover:rgba(255,255,255,0.55);--line:rgba(10,32,113,0.10);--line2:rgba(10,32,113,0.18);--field-line:#8A93A6;--axis:rgba(10,32,113,0.16);--dash:#9AA3B5;--area:rgba(45,84,224,0.16);--bar:#1D3A9C;--gold-tint:rgba(245,218,24,0.28);--gold-tint2:rgba(245,218,24,0.18);--gold-ink:#5C4D00;--gold-ink2:#3D3505;--red-tint:rgba(224,9,10,0.12);--red-ink:#B00708;--red-ink2:#7A0506;--green-tint:rgba(46,160,90,0.16);--green-ink:#17663A;--blue-tint:rgba(45,84,224,0.14);--link:#0A2071;--link-hover:#1D3A9C;--accent-line:#0A2071;--chart-line:#0A2071;--glow:none;--scrim:rgba(8,18,74,0.5);--scrim2:rgba(8,18,74,0.55);--ring:#FFFFFF;--option-bg:#FFFFFF;--option-ink:#08124A;color-scheme:light}
+.theme-dark{--page:radial-gradient(640px 520px at 6% 4%, rgba(45,84,224,0.65), transparent 70%), radial-gradient(520px 440px at 96% 8%, rgba(245,218,24,0.22), transparent 70%), radial-gradient(640px 520px at 88% 74%, rgba(224,9,10,0.30), transparent 70%), radial-gradient(700px 560px at 16% 80%, rgba(91,130,255,0.35), transparent 70%), radial-gradient(520px 420px at 52% 40%, rgba(10,32,113,0.9), transparent 70%), #040A22;--card:linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));--card-solid:#0C1A4F;--card-flat:rgba(255,255,255,0.05);--card-edge:rgba(255,255,255,0.16);--card-shadow:none;--primary:#2D54E0;--deep:#0A2071;--ink:#FFFFFF;--text:#E6EBF7;--text2:#C9D2E8;--muted:#9AA6C4;--muted2:#8C98B8;--soft:rgba(255,255,255,0.06);--soft2:rgba(255,255,255,0.04);--field:rgba(255,255,255,0.05);--sel:rgba(91,130,255,0.14);--hover:rgba(255,255,255,0.08);--line:rgba(255,255,255,0.08);--line2:rgba(255,255,255,0.16);--field-line:rgba(255,255,255,0.24);--axis:rgba(255,255,255,0.12);--dash:rgba(255,255,255,0.3);--area:rgba(45,84,224,0.35);--bar:#3A63F0;--gold-tint:rgba(245,218,24,0.14);--gold-tint2:rgba(245,218,24,0.10);--gold-ink:#F5DA18;--gold-ink2:#F7E27A;--red-tint:rgba(224,9,10,0.18);--red-ink:#FF8A8A;--red-ink2:#FFB3B3;--green-tint:rgba(46,160,90,0.18);--green-ink:#6EE7A0;--blue-tint:rgba(91,130,255,0.18);--link:#9DB6FF;--link-hover:#C4D3FF;--accent-line:#5B82FF;--chart-line:#7C9BFF;--glow:none;--scrim:rgba(2,6,20,0.72);--scrim2:rgba(2,6,20,0.78);--ring:#040A22;--option-bg:#0B1640;--option-ink:#FFFFFF;color-scheme:dark}
+body:has(.theme-dark){background:#040A22}
+select{-webkit-appearance:none;appearance:none;padding-right:46px !important;cursor:pointer;background-image:linear-gradient(45deg, transparent 50%, currentColor 50%),linear-gradient(135deg, currentColor 50%, transparent 50%) !important;background-position:calc(100% - 24px) 50%,calc(100% - 18px) 50% !important;background-size:6px 6px,6px 6px !important;background-repeat:no-repeat !important}
+option{background:var(--option-bg);color:var(--option-ink)}
+[style*="var(--card)"]{border:1px solid var(--card-edge);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%)}
+.theme-btn[aria-pressed="false"]:hover{background:var(--hover) !important}
+a{color:var(--link)}a:hover{color:var(--link-hover)}
+button,select,input,textarea{font:inherit}
+:focus-visible{outline:3px solid #F5DA18;outline-offset:2px}
+.skip{position:absolute;left:-9999px}.skip:focus{left:24px;top:24px;z-index:10;background:#FFFFFF;padding:10px 16px;border-radius:999px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.nav-item:hover{background:var(--hover)}
+.pill:hover{background:var(--hover)}
+.pill-dark:hover{background:#3A63F0}
+.trow:hover{background:var(--field)}
+.kpi{transition:background-color 160ms ease,color 160ms ease,box-shadow 160ms ease}
+.kpi:hover{background:var(--primary) !important;color:#FFFFFF !important}
+.kpi:hover span{color:#FFFFFF !important}
+.kpi:hover span.kpi-keep{color:var(--gold-ink) !important}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="position: relative; min-height: 100vh; box-sizing: border-box; display: flex; flex-wrap: wrap; gap: 16px; padding: 16px; background: var(--page); font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14.5px; line-height: 1.5; color: var(--text)">
+  <a href="#main-content" class="skip">Skip to main content</a>
+
+  <aside aria-label="Main navigation" style="flex: 1 1 256px; max-width: 100%; box-sizing: border-box; background: var(--card); border-radius: 24px; padding: 20px 14px 16px; display: flex; flex-direction: column; gap: 16px">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 2px 6px; text-decoration: none">
+      <span role="img" aria-label="Municipal seal not available" title="The official seal has not been supplied to this application. A neutral placeholder is shown in its place." style="width: 46px; height: 46px; flex: 0 0 46px; border-radius: 999px; border: 1.5px dashed var(--dash); background: var(--soft2); display: grid; place-items: center; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: var(--muted)"><span aria-hidden="true">TR</span></span>
+      <span style="display: flex; flex-direction: column; line-height: 1.25; min-width: 0">
+        <span style="font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 16px; font-weight: 600; color: var(--ink)">Taytay Social Welfare</span>
+        <span style="font-size: 11.5px; color: var(--muted)">Municipal Social Welfare and Development Office</span>
+      </span>
+    </a>
+    <nav aria-label="Main navigation" style="display: flex; flex-direction: column; gap: 4px">
+      <sc-for list="{{nav}}" as="section" hint-placeholder-count="5">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <button type="button" class="nav-item" onClick="{{section.toggle}}" aria-expanded="{{section.open}}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 34px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: var(--muted2); font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; cursor: pointer; text-align: left">
+            <span>{{section.title}}</span>
+            <sc-if value="{{section.open}}" hint-placeholder-val="{{true}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></sc-if>
+            <sc-if value="{{section.closed}}" hint-placeholder-val="{{false}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg></sc-if>
+          </button>
+          <sc-if value="{{section.open}}" hint-placeholder-val="{{true}}">
+            <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px">
+              <sc-for list="{{section.items}}" as="item" hint-placeholder-count="4">
+                <li>
+                  <sc-if value="{{item.active}}" hint-placeholder-val="{{false}}">
+                    <a href="{{item.href}}" aria-current="page" style="display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 0 12px; border-radius: 12px; background: var(--primary); color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none">
+                      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5DA18" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: 0 0 18px"><path d="{{item.icon}}"></path></svg>
+                      <span>{{item.label}}</span>
+                    </a>
+                  </sc-if>
+                  <sc-if value="{{item.inactive}}" hint-placeholder-val="{{true}}">
+                    <a href="{{item.href}}" class="nav-item" style="display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 12px; border-radius: 12px; color: var(--text2); font-size: 14px; font-weight: 500; text-decoration: none">
+                      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: 0 0 18px"><path d="{{item.icon}}"></path></svg>
+                      <span>{{item.label}}</span>
+                    </a>
+                  </sc-if>
+                </li>
+              </sc-for>
+            </ul>
+          </sc-if>
+        </div>
+      </sc-for>
+    </nav>
+    <footer style="margin-top: auto; display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 18px; background: var(--soft2)">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span aria-hidden="true" style="width: 38px; height: 38px; flex: 0 0 38px; border-radius: 999px; background: var(--primary); color: #F5DA18; display: grid; place-items: center; font-size: 13px; font-weight: 700">MA</span>
+        <span style="display: flex; flex-direction: column; line-height: 1.3; min-width: 0">
+          <span style="font-size: 14px; font-weight: 600; color: var(--ink)">Marisol Alcantara</span>
+          <span style="font-size: 12.5px; color: var(--muted)">Administrator · All barangays</span>
+        </span>
+      </div>
+      <a href="SignIn.dc.html" class="pill" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; border-radius: 999px; border: 1px solid var(--line2); background: var(--card); color: var(--ink); font-size: 13.5px; font-weight: 600; text-decoration: none">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path></svg>Sign out</a>
+    </footer>
+  </aside>
+
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+    <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 4px 8px 0">
+      <nav aria-label="Breadcrumb" style="flex: 1 1 180px; font-size: 13.5px; color: var(--muted)">
+        <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+          <li><a href="Main.dc.html" style="color: var(--muted); text-decoration: none">Dashboard</a></li>
+          <li aria-hidden="true">/</li>
+          <li aria-current="page" style="color: var(--ink); font-weight: 600">ID verification</li>
+        </ol>
+      </nav>
+      <a href="#" class="pill" style="flex: 0 1 380px; display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 8px 0 16px; border-radius: 999px; background: var(--card); color: var(--muted); text-decoration: none; font-size: 14px">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <span style="flex: 1 1 auto"><span class="vh">Search: </span>Search residents, requests, programmes…</span>
+        <kbd style="font-family: inherit; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--soft); color: var(--text2)">Ctrl K</kbd>
+      </a>
+      <div role="group" aria-label="Appearance" style="display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--card)"><button type="button" class="theme-btn" aria-pressed="{{isLight}}" onClick="{{setLight}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: {{lightBg}}; color: {{lightFg}}; font-size: 13.5px; font-weight: 600; cursor: pointer"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>Light</button><button type="button" class="theme-btn" aria-pressed="{{isDark}}" onClick="{{setDark}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: {{darkBg}}; color: {{darkFg}}; font-size: 13.5px; font-weight: 600; cursor: pointer"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>Dark</button></div>
+      <button type="button" aria-label="Notifications, 3 unread notifications" class="pill" style="position: relative; width: 46px; height: 46px; display: grid; place-items: center; border: 0; border-radius: 999px; background: var(--card); color: var(--ink); cursor: pointer">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+        <span aria-hidden="true" style="position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: #E0090A; color: #FFFFFF; font-size: 11px; font-weight: 700; display: grid; place-items: center; border: 2px solid var(--ring)">3</span>
+      </button>
+    </header>
+
+    <main id="main-content" style="display: flex; flex-direction: column; gap: 20px; padding: 0 8px 8px">
+      <div style="display: flex; flex-direction: column; gap: 8px; max-width: 820px">
+        <h1 style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 42px; line-height: 1.05; font-weight: 500; letter-spacing: -0.025em; color: var(--ink)">ID verification</h1>
+        <p style="margin: 0; font-size: 15px; color: var(--muted); text-wrap: pretty">Residents who asked, from the residents’ app, to have their account verified against a government ID and a selfie.</p>
+      </div>
+
+      <section aria-label="Queue figures" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 16px">
+        <div class="kpi" style="display: flex; flex-direction: column; gap: 4px; padding: 18px 20px; border-radius: 24px; background: var(--card); color: var(--ink)">
+          <span style="font-size: 13.5px; font-weight: 600; color: var(--text2)">Awaiting review</span>
+          <span style="font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 38px; line-height: 1.05; font-weight: 500; letter-spacing: -0.02em">12</span>
+          <span style="font-size: 12.5px; color: var(--muted)">Sent and not yet decided.</span>
+        </div>
+        <div class="kpi" style="display: flex; flex-direction: column; gap: 4px; padding: 18px 20px; border-radius: 24px; background: var(--card)">
+          <span style="font-size: 13.5px; font-weight: 600; color: var(--text2)">Oldest waiting</span>
+          <span style="display: flex; align-items: baseline; gap: 8px"><span style="font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 38px; line-height: 1.05; font-weight: 500; letter-spacing: -0.02em; color: var(--ink)">5</span><span style="font-size: 14px; color: var(--muted)">days</span></span>
+          <span class="kpi-keep" style="display: inline-flex; align-self: flex-start; padding: 2px 10px; border-radius: 999px; background: var(--gold-tint); color: var(--gold-ink); font-size: 12.5px; font-weight: 600">Sent 5 Nov 2026, 15:03</span>
+        </div>
+        <div class="kpi" style="display: flex; flex-direction: column; gap: 4px; padding: 18px 20px; border-radius: 24px; background: var(--card)">
+          <span style="font-size: 13.5px; font-weight: 600; color: var(--text2)">Decided, last 7 days</span>
+          <span style="font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 38px; line-height: 1.05; font-weight: 500; letter-spacing: -0.02em; color: var(--ink)">9</span>
+          <span aria-hidden="true" style="display: flex; height: 8px; border-radius: 999px; overflow: hidden; gap: 2px"><span style="width: 78%; background: var(--bar)"></span><span style="width: 22%; background: #E0090A"></span></span>
+          <span style="font-size: 12.5px; color: var(--muted)">7 approved · 2 rejected</span>
+        </div>
+        <div class="kpi" style="display: flex; flex-direction: column; gap: 4px; padding: 18px 20px; border-radius: 24px; background: var(--card)">
+          <span style="font-size: 13.5px; font-weight: 600; color: var(--text2)">Sent, last 7 days</span>
+          <span style="font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 38px; line-height: 1.05; font-weight: 500; letter-spacing: -0.02em; color: var(--ink)">14</span>
+          <span aria-hidden="true" style="display: flex; align-items: flex-end; gap: 4px; height: 26px"><span style="flex: 1; height: 40%; border-radius: 4px; background: var(--line2)"></span><span style="flex: 1; height: 60%; border-radius: 4px; background: var(--line2)"></span><span style="flex: 1; height: 30%; border-radius: 4px; background: var(--line2)"></span><span style="flex: 1; height: 20%; border-radius: 4px; background: var(--line2)"></span><span style="flex: 1; height: 20%; border-radius: 4px; background: var(--line2)"></span><span style="flex: 1; height: 70%; border-radius: 4px; background: var(--line2)"></span><span style="flex: 1; height: 100%; border-radius: 4px; background: #F5DA18"></span></span>
+        </div>
+      </section>
+
+      <section aria-labelledby="verification-queue-heading" style="padding: 22px; border-radius: 28px; background: var(--card); display: flex; flex-direction: column; gap: 16px">
+        <h2 id="verification-queue-heading" class="vh">ID verification requests</h2>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+          <div role="group" aria-labelledby="show-label" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+            <span id="show-label" style="font-size: 13px; font-weight: 600; color: var(--text2)">Show</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 999px; background: var(--soft)">
+              <sc-for list="{{filters}}" as="o" hint-placeholder-count="4">
+                <sc-if value="{{o.on}}" hint-placeholder-val="{{false}}"><button type="button" aria-pressed="true" onClick="{{o.pick}}" style="min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--primary); color: #FFFFFF; font-size: 13.5px; font-weight: 600; cursor: pointer">{{o.label}}</button></sc-if>
+                <sc-if value="{{o.off}}" hint-placeholder-val="{{true}}"><button type="button" aria-pressed="false" onClick="{{o.pick}}" style="min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: var(--text2); font-size: 13.5px; font-weight: 500; cursor: pointer">{{o.label}}</button></sc-if>
+              </sc-for>
+            </div>
+          </div>
+          <p style="margin: 0; font-size: 12.5px; color: var(--muted)">Newest first, as the server sends them.</p>
+        </div>
+        <p style="margin: 0; display: flex; gap: 10px; padding: 12px 16px; border-radius: 16px; background: var(--gold-tint2); font-size: 13px; color: var(--gold-ink2); text-wrap: pretty">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5DA18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: 0 0 18px; margin-top: 1px"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"></path></svg>
+          <span>Besides the ID and the selfie, the server sends only the name and birth date the account gives, and only while a request is waiting — they appear in the review, not in this list. A review establishes that the selfie shows the person on the ID, that the ID is legible and of the kind stated, and that it shows the name the account gives.</span>
+        </p>
+        <div style="overflow-x: auto">
+          <table style="width: 100%; min-width: 600px; border-collapse: separate; border-spacing: 0; font-size: 14px">
+            <caption class="vh">ID verification requests</caption>
+            <thead>
+              <tr>
+                <th scope="col" style="text-align: left; padding: 10px 16px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted2); background: var(--soft2); border-radius: 12px 0 0 12px">Sent</th>
+                <th scope="col" style="text-align: left; padding: 10px 16px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted2); background: var(--soft2)">ID sent</th>
+                <th scope="col" style="text-align: left; padding: 10px 16px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted2); background: var(--soft2)">Status</th>
+                <th scope="col" style="text-align: right; padding: 10px 16px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted2); background: var(--soft2); border-radius: 0 12px 12px 0">Review</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+                <tr class="trow">
+                  <td style="padding: 14px 16px; border-bottom: 1px solid var(--soft); font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums"><time datetime="{{r.iso}}">{{r.sent}}</time></td>
+                  <td style="padding: 14px 16px; border-bottom: 1px solid var(--soft)">
+                    <span style="display: inline-flex; align-items: center; gap: 10px"><span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 12px; background: var(--soft); color: var(--link); display: grid; place-items: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18v14H3zM8 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM5 16c.6-1.6 1.7-2 3-2s2.4.4 3 2M14 9h4M14 13h4"></path></svg></span>{{r.idType}}</span>
+                  </td>
+                  <td style="padding: 14px 16px; border-bottom: 1px solid var(--soft)"><span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: {{r.badgeBg}}; color: {{r.badgeFg}}; font-size: 12.5px; font-weight: 600"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 999px; background: {{r.dot}}"></span>{{r.statusLabel}}</span></td>
+                  <td style="padding: 14px 16px; border-bottom: 1px solid var(--soft); text-align: right">
+                    <button type="button" onClick="{{r.open}}" aria-label="Review the request sent {{r.sent}}" class="pill" style="display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 6px 0 16px; border: 1px solid var(--line2); border-radius: 999px; background: var(--card); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer">Review<span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 999px; background: var(--primary); color: #FFFFFF; display: grid; place-items: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"></path></svg></span></button>
+                  </td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+          <div style="padding: 28px; border-radius: 20px; background: var(--soft2); text-align: center">
+            <p style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 18px; font-weight: 500; color: var(--ink)">Nothing here</p>
+            <p style="margin: 4px 0 0; font-size: 13.5px; color: var(--muted)">{{emptyMessage}}</p>
+          </div>
+        </sc-if>
+        <sc-if value="{{hasRows}}" hint-placeholder-val="{{true}}">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+            <p role="status" style="margin: 0; font-size: 13px; color: var(--muted)">{{shown}} More are available.</p>
+            <button type="button" class="pill" style="min-height: 42px; padding: 0 20px; border: 1px solid var(--field-line); border-radius: 999px; background: var(--card); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer">Show more</button>
+          </div>
+        </sc-if>
+      </section>
+    </main>
+  </div>
+
+  <sc-if value="{{drawerOpen}}" hint-placeholder-val="{{true}}">
+    <div style="position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 24px; box-sizing: border-box; background: var(--scrim)">
+      <button type="button" aria-label="Close" tabindex="-1" onClick="{{close}}" style="position: absolute; inset: 0; border: 0; background: transparent; cursor: default"></button>
+      <section role="dialog" aria-modal="true" aria-labelledby="drawer-heading" style="position: relative; width: 100%; max-width: 1000px; max-height: calc(100vh - 48px); box-sizing: border-box; border-radius: 28px; background: var(--card-solid); display: flex; flex-direction: column; overflow: hidden">
+        <header style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 24px; border-bottom: 1px solid var(--soft)">
+          <h2 id="drawer-heading" style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 24px; font-weight: 500; letter-spacing: -0.01em; color: var(--ink)">Review an ID verification</h2>
+          <button type="button" onClick="{{close}}" class="pill" style="width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 999px; background: var(--soft); color: var(--ink); cursor: pointer"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg><span class="vh">Close</span></button>
+        </header>
+        <div style="flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 20px 24px 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr)); gap: 16px; align-items: start">
+          <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+
+          <section aria-labelledby="review-details" style="padding: 18px; border-radius: 20px; background: var(--soft2); display: flex; flex-direction: column; gap: 12px">
+            <h3 id="review-details" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--ink)">The request</h3>
+            <dl style="margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); gap: 12px 16px; font-size: 14px">
+              <div><dt style="font-size: 12px; font-weight: 600; color: var(--muted)">Status</dt><dd style="margin: 4px 0 0"><span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 12px; border-radius: 999px; background: {{sel.badgeBg}}; color: {{sel.badgeFg}}; font-size: 12.5px; font-weight: 600"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 999px; background: {{sel.dot}}"></span>{{sel.statusLabel}}</span></dd></div>
+              <div><dt style="font-size: 12px; font-weight: 600; color: var(--muted)">ID sent</dt><dd style="margin: 4px 0 0; font-weight: 600; color: var(--ink)">{{sel.idType}}</dd></div>
+              <div><dt style="font-size: 12px; font-weight: 600; color: var(--muted)">Sent</dt><dd style="margin: 4px 0 0; font-weight: 600; color: var(--ink)">{{sel.sent}}</dd></div>
+              <sc-if value="{{sel.hasDecided}}" hint-placeholder-val="{{false}}"><div><dt style="font-size: 12px; font-weight: 600; color: var(--muted)">Decided</dt><dd style="margin: 4px 0 0; font-weight: 600; color: var(--ink)">{{sel.decided}}</dd></div></sc-if>
+            </dl>
+            <sc-if value="{{sel.hasMessage}}" hint-placeholder-val="{{false}}">
+              <div style="padding: 12px 14px; border-radius: 14px; background: var(--card)"><p style="margin: 0; font-size: 12px; font-weight: 600; color: var(--muted)">What the resident wrote with their correction</p><p style="margin: 4px 0 0; font-size: 14px; color: var(--ink)">{{sel.message}}</p></div>
+            </sc-if>
+            <sc-if value="{{sel.hasNote}}" hint-placeholder-val="{{false}}">
+              <div style="padding: 12px 14px; border-radius: 14px; background: var(--card)"><p style="margin: 0; font-size: 12px; font-weight: 600; color: var(--muted)">{{sel.noteLabel}}</p><p style="margin: 4px 0 0; font-size: 14px; color: var(--ink)">{{sel.note}}</p></div>
+            </sc-if>
+          </section>
+
+          <sc-if value="{{sel.decidable}}" hint-placeholder-val="{{true}}">
+            <section aria-labelledby="review-account" style="padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+              <h3 id="review-account" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--ink)">What the account says</h3>
+              <sc-if value="{{sel.hasName}}" hint-placeholder-val="{{true}}">
+                <p style="margin: 0; font-size: 13px; color: var(--muted); text-wrap: pretty">The resident gave these when they made their account. Check them against the ID: approving says the ID shows this name.</p>
+                <dl style="margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 12px 16px">
+                  <div><dt style="font-size: 12px; font-weight: 600; color: var(--muted)">Name</dt><dd style="margin: 2px 0 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 22px; font-weight: 500; color: var(--ink)">{{sel.name}}</dd></div>
+                  <div><dt style="font-size: 12px; font-weight: 600; color: var(--muted)">Birth date</dt><dd style="margin: 2px 0 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: {{sel.birthSize}}; font-weight: 500; color: var(--ink)">{{sel.birth}}</dd></div>
+                </dl>
+              </sc-if>
+              <sc-if value="{{sel.noName}}" hint-placeholder-val="{{false}}">
+                <p style="margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--red-tint); color: var(--red-ink2); font-size: 13.5px; text-wrap: pretty">The account gives no name, so there is nothing to check against the ID and this request cannot be approved. Reject it, and ask the resident to add the name printed on their ID.</p>
+              </sc-if>
+            </section>
+          </sc-if>
+
+          <section aria-labelledby="review-images" style="padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+            <h3 id="review-images" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--ink)">The images</h3>
+            <sc-if value="{{imagesIdle}}" hint-placeholder-val="{{true}}">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 18px; border-radius: 16px; background: repeating-linear-gradient(135deg, var(--soft2) 0 10px, var(--soft) 10px 20px)">
+                <p style="flex: 1 1 260px; margin: 0; font-size: 13.5px; color: var(--text2); text-wrap: pretty">The ID and the selfie are not loaded until you ask. They are a government ID and a photograph of somebody’s face.</p>
+                <button type="button" onClick="{{askToOpen}}" class="pill-dark" style="min-height: 44px; padding: 0 20px; border: 0; border-radius: 999px; background: var(--primary); color: #FFFFFF; font-size: 14px; font-weight: 600; cursor: pointer">Show the ID and the selfie</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{imagesReady}}" hint-placeholder-val="{{false}}">
+              <p style="margin: 0; font-size: 13px; color: var(--muted)">Shown in this tab only while this review is open. They are discarded when you hide them, close the review or leave the page.</p>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); gap: 12px">
+                <sc-for list="{{sel.images}}" as="img" hint-placeholder-count="3">
+                  <figure style="margin: 0; display: flex; flex-direction: column; gap: 6px">
+                    <div role="img" aria-label="{{img}} (placeholder)" style="aspect-ratio: 1.4; border-radius: 14px; background: repeating-linear-gradient(135deg, var(--line) 0 10px, var(--soft) 10px 20px); display: grid; place-items: center; color: var(--muted); font-size: 12.5px; font-weight: 600">Image</div>
+                    <figcaption style="font-size: 12.5px; font-weight: 600; color: var(--text2)">{{img}}</figcaption>
+                  </figure>
+                </sc-for>
+              </div>
+              <button type="button" onClick="{{hideImages}}" class="pill" style="align-self: flex-start; min-height: 42px; padding: 0 18px; border: 1px solid var(--field-line); border-radius: 999px; background: var(--card); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer">Hide the images</button>
+            </sc-if>
+          </section>
+
+          </div>
+          <section aria-labelledby="review-decision" style="padding: 18px; border-radius: 20px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px">
+            <h3 id="review-decision" style="margin: 0; font-size: 15px; font-weight: 700; color: var(--ink)">Decide</h3>
+            <sc-if value="{{deciding}}" hint-placeholder-val="{{true}}">
+              <sc-if value="{{notOpened}}" hint-placeholder-val="{{true}}">
+                <p style="margin: 0; display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 14px; background: var(--gold-tint); color: var(--gold-ink); font-size: 13.5px; font-weight: 500"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4M12 16h.01"></path></svg>You have not opened the images in this review.</p>
+              </sc-if>
+              <h4 style="margin: 0; font-size: 14px; font-weight: 600; color: var(--text2)">Approve or reject this request</h4>
+              <p style="margin: 0; font-size: 13.5px; color: var(--text2)">Currently: <strong>Awaiting review</strong> <span style="color: var(--muted)">The resident sent an ID and a selfie, and nobody in the office has decided yet.</span></p>
+              <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text2)">Decision
+                <sc-if value="{{sel.hasName}}" hint-placeholder-val="{{true}}">
+                  <select value="{{decision}}" onChange="{{onDecision}}" style="min-height: 46px; padding: 0 14px; border: 1px solid var(--field-line); border-radius: 14px; background: var(--card); color: var(--ink); font-size: 14.5px; font-weight: 500">
+                    <option value="">—</option><option value="approved">Approved</option><option value="rejected">Rejected</option>
+                  </select>
+                </sc-if>
+                <sc-if value="{{sel.noName}}" hint-placeholder-val="{{false}}">
+                  <select value="{{decision}}" onChange="{{onDecision}}" style="min-height: 46px; padding: 0 14px; border: 1px solid var(--field-line); border-radius: 14px; background: var(--card); color: var(--ink); font-size: 14.5px; font-weight: 500">
+                    <option value="">—</option><option value="rejected">Rejected</option>
+                  </select>
+                </sc-if>
+              </label>
+              <sc-if value="{{chosen}}" hint-placeholder-val="{{false}}">
+                <p style="margin: 0; font-size: 13px; color: var(--muted)">{{choiceDescription}}</p>
+                <div style="padding: 14px 16px; border-radius: 16px; background: var(--soft2)">
+                  <p style="margin: 0 0 6px; font-size: 13px; font-weight: 700; color: var(--ink)">What happens when you confirm</p>
+                  <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; color: var(--text2)">
+                    <sc-for list="{{effects}}" as="e" hint-placeholder-count="3"><li>{{e}}</li></sc-for>
+                  </ul>
+                </div>
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text2)">{{reasonLabel}}
+                  <textarea rows="3" maxlength="1000" onInput="{{onReason}}" style="padding: 12px 14px; border: 1px solid var(--field-line); border-radius: 14px; font-size: 14px; font-weight: 400; color: var(--ink); resize: vertical"></textarea>
+                  <span style="font-size: 12.5px; font-weight: 400; color: var(--muted); text-wrap: pretty">{{reasonHint}}</span>
+                </label>
+                <sc-if value="{{needsTick}}" hint-placeholder-val="{{false}}">
+                  <div style="display: flex; flex-direction: column; gap: 4px">
+                    <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer">
+                      <input type="checkbox" checked="{{ticked}}" onChange="{{onTick}}" style="width: 18px; height: 18px; margin: 2px 0 0; flex: 0 0 18px; accent-color: var(--link)">{{statement}}</label>
+                    <p style="margin: 0 0 0 28px; font-size: 12.5px; color: var(--muted); text-wrap: pretty">Required to approve. If the ID shows a different name, reject the request and say so. Once approved, the resident cannot change their name or birth date in the app.</p>
+                  </div>
+                </sc-if>
+              </sc-if>
+              <sc-if value="{{canConfirm}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{record}}" class="pill-dark" style="min-height: 48px; border: 0; border-radius: 999px; background: var(--primary); color: #FFFFFF; font-size: 15px; font-weight: 600; cursor: pointer">Record the decision</button></sc-if>
+              <sc-if value="{{cannotConfirm}}" hint-placeholder-val="{{true}}"><button type="button" disabled style="min-height: 48px; border: 0; border-radius: 999px; background: var(--line); color: var(--muted); font-size: 15px; font-weight: 600; cursor: not-allowed">Record the decision</button></sc-if>
+            </sc-if>
+            <sc-if value="{{showAwaitingResident}}" hint-placeholder-val="{{false}}"><p style="margin: 0; font-size: 13.5px; color: var(--text2)">The resident may correct this request and send it again from the app. It then returns to the queue; nothing is done here until it does.</p></sc-if>
+            <sc-if value="{{showAlreadyDecided}}" hint-placeholder-val="{{false}}"><p style="margin: 0; font-size: 13.5px; color: var(--text2)">This request has been decided. Nothing further is done here.</p></sc-if>
+            <p role="status" aria-live="polite" style="margin: 0; font-size: 14px; font-weight: 600; color: var(--green-ink)">{{outcome}}</p>
+          </section>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{warningOpen}}" hint-placeholder-val="{{false}}">
+    <div style="position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 24px; background: var(--scrim2)">
+      <section role="alertdialog" aria-modal="true" aria-labelledby="warning-heading" style="width: 100%; max-width: 480px; box-sizing: border-box; padding: 26px; border-radius: 28px; background: var(--card-solid); display: flex; flex-direction: column; gap: 14px">
+        <span aria-hidden="true" style="width: 48px; height: 48px; border-radius: 999px; background: #F5DA18; color: #08124A; display: grid; place-items: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path></svg></span>
+        <h2 id="warning-heading" style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 22px; font-weight: 500; color: var(--ink)">Before you open these images</h2>
+        <p style="margin: 0; font-size: 14px; color: var(--text2)">You are about to see a resident’s government ID and a photograph of their face.</p>
+        <p style="margin: 0; font-size: 14px; color: var(--text2)">Open them only to decide this request, and only where nobody else can see your screen.</p>
+        <p style="margin: 0; font-size: 14px; color: var(--text2)">They are not saved on this computer. Do not copy, download or photograph them.</p>
+        <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 6px">
+          <button type="button" onClick="{{cancelOpen}}" class="pill" style="min-height: 46px; padding: 0 20px; border: 1px solid var(--field-line); border-radius: 999px; background: var(--card); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer">Cancel</button>
+          <button type="button" onClick="{{confirmOpen}}" class="pill-dark" style="min-height: 46px; padding: 0 22px; border: 0; border-radius: 999px; background: var(--primary); color: #FFFFFF; font-size: 14px; font-weight: 600; cursor: pointer">Show them</button>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1060}}'>
+class Component extends DCLogic {
+  nav(activeLabel) {
+    var self = this;
+    var I = {
+      grid: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z', check: 'M9 11l3 3 8-8M20 12v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11',
+      folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', file: 'M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M9 13h6M9 17h6',
+      user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0', heart: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
+      home: 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-5h4v5', users: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-4-6.3',
+      pin: 'M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', share: 'M15 4h5v5M20 4l-8 8M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
+      layers: 'M12 3l9 5-9 5-9-5zM3 13l9 5 9-5', cash: 'M3 7h18v10H3zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 10v.01M18 14v.01', chart: 'M4 20V10M10 20V4M16 20v-7M2 20h20',
+      cal: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4', shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4', inbox: 'M3 13l3-8h12l3 8v6H3zM3 13h5l1 3h6l1-3h5',
+      doc: 'M14 3H6v18h12V7zM14 3v4h4M12 11v6M9 14h6', ucog: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 11-5.7M18 15v6M15 18h6',
+      building: 'M4 21V5l8-2v18M12 7l8 2v12M7 9h2M7 13h2M7 17h2M15 12h2M15 16h2M2 21h20', phone: 'M7 2h10a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM11 18h2',
+      sliders: 'M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4', idcard: 'M3 5h18v14H3zM8 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM5 16c.6-1.6 1.7-2 3-2s2.4.4 3 2M14 9h4M14 13h4',
+      news: 'M4 5h13v14a1 1 0 0 0 1 1H5a1 1 0 0 1-1-1zM17 9h3v10a1 1 0 0 1-2 0M7 9h7M7 13h7M7 17h4', history: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2',
+      staff: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6', clip: 'M9 4h6v3H9zM7 5H5v16h14V5h-2M9 12h6M9 16h4',
+      gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1'
+    };
+    var NAV = [
+      { title: 'Casework', items: [['Dashboard', 'grid', 'Main.dc.html'], ['My work', 'check'], ['Cases', 'folder'], ['Assistance requests', 'file'], ['Residents', 'user', 'Residents.dc.html'], ['Beneficiaries', 'heart'], ['Households', 'home'], ['Families', 'users'], ['Field visits', 'pin'], ['Referrals', 'share']] },
+      { title: 'Delivery', items: [['Programs', 'layers'], ['Releases', 'cash'], ['Reports', 'chart']] },
+      { title: 'Community', items: [['Events', 'cal']] },
+      { title: 'Residents’ app', items: [['ID verification', 'shield', 'VerificationQueue.dc.html'], ['Office inbox', 'inbox', 'OfficeInbox.dc.html'], ['Resident document requests', 'doc'], ['Users and roles', 'ucog', 'Users.dc.html'], ['App directory', 'building', 'AppDirectory.dc.html'], ['Home screen', 'phone'], ['App settings', 'sliders'], ['Digital IDs', 'idcard'], ['Balita', 'news'], ['App audit trail', 'history']] },
+      { title: 'Administration', items: [['Staff and roles', 'staff'], ['Audit trail', 'clip'], ['Settings', 'gear']] }
+    ];
+    var open = (this.state && this.state.open) || {};
+    return NAV.map(function (s) {
+      var hasActive = s.items.some(function (i) { return i[0] === activeLabel; });
+      var isOpen = open[s.title] === undefined ? hasActive : open[s.title];
+      return {
+        title: s.title, open: isOpen, closed: !isOpen,
+        toggle: function () { var next = Object.assign({}, open); next[s.title] = !isOpen; self.setState({ open: next }); },
+        items: s.items.map(function (i) { var active = i[0] === activeLabel; return { label: i[0], icon: I[i[1]], href: i[2] || '#', active: active, inactive: !active }; })
+      };
+    });
+  }
+  renderVals() {
+    var START_OPEN = 'r1';
+    var self = this;
+    var st = this.state || {};
+    var theme = st.theme || (function () { try { return localStorage.getItem('taytay-theme') || 'light'; } catch (e) { return 'light'; } })();
+    var setTheme = function (v) { try { localStorage.setItem('taytay-theme', v); } catch (e) {} self.setState({ theme: v }); };
+    var CAT = {
+      pending: { label: 'Awaiting review', bg: 'var(--gold-tint)', fg: 'var(--gold-ink)', dot: '#D9BF00', description: 'The resident sent an ID and a selfie, and nobody in the office has decided yet.' },
+      approved: { label: 'Approved', bg: 'var(--green-tint)', fg: 'var(--green-ink)', dot: 'var(--green-ink)', description: 'An administrator approved it, and the account was marked verified.' },
+      rejected: { label: 'Rejected', bg: 'var(--red-tint)', fg: 'var(--red-ink)', dot: '#E0090A', description: 'An administrator rejected it with a reason the resident reads in the app. The resident may correct it and send it again.' }
+    };
+    var ID = { philid: 'PhilSys national ID (PhilID)', dl: 'Driver’s licence', umid: 'UMID', postal: 'Postal ID', voters: 'Voter’s ID', passport: 'Passport', sss: 'SSS ID' };
+    var ALL = [
+      { id: 'r1', iso: '2026-11-10T10:42', sent: '10 Nov 2026, 10:42', idType: ID.philid, status: 'pending', name: 'Maricel Robles', birth: '14 March 1987' },
+      { id: 'r2', iso: '2026-11-10T09:51', sent: '10 Nov 2026, 09:51', idType: ID.dl, status: 'pending', name: 'Ligaya Santos', birth: '', message: 'I sent a clearer photo of the back of my licence.' },
+      { id: 'r3', iso: '2026-11-10T07:30', sent: '10 Nov 2026, 07:30', idType: ID.umid, status: 'pending', name: '' },
+      { id: 'r5', iso: '2026-11-08T14:48', sent: '8 Nov 2026, 14:48', idType: ID.voters, status: 'approved', decided: '8 Nov 2026, 15:20', note: 'Name, birth date and photo match the ID.' },
+      { id: 'r6', iso: '2026-11-07T09:12', sent: '7 Nov 2026, 09:12', idType: ID.passport, status: 'rejected', decided: '7 Nov 2026, 11:02', note: 'The photo of your passport is blurred. Send a clearer photo of the page with your picture.', single: true },
+      { id: 'r7', iso: '2026-11-06T08:40', sent: '6 Nov 2026, 08:40', idType: ID.sss, status: 'approved', decided: '6 Nov 2026, 10:15', note: 'Checked against the SSS ID.' },
+      { id: 'r4', iso: '2026-11-05T15:03', sent: '5 Nov 2026, 15:03', idType: ID.postal, status: 'pending', name: 'Ramon Bautista', birth: '2 June 1979' }
+    ];
+    var decidedNow = st.decidedNow || {};
+    var statusOf = function (r) { return decidedNow[r.id] || r.status; };
+    var filter = st.filter || 'pending';
+    var visible = ALL.filter(function (r) { return filter === 'all' || statusOf(r) === filter; });
+    var selId = st.sel === undefined ? START_OPEN : st.sel;
+    var sr = ALL.filter(function (r) { return r.id === selId; })[0] || null;
+    var images = st.images || 'idle';
+    var decision = st.decision || '';
+    var reason = st.reason || '';
+    var ticked = !!st.ticked;
+    var reset = { images: 'idle', opened: false, decision: '', reason: '', ticked: false, outcome: '', warning: false };
+    var sel = { images: [] };
+    var status = 'pending';
+    if (sr) {
+      status = statusOf(sr);
+      var c = CAT[status];
+      sel = {
+        idType: sr.idType, sent: sr.sent, statusLabel: c.label, badgeBg: c.bg, badgeFg: c.fg, dot: c.dot,
+        hasDecided: !!sr.decided, decided: sr.decided || '',
+        hasMessage: !!sr.message, message: sr.message || '',
+        hasNote: !!sr.note, note: sr.note || '', noteLabel: status === 'rejected' ? 'Reason given to the resident' : 'Note recorded with the decision',
+        decidable: status === 'pending', hasName: !!sr.name, noName: !sr.name, name: sr.name || '',
+        birth: sr.birth || 'None given. The residents’ app does not ask for one, so only the name is checked.',
+        birthSize: sr.birth ? '22px' : '14px',
+        images: sr.single ? ['Front of the ID', 'Selfie'] : ['Front of the ID', 'Back of the ID', 'Selfie']
+      };
+    }
+    var EFFECTS = {
+      approved: ['The name you confirmed is kept as the name this ID was approved under. From now on the resident cannot change their name or birth date in the app.', 'The account is marked verified. A resident account becomes a verified resident account; a staff or administrator account keeps its role.', 'If it is then a verified resident account that is not closed, a digital ID is issued with this selfie as its photo, unless the account already has one.', 'The resident is told in the app: “Your identity review was approved.”', 'Your note stays with the request for the office. The resident does not see it.', 'Nothing in this console can undo an approval.'],
+      rejected: ['The resident reads your reason in the app, as what was wrong with what they sent. Write it for them, in words they can act on.', 'The resident is told in the app: “Your identity review was rejected.”', 'The account stays registered. The resident may correct the request and send it again, and it returns to this queue.']
+    };
+    var needsTick = decision === 'approved' && sel.hasName;
+    var canConfirm = !!sr && status === 'pending' && decision !== '' && reason.trim().length >= 8 && (!needsTick || ticked);
+    var statement = sr && sr.name ? (sr.birth ? 'The ID shows the name “' + sr.name + '” and the birth date ' + sr.birth + '.' : 'The ID shows the name “' + sr.name + '”.') : '';
+    return {
+      themeClass: 'theme-' + theme, isLight: theme === 'light', isDark: theme === 'dark',
+      setLight: function () { setTheme('light'); }, setDark: function () { setTheme('dark'); },
+      lightBg: theme === 'light' ? 'var(--primary)' : 'transparent', lightFg: theme === 'light' ? '#FFFFFF' : 'var(--text2)',
+      darkBg: theme === 'dark' ? 'var(--primary)' : 'transparent', darkFg: theme === 'dark' ? '#FFFFFF' : 'var(--text2)',
+      nav: this.nav('ID verification'),
+      filters: [['pending', 'Awaiting review'], ['approved', 'Approved'], ['rejected', 'Rejected'], ['all', 'Every request']].map(function (o) {
+        return { label: o[1], on: filter === o[0], off: filter !== o[0], pick: function () { self.setState({ filter: o[0] }); } };
+      }),
+      rows: visible.map(function (r) {
+        var c = CAT[statusOf(r)];
+        return { iso: r.iso, sent: r.sent, idType: r.idType, statusLabel: c.label, badgeBg: c.bg, badgeFg: c.fg, dot: c.dot,
+          open: function () { self.setState(Object.assign({ sel: r.id }, reset)); } };
+      }),
+      hasRows: visible.length > 0, empty: visible.length === 0,
+      emptyMessage: filter === 'pending' ? 'No request is waiting for review.' : 'No request has this status.',
+      shown: visible.length === 1 ? 'Showing 1 request.' : 'Showing ' + visible.length + ' requests.',
+      drawerOpen: !!sr,
+      close: function () { self.setState(Object.assign({ sel: null }, reset)); },
+      sel: sel,
+      imagesIdle: images === 'idle', imagesReady: images === 'ready',
+      askToOpen: function () { self.setState({ warning: true }); },
+      cancelOpen: function () { self.setState({ warning: false }); },
+      confirmOpen: function () { self.setState({ warning: false, images: 'ready', opened: true }); },
+      hideImages: function () { self.setState({ images: 'idle' }); },
+      warningOpen: !!st.warning && !!sr,
+      deciding: !!sr && status === 'pending',
+      notOpened: !st.opened,
+      decision: decision,
+      onDecision: function (e) { self.setState({ decision: e.target.value, ticked: false }); },
+      chosen: decision !== '',
+      choiceDescription: decision ? CAT[decision].description : '',
+      effects: decision ? EFFECTS[decision] : [],
+      reasonLabel: decision === 'approved' ? 'Note for the office (the resident does not see this)' : 'Reason the resident will read',
+      reasonHint: decision === 'approved' ? 'Required, and kept with the request against your name. Up to 1,000 characters.' : 'Required. The resident reads exactly these words in the app as what was wrong, so say what to fix. Up to 1,000 characters.',
+      onReason: function (e) { self.setState({ reason: e.target.value }); },
+      needsTick: needsTick, ticked: ticked, statement: statement,
+      onTick: function () { self.setState({ ticked: !ticked }); },
+      canConfirm: canConfirm, cannotConfirm: !canConfirm,
+      record: function () {
+        var d = Object.assign({}, decidedNow); d[sr.id] = decision;
+        self.setState({ decidedNow: d, images: 'idle', outcome: decision === 'approved' ? 'Approved. The server marked the account verified.' : 'Rejected. The resident can now read your reason in the app.' });
+      },
+      showAwaitingResident: !!sr && status === 'rejected' && !st.outcome,
+      showAlreadyDecided: !!sr && status === 'approved' && !st.outcome,
+      outcome: st.outcome || ''
+    };
+  }
+}
+</script>
+</body>
+</html>
