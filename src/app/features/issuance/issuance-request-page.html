@@ -1,5 +1,8 @@
 <p class="request__back">
-  <a routerLink="..">{{ copy.back }}</a>
+  <a class="back-link" routerLink="..">
+    <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+    {{ copy.back }}
+  </a>
 </p>
 
 <app-async-content
@@ -16,17 +19,25 @@
         [subtitle]="copy.titleFallback"
       />
 
-      <ul class="request__boundaries">
-        @for (sentence of boundaries; track sentence) {
-          <li>{{ sentence }}</li>
-        }
-      </ul>
+      <div class="callout request__boundaries">
+        <app-icon name="info" [size]="18" [stroke]="2" />
+        <ul>
+          @for (sentence of boundaries; track sentence) {
+            <li>{{ sentence }}</li>
+          }
+        </ul>
+      </div>
 
-      <div class="request__layout">
-        <div class="request__main">
-          <section class="card request__block" aria-labelledby="issuance-details">
-            <h2 id="issuance-details" class="request__heading">{{ copy.detailsHeading }}</h2>
-            <dl class="request__facts">
+      <div class="split request__layout">
+        <div class="split__main request__main">
+          <section
+            class="card card--padded stack request__block"
+            aria-labelledby="issuance-details"
+          >
+            <h2 id="issuance-details" class="section-title request__heading">
+              {{ copy.detailsHeading }}
+            </h2>
+            <dl class="facts request__facts">
               <div>
                 <dt>{{ copy.status }}</dt>
                 <dd><app-status-badge [catalog]="catalog" [status]="request.status" /></dd>
@@ -74,47 +85,51 @@
                 <dd>{{ standard(request) }}</dd>
               </div>
               @if (request.claimInstructions; as instructions) {
-                <div>
+                <div class="facts__row--wide">
                   <dt>{{ copy.claimInstructions }}</dt>
                   <dd class="request__words">{{ instructions }}</dd>
                 </div>
               }
               @if (request.claimDetails; as details) {
-                <div>
+                <div class="facts__row--wide">
                   <dt>{{ copy.claimDetails }}</dt>
                   <dd class="request__words">{{ details }}</dd>
                 </div>
               }
             </dl>
-            <p class="request__aside">{{ copy.snapshotNote }}</p>
+            <p class="status-line request__aside">{{ copy.snapshotNote }}</p>
 
             <h3 class="request__subheading">{{ copy.purpose }}</h3>
             <p class="request__words">{{ request.purpose }}</p>
-            <p class="request__aside">{{ copy.purposeNote }}</p>
+            <p class="status-line request__aside">{{ copy.purposeNote }}</p>
           </section>
 
-          <section class="card request__block" aria-labelledby="issuance-files">
-            <h2 id="issuance-files" class="request__heading">{{ copy.requirementsHeading }}</h2>
-            <p class="request__aside">{{ copy.filesClosed }}</p>
+          <section class="card card--padded stack request__block" aria-labelledby="issuance-files">
+            <h2 id="issuance-files" class="section-title request__heading">
+              {{ copy.requirementsHeading }}
+            </h2>
+            <p class="status-line request__aside">{{ copy.filesClosed }}</p>
             @if (fileProblem()) {
-              <p class="request__problem" role="alert">{{ fileProblem() }}</p>
+              <p class="callout callout--danger request__problem" role="alert">
+                {{ fileProblem() }}
+              </p>
             }
 
-            <ol class="request__requirements">
+            <ol class="soft-list request__requirements">
               @for (requirement of request.requirements; track requirement.code) {
-                <li class="request__requirement">
+                <li class="soft-row soft-row--stacked request__requirement">
                   <p class="request__requirement-label">
                     {{ requirement.label }}
-                    <span class="request__aside">
+                    <span class="chip">
                       {{ requirement.required ? copy.required : copy.optional }}
                     </span>
                   </p>
                   @if (requirement.hint; as hint) {
-                    <p class="request__aside">{{ hint }}</p>
+                    <p class="status-line request__aside">{{ hint }}</p>
                   }
                   @let versions = versionsFor(request, requirement.code);
                   @if (versions.length === 0) {
-                    <p class="request__aside">{{ copy.nothingSent }}</p>
+                    <p class="status-line request__aside">{{ copy.nothingSent }}</p>
                   } @else {
                     <ul class="request__files">
                       @for (attachment of versions; track attachment.id) {
@@ -177,9 +192,11 @@
           </section>
         </div>
 
-        <div class="request__side">
-          <section class="card request__block" aria-labelledby="issuance-moves">
-            <h2 id="issuance-moves" class="request__heading">{{ copy.movesHeading }}</h2>
+        <div class="split__side request__side">
+          <section class="card card--padded stack request__block" aria-labelledby="issuance-moves">
+            <h2 id="issuance-moves" class="section-title request__heading">
+              {{ copy.movesHeading }}
+            </h2>
             @if (canMove(request)) {
               <app-status-transition
                 [catalog]="catalog"
@@ -199,25 +216,30 @@
                 (confirmed)="onMove($event)"
               />
             } @else if (awaitsResident(request)) {
-              <p class="request__aside">{{ copy.waitingOnResident }}</p>
+              <p class="status-line request__aside">{{ copy.waitingOnResident }}</p>
             } @else if (hasEnded(request)) {
-              <p class="request__aside">{{ copy.ended }}</p>
+              <p class="status-line request__aside">{{ copy.ended }}</p>
             }
             <!-- Always in the DOM, so a screen reader hears the outcome when the text arrives. -->
-            <p class="request__outcome" role="status">{{ outcome() }}</p>
+            <p class="status-line request__outcome" role="status">{{ outcome() }}</p>
           </section>
 
-          <section class="card request__block" aria-labelledby="issuance-history">
-            <h2 id="issuance-history" class="request__heading">{{ copy.historyHeading }}</h2>
-            <p class="request__aside">{{ copy.historyNote }}</p>
-            <ol class="request__history">
+          <section
+            class="card card--padded stack request__block"
+            aria-labelledby="issuance-history"
+          >
+            <h2 id="issuance-history" class="section-title request__heading">
+              {{ copy.historyHeading }}
+            </h2>
+            <p class="status-line request__aside">{{ copy.historyNote }}</p>
+            <ol class="soft-list request__history">
               @for (event of request.history; track event.id) {
-                <li class="request__event">
+                <li class="soft-row soft-row--stacked request__event">
                   <p class="request__event-what">
                     <strong>{{ eventLabel(event) }}</strong>
                     <time [attr.datetime]="event.at">{{ event.at | date: 'd MMM y, HH:mm' }}</time>
                   </p>
-                  <p class="request__aside">
+                  <p class="status-line request__aside">
                     {{ actorLabel(request, event) }} · {{ copy.account }}
                     <code>{{ event.actorId }}</code>
                   </p>
@@ -246,16 +268,16 @@
 
 @if (pending(); as opening) {
   <app-modal [open]="true" [heading]="copy.warningHeading" (dismissed)="closeFile()">
-    <div modal-body class="request__warning">
-      <p class="request__aside">{{ copy.warningLead }}</p>
-      <p>{{ opening.grant.warning }}</p>
+    <div modal-body class="stack request__warning">
+      <p class="status-line request__aside">{{ copy.warningLead }}</p>
+      <p class="callout callout--warning">{{ opening.grant.warning }}</p>
       @let opened = file();
       @if (opened.kind === 'loading') {
         <p role="status">{{ copy.fetching }}</p>
       } @else if (opened.kind === 'error') {
-        <p class="request__problem" role="alert">{{ copy.fileFailed }}</p>
+        <p class="callout callout--danger request__problem" role="alert">{{ copy.fileFailed }}</p>
       } @else if (opened.kind === 'ready') {
-        <p class="request__aside">{{ copy.fileKept }}</p>
+        <p class="status-line request__aside">{{ copy.fileKept }}</p>
         @if (opened.value.mimeType === 'application/pdf') {
           <p role="status">
             {{ copy.pdfReady }}

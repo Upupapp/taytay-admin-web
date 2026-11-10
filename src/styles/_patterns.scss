@@ -1248,3 +1248,36 @@ a.kpi:focus-visible .kpi__arrow {
   background: var(--gold);
   color: var(--deep);
 }
+
+/* ── Back link ────────────────────────────────────────────────────────────
+   "Back to …" above a page title: a quiet link with a left arrow
+   (`<app-icon name="arrowRight" class="back-link__arrow" />`, mirrored). */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--target-min);
+  margin-block-end: var(--space-2);
+  color: var(--text2);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.back-link__arrow {
+  transform: scaleX(-1);
+}
+
+/* A short list inside a notice (what a module does not do). */
+.callout ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding-inline-start: 18px;
+}

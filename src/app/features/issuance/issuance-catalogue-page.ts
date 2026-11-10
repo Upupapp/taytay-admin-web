@@ -33,6 +33,7 @@ import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { Drawer } from '@shared/ui/drawer/drawer';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { IssuanceTypeEditor } from './issuance-type-editor';
 import { ISSUANCE_COPY } from './issuance.copy';
@@ -60,6 +61,7 @@ type Editing = { readonly kind: 'new' } | { readonly kind: 'edit'; readonly type
     DataTable,
     DatePipe,
     Drawer,
+    Icon,
     IssuanceTypeEditor,
     Modal,
     PageHeader,

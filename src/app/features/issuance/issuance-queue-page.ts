@@ -42,6 +42,7 @@ import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { ISSUANCE_COPY } from './issuance.copy';
 
@@ -124,7 +125,7 @@ function pagedFilter(query: IssuanceQueueQuery): IssuanceListFilter | null {
 @Component({
   selector: 'app-issuance-queue-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DataTable, HasPermissionDirective, PageHeader, RouterLink, StatusBadge],
+  imports: [AsyncContent, DataTable, HasPermissionDirective, Icon, PageHeader, RouterLink, StatusBadge],
   templateUrl: './issuance-queue-page.html',
   styleUrl: './issuance-queue-page.scss',
 })

@@ -9,18 +9,21 @@
   </a>
 </app-page-header>
 
-<ul class="queue__boundaries">
-  @for (sentence of boundaries; track sentence) {
-    <li>{{ sentence }}</li>
-  }
-</ul>
+<div class="callout queue__boundaries">
+  <app-icon name="info" [size]="18" [stroke]="2" />
+  <ul>
+    @for (sentence of boundaries; track sentence) {
+      <li>{{ sentence }}</li>
+    }
+  </ul>
+</div>
 
-<section class="card queue" aria-labelledby="issuance-queue-heading">
+<section class="card card--panel card--padded stack queue" aria-labelledby="issuance-queue-heading">
   <h2 id="issuance-queue-heading" class="visually-hidden">{{ copy.caption }}</h2>
 
   <!-- DL-186: one request by its whole number, in whatever status it is. -->
   <form
-    class="queue__find"
+    class="toolbar queue__find"
     role="search"
     novalidate
     [attr.aria-label]="copy.findLabel"
@@ -30,7 +33,7 @@
       <label class="field__label" for="issuance-reference">{{ copy.referenceLabel }}</label>
       <input
         id="issuance-reference"
-        class="field__input"
+        class="field__input field__input--pill"
         type="search"
         autocomplete="off"
         spellcheck="false"
@@ -42,20 +45,20 @@
     </div>
     <button type="submit" class="btn btn--secondary">{{ copy.find }}</button>
     @if (referenceProblem(); as problem) {
-      <p class="queue__problem" role="alert">{{ problem }}</p>
+      <p class="callout callout--danger queue__problem" role="alert">{{ problem }}</p>
     }
   </form>
 
   @if (reference(); as found) {
-    <div class="queue__narrowed" role="status">
-      <p class="queue__note">{{ copy.referenceShown(found) }}</p>
+    <div class="callout queue__narrowed" role="status">
+      <p class="status-line queue__note">{{ copy.referenceShown(found) }}</p>
       <button type="button" class="btn btn--secondary" (click)="clearReference()">
         {{ copy.backToQueue }}
       </button>
     </div>
   } @else if (forResident()) {
-    <div class="queue__narrowed" role="status">
-      <p class="queue__note">{{ copy.residentShown }}</p>
+    <div class="callout queue__narrowed" role="status">
+      <p class="status-line queue__note">{{ copy.residentShown }}</p>
       <button type="button" class="btn btn--secondary" (click)="clearResident()">
         {{ copy.everyResident }}
       </button>
@@ -63,12 +66,12 @@
   }
 
   @if (reference() === null) {
-    <div class="queue__toolbar">
+    <div class="toolbar queue__toolbar">
       <div class="field field--narrow">
         <label class="field__label" for="issuance-status">{{ copy.statusLabel }}</label>
         <select
           id="issuance-status"
-          class="field__input"
+          class="field__input field__input--pill"
           [value]="statusValue()"
           (change)="onStatus($event)"
         >
@@ -94,7 +97,7 @@
         <label class="field__label" for="issuance-type">{{ copy.typeLabel }}</label>
         <select
           id="issuance-type"
-          class="field__input"
+          class="field__input field__input--pill"
           aria-describedby="issuance-type-note"
           [value]="typeValue()"
           (change)="onType($event)"
@@ -113,8 +116,8 @@
     </div>
   }
 
-  <p class="queue__note">{{ ended() ? copy.orderEnded : copy.orderOpen }}</p>
-  <p class="queue__note">{{ copy.standardNote }}</p>
+  <p class="status-line queue__note">{{ ended() ? copy.orderEnded : copy.orderOpen }}</p>
+  <p class="status-line queue__note">{{ copy.standardNote }}</p>
 
   <app-async-content
     [state]="first()"
@@ -133,8 +136,8 @@
       />
 
       @if (rows().length > 0) {
-        <div class="queue__more">
-          <p class="queue__note" role="status">
+        <div class="list-more queue__more">
+          <p class="status-line queue__note" role="status">
             @if (whole()) {
               {{ copy.shownAll(rows().length) }}
             } @else {
@@ -152,7 +155,7 @@
             </button>
           }
           @if (moreFailed()) {
-            <p class="queue__problem" role="alert">{{ copy.moreFailed }}</p>
+            <p class="callout callout--danger queue__problem" role="alert">{{ copy.moreFailed }}</p>
           }
         </div>
       }
@@ -161,7 +164,11 @@
 </section>
 
 <ng-template #referenceCell let-request>
-  <a [routerLink]="[request.id]" [attr.aria-label]="copy.openLabel(request.referenceNumber)">
+  <a
+    class="record-link"
+    [routerLink]="[request.id]"
+    [attr.aria-label]="copy.openLabel(request.referenceNumber)"
+  >
     {{ request.referenceNumber }}
   </a>
 </ng-template>

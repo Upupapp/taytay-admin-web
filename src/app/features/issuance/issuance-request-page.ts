@@ -61,6 +61,7 @@ import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { ISSUANCE_COPY } from './issuance.copy';
 
@@ -136,6 +137,7 @@ interface OpenedFile {
   imports: [
     AsyncContent,
     DatePipe,
+    Icon,
     Modal,
     PageHeader,
     PesoPipe,

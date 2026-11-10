@@ -1,111 +1,54 @@
-/* Layout only. `.field`, `.card` and `.btn` are styles.scss's (DL-120) and are not redefined. */
-
-.request__back {
-  margin: 0 0 var(--space-snug);
-  font-size: 13px;
-}
+/* Layout only. `.field`, `.card` and `.btn` are styles.scss's (DL-120) and are not redefined.
+   ResidentRecord as a work page: the request and its files in the wide column,
+   the move and the history beside them. */
 
 .request__boundaries {
-  margin: 0 0 var(--space-base);
-  padding-inline-start: var(--space-base);
-  font-size: 13px;
-  color: var(--c-text-muted);
-}
-
-.request__layout {
-  display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: var(--space-base);
-  align-items: start;
-}
-
-@media (max-width: 960px) {
-  .request__layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.request__main,
-.request__side {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-base);
-}
-
-.request__block {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-snug);
-}
-
-.request__heading {
-  margin: 0;
-  font-size: 16px;
+  margin-block-end: var(--space-4);
 }
 
 .request__subheading {
-  margin: var(--space-snug) 0 0;
-  font-size: 14px;
-}
-
-.request__facts {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--space-snug);
-  margin: 0;
-
-  dt {
-    font-size: 12px;
-    color: var(--c-text-muted);
-  }
-
-  dd {
-    margin: 0;
-  }
+  margin-block-start: var(--space-2);
+  color: var(--ink);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-bold);
 }
 
 .request__aside {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-regular);
+}
+
+dd > .request__aside {
   display: block;
-  margin: 0;
-  font-size: 12px;
-  color: var(--c-text-muted);
 }
 
 .request__words {
-  margin: 0;
+  color: var(--text);
+  font-weight: var(--fw-regular);
   white-space: pre-line;
-}
-
-.request__problem {
-  margin: 0;
-  font-size: 13px;
-  color: var(--c-text);
-  font-weight: 600;
-}
-
-.request__requirements,
-.request__history {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-snug);
-  margin: 0;
-  padding-inline-start: var(--space-base);
 }
 
 .request__requirement-label,
 .request__event-what {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-snug);
   align-items: baseline;
-  margin: 0;
+  gap: var(--space-2);
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+}
+
+.request__event-what time {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-regular);
 }
 
 .request__files {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-snug);
-  margin: var(--space-snug) 0 0;
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -115,23 +58,15 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-snug);
-  font-size: 13px;
-}
-
-.request__outcome {
-  margin: 0;
-  font-size: 13px;
-}
-
-.request__warning {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-snug);
+  gap: var(--space-2);
+  padding-block-start: var(--space-2);
+  border-block-start: 1px solid var(--line);
+  font-size: var(--fs-label);
 }
 
 .request__image {
-  max-width: 100%;
-  height: auto;
-  border: 1px solid var(--c-border);
+  max-inline-size: 100%;
+  block-size: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-field);
 }

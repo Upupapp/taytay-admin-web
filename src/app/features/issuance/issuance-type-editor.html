@@ -1,4 +1,4 @@
-<form class="editor" (submit)="$event.preventDefault(); save()">
+<form class="form-panel editor" (submit)="$event.preventDefault(); save()">
   @if (creating()) {
     <div class="field">
       <label class="field__label" for="issuance-type-office">{{ copy.office }}</label>
@@ -102,19 +102,21 @@
     <p id="issuance-type-claim-hint" class="field__hint">{{ copy.claimInstructionsHint }}</p>
   </div>
 
-  <section class="editor__requirements" aria-labelledby="issuance-type-requirements">
-    <h3 id="issuance-type-requirements" class="editor__heading">{{ copy.requirementsHeading }}</h3>
+  <section class="form-section editor__requirements" aria-labelledby="issuance-type-requirements">
+    <h3 id="issuance-type-requirements" class="form-section__legend editor__heading">
+      {{ copy.requirementsHeading }}
+    </h3>
     <p class="field__hint">{{ copy.requirementsHint }}</p>
 
-    <ol class="editor__list">
+    <ol class="soft-list editor__list">
       @for (
         row of requirements();
         track row.key;
         let index = $index, first = $first, last = $last
       ) {
         <li>
-          <fieldset class="editor__requirement">
-            <legend>{{ copy.requirementLegend(index + 1) }}</legend>
+          <fieldset class="subpanel editor__requirement">
+            <legend class="editor__legend">{{ copy.requirementLegend(index + 1) }}</legend>
             <div class="field">
               <label class="field__label" [attr.for]="'requirement-label-' + row.key">
                 {{ copy.label }}
@@ -155,7 +157,7 @@
                 (input)="onHint(index, $event)"
               />
             </div>
-            <label class="editor__check">
+            <label class="check editor__check">
               <input
                 type="checkbox"
                 [checked]="row.required"
@@ -207,7 +209,7 @@
   </section>
 
   @if (problems().length > 0) {
-    <ul class="editor__problems">
+    <ul class="callout callout--danger editor__problems">
       @for (problem of problems(); track problem) {
         <li>{{ problem }}</li>
       }
@@ -228,8 +230,8 @@
     <p id="issuance-type-reason-hint" class="field__hint">{{ copy.reasonHint }}</p>
   </div>
 
-  <div class="editor__effects" id="issuance-type-effects">
-    <p class="editor__lead">{{ copy.effectsLead }}</p>
+  <div class="effects editor__effects" id="issuance-type-effects">
+    <p class="effects__lead editor__lead">{{ copy.effectsLead }}</p>
     <ul>
       @for (line of creating() ? copy.createEffects : updateEffects; track line) {
         <li>{{ line }}</li>
@@ -241,7 +243,7 @@
     <p class="field__hint">{{ copy.unchanged }}</p>
   }
 
-  <div class="editor__actions">
+  <div class="form-footer editor__actions">
     <button type="button" class="btn btn--secondary" (click)="cancelled.emit()">
       {{ copy.cancel }}
     </button>
@@ -255,5 +257,5 @@
     </button>
   </div>
 
-  <p class="editor__outcome" role="status">{{ outcome() }}</p>
+  <p class="status-line editor__outcome" role="status">{{ outcome() }}</p>
 </form>

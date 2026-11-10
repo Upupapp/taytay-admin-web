@@ -1,20 +1,30 @@
 <p class="catalogue__back">
-  <a routerLink="..">{{ copy.back }}</a>
+  <a class="back-link" routerLink="..">
+    <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+    {{ copy.back }}
+  </a>
 </p>
 
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
   <button type="button" page-actions class="btn btn--primary" (click)="add()">
+    <app-icon name="plus" class="catalogue__cta-icon" [stroke]="2.2" />
     {{ copy.add }}
   </button>
 </app-page-header>
 
-<ul class="catalogue__boundaries">
-  @for (sentence of boundaries; track sentence) {
-    <li>{{ sentence }}</li>
-  }
-</ul>
+<div class="callout catalogue__boundaries">
+  <app-icon name="info" [size]="18" [stroke]="2" />
+  <ul>
+    @for (sentence of boundaries; track sentence) {
+      <li>{{ sentence }}</li>
+    }
+  </ul>
+</div>
 
-<section class="card catalogue" aria-labelledby="issuance-catalogue-heading">
+<section
+  class="card card--panel card--padded stack catalogue"
+  aria-labelledby="issuance-catalogue-heading"
+>
   <h2 id="issuance-catalogue-heading" class="visually-hidden">{{ copy.caption }}</h2>
 
   <app-async-content
@@ -35,7 +45,7 @@
     </ng-template>
   </app-async-content>
 
-  <p class="catalogue__outcome" role="status">{{ outcome() }}</p>
+  <p class="status-line catalogue__outcome" role="status">{{ outcome() }}</p>
 </section>
 
 <ng-template #nameCell let-type>
@@ -75,7 +85,7 @@
       </button>
       <button
         type="button"
-        class="btn btn--secondary"
+        class="btn btn--danger-soft"
         [attr.aria-label]="copy.retireLabel(type.name)"
         (click)="askToRetire(type)"
       >
@@ -100,13 +110,15 @@
 
 @if (retiring(); as type) {
   <app-modal [open]="true" [heading]="copy.retireHeading(type.name)" (dismissed)="cancelRetire()">
-    <div modal-body class="catalogue__retire">
-      <p class="catalogue__lead">{{ copy.retireLead }}</p>
-      <ul id="issuance-retire-effects">
-        @for (line of retireEffects; track line) {
-          <li>{{ line }}</li>
-        }
-      </ul>
+    <div modal-body class="stack catalogue__retire">
+      <div class="effects">
+        <p class="effects__lead catalogue__lead">{{ copy.retireLead }}</p>
+        <ul id="issuance-retire-effects">
+          @for (line of retireEffects; track line) {
+            <li>{{ line }}</li>
+          }
+        </ul>
+      </div>
       <div class="field">
         <label class="field__label" for="issuance-retire-reason">{{ copy.retireReason }}</label>
         <textarea
@@ -121,7 +133,7 @@
         <p id="issuance-retire-reason-hint" class="field__hint">{{ copy.reasonHint }}</p>
       </div>
       @if (retireProblem()) {
-        <p class="catalogue__problem" role="alert">{{ retireProblem() }}</p>
+        <p class="callout callout--danger catalogue__problem" role="alert">{{ retireProblem() }}</p>
       }
     </div>
     <button type="button" modal-actions class="btn btn--secondary" (click)="cancelRetire()">
@@ -130,7 +142,7 @@
     <button
       type="button"
       modal-actions
-      class="btn btn--primary"
+      class="btn btn--danger"
       aria-describedby="issuance-retire-effects"
       [disabled]="!retireReasonOk() || retireBusy()"
       (click)="confirmRetire()"
