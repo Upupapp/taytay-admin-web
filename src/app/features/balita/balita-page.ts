@@ -30,6 +30,7 @@ import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { Drawer } from '@shared/ui/drawer/drawer';
 import { PageHeader } from '@shared/ui/page-header/page-header';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { BalitaEditor } from './balita-editor';
 import { BALITA_COPY } from './balita.copy';
@@ -51,7 +52,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-balita-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, BalitaEditor, DataTable, Drawer, PageHeader],
+  imports: [AsyncContent, BalitaEditor, DataTable, Drawer, Icon, PageHeader],
   templateUrl: './balita-page.html',
   styleUrl: './balita.scss',
 })

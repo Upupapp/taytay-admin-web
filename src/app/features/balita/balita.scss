@@ -1,120 +1,73 @@
-/* Layout only: every status, effect and outcome is text in the DOM. */
+/* Layout only: every status, effect and outcome is text in the DOM.
+   Residents list for the articles; AppDirectoryEdit form in the drawer, where
+   each outward act is a framed block with its effects above its button
+   (DL-124, DL-134). Shared by the page and the editor. */
 
 .balita {
   display: flex;
   flex-direction: column;
-  gap: var(--space-section);
+  gap: var(--space-4);
 }
 
-.balita__section,
-.balita__form,
-.balita__result,
-.balita__more {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-snug);
+.balita__cta-icon {
+  color: var(--gold);
 }
 
-.balita__form {
-  align-self: stretch;
-}
-
-.balita__heading,
-.balita__subheading {
-  margin: 0;
-  font-size: 15px;
-}
-
-.balita__facts {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: var(--space-snug) var(--space-section);
-  margin: 0;
-}
-
-.balita__facts dt {
-  font-weight: 600;
-}
-
-.balita__facts dd {
-  margin: 0;
+.balita__pinned {
+  margin-inline-start: var(--space-2);
 }
 
 .balita__effects {
   display: flex;
   flex-direction: column;
-  gap: var(--space-micro);
-  font-size: 13px;
-}
-
-.balita__effects p,
-.balita__effects ul,
-.balita__note,
-.balita__problem,
-.balita__outcome {
+  gap: var(--space-1);
   margin: 0;
-  font-size: 13px;
+  padding: var(--space-3) var(--space-4) var(--space-3) 34px;
+  border-radius: var(--r-lg);
+  background: var(--soft2);
+  color: var(--text2);
+  font-size: var(--fs-sm);
 }
 
-.balita__note,
-.balita__aside {
-  color: var(--c-text-muted);
-}
-
-.balita__aside {
-  display: block;
-  font-size: 12.5px;
-}
-
-.balita__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-snug);
-}
-
-.balita__photo {
-  margin: 0;
-}
-
-.balita__photo img {
-  display: block;
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
-}
-
-.balita__cover,
-.balita__act,
 .balita__lookup {
-  display: flex;
-  flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-snug);
 }
 
-.balita__act {
-  padding-block-start: var(--space-snug);
-  border-block-start: 1px solid var(--c-border);
+.balita__lookup .field {
+  align-self: stretch;
+  max-inline-size: 420px;
+}
+
+.balita__form .field + .field {
+  margin-block-start: 0;
 }
 
 .balita__cover img {
   display: block;
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
+  max-inline-size: 100%;
+  block-size: auto;
+  border-radius: var(--r-field);
 }
 
-.balita__drafts {
+.balita__cover > .btn {
+  align-self: flex-start;
+}
+
+.balita__act {
   display: flex;
   flex-direction: column;
-  gap: var(--space-snug);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
 }
 
-.balita__pinned {
-  margin-inline-start: var(--space-micro);
-  font-size: 12.5px;
+.balita__act > .btn {
+  align-self: flex-end;
+  min-block-size: var(--h-btn-lg);
+  padding-inline: 22px;
+}
+
+.balita__outcome {
+  margin-block-start: var(--space-3);
 }

@@ -1,7 +1,7 @@
 @let current = article();
 
 @if (current !== null) {
-  <dl class="balita__facts">
+  <dl class="facts facts--pairs balita__facts">
     <dt>{{ copy.status }}</dt>
     <dd><app-status-badge [catalog]="catalog" [status]="current.status" /></dd>
     <dt>{{ copy.id }}</dt>
@@ -15,7 +15,7 @@
   </dl>
 }
 
-<form class="balita__form" (submit)="$event.preventDefault()">
+<form class="form-panel balita__form" (submit)="$event.preventDefault()">
   <div class="field">
     <label class="field__label" for="balita-title">{{ copy.title }}</label>
     <input
@@ -55,7 +55,11 @@
       [disabled]="busy() || categories().kind !== 'ready'"
       (change)="setCategory($event)"
     >
-      <option value="" [selected]="category() === null" [disabled]="current !== null && current.category !== null">
+      <option
+        value=""
+        [selected]="category() === null"
+        [disabled]="current !== null && current.category !== null"
+      >
         {{ copy.noCategory }}
       </option>
       @for (option of categoryList(); track option.slug) {
@@ -96,21 +100,21 @@
     </div>
   }
 
-  <div class="balita__cover">
+  <div class="form-section balita__cover">
     @if (current?.hasCover) {
       @if (coverUrl(); as url) {
         <img [src]="url" [alt]="copy.coverAlt" width="240" />
         <button type="button" class="btn" (click)="hideCover()">{{ copy.coverHide }}</button>
       } @else if (coverState() === 'loading') {
-        <p class="balita__note" role="status">{{ copy.coverLoading }}</p>
+        <p class="status-line balita__note" role="status">{{ copy.coverLoading }}</p>
       } @else {
         @if (coverState() === 'failed') {
-          <p class="balita__problem" role="alert">{{ copy.coverFailed }}</p>
+          <p class="callout callout--danger balita__problem" role="alert">{{ copy.coverFailed }}</p>
         }
         <button type="button" class="btn" (click)="showCover()">{{ copy.coverShow }}</button>
       }
     } @else if (current !== null) {
-      <p class="balita__note">{{ copy.noCover }}</p>
+      <p class="status-line balita__note">{{ copy.noCover }}</p>
     }
 
     <app-image-file-field
@@ -129,7 +133,7 @@
   </div>
 
   @if (problem()) {
-    <p class="balita__problem" role="alert">{{ problem() }}</p>
+    <p class="callout callout--danger balita__problem" role="alert">{{ problem() }}</p>
   }
 
   @if (current === null) {
@@ -150,7 +154,12 @@
           <li>{{ effect }}</li>
         }
       </ul>
-      <button type="button" class="btn btn--primary" [disabled]="busy()" (click)="create('published')">
+      <button
+        type="button"
+        class="btn btn--primary"
+        [disabled]="busy()"
+        (click)="create('published')"
+      >
         {{ busy() ? copy.working : copy.publish }}
       </button>
     </div>
@@ -208,7 +217,12 @@
             <li>{{ effect }}</li>
           }
         </ul>
-        <button type="button" class="btn btn--primary" [disabled]="busy()" (click)="move('published')">
+        <button
+          type="button"
+          class="btn btn--primary"
+          [disabled]="busy()"
+          (click)="move('published')"
+        >
           {{ busy() ? copy.working : copy.publish }}
         </button>
       </div>
@@ -217,4 +231,4 @@
 </form>
 
 <!-- Always in the DOM, so a screen reader hears the outcome when the text arrives. -->
-<p class="balita__outcome" role="status" aria-live="polite">{{ outcome() }}</p>
+<p class="status-line balita__outcome" role="status" aria-live="polite">{{ outcome() }}</p>

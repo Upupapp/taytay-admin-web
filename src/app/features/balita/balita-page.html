@@ -1,12 +1,13 @@
 <app-page-header [title]="copy.page.title" [subtitle]="copy.page.subtitle">
   <button type="button" page-actions class="btn btn--primary" (click)="write()">
+    <app-icon name="plus" class="balita__cta-icon" [stroke]="2.2" />
     {{ copy.page.write }}
   </button>
 </app-page-header>
 
 <div class="balita">
-  <section class="card balita__section" aria-labelledby="balita-rules">
-    <h2 id="balita-rules" class="balita__heading">{{ copy.page.rules }}</h2>
+  <section class="card card--padded stack balita__section" aria-labelledby="balita-rules">
+    <h2 id="balita-rules" class="section-title balita__heading">{{ copy.page.rules }}</h2>
     <ul class="balita__effects">
       @for (rule of rules; track $index) {
         <li>{{ rule }}</li>
@@ -14,9 +15,12 @@
     </ul>
   </section>
 
-  <section class="card balita__section" aria-labelledby="balita-list">
-    <h2 id="balita-list" class="balita__heading">{{ copy.list.heading }}</h2>
-    <p class="balita__note">{{ copy.list.lead }}</p>
+  <section
+    class="card card--panel card--padded stack balita__section"
+    aria-labelledby="balita-list"
+  >
+    <h2 id="balita-list" class="section-title balita__heading">{{ copy.list.heading }}</h2>
+    <p class="status-line balita__note">{{ copy.list.lead }}</p>
 
     <app-async-content
       [state]="first()"
@@ -35,8 +39,8 @@
         />
 
         @if (rows().length > 0) {
-          <div class="balita__more">
-            <p class="balita__note" role="status">
+          <div class="list-more balita__more">
+            <p class="status-line balita__note" role="status">
               {{ copy.list.shown(rows().length) }}
               {{ hasMore() ? copy.list.moreAvailable : copy.list.noMore }}
             </p>
@@ -46,7 +50,9 @@
               </button>
             }
             @if (moreFailed()) {
-              <p class="balita__problem" role="alert">{{ copy.list.moreFailed }}</p>
+              <p class="callout callout--danger balita__problem" role="alert">
+                {{ copy.list.moreFailed }}
+              </p>
             }
           </div>
         }
@@ -54,30 +60,30 @@
     </app-async-content>
   </section>
 
-  <section class="card balita__section" aria-labelledby="balita-drafts">
-    <h2 id="balita-drafts" class="balita__heading">{{ copy.drafts.heading }}</h2>
-    <p class="balita__note">{{ copy.drafts.lead }}</p>
+  <section class="card card--padded stack balita__section" aria-labelledby="balita-drafts">
+    <h2 id="balita-drafts" class="section-title balita__heading">{{ copy.drafts.heading }}</h2>
+    <p class="status-line balita__note">{{ copy.drafts.lead }}</p>
     @if (drafts().length > 0) {
-      <ul class="balita__drafts">
+      <ul class="soft-list balita__drafts">
         @for (draft of drafts(); track draft.id) {
-          <li>
+          <li class="soft-row">
             <button type="button" class="btn btn--small" (click)="open(draft)">
               {{ draft.title }}
             </button>
-            <span class="balita__note">{{ copy.drafts.id(draft.id) }}</span>
+            <span class="soft-row__meta">{{ copy.drafts.id(draft.id) }}</span>
           </li>
         }
       </ul>
     }
 
-    <form class="balita__lookup" (submit)="$event.preventDefault(); openById()">
-      <h3 class="balita__subheading">{{ copy.byId.heading }}</h3>
-      <p class="balita__note">{{ copy.byId.lead }}</p>
+    <form class="subpanel balita__lookup" (submit)="$event.preventDefault(); openById()">
+      <h3 class="section-title balita__subheading">{{ copy.byId.heading }}</h3>
+      <p class="status-line balita__note">{{ copy.byId.lead }}</p>
       <div class="field">
         <label class="field__label" for="balita-lookup">{{ copy.byId.label }}</label>
         <input
           id="balita-lookup"
-          class="field__input"
+          class="field__input field__input--pill"
           type="text"
           autocomplete="off"
           spellcheck="false"
@@ -90,7 +96,7 @@
         {{ lookupBusy() ? copy.byId.opening : copy.byId.submit }}
       </button>
       @if (lookupProblem()) {
-        <p class="balita__problem" role="alert">{{ lookupProblem() }}</p>
+        <p class="callout callout--danger balita__problem" role="alert">{{ lookupProblem() }}</p>
       }
     </form>
   </section>
@@ -99,7 +105,11 @@
 <ng-template #titleCell let-article>
   {{ article.title }}
   @if (article.pinned) {
-    <strong class="balita__pinned">({{ copy.list.pinned }})</strong>
+    <!-- The brackets stay in the text, so the title reads the same without the chip. -->
+    <strong class="chip chip--warning balita__pinned"
+      ><span class="visually-hidden">(</span>{{ copy.list.pinned
+      }}<span class="visually-hidden">)</span></strong
+    >
   }
 </ng-template>
 
@@ -118,9 +128,7 @@
   <app-drawer
     [open]="true"
     size="wide"
-    [heading]="
-      current === 'new' ? copy.editor.newHeading : copy.editor.editHeading(current.title)
-    "
+    [heading]="current === 'new' ? copy.editor.newHeading : copy.editor.editHeading(current.title)"
     (dismissed)="close()"
   >
     <div drawer-body>

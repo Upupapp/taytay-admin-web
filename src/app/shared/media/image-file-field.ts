@@ -85,27 +85,30 @@ function headOf(file: Blob): Promise<Uint8Array> {
     </div>
   `,
   styles: `
-    .image-field__input {
-      display: block;
-    }
     .image-field__problem {
-      margin: var(--space-2) 0 0;
-      color: var(--tone-danger-fg);
-      font-size: 13px;
+      color: var(--red-ink);
+      font-size: var(--fs-label);
+      font-weight: var(--fw-semibold);
     }
     .image-field__preview {
-      margin: var(--space-3) 0 var(--space-2);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      margin: var(--space-2) 0 0;
     }
     .image-field__preview img {
       display: block;
       max-inline-size: 100%;
       max-block-size: 192px;
-      border: 1px solid var(--c-border);
-      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      border-radius: var(--r-field);
     }
     .image-field__preview figcaption {
-      color: var(--c-text-muted);
-      font-size: 12px;
+      color: var(--muted);
+      font-size: var(--fs-2xs);
+    }
+    .image-field > .btn {
+      align-self: flex-start;
     }
   `,
 })
