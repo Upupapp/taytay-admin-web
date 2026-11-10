@@ -22,14 +22,14 @@ import { PROGRAM_COPY } from './program.copy';
   template: `
     @let record = responsibility();
 
-    <section class="responsibility" aria-labelledby="responsibility-heading">
+    <section class="card card--padded responsibility" aria-labelledby="responsibility-heading">
       <h3 class="responsibility__heading" id="responsibility-heading">{{ copy.heading }}</h3>
 
       <p class="responsibility__badges">
-        <span class="responsibility__badge">{{ agencyLabel(record.administeredBy) }}</span>
-        <span class="responsibility__badge">{{ roleLabel(record.lguRole) }}</span>
+        <span class="chip responsibility__badge">{{ agencyLabel(record.administeredBy) }}</span>
+        <span class="chip responsibility__badge">{{ roleLabel(record.lguRole) }}</span>
         @if (record.fundsHeldBy !== record.administeredBy) {
-          <span class="responsibility__badge">
+          <span class="chip responsibility__badge">
             {{ copy.fundsHeldBy }}: {{ agencyLabel(record.fundsHeldBy) }}
           </span>
         }
@@ -39,7 +39,9 @@ import { PROGRAM_COPY } from './program.copy';
       <p class="responsibility__statement">{{ record.statement }}</p>
 
       @if (elsewhere()) {
-        <p class="responsibility__elsewhere">{{ copy.decidedElsewhere }}</p>
+        <p class="callout callout--warning responsibility__elsewhere">
+          {{ copy.decidedElsewhere }}
+        </p>
       }
 
       @if (record.sources.length > 0) {

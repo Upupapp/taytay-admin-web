@@ -10,18 +10,24 @@
 
 @switch (recordState().kind) {
   @case ('loading') {
-    <p class="card program-form__section" role="status">{{ copy.loadingRecord }}</p>
+    <p class="card card--padded" role="status">{{ copy.loadingRecord }}</p>
   }
   @case ('error') {
-    <p class="card program-form__section" role="alert">{{ copy.recordFailed }}</p>
+    <p class="callout callout--danger" role="alert">{{ copy.recordFailed }}</p>
   }
   @default {
     @if (editing() && record() === null) {
-      <p class="card program-form__section" role="alert">{{ copy.recordMissing }}</p>
+      <p class="callout callout--danger" role="alert">{{ copy.recordMissing }}</p>
     } @else {
-      <form class="program-form" novalidate (submit)="submit($event)">
-        <fieldset class="card program-form__section">
-          <legend class="program-form__legend">{{ copy.basicsHeading }}</legend>
+      <form
+        class="card card--panel card--padded form-panel program-form"
+        novalidate
+        (submit)="submit($event)"
+      >
+        <fieldset class="form-section program-form__section">
+          <legend class="form-section__legend program-form__legend">
+            {{ copy.basicsHeading }}
+          </legend>
           <div class="program-form__grid">
             <label class="field program-form__wide">
               <span class="field__label">{{ copy.name }}</span>
@@ -108,9 +114,11 @@
         </fieldset>
 
         <!-- Whose programme it is decides what an applicant is told (DL-65). -->
-        <fieldset class="card program-form__section">
-          <legend class="program-form__legend">{{ copy.responsibilityHeading }}</legend>
-          <p class="program-form__note">{{ copy.responsibilityHint }}</p>
+        <fieldset class="form-section program-form__section">
+          <legend class="form-section__legend program-form__legend">
+            {{ copy.responsibilityHeading }}
+          </legend>
+          <p class="form-section__note program-form__note">{{ copy.responsibilityHint }}</p>
           <div class="program-form__grid">
             <label class="field">
               <span class="field__label">{{ detailCopy.administeredBy }}</span>
@@ -173,7 +181,9 @@
           <p class="field__hint">{{ copy.sourcesHint }}</p>
           @for (source of current.responsibility.sources; track $index; let index = $index) {
             <fieldset class="program-form__entry">
-              <legend class="program-form__entry-legend">{{ copy.sourceGroup(index + 1) }}</legend>
+              <legend class="form-section__legend program-form__entry-legend">
+                {{ copy.sourceGroup(index + 1) }}
+              </legend>
               <div class="program-form__grid">
                 <label class="field">
                   <span class="field__label">{{ copy.sourceTitle }}</span>
@@ -221,12 +231,14 @@
         </fieldset>
 
         <!-- Guidance is read by a person; none of it refuses anybody (DL-66). -->
-        <fieldset class="card program-form__section">
-          <legend class="program-form__legend">{{ copy.guidanceHeading }}</legend>
-          <p class="program-form__note">{{ copy.guidanceHint }}</p>
+        <fieldset class="form-section program-form__section">
+          <legend class="form-section__legend program-form__legend">
+            {{ copy.guidanceHeading }}
+          </legend>
+          <p class="form-section__note program-form__note">{{ copy.guidanceHint }}</p>
           @for (guideline of current.guidance; track $index; let index = $index) {
             <fieldset class="program-form__entry">
-              <legend class="program-form__entry-legend">
+              <legend class="form-section__legend program-form__entry-legend">
                 {{ copy.guidelineGroup(index + 1) }}
               </legend>
               <div class="program-form__grid">
@@ -311,7 +323,9 @@
           </button>
 
           <fieldset class="program-form__entry">
-            <legend class="program-form__entry-legend">{{ copy.eligibilityHeading }}</legend>
+            <legend class="form-section__legend program-form__entry-legend">
+              {{ copy.eligibilityHeading }}
+            </legend>
             <p class="field__hint">{{ copy.eligibilityHint }}</p>
             <div class="program-form__grid">
               <label class="field">
@@ -381,8 +395,10 @@
           </fieldset>
         </fieldset>
 
-        <fieldset class="card program-form__section">
-          <legend class="program-form__legend">{{ copy.documentsHeading }}</legend>
+        <fieldset class="form-section program-form__section">
+          <legend class="form-section__legend program-form__legend">
+            {{ copy.documentsHeading }}
+          </legend>
           <label class="field">
             <span class="field__label">{{ copy.template }}</span>
             <select
@@ -405,10 +421,12 @@
             <span class="field__hint" id="program-template-hint">{{ copy.templateHint }}</span>
           </label>
           @if (templatesFailed()) {
-            <p class="program-form__note" role="status">{{ copy.templatesUnread }}</p>
+            <p class="form-section__note program-form__note" role="status">
+              {{ copy.templatesUnread }}
+            </p>
           }
           @if (chosenTemplate(); as template) {
-            <p class="program-form__note">
+            <p class="form-section__note program-form__note">
               {{ copy.templateDocuments(template.requirements.length) }}
             </p>
           }
@@ -419,8 +437,10 @@
           />
         </fieldset>
 
-        <fieldset class="card program-form__section">
-          <legend class="program-form__legend">{{ copy.windowHeading }}</legend>
+        <fieldset class="form-section program-form__section">
+          <legend class="form-section__legend program-form__legend">
+            {{ copy.windowHeading }}
+          </legend>
           <label class="program-form__check">
             <input
               type="checkbox"
@@ -489,8 +509,11 @@
         </fieldset>
 
         <!-- What saving does, said before the button rather than after it (DL-124). -->
-        <section class="card program-form__section" aria-labelledby="program-consequences-heading">
-          <h2 class="program-form__legend" id="program-consequences-heading">
+        <section
+          class="subpanel subpanel--soft program-form__section"
+          aria-labelledby="program-consequences-heading"
+        >
+          <h2 class="section-title" id="program-consequences-heading">
             {{ detailCopy.consequencesHeading }}
           </h2>
           <ul class="program-form__consequences">
@@ -518,7 +541,7 @@
           </label>
 
           @if (ruleProblems().length > 0) {
-            <div class="program-form__problems">
+            <div class="callout callout--danger program-form__problems">
               <p class="program-form__problems-heading">{{ detailCopy.missingHeading }}</p>
               <ul>
                 @for (problem of ruleProblems(); track problem.code) {
@@ -528,14 +551,14 @@
             </div>
           }
           @if (attempted() && missing().length > 0) {
-            <ul class="program-form__problems" role="alert">
+            <ul class="callout callout--danger program-form__problems" role="alert">
               @for (line of missing(); track line) {
                 <li>{{ line }}</li>
               }
             </ul>
           }
           @if (refusal().length > 0) {
-            <div class="program-form__problems" role="alert">
+            <div class="callout callout--danger program-form__problems" role="alert">
               <p class="program-form__problems-heading">{{ detailCopy.refusedHeading }}</p>
               <ul>
                 @for (sentence of refusal(); track $index) {
@@ -545,7 +568,7 @@
             </div>
           }
 
-          <div class="program-form__actions">
+          <div class="form-footer program-form__actions">
             <a class="btn" routerLink="/programs">{{ detailCopy.cancel }}</a>
             <button type="submit" class="btn btn--primary" [disabled]="saving()">
               {{ saving() ? copy.saving : editing() ? copy.saveEdit : copy.save }}

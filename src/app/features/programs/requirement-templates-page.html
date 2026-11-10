@@ -7,32 +7,34 @@
   }
 </app-page-header>
 
-<div class="program-form">
+<div class="stack program-form">
   @if (loadFailed()) {
-    <p class="card program-form__section program-form__problems" role="alert">
+    <p class="callout callout--danger program-form__problems" role="alert">
       {{ copy.loadFailed }}
     </p>
   } @else {
-    <app-data-table
-      [caption]="copy.caption"
-      [columns]="columns()"
-      [rows]="templates()"
-      [rowKey]="rowKey"
-      [loading]="state().kind === 'loading'"
-      [emptyHeading]="copy.emptyHeading"
-      [emptyMessage]="copy.emptyMessage"
-    />
+    <section class="card card--panel card--padded" [attr.aria-label]="copy.caption">
+      <app-data-table
+        [caption]="copy.caption"
+        [columns]="columns()"
+        [rows]="templates()"
+        [rowKey]="rowKey"
+        [loading]="state().kind === 'loading'"
+        [emptyHeading]="copy.emptyHeading"
+        [emptyMessage]="copy.emptyMessage"
+      />
+    </section>
   }
 
   @let editing = mode();
   @if (editing.kind !== 'closed') {
     <form
-      class="card program-form__section"
+      class="card card--panel card--padded form-panel program-form__editor"
       novalidate
       aria-labelledby="template-editor-heading"
       (submit)="submit($event)"
     >
-      <h2 class="program-form__legend" id="template-editor-heading">
+      <h2 class="section-title section-title--display" id="template-editor-heading">
         @switch (editing.kind) {
           @case ('create') {
             {{ copy.createHeading }}
@@ -132,7 +134,7 @@
       </label>
 
       @if (documentProblems().length > 0) {
-        <div class="program-form__problems">
+        <div class="callout callout--danger program-form__problems">
           <p class="program-form__problems-heading">{{ detailCopy.missingHeading }}</p>
           <ul>
             @for (problem of documentProblems(); track problem.code) {
@@ -142,14 +144,14 @@
         </div>
       }
       @if (attempted() && missing().length > 0) {
-        <ul class="program-form__problems" role="alert">
+        <ul class="callout callout--danger program-form__problems" role="alert">
           @for (line of missing(); track line) {
             <li>{{ line }}</li>
           }
         </ul>
       }
       @if (refusal().length > 0) {
-        <div class="program-form__problems" role="alert">
+        <div class="callout callout--danger program-form__problems" role="alert">
           <p class="program-form__problems-heading">{{ detailCopy.refusedHeading }}</p>
           <ul>
             @for (sentence of refusal(); track $index) {
@@ -159,7 +161,7 @@
         </div>
       }
 
-      <div class="program-form__actions">
+      <div class="form-footer program-form__actions">
         <button type="button" class="btn" (click)="close()">{{ copy.cancel }}</button>
         <button type="submit" class="btn btn--primary" [disabled]="saving()">
           @if (saving()) {

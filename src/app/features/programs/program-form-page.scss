@@ -1,52 +1,40 @@
-/* Layout only. The primitives (.field, .btn, .card) belong to styles.scss (DL-120). */
+/* Layout only. The primitives (.field, .btn, .card) belong to styles.scss (DL-120); the
+   framed sections and the footer are `.form-section` / `.form-footer` from _patterns.scss.
+   Shared with the requirement templates page. */
 
 .program-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-base);
-  margin-block-start: var(--space-base);
   max-inline-size: 960px;
 }
 
-.program-form__section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-snug);
-  padding: var(--space-card);
-  border: 1px solid var(--c-border);
-}
-
-.program-form__legend {
-  margin: 0;
-  padding-inline: var(--space-compact);
-  color: var(--c-text);
-  font-size: 14px;
-  font-weight: 600;
-}
-
 .program-form__subheading {
-  margin: var(--space-snug) 0 0;
-  font-size: 13px;
-  font-weight: 600;
+  margin-block-start: var(--space-2);
+  color: var(--ink);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
 }
 
 .program-form__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-base);
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: var(--space-3) var(--space-4);
 }
 
 .program-form__wide {
   grid-column: 1 / -1;
 }
 
+/* A source or guideline inside a section: a lighter frame on the soft fill. */
 .program-form__entry {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-compact);
-  padding: var(--space-card);
-  border: 1px solid var(--c-border);
+  gap: var(--space-3);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 14px var(--space-4) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--soft2);
 }
 
 .program-form__entry > .program-form__grid {
@@ -54,8 +42,7 @@
 }
 
 .program-form__entry-legend {
-  padding-inline: var(--space-compact);
-  font-weight: 600;
+  font-size: var(--fs-control);
 }
 
 .program-form__add {
@@ -65,7 +52,7 @@
 .program-form__checks {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-compact) var(--space-base);
+  gap: var(--space-2) var(--space-4);
   margin: 0;
   padding: 0;
   border: 0;
@@ -74,45 +61,46 @@
 .program-form__check {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-micro);
-}
+  gap: var(--space-2);
+  min-block-size: var(--target-min);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
 
-.program-form__note {
-  margin: 0;
-  color: var(--c-text-muted);
+  input {
+    inline-size: 18px;
+    block-size: 18px;
+    margin: 0;
+    accent-color: var(--link);
+  }
 }
 
 .program-form__consequences {
-  margin: 0;
-  padding-inline-start: var(--space-base);
   display: flex;
   flex-direction: column;
-  gap: var(--space-micro);
-}
-
-.program-form__problem {
-  color: var(--tone-danger-fg);
+  gap: var(--space-1);
+  margin: 0;
+  padding-inline-start: 18px;
+  color: var(--text2);
+  font-size: var(--fs-sm);
 }
 
 .program-form__problems {
+  flex-direction: column;
+  gap: var(--space-1);
   margin: 0;
-  padding: var(--space-compact) var(--space-base);
-  border-inline-start: 3px solid var(--tone-danger-fg);
-  color: var(--tone-danger-fg);
+}
+
+.program-form__problems ul,
+ul.program-form__problems {
+  margin: 0;
+  padding-inline-start: 34px;
 }
 
 .program-form__problems ul {
-  margin: 0;
-  padding-inline-start: var(--space-base);
+  padding-inline-start: 18px;
 }
 
 .program-form__problems-heading {
-  margin: 0;
-  font-weight: 600;
-}
-
-.program-form__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-compact);
+  font-weight: var(--fw-bold);
 }

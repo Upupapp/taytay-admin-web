@@ -98,29 +98,36 @@ import { PROGRAMS_COPY } from './programs.copy';
     :host {
       display: flex;
       flex-direction: column;
-      gap: var(--space-base);
+      gap: var(--space-3);
       align-items: flex-start;
     }
     .documents-editor__row {
       display: flex;
       flex-direction: column;
-      gap: var(--space-compact);
+      gap: var(--space-3);
       align-self: stretch;
-      padding: var(--space-card);
-      border: 1px solid var(--c-border);
+      min-inline-size: 0;
+      margin: 0;
+      padding: 14px var(--space-4) var(--space-4);
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      background: var(--soft2);
     }
     .documents-editor__legend {
-      padding-inline: var(--space-compact);
-      font-weight: 600;
+      padding-inline: 6px;
+      color: var(--ink);
+      font-size: var(--fs-control);
+      font-weight: var(--fw-bold);
     }
     .documents-editor__grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: var(--space-base);
+      grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+      gap: var(--space-3) var(--space-4);
     }
     .documents-editor__none {
       margin: 0;
-      color: var(--c-text-muted);
+      font-size: var(--fs-label);
+      color: var(--muted);
     }
   `,
 })

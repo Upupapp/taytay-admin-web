@@ -2,17 +2,18 @@
 
 .templates__name {
   display: block;
-  font-weight: 600;
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
 }
 
 .templates__code,
 .templates__retired {
   display: block;
-  color: var(--c-text-muted);
-  font-size: 12px;
+  color: var(--muted);
+  font-size: var(--fs-2xs);
 }
 
 .templates__actions {
   display: inline-flex;
-  gap: var(--space-compact);
+  gap: var(--space-2);
 }

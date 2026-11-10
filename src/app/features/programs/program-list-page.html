@@ -8,30 +8,37 @@
     class="btn btn--primary"
     routerLink="/programs/new"
   >
+    <app-icon name="plus" class="catalog__cta-icon" [stroke]="2.2" />
     {{ copy.newProgramme }}
   </a>
 </app-page-header>
 
-<div class="card catalog">
+<section class="card card--panel card--padded stack catalog" [attr.aria-label]="copy.caption">
   <!-- Said before the table, because "everything the office hands out is the
        office's to decide" is the assumption every reader arrives with (DL-65). -->
-  <p class="catalog__banner">{{ copy.banner }}</p>
+  <p class="callout catalog__banner">
+    <app-icon name="info" [size]="18" [stroke]="2" />
+    <span>{{ copy.banner }}</span>
+  </p>
 
-  <div class="filters">
-    <label class="filters__field filters__field--wide">
-      <span class="filters__label">{{ copy.search }}</span>
-      <input
-        type="search"
-        class="filters__input"
-        [placeholder]="copy.searchPlaceholder"
-        [value]="searchText()"
-        (input)="onSearch($event)"
-      />
+  <div class="toolbar">
+    <label class="field catalog__search">
+      <span class="field__label">{{ copy.search }}</span>
+      <span class="search-field">
+        <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+        <input
+          type="search"
+          class="field__input field__input--pill"
+          [placeholder]="copy.searchPlaceholder"
+          [value]="searchText()"
+          (input)="onSearch($event)"
+        />
+      </span>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.category }}</span>
-      <select class="filters__input" (change)="onCategory($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.category }}</span>
+      <select class="field__input field__input--pill" (change)="onCategory($event)">
         <option value="" [selected]="!filter().category">{{ copy.allCategories }}</option>
         @for (category of categories; track category) {
           <option [value]="category" [selected]="filter().category === category">
@@ -41,9 +48,9 @@
       </select>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.status }}</span>
-      <select class="filters__input" (change)="onStatus($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.status }}</span>
+      <select class="field__input field__input--pill" (change)="onStatus($event)">
         <option value="" [selected]="!filter().status">{{ copy.allStatuses }}</option>
         @for (status of statuses; track status) {
           <option [value]="status" [selected]="filter().status === status">
@@ -54,13 +61,15 @@
     </label>
 
     @if (hasFilters()) {
-      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+      <button type="button" class="btn catalog__clear" (click)="clearFilters()">
+        {{ copy.clear }}
+      </button>
     }
   </div>
 
   @if (usageUnavailable(); as because) {
     <!-- In place of the two utilization columns: a column of dashes would read as "none" (DL-176). -->
-    <p class="catalog__note" role="note">{{ because }}</p>
+    <p class="callout callout--warning catalog__note" role="note">{{ because }}</p>
   }
 
   <app-data-table
@@ -77,8 +86,8 @@
   />
 
   @if (rows().length > 0) {
-    <div class="catalog__more">
-      <p class="catalog__hint" role="status">
+    <div class="list-more catalog__more">
+      <p class="status-line catalog__hint" role="status">
         {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
       </p>
       @if (hasMore()) {
@@ -92,14 +101,14 @@
         </button>
       }
       @if (moreFailed()) {
-        <p class="catalog__problem" role="alert">{{ copy.moreFailed }}</p>
+        <p class="callout callout--danger catalog__problem" role="alert">{{ copy.moreFailed }}</p>
       }
     </div>
   }
-</div>
+</section>
 
 <ng-template #nameCell let-row>
-  <a class="catalog__name" [routerLink]="detailLink(row)">{{ row.program.name }}</a>
+  <a class="record-link catalog__name" [routerLink]="detailLink(row)">{{ row.program.name }}</a>
   <span class="catalog__code">{{ row.program.code }}</span>
 </ng-template>
 

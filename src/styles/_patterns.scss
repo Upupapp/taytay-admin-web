@@ -1135,3 +1135,15 @@ a.kpi:focus-visible .kpi__arrow {
   color: var(--muted);
   font-size: var(--fs-xs);
 }
+
+/* Facts as label/value pairs on one line each (dt and dd as siblings, no row
+   wrappers): the label column takes what it needs. */
+.facts.facts--pairs {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  font-size: var(--fs-label);
+}
+
+.facts--pairs dd {
+  margin: 0;
+}

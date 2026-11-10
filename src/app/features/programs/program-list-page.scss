@@ -1,99 +1,35 @@
+// Residents mock-up as the programme catalogue: the DL-65 note, filters, table, "more".
+
+.catalog__cta-icon {
+  color: var(--gold);
+}
+
 .catalog__banner {
-  padding: var(--space-snug) var(--space-base);
-  border-block-end: 1px solid var(--c-border);
-  color: var(--c-text-muted);
-  font-size: 13px;
+  align-items: flex-start;
 }
 
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-base);
-  padding: var(--space-base);
-  border-block-end: 1px solid var(--c-border);
-}
-
-.filters__field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-micro);
-  min-inline-size: 180px;
-}
-
-.filters__field--wide {
+.catalog__search {
   flex: 1 1 260px;
 }
 
-.filters__label {
-  color: var(--c-text-muted);
-  font-size: 12px;
-  font-weight: 600;
+.toolbar select.field__input {
+  min-inline-size: 170px;
 }
 
-.filters__input {
-  padding: var(--space-compact) var(--space-snug);
-  /* Comfortably over the 24px pointer-target minimum (WCAG 2.5.8). */
-  min-block-size: 36px;
-  border: 1px solid var(--c-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
-  color: var(--c-text);
-  font: inherit;
-  font-size: 14px;
-}
-
-.catalog__name {
-  display: inline-block;
-  min-block-size: var(--target-min);
-  line-height: var(--target-min);
-  color: var(--c-text);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.catalog__name:hover {
-  text-decoration: underline;
+.catalog__clear {
+  min-block-size: var(--h-btn);
 }
 
 .catalog__code,
 .catalog__role {
   display: block;
-  color: var(--c-text-muted);
-  font-size: 12px;
+  color: var(--muted);
+  font-size: var(--fs-2xs);
 }
 
 .catalog__agency {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.catalog__note {
-  margin: 0;
-  padding: var(--space-snug) var(--space-base);
-  border-block-end: 1px solid var(--c-border);
-  border-inline-start: 3px solid var(--c-border-strong);
-  background: var(--c-surface-muted);
-  color: var(--c-text);
-  font-size: 13px;
-}
-
-.catalog__more {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-base);
-  padding: var(--space-base);
-}
-
-.catalog__hint {
-  margin: 0;
-  font-size: 13px;
-  color: var(--c-text-subtle);
-}
-
-.catalog__problem {
-  margin: 0;
-  font-size: 13px;
+  color: var(--ink);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
 }
