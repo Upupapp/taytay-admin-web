@@ -6,57 +6,62 @@
         <a class="btn" routerLink="/beneficiaries">{{ copy.back }}</a>
       </p>
     } @else {
-      <app-page-header
-        [title]="record.resident.fullName"
-        [subtitle]="barangayLabel(record)"
-      >
+      <app-page-header [title]="record.resident.fullName" [subtitle]="barangayLabel(record)">
         <a page-actions class="btn" [routerLink]="'/residents/' + record.residentId">
           Open registry record
         </a>
       </app-page-header>
 
-      <div class="beneficiary">
-        <section class="card beneficiary__panel" aria-labelledby="standing-heading">
-          <h2 class="beneficiary__heading" id="standing-heading">{{ copy.standingHeading }}</h2>
-          <p class="beneficiary__hint">{{ copy.standingHint }}</p>
+      <div class="record-grid beneficiary">
+        <section class="card card--padded beneficiary__panel" aria-labelledby="standing-heading">
+          <h2 class="section-title beneficiary__heading" id="standing-heading">
+            {{ copy.standingHeading }}
+          </h2>
+          <p class="status-line beneficiary__hint">{{ copy.standingHint }}</p>
 
           <!-- Each standing is listed with what it was derived from. A badge a
                caseworker cannot check is a claim, not a fact. -->
-          <ul class="standing-list">
+          <ul class="soft-list standing-list">
             @for (role of record.standing.roles; track role) {
-              <li class="standing-list__item">
+              <li class="soft-row soft-row--stacked standing-list__item">
                 <span class="standing-list__label">{{ roleLabel(role) }}</span>
-                <span class="standing-list__why">{{ roleDescription(role) }}</span>
+                <span class="soft-row__meta standing-list__why">{{ roleDescription(role) }}</span>
               </li>
             }
           </ul>
 
-          <dl class="totals">
-            <div class="totals__item">
-              <dt>{{ copy.totalReceived }}</dt>
-              <dd class="totals__amount">{{ record.totalReleased | peso }}</dd>
+          <dl class="tally-row totals">
+            <div class="tally tally--primary totals__item">
+              <dt class="tally__label">{{ copy.totalReceived }}</dt>
+              <dd class="tally__value totals__amount">{{ record.totalReleased | peso }}</dd>
               <!-- Goods are counted beside the money, never valued into it (`DL-93`). -->
               @if (record.goodsReceivedCount > 0) {
-                <dd class="totals__goods">{{ copy.goodsReceived(record.goodsReceivedCount) }}</dd>
+                <dd class="tally__hint totals__goods">
+                  {{ copy.goodsReceived(record.goodsReceivedCount) }}
+                </dd>
               }
-              <dd class="totals__hint">{{ copy.totalReceivedHint }}</dd>
+              <dd class="tally__hint totals__hint">{{ copy.totalReceivedHint }}</dd>
             </div>
-            <div class="totals__item">
-              <dt>{{ copy.eventCount }}</dt>
-              <dd class="totals__amount">{{ record.timeline.length }}</dd>
+            <div class="tally totals__item">
+              <dt class="tally__label">{{ copy.eventCount }}</dt>
+              <dd class="tally__value totals__amount">{{ record.timeline.length }}</dd>
             </div>
-            <div class="totals__item">
-              <dt>{{ copy.openCases }}</dt>
-              <dd class="totals__amount">{{ record.standing.evidence.openRequestCount }}</dd>
+            <div class="tally totals__item">
+              <dt class="tally__label">{{ copy.openCases }}</dt>
+              <dd class="tally__value totals__amount">
+                {{ record.standing.evidence.openRequestCount }}
+              </dd>
             </div>
           </dl>
         </section>
 
-        <section class="card beneficiary__panel" aria-labelledby="household-heading">
-          <h2 class="beneficiary__heading" id="household-heading">{{ copy.householdHeading }}</h2>
+        <section class="card card--padded beneficiary__panel" aria-labelledby="household-heading">
+          <h2 class="section-title beneficiary__heading" id="household-heading">
+            {{ copy.householdHeading }}
+          </h2>
 
           @if (record.household === null) {
-            <p class="beneficiary__empty">{{ copy.householdNone }}</p>
+            <p class="status-line beneficiary__empty">{{ copy.householdNone }}</p>
           } @else {
             <p class="beneficiary__line">
               <a [routerLink]="'/households/' + record.household.id">{{ copy.openHousehold }}</a>
@@ -72,11 +77,11 @@
           <!-- Plural, and separate from the household: one address routinely
                holds several families (DL-47). -->
           @if (record.families.length === 0) {
-            <p class="beneficiary__empty">{{ copy.familiesNone }}</p>
+            <p class="status-line beneficiary__empty">{{ copy.familiesNone }}</p>
           } @else {
-            <ul class="family-list">
+            <ul class="soft-list family-list">
               @for (family of record.families; track family.id) {
-                <li>
+                <li class="soft-row">
                   <a [routerLink]="'/families/' + family.id">{{ family.name }}</a>
                 </li>
               }
@@ -84,25 +89,22 @@
           }
         </section>
 
-        <section class="card beneficiary__panel" aria-labelledby="programmes-heading">
-          <h2 class="beneficiary__heading" id="programmes-heading">
+        <section class="card card--padded beneficiary__panel" aria-labelledby="programmes-heading">
+          <h2 class="section-title beneficiary__heading" id="programmes-heading">
             {{ copy.enrollmentsHeading }}
           </h2>
 
           @if (!membershipRecorded()) {
-            <p class="beneficiary__empty" role="note">{{ membershipNotRecorded }}</p>
+            <p class="status-line beneficiary__empty" role="note">{{ membershipNotRecorded }}</p>
           } @else if (enrollments().length === 0) {
-            <p class="beneficiary__empty">{{ copy.enrollmentsNone }}</p>
+            <p class="status-line beneficiary__empty">{{ copy.enrollmentsNone }}</p>
           } @else {
-            <ul class="enrollments">
+            <ul class="soft-list enrollments">
               @for (enrollment of enrollments(); track enrollment.id) {
-                <li class="enrollments__item">
+                <li class="soft-row soft-row--stacked enrollments__item">
                   <p class="enrollments__head">
                     <span class="enrollments__name">{{ enrollment.programName }}</span>
-                    <app-status-badge
-                      [catalog]="enrollmentStatuses"
-                      [status]="enrollment.status"
-                    />
+                    <app-status-badge [catalog]="enrollmentStatuses" [status]="enrollment.status" />
                   </p>
                   <p class="enrollments__dates">
                     <span>{{ copy.enrolledOn }} {{ enrollment.enrolledOn }}</span>
@@ -129,17 +131,20 @@
         </section>
 
         @if (record.duplicateCandidates.length > 0) {
-          <section class="card beneficiary__panel" aria-labelledby="duplicates-heading">
-            <h2 class="beneficiary__heading" id="duplicates-heading">
+          <section
+            class="card card--padded beneficiary__panel"
+            aria-labelledby="duplicates-heading"
+          >
+            <h2 class="section-title beneficiary__heading" id="duplicates-heading">
               {{ copy.duplicatesHeading }}
             </h2>
-            <p class="beneficiary__hint">{{ copy.duplicatesHint }}</p>
+            <p class="status-line beneficiary__hint">{{ copy.duplicatesHint }}</p>
 
             <!-- The other record is named only as a masked label here; the
                  comparison itself lives on the review screen (DL-73). -->
-            <ul class="duplicates">
+            <ul class="soft-list duplicates">
               @for (candidate of record.duplicateCandidates; track candidate.otherResidentId) {
-                <li class="duplicates__item">
+                <li class="soft-row duplicates__item">
                   <span class="duplicates__label">{{ candidate.otherLabel }}</span>
                   <a
                     class="btn btn--small"
@@ -154,7 +159,7 @@
           </section>
         }
 
-        <section class="card beneficiary__panel beneficiary__panel--wide">
+        <section class="card card--padded beneficiary__panel record-grid__wide">
           <app-assistance-history-timeline
             [entries]="record.timeline"
             [heading]="copy.timelineHeading"

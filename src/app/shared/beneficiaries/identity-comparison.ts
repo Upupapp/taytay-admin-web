@@ -38,34 +38,40 @@ import {
       </p>
 
       @if (candidate().holdsSensitiveRecord) {
-        <p class="comparison__sensitive" role="note">{{ sensitiveNotice() }}</p>
+        <p class="callout callout--warning comparison__sensitive" role="note">
+          {{ sensitiveNotice() }}
+        </p>
       }
 
-      <table class="comparison__table">
-        <caption class="comparison__caption">
-          {{ heading() }}
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">{{ attributeHeader() }}</th>
-            <th scope="col">{{ outcomeHeader() }}</th>
-            <th scope="col">{{ ruleHeader() }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (signal of candidate().signals; track signal.attribute) {
+      <div class="table-scroll">
+        <table class="simple-table comparison__table">
+          <caption class="visually-hidden comparison__caption">
+            {{
+              heading()
+            }}
+          </caption>
+          <thead>
             <tr>
-              <th scope="row" class="comparison__attribute">{{ attributeLabel(signal) }}</th>
-              <!-- The outcome is a word first. The tone attribute only tints it,
-                   so nothing here depends on colour alone (WCAG 1.4.1). -->
-              <td class="comparison__outcome" [attr.data-outcome]="signal.outcome">
-                {{ outcomeLabel(signal) }}
-              </td>
-              <td class="comparison__rule">{{ signal.rule }}</td>
+              <th scope="col">{{ attributeHeader() }}</th>
+              <th scope="col">{{ outcomeHeader() }}</th>
+              <th scope="col">{{ ruleHeader() }}</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (signal of candidate().signals; track signal.attribute) {
+              <tr>
+                <th scope="row" class="comparison__attribute">{{ attributeLabel(signal) }}</th>
+                <!-- The outcome is a word first. The tone attribute only tints it,
+                   so nothing here depends on colour alone (WCAG 1.4.1). -->
+                <td class="comparison__outcome" [attr.data-outcome]="signal.outcome">
+                  {{ outcomeLabel(signal) }}
+                </td>
+                <td class="comparison__rule">{{ signal.rule }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </section>
   `,
   styleUrl: './identity-comparison.scss',

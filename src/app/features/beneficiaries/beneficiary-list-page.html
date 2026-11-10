@@ -9,29 +9,32 @@
   </a>
 </app-page-header>
 
-<div class="card beneficiaries">
+<section class="card card--panel card--padded stack beneficiaries" [attr.aria-label]="copy.caption">
   <app-saved-views-bar
     resource="beneficiaries"
     [currentParams]="filterParams()"
     [currentUserId]="currentUserId()"
   />
 
-  <div class="filters">
-    <label class="filters__field filters__field--wide">
-      <span class="filters__label">{{ copy.search }}</span>
-      <input
-        type="search"
-        class="filters__input"
-        [placeholder]="copy.searchPlaceholder"
-        [value]="searchText()"
-        aria-describedby="beneficiary-search-hint"
-        (input)="onSearch($event)"
-      />
+  <div class="toolbar">
+    <label class="field beneficiaries__search">
+      <span class="field__label">{{ copy.search }}</span>
+      <span class="search-field">
+        <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+        <input
+          type="search"
+          class="field__input field__input--pill"
+          [placeholder]="copy.searchPlaceholder"
+          [value]="searchText()"
+          aria-describedby="beneficiary-search-hint"
+          (input)="onSearch($event)"
+        />
+      </span>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.barangay }}</span>
-      <select class="filters__input" (change)="onBarangay($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.barangay }}</span>
+      <select class="field__input field__input--pill" (change)="onBarangay($event)">
         <option value="" [selected]="!filter().barangayId">{{ copy.allBarangays }}</option>
         @for (barangay of barangays; track barangay.id) {
           <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
@@ -41,9 +44,9 @@
       </select>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.programme }}</span>
-      <select class="filters__input" (change)="onProgramme($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.programme }}</span>
+      <select class="field__input field__input--pill" (change)="onProgramme($event)">
         <option value="" [selected]="!filter().programId">{{ copy.allProgrammes }}</option>
         @for (programme of programList(); track programme.id) {
           <option [value]="programme.id" [selected]="filter().programId === programme.id">
@@ -53,9 +56,9 @@
       </select>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.standing }}</span>
-      <select class="filters__input" (change)="onStanding($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.standing }}</span>
+      <select class="field__input field__input--pill" (change)="onStanding($event)">
         <option value="" [selected]="!filter().role">{{ copy.allStandings }}</option>
         @for (standing of standings; track standing) {
           <option [value]="standing" [selected]="filter().role === standing">
@@ -65,27 +68,27 @@
       </select>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.receivedFrom }}</span>
+    <label class="field">
+      <span class="field__label">{{ copy.receivedFrom }}</span>
       <input
         type="date"
-        class="filters__input"
+        class="field__input field__input--pill"
         [value]="filter().receivedFrom ?? ''"
         (change)="onFrom($event)"
       />
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.receivedTo }}</span>
+    <label class="field">
+      <span class="field__label">{{ copy.receivedTo }}</span>
       <input
         type="date"
-        class="filters__input"
+        class="field__input field__input--pill"
         [value]="filter().receivedTo ?? ''"
         (change)="onTo($event)"
       />
     </label>
 
-    <label class="filters__check">
+    <label class="check-pill">
       <input
         type="checkbox"
         [checked]="filter().withOpenDuplicateReview === true"
@@ -95,16 +98,20 @@
     </label>
 
     @if (hasFilters()) {
-      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+      <button type="button" class="btn beneficiaries__clear" (click)="clearFilters()">
+        {{ copy.clear }}
+      </button>
     }
   </div>
 
-  <p class="filters__hint" id="beneficiary-search-hint">{{ copy.searchHint }}</p>
+  <p class="status-line filters__hint" id="beneficiary-search-hint">{{ copy.searchHint }}</p>
 
   <!-- A reversed period matches nothing, which reads on screen as "this office
        has never helped anybody". Said out loud rather than left to be inferred. -->
   @if (periodReversed()) {
-    <p class="beneficiaries__warning" role="status">{{ copy.periodReversed }}</p>
+    <p class="callout callout--warning beneficiaries__warning" role="status">
+      {{ copy.periodReversed }}
+    </p>
   }
 
   <app-data-table
@@ -121,8 +128,8 @@
   />
 
   @if (rows().length > 0) {
-    <div class="beneficiaries__more">
-      <p class="filters__hint" role="status">
+    <div class="list-more beneficiaries__more">
+      <p class="status-line filters__hint" role="status">
         {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
       </p>
       @if (hasMore()) {
@@ -136,21 +143,25 @@
         </button>
       }
       @if (moreFailed()) {
-        <p class="beneficiaries__problem" role="alert">{{ copy.moreFailed }}</p>
+        <p class="callout callout--danger beneficiaries__problem" role="alert">
+          {{ copy.moreFailed }}
+        </p>
       }
     </div>
   }
-</div>
+</section>
 
 <ng-template #personCell let-row>
-  <a class="beneficiaries__name" [routerLink]="detailLink(row)">{{ row.resident.listedName }}</a>
+  <a class="record-link beneficiaries__name" [routerLink]="detailLink(row)">{{
+    row.resident.listedName
+  }}</a>
   @if (row.resident.isProtected) {
-    <span class="beneficiaries__protected">{{ copy.restricted }}</span>
+    <span class="chip chip--danger beneficiaries__protected">{{ copy.restricted }}</span>
   }
   <!-- A flag, never the other record. Which record it resembles is on the
        review screen, behind its own permission. -->
   @if (row.hasOpenDuplicateReview) {
-    <span class="beneficiaries__duplicate" [title]="copy.duplicateFlagHint">
+    <span class="chip chip--warning beneficiaries__duplicate" [title]="copy.duplicateFlagHint">
       {{ copy.duplicateFlag }}
     </span>
   }
@@ -163,14 +174,14 @@
 <!-- "Not enrolled" is a finding about the person; where membership is not
      recorded at all, the cell says that instead (`DL-187`). -->
 <ng-template #programmesCell let-row>
-  <span class="programmes">
+  <span class="chip-list programmes">
     @if (row.currentProgramNames === null) {
       <span class="programmes__none" [title]="copy.programmesNotRecordedHint">
         {{ copy.programmesNotRecorded }}
       </span>
     } @else {
       @for (name of row.currentProgramNames; track name) {
-        <span class="programmes__chip">{{ name }}</span>
+        <span class="chip chip--info programmes__chip">{{ name }}</span>
       } @empty {
         <span class="programmes__none">{{ copy.noProgrammes }}</span>
       }

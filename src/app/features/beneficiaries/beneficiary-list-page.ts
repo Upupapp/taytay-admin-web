@@ -38,6 +38,7 @@ import { DataTable } from '@shared/ui/data-table/data-table';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { SavedViewsBar } from '@shared/ui/saved-views/saved-views-bar';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { BENEFICIARIES_COPY } from './beneficiaries.copy';
 import { beneficiaryFilterParams, readBeneficiaryQuery } from './beneficiary-query';
@@ -70,6 +71,7 @@ const PAGE_SIZE = 20;
   imports: [
     DataTable,
     HasPermissionDirective,
+    Icon,
     PageHeader,
     PesoPipe,
     RelativeTimePipe,

@@ -1,62 +1,60 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <button
-    page-actions
-    type="button"
-    class="btn"
-    [disabled]="detecting()"
-    (click)="detect()"
-  >
+  <button page-actions type="button" class="btn" [disabled]="detecting()" (click)="detect()">
     {{ detecting() ? copy.detecting : copy.detect }}
   </button>
   <a page-actions class="btn" routerLink="/beneficiaries">{{ copy.back }}</a>
 </app-page-header>
 
-<div class="card review">
-  <p class="review__hint">{{ copy.strengthHint }}</p>
+<div class="card card--panel card--padded stack review">
+  <p class="status-line review__hint">{{ copy.strengthHint }}</p>
 
   <app-async-content [state]="state()" [content]="queueBody" [skeletonLines]="5">
     <ng-template #queueBody>
       @if (rows().length === 0) {
         <div class="review__empty">
-          <h2 class="review__empty-heading">{{ copy.emptyHeading }}</h2>
+          <h2 class="section-title review__empty-heading">{{ copy.emptyHeading }}</h2>
           <p class="review__empty-message">{{ copy.emptyMessage }}</p>
         </div>
       } @else {
-        <table class="review__table">
-          <caption class="review__caption">
-            {{ copy.caption }}
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">{{ copy.columnRecords }}</th>
-              <th scope="col">{{ copy.columnStrength }}</th>
-              <th scope="col">{{ copy.columnAgreement }}</th>
-              <th scope="col"><span class="visually-hidden">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (candidate of rows(); track candidate.residentId + candidate.otherResidentId) {
+        <div class="table-scroll">
+          <table class="simple-table review__table">
+            <caption class="review__caption">
+              {{
+                copy.caption
+              }}
+            </caption>
+            <thead>
               <tr>
-                <!-- Masked names on both sides. This queue never shows a value
-                     that was compared (DL-73). -->
-                <th scope="row" class="review__pair">
-                  <span>{{ candidate.residentLabel }}</span>
-                  <span class="review__versus">and</span>
-                  <span>{{ candidate.otherLabel }}</span>
-                </th>
-                <td>{{ strengthLabels[candidate.strength] }}</td>
-                <td class="review__agreement">{{ agreementSummary(candidate) }}</td>
-                <td class="review__action">
-                  <button type="button" class="btn btn--small" (click)="open(candidate)">
-                    {{ copy.open }}
-                  </button>
-                </td>
+                <th scope="col">{{ copy.columnRecords }}</th>
+                <th scope="col">{{ copy.columnStrength }}</th>
+                <th scope="col">{{ copy.columnAgreement }}</th>
+                <th scope="col"><span class="visually-hidden">Actions</span></th>
               </tr>
-            }
-          </tbody>
-        </table>
-        <div class="review__more">
-          <p class="review__hint" role="status">
+            </thead>
+            <tbody>
+              @for (candidate of rows(); track candidate.residentId + candidate.otherResidentId) {
+                <tr>
+                  <!-- Masked names on both sides. This queue never shows a value
+                     that was compared (DL-73). -->
+                  <th scope="row" class="review__pair">
+                    <span>{{ candidate.residentLabel }}</span>
+                    <span class="review__versus">and</span>
+                    <span>{{ candidate.otherLabel }}</span>
+                  </th>
+                  <td>{{ strengthLabels[candidate.strength] }}</td>
+                  <td class="review__agreement">{{ agreementSummary(candidate) }}</td>
+                  <td class="review__action">
+                    <button type="button" class="btn btn--small" (click)="open(candidate)">
+                      {{ copy.open }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="list-more review__more">
+          <p class="status-line review__hint" role="status">
             {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
           </p>
           @if (hasMore()) {
@@ -70,7 +68,9 @@
             </button>
           }
           @if (moreFailed()) {
-            <p class="review__problem" role="alert">{{ copy.moreFailed }}</p>
+            <p class="callout callout--danger review__problem" role="alert">
+              {{ copy.moreFailed }}
+            </p>
           }
         </div>
       }
@@ -86,7 +86,7 @@
     [description]="copy.comparisonHint"
     (dismissed)="close()"
   >
-    <div drawer-body class="finding">
+    <div drawer-body class="stack finding">
       <app-identity-comparison
         [candidate]="candidate"
         [heading]="copy.comparisonHeading"
@@ -95,10 +95,10 @@
         [sensitiveNotice]="copy.sensitiveNotice"
       />
 
-      <fieldset class="finding__group">
+      <fieldset class="choice-list finding__group">
         <legend class="finding__legend">{{ copy.verdictHeading }}</legend>
 
-        <label class="finding__option">
+        <label class="choice finding__option">
           <input
             type="radio"
             name="verdict"
@@ -106,13 +106,13 @@
             [checked]="verdict() === 'same-person'"
             (change)="onVerdict('same-person')"
           />
-          <span>
+          <span class="choice__text">
             <span class="finding__option-label">{{ copy.verdictSame }}</span>
-            <span class="finding__option-hint">{{ copy.verdictSameHint }}</span>
+            <span class="choice__hint finding__option-hint">{{ copy.verdictSameHint }}</span>
           </span>
         </label>
 
-        <label class="finding__option">
+        <label class="choice finding__option">
           <input
             type="radio"
             name="verdict"
@@ -120,19 +120,19 @@
             [checked]="verdict() === 'distinct-people'"
             (change)="onVerdict('distinct-people')"
           />
-          <span>
+          <span class="choice__text">
             <span class="finding__option-label">{{ copy.verdictDistinct }}</span>
-            <span class="finding__option-hint">{{ copy.verdictDistinctHint }}</span>
+            <span class="choice__hint finding__option-hint">{{ copy.verdictDistinctHint }}</span>
           </span>
         </label>
       </fieldset>
 
       @if (verdict() === 'same-person') {
-        <fieldset class="finding__group">
+        <fieldset class="choice-list finding__group">
           <legend class="finding__legend">{{ copy.canonicalHeading }}</legend>
-          <p class="finding__hint">{{ copy.canonicalHint }}</p>
+          <p class="field__hint finding__hint">{{ copy.canonicalHint }}</p>
 
-          <label class="finding__option">
+          <label class="choice finding__option">
             <input
               type="radio"
               name="canonical"
@@ -142,7 +142,7 @@
             <span class="finding__option-label">{{ candidate.residentLabel }}</span>
           </label>
 
-          <label class="finding__option">
+          <label class="choice finding__option">
             <input
               type="radio"
               name="canonical"
@@ -155,9 +155,11 @@
 
         <!-- What is carried across, never what is deleted: nothing is. -->
         @if (preview(); as summary) {
-          <section class="preview" aria-labelledby="preview-heading">
-            <h3 class="preview__heading" id="preview-heading">{{ copy.previewHeading }}</h3>
-            <dl class="preview__list">
+          <section class="subpanel subpanel--soft preview" aria-labelledby="preview-heading">
+            <h3 class="section-title preview__heading" id="preview-heading">
+              {{ copy.previewHeading }}
+            </h3>
+            <dl class="facts preview__list">
               <div class="preview__item">
                 <dt>{{ copy.previewRequests }}</dt>
                 <dd>{{ summary.movingRequestCount }}</dd>
@@ -188,17 +190,19 @@
         }
       }
 
-      <label class="finding__field">
-        <span class="finding__legend">{{ copy.reasonLabel }}</span>
+      <label class="field finding__field">
+        <span class="field__label finding__legend">{{ copy.reasonLabel }}</span>
         <textarea
-          class="finding__textarea"
+          class="field__input finding__textarea"
           rows="3"
           [value]="reason()"
           [placeholder]="copy.reasonPlaceholder"
           aria-describedby="finding-reason-hint"
           (input)="onReason($event)"
         ></textarea>
-        <span class="finding__hint" id="finding-reason-hint">{{ copy.reasonHint }}</span>
+        <span class="field__hint finding__hint" id="finding-reason-hint">{{
+          copy.reasonHint
+        }}</span>
       </label>
     </div>
 
