@@ -1,12 +1,9 @@
 /* Taytay Rizal Social Welfare — brand token layer.
  *
  * The digital identity of the staff console. Three things live here and
- * nowhere else: the brand colour ramp, the semantic spacing aliases, and the
- * brand-surface sizing used by the logo/seal components.
- *
- * Since the redesign (DL-200) the ramp points at the design tokens in
- * styles.scss rather than holding colours of its own, so the two cannot
- * disagree.
+ * nowhere else: the focus ring, the semantic spacing aliases, and the
+ * brand-surface sizing used by the logo/seal components. The colours
+ * themselves are the design tokens in styles.scss (DL-200, DL-202).
  *
  * IMPORTANT — these colours are this application's palette. They are NOT
  * claimed to be the official colours of the Municipality of Taytay, and no
@@ -20,14 +17,10 @@
  */
 
 :root {
-  /* ── Brand ramp ───────────────────────────────────────────────────────── */
-  --brand-primary: var(--primary);
-  /* The dark end of the ramp. A primary button's hover is lighter in the
-     design: --primary-hover. */
-  --brand-primary-hover: var(--deep);
-  --brand-primary-soft: var(--blue-50);
-  /* Ink used for text placed ON the primary brand colour. */
-  --brand-on-primary: var(--on-primary);
+  /* The brand ramp (`--brand-primary`, `-hover`, `-soft`, `--brand-on-primary`)
+     was retired in Phase 4 of the redesign (DL-202): its colours are
+     `--primary`, `--deep`, `--blue-50` and `--on-primary` in styles.scss, and
+     `check:brand` compares those with brand-palette.ts. */
 
   /* ── Focus ring ───────────────────────────────────────────────────────── */
   /* Two rings, one set of tokens, so every focus style is identical and

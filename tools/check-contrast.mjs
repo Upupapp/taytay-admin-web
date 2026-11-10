@@ -19,7 +19,7 @@
  * ## What it cannot tell you
  *
  * That a colour is *used* where the check assumes. It pairs each foreground token with the
- * background token it is named for; a screen that puts `--tone-danger-fg` on `--c-brand` is a
+ * background token it is named for; a screen that puts `--tone-danger-fg` on `--primary` is a
  * combination no static rule anticipated, and only a person looking at the screen will see it.
  */
 
@@ -36,9 +36,10 @@ const source = readFileSync(join(ROOT, 'src/styles.scss'), 'utf8');
 
 /*
  * Each token is followed through its `var()` aliases to the colour it lands on. Since the
- * redesign (DL-200) the pre-redesign names (`--c-text`, `--c-brand`, …) point at the design
- * tokens instead of repeating their hex; reading only literal hex would have skipped them, and a
- * skipped pair is a pair nobody measured.
+ * redesign (DL-200) several design tokens are aliases (`--primary` is `var(--blue)`, `--deep` is
+ * `var(--navy)`); reading only literal hex would have skipped them, and a skipped pair is a pair
+ * nobody measured. The pre-redesign names (`--c-text`, `--c-brand`, …) were retired in Phase 4
+ * (DL-202) and every pair below names the design token that replaced them.
  */
 /** @type {Map<string, string>} */
 const declared = new Map();
@@ -126,10 +127,10 @@ function require(foreground, background, minimum, what) {
 }
 
 // ── body text ──────────────────────────────────────────────────────────────
-for (const background of ['--c-bg', '--c-surface', '--c-surface-muted']) {
-  require('--c-text', background, TEXT_MINIMUM, 'body text');
-  require('--c-text-muted', background, TEXT_MINIMUM, 'muted text');
-  require('--c-text-subtle', background, TEXT_MINIMUM, 'subtle text');
+for (const background of ['--page-base', '--card-solid', '--fill']) {
+  require('--text', background, TEXT_MINIMUM, 'body text');
+  require('--muted', background, TEXT_MINIMUM, 'muted text');
+  require('--muted2', background, TEXT_MINIMUM, 'subtle text');
   require('--ink', background, TEXT_MINIMUM, 'heading ink');
   require('--text2', background, TEXT_MINIMUM, 'secondary text');
 }
@@ -146,9 +147,9 @@ require('--on-deep-muted', '--deep', TEXT_MINIMUM, 'muted text on the deep panel
 require('--on-deep-muted', '--primary', TEXT_MINIMUM, 'muted text on a primary panel');
 
 // ── brand, which carries links and primary buttons ─────────────────────────
-require('--c-brand', '--c-surface', TEXT_MINIMUM, 'brand text');
-require('--c-brand', '--c-bg', TEXT_MINIMUM, 'brand text');
-require('--c-accent', '--c-surface', TEXT_MINIMUM, 'accent text');
+require('--primary', '--card-solid', TEXT_MINIMUM, 'brand text');
+require('--primary', '--page-base', TEXT_MINIMUM, 'brand text');
+require('--gold-ink', '--card-solid', TEXT_MINIMUM, 'accent text');
 
 // ── status tones, each on its own background ───────────────────────────────
 for (const tone of ['neutral', 'info', 'progress', 'success', 'warning', 'danger']) {
@@ -156,8 +157,8 @@ for (const tone of ['neutral', 'info', 'progress', 'success', 'warning', 'danger
 }
 
 // ── interface components: borders must be visible against what they enclose ─
-require('--c-border-strong', '--c-surface', COMPONENT_MINIMUM, 'strong border');
-require('--c-border-strong', '--c-bg', COMPONENT_MINIMUM, 'strong border');
+require('--field-line', '--card-solid', COMPONENT_MINIMUM, 'strong border');
+require('--field-line', '--page-base', COMPONENT_MINIMUM, 'strong border');
 
 /*
  * ── colour is never the only signal ────────────────────────────────────────

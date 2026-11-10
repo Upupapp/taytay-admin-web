@@ -43,14 +43,14 @@
   min-block-size: var(--target-min);
   padding: var(--space-1);
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--r-pill);
   background: none;
   color: inherit;
   cursor: pointer;
 }
 
 .icon-button:hover:not(:disabled) {
-  background: var(--c-surface-muted);
+  background: var(--soft);
 }
 
 .icon-button:disabled {

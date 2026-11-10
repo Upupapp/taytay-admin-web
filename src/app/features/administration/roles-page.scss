@@ -42,8 +42,11 @@
   font-weight: var(--fw-semibold);
 }
 
-/* A wide matrix scrolls inside its card rather than the page. */
+/* A wide matrix scrolls inside its card rather than the page. Positioned, so
+   the visually hidden "holds" labels are clipped with it: unpositioned, they
+   widened the page to 1475px (Phase 4 sweep). */
 .matrix__scroll {
+  position: relative;
   overflow-x: auto;
 }
 

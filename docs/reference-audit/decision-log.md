@@ -9467,3 +9467,55 @@ panels 420/660 (were 400/640), towards the mock-ups' wider dialogs. The notifica
 inbox drawer is its own component, so the shell's stylesheet stays inside the component-style
 budget. Not measured: contrast of muted text on the glass sidebar and cards over the wash (open
 since `DL-200`; the redesign's final phase measures it on the rendered screens).
+
+## DL-202 — the redesign's last phase: the old token names go, and contrast on glass is measured on the rendered screens
+
+**Status:** Settled (11 November 2026). Phase 4 of `DL-200`. Closes the question `DL-200` and
+`DL-201` left open (contrast on the translucent surfaces). Presentation only: no selector, input,
+output, route, guard, live region or wording changed.
+
+**The pre-redesign names are retired.** Once every screen had been restyled, nothing but the checks
+used `--c-*`, `--radius-*`, `--shadow-*`, `--font-sans` or the `--brand-primary*` ramp, so they went
+from `styles.scss` and `_brand-tokens.scss`. `check:contrast` and `check:brand` measure the same
+pairs under the names that replaced them (`--text`, `--muted`, `--muted2`, `--primary`, `--deep`,
+`--blue-50`, `--on-primary`, `--gold-ink`, `--field-line`, `--page-base`, `--card-solid`,
+`--fill`): the same colours, the same thresholds, the same number of pairs. The mirror's
+decorative-border entry (`borderDecorative`) now describes the design's divider (`--divider`)
+instead of a grey no stylesheet paints any more; it is an exemption, not an audited pair. The
+semantic spacing layer of `DL-17` (`--space-card`, `--space-page`, …) is a decision of its own,
+not a pre-redesign name, and stays.
+
+**Contrast on glass, measured.** Cards and the sidebar are white glass over a fixed wash of colour,
+so the colour under a line of text depends on where it sits; a static audit cannot see that. The
+rendered console (local-mock, every module as an administrator, the first record of every list) was
+measured at 1280×800 and 1440×900: every text hidden, the pixels behind each run read back and
+compared with its colour, beside axe-core (which leaves text on a gradient or translucent surface
+"incomplete" rather than measuring it). Muted text did not hold 4.5:1: 3.9–4.2:1 in the sidebar on
+every page (its brand line and section titles, over the blue at the top-left and the navy at the
+bottom-left of the wash) and 4.3–4.5:1 on cards on about fifteen screens. Worked out for the worst
+case, muted text at a card's thin end (28% white) over the navy would fall to about 3.6:1. Three
+changes, chosen to keep the glass and the order of the inks rather than to make the cards opaque:
+
+- `--muted` and `--muted2` darken to `#4f586c` (7.1:1 on white; were 5.9 and 5.6:1). The two names
+  stay because the mock-ups use both.
+- A card's thin end is 40% white instead of 28% (`--card`), so no card is thinner than the glass
+  the inks were worked out on (muted text 4.7:1 there over the darkest part of the wash).
+- `--field-line` darkens to `#6b7489`, so a field's boundary keeps 3:1 (WCAG 1.4.11) on that same
+  thinnest glass.
+
+Measured again afterwards: 2,992 runs of text, none below its threshold; muted text no lower than
+5.0:1.
+
+**What else the sweep found.** On the dashboard, the residents'-app panel set its heading in the
+global navy ink on the primary fill (1.2:1); it is white now. The intake stepper's "to do" count was
+a translucent gold that measured 1.2:1 on the filled current step; it is the audited warning tone.
+A date or time field lost its focus ring after the first of its parts, because Chromium stops
+matching `:focus-visible` once focus moves inside the field; those fields draw the ring on
+`:focus-within`. The roles matrix's visually hidden labels widened the page to 1,475px, because the
+box that scrolls the matrix was not positioned; every box that scrolls a table is positioned now.
+At 1280px four tables scrolled sideways by 15–60px (a dashboard breakdown, the beneficiary list, the
+home screen's two lists); a figure with words after it, a table heading and a row's buttons now wrap
+instead. The roles matrix (every permission against every role) still scrolls inside its card at
+both widths, by design. The event check-in's Find button no longer sits on a fixed 25px offset: the
+field's label, input and hint are rows of a subgrid, so the button stays on the input's row whatever
+the label's height.

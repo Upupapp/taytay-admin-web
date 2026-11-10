@@ -45,7 +45,12 @@
   text-align: end;
   /* Aligned digits make magnitudes comparable without reading every number. */
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+}
+
+/* A figure with words after it ("₱8,000.00 and 3 goods") wraps between the
+   words, never inside the figure, so a narrow panel does not scroll. */
+.chart__value {
+  text-wrap: balance;
 }
 
 .chart__value {

@@ -1,19 +1,24 @@
 /* One person at a time (DL-195): a framed sub-panel with a pill search and the
    matches as soft rows. */
 
+/* The field's label, input and hint are rows of the form's own grid (subgrid),
+   so the button sits on the input's row whatever height the label takes. */
 .check-in__search {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: var(--space-3);
-}
-
-.check-in__search .btn {
-  margin-block-start: 25px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-3);
 }
 
 .check-in__field {
-  flex: 1 1 16rem;
+  display: grid;
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+}
+
+.check-in__search .btn {
+  grid-row: 2;
+  grid-column: 2;
+  align-self: center;
 }
 
 .check-in__done {

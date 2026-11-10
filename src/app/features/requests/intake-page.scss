@@ -11,9 +11,11 @@
   margin-block-end: var(--space-4);
 }
 
+/* Opaque, so it reads the same on the filled current step (the translucent
+   gold tint over the primary fill measured 1.2:1, Phase 4). */
 .stepper__todo {
-  background: var(--gold-tint2);
-  color: var(--gold-ink2);
+  background: var(--tone-warning-bg);
+  color: var(--tone-warning-fg);
 }
 
 .intake__subheading {

@@ -18,16 +18,16 @@ export const BRAND_PALETTE = {
   surface: '#ffffff',
   surfaceMuted: '#f2f4f8',
 
-  // Borders
-  borderDecorative: '#e1e6f0',
-  borderInteractive: '#7a8399',
+  // Borders (decorative = the design's divider; interactive = a text field's edge)
+  borderDecorative: '#eef1f6',
+  borderInteractive: '#6b7489',
 
   // Ink
   ink: '#08124a',
   text: '#1b2540',
   text2: '#2b3550',
-  textMuted: '#5a6478',
-  textSubtle: '#5e687c',
+  textMuted: '#4f586c',
+  textSubtle: '#4f586c',
 
   // Brand
   brandPrimary: '#0a2071',
@@ -212,11 +212,11 @@ export const DOCUMENTED_EXEMPTIONS: readonly { readonly label: string; readonly 
         'so the tint is supplementary and carries no meaning on its own.',
     },
     {
-      label: 'decorative border (--c-border) against surfaces',
+      label: 'decorative rules (--divider, --line, --line2) against surfaces',
       reason:
-        'Table rules and card edges are decoration. They do not identify a control or ' +
-        'convey state, so no 1.4.11 threshold applies. Control boundaries use ' +
-        '--c-border-strong, which is audited at 3:1.',
+        'Table rules, hairlines and card edges are decoration. They do not identify a control ' +
+        'or convey state, so no 1.4.11 threshold applies. Control boundaries use ' +
+        '--field-line, which is audited at 3:1.',
     },
     {
       label: 'the official municipal seal',

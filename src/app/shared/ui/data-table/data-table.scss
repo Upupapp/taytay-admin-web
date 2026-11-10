@@ -2,6 +2,8 @@
    capitals, hairline rows, and a row tint under the pointer. It sits inside a
    card; the card gives it its padding. */
 .table-wrap {
+  /* Contains visually hidden labels, which would otherwise widen the page. */
+  position: relative;
   overflow-x: auto;
 }
 
@@ -21,7 +23,8 @@
   letter-spacing: var(--ls-caps);
   text-align: start;
   text-transform: uppercase;
-  white-space: nowrap;
+  /* A long heading wraps rather than making the table scroll at 1280px. */
+  text-wrap: balance;
 }
 
 .table th:first-child {

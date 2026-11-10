@@ -61,7 +61,11 @@ conform, both now corrected and pinned against reinstatement:
 
 Two exemptions are recorded with the clause relied on, rather than quietly
 ignored: status-badge tints (the visible **label** carries the state, not the
-tint) and decorative rules (`--c-border` identifies no component).
+tint) and decorative rules (`--divider`, `--line`, `--line2` identify no component).
+
+The pre-redesign token names above (`--c-text-subtle`, `--c-border-strong`) were retired in
+Phase 4 of the redesign (DL-202); their colours are `--muted2` and `--field-line` now, and the
+checks audit those names.
 
 > Adding a colour pairing to a component without adding it to `AUDITED_PAIRS`
 > is how a palette silently stops conforming.

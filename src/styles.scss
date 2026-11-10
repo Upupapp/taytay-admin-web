@@ -7,11 +7,11 @@
    (later `docs/design/`) where they say something, the design README where
    they do not. Names in the first block are the mock-ups' own, so a screen
    translated from a mock-up can keep `var(--card)` as it is written there.
-   The second block keeps every name the console used before the redesign,
-   pointed at the new values, until each screen is restyled.
+   The names the console used before the redesign were retired once every
+   screen was restyled (DL-202).
 
-   The brand identity layer (brand ramp, focus ring, semantic spacing, seal
-   sizing) lives in ./styles/_brand-tokens.scss. */
+   The brand identity layer (focus ring, semantic spacing, seal sizing) lives
+   in ./styles/_brand-tokens.scss. */
 
 @use 'sass:meta';
 @use './styles/fonts';
@@ -30,6 +30,8 @@
   --green: #17663a;
   --sky: #2d54e0;
   --fill: #f2f4f8;
+  /* Decorative separators are exempt from WCAG 1.4.11: they identify no
+     component and convey no state (brand-palette.ts DOCUMENTED_EXEMPTIONS). */
   --divider: #eef1f6;
   --blue-50: #ecf1fc;
   --blue-100: #dce5fa;
@@ -44,7 +46,10 @@
     radial-gradient(700px 560px at 18% 78%, rgb(10 32 113 / 30%), transparent 70%),
     radial-gradient(520px 420px at 52% 40%, rgb(91 130 255 / 25%), transparent 70%),
     var(--page-base);
-  --card: linear-gradient(135deg, rgb(255 255 255 / 62%), rgb(255 255 255 / 28%));
+  /* The thin end is 40% white, not the mock-ups' 28%: measured over the
+     wash in Phase 4 (DL-202), muted text at a card's thin end over the navy
+     blob fell to 3.6:1. With 40% and the inks below it clears 4.5:1 there. */
+  --card: linear-gradient(135deg, rgb(255 255 255 / 62%), rgb(255 255 255 / 40%));
   --card-solid: #ffffff;
   --card-flat: rgb(255 255 255 / 40%);
   --card-edge: rgb(255 255 255 / 70%);
@@ -61,8 +66,9 @@
   --line2: rgb(10 32 113 / 18%);
   /* The boundary of a text field identifies it, so 3:1 applies (WCAG 1.4.11).
      The mock-ups' #8a93a6 measures 2.6:1 on the page; this is the nearest
-     shade that clears 3:1 there and on white. */
-  --field-line: #7a8399;
+     shade that clears 3:1 on the thinnest glass over the darkest part of the
+     wash, as measured in Phase 4 (DL-202). */
+  --field-line: #6b7489;
 
   /* Inks */
   --primary: var(--blue);
@@ -72,9 +78,13 @@
   --ink: #08124a;
   --text: #1b2540;
   --text2: #2b3550;
-  --muted: #5a6478;
-  /* The mock-ups' #6b7489 measures 3.9:1 on the page; darkened to clear 4.5:1. */
-  --muted2: #5e687c;
+  /* Muted text sits on translucent glass over the coloured wash. Measured in
+     the browser in Phase 4 (DL-202), the earlier #5a6478 / #5e687c fell to
+     3.9-4.2:1 in the sidebar and 4.3-4.5:1 on cards; these clear 4.5:1 on the
+     thinnest glass over the darkest part of the wash. The two names stay
+     because the mock-ups use both. */
+  --muted: #4f586c;
+  --muted2: #4f586c;
   --link: var(--blue);
   --link-hover: #1d3a9c;
 
@@ -204,33 +214,9 @@
   --tile-sm: 36px;
   --tile-lg: 56px;
 
-  /* ── Pre-redesign names ───────────────────────────────────────────────── */
-  /* Kept so a screen not yet restyled still draws in the new palette. New
-     code uses the names above. `check:contrast` and `check:brand` resolve
-     these aliases and audit the colour each one lands on. */
-  --c-bg: var(--page-base);
-  --c-surface: var(--card-solid);
-  --c-surface-muted: var(--fill);
-  --c-surface-sunken: var(--fill);
-  /* Decorative separators (table rules, card edges). Exempt from WCAG 1.4.11:
-     they do not identify a component or convey state. Opaque, because the
-     brand audit compares hex values; new code uses var(--line). */
-  --c-border: #e1e6f0;
-  /* Boundaries of interactive controls. For a text input the border IS what
-     identifies the control, so 1.4.11 applies and 3:1 is required. See DL-21. */
-  --c-border-strong: var(--field-line);
-  --c-text: var(--text);
-  --c-text-muted: var(--muted);
-  --c-text-subtle: var(--muted2);
-  --c-brand: var(--primary);
-  --c-brand-dark: var(--deep);
-  --c-brand-soft: var(--blue-50);
-  --c-accent: var(--gold-ink);
-  --c-link: var(--link);
-  --c-danger: var(--red-ink);
-  --c-success: var(--green-ink);
-  --c-warning: var(--gold-ink);
-  --c-focus: var(--focus-ring-inner);
+  /* The pre-redesign names (`--c-*`, `--radius-*`, `--shadow-*`,
+     `--font-sans`, `--brand-primary*`) were retired in Phase 4 once no
+     stylesheet used them; the checks audit the names above (DL-202). */
 
   /* Status tones — consumed by the StatusBadge primitive. Each is the
      mock-ups' tint laid over white, as hex, so the pair can be audited. */
@@ -247,12 +233,6 @@
   --tone-danger-fg: #b00708;
   --tone-danger-bg: #fbe2e2;
 
-  --radius-sm: var(--r-sm);
-  --radius-md: var(--r-field);
-  --radius-lg: var(--r-card);
-  --radius-base: var(--r-field);
-  --radius-tight: var(--r-xs);
-
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -260,14 +240,6 @@
   --space-5: 24px;
   --space-6: 32px;
   --space-7: 48px;
-
-  /* The design draws no shadows. The names stay so a component that still
-     asks for one gets nothing. */
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: none;
-
-  --font-sans: var(--font-body);
 
   --shell-sidebar-width: 264px;
   --shell-topbar-height: 60px;
@@ -388,7 +360,11 @@ table {
    the navigation). Forced-colours mode drops the inner ring and keeps the
    outline in the system colour. Driven by the focus tokens so every
    occurrence is identical. */
-:focus-visible {
+:focus-visible,
+/* A date or time field moves focus between its own parts (day, month, year);
+   Chromium stops matching :focus-visible on the field after the first part,
+   which left the ring off while the keyboard was still inside it. */
+input:is([type='date'], [type='time'], [type='datetime-local'], [type='month'], [type='week']):focus-within {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
   box-shadow: 0 0 0 var(--focus-ring-offset) var(--focus-ring-inner);

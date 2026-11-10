@@ -19,17 +19,9 @@ import { notConnectedSentence, type DataPort } from '@domain/index';
 @Component({
   selector: 'app-not-connected',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<p class="not-connected" role="note">{{ sentence() }}</p>`,
-  styles: `
-    .not-connected {
-      margin: 0;
-      padding: var(--space-3);
-      border-left: 3px solid var(--c-border-strong);
-      background: var(--c-surface-muted);
-      color: var(--c-text);
-      font-size: 13px;
-    }
-  `,
+  // The global `.note-box` look (quiet note with a left rule), the same as every other gap a
+  // screen names in place.
+  template: `<p class="not-connected note-box" role="note">{{ sentence() }}</p>`,
 })
 export class NotConnected {
   readonly port = input.required<DataPort>();

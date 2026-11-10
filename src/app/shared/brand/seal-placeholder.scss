@@ -16,10 +16,10 @@
   border-radius: var(--r-sm);
   background: var(--seal-placeholder-bg);
   color: var(--seal-placeholder-fg);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   /* Scales with the reserved box so the mark reads at every size. */
   font-size: 32%;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--ls-caps);
   line-height: 1;
   vertical-align: middle;
 }

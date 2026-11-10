@@ -139,6 +139,9 @@
    the DataTable's look: the soft header band, hairline rows. Wrap it in
    `.table-scroll` so a narrow column scrolls inside its card. */
 .table-scroll {
+  /* Positioned, so a visually hidden label inside (position: absolute) is
+     clipped here instead of widening the page (Phase 4 sweep). */
+  position: relative;
   overflow-x: auto;
 }
 
@@ -728,7 +731,7 @@ a.kpi:focus-visible .kpi__arrow {
   block-size: 52px;
   background: var(--primary);
   color: var(--gold);
-  font-size: 17px;
+  font-size: var(--fs-subheading);
 }
 
 /* ── Notices ──────────────────────────────────────────────────────────────

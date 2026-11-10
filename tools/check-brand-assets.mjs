@@ -33,19 +33,19 @@ const read = (relative) => readFileSync(join(root, relative), 'utf8');
  * mirror. Left: CSS custom property. Right: key in BRAND_PALETTE.
  */
 const TOKEN_MAP = {
-  '--c-bg': 'bg',
-  '--c-surface': 'surface',
-  '--c-surface-muted': 'surfaceMuted',
-  '--c-border': 'borderDecorative',
-  '--c-border-strong': 'borderInteractive',
-  '--c-text': 'text',
-  '--c-text-muted': 'textMuted',
-  '--c-text-subtle': 'textSubtle',
-  '--brand-primary': 'brandPrimary',
-  '--brand-primary-hover': 'brandPrimaryHover',
-  '--brand-primary-soft': 'brandPrimarySoft',
-  '--brand-on-primary': 'brandOnPrimary',
-  '--c-accent': 'accent',
+  '--page-base': 'bg',
+  '--card-solid': 'surface',
+  '--fill': 'surfaceMuted',
+  '--divider': 'borderDecorative',
+  '--field-line': 'borderInteractive',
+  '--text': 'text',
+  '--muted': 'textMuted',
+  '--muted2': 'textSubtle',
+  '--primary': 'brandPrimary',
+  '--deep': 'brandPrimaryHover',
+  '--blue-50': 'brandPrimarySoft',
+  '--on-primary': 'brandOnPrimary',
+  '--gold-ink': 'accent',
   '--focus-ring-color': 'focusRing',
   '--focus-ring-inner': 'focusRingInner',
   '--primary-hover': 'primaryHover',
@@ -58,9 +58,10 @@ const TOKEN_MAP = {
 
 const styleSources = ['src/styles.scss', 'src/styles/_brand-tokens.scss'];
 // Every declaration, then each one followed through its `var()` aliases. Since the
-// redesign (DL-200) the pre-redesign names point at the design tokens rather than
-// repeating their hex, and a parser that read only literal hex would silently stop
-// comparing them — which is the drift this check exists to catch.
+// redesign (DL-200) several design tokens are aliases (`--primary` is `var(--blue)`),
+// and a parser that read only literal hex would silently stop comparing them — which is
+// the drift this check exists to catch. The pre-redesign names this map used to carry
+// (`--c-*`, `--brand-primary*`) were retired in Phase 4 (DL-202).
 const declared = new Map();
 for (const file of styleSources) {
   const text = read(file).replace(/\/\*[\s\S]*?\*\//g, '');

@@ -53,6 +53,7 @@
 }
 
 .panel {
+  position: relative;
   min-inline-size: 0;
   overflow-x: auto;
 }
@@ -76,6 +77,8 @@
 }
 
 .app-figures__heading {
+  /* The global heading ink is navy; on the primary panel it would vanish. */
+  color: var(--on-primary);
   font-family: var(--font-display);
   font-size: var(--fs-title-md);
   font-weight: var(--fw-medium);
