@@ -28,6 +28,7 @@ import { blankToNull, readChecked, readText } from '@shared/forms/form-values';
 import { failureReason } from '@shared/state/failure-reason';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { Icon } from '@shared/ui/icon/icon';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
@@ -70,7 +71,7 @@ export type LegalTextKind = 'terms' | 'privacyNotice';
 @Component({
   selector: 'app-app-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, Modal, PageHeader],
+  imports: [AsyncContent, DatePipe, Icon, Modal, PageHeader],
   templateUrl: './app-settings-page.html',
   styleUrl: './app-settings-page.scss',
 })

@@ -1,115 +1,140 @@
-/* Layout only. `.field`, `.card`, `.check` and `.btn` are styles.scss's (DL-120) and are not redefined. */
+/* Layout only. `.field`, `.card`, `.check` and `.btn` are styles.scss's (DL-120) and are not redefined.
+   The ResidentRegister form pattern: a panel of hairline sections, the review button in the footer. */
 
-.settings {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-base);
+/* Always in the DOM so it is announced; drawn only once it says something. */
+.settings__outcome:not(:empty) {
+  margin-block-end: var(--space-4);
+  padding: 10px 14px;
+  border-radius: var(--r-field);
+  background: var(--green-tint);
+  color: var(--green-ink);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
 }
 
-.settings__group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-snug);
-  margin: 0;
-  padding: var(--space-3);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
+/* Contact and versions side by side at desktop widths. */
+.settings__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr));
+  align-items: start;
+  gap: var(--space-4);
 }
 
-.settings__group > .field + .field {
+.settings__group > .field + .field,
+.settings__new-flag > .field + .field {
   margin-block-start: 0;
 }
 
-.settings__group legend {
-  padding-inline: var(--space-1);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.settings__note,
-.settings__problem,
-.settings__outcome {
-  margin: 0;
-  font-size: 13px;
-}
-
 .settings__note {
-  color: var(--c-text-muted);
+  max-inline-size: 90ch;
+  color: var(--muted);
+  font-size: var(--fs-label);
 }
 
 .settings__problem {
-  color: var(--tone-danger-fg);
+  color: var(--red-ink);
+  font-size: var(--fs-label);
 }
 
-.settings__flags {
-  inline-size: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.settings__flags th,
-.settings__flags td {
-  padding: var(--space-2);
-  border-block-end: 1px solid var(--c-border);
-  text-align: start;
+.settings__flags code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
 }
 
 .settings__new-flag {
   display: grid;
   grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr) auto;
-  gap: var(--space-2);
   align-items: end;
+  gap: var(--space-2);
 }
 
-.settings__new-flag > .field + .field {
-  margin-block-start: 0;
+.settings__remove-flag {
+  min-inline-size: var(--h-field);
+  min-block-size: var(--h-field);
+}
+
+.settings__add,
+.settings__legal-act {
+  align-self: flex-start;
 }
 
 .settings__problems {
-  padding: var(--space-3);
-  border: 1px solid var(--tone-danger-fg);
-  border-radius: var(--radius-md);
-  background: var(--tone-danger-bg);
-  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px var(--space-4);
+  border-radius: var(--r-lg);
+  background: var(--red-tint);
+  color: var(--red-ink2);
+  font-size: var(--fs-sm);
 }
 
 .settings__problems p {
-  margin: 0 0 var(--space-1);
-  font-weight: 600;
+  font-weight: var(--fw-bold);
 }
 
 .settings__problems ul,
 .settings__warning ul {
-  margin: 0 0 var(--space-2);
-  padding-inline-start: var(--space-5);
+  margin: 0;
+  padding-inline-start: 18px;
 }
 
-/* DL-186: the texts residents accept, read and published here. */
+/* What the change does, in the effects look, before the button that makes it. */
+.settings__warning {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  color: var(--text2);
+  font-size: var(--fs-sm);
+}
+
+.settings__warning ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 14px var(--space-4) 14px 34px;
+  border-radius: var(--r-lg);
+  background: var(--soft2);
+}
+
+/* DL-186: the texts residents accept, read and published here, one soft block each. */
 .settings__legal {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-snug);
-  padding-block: var(--space-snug);
-  border-block-start: 1px solid var(--c-border);
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--r-xl);
+  background: var(--soft2);
 }
 
 .settings__legal-heading {
-  margin: 0;
-  font-size: 15px;
+  color: var(--ink);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-bold);
 }
 
-.settings__legal-current {
-  align-self: stretch;
+.settings__legal-current summary {
+  color: var(--link);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+
+.settings__legal-current[open] > summary {
+  margin-block-end: var(--space-2);
 }
 
 /* As written: the text is shown, never rendered as markup. */
 .settings__legal-text {
+  margin-block-start: var(--space-2);
+  padding: var(--space-3) 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--card-solid);
+  color: var(--text);
+  font-size: var(--fs-label);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  padding: var(--space-snug);
-  border: 1px solid var(--c-border);
-  border-radius: 4px;
 }
 
 .settings__legal-input {
@@ -117,6 +142,6 @@
   font-family: inherit;
 }
 
-.settings__legal .field {
-  align-self: stretch;
+.settings__footer {
+  align-items: center;
 }
