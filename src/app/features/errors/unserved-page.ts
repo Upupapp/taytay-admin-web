@@ -6,6 +6,7 @@ import { SessionStore } from '@core/auth/session.store';
 import { ServedPorts } from '@core/access/served-ports';
 import { NAVIGATION, type NavItem } from '@core/navigation/navigation';
 import { DATA_PORT_HOLDINGS, type DataPort } from '@domain/index';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { UNSERVED_COPY } from './unserved.copy';
@@ -32,76 +33,114 @@ interface WithheldModule {
 @Component({
   selector: 'app-unserved-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeader, RouterLink],
+  imports: [Icon, PageHeader, RouterLink],
   template: `
     <app-page-header [title]="copy.heading" [subtitle]="copy.subtitle" />
 
-    @if (unserved().length === 0) {
-      <section class="card">
-        <p>{{ copy.everythingServed }}</p>
-      </section>
-    } @else {
-      <section class="card unserved" aria-labelledby="unserved-meaning">
-        <h2 id="unserved-meaning">{{ copy.meaningHeading }}</h2>
-        @for (sentence of copy.meaning; track $index) {
-          <p>{{ sentence }}</p>
+    <div class="unserved-grid">
+      @if (unserved().length === 0) {
+        <section class="card card--padded unserved">
+          <p class="callout callout--success">
+            <app-icon name="success" [size]="18" [stroke]="2" />
+            <span>{{ copy.everythingServed }}</span>
+          </p>
+        </section>
+      } @else {
+        <section class="card card--padded unserved" aria-labelledby="unserved-meaning">
+          <h2 id="unserved-meaning" class="section-title">{{ copy.meaningHeading }}</h2>
+          @for (sentence of copy.meaning; track $index) {
+            <p>{{ sentence }}</p>
+          }
+        </section>
+
+        <section class="card card--padded unserved" aria-labelledby="unserved-modules">
+          <h2 id="unserved-modules" class="section-title">{{ copy.modulesHeading }}</h2>
+          <ul class="unserved__list">
+            @for (module of withheld(); track module.label) {
+              <li>
+                <strong>{{ module.label }}.</strong>
+                {{ module.description }}
+                {{ copy.needs(module.missing) }}
+              </li>
+            }
+          </ul>
+        </section>
+
+        <section class="card card--padded unserved" aria-labelledby="unserved-ports">
+          <h2 id="unserved-ports" class="section-title">{{ copy.portsHeading }}</h2>
+          <div class="note-box">
+            <p>{{ copy.portsLead }}</p>
+            <ul>
+              @for (holding of unservedHoldings(); track holding) {
+                <li>{{ copy.portSentence(holding) }}</li>
+              }
+            </ul>
+          </div>
+        </section>
+      }
+
+      <section class="card card--padded unserved" aria-labelledby="unserved-available">
+        <h2 id="unserved-available" class="section-title">{{ copy.availableHeading }}</h2>
+        @if (available().length > 0) {
+          <ul class="unserved__list">
+            @for (item of available(); track item.route) {
+              <li>
+                <a class="record-link" [routerLink]="item.route">{{ item.label }}</a> —
+                {{ item.description }}
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="note-box">{{ copy.nothingAvailable }}</p>
+        }
+        @if (awaitingOffice()) {
+          <p class="callout callout--warning">{{ copy.awaitingOffice }}</p>
         }
       </section>
-
-      <section class="card unserved" aria-labelledby="unserved-modules">
-        <h2 id="unserved-modules">{{ copy.modulesHeading }}</h2>
-        <ul class="unserved__list">
-          @for (module of withheld(); track module.label) {
-            <li>
-              <strong>{{ module.label }}.</strong>
-              {{ module.description }}
-              {{ copy.needs(module.missing) }}
-            </li>
-          }
-        </ul>
-      </section>
-
-      <section class="card unserved" aria-labelledby="unserved-ports">
-        <h2 id="unserved-ports">{{ copy.portsHeading }}</h2>
-        <p>{{ copy.portsLead }}</p>
-        <ul class="unserved__list">
-          @for (holding of unservedHoldings(); track holding) {
-            <li>{{ copy.portSentence(holding) }}</li>
-          }
-        </ul>
-      </section>
+    </div>
+  `,
+  // A notice page: padded cards in two columns at desktop widths; each listed
+  // module a soft row whose sentence keeps its inline flow.
+  styles: `
+    .unserved-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+      align-items: start;
+      gap: var(--space-4);
     }
 
-    <section class="card unserved" aria-labelledby="unserved-available">
-      <h2 id="unserved-available">{{ copy.availableHeading }}</h2>
-      @if (available().length > 0) {
-        <ul class="unserved__list">
-          @for (item of available(); track item.route) {
-            <li>
-              <a [routerLink]="item.route">{{ item.label }}</a> — {{ item.description }}
-            </li>
-          }
-        </ul>
-      } @else {
-        <p>{{ copy.nothingAvailable }}</p>
-      }
-      @if (awaitingOffice()) {
-        <p>{{ copy.awaitingOffice }}</p>
-      }
-    </section>
-  `,
-  styles: `
     .unserved {
-      display: grid;
-      gap: var(--space-snug);
-      margin-block-start: var(--space-section);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      min-inline-size: 0;
+      color: var(--text);
+      font-size: var(--fs-sm);
+    }
+
+    .unserved .callout app-icon {
+      flex: none;
+      margin-block-start: 1px;
     }
 
     .unserved__list {
       display: grid;
-      gap: var(--space-compact);
+      gap: var(--space-2);
       margin: 0;
-      padding-inline-start: var(--space-section);
+      padding: 0;
+      list-style: none;
+    }
+
+    .unserved__list > li {
+      padding: 10px var(--space-3);
+      border-radius: var(--r-field);
+      background: var(--soft2);
+      color: var(--text2);
+      font-size: var(--fs-label);
+    }
+
+    .unserved__list strong {
+      color: var(--ink);
     }
   `,
 })

@@ -11,7 +11,7 @@ import { ERRORS_COPY } from './errors.copy';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [EmptyState],
   template: `
-    <div class="card">
+    <div class="card card--panel card--padded notice-page">
       <app-empty-state
         variant="forbidden"
         [heading]="copy.forbiddenHeading"

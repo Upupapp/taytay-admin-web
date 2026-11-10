@@ -1287,3 +1287,17 @@ a.kpi:focus-visible .kpi__arrow {
   margin: 0;
   padding-inline-start: 18px;
 }
+
+/* ── Notice page ──────────────────────────────────────────────────────────
+   A whole-page notice — page not found, no access, not built yet — is the
+   empty state in one centred panel card, never a bare line on the wash.
+   Under a page header it starts at the header's spacing. */
+.notice-page {
+  inline-size: min(720px, 100%);
+  margin: var(--space-6) auto 0;
+  padding-block: var(--space-6);
+}
+
+.notice-page--under-header {
+  margin-block-start: 0;
+}
