@@ -101,7 +101,7 @@ export interface TransitionGuidance {
             {{ destinationLabel() }}
           </label>
           <select
-            class="transition__select"
+            class="field__input transition__select"
             [id]="destinationId()"
             [value]="destination() ?? ''"
             (change)="onDestination($event)"
@@ -117,7 +117,7 @@ export interface TransitionGuidance {
         </div>
 
         @if (chosenGuidance(); as guide) {
-          <div class="transition__consequences" [id]="consequencesId()">
+          <div class="effects transition__consequences" [id]="consequencesId()">
             <p class="transition__label">{{ copy.consequences }}</p>
             <ul class="transition__effects">
               @for (line of guide.consequences; track $index) {
@@ -132,7 +132,7 @@ export interface TransitionGuidance {
             chosenGuidance()?.reasonLabel ?? reasonLabel()
           }}</label>
           <textarea
-            class="transition__reason"
+            class="field__input transition__reason"
             rows="3"
             [id]="reasonId()"
             [attr.aria-describedby]="reasonHintId()"
@@ -154,7 +154,7 @@ export interface TransitionGuidance {
           <div class="transition__field">
             <label class="transition__label" [attr.for]="detailId()">{{ field.label }}</label>
             <textarea
-              class="transition__reason"
+              class="field__input transition__reason"
               rows="3"
               [id]="detailId()"
               [attr.aria-describedby]="detailHintId()"

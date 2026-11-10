@@ -40,6 +40,7 @@ import {
 import { ObjectUrls } from '@shared/media/object-urls';
 import { failureReason } from '@shared/state/failure-reason';
 import { failed, IDLE, LOADING, ready, type ViewState } from '@shared/state/view-state';
+import { Icon } from '@shared/ui/icon/icon';
 import { Modal } from '@shared/ui/modal/modal';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -88,7 +89,7 @@ interface OpenedImage {
 @Component({
   selector: 'app-verification-review',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, Modal, StatusBadge, StatusTransition],
+  imports: [DatePipe, Icon, Modal, StatusBadge, StatusTransition],
   templateUrl: './verification-review.html',
   styleUrl: './verification-review.scss',
 })

@@ -3,7 +3,7 @@
 .queue {
   display: flex;
   flex-direction: column;
-  gap: var(--space-base);
+  gap: var(--space-4);
 }
 
 .queue__toolbar {
@@ -11,23 +11,51 @@
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: var(--space-snug);
+  gap: var(--space-3);
 }
 
-.queue__note,
-.queue__problem {
+.queue__filter {
+  min-inline-size: 220px;
+}
+
+.queue__notice {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-label);
+  text-wrap: pretty;
 }
 
-.queue__note {
-  color: var(--c-text-muted);
+.queue__notice app-icon {
+  flex: none;
+  margin-block-start: 1px;
+}
+
+.queue__sent {
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.queue__id {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.queue__id .icon-tile {
+  color: var(--link);
 }
 
 .queue__more {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-snug);
-  margin-block-start: var(--space-snug);
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-block-start: var(--space-3);
+}
+
+.queue__problem {
+  margin: 0;
+  color: var(--red-ink);
+  font-size: var(--fs-label);
 }

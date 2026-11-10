@@ -1,34 +1,40 @@
 /* Layout only. Every label, hint and refusal this control shows is text in the
-   DOM; removing this file changes how it looks and not what it says. */
+   DOM; removing this file changes how it looks and not what it says.
+
+   No frame of its own: every screen sets it inside a framed block that carries
+   the section's heading (a review's "Decide", a record's status panel), as the
+   console mock-ups draw it. The select and the reason are global
+   `.field__input`s and the consequences the global `.effects` box. */
 
 .transition {
   display: flex;
   flex-direction: column;
-  gap: var(--space-snug);
-  padding: var(--space-base);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
+  gap: 14px;
 }
 
 .transition__heading {
   margin: 0;
-  font-size: 15px;
+  color: var(--text2);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
 }
 
 .transition__current {
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-micro);
-  font-size: 13px;
+  color: var(--text2);
+  font-size: var(--fs-sm);
+}
+
+.transition__current strong {
+  color: var(--ink);
 }
 
 .transition__describes,
 .transition__hint,
 .transition__none {
-  color: var(--c-text-muted);
-  font-size: 12.5px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  text-wrap: pretty;
 }
 
 .transition__none {
@@ -38,24 +44,19 @@
 .transition__field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-micro);
+  gap: 6px;
 }
 
 .transition__label {
-  font-size: 13px;
-  font-weight: 600;
+  margin: 0;
+  color: var(--text2);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
 }
 
-.transition__select,
-.transition__reason {
-  min-block-size: var(--target-min);
-  padding: var(--space-compact) var(--space-snug);
-  border: 1px solid var(--c-border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--c-surface);
-  color: var(--c-text);
-  font: inherit;
-  font-size: 13px;
+.transition__consequences .transition__label {
+  color: var(--ink);
+  font-weight: var(--fw-bold);
 }
 
 .transition__reason {
@@ -66,26 +67,35 @@
    reinforcement, never the message. */
 .transition__problem {
   margin: 0;
-  color: var(--tone-danger-fg);
-  font-size: 12.5px;
+  color: var(--red-ink);
+  font-size: var(--fs-xs);
 }
 
 .transition__actions {
   display: flex;
-  gap: var(--space-compact);
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
-.transition__consequences {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-micro);
-  padding: var(--space-snug);
-  border-inline-start: 3px solid var(--c-border-strong);
-  background: var(--c-surface-muted, var(--c-surface));
+.transition__actions .btn {
+  min-block-size: var(--h-btn-lg);
+  font-size: var(--fs-section);
 }
 
 .transition__effects {
   margin: 0;
-  padding-inline-start: var(--space-base);
-  font-size: 13px;
+  padding-inline-start: 18px;
+}
+
+/* A confirmation statement may run to two lines (it quotes a name). */
+.transition .check {
+  align-items: flex-start;
+  color: var(--ink);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
+}
+
+.transition .check input {
+  flex: none;
+  margin-block-start: 2px;
 }

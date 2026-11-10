@@ -1,35 +1,71 @@
-/* Layout only: every label, warning and outcome is text in the DOM. */
+/* Layout only: every label, warning and outcome is text in the DOM. The
+   blocks are the global `.subpanel`s; the review lays them out as the mock-up
+   does, the request, the account and the images beside the decision. */
 
 :host {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-section);
+  display: block;
 }
 
-.review__block {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-snug);
+.review {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr));
+  gap: var(--space-4);
+  align-items: start;
 }
 
-.review__heading {
-  margin: 0;
-  font-size: 15px;
+.review__column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+.review__decision {
+  gap: 14px;
 }
 
 .review__facts {
-  display: grid;
-  gap: var(--space-snug);
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+}
+
+.review__facts dt,
+.review__claimed dt,
+.review__notes dt {
+  font-weight: var(--fw-semibold);
+}
+
+.review__claimed {
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+}
+
+.review__claim {
+  font-family: var(--font-display);
+  font-size: var(--fs-title-md);
+  font-weight: var(--fw-medium);
+}
+
+.review__notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   margin: 0;
 }
 
-.review__facts dt {
-  font-size: 12.5px;
-  font-weight: 600;
+.review__note-box {
+  padding: var(--space-3) 14px;
+  border-radius: var(--r-field);
+  background: var(--card-solid);
 }
 
-.review__facts dd {
-  margin: 0;
+.review__note-box dt {
+  color: var(--muted);
+  font-size: var(--fs-2xs);
+}
+
+.review__note-box dd {
+  margin: var(--space-1) 0 0;
+  color: var(--ink);
+  font-size: var(--fs-control);
 }
 
 .review__words {
@@ -37,40 +73,90 @@
 }
 
 .review__note,
-.review__caution,
-.review__problem,
-.review__outcome {
+.review__problem {
   margin: 0;
-  font-size: 13px;
+  color: var(--muted);
+  font-size: var(--fs-label);
+  text-wrap: pretty;
+}
+
+.review__problem {
+  color: var(--red-ink);
 }
 
 .review__caution {
-  font-weight: 600;
+  margin: 0;
+  align-items: center;
+  font-weight: var(--fw-medium);
+}
+
+.review__said {
+  margin: 0;
+  color: var(--text2);
+  font-size: var(--fs-sm);
+}
+
+.review__outcome {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
+}
+
+/* The images, before anybody asks for them: a hatched placeholder. */
+.review__closed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--r-lg);
+  background: repeating-linear-gradient(135deg, var(--soft2) 0 10px, var(--soft) 10px 20px);
+}
+
+.review__closed p {
+  flex: 1 1 260px;
+  margin: 0;
+  color: var(--text2);
+  font-size: var(--fs-sm);
+  text-wrap: pretty;
 }
 
 .review__images {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--space-snug);
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+  gap: var(--space-3);
 }
 
 .review__figure {
   display: flex;
   flex-direction: column;
-  gap: var(--space-micro);
+  gap: 6px;
   margin: 0;
-  font-size: 12.5px;
+  color: var(--text2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
 }
 
 .review__image {
   inline-size: 100%;
   block-size: auto;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  border-radius: var(--r-field);
+}
+
+.review__hide {
+  align-self: flex-start;
 }
 
 .review__warning {
   display: flex;
   flex-direction: column;
-  gap: var(--space-snug);
+  gap: 14px;
+  color: var(--text2);
+  font-size: var(--fs-control);
+}
+
+.review__warning p {
+  margin: 0;
 }

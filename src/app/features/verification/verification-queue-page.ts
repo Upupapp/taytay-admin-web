@@ -28,7 +28,8 @@ import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/vie
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
-import { Drawer } from '@shared/ui/drawer/drawer';
+import { Icon } from '@shared/ui/icon/icon';
+import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -59,14 +60,23 @@ function readFilter(params: ParamMap): VerificationFilter {
  * assert a number nobody computed. "Show more" appends the next page.
  *
  * **There is no record to open by address.** The API has no read of one verification request, so a
- * review opens in a drawer beside the list (`Drawer`: context while keeping one's place) rather than
- * at a route a reload could not answer. After a decision the queue is read again from the server,
+ * review opens in a centred dialog over the list (the console's design: one wide review, the list
+ * kept where it was beneath it) rather than at a route a reload could not answer. After a decision the queue is read again from the server,
  * never patched: a colleague may have decided others meanwhile.
  */
 @Component({
   selector: 'app-verification-queue-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DataTable, DatePipe, Drawer, PageHeader, StatusBadge, VerificationReview],
+  imports: [
+    AsyncContent,
+    DataTable,
+    DatePipe,
+    Icon,
+    Modal,
+    PageHeader,
+    StatusBadge,
+    VerificationReview,
+  ],
   templateUrl: './verification-queue-page.html',
   styleUrl: './verification-queue-page.scss',
 })
@@ -83,6 +93,8 @@ export class VerificationQueuePage {
 
   private readonly submittedCell =
     viewChild.required<TemplateRef<{ $implicit: VerificationRequest }>>('submittedCell');
+  private readonly idTypeCell =
+    viewChild.required<TemplateRef<{ $implicit: VerificationRequest }>>('idTypeCell');
   private readonly statusCell =
     viewChild.required<TemplateRef<{ $implicit: VerificationRequest }>>('statusCell');
   private readonly actionCell =
@@ -144,7 +156,8 @@ export class VerificationQueuePage {
     {
       key: 'id-type',
       header: this.copy.columnId,
-      value: (request) => ID_DOCUMENT_TYPE_LABELS[request.idType],
+      value: (request) => this.idTypeLabel(request),
+      cell: this.idTypeCell(),
     },
     { key: 'status', header: this.copy.columnStatus, cell: this.statusCell() },
     {
@@ -208,10 +221,14 @@ export class VerificationQueuePage {
     this.selected.set(null);
   }
 
-  /** Keeps the decided request in the drawer, and reads the queue again from the server. */
+  /** Keeps the decided request in the review, and reads the queue again from the server. */
   protected onDecided(request: VerificationRequest): void {
     this.selected.set(request);
     this.reload();
+  }
+
+  protected idTypeLabel(request: VerificationRequest): string {
+    return ID_DOCUMENT_TYPE_LABELS[request.idType];
   }
 
   protected reviewLabel(request: VerificationRequest): string {

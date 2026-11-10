@@ -843,3 +843,51 @@ a.kpi:focus-visible .kpi__arrow {
     grid-column: span 12;
   }
 }
+
+/* ── Row action with an arrow chip ────────────────────────────────────────
+   A table row's "Review" / "Open": the `.btn` pill with a round primary chip
+   at its end (the chip is aria-hidden; the button's words or aria-label name
+   the act). */
+.btn.btn--arrow {
+  gap: var(--space-2);
+  min-block-size: 40px;
+  padding-inline: var(--space-4) 6px;
+  background: var(--card-solid);
+  color: var(--ink);
+  font-size: var(--fs-control);
+}
+
+.btn__arrow {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 28px;
+  block-size: 28px;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+/* ── Sub-panels ───────────────────────────────────────────────────────────
+   A block inside a dialog or a panel (a review's "The request", "Decide"):
+   hairline-framed by default, filled soft or deep when it is the summary. */
+.subpanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-inline-size: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+}
+
+.subpanel--soft {
+  border-color: transparent;
+  background: var(--soft2);
+}
+
+.subpanel--deep {
+  border-color: transparent;
+  background: var(--deep);
+  color: var(--on-deep);
+}

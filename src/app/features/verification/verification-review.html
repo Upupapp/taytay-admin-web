@@ -1,141 +1,157 @@
-<section class="review__block" aria-labelledby="review-details">
-  <h3 id="review-details" class="review__heading">{{ copy.detailsHeading }}</h3>
-  <dl class="review__facts">
-    <div>
-      <dt>{{ copy.status }}</dt>
-      <dd><app-status-badge [catalog]="catalog" [status]="request().status" /></dd>
-    </div>
-    <div>
-      <dt>{{ copy.idType }}</dt>
-      <dd>{{ idTypeLabel() }}</dd>
-    </div>
-    <div>
-      <dt>{{ copy.submitted }}</dt>
-      <dd>
-        <time [attr.datetime]="request().submittedAt">
-          {{ request().submittedAt | date: 'd MMM y, HH:mm' }}
-        </time>
-      </dd>
-    </div>
-    @if (request().reviewedAt; as reviewedAt) {
-      <div>
-        <dt>{{ copy.reviewed }}</dt>
-        <dd>
-          <time [attr.datetime]="reviewedAt">{{ reviewedAt | date: 'd MMM y, HH:mm' }}</time>
-        </dd>
-      </div>
-    }
-    @if (request().residentMessage; as message) {
-      <div>
-        <dt>{{ copy.residentMessage }}</dt>
-        <dd class="review__words">{{ message }}</dd>
-      </div>
-    }
-    @if (request().reviewNote; as note) {
-      <div>
-        <dt>
-          {{ request().status === 'rejected' ? copy.reviewNoteForResident : copy.reviewNote }}
-        </dt>
-        <dd class="review__words">{{ note }}</dd>
-      </div>
-    }
-  </dl>
-</section>
-
-@if (decidable()) {
-  <section class="review__block" aria-labelledby="review-account">
-    <h3 id="review-account" class="review__heading">{{ copy.accountHeading }}</h3>
-    @if (identity(); as claimed) {
-      <p class="review__note">{{ copy.accountIntro }}</p>
-      <dl class="review__facts">
+<div class="review">
+  <div class="review__column">
+    <section class="subpanel subpanel--soft" aria-labelledby="review-details">
+      <h3 id="review-details" class="section-title">{{ copy.detailsHeading }}</h3>
+      <dl class="facts review__facts">
         <div>
-          <dt>{{ copy.accountName }}</dt>
-          <dd class="review__words">{{ claimed.name }}</dd>
+          <dt>{{ copy.status }}</dt>
+          <dd><app-status-badge [catalog]="catalog" [status]="request().status" /></dd>
         </div>
         <div>
-          <dt>{{ copy.accountBirthDate }}</dt>
+          <dt>{{ copy.idType }}</dt>
+          <dd>{{ idTypeLabel() }}</dd>
+        </div>
+        <div>
+          <dt>{{ copy.submitted }}</dt>
           <dd>
-            @if (claimed.birthDate; as birthDate) {
-              <time [attr.datetime]="birthDate">{{ birthDate | date: 'd MMMM y' }}</time>
-            } @else {
-              {{ copy.noBirthDate }}
-            }
+            <time [attr.datetime]="request().submittedAt">
+              {{ request().submittedAt | date: 'd MMM y, HH:mm' }}
+            </time>
           </dd>
         </div>
+        @if (request().reviewedAt; as reviewedAt) {
+          <div>
+            <dt>{{ copy.reviewed }}</dt>
+            <dd>
+              <time [attr.datetime]="reviewedAt">{{ reviewedAt | date: 'd MMM y, HH:mm' }}</time>
+            </dd>
+          </div>
+        }
       </dl>
-    } @else {
-      <p class="review__caution">{{ copy.noName }}</p>
-    }
-  </section>
-}
-
-<section class="review__block" aria-labelledby="review-images">
-  <h3 id="review-images" class="review__heading">{{ copy.imagesHeading }}</h3>
-
-  @let state = images();
-  @if (state.kind === 'idle') {
-    <p class="review__note">{{ copy.imagesClosed }}</p>
-    <button type="button" class="btn btn--secondary" (click)="askToOpen()">
-      {{ copy.openImages }}
-    </button>
-  } @else if (state.kind === 'loading') {
-    <p class="review__note" role="status">{{ copy.imagesLoading }}</p>
-  } @else if (state.kind === 'error') {
-    <p class="review__problem" role="alert">{{ copy.imagesFailed }}</p>
-    <button type="button" class="btn btn--secondary" (click)="askToOpen()">
-      {{ copy.openImages }}
-    </button>
-  } @else if (state.kind === 'ready') {
-    <p class="review__note">{{ copy.imagesKept }}</p>
-    <div class="review__images">
-      @for (image of state.value; track image.kind) {
-        <figure class="review__figure">
-          <img class="review__image" [src]="image.url" [alt]="image.label" />
-          <figcaption>{{ image.label }}</figcaption>
-        </figure>
+      @if (request().residentMessage || request().reviewNote) {
+        <dl class="review__notes">
+          @if (request().residentMessage; as message) {
+            <div class="review__note-box">
+              <dt>{{ copy.residentMessage }}</dt>
+              <dd class="review__words">{{ message }}</dd>
+            </div>
+          }
+          @if (request().reviewNote; as note) {
+            <div class="review__note-box">
+              <dt>
+                {{ request().status === 'rejected' ? copy.reviewNoteForResident : copy.reviewNote }}
+              </dt>
+              <dd class="review__words">{{ note }}</dd>
+            </div>
+          }
+        </dl>
       }
-    </div>
-    <button type="button" class="btn btn--secondary" (click)="hideImages()">
-      {{ copy.hideImages }}
-    </button>
-  }
-</section>
+    </section>
 
-<section class="review__block" aria-labelledby="review-decision">
-  <h3 id="review-decision" class="review__heading">{{ copy.decisionHeading }}</h3>
-
-  @if (decidable()) {
-    @if (!opened()) {
-      <p class="review__caution">{{ copy.notOpened }}</p>
+    @if (decidable()) {
+      <section class="subpanel" aria-labelledby="review-account">
+        <h3 id="review-account" class="section-title">{{ copy.accountHeading }}</h3>
+        @if (identity(); as claimed) {
+          <p class="review__note">{{ copy.accountIntro }}</p>
+          <dl class="facts review__claimed">
+            <div>
+              <dt>{{ copy.accountName }}</dt>
+              <dd class="review__words review__claim">{{ claimed.name }}</dd>
+            </div>
+            <div>
+              <dt>{{ copy.accountBirthDate }}</dt>
+              @if (claimed.birthDate; as birthDate) {
+                <dd class="review__claim">
+                  <time [attr.datetime]="birthDate">{{ birthDate | date: 'd MMMM y' }}</time>
+                </dd>
+              } @else {
+                <dd>{{ copy.noBirthDate }}</dd>
+              }
+            </div>
+          </dl>
+        } @else {
+          <p class="callout callout--danger review__caution">{{ copy.noName }}</p>
+        }
+      </section>
     }
-    <app-status-transition
-      [catalog]="catalog"
-      [transitions]="transitions"
-      [current]="request().status"
-      [permitted]="moves()"
-      [heading]="copy.decisionPrompt"
-      [destinationLabel]="copy.destinationLabel"
-      [confirmLabel]="copy.confirm"
-      [guidance]="guidance()"
-      [minimumReasonLength]="limits.minimum"
-      [maximumReasonLength]="limits.maximum"
-      [busy]="busy()"
-      idPrefix="verification-decision"
-      (confirmed)="decide($event)"
-    />
-  } @else if (request().status === 'rejected') {
-    <p class="review__note">{{ copy.awaitingResident }}</p>
-  } @else {
-    <p class="review__note">{{ copy.alreadyDecided }}</p>
-  }
 
-  <!-- Always in the DOM, so a screen reader hears the outcome when the text arrives. -->
-  <p class="review__outcome" role="status" aria-live="polite">{{ outcome() }}</p>
-</section>
+    <section class="subpanel" aria-labelledby="review-images">
+      <h3 id="review-images" class="section-title">{{ copy.imagesHeading }}</h3>
+
+      @let state = images();
+      @if (state.kind === 'idle') {
+        <div class="review__closed">
+          <p>{{ copy.imagesClosed }}</p>
+          <button type="button" class="btn btn--primary" (click)="askToOpen()">
+            {{ copy.openImages }}
+          </button>
+        </div>
+      } @else if (state.kind === 'loading') {
+        <p class="review__note" role="status">{{ copy.imagesLoading }}</p>
+      } @else if (state.kind === 'error') {
+        <p class="review__problem" role="alert">{{ copy.imagesFailed }}</p>
+        <button type="button" class="btn review__hide" (click)="askToOpen()">
+          {{ copy.openImages }}
+        </button>
+      } @else if (state.kind === 'ready') {
+        <p class="review__note">{{ copy.imagesKept }}</p>
+        <div class="review__images">
+          @for (image of state.value; track image.kind) {
+            <figure class="review__figure">
+              <img class="review__image" [src]="image.url" [alt]="image.label" />
+              <figcaption>{{ image.label }}</figcaption>
+            </figure>
+          }
+        </div>
+        <button type="button" class="btn review__hide" (click)="hideImages()">
+          {{ copy.hideImages }}
+        </button>
+      }
+    </section>
+  </div>
+
+  <section class="subpanel review__decision" aria-labelledby="review-decision">
+    <h3 id="review-decision" class="section-title">{{ copy.decisionHeading }}</h3>
+
+    @if (decidable()) {
+      @if (!opened()) {
+        <p class="callout callout--warning review__caution">
+          <app-icon name="warning" [size]="16" [stroke]="2" />
+          <span>{{ copy.notOpened }}</span>
+        </p>
+      }
+      <app-status-transition
+        [catalog]="catalog"
+        [transitions]="transitions"
+        [current]="request().status"
+        [permitted]="moves()"
+        [heading]="copy.decisionPrompt"
+        [destinationLabel]="copy.destinationLabel"
+        [confirmLabel]="copy.confirm"
+        [guidance]="guidance()"
+        [minimumReasonLength]="limits.minimum"
+        [maximumReasonLength]="limits.maximum"
+        [busy]="busy()"
+        idPrefix="verification-decision"
+        (confirmed)="decide($event)"
+      />
+    } @else if (request().status === 'rejected') {
+      <p class="review__said">{{ copy.awaitingResident }}</p>
+    } @else {
+      <p class="review__said">{{ copy.alreadyDecided }}</p>
+    }
+
+    <!-- Always in the DOM, so a screen reader hears the outcome when the text arrives. -->
+    <p class="review__outcome" role="status" aria-live="polite">{{ outcome() }}</p>
+  </section>
+</div>
 
 @if (warningOpen()) {
-  <app-modal [open]="true" [heading]="copy.warningHeading" (dismissed)="cancelOpen()">
+  <app-modal [open]="true" size="small" [heading]="copy.warningHeading" (dismissed)="cancelOpen()">
     <div modal-body class="review__warning">
+      <span class="icon-tile icon-tile--gold icon-tile--round" aria-hidden="true">
+        <app-icon name="warning" [size]="22" [stroke]="2" />
+      </span>
       @for (sentence of copy.warning; track $index) {
         <p>{{ sentence }}</p>
       }
