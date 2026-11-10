@@ -1,76 +1,52 @@
-/* Layout only: every status, effect and outcome is text in the DOM. */
+/* Layout only: every status, effect and outcome is text in the DOM.
+   The lookup as a padded card (no camera, nothing kept, DL-171), the accounts
+   in the panel card, a card's record in the drawer; every act's effects are
+   said before its confirmation's button. Shared by the four components. */
 
 .digital-ids {
   display: flex;
   flex-direction: column;
-  gap: var(--space-section);
+  gap: var(--space-4);
 }
 
-.digital-ids__section,
-.digital-ids__form,
-.digital-ids__result,
-.digital-ids__more {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-snug);
+.digital-ids__form .field + .field {
+  margin-block-start: 0;
 }
 
-.digital-ids__form {
-  align-self: stretch;
+.digital-ids__form > .btn,
+.digital-ids__result > .btn,
+:host > .btn {
+  align-self: flex-start;
 }
 
-.digital-ids__heading,
-.digital-ids__subheading {
-  margin: 0;
-  font-size: 15px;
+.digital-ids__effects ul {
+  padding-inline-start: 18px;
 }
 
 .digital-ids__facts {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: var(--space-snug) var(--space-section);
-  margin: 0;
-}
-
-.digital-ids__facts dt {
-  font-weight: 600;
-}
-
-.digital-ids__facts dd {
-  margin: 0;
-}
-
-.digital-ids__effects {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-micro);
-  font-size: 13px;
-}
-
-.digital-ids__effects p,
-.digital-ids__effects ul,
-.digital-ids__note,
-.digital-ids__problem,
-.digital-ids__outcome {
-  margin: 0;
-  font-size: 13px;
-}
-
-.digital-ids__note,
-.digital-ids__aside {
-  color: var(--c-text-muted);
+  font-size: var(--fs-control);
 }
 
 .digital-ids__aside {
   display: block;
-  font-size: 12.5px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-regular);
+}
+
+.digital-ids__subheading {
+  margin-block-start: var(--space-2);
 }
 
 .digital-ids__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-snug);
+  gap: var(--space-2);
+}
+
+.digital-ids__warning {
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .digital-ids__photo {
@@ -79,7 +55,8 @@
 
 .digital-ids__photo img {
   display: block;
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
+  max-inline-size: 100%;
+  block-size: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-field);
 }

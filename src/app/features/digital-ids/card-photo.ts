@@ -40,10 +40,10 @@ type PhotoState =
         <button type="button" class="btn" (click)="ask()">{{ copy.show }}</button>
       }
       @case ('loading') {
-        <p class="digital-ids__note" role="status">{{ copy.loading }}</p>
+        <p class="status-line digital-ids__note" role="status">{{ copy.loading }}</p>
       }
       @case ('failed') {
-        <p class="digital-ids__problem" role="alert">{{ copy.failed }}</p>
+        <p class="callout callout--danger digital-ids__problem" role="alert">{{ copy.failed }}</p>
         <button type="button" class="btn" (click)="ask()">{{ copy.show }}</button>
       }
       @case ('open') {
@@ -61,7 +61,7 @@ type PhotoState =
         size="small"
         (dismissed)="warning.set(false)"
       >
-        <div modal-body>
+        <div modal-body class="callout callout--warning digital-ids__warning">
           @for (line of copy.warning; track $index) {
             <p>{{ line }}</p>
           }

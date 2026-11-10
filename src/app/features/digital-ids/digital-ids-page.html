@@ -5,13 +5,18 @@
     <app-card-check />
   }
 
-  <section class="card digital-ids__section" aria-labelledby="digital-ids-manage">
-    <h2 id="digital-ids-manage" class="digital-ids__heading">{{ copy.manage.heading }}</h2>
+  <section
+    class="card card--panel card--padded stack digital-ids__section"
+    aria-labelledby="digital-ids-manage"
+  >
+    <h2 id="digital-ids-manage" class="section-title digital-ids__heading">
+      {{ copy.manage.heading }}
+    </h2>
 
     @if (!canManage()) {
-      <p class="digital-ids__note">{{ copy.manage.noManage }}</p>
+      <p class="status-line digital-ids__note">{{ copy.manage.noManage }}</p>
     } @else {
-      <p class="digital-ids__note">{{ copy.manage.lead }} {{ copy.manage.order }}</p>
+      <p class="status-line digital-ids__note">{{ copy.manage.lead }} {{ copy.manage.order }}</p>
 
       <app-async-content
         [state]="first()"
@@ -29,8 +34,8 @@
             [emptyMessage]="copy.manage.emptyMessage"
           />
 
-          <div class="digital-ids__more">
-            <p class="digital-ids__note" role="status">
+          <div class="list-more digital-ids__more">
+            <p class="status-line digital-ids__note" role="status">
               {{ copy.manage.read(readCount(), rows().length) }}
               {{ hasMore() ? copy.manage.moreAvailable : copy.manage.noMore }}
             </p>
@@ -40,7 +45,9 @@
               </button>
             }
             @if (moreFailed()) {
-              <p class="digital-ids__problem" role="alert">{{ copy.manage.moreFailed }}</p>
+              <p class="callout callout--danger digital-ids__problem" role="alert">
+                {{ copy.manage.moreFailed }}
+              </p>
             }
           </div>
         </ng-template>
@@ -63,7 +70,7 @@
 @if (selected(); as account) {
   <app-drawer [open]="true" [heading]="copy.panel.heading(nameOf(account))" (dismissed)="close()">
     <div drawer-body>
-      <app-card-panel [account]="account" />
+      <app-card-panel class="stack" [account]="account" />
     </div>
   </app-drawer>
 }
