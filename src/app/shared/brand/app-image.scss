@@ -32,12 +32,9 @@
 .img__pending {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    var(--c-surface-muted) 25%,
-    var(--c-border) 37%,
-    var(--c-surface-muted) 63%
-  );
+  /* The same shimmer as the shared skeleton, so a loading image reads as
+     the rest of the console's loading states. */
+  background: linear-gradient(90deg, var(--soft) 25%, var(--line) 37%, var(--soft) 63%);
   background-size: 400% 100%;
   animation: img-shimmer 1400ms ease-in-out infinite;
 }
@@ -48,13 +45,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px dashed var(--c-border-strong);
-  background: var(--c-surface-muted);
-  color: var(--c-text-subtle);
+  border: 1px dashed var(--field-line);
+  background: var(--soft);
+  color: var(--muted2);
 }
 
 .img__fallback-glyph {
-  font-size: 18px;
+  font-size: var(--fs-heading);
   line-height: 1;
 }
 
@@ -73,6 +70,6 @@
 @media (prefers-reduced-motion: reduce) {
   .img__pending {
     animation: none;
-    background: var(--c-surface-muted);
+    background: var(--soft);
   }
 }
