@@ -32,6 +32,7 @@ import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/vie
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { VISITS_COPY } from './visits.copy';
 
@@ -56,7 +57,7 @@ const PAGE_SIZE = 50;
 @Component({
   selector: 'app-visit-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, NgTemplateOutlet, PageHeader, RouterLink, StatusBadge],
+  imports: [AsyncContent, Icon, NgTemplateOutlet, PageHeader, RouterLink, StatusBadge],
   templateUrl: './visit-list-page.html',
   styleUrl: './visit-list-page.scss',
 })

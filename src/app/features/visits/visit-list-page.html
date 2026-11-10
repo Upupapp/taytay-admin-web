@@ -1,10 +1,11 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
-<div class="card visits">
-  <div class="scope" role="group" aria-label="Whose visits">
+<section class="card card--panel card--padded stack visits" [attr.aria-label]="copy.caption">
+  <div class="tabs scope" role="group" aria-label="Whose visits">
     <button
       type="button"
-      class="scope__button"
+      class="tab scope__button"
+      [class.tab--active]="onlyMine()"
       [class.scope__button--on]="onlyMine()"
       [attr.aria-pressed]="onlyMine()"
       (click)="onScope(true)"
@@ -13,7 +14,8 @@
     </button>
     <button
       type="button"
-      class="scope__button"
+      class="tab scope__button"
+      [class.tab--active]="!onlyMine()"
       [class.scope__button--on]="!onlyMine()"
       [attr.aria-pressed]="!onlyMine()"
       (click)="onScope(false)"
@@ -22,20 +24,23 @@
     </button>
   </div>
 
-  <div class="filters">
-    <label class="filters__field filters__field--wide">
-      <span class="filters__label">{{ copy.search }}</span>
-      <input
-        type="search"
-        class="filters__input"
-        [placeholder]="copy.searchPlaceholder"
-        (input)="onSearch($event)"
-      />
+  <div class="toolbar">
+    <label class="field visits__search">
+      <span class="field__label">{{ copy.search }}</span>
+      <span class="search-field">
+        <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+        <input
+          type="search"
+          class="field__input field__input--pill"
+          [placeholder]="copy.searchPlaceholder"
+          (input)="onSearch($event)"
+        />
+      </span>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.status }}</span>
-      <select class="filters__input" (change)="onStatus($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.status }}</span>
+      <select class="field__input field__input--pill" (change)="onStatus($event)">
         <option value="">{{ copy.allStatuses }}</option>
         @for (value of statuses; track value) {
           <option [value]="value">{{ statusLabel(value) }}</option>
@@ -43,9 +48,9 @@
       </select>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.purpose }}</span>
-      <select class="filters__input" (change)="onPurpose($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.purpose }}</span>
+      <select class="field__input field__input--pill" (change)="onPurpose($event)">
         <option value="">{{ copy.allPurposes }}</option>
         @for (value of purposes; track value) {
           <option [value]="value">{{ purposeLabel(value) }}</option>
@@ -53,24 +58,31 @@
       </select>
     </label>
 
-    <label class="filters__check">
+    <label class="check-pill">
       <input type="checkbox" [checked]="overdueOnly()" (change)="onOverdueOnly($event)" />
       <span>{{ copy.overdueOnly }}</span>
     </label>
 
     @if (hasFilters()) {
-      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+      <button type="button" class="btn visits__clear" (click)="clearFilters()">
+        {{ copy.clear }}
+      </button>
     }
   </div>
 
-  <app-async-content [state]="state()" [content]="body" [skeletonLines]="6" (retryRequested)="retry()">
+  <app-async-content
+    [state]="state()"
+    [content]="body"
+    [skeletonLines]="6"
+    (retryRequested)="retry()"
+  >
     <ng-template #body>
       @if (!hasAny()) {
-        <div class="visits__empty">
-          <h2 class="visits__empty-heading">
+        <div class="subpanel subpanel--soft visits__empty">
+          <h2 class="section-title visits__empty-heading">
             {{ hasFilters() ? copy.noResultsHeading : copy.emptyHeading }}
           </h2>
-          <p class="visits__empty-message">
+          <p class="status-line visits__empty-message">
             {{ hasFilters() ? copy.noResultsMessage : copy.emptyMessage }}
           </p>
         </div>
@@ -78,39 +90,51 @@
         <!-- Overdue first. The heading says the office is late, not the family. -->
         @if (overdue().length > 0) {
           <section class="bucket bucket--overdue" aria-labelledby="overdue-heading">
-            <h2 class="bucket__heading" id="overdue-heading">
+            <h2 class="section-title bucket__heading" id="overdue-heading">
               {{ copy.overdue }}
-              <span class="bucket__count">{{ overdue().length }}</span>
+              <span class="tab__count bucket__count">{{ overdue().length }}</span>
             </h2>
-            <p class="bucket__hint">{{ copy.overdueHint }}</p>
-            <ng-container [ngTemplateOutlet]="rows" [ngTemplateOutletContext]="{ $implicit: overdue() }" />
+            <p class="status-line bucket__hint">{{ copy.overdueHint }}</p>
+            <ng-container
+              [ngTemplateOutlet]="rows"
+              [ngTemplateOutletContext]="{ $implicit: overdue() }"
+            />
           </section>
         }
 
         @if (dueToday().length > 0) {
           <section class="bucket" aria-labelledby="today-heading">
-            <h2 class="bucket__heading" id="today-heading">
+            <h2 class="section-title bucket__heading" id="today-heading">
               {{ copy.dueToday }}
-              <span class="bucket__count">{{ dueToday().length }}</span>
+              <span class="tab__count bucket__count">{{ dueToday().length }}</span>
             </h2>
-            <ng-container [ngTemplateOutlet]="rows" [ngTemplateOutletContext]="{ $implicit: dueToday() }" />
+            <ng-container
+              [ngTemplateOutlet]="rows"
+              [ngTemplateOutletContext]="{ $implicit: dueToday() }"
+            />
           </section>
         }
 
         @if (upcoming().length > 0) {
           <section class="bucket" aria-labelledby="upcoming-heading">
-            <h2 class="bucket__heading" id="upcoming-heading">
+            <h2 class="section-title bucket__heading" id="upcoming-heading">
               {{ copy.upcoming }}
-              <span class="bucket__count">{{ upcoming().length }}</span>
+              <span class="tab__count bucket__count">{{ upcoming().length }}</span>
             </h2>
-            <ng-container [ngTemplateOutlet]="rows" [ngTemplateOutletContext]="{ $implicit: upcoming() }" />
+            <ng-container
+              [ngTemplateOutlet]="rows"
+              [ngTemplateOutletContext]="{ $implicit: upcoming() }"
+            />
           </section>
         }
 
         @for (day of closedByDay(); track day.date) {
           <section class="bucket" [attr.aria-label]="day.date">
-            <h2 class="bucket__heading">{{ day.date }}</h2>
-            <ng-container [ngTemplateOutlet]="rows" [ngTemplateOutletContext]="{ $implicit: day.visits }" />
+            <h2 class="section-title bucket__heading">{{ day.date }}</h2>
+            <ng-container
+              [ngTemplateOutlet]="rows"
+              [ngTemplateOutletContext]="{ $implicit: day.visits }"
+            />
           </section>
         }
       }
@@ -118,9 +142,9 @@
   </app-async-content>
 
   @if (hasAny()) {
-    <div class="visits__more">
+    <div class="list-more visits__more">
       <!-- The buckets above sort what has been read; they never claim to be the whole plan. -->
-      <p class="visits__hint" role="status">
+      <p class="status-line visits__hint" role="status">
         {{ copy.shown(visits().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
       </p>
       @if (hasMore()) {
@@ -129,22 +153,22 @@
         </button>
       }
       @if (moreFailed()) {
-        <p class="visits__problem" role="alert">{{ copy.moreFailed }}</p>
+        <p class="callout callout--danger visits__problem" role="alert">{{ copy.moreFailed }}</p>
       }
     </div>
   }
-</div>
+</section>
 
 <ng-template #rows let-visits>
-  <ul class="visit-rows">
+  <ul class="soft-list visit-rows">
     @for (visit of visits; track visit.id) {
-      <li class="visit-rows__item">
+      <li class="soft-row soft-row--stacked visit-rows__item">
         <p class="visit-rows__head">
-          <a class="visit-rows__reference" [routerLink]="detailLink(visit)">
+          <a class="record-link visit-rows__reference" [routerLink]="detailLink(visit)">
             {{ visit.referenceNumber }}
           </a>
           <app-status-badge [catalog]="statusCatalog" [status]="visit.status" />
-          <span class="visit-rows__purpose">{{ purposeLabel(visit.purpose) }}</span>
+          <span class="chip visit-rows__purpose">{{ purposeLabel(visit.purpose) }}</span>
         </p>
         <p class="visit-rows__meta">
           <span class="visit-rows__date">{{ visit.scheduledFor }}</span>

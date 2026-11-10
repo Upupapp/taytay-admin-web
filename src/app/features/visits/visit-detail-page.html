@@ -1,23 +1,32 @@
-<app-async-content [state]="state()" [content]="visitContent" [skeletonLines]="8" (retryRequested)="retry()">
+<app-async-content
+  [state]="state()"
+  [content]="visitContent"
+  [skeletonLines]="8"
+  (retryRequested)="retry()"
+>
   <ng-template #visitContent let-visit>
     @if (visit === null) {
       <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
-      <p class="visit__back"><a class="btn" routerLink="/visits">{{ copy.back }}</a></p>
+      <p class="visit__back">
+        <a class="btn" routerLink="/visits">{{ copy.back }}</a>
+      </p>
     } @else {
       <app-page-header [title]="visit.referenceNumber" [subtitle]="addressShown(visit)">
         <a page-actions class="btn" routerLink="/visits">{{ copy.back }}</a>
       </app-page-header>
 
       @if (wordsWithheld(visit)) {
-        <p class="visit__withheld" role="note">{{ copy.wordsWithheldNotice }}</p>
+        <p class="callout callout--warning visit__withheld" role="note">
+          {{ copy.wordsWithheldNotice }}
+        </p>
       }
 
-      <div class="visit">
-        <section class="card visit__panel" aria-labelledby="about-heading">
-          <h2 class="visit__heading" id="about-heading">{{ copy.aboutHeading }}</h2>
+      <div class="record-grid visit">
+        <section class="card card--padded visit__panel" aria-labelledby="about-heading">
+          <h2 class="section-title visit__heading" id="about-heading">{{ copy.aboutHeading }}</h2>
           <p class="visit__status">
             <app-status-badge [catalog]="statusCatalog" [status]="visit.status" />
-            <span class="visit__purpose">{{ purposeLabel(visit) }}</span>
+            <span class="chip visit__purpose">{{ purposeLabel(visit) }}</span>
           </p>
 
           <dl class="facts">
@@ -60,17 +69,19 @@
           }
         </section>
 
-        <section class="card visit__panel" aria-labelledby="checklist-heading">
-          <h2 class="visit__heading" id="checklist-heading">{{ copy.checklistHeading }}</h2>
-          <p class="visit__hint">{{ copy.checklistHint }}</p>
+        <section class="card card--padded visit__panel" aria-labelledby="checklist-heading">
+          <h2 class="section-title visit__heading" id="checklist-heading">
+            {{ copy.checklistHeading }}
+          </h2>
+          <p class="status-line visit__hint">{{ copy.checklistHint }}</p>
 
           @if (visit.checklist.length === 0) {
-            <p class="visit__empty">{{ copy.checklistNone }}</p>
+            <p class="status-line visit__empty">{{ copy.checklistNone }}</p>
           } @else {
-            <ul class="checklist">
+            <ul class="soft-list checklist">
               @for (item of visit.checklist; track item.code) {
-                <li class="checklist__item">
-                  <label class="checklist__label">
+                <li class="soft-row soft-row--stacked checklist__item">
+                  <label class="check checklist__label">
                     <input
                       type="checkbox"
                       [checked]="checked(item.code)"
@@ -94,22 +105,32 @@
           }
         </section>
 
-        <section class="card visit__panel visit__panel--wide" aria-labelledby="found-heading">
-          <h2 class="visit__heading" id="found-heading">{{ copy.observationsHeading }}</h2>
-          <p class="visit__hint">{{ copy.observationsHint }}</p>
+        <section
+          class="card card--padded visit__panel visit__panel--wide record-grid__wide"
+          aria-labelledby="found-heading"
+        >
+          <h2 class="section-title visit__heading" id="found-heading">
+            {{ copy.observationsHeading }}
+          </h2>
+          <p class="status-line visit__hint">{{ copy.observationsHint }}</p>
 
           <!-- Surfaced, not blocked: a file built only of assessments is the
                shape that hardens into a label. -->
           @if (allJudgement()) {
-            <p class="visit__warning" role="status">{{ copy.allJudgementWarning }}</p>
+            <p class="callout callout--warning visit__warning" role="status">
+              {{ copy.allJudgementWarning }}
+            </p>
           }
 
           @if (visit.observations.length === 0) {
-            <p class="visit__empty">{{ copy.observationsNone }}</p>
+            <p class="status-line visit__empty">{{ copy.observationsNone }}</p>
           } @else {
-            <ol class="observations">
+            <ol class="soft-list observations">
               @for (entry of visit.observations; track entry.id) {
-                <li class="observations__item" [attr.data-kind]="entry.kind">
+                <li
+                  class="soft-row soft-row--stacked observations__item"
+                  [attr.data-kind]="entry.kind"
+                >
                   <p class="observations__kind">{{ observationLabel(entry) }}</p>
                   <p class="observations__body">
                     {{ wordsWithheld(visit) ? copy.withheld : entry.body }}
@@ -130,14 +151,14 @@
           }
 
           @if (canWrite() && isOpen()) {
-            <h3 class="visit__subheading">{{ copy.addObservationHeading }}</h3>
+            <h3 class="section-title visit__subheading">{{ copy.addObservationHeading }}</h3>
 
             <!-- The kind is the first choice, not a detail at the end: a worker
                  who has already written a paragraph will not reclassify it. -->
-            <fieldset class="kinds">
-              <legend class="field__label">{{ copy.kind }}</legend>
+            <fieldset class="choice-list kinds">
+              <legend>{{ copy.kind }}</legend>
               @for (value of kinds; track value) {
-                <label class="kinds__option">
+                <label class="choice kinds__option">
                   <input
                     type="radio"
                     name="observation-kind"
@@ -145,9 +166,9 @@
                     [checked]="kind() === value"
                     (change)="onKind(value)"
                   />
-                  <span>
+                  <span class="choice__text">
                     <span class="kinds__label">{{ kindLabel(value) }}</span>
-                    <span class="kinds__hint">{{ kindDescription(value) }}</span>
+                    <span class="choice__hint kinds__hint">{{ kindDescription(value) }}</span>
                   </span>
                 </label>
               }
@@ -190,9 +211,11 @@
         </section>
 
         @if (canWrite() && isOpen()) {
-          <section class="card visit__panel" aria-labelledby="close-heading">
-            <h2 class="visit__heading" id="close-heading">{{ copy.outcomeHeading }}</h2>
-            <p class="visit__hint">{{ copy.outcomeHint }}</p>
+          <section class="card card--padded visit__panel" aria-labelledby="close-heading">
+            <h2 class="section-title visit__heading" id="close-heading">
+              {{ copy.outcomeHeading }}
+            </h2>
+            <p class="status-line visit__hint">{{ copy.outcomeHint }}</p>
 
             <label class="field">
               <span class="field__label">{{ copy.outcomeStatus }}</span>
@@ -250,8 +273,8 @@
             </button>
           </section>
         } @else if (!isOpen()) {
-          <section class="card visit__panel">
-            <p class="visit__empty">{{ copy.alreadyClosed }}</p>
+          <section class="card card--padded visit__panel">
+            <p class="status-line visit__empty">{{ copy.alreadyClosed }}</p>
           </section>
         }
       </div>
