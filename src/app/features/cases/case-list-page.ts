@@ -33,6 +33,7 @@ import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { CASE_COPY } from '@shared/cases/case.copy';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
@@ -59,7 +60,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-case-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, PageHeader, RouterLink, StatusBadge],
+  imports: [DataTable, Icon, PageHeader, RouterLink, StatusBadge],
   templateUrl: './case-list-page.html',
   styleUrl: './case-list-page.scss',
 })

@@ -4,128 +4,141 @@
 
 @if (!opensCases()) {
   <!-- Opening is an assigner's act (DL-179); a caseload is told, not shown a refused form. -->
-  <p class="card open-case__refused">{{ copy.caseloadRefused }}</p>
+  <p class="callout callout--warning open-case__refused">{{ copy.caseloadRefused }}</p>
 } @else {
-  <form class="open-case" (submit)="$event.preventDefault(); submit()">
+  <form
+    class="card card--panel card--padded form-panel open-case"
+    (submit)="$event.preventDefault(); submit()"
+  >
     @if (continues()) {
-      <section class="card open-case__section" aria-labelledby="open-continues">
-        <h2 class="open-case__heading" id="open-continues">{{ copy.continuesHeading }}</h2>
+      <section class="subpanel subpanel--soft" aria-labelledby="open-continues">
+        <h2 class="section-title" id="open-continues">{{ copy.continuesHeading }}</h2>
         @if (priorReference(); as reference) {
-          <p class="open-case__note">{{ copy.continuesNote(reference) }}</p>
+          <p class="form-section__note">{{ copy.continuesNote(reference) }}</p>
         } @else {
-          <p class="open-case__note">{{ copy.continuesUnknown }}</p>
+          <p class="form-section__note">{{ copy.continuesUnknown }}</p>
         }
       </section>
     }
 
-    <fieldset class="card open-case__section">
-      <legend class="open-case__heading">{{ copy.subjectHeading }}</legend>
-      @if (presetState().kind === 'loading' && subject()) {
-        <p class="open-case__note" role="status">{{ copy.subjectLoading }}</p>
-      } @else if (presetState().kind === 'error') {
-        <p class="open-case__problem" role="alert">{{ copy.subjectFailed }}</p>
-      }
-      <app-person-picker
-        [label]="copy.subjectLabel"
-        [hint]="copy.subjectHint"
-        [(selected)]="subjectView"
-      />
-    </fieldset>
-
-    <fieldset class="card open-case__section">
-      <legend class="open-case__heading">{{ copy.aboutHeading }}</legend>
-      <label class="form__field">
-        <span class="form__label">{{ copy.category }}</span>
-        <select class="form__input" required (change)="onCategory($event)">
-          <option value="" [selected]="category() === null" disabled>—</option>
-          @for (option of categories; track option) {
-            <option [value]="option" [selected]="category() === option">
-              {{ categoryLabel(option) }}
-            </option>
+    <div class="open-case__columns">
+      <div class="open-case__column">
+        <fieldset class="form-section">
+          <legend class="form-section__legend">{{ copy.subjectHeading }}</legend>
+          @if (presetState().kind === 'loading' && subject()) {
+            <p class="form-section__note" role="status">{{ copy.subjectLoading }}</p>
+          } @else if (presetState().kind === 'error') {
+            <p class="field__error open-case__problem" role="alert">{{ copy.subjectFailed }}</p>
           }
-        </select>
-      </label>
+          <app-person-picker
+            [label]="copy.subjectLabel"
+            [hint]="copy.subjectHint"
+            [(selected)]="subjectView"
+          />
+        </fieldset>
 
-      <label class="form__field">
-        <span class="form__label">{{ copy.summary }}</span>
-        <textarea
-          class="form__input"
-          rows="3"
-          required
-          [attr.maxlength]="summaryMax"
-          [placeholder]="copy.summaryPlaceholder"
-          [value]="summary()"
-          (input)="onSummary($event)"
-        ></textarea>
-        <span class="form__hint">{{ copy.summaryHint }}</span>
-      </label>
-      <p class="open-case__problem" role="alert">{{ summaryProblem() }}</p>
-    </fieldset>
-
-    @if (subjectView()) {
-      <fieldset class="card open-case__section">
-        <legend class="open-case__heading">{{ copy.requestsHeading }}</legend>
-        <p class="open-case__note">{{ copy.requestsNote }}</p>
-        @switch (requestState().kind) {
-          @case ('error') {
-            <p class="open-case__problem" role="alert">{{ copy.requestsFailed }}</p>
-          }
-          @case ('ready') {
-            @if (requestPage(); as page) {
-              @if (page.items.length === 0) {
-                <p class="open-case__note">{{ copy.requestsNone }}</p>
-              } @else {
-                <ul class="open-case__requests">
-                  @for (request of page.items; track request.id) {
-                    <li>
-                      <label class="open-case__request">
-                        <input
-                          type="checkbox"
-                          [checked]="isChosen(request.id)"
-                          (change)="onRequest(request.id, $event)"
-                        />
-                        <span
-                          >{{ request.referenceNumber }} ·
-                          {{ requestCatalog[request.status].label }}</span
-                        >
-                      </label>
-                    </li>
+        @if (subjectView()) {
+          <fieldset class="form-section">
+            <legend class="form-section__legend">{{ copy.requestsHeading }}</legend>
+            <p class="form-section__note">{{ copy.requestsNote }}</p>
+            @switch (requestState().kind) {
+              @case ('error') {
+                <p class="field__error open-case__problem" role="alert">
+                  {{ copy.requestsFailed }}
+                </p>
+              }
+              @case ('ready') {
+                @if (requestPage(); as page) {
+                  @if (page.items.length === 0) {
+                    <p class="form-section__note">{{ copy.requestsNone }}</p>
+                  } @else {
+                    <ul class="choice-list open-case__requests">
+                      @for (request of page.items; track request.id) {
+                        <li>
+                          <label class="choice">
+                            <input
+                              type="checkbox"
+                              [checked]="isChosen(request.id)"
+                              (change)="onRequest(request.id, $event)"
+                            />
+                            <span class="choice__text"
+                              >{{ request.referenceNumber }} ·
+                              {{ requestCatalog[request.status].label }}</span
+                            >
+                          </label>
+                        </li>
+                      }
+                    </ul>
+                    @if (page.hasMore) {
+                      <p class="form-section__note">{{ copy.requestsMore }}</p>
+                    }
                   }
-                </ul>
-                @if (page.hasMore) {
-                  <p class="open-case__note">{{ copy.requestsMore }}</p>
                 }
               }
+              @default {
+                <p class="form-section__note" role="status">{{ copy.requestsLoading }}</p>
+              }
             }
-          }
-          @default {
-            <p class="open-case__note" role="status">{{ copy.requestsLoading }}</p>
-          }
+          </fieldset>
         }
-      </fieldset>
-    }
+      </div>
 
-    <fieldset class="card open-case__section">
-      <legend class="open-case__heading">{{ copy.reasonHeading }}</legend>
-      <label class="form__field">
-        <span class="form__label">{{ copy.reason }}</span>
-        <textarea
-          class="form__input"
-          rows="3"
-          required
-          [placeholder]="copy.reasonPlaceholder"
-          [value]="reason()"
-          (input)="onReason($event)"
-        ></textarea>
-        <span class="form__hint">{{ copy.reasonHint }}</span>
-      </label>
-    </fieldset>
+      <div class="open-case__column">
+        <fieldset class="form-section">
+          <legend class="form-section__legend">{{ copy.aboutHeading }}</legend>
+          <label class="field">
+            <span class="field__label">{{ copy.category }}</span>
+            <select class="field__input" required (change)="onCategory($event)">
+              <option value="" [selected]="category() === null" disabled>—</option>
+              @for (option of categories; track option) {
+                <option [value]="option" [selected]="category() === option">
+                  {{ categoryLabel(option) }}
+                </option>
+              }
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field__label">{{ copy.summary }}</span>
+            <textarea
+              class="field__input"
+              rows="3"
+              required
+              [attr.maxlength]="summaryMax"
+              [placeholder]="copy.summaryPlaceholder"
+              [value]="summary()"
+              (input)="onSummary($event)"
+            ></textarea>
+            <span class="field__hint">{{ copy.summaryHint }}</span>
+          </label>
+          <p class="field__error form-problem open-case__problem" role="alert">
+            {{ summaryProblem() }}
+          </p>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend class="form-section__legend">{{ copy.reasonHeading }}</legend>
+          <label class="field">
+            <span class="field__label">{{ copy.reason }}</span>
+            <textarea
+              class="field__input"
+              rows="3"
+              required
+              [placeholder]="copy.reasonPlaceholder"
+              [value]="reason()"
+              (input)="onReason($event)"
+            ></textarea>
+            <span class="field__hint">{{ copy.reasonHint }}</span>
+          </label>
+        </fieldset>
+      </div>
+    </div>
 
     @if (failure(); as message) {
-      <p class="card open-case__problem" role="alert">{{ message }}</p>
+      <p class="callout callout--danger open-case__problem" role="alert">{{ message }}</p>
     }
 
-    <div class="open-case__actions">
+    <div class="form-footer">
       <button type="submit" class="btn btn--primary" [disabled]="!canOpen()">
         {{ submitting() ? copy.opening : copy.confirm }}
       </button>

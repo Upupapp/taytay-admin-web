@@ -7,7 +7,7 @@
 
 <ng-template #body let-workspace>
   @if (!workspace) {
-    <div class="card workspace__missing">
+    <div class="card card--padded workspace__missing">
       <h1>{{ copy.notFoundHeading }}</h1>
       <p>{{ copy.notFoundMessage }}</p>
       <a class="btn" routerLink="/cases">{{ copy.back }}</a>
@@ -30,7 +30,7 @@
 
     @if (workspace.record.status === 'closed') {
       <!-- Closed is terminal (DL-53): no write is offered, and a recurrence is a new case. -->
-      <div class="card workspace__closed">
+      <div class="callout workspace__closed">
         <p>{{ copy.closedNotice }}</p>
         @if (assigns()) {
           <a class="btn" routerLink="/cases/new" [queryParams]="continueParams(workspace)">{{
@@ -41,13 +41,17 @@
     }
 
     @if (wordsWithheld(workspace)) {
-      <p class="card workspace__protected" role="note">{{ copy.protectedNotice }}</p>
+      <p class="callout callout--warning workspace__protected" role="note">
+        {{ copy.protectedNotice }}
+      </p>
     }
 
     <!-- What happens next, first on the page. A caseworker opening a file is
          asking that before anything else. -->
-    <section class="card workspace__next" aria-labelledby="next-heading">
-      <h2 class="workspace__heading" id="next-heading">{{ copy.nextActionHeading }}</h2>
+    <section class="card card--padded workspace__next" aria-labelledby="next-heading">
+      <h2 class="section-title workspace__heading" id="next-heading">
+        {{ copy.nextActionHeading }}
+      </h2>
       @if (workspace.nextAction; as action) {
         <p class="workspace__next-title">{{ taskTitle(action) }}</p>
         <p class="workspace__next-meta">
@@ -92,8 +96,10 @@
     <div class="workspace__columns">
       <div class="workspace__main">
         <!-- Who this is about: person, address, family — read together. -->
-        <section class="card workspace__block" aria-labelledby="context-heading">
-          <h2 class="workspace__heading" id="context-heading">{{ copy.contextHeading }}</h2>
+        <section class="card card--padded workspace__block" aria-labelledby="context-heading">
+          <h2 class="section-title workspace__heading" id="context-heading">
+            {{ copy.contextHeading }}
+          </h2>
           <p class="workspace__note">{{ copy.contextNote }}</p>
 
           @if (readsRegistry()) {
@@ -161,71 +167,77 @@
 
         <!-- Advisory only. Nothing on this page derives an entitlement from it. -->
         @if (workspace.vulnerability; as snapshot) {
-          <section class="card workspace__block">
+          <section class="card card--padded workspace__block">
             <app-vulnerability-snapshot [snapshot]="snapshot" />
           </section>
         }
 
-        <section class="card workspace__block" aria-labelledby="requests-heading">
-          <h2 class="workspace__heading" id="requests-heading">{{ copy.requestsHeading }}</h2>
+        <section class="card card--padded workspace__block" aria-labelledby="requests-heading">
+          <h2 class="section-title workspace__heading" id="requests-heading">
+            {{ copy.requestsHeading }}
+          </h2>
           <p class="workspace__note">{{ copy.requestsNote }}</p>
 
           @if (workspace.requests.length === 0 && unreadRequests(workspace) === 0) {
             <p class="workspace__none">{{ copy.noRequests }}</p>
           }
           @if (workspace.requests.length > 0) {
-            <table class="workspace__table">
-              <caption class="workspace__caption">
-                {{
-                  copy.requestsHeading
-                }}
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">{{ copy.requestReference }}</th>
-                  <th scope="col">{{ copy.requestStatus }}</th>
-                  <th scope="col">{{ copy.requestRequested }}</th>
-                  <th scope="col">{{ copy.requestApproved }}</th>
-                  @if (writable(workspace) && canManage()) {
-                    <th scope="col">
-                      <span class="visually-hidden">{{ copy.endLink }}</span>
-                    </th>
-                  }
-                </tr>
-              </thead>
-              <tbody>
-                @for (request of workspace.requests; track request.id) {
+            <div class="table-scroll">
+              <table class="simple-table workspace__table">
+                <caption class="visually-hidden">
+                  {{
+                    copy.requestsHeading
+                  }}
+                </caption>
+                <thead>
                   <tr>
-                    <th scope="row">
-                      <a [routerLink]="'/assistance-requests/' + request.id">{{
-                        request.referenceNumber
-                      }}</a>
-                    </th>
-                    <td>
-                      <app-status-badge [catalog]="requestCatalog" [status]="request.status" />
-                    </td>
-                    <td>
-                      {{ request.requestedAmount ? (request.requestedAmount | peso) : copy.notSet }}
-                    </td>
-                    <td>
-                      {{ request.approvedAmount ? (request.approvedAmount | peso) : copy.notSet }}
-                    </td>
+                    <th scope="col">{{ copy.requestReference }}</th>
+                    <th scope="col">{{ copy.requestStatus }}</th>
+                    <th scope="col">{{ copy.requestRequested }}</th>
+                    <th scope="col">{{ copy.requestApproved }}</th>
                     @if (writable(workspace) && canManage()) {
-                      <td>
-                        <button
-                          type="button"
-                          class="btn btn--subtle"
-                          [attr.aria-label]="copy.endLinkLabel(request.referenceNumber)"
-                          (click)="openEndLink(request)"
-                        >
-                          {{ copy.endLink }}
-                        </button>
-                      </td>
+                      <th scope="col">
+                        <span class="visually-hidden">{{ copy.endLink }}</span>
+                      </th>
                     }
                   </tr>
-                }
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  @for (request of workspace.requests; track request.id) {
+                    <tr>
+                      <th scope="row">
+                        <a [routerLink]="'/assistance-requests/' + request.id">{{
+                          request.referenceNumber
+                        }}</a>
+                      </th>
+                      <td>
+                        <app-status-badge [catalog]="requestCatalog" [status]="request.status" />
+                      </td>
+                      <td>
+                        {{
+                          request.requestedAmount ? (request.requestedAmount | peso) : copy.notSet
+                        }}
+                      </td>
+                      <td>
+                        {{ request.approvedAmount ? (request.approvedAmount | peso) : copy.notSet }}
+                      </td>
+                      @if (writable(workspace) && canManage()) {
+                        <td>
+                          <button
+                            type="button"
+                            class="btn btn--subtle"
+                            [attr.aria-label]="copy.endLinkLabel(request.referenceNumber)"
+                            (click)="openEndLink(request)"
+                          >
+                            {{ copy.endLink }}
+                          </button>
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           }
           @if (unreadRequests(workspace) > 0) {
             <!-- Named and not shown (DL-179): a short list is never read as the whole of it. -->
@@ -242,14 +254,16 @@
           }
         </section>
 
-        <section class="card workspace__block">
+        <section class="card card--padded workspace__block">
           <app-case-timeline [entries]="workspace.timeline" />
         </section>
       </div>
 
       <div class="workspace__side">
-        <section class="card workspace__block" aria-labelledby="facts-heading">
-          <h2 class="workspace__heading" id="facts-heading">{{ copy.factsHeading }}</h2>
+        <section class="card card--padded workspace__block" aria-labelledby="facts-heading">
+          <h2 class="section-title workspace__heading" id="facts-heading">
+            {{ copy.factsHeading }}
+          </h2>
           <dl class="workspace__facts">
             <dt>{{ copy.status }}</dt>
             <dd>
@@ -285,7 +299,7 @@
         </section>
 
         @if (canManage() && writable(workspace)) {
-          <div class="workspace__block">
+          <div class="card card--padded workspace__block">
             <app-status-transition
               idPrefix="case-status"
               [catalog]="statusCatalog"
@@ -320,8 +334,10 @@
           </div>
         }
 
-        <section class="card workspace__block" aria-labelledby="tasks-heading">
-          <h2 class="workspace__heading" id="tasks-heading">{{ copy.tasksHeading }}</h2>
+        <section class="card card--padded workspace__block" aria-labelledby="tasks-heading">
+          <h2 class="section-title workspace__heading" id="tasks-heading">
+            {{ copy.tasksHeading }}
+          </h2>
           <p class="workspace__note">{{ copy.tasksNote }}</p>
 
           @if (workspace.tasks.length === 0) {
@@ -367,8 +383,10 @@
           }
         </section>
 
-        <section class="card workspace__block" aria-labelledby="notes-heading">
-          <h2 class="workspace__heading" id="notes-heading">{{ copy.notesHeading }}</h2>
+        <section class="card card--padded workspace__block" aria-labelledby="notes-heading">
+          <h2 class="section-title workspace__heading" id="notes-heading">
+            {{ copy.notesHeading }}
+          </h2>
           <p class="workspace__note">{{ copy.notesNote }}</p>
 
           @if (withheldNotes(workspace) > 0) {
@@ -412,15 +430,17 @@
       [description]="copy.assignNote"
       (dismissed)="cancel()"
     >
-      <div modal-body class="form">
+      <div modal-body class="stack">
         @switch (assigneeState().kind) {
           @case ('error') {
-            <p class="workspace__problem" role="alert">{{ copy.assigneesFailed }}</p>
+            <p class="callout callout--danger workspace__problem" role="alert">
+              {{ copy.assigneesFailed }}
+            </p>
           }
           @case ('ready') {
-            <label class="form__field">
-              <span class="form__label">{{ copy.assignWorker }}</span>
-              <select class="form__input" (change)="onAssignee($event)">
+            <label class="field">
+              <span class="field__label">{{ copy.assignWorker }}</span>
+              <select class="field__input" (change)="onAssignee($event)">
                 <option value="" [selected]="assignee() === null">{{ copy.assignNobody }}</option>
                 @for (worker of assignees(); track worker.id) {
                   <option [value]="worker.id" [selected]="assignee() === worker.id">
@@ -435,16 +455,16 @@
           }
         }
 
-        <label class="form__field">
-          <span class="form__label">{{ shared.transition.reason }}</span>
+        <label class="field">
+          <span class="field__label">{{ shared.transition.reason }}</span>
           <textarea
-            class="form__input"
+            class="field__input"
             rows="3"
             [placeholder]="shared.transition.reasonPlaceholder"
             [value]="assignReason()"
             (input)="onAssignReason($event)"
           ></textarea>
-          <span class="form__hint">{{ shared.transition.reasonHint }}</span>
+          <span class="field__hint">{{ shared.transition.reasonHint }}</span>
         </label>
 
         @if (assignMovesTasks(workspace); as moving) {
@@ -474,19 +494,21 @@
       [description]="linkCopy.description"
       (dismissed)="cancel()"
     >
-      <div modal-body class="form">
+      <div modal-body class="stack">
         <p class="workspace__note">{{ linkCopy.rules }}</p>
         @switch (linkState().kind) {
           @case ('error') {
-            <p class="workspace__problem" role="alert">{{ linkCopy.failed }}</p>
+            <p class="callout callout--danger workspace__problem" role="alert">
+              {{ linkCopy.failed }}
+            </p>
           }
           @case ('ready') {
             @if (linkOptions(workspace).length === 0) {
               <p class="workspace__none">{{ linkCopy.none }}</p>
             } @else {
-              <label class="form__field">
-                <span class="form__label">{{ linkCopy.request }}</span>
-                <select class="form__input" (change)="onLinkChoice($event)">
+              <label class="field">
+                <span class="field__label">{{ linkCopy.request }}</span>
+                <select class="field__input" (change)="onLinkChoice($event)">
                   <option value="" [selected]="linkChoice() === null">{{ linkCopy.choose }}</option>
                   @for (request of linkOptions(workspace); track request.id) {
                     <option [value]="request.id" [selected]="linkChoice() === request.id">
@@ -505,16 +527,16 @@
           }
         }
 
-        <label class="form__field">
-          <span class="form__label">{{ linkCopy.reason }}</span>
+        <label class="field">
+          <span class="field__label">{{ linkCopy.reason }}</span>
           <textarea
-            class="form__input"
+            class="field__input"
             rows="3"
             [placeholder]="linkCopy.reasonPlaceholder"
             [value]="linkReason()"
             (input)="onLinkReason($event)"
           ></textarea>
-          <span class="form__hint">{{ shared.transition.reasonHint }}</span>
+          <span class="field__hint">{{ shared.transition.reasonHint }}</span>
         </label>
       </div>
 
@@ -539,11 +561,11 @@
       [description]="noteCopy.description"
       (dismissed)="cancel()"
     >
-      <div modal-body class="form">
-        <label class="form__field">
-          <span class="form__label">{{ noteCopy.body }}</span>
+      <div modal-body class="stack">
+        <label class="field">
+          <span class="field__label">{{ noteCopy.body }}</span>
           <textarea
-            class="form__input"
+            class="field__input"
             rows="4"
             [placeholder]="noteCopy.bodyPlaceholder"
             [value]="noteBody()"
@@ -551,9 +573,9 @@
           ></textarea>
         </label>
 
-        <label class="form__field">
-          <span class="form__label">{{ noteCopy.sensitivity }}</span>
-          <select class="form__input" (change)="onNoteSensitivity($event)">
+        <label class="field">
+          <span class="field__label">{{ noteCopy.sensitivity }}</span>
+          <select class="field__input" (change)="onNoteSensitivity($event)">
             @for (option of sensitivities; track option) {
               <!-- Writing into the protected tier needs the clearance to read
                    it; the repository refuses either way. -->
@@ -564,19 +586,19 @@
               }
             }
           </select>
-          <span class="form__hint">{{ sensitivityHint(noteSensitivity()) }}</span>
+          <span class="field__hint">{{ sensitivityHint(noteSensitivity()) }}</span>
         </label>
 
-        <label class="form__field">
-          <span class="form__label">{{ noteCopy.reason }}</span>
+        <label class="field">
+          <span class="field__label">{{ noteCopy.reason }}</span>
           <input
             type="text"
-            class="form__input"
+            class="field__input"
             [placeholder]="noteCopy.reasonPlaceholder"
             [value]="noteReason()"
             (input)="onNoteReason($event)"
           />
-          <span class="form__hint">{{ shared.transition.reasonHint }}</span>
+          <span class="field__hint">{{ shared.transition.reasonHint }}</span>
         </label>
       </div>
 
@@ -601,21 +623,21 @@
       [description]="taskCopy.description"
       (dismissed)="cancel()"
     >
-      <div modal-body class="form">
-        <label class="form__field">
-          <span class="form__label">{{ taskCopy.title }}</span>
+      <div modal-body class="stack">
+        <label class="field">
+          <span class="field__label">{{ taskCopy.title }}</span>
           <input
             type="text"
-            class="form__input"
+            class="field__input"
             [placeholder]="taskCopy.titlePlaceholder"
             [value]="taskTitleText()"
             (input)="onTaskTitle($event)"
           />
         </label>
 
-        <label class="form__field">
-          <span class="form__label">{{ taskCopy.kind }}</span>
-          <select class="form__input" (change)="onTaskKind($event)">
+        <label class="field">
+          <span class="field__label">{{ taskCopy.kind }}</span>
+          <select class="field__input" (change)="onTaskKind($event)">
             @for (kind of taskKinds; track kind) {
               <option [value]="kind" [selected]="taskKind() === kind">
                 {{ taskKindLabel(kind) }}
@@ -624,19 +646,19 @@
           </select>
         </label>
 
-        <label class="form__field">
-          <span class="form__label">{{ taskCopy.dueOn }}</span>
+        <label class="field">
+          <span class="field__label">{{ taskCopy.dueOn }}</span>
           <input
             type="date"
-            class="form__input"
+            class="field__input"
             [value]="taskDueOn()"
             (change)="onTaskDueOn($event)"
           />
         </label>
 
-        <label class="form__field">
-          <span class="form__label">{{ taskCopy.assignee }}</span>
-          <select class="form__input" (change)="onTaskOwer($event)">
+        <label class="field">
+          <span class="field__label">{{ taskCopy.assignee }}</span>
+          <select class="field__input" (change)="onTaskOwer($event)">
             <option value="" [selected]="taskOwer() === null">{{ taskCopy.nobody }}</option>
             @for (choice of owerChoices(workspace); track choice.id) {
               <option [value]="choice.id" [selected]="taskOwer() === choice.id">
@@ -644,14 +666,14 @@
               </option>
             }
           </select>
-          <span class="form__hint">{{ taskCopy.assigneeHint }}</span>
+          <span class="field__hint">{{ taskCopy.assigneeHint }}</span>
         </label>
 
-        <label class="form__field">
-          <span class="form__label">{{ taskCopy.reason }}</span>
+        <label class="field">
+          <span class="field__label">{{ taskCopy.reason }}</span>
           <input
             type="text"
-            class="form__input"
+            class="field__input"
             [placeholder]="taskCopy.reasonPlaceholder"
             [value]="taskReason()"
             (input)="onTaskReason($event)"
@@ -681,10 +703,10 @@
       [description]="handOverCopy.description"
       (dismissed)="cancel()"
     >
-      <div modal-body class="form">
-        <label class="form__field">
-          <span class="form__label">{{ handOverCopy.assignee }}</span>
-          <select class="form__input" (change)="onHandOverOwer($event)">
+      <div modal-body class="stack">
+        <label class="field">
+          <span class="field__label">{{ handOverCopy.assignee }}</span>
+          <select class="field__input" (change)="onHandOverOwer($event)">
             <option value="" [selected]="handOverOwer() === null">{{ taskCopy.nobody }}</option>
             @for (choice of owerChoices(workspace); track choice.id) {
               <option [value]="choice.id" [selected]="handOverOwer() === choice.id">
@@ -692,19 +714,19 @@
               </option>
             }
           </select>
-          <span class="form__hint">{{ taskCopy.assigneeHint }}</span>
+          <span class="field__hint">{{ taskCopy.assigneeHint }}</span>
         </label>
 
-        <label class="form__field">
-          <span class="form__label">{{ handOverCopy.reason }}</span>
+        <label class="field">
+          <span class="field__label">{{ handOverCopy.reason }}</span>
           <textarea
-            class="form__input"
+            class="field__input"
             rows="3"
             [placeholder]="handOverCopy.reasonPlaceholder"
             [value]="handOverReason()"
             (input)="onHandOverReason($event)"
           ></textarea>
-          <span class="form__hint">{{ shared.transition.reasonHint }}</span>
+          <span class="field__hint">{{ shared.transition.reasonHint }}</span>
         </label>
       </div>
 
@@ -730,27 +752,27 @@
       [description]="rescheduleCopy.description"
       (dismissed)="cancel()"
     >
-      <div modal-body class="form">
-        <label class="form__field">
-          <span class="form__label">{{ rescheduleCopy.dueOn }}</span>
+      <div modal-body class="stack">
+        <label class="field">
+          <span class="field__label">{{ rescheduleCopy.dueOn }}</span>
           <input
             type="date"
-            class="form__input"
+            class="field__input"
             [value]="rescheduleDueOn()"
             (change)="onRescheduleDueOn($event)"
           />
         </label>
 
-        <label class="form__field">
-          <span class="form__label">{{ rescheduleCopy.reason }}</span>
+        <label class="field">
+          <span class="field__label">{{ rescheduleCopy.reason }}</span>
           <textarea
-            class="form__input"
+            class="field__input"
             rows="3"
             [placeholder]="rescheduleCopy.reasonPlaceholder"
             [value]="rescheduleReason()"
             (input)="onRescheduleReason($event)"
           ></textarea>
-          <span class="form__hint">{{ shared.transition.reasonHint }}</span>
+          <span class="field__hint">{{ shared.transition.reasonHint }}</span>
         </label>
       </div>
 
@@ -776,17 +798,17 @@
       [description]="completeCopy.description"
       (dismissed)="cancel()"
     >
-      <div modal-body class="form">
-        <label class="form__field">
-          <span class="form__label">{{ completeCopy.outcome }}</span>
+      <div modal-body class="stack">
+        <label class="field">
+          <span class="field__label">{{ completeCopy.outcome }}</span>
           <textarea
-            class="form__input"
+            class="field__input"
             rows="3"
             [placeholder]="completeCopy.outcomePlaceholder"
             [value]="outcome()"
             (input)="onOutcome($event)"
           ></textarea>
-          <span class="form__hint">{{ shared.transition.reasonHint }}</span>
+          <span class="field__hint">{{ shared.transition.reasonHint }}</span>
         </label>
       </div>
 
@@ -812,17 +834,17 @@
       [description]="cancelTaskCopy.description"
       (dismissed)="cancel()"
     >
-      <div modal-body class="form">
-        <label class="form__field">
-          <span class="form__label">{{ cancelTaskCopy.reason }}</span>
+      <div modal-body class="stack">
+        <label class="field">
+          <span class="field__label">{{ cancelTaskCopy.reason }}</span>
           <textarea
-            class="form__input"
+            class="field__input"
             rows="3"
             [placeholder]="cancelTaskCopy.reasonPlaceholder"
             [value]="cancelTaskReason()"
             (input)="onCancelTaskReason($event)"
           ></textarea>
-          <span class="form__hint">{{ shared.transition.reasonHint }}</span>
+          <span class="field__hint">{{ shared.transition.reasonHint }}</span>
         </label>
       </div>
 
@@ -848,17 +870,17 @@
       [description]="endLinkCopy.description"
       (dismissed)="cancel()"
     >
-      <div modal-body class="form">
-        <label class="form__field">
-          <span class="form__label">{{ endLinkCopy.reason }}</span>
+      <div modal-body class="stack">
+        <label class="field">
+          <span class="field__label">{{ endLinkCopy.reason }}</span>
           <textarea
-            class="form__input"
+            class="field__input"
             rows="3"
             [placeholder]="endLinkCopy.reasonPlaceholder"
             [value]="endLinkReason()"
             (input)="onEndLinkReason($event)"
           ></textarea>
-          <span class="form__hint">{{ shared.transition.reasonHint }}</span>
+          <span class="field__hint">{{ shared.transition.reasonHint }}</span>
         </label>
       </div>
 

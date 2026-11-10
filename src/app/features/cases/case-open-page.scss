@@ -1,53 +1,15 @@
-.open-case {
+// ResidentRegister mock-up: one panel, two columns of framed sections, the footer.
+
+.open-case__columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr));
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.open-case__column {
   display: flex;
   flex-direction: column;
-  gap: var(--space-base);
-}
-
-.open-case__section,
-.open-case__refused {
-  margin: 0;
-  padding: var(--space-base);
-}
-
-.open-case__heading {
-  margin: 0 0 var(--space-compact);
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.open-case__note {
-  margin: 0 0 var(--space-compact);
-  color: var(--c-text-muted);
-  font-size: 13px;
-}
-
-.open-case__problem {
-  margin: 0;
-  font-size: 13px;
-}
-
-.open-case__problem:empty {
-  display: none;
-}
-
-.open-case__requests {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-compact);
-}
-
-.open-case__request {
-  display: flex;
-  align-items: center;
-  gap: var(--space-compact);
-  font-size: 13.5px;
-}
-
-.open-case__actions {
-  display: flex;
-  justify-content: flex-end;
+  gap: var(--space-4);
+  min-inline-size: 0;
 }

@@ -1,60 +1,85 @@
-.workspace__missing,
-.workspace__closed,
-.workspace__protected {
-  padding: var(--space-base);
-}
+// ResidentRecord mock-up as the case file: what happens next first, then the record in two
+// columns (context, requests and history | facts, status, tasks, notes).
 
 .workspace__closed,
-.workspace__protected {
-  margin-block-end: var(--space-base);
-  color: var(--c-text-muted);
-  font-size: 13px;
-}
-
+.workspace__protected,
 .workspace__next {
-  margin-block-end: var(--space-base);
-  padding: var(--space-base);
+  margin-block-end: var(--space-4);
+}
+
+.workspace__closed {
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.workspace__missing,
+.workspace__next,
+.workspace__block {
   display: flex;
   flex-direction: column;
-  gap: var(--space-compact);
+  gap: var(--space-2);
+}
+
+.workspace__missing {
+  align-items: flex-start;
 }
 
 .workspace__next-title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-title-sm);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--ls-title);
 }
 
 .workspace__next-meta,
 .workspace__assigned,
-.workspace__fact {
-  margin: 0;
+.workspace__fact,
+.workspace__task-meta,
+.workspace__note-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-snug);
-  font-size: 13px;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  color: var(--text2);
+  font-size: var(--fs-label);
+}
+
+.workspace__task-meta,
+.workspace__note-meta {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.workspace__assigned strong,
+.workspace__fact a {
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
 }
 
 /* Reinforcement: the label beside it already reads "9 days overdue". */
 .workspace__due--late {
-  color: var(--tone-danger-fg);
-  font-weight: 600;
+  color: var(--red-ink);
+  font-weight: var(--fw-semibold);
 }
 
-.workspace__actions {
+.workspace__actions,
+.workspace__task-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-compact);
+  gap: var(--space-2);
+  margin-block-start: var(--space-1);
 }
 
 .workspace__columns {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: var(--space-base);
   align-items: start;
+  gap: var(--space-4);
 }
 
-@media (max-width: 900px) {
+@media (width <= 1100px) {
   .workspace__columns {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -64,195 +89,103 @@
 .workspace__side {
   display: flex;
   flex-direction: column;
-  gap: var(--space-base);
+  gap: var(--space-4);
   min-inline-size: 0;
 }
 
-.workspace__block {
-  padding: var(--space-base);
-}
-
-.workspace__heading {
-  margin: 0 0 var(--space-compact);
-  font-size: 15px;
-}
-
 .workspace__subheading {
-  margin: var(--space-snug) 0 var(--space-compact);
-  font-size: 13px;
-  font-weight: 600;
+  margin-block-start: var(--space-2);
+  color: var(--ink);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
 }
 
 .workspace__note,
 .workspace__none,
 .workspace__withheld {
-  margin: 0 0 var(--space-compact);
-  color: var(--c-text-muted);
-  font-size: 12.5px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
 }
 
 .workspace__members,
 .workspace__families,
 .workspace__tasks,
-.workspace__notes {
+.workspace__notes,
+.workspace__close-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-compact);
 }
 
 .workspace__task,
-.workspace__note-entry {
-  padding: var(--space-snug);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
+.workspace__note-entry,
+.workspace__close-tasks li {
   display: flex;
   flex-direction: column;
-  gap: var(--space-micro);
+  gap: var(--space-1);
+  padding: var(--space-3) 14px;
+  border-radius: var(--r-field);
+  background: var(--soft2);
+}
+
+.workspace__close-tasks li {
+  flex-flow: row wrap;
+  align-items: center;
 }
 
 .workspace__task-title,
-.workspace__note-body {
-  margin: 0;
-  font-size: 13px;
-}
-
-.workspace__task-meta,
-.workspace__note-meta {
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-compact);
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-}
-
+.workspace__note-body,
 .workspace__task-outcome {
-  margin: 0;
-  font-size: 12.5px;
+  color: var(--ink);
+  font-size: var(--fs-label);
+}
+
+.workspace__task-title {
+  font-weight: var(--fw-semibold);
 }
 
 .workspace__note-tier {
-  font-weight: 600;
+  color: var(--ink);
+  font-weight: var(--fw-bold);
 }
 
+/* The body is absent, not hidden (DL-38): said in a dashed box so it is not read as a note. */
 .workspace__note-withheld {
-  margin: 0;
-  padding: var(--space-compact);
-  border: 1px dashed var(--c-border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--c-surface-muted);
-  font-size: 12.5px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px dashed var(--field-line);
+  border-radius: var(--r-md);
+  color: var(--text2);
+  font-size: var(--fs-xs);
 }
 
 .workspace__facts {
-  margin: 0;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-compact) var(--space-snug);
-  font-size: 13px;
-}
-
-.workspace__facts dt {
-  color: var(--c-text-muted);
-  font-weight: 600;
-}
-
-.workspace__facts dd {
+  gap: var(--space-2) var(--space-4);
   margin: 0;
-}
+  font-size: var(--fs-label);
 
-.workspace__table {
-  inline-size: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
+  dt {
+    color: var(--muted);
+    font-size: var(--fs-2xs);
+  }
 
-.workspace__caption {
-  text-align: start;
-  padding-block-end: var(--space-compact);
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-}
-
-.workspace__table th,
-.workspace__table td {
-  padding: var(--space-compact);
-  border-block-end: 1px solid var(--c-border);
-  text-align: start;
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-snug);
-}
-
-.form__field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-micro);
-}
-
-.form__label {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.form__hint {
-  color: var(--c-text-muted);
-  font-size: 12px;
-}
-
-.form__input {
-  min-block-size: 36px;
-  padding: var(--space-compact) var(--space-snug);
-  border: 1px solid var(--c-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
-  color: var(--c-text);
-  font: inherit;
-  font-size: 14px;
-}
-
-textarea.form__input {
-  resize: vertical;
-}
-
-.workspace__closed p {
-  margin: 0 0 var(--space-compact);
-}
-
-.workspace__task-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-compact);
-}
-
-.workspace__close-blocked {
-  margin-block-start: var(--space-compact);
-}
-
-/* The open tasks listed where closing is held back, each with its way out (DL-183). */
-.workspace__close-tasks {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: var(--space-compact);
-
-  li {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-compact);
+  dd {
+    margin: 0;
+    color: var(--ink);
+    font-weight: var(--fw-semibold);
+    overflow-wrap: anywhere;
   }
 }
 
-.workspace__problem {
-  margin: 0;
-  font-size: 13px;
+.workspace__table a {
+  color: var(--ink);
+}
+
+.workspace__facts .workspace__withheld {
+  color: var(--muted);
+  font-weight: var(--fw-regular);
 }

@@ -982,3 +982,43 @@ a.kpi:focus-visible .kpi__arrow {
   background: var(--deep);
   color: var(--on-deep);
 }
+
+/* ── Form sections ────────────────────────────────────────────────────────
+   A form's fieldsets as the ResidentRegister mock-up frames them: a hairline
+   box with the legend set into its top edge. Put them in a padded panel card
+   (`.form-panel`), with `.form-footer` last. `.form-section__note` is the
+   muted line that says what a section is for. */
+.form-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+}
+
+.form-section__legend {
+  padding-inline: 6px;
+  color: var(--ink);
+  font-size: var(--fs-section);
+  font-weight: var(--fw-bold);
+}
+
+.form-section__note {
+  color: var(--muted);
+  font-size: var(--fs-label);
+}
+
+/* A problem line that is always in the DOM (an alert region) but says
+   nothing until there is something to say. */
+.form-problem:empty {
+  display: none;
+}

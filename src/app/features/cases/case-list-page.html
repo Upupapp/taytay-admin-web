@@ -1,60 +1,69 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
   @if (opensCases()) {
-    <a page-actions class="btn btn--primary" routerLink="/cases/new">{{ copy.open }}</a>
+    <a page-actions class="btn btn--primary" routerLink="/cases/new">
+      <app-icon name="plus" class="cases__cta-icon" [stroke]="2.2" />
+      {{ copy.open }}
+    </a>
   }
 </app-page-header>
 
-<div class="card cases">
+<section class="card card--panel card--padded stack cases" [attr.aria-label]="copy.caption">
   <!-- A case is not a request. Said before the table, because these are the two
        words most easily used for each other (DL-52). -->
-  <p class="cases__banner">{{ copy.banner }}</p>
+  <p class="callout cases__banner">
+    <app-icon name="info" [size]="18" [stroke]="2" />
+    <span>{{ copy.banner }}</span>
+  </p>
   @if (isCaseload()) {
     <!-- A caseload is the cases given to it (DL-179); said, so an empty list is not a mystery. -->
-    <p class="cases__note">{{ copy.caseloadNote }}</p>
+    <p class="status-line cases__note">{{ copy.caseloadNote }}</p>
   }
 
   <nav class="queues" [attr.aria-label]="copy.queuesHeading">
-    <h2 class="queues__heading">{{ copy.queuesHeading }}</h2>
-    <p class="queues__note">{{ copy.queuesNote }}</p>
-    <ul class="queues__list">
+    <h2 class="section-title queues__heading">{{ copy.queuesHeading }}</h2>
+    <p class="status-line queues__note">{{ copy.queuesNote }}</p>
+    <ul class="tabs queues__list">
       @for (queue of queues(); track queue) {
         <li>
           <button
             type="button"
-            class="queues__item"
-            [class.queues__item--active]="activeQueue() === queue"
+            class="tab queues__item"
+            [class.tab--active]="activeQueue() === queue"
             [attr.aria-current]="activeQueue() === queue ? 'true' : null"
             [title]="queueDescription(queue)"
             (click)="onQueue(queue)"
           >
             <span class="queues__label">{{ queueLabel(queue) }}</span>
             @if (countFor(queue); as count) {
-              <span class="queues__count">{{ count }}</span>
+              <span class="tab__count">{{ count }}</span>
             } @else {
-              <span class="queues__count queues__count--zero">0</span>
+              <span class="tab__count queues__count--zero">0</span>
             }
           </button>
         </li>
       }
     </ul>
-    <p class="queues__description">{{ queueDescription(activeQueue()) }}</p>
+    <p class="status-line queues__description">{{ queueDescription(activeQueue()) }}</p>
   </nav>
 
-  <div class="filters">
-    <label class="filters__field filters__field--wide">
-      <span class="filters__label">{{ copy.search }}</span>
-      <input
-        type="search"
-        class="filters__input"
-        [placeholder]="copy.searchPlaceholder"
-        [value]="searchText()"
-        (input)="onSearch($event)"
-      />
+  <div class="toolbar">
+    <label class="field cases__search">
+      <span class="field__label">{{ copy.search }}</span>
+      <span class="search-field">
+        <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+        <input
+          type="search"
+          class="field__input field__input--pill"
+          [placeholder]="copy.searchPlaceholder"
+          [value]="searchText()"
+          (input)="onSearch($event)"
+        />
+      </span>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.status }}</span>
-      <select class="filters__input" (change)="onStatus($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.status }}</span>
+      <select class="field__input field__input--pill" (change)="onStatus($event)">
         <option value="" [selected]="!filter().status">{{ copy.allStatuses }}</option>
         @for (status of statuses; track status) {
           <option [value]="status" [selected]="filter().status === status">
@@ -64,9 +73,9 @@
       </select>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.category }}</span>
-      <select class="filters__input" (change)="onCategory($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.category }}</span>
+      <select class="field__input field__input--pill" (change)="onCategory($event)">
         <option value="" [selected]="!filter().category">{{ copy.allCategories }}</option>
         @for (category of categories; track category) {
           <option [value]="category" [selected]="filter().category === category">
@@ -76,9 +85,9 @@
       </select>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.barangay }}</span>
-      <select class="filters__input" (change)="onBarangay($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.barangay }}</span>
+      <select class="field__input field__input--pill" (change)="onBarangay($event)">
         <option value="" [selected]="!filter().barangayId">{{ copy.allBarangays }}</option>
         @for (barangay of barangays; track barangay.id) {
           <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
@@ -89,7 +98,9 @@
     </label>
 
     @if (hasFilters()) {
-      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+      <button type="button" class="btn cases__clear" (click)="clearFilters()">
+        {{ copy.clear }}
+      </button>
     }
   </div>
 
@@ -107,12 +118,12 @@
   />
 
   @if (failure(); as message) {
-    <p class="cases__problem" role="alert">{{ message }}</p>
+    <p class="callout callout--danger cases__problem" role="alert">{{ message }}</p>
   }
 
   @if (rows().length > 0) {
     <div class="cases__more">
-      <p class="cases__hint" role="status">
+      <p class="status-line cases__hint" role="status">
         {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
       </p>
       @if (hasMore()) {
@@ -126,11 +137,11 @@
         </button>
       }
       @if (moreFailed()) {
-        <p class="cases__problem" role="alert">{{ copy.moreFailed }}</p>
+        <p class="callout callout--danger cases__problem" role="alert">{{ copy.moreFailed }}</p>
       }
     </div>
   }
-</div>
+</section>
 
 <ng-template #referenceCell let-summary>
   <a class="cases__reference" [routerLink]="detailLink(summary)">

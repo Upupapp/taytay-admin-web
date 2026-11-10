@@ -17,6 +17,7 @@ import {
   type CursorPage,
   type ResidentView,
 } from '@domain/index';
+import { InitialsPipe } from '@shared/pipes/initials.pipe';
 import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
 
 let sequence = 0;
@@ -48,25 +49,28 @@ const RESULT_LIMIT = 8;
 @Component({
   selector: 'app-person-picker',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [InitialsPipe],
   template: `
     @let chosen = selected();
 
     <div class="picker">
       @if (chosen) {
         <div class="picker__chosen">
+          <!-- The initials repeat the name beside them, masked or not. -->
+          <span class="avatar" aria-hidden="true">{{ chosen.listedName | initials }}</span>
           <div class="picker__chosen-text">
             <span class="picker__chosen-name">{{ chosen.listedName }}</span>
             <span class="picker__chosen-meta">{{ describe(chosen) }}</span>
           </div>
-          <button type="button" class="btn btn--subtle" (click)="clear()">
+          <button type="button" class="btn picker__change" (click)="clear()">
             {{ changeLabel() }}
           </button>
         </div>
       } @else {
-        <label class="picker__field">
-          <span class="picker__label">{{ label() }}</span>
+        <label class="field picker__field">
+          <span class="field__label picker__label">{{ label() }}</span>
           <input
-            class="picker__input"
+            class="field__input picker__input"
             type="text"
             role="combobox"
             autocomplete="off"
@@ -83,7 +87,7 @@ const RESULT_LIMIT = 8;
           />
         </label>
 
-        <p class="picker__hint" [id]="hintId">{{ hint() }}</p>
+        <p class="field__hint picker__hint" [id]="hintId">{{ hint() }}</p>
 
         <!-- Options are buttons so that pointer activation is a real activation,
              not a click handler bolted to a list item. They are kept out of the
@@ -104,7 +108,7 @@ const RESULT_LIMIT = 8;
               <span class="picker__option-name">{{ option.listedName }}</span>
               <span class="picker__option-meta">{{ describe(option) }}</span>
               @if (option.isProtected) {
-                <span class="picker__option-protected">Protected record</span>
+                <span class="chip chip--danger picker__option-protected">Protected record</span>
               }
             </button>
           }
