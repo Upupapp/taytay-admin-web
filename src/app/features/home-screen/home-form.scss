@@ -1,0 +1,83 @@
+/* Layout only. The fields are the global `.field`s (DL-120); the form is laid
+   out as the AppDirectoryEdit mock-up lays one out: what is typed on the left,
+   what saving does on the right, the one button under its effects. */
+
+:host {
+  display: block;
+}
+
+.home-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
+  align-items: start;
+  gap: 20px;
+}
+
+.home-form__main,
+.home-form__side,
+.home-form__image {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+/* The shared `.field + .field` spacing is replaced by the column's gap, not redefined. */
+.home-form__main > .field + .field {
+  margin-block-start: 0;
+}
+
+.home-form__side > .btn {
+  min-block-size: var(--h-btn-lg);
+  font-size: var(--fs-body);
+}
+
+.home-form__image {
+  gap: var(--space-3);
+  padding: 14px var(--space-4) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+.home-form__heading {
+  color: var(--ink);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-bold);
+}
+
+.home-form__show {
+  align-self: flex-start;
+}
+
+.home-form__current {
+  display: block;
+  max-inline-size: 100%;
+  max-block-size: 160px;
+  border-radius: var(--r-md);
+}
+
+.home-form__problem,
+.home-form__outcome {
+  color: var(--red-ink);
+  font-size: var(--fs-label);
+}
+
+.home-form__problems {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px var(--space-4);
+  border-radius: var(--r-lg);
+  background: var(--red-tint);
+  color: var(--red-ink2);
+  font-size: var(--fs-sm);
+}
+
+.home-form__problems p {
+  font-weight: var(--fw-bold);
+}
+
+.home-form__problems ul {
+  margin: 0;
+  padding-inline-start: 18px;
+}

@@ -47,7 +47,7 @@ import { HOME_SCREEN_COPY } from './home-screen.copy';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ImageFileField],
   templateUrl: './banner-form.html',
-  styleUrl: './home-screen.scss',
+  styleUrl: './home-form.scss',
 })
 export class BannerForm {
   private readonly repository = inject(HOME_SCREEN_REPOSITORY);

@@ -25,7 +25,7 @@ import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/vie
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
-import { Drawer } from '@shared/ui/drawer/drawer';
+import { Icon } from '@shared/ui/icon/icon';
 import { Modal } from '@shared/ui/modal/modal';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -33,14 +33,14 @@ import { BannerForm } from './banner-form';
 import { HOME_SCREEN_COPY } from './home-screen.copy';
 
 /**
- * The home screen's banners (`DL-170`): every banner, shown and hidden, in the app's order; added and
- * changed in a drawer; deleted behind a confirmation that offers hiding instead. The section says,
- * under its title, that the app has no description of a banner's image to give.
+ * The home screen's banners (`DL-170`): every banner, shown and hidden, in the app's order; added
+ * and changed in a centred dialog; deleted behind a confirmation that offers hiding instead. The
+ * section says, under its title, that the app has no description of a banner's image to give.
  */
 @Component({
   selector: 'app-banners-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, BannerForm, DataTable, Drawer, Modal, StatusBadge],
+  imports: [AsyncContent, BannerForm, DataTable, Icon, Modal, StatusBadge],
   templateUrl: './banners-section.html',
   styleUrl: './home-screen.scss',
 })

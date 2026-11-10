@@ -1,7 +1,7 @@
-<section class="card home-section" aria-labelledby="preview-heading">
+<section class="card card--panel card--padded home-section" aria-labelledby="preview-heading">
   <div class="home-section__head">
     <h2 id="preview-heading" class="home-section__title">{{ copy.heading }}</h2>
-    <button type="button" class="btn btn--secondary" (click)="reload()">{{ copy.reload }}</button>
+    <button type="button" class="btn" (click)="reload()">{{ copy.reload }}</button>
   </div>
   <p class="home-section__note">{{ copy.lead }}</p>
 
@@ -13,51 +13,55 @@
   >
     <ng-template #previewContent>
       @if (preview(); as shown) {
-        <h3 class="home-section__subtitle">{{ copy.banners }}</h3>
-        @if (shown.banners.length === 0) {
-          <p class="home-section__note">{{ copy.noBanners }}</p>
-        } @else {
-          <ol class="home-preview__banners">
-            @for (banner of shown.banners; track banner.id) {
-              <li class="home-preview__banner">
-                @if (banner.mediaId === null) {
-                  <span class="home-preview__placeholder">{{ copy.noImage }}</span>
-                } @else if (images().get(banner.id); as image) {
-                  @if (image === 'failed') {
-                    <span class="home-preview__placeholder">{{ copy.imageFailed }}</span>
-                  } @else {
-                    <img [src]="image" [alt]="copy.imageAlt(banner.title)" />
+        <div class="home-preview">
+          <h3 class="eyebrow home-section__subtitle">{{ copy.banners }}</h3>
+          @if (shown.banners.length === 0) {
+            <p class="status-line">{{ copy.noBanners }}</p>
+          } @else {
+            <ol class="home-preview__banners">
+              @for (banner of shown.banners; track banner.id) {
+                <li class="home-preview__banner">
+                  @if (banner.mediaId === null) {
+                    <span class="home-preview__placeholder">{{ copy.noImage }}</span>
+                  } @else if (images().get(banner.id); as image) {
+                    @if (image === 'failed') {
+                      <span class="home-preview__placeholder">{{ copy.imageFailed }}</span>
+                    } @else {
+                      <img [src]="image" [alt]="copy.imageAlt(banner.title)" />
+                    }
                   }
-                }
-                <span>{{ banner.title }}</span>
-              </li>
-            }
-          </ol>
-        }
+                  <span class="home-preview__title">{{ banner.title }}</span>
+                </li>
+              }
+            </ol>
+          }
 
-        <h3 class="home-section__subtitle">{{ copy.links }}</h3>
-        @if (shown.links.length === 0) {
-          <p class="home-section__note">{{ copy.noLinks }}</p>
-        } @else {
-          <ol class="home-preview__list">
-            @for (link of shown.links; track link.id) {
-              <li>{{ link.label }}</li>
-            }
-          </ol>
-        }
+          <h3 class="eyebrow home-section__subtitle">{{ copy.links }}</h3>
+          @if (shown.links.length === 0) {
+            <p class="status-line">{{ copy.noLinks }}</p>
+          } @else {
+            <ol class="home-preview__list">
+              @for (link of shown.links; track link.id) {
+                <li>{{ link.label }}</li>
+              }
+            </ol>
+          }
 
-        <h3 class="home-section__subtitle">{{ copy.featured }}</h3>
-        @if (shown.featuredServices.length === 0) {
-          <p class="home-section__note">{{ copy.noFeatured }}</p>
-        } @else {
-          <ol class="home-preview__list">
-            @for (name of shown.featuredServices; track $index) {
-              <li>{{ name }}</li>
-            }
-          </ol>
-        }
+          <h3 class="eyebrow home-section__subtitle">{{ copy.featured }}</h3>
+          @if (shown.featuredServices.length === 0) {
+            <p class="status-line">{{ copy.noFeatured }}</p>
+          } @else {
+            <ol class="home-preview__list">
+              @for (name of shown.featuredServices; track $index) {
+                <li>{{ name }}</li>
+              }
+            </ol>
+          }
 
-        <p class="home-section__note">{{ copy.carries(shown.hotlines, shown.news) }}</p>
+          <p class="note-box home-preview__carries">
+            {{ copy.carries(shown.hotlines, shown.news) }}
+          </p>
+        </div>
       }
     </ng-template>
   </app-async-content>

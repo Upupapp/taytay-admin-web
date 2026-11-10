@@ -1,10 +1,12 @@
-<section class="card home-section" aria-labelledby="banners-heading">
+<section class="card card--panel card--padded home-section" aria-labelledby="banners-heading">
   <div class="home-section__head">
     <h2 id="banners-heading" class="home-section__title">{{ copy.heading }}</h2>
-    <button type="button" class="btn btn--primary" (click)="add()">{{ copy.add }}</button>
+    <button type="button" class="btn btn--primary" (click)="add()">
+      <app-icon name="plus" class="home-section__plus" [stroke]="2.2" />{{ copy.add }}
+    </button>
   </div>
   <p class="home-section__note">{{ copy.lead }}</p>
-  <p class="home-section__gap">{{ noDescription }}</p>
+  <p class="callout callout--warning home-section__gap">{{ noDescription }}</p>
 
   <p class="home-section__outcome" role="status" aria-live="polite">{{ outcome() }}</p>
 
@@ -24,15 +26,19 @@
         [emptyMessage]="copy.emptyMessage"
       />
       @if (rows().length > 0) {
-        <p class="home-section__note" role="status">{{ copy.count(rows().length) }}</p>
+        <p class="status-line home-section__count" role="status">
+          {{ copy.count(rows().length) }}
+        </p>
       }
     </ng-template>
   </app-async-content>
 </section>
 
 <ng-template #titleCell let-banner>
-  {{ banner.title }}
-  <span class="home-section__note">{{ banner.href ?? copy.noLink }}</span>
+  <span class="home-section__label">
+    <span class="home-section__primary">{{ banner.title }}</span>
+    <span class="home-section__secondary">{{ banner.href ?? copy.noLink }}</span>
+  </span>
 </ng-template>
 
 <ng-template #shownCell let-banner>
@@ -43,7 +49,7 @@
   <div class="home-section__actions">
     <button
       type="button"
-      class="btn btn--secondary"
+      class="btn"
       [attr.aria-label]="copy.editLabel(banner.title)"
       (click)="edit(banner)"
     >
@@ -51,7 +57,7 @@
     </button>
     <button
       type="button"
-      class="btn btn--secondary"
+      class="btn btn--danger-soft"
       [attr.aria-label]="copy.removeLabel(banner.title)"
       (click)="askRemove(banner)"
     >
@@ -61,16 +67,16 @@
 </ng-template>
 
 @if (editing() !== null) {
-  <app-drawer
+  <app-modal
     [open]="true"
-    size="wide"
+    size="large"
     [heading]="drawerBanner() === null ? copy.createHeading : copy.editHeading"
     (dismissed)="closeDrawer()"
   >
-    <div drawer-body>
+    <div modal-body>
       <app-banner-form [banner]="drawerBanner()" (saved)="onSaved($event)" />
     </div>
-  </app-drawer>
+  </app-modal>
 }
 
 @if (removing(); as banner) {
@@ -90,13 +96,13 @@
         <p class="home-section__problem" role="alert">{{ problem }}</p>
       }
     </div>
-    <button type="button" modal-actions class="btn btn--secondary" (click)="cancelRemove()">
+    <button type="button" modal-actions class="btn" (click)="cancelRemove()">
       {{ common.cancel }}
     </button>
     <button
       type="button"
       modal-actions
-      class="btn btn--primary"
+      class="btn btn--danger"
       [disabled]="removeBusy()"
       (click)="confirmRemove()"
     >

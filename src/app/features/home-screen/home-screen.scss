@@ -1,4 +1,5 @@
-/* Layout only. `.field`, `.card`, `.check` and `.btn` are styles.scss's (DL-120) and are not redefined. */
+/* Layout only. `.field`, `.card`, `.check` and `.btn` are styles.scss's (DL-120) and are not redefined.
+   The page, its list sections and the preview, as the AppDirectory mock-up draws a section. */
 
 :host {
   display: block;
@@ -6,32 +7,23 @@
 
 .home-layout {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
-  gap: var(--space-base);
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
   align-items: start;
+  gap: var(--space-4);
 }
 
-.home-layout__lists {
+.home-layout__lists,
+.home-section,
+.home-preview {
   display: flex;
   flex-direction: column;
-  gap: var(--space-base);
+  gap: 14px;
 }
 
-@media (max-width: 960px) {
+@media (width <= 1100px) {
   .home-layout {
     grid-template-columns: minmax(0, 1fr);
   }
-}
-
-.home-section,
-.home-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-snug);
-}
-
-.home-form > .field + .field {
-  margin-block-start: 0;
 }
 
 .home-section__head {
@@ -39,118 +31,146 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-snug);
+  gap: var(--space-3);
 }
 
 .home-section__title {
-  margin: 0;
-  font-size: 16px;
+  color: var(--ink);
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-bold);
 }
 
-.home-section__subtitle,
-.home-form__heading {
-  margin: var(--space-2) 0 0;
-  font-size: 14px;
+.home-section__plus {
+  color: var(--gold);
 }
 
-.home-section__note,
-.home-section__problem,
-.home-section__outcome,
-.home-form__note,
-.home-form__problem,
-.home-form__outcome {
-  margin: 0;
-  font-size: 13px;
+.home-section__note {
+  max-inline-size: 90ch;
+  color: var(--muted);
+  font-size: var(--fs-sm);
 }
 
-.home-section__note,
-.home-form__note {
-  color: var(--c-text-muted);
+.home-section__problem {
+  color: var(--red-ink);
+  font-size: var(--fs-label);
 }
 
-.home-section__problem,
-.home-form__problem {
-  color: var(--tone-danger-fg);
+/* Always in the DOM so it is announced; drawn only once it says something. */
+.home-section__outcome:not(:empty) {
+  padding: 10px 14px;
+  border-radius: var(--r-field);
+  background: var(--green-tint);
+  color: var(--green-ink);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
 }
 
-/* What the API does not keep is said plainly, set apart so it is not read as a hint. */
-.home-section__gap,
-.home-form__gap {
-  margin: 0;
-  padding: var(--space-2) var(--space-3);
-  border-inline-start: 4px solid var(--tone-warning-fg);
-  background: var(--tone-warning-bg);
-  font-size: 13px;
+.home-section__label {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.home-section__primary {
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+}
+
+.home-section__secondary {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  overflow-wrap: anywhere;
 }
 
 .home-section__actions {
   display: flex;
-  flex-wrap: wrap;
   justify-content: flex-end;
-  gap: var(--space-snug);
+  gap: var(--space-2);
 }
 
-.home-section__warning ul,
-.home-form__effects ul,
-.home-form__problems ul {
-  margin: 0;
-  padding-inline-start: var(--space-5);
-}
-
-.home-form__effects,
-.home-form__problems {
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-}
-
-.home-form__effects {
-  border: 1px solid var(--tone-warning-fg);
-  background: var(--tone-warning-bg);
-}
-
-.home-form__problems {
-  border: 1px solid var(--tone-danger-fg);
-  background: var(--tone-danger-bg);
-}
-
-.home-form__effects p,
-.home-form__problems p {
-  margin: 0 0 var(--space-1);
-  font-weight: 600;
-}
-
-.home-form__image {
+/* What deleting does, in the effects look, before the button that does it. */
+.home-section__warning {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding-block-start: var(--space-2);
-  border-block-start: 1px solid var(--c-border);
+  color: var(--text2);
+  font-size: var(--fs-sm);
 }
 
-.home-form__current,
-.home-preview__banner img {
-  display: block;
-  max-inline-size: 100%;
-  max-block-size: 160px;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-sm);
+.home-section__warning ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 14px var(--space-4) 14px 34px;
+  border-radius: var(--r-lg);
+  background: var(--soft2);
+}
+
+/* ── Preview: what the app is given, in its order ─────────────────────── */
+
+.home-section__subtitle {
+  margin-block-start: var(--space-1);
 }
 
 .home-preview__banners,
 .home-preview__list {
+  display: grid;
+  gap: var(--space-2);
   margin: 0;
-  padding-inline-start: var(--space-5);
+  padding: 0;
+  list-style: none;
+  counter-reset: shown;
+}
+
+.home-preview__banner,
+.home-preview__list > li {
+  display: flex;
+  gap: 10px;
+  padding: 10px var(--space-3);
+  border-radius: var(--r-field);
+  background: var(--soft2);
+  color: var(--ink);
+  font-size: var(--fs-label);
 }
 
 .home-preview__banner {
-  display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  margin-block-end: var(--space-3);
+}
+
+.home-preview__list > li {
+  align-items: center;
+  counter-increment: shown;
+}
+
+.home-preview__list > li::before {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 22px;
+  block-size: 22px;
+  border-radius: var(--r-pill);
+  background: var(--card-solid);
+  color: var(--muted);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-bold);
+  content: counter(shown);
+}
+
+.home-preview__banner img {
+  display: block;
+  inline-size: 100%;
+  max-block-size: 140px;
+  border-radius: var(--r-md);
+  object-fit: cover;
+}
+
+.home-preview__title {
+  font-weight: var(--fw-semibold);
 }
 
 .home-preview__placeholder {
-  color: var(--c-text-muted);
-  font-size: 12px;
+  color: var(--muted);
+  font-size: var(--fs-2xs);
+  font-style: italic;
 }

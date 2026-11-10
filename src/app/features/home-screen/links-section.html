@@ -1,7 +1,9 @@
-<section class="card home-section" aria-labelledby="links-heading">
+<section class="card card--panel card--padded home-section" aria-labelledby="links-heading">
   <div class="home-section__head">
     <h2 id="links-heading" class="home-section__title">{{ copy.heading }}</h2>
-    <button type="button" class="btn btn--primary" (click)="add()">{{ copy.add }}</button>
+    <button type="button" class="btn btn--primary" (click)="add()">
+      <app-icon name="plus" class="home-section__plus" [stroke]="2.2" />{{ copy.add }}
+    </button>
   </div>
   <p class="home-section__note">{{ copy.lead }}</p>
 
@@ -23,7 +25,9 @@
         [emptyMessage]="copy.emptyMessage"
       />
       @if (rows().length > 0) {
-        <p class="home-section__note" role="status">{{ copy.count(rows().length) }}</p>
+        <p class="status-line home-section__count" role="status">
+          {{ copy.count(rows().length) }}
+        </p>
       }
     </ng-template>
   </app-async-content>
@@ -33,7 +37,7 @@
   <div class="home-section__actions">
     <button
       type="button"
-      class="btn btn--secondary"
+      class="btn"
       [attr.aria-label]="copy.editLabel(link.label)"
       (click)="edit(link)"
     >
@@ -41,7 +45,7 @@
     </button>
     <button
       type="button"
-      class="btn btn--secondary"
+      class="btn btn--danger-soft"
       [attr.aria-label]="copy.removeLabel(link.label)"
       (click)="askRemove(link)"
     >
@@ -51,15 +55,15 @@
 </ng-template>
 
 @if (editing() !== null) {
-  <app-drawer
+  <app-modal
     [open]="true"
     [heading]="drawerLink() === null ? copy.createHeading : copy.editHeading"
     (dismissed)="closeDrawer()"
   >
-    <div drawer-body>
+    <div modal-body>
       <app-link-form [link]="drawerLink()" (saved)="onSaved($event)" />
     </div>
-  </app-drawer>
+  </app-modal>
 }
 
 @if (removing(); as link) {
@@ -75,13 +79,13 @@
         <p class="home-section__problem" role="alert">{{ problem }}</p>
       }
     </div>
-    <button type="button" modal-actions class="btn btn--secondary" (click)="cancelRemove()">
+    <button type="button" modal-actions class="btn" (click)="cancelRemove()">
       {{ common.cancel }}
     </button>
     <button
       type="button"
       modal-actions
-      class="btn btn--primary"
+      class="btn btn--danger"
       [disabled]="removeBusy()"
       (click)="confirmRemove()"
     >

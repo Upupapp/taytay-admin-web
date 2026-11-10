@@ -18,7 +18,7 @@ import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/vie
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
-import { Drawer } from '@shared/ui/drawer/drawer';
+import { Icon } from '@shared/ui/icon/icon';
 import { Modal } from '@shared/ui/modal/modal';
 
 import { HOME_SCREEN_COPY } from './home-screen.copy';
@@ -31,7 +31,7 @@ import { LinkForm } from './link-form';
 @Component({
   selector: 'app-links-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DataTable, Drawer, LinkForm, Modal],
+  imports: [AsyncContent, DataTable, Icon, LinkForm, Modal],
   templateUrl: './links-section.html',
   styleUrl: './home-screen.scss',
 })

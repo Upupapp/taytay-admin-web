@@ -29,7 +29,7 @@ import { HOME_SCREEN_COPY } from './home-screen.copy';
   selector: 'app-link-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './link-form.html',
-  styleUrl: './home-screen.scss',
+  styleUrl: './home-form.scss',
 })
 export class LinkForm {
   private readonly repository = inject(HOME_SCREEN_REPOSITORY);
