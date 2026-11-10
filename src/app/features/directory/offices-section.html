@@ -1,7 +1,9 @@
-<section class="card directory-section" aria-labelledby="offices-heading">
+<section class="card card--panel card--padded directory-section" aria-labelledby="offices-heading">
   <div class="directory-section__head">
     <h2 id="offices-heading" class="directory-section__title">{{ copy.heading }}</h2>
-    <button type="button" class="btn btn--primary" (click)="add()">{{ copy.add }}</button>
+    <button type="button" class="btn btn--primary" (click)="add()">
+      <app-icon name="plus" class="directory-section__plus" [stroke]="2.2" />{{ copy.add }}
+    </button>
   </div>
   <p class="directory-section__note">{{ copy.lead }} {{ listCopy.order }}</p>
 
@@ -49,17 +51,24 @@
 </section>
 
 <ng-template #nameCell let-office>
-  {{ office.name }}
-  @if (office.shortName !== null && office.shortName !== office.name) {
-    ({{ office.shortName }})
-  }
+  <span class="directory-section__name">
+    <span class="icon-tile icon-tile--sm icon-tile--soft" aria-hidden="true">
+      <app-icon name="building" [size]="18" />
+    </span>
+    <span class="directory-section__label">
+      <span class="directory-section__primary">{{ office.name }}</span>
+      @if (office.shortName !== null && office.shortName !== office.name) {
+        <span class="directory-section__secondary">({{ office.shortName }})</span>
+      }
+    </span>
+  </span>
 </ng-template>
 
 <ng-template #actionCell let-office>
   <div class="directory-section__actions">
     <button
       type="button"
-      class="btn btn--secondary"
+      class="btn"
       [attr.aria-label]="copy.editLabel(office.name)"
       (click)="edit(office)"
     >
@@ -67,7 +76,7 @@
     </button>
     <button
       type="button"
-      class="btn btn--secondary"
+      class="btn btn--danger-soft"
       [attr.aria-label]="copy.removeLabel(office.name)"
       (click)="askRemove(office)"
     >
@@ -77,16 +86,16 @@
 </ng-template>
 
 @if (editing() !== null) {
-  <app-drawer
+  <app-modal
     [open]="true"
-    size="wide"
+    size="large"
     [heading]="drawerOffice() === null ? copy.createHeading : copy.editHeading"
     (dismissed)="closeDrawer()"
   >
-    <div drawer-body>
+    <div modal-body>
       <app-office-form [office]="drawerOffice()" (saved)="onSaved($event)" />
     </div>
-  </app-drawer>
+  </app-modal>
 }
 
 @if (removing(); as office) {
@@ -108,7 +117,7 @@
     <button
       type="button"
       modal-actions
-      class="btn btn--primary"
+      class="btn btn--danger"
       [disabled]="removeBusy()"
       (click)="confirmRemove()"
     >

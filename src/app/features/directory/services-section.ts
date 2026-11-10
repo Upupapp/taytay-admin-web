@@ -24,7 +24,7 @@ import { failureReason } from '@shared/state/failure-reason';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
-import { Drawer } from '@shared/ui/drawer/drawer';
+import { Icon } from '@shared/ui/icon/icon';
 import { Modal } from '@shared/ui/modal/modal';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -42,7 +42,7 @@ import { ServiceForm } from './service-form';
 @Component({
   selector: 'app-services-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DataTable, Drawer, Modal, ServiceForm, StatusBadge],
+  imports: [AsyncContent, DataTable, Icon, Modal, ServiceForm, StatusBadge],
   templateUrl: './services-section.html',
   styleUrl: './directory-section.scss',
 })

@@ -25,7 +25,7 @@ import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/vie
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
-import { Drawer } from '@shared/ui/drawer/drawer';
+import { Icon } from '@shared/ui/icon/icon';
 import { Modal } from '@shared/ui/modal/modal';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -40,7 +40,7 @@ import { HotlineForm } from './hotline-form';
 @Component({
   selector: 'app-hotlines-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DataTable, Drawer, HotlineForm, Modal, StatusBadge],
+  imports: [AsyncContent, DataTable, HotlineForm, Icon, Modal, StatusBadge],
   templateUrl: './hotlines-section.html',
   styleUrl: './directory-section.scss',
 })

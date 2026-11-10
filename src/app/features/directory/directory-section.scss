@@ -3,35 +3,85 @@
 .directory-section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-base);
+  gap: 14px;
 }
 
 .directory-section__head {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-snug);
+  gap: var(--space-4);
 }
 
 .directory-section__title {
   margin: 0;
-  font-size: 16px;
+  color: var(--ink);
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-bold);
+}
+
+.directory-section__plus {
+  color: var(--gold);
 }
 
 .directory-section__note,
 .directory-section__problem,
 .directory-section__outcome {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-label);
 }
 
 .directory-section__note {
-  color: var(--c-text-muted);
+  max-inline-size: 90ch;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  text-wrap: pretty;
 }
 
 .directory-section__problem {
-  color: var(--tone-danger-fg);
+  color: var(--red-ink);
+}
+
+/* Always in the DOM so it is announced; drawn only once it says something. */
+.directory-section__outcome:not(:empty) {
+  padding: 10px 14px;
+  border-radius: var(--r-field);
+  background: var(--green-tint);
+  color: var(--green-ink);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.directory-section__name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.directory-section__name .icon-tile {
+  background: var(--soft);
+  color: var(--link);
+}
+
+.directory-section__label {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.directory-section__primary {
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+}
+
+.directory-section__secondary {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.directory-section__slug {
+  font-family: var(--font-mono);
 }
 
 .directory-section__more,
@@ -39,25 +89,53 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-snug);
+  gap: var(--space-2);
 }
 
 .directory-section__more {
-  margin-block-start: var(--space-snug);
+  justify-content: space-between;
+  margin-block-start: var(--space-3);
 }
 
 .directory-section__actions {
   justify-content: flex-end;
+  flex-wrap: nowrap;
+}
+
+/* What deleting does, in the effects look, before the button that does it. */
+.directory-section__warning {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--text2);
+  font-size: var(--fs-sm);
+}
+
+.directory-section__warning p {
+  margin: 0;
 }
 
 .directory-section__warning ul {
-  margin: 0 0 var(--space-2);
-  padding-inline-start: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 14px var(--space-4) 14px 34px;
+  border-radius: var(--r-lg);
+  background: var(--soft2);
 }
 
+/* Open a page by its address: a soft band holding the field and its button. */
 .directory-section__find {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: var(--space-snug);
+  gap: var(--space-3);
+  padding: 14px var(--space-4);
+  border-radius: var(--r-box);
+  background: var(--soft2);
+}
+
+.directory-section__find .field {
+  flex: 1 1 280px;
 }

@@ -15,7 +15,7 @@ import { failureReason } from '@shared/state/failure-reason';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
-import { Drawer } from '@shared/ui/drawer/drawer';
+import { Icon } from '@shared/ui/icon/icon';
 import { Modal } from '@shared/ui/modal/modal';
 
 import { cursorList } from './cursor-list';
@@ -30,7 +30,7 @@ import { OfficeForm } from './office-form';
 @Component({
   selector: 'app-offices-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DataTable, Drawer, Modal, OfficeForm],
+  imports: [AsyncContent, DataTable, Icon, Modal, OfficeForm],
   templateUrl: './offices-section.html',
   styleUrl: './directory-section.scss',
 })

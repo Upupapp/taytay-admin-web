@@ -1,99 +1,103 @@
 <form class="directory-form" novalidate (submit)="$event.preventDefault(); save()">
-  <div class="field">
-    <label class="field__label" for="hotline-name">{{ copy.name }}</label>
-    <input
-      id="hotline-name"
-      class="field__input"
-      autocomplete="off"
-      [value]="name()"
-      (input)="name.set(text($event))"
-    />
-  </div>
-
-  <div class="field">
-    <label class="field__label" for="hotline-number">{{ copy.number }}</label>
-    <p class="field__hint" id="hotline-number-hint">
-      {{ copy.numberHint }}
-      @if (hotline(); as current) {
-        {{ copy.numberWas(current.number) }}
-      }
-    </p>
-    <input
-      id="hotline-number"
-      class="field__input"
-      type="tel"
-      autocomplete="off"
-      aria-describedby="hotline-number-hint"
-      [value]="number()"
-      (input)="number.set(text($event))"
-    />
-  </div>
-
-  <div class="field">
-    <label class="field__label" for="hotline-category">{{ copy.category }}</label>
-    <p class="field__hint" id="hotline-category-hint">{{ copy.categoryHint }}</p>
-    <input
-      id="hotline-category"
-      class="field__input"
-      autocomplete="off"
-      aria-describedby="hotline-category-hint"
-      [value]="category()"
-      (input)="category.set(text($event))"
-    />
-  </div>
-
-  <div class="field field--narrow">
-    <label class="field__label" for="hotline-order">{{ copy.sortOrder }}</label>
-    <p class="field__hint" id="hotline-order-hint">{{ copy.sortOrderHint }}</p>
-    <input
-      id="hotline-order"
-      class="field__input"
-      inputmode="numeric"
-      autocomplete="off"
-      aria-describedby="hotline-order-hint"
-      [value]="sortOrder()"
-      (input)="sortOrder.set(text($event))"
-    />
-  </div>
-
-  <label class="check">
-    <input type="checkbox" [checked]="active()" (change)="active.set(checked($event))" />
-    {{ copy.active }}
-  </label>
-
-  @if (attempted() && problems().length > 0) {
-    <div class="directory-form__problems" role="alert">
-      <p>{{ copy.problemsLead }}</p>
-      <ul>
-        @for (problem of problems(); track $index) {
-          <li>{{ problem }}</li>
-        }
-      </ul>
+  <div class="directory-form__main">
+    <div class="field">
+      <label class="field__label" for="hotline-name">{{ copy.name }}</label>
+      <input
+        id="hotline-name"
+        class="field__input"
+        autocomplete="off"
+        [value]="name()"
+        (input)="name.set(text($event))"
+      />
     </div>
-  }
 
-  @if (unchanged()) {
-    <p class="directory-form__note">{{ copy.unchanged }}</p>
-  } @else {
-    <!-- What the server does, between the fields and the button that does it. -->
-    <div class="directory-form__effects">
-      <p>{{ effectsLead }}</p>
-      @if (numberChange(); as change) {
-        <p class="directory-form__number">{{ change.from }} → {{ change.to }}</p>
-      }
-      <ul>
-        @for (effect of effects(); track $index) {
-          <li>{{ effect }}</li>
+    <div class="field">
+      <label class="field__label" for="hotline-number">{{ copy.number }}</label>
+      <p class="field__hint" id="hotline-number-hint">
+        {{ copy.numberHint }}
+        @if (hotline(); as current) {
+          {{ copy.numberWas(current.number) }}
         }
-      </ul>
+      </p>
+      <input
+        id="hotline-number"
+        class="field__input"
+        type="tel"
+        autocomplete="off"
+        aria-describedby="hotline-number-hint"
+        [value]="number()"
+        (input)="number.set(text($event))"
+      />
     </div>
-    <button type="submit" class="btn btn--primary" [disabled]="busy()">
-      {{ busy() ? copy.saving : creating() ? copy.create : copy.save }}
-    </button>
-  }
 
-  <!-- Only ever a refusal: a save that works is announced by the list beside the form. -->
-  @if (outcome(); as problem) {
-    <p class="directory-form__outcome" role="alert">{{ problem }}</p>
-  }
+    <div class="field">
+      <label class="field__label" for="hotline-category">{{ copy.category }}</label>
+      <p class="field__hint" id="hotline-category-hint">{{ copy.categoryHint }}</p>
+      <input
+        id="hotline-category"
+        class="field__input"
+        autocomplete="off"
+        aria-describedby="hotline-category-hint"
+        [value]="category()"
+        (input)="category.set(text($event))"
+      />
+    </div>
+
+    <div class="field field--narrow">
+      <label class="field__label" for="hotline-order">{{ copy.sortOrder }}</label>
+      <p class="field__hint" id="hotline-order-hint">{{ copy.sortOrderHint }}</p>
+      <input
+        id="hotline-order"
+        class="field__input"
+        inputmode="numeric"
+        autocomplete="off"
+        aria-describedby="hotline-order-hint"
+        [value]="sortOrder()"
+        (input)="sortOrder.set(text($event))"
+      />
+    </div>
+
+    <label class="check">
+      <input type="checkbox" [checked]="active()" (change)="active.set(checked($event))" />
+      {{ copy.active }}
+    </label>
+  </div>
+
+  <div class="directory-form__side">
+    @if (attempted() && problems().length > 0) {
+      <div class="directory-form__problems" role="alert">
+        <p>{{ copy.problemsLead }}</p>
+        <ul>
+          @for (problem of problems(); track $index) {
+            <li>{{ problem }}</li>
+          }
+        </ul>
+      </div>
+    }
+
+    @if (unchanged()) {
+      <p class="directory-form__note">{{ copy.unchanged }}</p>
+    } @else {
+      <!-- What the server does, between the fields and the button that does it. -->
+      <div class="directory-form__effects">
+        <p>{{ effectsLead }}</p>
+        @if (numberChange(); as change) {
+          <p class="directory-form__number">{{ change.from }} → {{ change.to }}</p>
+        }
+        <ul>
+          @for (effect of effects(); track $index) {
+            <li>{{ effect }}</li>
+          }
+        </ul>
+      </div>
+      <button type="submit" class="btn btn--primary" [disabled]="busy()">
+        {{ busy() ? copy.saving : creating() ? copy.create : copy.save }}
+      </button>
+    }
+
+    <!-- Only ever a refusal: a save that works is announced by the list beside the form. -->
+    @if (outcome(); as problem) {
+      <p class="directory-form__outcome" role="alert">{{ problem }}</p>
+    }
+  </div>
 </form>

@@ -1,417 +1,426 @@
 <form class="directory-form" novalidate (submit)="$event.preventDefault(); save()">
-  <div class="field">
-    <label class="field__label" for="service-name">{{ copy.name }}</label>
-    <input
-      id="service-name"
-      class="field__input"
-      autocomplete="off"
-      [value]="name()"
-      (input)="name.set(text($event))"
-    />
-  </div>
-
-  @if (creating()) {
+  <div class="directory-form__main">
     <div class="field">
-      <label class="field__label" for="service-slug">{{ copy.slug }}</label>
-      <p class="field__hint" id="service-slug-hint">{{ copy.slugHint }}</p>
+      <label class="field__label" for="service-name">{{ copy.name }}</label>
       <input
-        id="service-slug"
+        id="service-name"
         class="field__input"
         autocomplete="off"
-        spellcheck="false"
-        aria-describedby="service-slug-hint"
-        [value]="slug()"
-        (input)="slug.set(text($event))"
+        [value]="name()"
+        (input)="name.set(text($event))"
       />
     </div>
-    <div class="field">
-      <label class="field__label" for="service-category">{{ copy.category }}</label>
-      <p class="field__hint" id="service-category-hint">{{ copy.optional }}</p>
-      <input
-        id="service-category"
-        class="field__input"
-        autocomplete="off"
-        aria-describedby="service-category-hint"
-        [value]="category()"
-        (input)="category.set(text($event))"
-      />
-    </div>
-  }
 
-  <div class="field">
-    <label class="field__label" for="service-summary">{{ copy.summary }}</label>
-    <p class="field__hint" id="service-summary-hint">{{ copy.summaryHint }}</p>
-    <textarea
-      id="service-summary"
-      class="field__input"
-      rows="2"
-      aria-describedby="service-summary-hint"
-      [value]="summary()"
-      (input)="summary.set(text($event))"
-    ></textarea>
-  </div>
-
-  <div class="field">
-    <label class="field__label" for="service-details">{{ copy.details }}</label>
-    <textarea
-      id="service-details"
-      class="field__input"
-      rows="6"
-      [value]="details()"
-      (input)="details.set(text($event))"
-    ></textarea>
-  </div>
-
-  @if (creating()) {
-    <div class="field">
-      <label class="field__label" for="service-eligibility">{{ copy.eligibility }}</label>
-      <p class="field__hint" id="service-eligibility-hint">
-        {{ copy.eligibilityHint }} {{ copy.optional }}
-      </p>
-      <textarea
-        id="service-eligibility"
-        class="field__input"
-        rows="3"
-        aria-describedby="service-eligibility-hint"
-        [value]="eligibility()"
-        (input)="eligibility.set(text($event))"
-      ></textarea>
-    </div>
-  }
-
-  <div class="field">
-    <label class="field__label" for="service-requirements">{{ copy.requirements }}</label>
-    <p class="field__hint" id="service-requirements-hint">{{ copy.linesHint }}</p>
-    <textarea
-      id="service-requirements"
-      class="field__input"
-      rows="4"
-      aria-describedby="service-requirements-hint"
-      [value]="requirements()"
-      (input)="requirements.set(text($event))"
-    ></textarea>
-  </div>
-
-  <div class="field">
-    <label class="field__label" for="service-steps">{{ copy.claimSteps }}</label>
-    <p class="field__hint" id="service-steps-hint">{{ copy.linesHint }}</p>
-    <textarea
-      id="service-steps"
-      class="field__input"
-      rows="4"
-      aria-describedby="service-steps-hint"
-      [value]="claimSteps()"
-      (input)="claimSteps.set(text($event))"
-    ></textarea>
-  </div>
-
-  <fieldset class="directory-form__group">
-    <legend>{{ copy.contacts }}</legend>
-    @for (contact of contacts(); track $index; let i = $index) {
-      <div class="directory-form__row">
-        <div class="field">
-          <label class="field__label" [for]="'service-contact-type-' + i">{{
-            copy.contactType
-          }}</label>
-          <select
-            class="field__input"
-            [id]="'service-contact-type-' + i"
-            (change)="setContact(i, { type: contactType($event) })"
-          >
-            @for (type of contactTypes; track type) {
-              <option [value]="type" [selected]="contact.type === type">
-                {{ contactLabels[type] }}
-              </option>
-            }
-          </select>
-        </div>
-        <div class="field">
-          <label class="field__label" [for]="'service-contact-label-' + i">{{
-            copy.contactLabel
-          }}</label>
-          <input
-            class="field__input"
-            autocomplete="off"
-            [id]="'service-contact-label-' + i"
-            [value]="contact.label ?? ''"
-            (input)="setContact(i, { label: text($event) })"
-          />
-        </div>
-        <div class="field">
-          <label class="field__label" [for]="'service-contact-value-' + i">{{
-            copy.contactValue
-          }}</label>
-          <input
-            class="field__input"
-            autocomplete="off"
-            [id]="'service-contact-value-' + i"
-            [value]="contact.value"
-            (input)="setContact(i, { value: text($event) })"
-          />
-        </div>
-        <button
-          type="button"
-          class="btn btn--secondary"
-          [attr.aria-label]="copy.removeContact(i + 1)"
-          (click)="removeContact(i)"
-        >
-          ✕
-        </button>
+    @if (creating()) {
+      <div class="field">
+        <label class="field__label" for="service-slug">{{ copy.slug }}</label>
+        <p class="field__hint" id="service-slug-hint">{{ copy.slugHint }}</p>
+        <input
+          id="service-slug"
+          class="field__input"
+          autocomplete="off"
+          spellcheck="false"
+          aria-describedby="service-slug-hint"
+          [value]="slug()"
+          (input)="slug.set(text($event))"
+        />
+      </div>
+      <div class="field">
+        <label class="field__label" for="service-category">{{ copy.category }}</label>
+        <p class="field__hint" id="service-category-hint">{{ copy.optional }}</p>
+        <input
+          id="service-category"
+          class="field__input"
+          autocomplete="off"
+          aria-describedby="service-category-hint"
+          [value]="category()"
+          (input)="category.set(text($event))"
+        />
       </div>
     }
-    <button type="button" class="btn btn--secondary" (click)="addContact()">
-      {{ copy.addContact }}
-    </button>
-  </fieldset>
 
-  @if (creating()) {
+    <div class="field">
+      <label class="field__label" for="service-summary">{{ copy.summary }}</label>
+      <p class="field__hint" id="service-summary-hint">{{ copy.summaryHint }}</p>
+      <textarea
+        id="service-summary"
+        class="field__input"
+        rows="2"
+        aria-describedby="service-summary-hint"
+        [value]="summary()"
+        (input)="summary.set(text($event))"
+      ></textarea>
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="service-details">{{ copy.details }}</label>
+      <textarea
+        id="service-details"
+        class="field__input"
+        rows="6"
+        [value]="details()"
+        (input)="details.set(text($event))"
+      ></textarea>
+    </div>
+
+    @if (creating()) {
+      <div class="field">
+        <label class="field__label" for="service-eligibility">{{ copy.eligibility }}</label>
+        <p class="field__hint" id="service-eligibility-hint">
+          {{ copy.eligibilityHint }} {{ copy.optional }}
+        </p>
+        <textarea
+          id="service-eligibility"
+          class="field__input"
+          rows="3"
+          aria-describedby="service-eligibility-hint"
+          [value]="eligibility()"
+          (input)="eligibility.set(text($event))"
+        ></textarea>
+      </div>
+    }
+
+    <div class="field">
+      <label class="field__label" for="service-requirements">{{ copy.requirements }}</label>
+      <p class="field__hint" id="service-requirements-hint">{{ copy.linesHint }}</p>
+      <textarea
+        id="service-requirements"
+        class="field__input"
+        rows="4"
+        aria-describedby="service-requirements-hint"
+        [value]="requirements()"
+        (input)="requirements.set(text($event))"
+      ></textarea>
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="service-steps">{{ copy.claimSteps }}</label>
+      <p class="field__hint" id="service-steps-hint">{{ copy.linesHint }}</p>
+      <textarea
+        id="service-steps"
+        class="field__input"
+        rows="4"
+        aria-describedby="service-steps-hint"
+        [value]="claimSteps()"
+        (input)="claimSteps.set(text($event))"
+      ></textarea>
+    </div>
+
     <fieldset class="directory-form__group">
-      <legend>{{ copy.locations }}</legend>
-      @for (place of locations(); track $index; let i = $index) {
+      <legend>{{ copy.contacts }}</legend>
+      @for (contact of contacts(); track $index; let i = $index) {
         <div class="directory-form__row">
           <div class="field">
-            <label class="field__label" [for]="'service-place-name-' + i">{{
-              copy.locationName
+            <label class="field__label" [for]="'service-contact-type-' + i">{{
+              copy.contactType
+            }}</label>
+            <select
+              class="field__input"
+              [id]="'service-contact-type-' + i"
+              (change)="setContact(i, { type: contactType($event) })"
+            >
+              @for (type of contactTypes; track type) {
+                <option [value]="type" [selected]="contact.type === type">
+                  {{ contactLabels[type] }}
+                </option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label class="field__label" [for]="'service-contact-label-' + i">{{
+              copy.contactLabel
             }}</label>
             <input
               class="field__input"
               autocomplete="off"
-              [id]="'service-place-name-' + i"
-              [value]="place.name"
-              (input)="setLocation(i, { name: text($event) })"
+              [id]="'service-contact-label-' + i"
+              [value]="contact.label ?? ''"
+              (input)="setContact(i, { label: text($event) })"
             />
           </div>
           <div class="field">
-            <label class="field__label" [for]="'service-place-address-' + i">
-              {{ copy.locationAddress }}
-            </label>
+            <label class="field__label" [for]="'service-contact-value-' + i">{{
+              copy.contactValue
+            }}</label>
             <input
               class="field__input"
               autocomplete="off"
-              [id]="'service-place-address-' + i"
-              [value]="place.address"
-              (input)="setLocation(i, { address: text($event) })"
+              [id]="'service-contact-value-' + i"
+              [value]="contact.value"
+              (input)="setContact(i, { value: text($event) })"
             />
           </div>
           <button
             type="button"
             class="btn btn--secondary"
-            [attr.aria-label]="copy.removeLocation(i + 1)"
-            (click)="removeLocation(i)"
+            [attr.aria-label]="copy.removeContact(i + 1)"
+            (click)="removeContact(i)"
           >
             ✕
           </button>
         </div>
       }
-      <button type="button" class="btn btn--secondary" (click)="addLocation()">
-        {{ copy.addLocation }}
+      <button type="button" class="btn btn--secondary" (click)="addContact()">
+        {{ copy.addContact }}
       </button>
     </fieldset>
 
-    <div class="field">
-      <label class="field__label" for="service-office">{{ copy.office }}</label>
-      <select id="service-office" class="field__input" (change)="chooseOffice($event)">
-        <option value="" [selected]="officeId() === null">{{ copy.officeNone }}</option>
-        @for (office of directory(); track office.id) {
-          <option [value]="office.id" [selected]="officeId() === office.id">
-            {{ label(office) }}
-          </option>
+    @if (creating()) {
+      <fieldset class="directory-form__group">
+        <legend>{{ copy.locations }}</legend>
+        @for (place of locations(); track $index; let i = $index) {
+          <div class="directory-form__row">
+            <div class="field">
+              <label class="field__label" [for]="'service-place-name-' + i">{{
+                copy.locationName
+              }}</label>
+              <input
+                class="field__input"
+                autocomplete="off"
+                [id]="'service-place-name-' + i"
+                [value]="place.name"
+                (input)="setLocation(i, { name: text($event) })"
+              />
+            </div>
+            <div class="field">
+              <label class="field__label" [for]="'service-place-address-' + i">
+                {{ copy.locationAddress }}
+              </label>
+              <input
+                class="field__input"
+                autocomplete="off"
+                [id]="'service-place-address-' + i"
+                [value]="place.address"
+                (input)="setLocation(i, { address: text($event) })"
+              />
+            </div>
+            <button
+              type="button"
+              class="btn btn--secondary"
+              [attr.aria-label]="copy.removeLocation(i + 1)"
+              (click)="removeLocation(i)"
+            >
+              ✕
+            </button>
+          </div>
         }
-      </select>
-    </div>
-  }
-
-  <div class="field">
-    <label class="field__label" for="service-schedule">{{ copy.schedule }}</label>
-    <p class="field__hint" id="service-schedule-hint">{{ copy.optional }}</p>
-    <input
-      id="service-schedule"
-      class="field__input"
-      autocomplete="off"
-      aria-describedby="service-schedule-hint"
-      [value]="schedule()"
-      (input)="schedule.set(text($event))"
-    />
-  </div>
-
-  <div class="field">
-    <label class="field__label" for="service-legal-basis">{{ copy.legalBasis }}</label>
-    <p class="field__hint" id="service-legal-basis-hint">{{ copy.optional }}</p>
-    <input
-      id="service-legal-basis"
-      class="field__input"
-      autocomplete="off"
-      aria-describedby="service-legal-basis-hint"
-      [value]="legalBasis()"
-      (input)="legalBasis.set(text($event))"
-    />
-  </div>
-
-  <div class="directory-form__pair">
-    <div class="field">
-      <label class="field__label" for="service-badge">{{ copy.badge }}</label>
-      <p class="field__hint" id="service-badge-hint">{{ copy.badgeHint }}</p>
-      <input
-        id="service-badge"
-        class="field__input"
-        autocomplete="off"
-        aria-describedby="service-badge-hint"
-        [value]="badge()"
-        (input)="badge.set(text($event))"
-      />
-    </div>
-    <div class="field">
-      <label class="field__label" for="service-icon">{{ copy.iconKey }}</label>
-      <p class="field__hint" id="service-icon-hint">{{ copy.iconKeyHint }}</p>
-      <input
-        id="service-icon"
-        class="field__input"
-        autocomplete="off"
-        spellcheck="false"
-        aria-describedby="service-icon-hint"
-        [value]="iconKey()"
-        (input)="iconKey.set(text($event))"
-      />
-    </div>
-    <div class="field">
-      <label class="field__label" for="service-colour">{{ copy.tileColor }}</label>
-      <p class="field__hint" id="service-colour-hint">{{ copy.tileColorHint }}</p>
-      <input
-        id="service-colour"
-        class="field__input"
-        autocomplete="off"
-        spellcheck="false"
-        aria-describedby="service-colour-hint"
-        [value]="tileColor()"
-        (input)="tileColor.set(text($event))"
-      />
-    </div>
-  </div>
-
-  <label class="check">
-    <input
-      type="checkbox"
-      [checked]="hiddenFromList()"
-      (change)="hiddenFromList.set(checked($event))"
-    />
-    {{ copy.hidden }}
-  </label>
-
-  @if (!creating()) {
-    <label class="check">
-      <input type="checkbox" [checked]="featured()" (change)="featured.set(checked($event))" />
-      {{ copy.featured }}
-    </label>
-  }
-
-  <div class="field">
-    <label class="field__label" for="service-headline">{{ copy.featuredHeadline }}</label>
-    <p class="field__hint" id="service-headline-hint">{{ copy.optional }}</p>
-    <input
-      id="service-headline"
-      class="field__input"
-      autocomplete="off"
-      aria-describedby="service-headline-hint"
-      [value]="featuredHeadline()"
-      (input)="featuredHeadline.set(text($event))"
-    />
-  </div>
-
-  @if (service(); as current) {
-    <section class="directory-form__fixed" aria-labelledby="service-fixed-heading">
-      <h3 id="service-fixed-heading" class="directory-form__heading">{{ copy.fixedHeading }}</h3>
-      <p class="field__hint">{{ fixedLead }}</p>
-      <dl class="directory-form__facts">
-        <div>
-          <dt>{{ copy.slug }}</dt>
-          <dd>{{ current.slug }}</dd>
-        </div>
-        <div>
-          <dt>{{ copy.category }}</dt>
-          <dd>{{ current.category ?? copy.notGiven }}</dd>
-        </div>
-        <div>
-          <dt>{{ copy.eligibility }}</dt>
-          <dd>{{ current.eligibility ?? copy.notGiven }}</dd>
-        </div>
-        <div>
-          <dt>{{ copy.locations }}</dt>
-          <dd>
-            @for (place of current.locations; track $index) {
-              {{ place.name }} — {{ place.address }}<br />
-            } @empty {
-              {{ copy.notGiven }}
-            }
-          </dd>
-        </div>
-        <div>
-          <dt>{{ copy.office }}</dt>
-          <dd>{{ officeName(current.officeId) }}</dd>
-        </div>
-      </dl>
-    </section>
-  }
-
-  @if (attempted() && problems().length > 0) {
-    <div class="directory-form__problems" role="alert">
-      <p>{{ copy.problemsLead }}</p>
-      <ul>
-        @for (problem of problems(); track $index) {
-          <li>{{ problem }}</li>
-        }
-      </ul>
-    </div>
-  }
-
-  @if (unchanged()) {
-    <p class="directory-form__note">{{ copy.unchanged }}</p>
-  } @else {
-    <!-- What the server does, between the fields and the button that does it. -->
-    <div class="directory-form__effects">
-      <p>{{ effectsLead }}</p>
-      <ul>
-        @for (effect of effects(); track $index) {
-          <li>{{ effect }}</li>
-        }
-      </ul>
-    </div>
-    <button type="submit" class="btn btn--primary" [disabled]="busy()">
-      {{ busy() ? copy.saving : creating() ? copy.create : copy.save }}
-    </button>
-  }
-
-  <section class="directory-form__image" aria-labelledby="service-image-heading">
-    <h3 id="service-image-heading" class="directory-form__heading">{{ copy.imageHeading }}</h3>
-    @if (service(); as current) {
-      <p class="field__hint">{{ current.hasImage ? copy.imageCurrent : copy.imageNone }}</p>
-      <app-image-file-field
-        inputId="service-image"
-        [label]="copy.image"
-        [hint]="copy.imageHint"
-        [disabled]="busy()"
-        (chosen)="image.set($event)"
-      />
-      @if (image() !== null) {
-        <!-- What the upload does, between the choice and the button that does it. -->
-        <div class="directory-form__effects">
-          <p>{{ effectsLead }}</p>
-          <ul>
-            @for (effect of imageEffects(); track $index) {
-              <li>{{ effect }}</li>
-            }
-          </ul>
-        </div>
-        <button type="button" class="btn btn--primary" [disabled]="busy()" (click)="uploadImage()">
-          {{ busy() ? copy.uploading : copy.uploadImage }}
+        <button type="button" class="btn btn--secondary" (click)="addLocation()">
+          {{ copy.addLocation }}
         </button>
-      }
-    } @else {
-      <p class="field__hint">{{ copy.imageAfterCreate }}</p>
-    }
-  </section>
+      </fieldset>
 
-  <!-- Only ever a refusal: a save that works is announced by the list beside the form. -->
-  @if (outcome(); as problem) {
-    <p class="directory-form__outcome" role="alert">{{ problem }}</p>
-  }
+      <div class="field">
+        <label class="field__label" for="service-office">{{ copy.office }}</label>
+        <select id="service-office" class="field__input" (change)="chooseOffice($event)">
+          <option value="" [selected]="officeId() === null">{{ copy.officeNone }}</option>
+          @for (office of directory(); track office.id) {
+            <option [value]="office.id" [selected]="officeId() === office.id">
+              {{ label(office) }}
+            </option>
+          }
+        </select>
+      </div>
+    }
+
+    <div class="field">
+      <label class="field__label" for="service-schedule">{{ copy.schedule }}</label>
+      <p class="field__hint" id="service-schedule-hint">{{ copy.optional }}</p>
+      <input
+        id="service-schedule"
+        class="field__input"
+        autocomplete="off"
+        aria-describedby="service-schedule-hint"
+        [value]="schedule()"
+        (input)="schedule.set(text($event))"
+      />
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="service-legal-basis">{{ copy.legalBasis }}</label>
+      <p class="field__hint" id="service-legal-basis-hint">{{ copy.optional }}</p>
+      <input
+        id="service-legal-basis"
+        class="field__input"
+        autocomplete="off"
+        aria-describedby="service-legal-basis-hint"
+        [value]="legalBasis()"
+        (input)="legalBasis.set(text($event))"
+      />
+    </div>
+
+    <div class="directory-form__pair">
+      <div class="field">
+        <label class="field__label" for="service-badge">{{ copy.badge }}</label>
+        <p class="field__hint" id="service-badge-hint">{{ copy.badgeHint }}</p>
+        <input
+          id="service-badge"
+          class="field__input"
+          autocomplete="off"
+          aria-describedby="service-badge-hint"
+          [value]="badge()"
+          (input)="badge.set(text($event))"
+        />
+      </div>
+      <div class="field">
+        <label class="field__label" for="service-icon">{{ copy.iconKey }}</label>
+        <p class="field__hint" id="service-icon-hint">{{ copy.iconKeyHint }}</p>
+        <input
+          id="service-icon"
+          class="field__input"
+          autocomplete="off"
+          spellcheck="false"
+          aria-describedby="service-icon-hint"
+          [value]="iconKey()"
+          (input)="iconKey.set(text($event))"
+        />
+      </div>
+      <div class="field">
+        <label class="field__label" for="service-colour">{{ copy.tileColor }}</label>
+        <p class="field__hint" id="service-colour-hint">{{ copy.tileColorHint }}</p>
+        <input
+          id="service-colour"
+          class="field__input"
+          autocomplete="off"
+          spellcheck="false"
+          aria-describedby="service-colour-hint"
+          [value]="tileColor()"
+          (input)="tileColor.set(text($event))"
+        />
+      </div>
+    </div>
+
+    <label class="check">
+      <input
+        type="checkbox"
+        [checked]="hiddenFromList()"
+        (change)="hiddenFromList.set(checked($event))"
+      />
+      {{ copy.hidden }}
+    </label>
+
+    @if (!creating()) {
+      <label class="check">
+        <input type="checkbox" [checked]="featured()" (change)="featured.set(checked($event))" />
+        {{ copy.featured }}
+      </label>
+    }
+
+    <div class="field">
+      <label class="field__label" for="service-headline">{{ copy.featuredHeadline }}</label>
+      <p class="field__hint" id="service-headline-hint">{{ copy.optional }}</p>
+      <input
+        id="service-headline"
+        class="field__input"
+        autocomplete="off"
+        aria-describedby="service-headline-hint"
+        [value]="featuredHeadline()"
+        (input)="featuredHeadline.set(text($event))"
+      />
+    </div>
+  </div>
+
+  <div class="directory-form__side">
+    @if (service(); as current) {
+      <section class="directory-form__fixed" aria-labelledby="service-fixed-heading">
+        <h3 id="service-fixed-heading" class="directory-form__heading">{{ copy.fixedHeading }}</h3>
+        <p class="field__hint">{{ fixedLead }}</p>
+        <dl class="directory-form__facts">
+          <div>
+            <dt>{{ copy.slug }}</dt>
+            <dd>{{ current.slug }}</dd>
+          </div>
+          <div>
+            <dt>{{ copy.category }}</dt>
+            <dd>{{ current.category ?? copy.notGiven }}</dd>
+          </div>
+          <div>
+            <dt>{{ copy.eligibility }}</dt>
+            <dd>{{ current.eligibility ?? copy.notGiven }}</dd>
+          </div>
+          <div>
+            <dt>{{ copy.locations }}</dt>
+            <dd>
+              @for (place of current.locations; track $index) {
+                {{ place.name }} — {{ place.address }}<br />
+              } @empty {
+                {{ copy.notGiven }}
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>{{ copy.office }}</dt>
+            <dd>{{ officeName(current.officeId) }}</dd>
+          </div>
+        </dl>
+      </section>
+    }
+
+    @if (attempted() && problems().length > 0) {
+      <div class="directory-form__problems" role="alert">
+        <p>{{ copy.problemsLead }}</p>
+        <ul>
+          @for (problem of problems(); track $index) {
+            <li>{{ problem }}</li>
+          }
+        </ul>
+      </div>
+    }
+
+    @if (unchanged()) {
+      <p class="directory-form__note">{{ copy.unchanged }}</p>
+    } @else {
+      <!-- What the server does, between the fields and the button that does it. -->
+      <div class="directory-form__effects">
+        <p>{{ effectsLead }}</p>
+        <ul>
+          @for (effect of effects(); track $index) {
+            <li>{{ effect }}</li>
+          }
+        </ul>
+      </div>
+      <button type="submit" class="btn btn--primary" [disabled]="busy()">
+        {{ busy() ? copy.saving : creating() ? copy.create : copy.save }}
+      </button>
+    }
+
+    <section class="directory-form__image" aria-labelledby="service-image-heading">
+      <h3 id="service-image-heading" class="directory-form__heading">{{ copy.imageHeading }}</h3>
+      @if (service(); as current) {
+        <p class="field__hint">{{ current.hasImage ? copy.imageCurrent : copy.imageNone }}</p>
+        <app-image-file-field
+          inputId="service-image"
+          [label]="copy.image"
+          [hint]="copy.imageHint"
+          [disabled]="busy()"
+          (chosen)="image.set($event)"
+        />
+        @if (image() !== null) {
+          <!-- What the upload does, between the choice and the button that does it. -->
+          <div class="directory-form__effects">
+            <p>{{ effectsLead }}</p>
+            <ul>
+              @for (effect of imageEffects(); track $index) {
+                <li>{{ effect }}</li>
+              }
+            </ul>
+          </div>
+          <button
+            type="button"
+            class="btn btn--primary"
+            [disabled]="busy()"
+            (click)="uploadImage()"
+          >
+            {{ busy() ? copy.uploading : copy.uploadImage }}
+          </button>
+        }
+      } @else {
+        <p class="field__hint">{{ copy.imageAfterCreate }}</p>
+      }
+    </section>
+
+    <!-- Only ever a refusal: a save that works is announced by the list beside the form. -->
+    @if (outcome(); as problem) {
+      <p class="directory-form__outcome" role="alert">{{ problem }}</p>
+    }
+  </div>
 </form>

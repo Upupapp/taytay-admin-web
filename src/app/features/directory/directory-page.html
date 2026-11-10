@@ -2,11 +2,11 @@
 
 @if (offered().length > 1) {
   <nav class="directory-tabs" [attr.aria-label]="copy.sectionsLabel">
-    <ul>
+    <ul class="tabs">
       @for (tab of offered(); track tab.key) {
         <li>
           <a
-            class="directory-tabs__link"
+            class="tab directory-tabs__link"
             routerLink="."
             [queryParams]="{ section: tab.key }"
             [attr.aria-current]="current() === tab.key ? 'page' : null"
@@ -30,6 +30,6 @@
     <app-hotlines-section />
   }
   @default {
-    <p class="card">{{ copy.noSection }}</p>
+    <p class="card card--padded">{{ copy.noSection }}</p>
   }
 }

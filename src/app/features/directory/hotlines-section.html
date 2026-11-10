@@ -1,7 +1,9 @@
-<section class="card directory-section" aria-labelledby="hotlines-heading">
+<section class="card card--panel card--padded directory-section" aria-labelledby="hotlines-heading">
   <div class="directory-section__head">
     <h2 id="hotlines-heading" class="directory-section__title">{{ copy.heading }}</h2>
-    <button type="button" class="btn btn--primary" (click)="add()">{{ copy.add }}</button>
+    <button type="button" class="btn btn--primary" (click)="add()">
+      <app-icon name="plus" class="directory-section__plus" [stroke]="2.2" />{{ copy.add }}
+    </button>
   </div>
   <p class="directory-section__note">{{ copy.lead }}</p>
 
@@ -40,7 +42,7 @@
   <div class="directory-section__actions">
     <button
       type="button"
-      class="btn btn--secondary"
+      class="btn"
       [attr.aria-label]="copy.editLabel(hotline.name)"
       (click)="edit(hotline)"
     >
@@ -48,7 +50,7 @@
     </button>
     <button
       type="button"
-      class="btn btn--secondary"
+      class="btn btn--danger-soft"
       [attr.aria-label]="copy.removeLabel(hotline.name)"
       (click)="askRemove(hotline)"
     >
@@ -58,15 +60,15 @@
 </ng-template>
 
 @if (editing() !== null) {
-  <app-drawer
+  <app-modal
     [open]="true"
     [heading]="drawerHotline() === null ? copy.createHeading : copy.editHeading"
     (dismissed)="closeDrawer()"
   >
-    <div drawer-body>
+    <div modal-body>
       <app-hotline-form [hotline]="drawerHotline()" (saved)="onSaved($event)" />
     </div>
-  </app-drawer>
+  </app-modal>
 }
 
 @if (removing(); as hotline) {
@@ -92,7 +94,7 @@
     <button
       type="button"
       modal-actions
-      class="btn btn--primary"
+      class="btn btn--danger"
       [disabled]="removeBusy()"
       (click)="confirmRemove()"
     >

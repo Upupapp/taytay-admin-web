@@ -1,44 +1,63 @@
+/* Layout only. The fields are the global `.field`s; the form lays them out as
+   the AppDirectoryEdit mock-up does: what is typed on the left, what is fixed
+   and what saving does on the right, the one button under its effects. */
+
 :host {
   display: block;
 }
 
 .directory-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.directory-form__main,
+.directory-form__side {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  min-inline-size: 0;
 }
 
-/* The shared `.field + .field` spacing is replaced by the form's gap, not redefined (`DL-120`). */
-.directory-form > .field + .field {
+/* The shared `.field + .field` spacing is replaced by the column's gap, not redefined (`DL-120`). */
+.directory-form__main > .field + .field,
+.directory-form__pair > .field + .field,
+.directory-form__row > .field + .field {
   margin-block-start: 0;
+}
+
+.directory-form__side > .btn {
+  min-block-size: var(--h-btn-lg);
+  font-size: var(--fs-body);
 }
 
 .directory-form__heading {
   margin: 0 0 var(--space-2);
-  font-size: 14px;
+  color: var(--ink);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-bold);
 }
 
 .directory-form__group {
   margin: 0;
-  padding: var(--space-3);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
+  padding: 14px var(--space-4) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
 }
 
 .directory-form__group legend {
   padding-inline: var(--space-1);
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--text2);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
 }
 
 .directory-form__pair {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: var(--space-3);
-}
-
-.directory-form__pair > .field + .field {
-  margin-block-start: 0;
 }
 
 .directory-form__row {
@@ -49,73 +68,98 @@
   margin-block-end: var(--space-2);
 }
 
-.directory-form__row > .field + .field {
-  margin-block-start: 0;
+/* What was set at creation and cannot be edited: a soft panel of facts. */
+.directory-form__fixed {
+  padding: var(--space-4);
+  border-radius: var(--r-xl);
+  background: var(--soft2);
 }
 
 .directory-form__facts {
   display: grid;
-  gap: var(--space-2);
-  margin: 0;
+  gap: 10px;
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-label);
 }
 
 .directory-form__facts dt {
-  color: var(--c-text-muted);
-  font-size: 12px;
+  color: var(--muted);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
 }
 
 .directory-form__facts dd {
-  margin: 0;
+  margin: 2px 0 0;
+  color: var(--ink);
   white-space: pre-line;
 }
 
 .directory-form__effects,
 .directory-form__problems {
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  font-size: 13px;
+  padding: 14px var(--space-4);
+  border-radius: var(--r-lg);
+  font-size: var(--fs-sm);
 }
 
 .directory-form__effects {
-  border: 1px solid var(--tone-warning-fg);
-  background: var(--tone-warning-bg);
+  background: var(--soft2);
+  color: var(--text2);
 }
 
 .directory-form__problems {
-  border: 1px solid var(--tone-danger-fg);
-  background: var(--tone-danger-bg);
+  background: var(--red-tint);
+  color: var(--red-ink2);
 }
 
 .directory-form__effects p,
 .directory-form__problems p {
-  margin: 0 0 var(--space-1);
-  font-weight: 600;
+  margin: 0 0 6px;
+  font-weight: var(--fw-bold);
+}
+
+.directory-form__effects p {
+  color: var(--ink);
 }
 
 .directory-form__effects ul,
 .directory-form__problems ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
   margin: 0;
-  padding-inline-start: var(--space-5);
+  padding-inline-start: 18px;
 }
 
 .directory-form__note {
   margin: 0;
-  color: var(--c-text-muted);
-  font-size: 13px;
+  padding: var(--space-3) 14px;
+  border-radius: var(--r-field);
+  background: var(--soft2);
+  color: var(--text2);
+  font-size: var(--fs-sm);
 }
 
 .directory-form__outcome {
   margin: 0;
-  font-size: 13px;
+  color: var(--ink);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
 }
 
 .directory-form__image {
-  padding-block-start: var(--space-2);
-  border-block-start: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block-start: var(--space-4);
+  border-block-start: 1px solid var(--soft);
+}
+
+.directory-form__image .directory-form__heading {
+  margin: 0;
 }
 
 /* A changed number is read back in full, larger than the sentences around it. */
 .directory-form__number {
-  font-size: 16px;
+  font-size: var(--fs-subheading);
   font-variant-numeric: tabular-nums;
 }

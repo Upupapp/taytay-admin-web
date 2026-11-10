@@ -1,7 +1,9 @@
-<section class="card directory-section" aria-labelledby="services-heading">
+<section class="card card--panel card--padded directory-section" aria-labelledby="services-heading">
   <div class="directory-section__head">
     <h2 id="services-heading" class="directory-section__title">{{ copy.heading }}</h2>
-    <button type="button" class="btn btn--primary" (click)="add()">{{ copy.add }}</button>
+    <button type="button" class="btn btn--primary" (click)="add()">
+      <app-icon name="plus" class="directory-section__plus" [stroke]="2.2" />{{ copy.add }}
+    </button>
   </div>
   <p class="directory-section__note">{{ copy.lead }}</p>
   <p class="directory-section__note">{{ copy.hiddenNote }} {{ listCopy.order }}</p>
@@ -75,8 +77,12 @@
 </section>
 
 <ng-template #nameCell let-service>
-  {{ service.name }}
-  <span class="directory-section__note">services/{{ service.slug }}</span>
+  <span class="directory-section__label">
+    <span class="directory-section__primary">{{ service.name }}</span>
+    <span class="directory-section__secondary directory-section__slug"
+      >services/{{ service.slug }}</span
+    >
+  </span>
 </ng-template>
 
 <ng-template #listingCell let-service>
@@ -87,7 +93,7 @@
   <div class="directory-section__actions">
     <button
       type="button"
-      class="btn btn--secondary"
+      class="btn"
       [attr.aria-label]="copy.editLabel(service.name)"
       (click)="edit(service)"
     >
@@ -95,7 +101,7 @@
     </button>
     <button
       type="button"
-      class="btn btn--secondary"
+      class="btn btn--danger-soft"
       [attr.aria-label]="copy.removeLabel(service.name)"
       (click)="askRemove(service)"
     >
@@ -105,20 +111,20 @@
 </ng-template>
 
 @if (editing() !== null) {
-  <app-drawer
+  <app-modal
     [open]="true"
-    size="wide"
+    size="large"
     [heading]="drawerService() === null ? copy.createHeading : copy.editHeading"
     (dismissed)="closeDrawer()"
   >
-    <div drawer-body>
+    <div modal-body>
       <app-service-form
         [service]="drawerService()"
         [offices]="offices.state()"
         (saved)="onSaved($event)"
       />
     </div>
-  </app-drawer>
+  </app-modal>
 }
 
 @if (removing(); as service) {
@@ -144,7 +150,7 @@
     <button
       type="button"
       modal-actions
-      class="btn btn--primary"
+      class="btn btn--danger"
       [disabled]="removeBusy()"
       (click)="confirmRemove()"
     >

@@ -98,6 +98,19 @@
   color: var(--red-ink);
 }
 
+/* A destructive row action in a list of many (Delete beside Edit): red ink on
+   a tinted hairline, so a column of them does not shout. It opens a
+   confirmation; the confirmation's button is the filled `.btn--danger`. */
+.btn.btn--danger-soft {
+  border-color: var(--red-tint);
+  color: var(--red-ink);
+}
+
+.btn.btn--danger-soft:hover:not(:disabled) {
+  background: var(--red-tint);
+  color: var(--red-ink2);
+}
+
 .btn--danger-outline:hover:not(:disabled) {
   background: var(--red-tint);
   color: var(--red-ink2);
