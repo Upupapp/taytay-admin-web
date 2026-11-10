@@ -4,6 +4,9 @@ import { RouterLink } from '@angular/router';
 import { NotificationStore } from '@core/notifications/notification.store';
 import type { NotificationId } from '@domain/index';
 
+import { Icon } from '../icon/icon';
+import { SEVERITY_ICONS } from '../icon/severity-icons';
+
 /**
  * Renders the transient notification stack. Mounted once by the app shell —
  * features raise messages through `NotificationStore`, never by placing toast
@@ -12,7 +15,7 @@ import type { NotificationId } from '@domain/index';
 @Component({
   selector: 'app-toast-host',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [Icon, RouterLink],
   template: `
     <div class="toasts" role="region" aria-label="Notifications">
       @for (toast of notifications.toasts(); track toast.id) {
@@ -21,6 +24,9 @@ import type { NotificationId } from '@domain/index';
           [class]="'toast--' + toast.severity"
           [attr.role]="toast.severity === 'error' ? 'alert' : 'status'"
         >
+          <span class="toast__icon" aria-hidden="true">
+            <app-icon [name]="severityIcons[toast.severity]" [size]="18" [stroke]="2" />
+          </span>
           <div class="toast__content">
             <h3 class="toast__title">{{ toast.title }}</h3>
             @if (toast.body; as body) {
@@ -33,7 +39,7 @@ import type { NotificationId } from '@domain/index';
             }
           </div>
           <button type="button" class="icon-button toast__close" (click)="dismiss(toast.id)">
-            <span aria-hidden="true">✕</span>
+            <app-icon name="close" [size]="14" [stroke]="2.2" />
             <span class="visually-hidden">Dismiss notification</span>
           </button>
         </article>
@@ -44,6 +50,7 @@ import type { NotificationId } from '@domain/index';
 })
 export class ToastHost {
   protected readonly notifications = inject(NotificationStore);
+  protected readonly severityIcons = SEVERITY_ICONS;
 
   protected dismiss(id: NotificationId): void {
     this.notifications.dismissToast(id);

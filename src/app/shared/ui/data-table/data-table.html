@@ -19,15 +19,13 @@
             @if (column.sortField) {
               <button type="button" class="table__sort" (click)="toggleSort(column)">
                 <span [class.visually-hidden]="column.hideHeader">{{ column.header }}</span>
-                <span class="table__sort-arrow" aria-hidden="true">
-                  {{
-                    directionFor(column) === 'asc'
-                      ? '▲'
-                      : directionFor(column) === 'desc'
-                        ? '▼'
-                        : '↕'
-                  }}
-                </span>
+                <app-icon
+                  class="table__sort-arrow"
+                  [class.table__sort-arrow--active]="directionFor(column) !== null"
+                  [name]="sortIcon(column)"
+                  [size]="14"
+                  [stroke]="2.2"
+                />
               </button>
             } @else {
               <span [class.visually-hidden]="column.hideHeader">{{ column.header }}</span>

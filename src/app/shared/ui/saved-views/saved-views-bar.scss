@@ -1,17 +1,23 @@
+/* The console mock-ups' tab strip: a glass pill holding pill-shaped views,
+   the applied one filled in the primary colour. No backdrop filter: the save
+   dialog renders inside this bar, and a filter would trap its overlay. */
 .views {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-compact);
+  gap: var(--space-2);
 }
 
 .views__list {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-compact);
+  gap: 6px;
   margin: 0;
-  padding: 0;
+  padding: 5px;
+  border: 1px solid var(--card-edge);
+  border-radius: var(--r-pill);
+  background: var(--card);
   list-style: none;
 }
 
@@ -24,65 +30,47 @@
 .views__chip {
   display: inline-flex;
   align-items: center;
-  /* Meets the 24px pointer-target minimum outright (WCAG 2.5.8). */
-  min-block-size: var(--target-min);
-  padding: var(--space-micro) var(--space-snug);
-  border: 1px solid var(--c-border-strong);
-  border-radius: 999px;
-  background: var(--c-surface);
-  color: var(--c-text);
-  font-size: 13px;
+  min-block-size: var(--h-tab);
+  padding: 0 18px;
+  border-radius: var(--r-pill);
+  color: var(--text2);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
   text-decoration: none;
+  transition: background-color 120ms ease;
 }
 
 .views__chip:hover {
-  background: var(--c-surface-muted);
+  background: var(--hover);
+  color: var(--ink);
 }
 
 /* The applied view is marked by fill *and* by aria-current, so which one is in
-   force does not depend on seeing the difference between two greys. */
-.views__chip--active {
-  border-color: var(--c-brand);
-  background: var(--brand-primary-soft);
-  color: var(--c-brand-dark);
-  font-weight: 600;
+   force does not depend on seeing the difference between two colours. */
+.views__chip--active,
+.views__chip--active:hover {
+  background: var(--primary);
+  color: var(--on-primary);
 }
 
 .views__remove {
-  font-size: 15px;
-  line-height: 1;
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: var(--r-pill);
+  color: var(--muted);
+}
+
+.views__remove:hover:not(:disabled) {
+  background: var(--soft);
+  color: var(--ink);
 }
 
 .views__save {
   margin-inline-start: auto;
-  font-size: 13px;
 }
 
 .views__error {
   flex-basis: 100%;
-  color: var(--tone-danger-fg);
-  font-size: 13px;
-}
-
-.views__field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-micro);
-}
-
-.views__field-label {
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-  font-weight: 600;
-}
-
-.views__field-input {
-  padding: var(--space-compact) var(--space-snug);
-  border: 1px solid var(--c-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
-  color: var(--c-text);
-  font: inherit;
-  font-size: 14px;
-  min-block-size: 36px;
+  color: var(--red-ink);
+  font-size: var(--fs-label);
 }

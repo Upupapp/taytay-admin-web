@@ -26,11 +26,12 @@ import {
 } from '@domain/index';
 
 import { AppNav } from './navigation/app-nav';
+import { NAV_ICONS } from './navigation/nav-icons';
 import { AppTopbar } from './topbar/app-topbar';
 import { buildCrumbs, AppBreadcrumb } from './breadcrumb/app-breadcrumb';
 import { GlobalSearchTrigger } from './search/global-search-trigger';
 import { LAYOUT_COPY } from './layout.copy';
-import { Shell } from './shell/shell';
+import { initialsOf, Shell } from './shell/shell';
 
 /* ── fixtures ─────────────────────────────────────────────────────────────── */
 
@@ -117,6 +118,23 @@ describe('navigation reachability', () => {
     expect(expected.length).toBeGreaterThan(0);
     for (const route of expected) {
       expect(hrefs, `${route} must be a direct navigation link`).toContain(route);
+    }
+  });
+
+  it('draws the design’s icon beside every module, hidden from assistive technology', async () => {
+    // A module added without an icon falls back to its two-letter glyph; this
+    // makes the gap visible instead of leaving one row unlike the rest.
+    for (const item of NAVIGATION.flatMap((section) => section.items)) {
+      expect(NAV_ICONS[item.route], `${item.route} has no icon in nav-icons.ts`).toBeDefined();
+    }
+    await configure('system-administrator');
+    const fixture = TestBed.createComponent(AppNav);
+    await fixture.whenStable();
+    const links = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLAnchorElement>('a.nav__link'),
+    );
+    for (const link of links) {
+      expect(link.querySelector('app-icon')?.getAttribute('aria-hidden')).toBe('true');
     }
   });
 
@@ -449,6 +467,21 @@ describe('Shell', () => {
     const account = element.querySelector('#app-sidebar .shell__account');
     expect(account).not.toBeNull();
     expect(account?.querySelector('.shell__sign-out')?.textContent).toContain(LAYOUT_COPY.signOut);
+  });
+
+  it('draws the account’s initials as decoration beside the printed name', async () => {
+    const { element } = await render();
+    const avatar = element.querySelector('#app-sidebar .shell__avatar');
+    // The session in these tests may hold no account; when it does, the initials
+    // are hidden and the name itself is printed.
+    if (avatar !== null) {
+      expect(avatar.getAttribute('aria-hidden')).toBe('true');
+      expect(element.querySelector('.shell__account-name')?.textContent?.trim()).not.toBe('');
+    }
+    expect(initialsOf('Marisol Alcantara')).toBe('MA');
+    expect(initialsOf('Cordero, M.')).toBe('CM');
+    expect(initialsOf('Grace')).toBe('G');
+    expect(initialsOf('')).toBe('');
   });
 
   it('is a plain landmark on a wide viewport, not a dialog', async () => {

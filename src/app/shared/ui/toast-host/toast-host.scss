@@ -1,68 +1,90 @@
+/* The mock-ups draw no toast; this one is built from their notice vocabulary.
+   A solid white card with a hairline edge, so it reads over any screen, and a
+   tinted round tile whose icon shape says the severity. No shadow. */
 .toasts {
   position: fixed;
-  right: var(--space-5);
-  bottom: var(--space-5);
+  inset-inline-end: var(--space-5);
+  inset-block-end: var(--space-5);
   z-index: 70;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  width: min(380px, calc(100vw - var(--space-6)));
+  inline-size: min(400px, calc(100% - var(--space-6)));
 }
 
 .toast {
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid var(--c-border);
-  border-left-width: 4px;
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
-  box-shadow: var(--shadow-md);
+  padding: 14px var(--space-4);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-box);
+  background: var(--card-solid);
+  color: var(--text);
+}
+
+.toast__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: var(--tile-sm);
+  block-size: var(--tile-sm);
+  border-radius: var(--r-pill);
+  background: var(--tone-info-bg);
+  color: var(--tone-info-fg);
+}
+
+.toast--success .toast__icon {
+  background: var(--tone-success-bg);
+  color: var(--tone-success-fg);
+}
+
+.toast--warning .toast__icon {
+  background: var(--tone-warning-bg);
+  color: var(--tone-warning-fg);
+}
+
+.toast--error .toast__icon {
+  background: var(--tone-danger-bg);
+  color: var(--tone-danger-fg);
 }
 
 .toast__content {
-  flex: 1;
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  padding-block-start: 6px;
 }
 
 .toast__title {
-  font-size: 14px;
+  color: var(--ink);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
 }
 
 .toast__body {
-  margin-top: var(--space-1);
-  color: var(--c-text-muted);
-  font-size: 13px;
+  margin-block-start: 2px;
+  color: var(--text2);
+  font-size: var(--fs-sm);
+  overflow-wrap: anywhere;
 }
 
 .toast__action {
   display: inline-block;
-  margin-top: var(--space-2);
-  font-size: 13px;
-  font-weight: 600;
+  margin-block-start: var(--space-2);
+  color: var(--link);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
 }
 
 .toast__close {
   flex: none;
-  padding: 0 var(--space-1);
-  border: 0;
-  background: none;
-  color: var(--c-text-subtle);
-  cursor: pointer;
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: var(--r-pill);
+  color: var(--muted);
 }
 
-.toast--info {
-  border-left-color: var(--tone-info-fg);
-}
-
-.toast--success {
-  border-left-color: var(--tone-success-fg);
-}
-
-.toast--warning {
-  border-left-color: var(--tone-warning-fg);
-}
-
-.toast--error {
-  border-left-color: var(--tone-danger-fg);
+.toast__close:hover:not(:disabled) {
+  background: var(--soft);
+  color: var(--ink);
 }

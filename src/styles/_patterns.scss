@@ -1,0 +1,497 @@
+/* Page patterns from the console mock-ups (DL-201).
+ *
+ * The pieces every restyled screen repeats — chips, tabs, KPI figures, icon
+ * tiles, notices, filter rows, fact lists, the dashboard grid — defined once,
+ * like `.btn`, `.field` and `.card` (DL-120), so that a screen translated
+ * from a mock-up uses a class instead of copying the mock-up's inline styles.
+ * Loaded after the primitives in styles.scss, so a modifier here can refine
+ * one. Colours are tokens only; the audited tone pairs carry every label.
+ */
+
+/* ── Page header actions ──────────────────────────────────────────────────
+   The page's own call to action is the mock-ups' large pill (48px). The
+   header projects it, so it is sized here rather than in the component. */
+.page-header__actions .btn {
+  min-block-size: var(--h-btn-lg);
+  padding-inline: 22px;
+  font-size: var(--fs-body);
+}
+
+/* ── Cards ────────────────────────────────────────────────────────────────
+   `.card` itself has no padding (features lay out their own). A section on
+   the page is a padded card; a large panel (the registry table, a form) has
+   the larger corner. */
+.card--padded {
+  padding: 20px 22px;
+}
+
+.card--panel {
+  border-radius: var(--r-panel);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Headings inside a page ─────────────────────────────────────────────── */
+.section-title {
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--fs-section);
+  font-weight: var(--fw-bold);
+  letter-spacing: normal;
+}
+
+.section-title--display {
+  font-family: var(--font-display);
+  font-size: var(--fs-title-sm);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--ls-title);
+}
+
+.eyebrow {
+  color: var(--muted2);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+/* A count or "more are available" line under a list. */
+.status-line {
+  color: var(--muted);
+  font-size: var(--fs-label);
+}
+
+/* ── Chips ────────────────────────────────────────────────────────────────
+   Sectors, categories, flags. A status is never a chip: it is a StatusBadge,
+   because its label and tone come from the domain catalog. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  background: var(--tone-neutral-bg);
+  color: var(--tone-neutral-fg);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-snug);
+  white-space: nowrap;
+}
+
+.chip--info {
+  background: var(--tone-info-bg);
+  color: var(--tone-info-fg);
+}
+
+.chip--progress {
+  background: var(--tone-progress-bg);
+  color: var(--tone-progress-fg);
+}
+
+.chip--success {
+  background: var(--tone-success-bg);
+  color: var(--tone-success-fg);
+}
+
+.chip--warning {
+  background: var(--tone-warning-bg);
+  color: var(--tone-warning-fg);
+}
+
+.chip--danger {
+  background: var(--tone-danger-bg);
+  color: var(--tone-danger-fg);
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ── Tabs ─────────────────────────────────────────────────────────────────
+   A glass pill of pill-shaped choices; the current one is filled. Mark it
+   with `aria-current` (links) or `aria-selected` (a tablist) as well as the
+   class, so it is not told by colour alone. No backdrop filter: a dialog may
+   open beside it. */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-self: flex-start;
+  gap: 6px;
+  margin: 0;
+  padding: 5px;
+  border: 1px solid var(--card-edge);
+  border-radius: var(--r-pill);
+  background: var(--card);
+  list-style: none;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--h-tab);
+  padding: 0 18px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text2);
+  font: inherit;
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tab:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.tab--active,
+.tab[aria-current='page'],
+.tab[aria-selected='true'] {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.tab__count {
+  min-inline-size: 22px;
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  background: var(--soft);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
+  text-align: center;
+}
+
+.tab--active .tab__count,
+.tab[aria-current='page'] .tab__count,
+.tab[aria-selected='true'] .tab__count {
+  background: var(--primary-hover);
+}
+
+/* ── Filter row ───────────────────────────────────────────────────────────
+   Labelled controls above a list, bottom-aligned so labels of different
+   lengths do not stagger the fields. Filter fields are pills. */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.toolbar .field + .field {
+  margin-block-start: 0;
+}
+
+.field__input.field__input--pill {
+  min-block-size: var(--h-btn);
+  padding-inline: var(--space-4);
+  border-radius: var(--r-pill);
+  font-weight: var(--fw-medium);
+}
+
+select.field__input.field__input--pill {
+  padding-inline-end: 46px;
+}
+
+/* A search field with the magnifier inside it: wrap the input, and put an
+   <app-icon name="search" class="search-field__icon" /> before it. */
+.search-field {
+  position: relative;
+  display: flex;
+  min-inline-size: 0;
+}
+
+.search-field__icon {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: var(--space-4);
+  color: var(--muted);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.search-field .field__input {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  padding-inline-start: 42px;
+}
+
+/* ── KPI figures ──────────────────────────────────────────────────────────
+   A label, a large figure and a line saying what it counts. Every figure
+   comes from the API; when it is a link to the records behind it, the whole
+   card fills with the primary colour under the pointer. */
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 18px 20px;
+  border: 1px solid var(--card-edge);
+  border-radius: var(--r-card);
+  background: var(--card);
+  color: var(--ink);
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.kpi__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--text2);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.kpi__value {
+  font-family: var(--font-display);
+  font-size: var(--fs-kpi);
+  font-weight: var(--fw-medium);
+  line-height: var(--lh-display);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi__hint {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  text-wrap: pretty;
+}
+
+a.kpi:hover {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+a.kpi:hover .kpi__label,
+a.kpi:hover .kpi__hint {
+  color: var(--on-primary);
+}
+
+/* ── Icon tiles ───────────────────────────────────────────────────────────
+   A rounded square holding one <app-icon>. Decoration beside a label, so
+   `aria-hidden="true"` on the tile. Gradient tiles take a white icon, except
+   gold, which takes navy; `--soft` is the mock-ups' tinted tile for tables
+   and lists. */
+.icon-tile {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: var(--tile);
+  block-size: var(--tile);
+  border-radius: var(--r-tile);
+  background: var(--tile-blue);
+  color: var(--tile-ink);
+}
+
+.icon-tile--sm {
+  inline-size: var(--tile-sm);
+  block-size: var(--tile-sm);
+  border-radius: var(--r-tile-sm);
+}
+
+.icon-tile--lg {
+  inline-size: var(--tile-lg);
+  block-size: var(--tile-lg);
+  border-radius: var(--r-tile-lg);
+}
+
+.icon-tile--round {
+  border-radius: var(--r-pill);
+}
+
+.icon-tile--green {
+  background: var(--tile-green);
+}
+
+.icon-tile--gold {
+  background: var(--tile-gold);
+  color: var(--tile-gold-ink);
+}
+
+.icon-tile--red {
+  background: var(--tile-red);
+}
+
+.icon-tile--navy {
+  background: var(--tile-navy);
+}
+
+.icon-tile--sky {
+  background: var(--tile-sky);
+}
+
+.icon-tile--soft {
+  background: var(--blue-50);
+  color: var(--primary);
+}
+
+/* Initials in a circle, beside a printed name (so `aria-hidden="true"`). */
+.avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 34px;
+  block-size: 34px;
+  border-radius: var(--r-pill);
+  background: var(--blue-50);
+  color: var(--primary);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+}
+
+.avatar--lg {
+  inline-size: 52px;
+  block-size: 52px;
+  background: var(--primary);
+  color: var(--gold);
+  font-size: 17px;
+}
+
+/* ── Notices ──────────────────────────────────────────────────────────────
+   A rounded box in a tone's tint with the tone's dark ink: protected-record
+   warnings, outcomes, what-happens-next. The words carry the tone. */
+.callout {
+  display: flex;
+  gap: var(--space-3);
+  padding: 14px var(--space-4);
+  border-radius: var(--r-lg);
+  background: var(--blue-tint);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+}
+
+.callout--warning {
+  background: var(--gold-tint2);
+  color: var(--gold-ink2);
+}
+
+.callout--danger {
+  background: var(--red-tint);
+  color: var(--red-ink2);
+}
+
+.callout--success {
+  background: var(--green-tint);
+  color: var(--green-ink);
+}
+
+.callout__title {
+  color: var(--ink);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-bold);
+}
+
+/* "What this does": the effects a button will have, stated before it. */
+.effects {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 14px var(--space-4);
+  border-radius: var(--r-lg);
+  background: var(--soft2);
+  color: var(--text2);
+  font-size: var(--fs-sm);
+}
+
+.effects ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding-inline-start: 18px;
+}
+
+.effects b,
+.effects strong {
+  color: var(--ink);
+}
+
+/* ── Facts ────────────────────────────────────────────────────────────────
+   A record's fields as a definition list, two to a row. */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-4);
+  margin: 0;
+  font-size: var(--fs-control);
+}
+
+.facts dt {
+  color: var(--muted);
+  font-size: var(--fs-2xs);
+}
+
+.facts dd {
+  margin: 2px 0 0;
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+  overflow-wrap: anywhere;
+}
+
+/* ── Dashboard grid ───────────────────────────────────────────────────────
+   Twelve columns; a child spans `.span-N`. Halves under 1100px, full width
+   under 700px, as the mock-ups' bento does. */
+.bento {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.bento > * {
+  grid-column: span 12;
+  min-inline-size: 0;
+}
+
+.bento > .span-3 {
+  grid-column: span 3;
+}
+
+.bento > .span-4 {
+  grid-column: span 4;
+}
+
+.bento > .span-5 {
+  grid-column: span 5;
+}
+
+.bento > .span-6 {
+  grid-column: span 6;
+}
+
+.bento > .span-7 {
+  grid-column: span 7;
+}
+
+.bento > .span-8 {
+  grid-column: span 8;
+}
+
+.bento > .span-9 {
+  grid-column: span 9;
+}
+
+@media (width <= 1100px) {
+  .bento > [class*='span-'] {
+    grid-column: span 6;
+  }
+}
+
+@media (width <= 700px) {
+  .bento > [class*='span-'] {
+    grid-column: span 12;
+  }
+}

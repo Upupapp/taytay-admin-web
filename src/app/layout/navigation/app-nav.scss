@@ -1,17 +1,31 @@
+/* The console mock-ups' navigation, on the glass sidebar: small-capital section
+   titles, rows with a line icon, and the current page filled in the primary
+   colour with a gold icon. The current page is also `aria-current="page"` and
+   bold, so it is not marked by colour alone. */
 .nav {
   display: flex;
   flex-direction: column;
-  gap: var(--space-section);
+  gap: var(--space-1);
   /* Allows the sidebar column to shrink instead of forcing the page wider. */
   min-inline-size: 0;
 }
 
+.nav__section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .nav__title {
-  margin-block-end: var(--space-compact);
-  color: var(--brand-nav-section);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  min-block-size: 34px;
+  padding: 0 var(--space-3);
+  color: var(--muted2);
+  font-family: var(--font-body);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 
@@ -24,50 +38,70 @@
   list-style: none;
 }
 
+.nav__list--unserved {
+  margin-block-start: var(--space-2);
+  padding-block-start: var(--space-2);
+  border-block-start: 1px solid var(--line);
+}
+
 .nav__link {
   display: flex;
   align-items: center;
-  gap: var(--space-snug);
+  gap: var(--space-3);
   /* Comfortably clears the 24px minimum target (WCAG 2.5.8). */
   min-block-size: 40px;
-  padding: var(--space-compact) var(--space-snug);
-  border-radius: var(--radius-md);
-  color: var(--brand-nav-ink);
-  font-size: 14px;
+  padding: 0 var(--space-3);
+  border-radius: var(--r-md);
+  color: var(--text2);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-medium);
+  line-height: var(--lh-snug);
   text-decoration: none;
   transition: background-color var(--motion-micro) var(--motion-ease-standard);
 }
 
 .nav__link:hover {
-  background: rgb(255 255 255 / 8%);
+  background: var(--hover);
+  color: var(--ink);
 }
 
-.nav__link--active {
-  background: rgb(255 255 255 / 16%);
-  color: var(--brand-on-primary);
-  font-weight: 600;
+.nav__link--active,
+.nav__link--active:hover {
+  min-block-size: var(--h-nav);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: var(--fw-semibold);
+}
+
+.nav__link--active .nav__icon {
+  color: var(--gold);
 }
 
 .nav__glyph {
-  display: flex;
+  display: grid;
   flex: none;
-  align-items: center;
-  justify-content: center;
+  place-items: center;
   inline-size: 24px;
   block-size: 24px;
-  border-radius: var(--radius-sm);
-  background: rgb(255 255 255 / 10%);
-  font-size: 10.5px;
-  font-weight: 700;
+  border-radius: var(--r-sm);
+  background: var(--soft);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-bold);
+}
+
+.nav__link--active .nav__glyph {
+  background: transparent;
 }
 
 .nav__label {
-  /* Long labels wrap or ellipsize rather than widening the sidebar. */
+  /* Long labels wrap rather than widening the sidebar. */
   min-inline-size: 0;
+  padding-block: var(--space-2);
   overflow-wrap: anywhere;
 }
 
 .nav__empty {
-  color: var(--brand-nav-section);
-  font-size: 13px;
+  padding: 0 var(--space-3);
+  color: var(--muted);
+  font-size: var(--fs-label);
 }

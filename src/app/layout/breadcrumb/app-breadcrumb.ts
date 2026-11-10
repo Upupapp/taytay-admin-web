@@ -38,12 +38,16 @@ export const HOME_CRUMB: Crumb = { label: LAYOUT_COPY.breadcrumbHome, route: '/d
               @if (crumb.route && !last) {
                 <a class="crumbs__link" [routerLink]="crumb.route">{{ crumb.label }}</a>
               } @else {
-                <span class="crumbs__current" [attr.aria-current]="last ? 'page' : null">
+                <span
+                  class="crumbs__current"
+                  [class.crumbs__section]="!last"
+                  [attr.aria-current]="last ? 'page' : null"
+                >
                   {{ crumb.label }}
                 </span>
               }
               @if (!last) {
-                <span class="crumbs__sep" aria-hidden="true">›</span>
+                <span class="crumbs__sep" aria-hidden="true">/</span>
               }
             </li>
           }

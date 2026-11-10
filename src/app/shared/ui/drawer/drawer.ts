@@ -8,6 +8,7 @@ import {
   viewChild,
 } from '@angular/core';
 
+import { Icon } from '../icon/icon';
 import { bindOverlay } from '../overlay/overlay.behavior';
 
 export type DrawerSide = 'end' | 'start';
@@ -25,6 +26,7 @@ export type DrawerSize = 'narrow' | 'wide';
 @Component({
   selector: 'app-drawer',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Icon],
   templateUrl: './drawer.html',
   styleUrl: './drawer.scss',
 })

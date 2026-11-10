@@ -4,6 +4,8 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import type { Page, SortDirection, SortSpec } from '@domain/index';
 
 import { EmptyState, type EmptyStateVariant } from '../empty-state/empty-state';
+import { Icon } from '../icon/icon';
+import type { IconName } from '../icon/icons';
 import { Skeleton } from '../loading/skeleton';
 import { columnText, type TableColumn } from './table-column';
 
@@ -18,7 +20,7 @@ import { columnText, type TableColumn } from './table-column';
 @Component({
   selector: 'app-data-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet, EmptyState, Skeleton],
+  imports: [NgTemplateOutlet, EmptyState, Icon, Skeleton],
   templateUrl: './data-table.html',
   styleUrl: './data-table.scss',
 })
@@ -69,6 +71,15 @@ export class DataTable<TRow> {
   protected directionFor(column: TableColumn<TRow>): SortDirection | null {
     const sort = this.sort();
     return sort && sort.field === column.sortField ? sort.direction : null;
+  }
+
+  /** The arrow beside a sortable header. Decoration: `aria-sort` says the same to a reader. */
+  protected sortIcon(column: TableColumn<TRow>): IconName {
+    const direction = this.directionFor(column);
+    if (direction === null) {
+      return 'chevronsUpDown';
+    }
+    return direction === 'asc' ? 'chevronUp' : 'chevronDown';
   }
 
   protected ariaSortFor(column: TableColumn<TRow>): 'ascending' | 'descending' | 'none' {

@@ -1,32 +1,36 @@
+:host {
+  display: flex;
+  min-inline-size: 0;
+}
+
+/* The console mock-ups' search pill: glass, 46px, a muted prompt, and the
+   shortcut tucked into the right-hand end. */
 .search-trigger {
   display: inline-flex;
-  align-items: center;
-  gap: var(--space-compact);
-  /* Grows with the topbar but never forces it wider than the viewport. */
   flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
   min-inline-size: 0;
-  max-inline-size: 420px;
-  min-block-size: 34px;
-  padding: var(--space-1) var(--space-snug);
-  border: 1px solid var(--c-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--c-surface-muted);
-  color: var(--c-text-muted);
+  min-block-size: var(--h-icon-btn);
+  padding: 0 var(--space-2) 0 var(--space-4);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--r-pill);
+  background: var(--card);
+  color: var(--muted);
   font: inherit;
-  font-size: 13.5px;
+  font-size: var(--fs-control);
   text-align: start;
   cursor: pointer;
   transition: background-color var(--motion-micro) var(--motion-ease-standard);
 }
 
 .search-trigger:hover {
-  background: var(--c-surface);
+  background: var(--hover);
+  color: var(--text2);
 }
 
 .search-trigger__glyph {
-  flex: none;
-  font-size: 15px;
-  line-height: 1;
+  color: var(--text2);
 }
 
 .search-trigger__text {
@@ -39,17 +43,17 @@
 
 .search-trigger__kbd {
   flex: none;
-  padding: 1px var(--space-1);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-sm);
-  background: var(--c-surface);
-  color: var(--c-text-subtle);
+  padding: 3px var(--space-2);
+  border-radius: var(--r-pill);
+  background: var(--soft);
+  color: var(--text2);
   font-family: inherit;
-  font-size: 11px;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-semibold);
 }
 
-/* On narrow screens the trigger collapses to its glyph, which still meets the
-   24px minimum target because of .icon-button-sized padding above. */
+/* On narrow screens the trigger collapses to a round glyph button, as large as
+   the notifications button beside it. */
 @media (width <= 640px) {
   .search-trigger__text,
   .search-trigger__kbd {
@@ -58,7 +62,8 @@
 
   .search-trigger {
     flex: none;
-    min-inline-size: var(--target-min);
     justify-content: center;
+    inline-size: var(--h-icon-btn);
+    padding: 0;
   }
 }

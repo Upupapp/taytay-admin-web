@@ -1,6 +1,13 @@
+/* The console mock-ups' frame: a glass sidebar floating on the page wash with
+   the page's own 16px margin, and the main column beside it. A grid, so a wide
+   table in the outlet can never push the main column under the sidebar. */
 .shell {
-  display: flex;
+  display: grid;
+  grid-template-columns: var(--shell-sidebar-width) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-4);
   min-block-size: 100vh;
+  padding: var(--space-4);
   /* The shell must never be the reason the page scrolls sideways. Children that
      could exceed the viewport clip or wrap instead. */
   max-inline-size: 100%;
@@ -10,16 +17,27 @@
 .skip-link {
   position: absolute;
   inset-block-start: -100px;
-  inset-inline-start: var(--space-base);
+  inset-inline-start: var(--space-5);
   z-index: 80;
-  padding: var(--space-compact) var(--space-base);
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
-  box-shadow: var(--shadow-md);
+  padding: 10px var(--space-4);
+  border-radius: var(--r-pill);
+  background: var(--card-solid);
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
 }
 
 .skip-link:focus {
-  inset-block-start: var(--space-snug);
+  inset-block-start: var(--space-5);
+}
+
+/* The banner spans both columns above them. It renders nothing while online,
+   and an empty grid item would still open a row and a gap. */
+.shell__banner {
+  grid-column: 1 / -1;
+}
+
+.shell__banner:empty {
+  display: none;
 }
 
 .shell__scrim {
@@ -28,29 +46,38 @@
   z-index: 39;
   border: 0;
   padding: 0;
-  background: rgb(16 33 51 / 45%);
+  background: var(--scrim);
   cursor: pointer;
 }
 
+/* Glass, with the blur the mock-ups give it: the sidebar never contains a
+   fixed overlay, so the filter cannot trap one (DL-200). */
 .shell__sidebar {
   position: sticky;
-  inset-block-start: 0;
+  inset-block-start: var(--space-4);
   display: flex;
-  flex: none;
   flex-direction: column;
-  gap: var(--space-card);
+  gap: var(--space-4);
   inline-size: var(--shell-sidebar-width);
   /* Cannot exceed the viewport on a small screen. */
   max-inline-size: 100%;
-  block-size: 100vh;
-  padding: var(--space-card) var(--space-base);
+  block-size: calc(100vh - 2 * var(--space-4));
+  padding: 20px 14px var(--space-4);
   overflow-y: auto;
-  background: var(--brand-primary-hover);
-  color: var(--brand-nav-ink);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--r-card);
+  background: var(--card);
+  backdrop-filter: var(--glass-filter);
+  color: var(--text2);
 }
 
 .shell__sidebar:focus {
   outline: none;
+}
+
+.shell__brand {
+  flex: none;
+  padding: 2px 6px;
 }
 
 .shell__nav {
@@ -68,31 +95,60 @@
   display: flex;
   flex: none;
   flex-direction: column;
-  gap: var(--space-1);
-  padding-block-start: var(--space-snug);
-  border-block-start: 1px solid rgb(255 255 255 / 16%);
+  gap: var(--space-3);
+  padding: 14px;
+  border-radius: var(--r-box);
+  background: var(--soft2);
+}
+
+.shell__identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-inline-size: 0;
+}
+
+.shell__avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 38px;
+  block-size: 38px;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--gold);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+}
+
+.shell__identity-text {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  line-height: 1.3;
 }
 
 .shell__account-name {
-  color: var(--brand-on-primary);
-  font-size: 13.5px;
-  font-weight: 600;
+  color: var(--ink);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
+  overflow-wrap: anywhere;
 }
 
 .shell__account-meta {
-  color: var(--brand-nav-ink-muted);
-  font-size: 11.5px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
 }
 
 .shell__sign-out {
-  margin-block-start: var(--space-compact);
+  min-block-size: 40px;
   justify-content: center;
 }
 
 .shell__main {
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
+  gap: 20px;
   /* Without this a wide table inside the outlet widens the whole page. */
   min-inline-size: 0;
 }
@@ -100,87 +156,45 @@
 .shell__content {
   flex: 1 1 auto;
   min-inline-size: 0;
-  padding: var(--space-card);
+  padding: 0 var(--space-2) var(--space-2);
 }
 
 .shell__content:focus {
   outline: none;
 }
 
-/* Notification inbox items, rendered into the shared drawer. */
-.inbox__item {
-  padding: var(--space-snug) 0;
-  border-block-end: 1px solid var(--c-border);
-}
-
-.inbox__item--unread .inbox__title {
-  font-weight: 700;
-}
-
-.inbox__meta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-compact);
-  color: var(--c-text-subtle);
-  font-size: 12px;
-}
-
-.inbox__severity {
-  inline-size: 8px;
-  block-size: 8px;
-  border-radius: 50%;
-  background: var(--tone-neutral-fg);
-}
-
-.inbox__severity--info {
-  background: var(--tone-info-fg);
-}
-
-.inbox__severity--success {
-  background: var(--tone-success-fg);
-}
-
-.inbox__severity--warning {
-  background: var(--tone-warning-fg);
-}
-
-.inbox__severity--error {
-  background: var(--tone-danger-fg);
-}
-
-.inbox__title {
-  margin-block-start: var(--space-1);
-  font-size: 14px;
-}
-
-.inbox__body {
-  margin-block-start: var(--space-1);
-  color: var(--c-text-muted);
-  font-size: 13px;
-}
-
-.inbox__read {
-  margin-block-start: var(--space-compact);
-  padding-inline-start: 0;
-  font-size: 12.5px;
-}
-
 @media (width <= 900px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--space-3);
+  }
+
+  /* An overlay drawer here. Solid rather than glass, because it slides over the
+     page's content and its links must read the same over any of it. Hidden as
+     well as moved when closed, so it stays out of sight even where reduced
+     motion drops the transform. */
   .shell__sidebar {
     position: fixed;
-    inset-block: 0;
-    inset-inline-start: 0;
+    inset-block: var(--space-2);
+    inset-inline-start: var(--space-2);
     z-index: 40;
-    transform: translateX(-100%);
-    transition: transform var(--motion-panel) var(--motion-ease-decelerate);
+    inline-size: min(var(--shell-sidebar-width), calc(100% - 2 * var(--space-2)));
+    block-size: auto;
+    background: var(--card-solid);
+    visibility: hidden;
+    transform: translateX(calc(-100% - var(--space-4)));
+    transition:
+      transform var(--motion-panel) var(--motion-ease-decelerate),
+      visibility 0s linear var(--motion-panel);
   }
 
   .shell__sidebar--open {
+    visibility: visible;
     transform: none;
-    box-shadow: var(--shadow-lg);
+    transition: transform var(--motion-panel) var(--motion-ease-decelerate);
   }
 
   .shell__content {
-    padding: var(--space-base);
+    padding: 0;
   }
 }

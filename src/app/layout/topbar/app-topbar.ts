@@ -2,14 +2,16 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 
 import { ServedPorts } from '@core/access/served-ports';
 import { NotificationStore } from '@core/notifications/notification.store';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { AppBreadcrumb } from '../breadcrumb/app-breadcrumb';
 import { GlobalSearchTrigger } from '../search/global-search-trigger';
 import { LAYOUT_COPY } from '../layout.copy';
 
 /**
- * The sticky topbar: navigation toggle, breadcrumb, global-search trigger and
- * the notification inbox.
+ * The topbar: navigation toggle, breadcrumb, global-search trigger and the
+ * notification inbox. It scrolls with the page, as the console mock-ups draw
+ * it (`DL-201`): a row on the page wash, not a bar over the content.
  *
  * Identity and sign-out deliberately live in the sidebar footer instead. Put
  * in the topbar they would have to be hidden on a narrow screen, which strands
@@ -21,7 +23,7 @@ import { LAYOUT_COPY } from '../layout.copy';
 @Component({
   selector: 'app-topbar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AppBreadcrumb, GlobalSearchTrigger],
+  imports: [AppBreadcrumb, GlobalSearchTrigger, Icon],
   template: `
     <header class="topbar">
       <button
@@ -32,15 +34,13 @@ import { LAYOUT_COPY } from '../layout.copy';
         aria-controls="app-sidebar"
         (click)="navToggled.emit()"
       >
-        <span aria-hidden="true">☰</span>
+        <app-icon name="menu" [size]="20" [stroke]="2" />
       </button>
 
       <app-breadcrumb class="topbar__crumbs" />
 
-      <div class="topbar__spacer"></div>
-
       @if (searchServed) {
-        <app-global-search-trigger (activated)="searchActivated.emit()" />
+        <app-global-search-trigger class="topbar__search" (activated)="searchActivated.emit()" />
       }
 
       <button
@@ -49,7 +49,7 @@ import { LAYOUT_COPY } from '../layout.copy';
         [attr.aria-label]="inboxLabel()"
         (click)="inboxOpened.emit()"
       >
-        <span aria-hidden="true">🔔</span>
+        <app-icon name="bell" [size]="20" />
         @if (notifications.unreadCount(); as unread) {
           <span class="topbar__badge" aria-hidden="true">{{ unread }}</span>
         }

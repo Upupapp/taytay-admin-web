@@ -1,48 +1,52 @@
+/* The console mock-ups' status chip: a pill in the tone's tint, a dot in the
+   tone's ink, and the label. The label carries the status; tint and dot repeat
+   it, so nothing depends on telling two colours apart. */
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: 2px var(--space-3);
-  border-radius: 999px;
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1.6;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-snug);
   white-space: nowrap;
 }
 
 .badge__dot {
-  width: 6px;
-  height: 6px;
+  flex: none;
+  inline-size: 7px;
+  block-size: 7px;
   border-radius: 50%;
   background: currentcolor;
 }
 
 .badge--neutral {
-  color: var(--tone-neutral-fg);
   background: var(--tone-neutral-bg);
+  color: var(--tone-neutral-fg);
 }
 
 .badge--info {
-  color: var(--tone-info-fg);
   background: var(--tone-info-bg);
+  color: var(--tone-info-fg);
 }
 
 .badge--progress {
-  color: var(--tone-progress-fg);
   background: var(--tone-progress-bg);
+  color: var(--tone-progress-fg);
 }
 
 .badge--success {
-  color: var(--tone-success-fg);
   background: var(--tone-success-bg);
+  color: var(--tone-success-fg);
 }
 
 .badge--warning {
-  color: var(--tone-warning-fg);
   background: var(--tone-warning-bg);
+  color: var(--tone-warning-fg);
 }
 
 .badge--danger {
-  color: var(--tone-danger-fg);
   background: var(--tone-danger-bg);
+  color: var(--tone-danger-fg);
 }

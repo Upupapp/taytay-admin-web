@@ -8,6 +8,7 @@ import {
   viewChild,
 } from '@angular/core';
 
+import { Icon } from '../icon/icon';
 import { bindOverlay } from '../overlay/overlay.behavior';
 
 export type ModalSize = 'small' | 'medium' | 'large';
@@ -26,6 +27,7 @@ export type ModalSize = 'small' | 'medium' | 'large';
 @Component({
   selector: 'app-modal',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Icon],
   templateUrl: './modal.html',
   styleUrl: './modal.scss',
 })

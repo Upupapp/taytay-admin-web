@@ -1,0 +1,73 @@
+/* Notification inbox items, in the shell's drawer. */
+.inbox__item {
+  padding: 14px 0;
+  border-block-end: 1px solid var(--soft);
+}
+
+.inbox__item:first-child {
+  padding-block-start: 0;
+}
+
+.inbox__item--unread .inbox__title {
+  font-weight: var(--fw-bold);
+}
+
+.inbox__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted2);
+  font-size: var(--fs-2xs);
+}
+
+/* Shape as well as colour: each severity has its own icon. */
+.inbox__severity {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 24px;
+  block-size: 24px;
+  border-radius: var(--r-pill);
+  background: var(--tone-neutral-bg);
+  color: var(--tone-neutral-fg);
+}
+
+.inbox__severity--info {
+  background: var(--tone-info-bg);
+  color: var(--tone-info-fg);
+}
+
+.inbox__severity--success {
+  background: var(--tone-success-bg);
+  color: var(--tone-success-fg);
+}
+
+.inbox__severity--warning {
+  background: var(--tone-warning-bg);
+  color: var(--tone-warning-fg);
+}
+
+.inbox__severity--error {
+  background: var(--tone-danger-bg);
+  color: var(--tone-danger-fg);
+}
+
+.inbox__title {
+  margin-block-start: 6px;
+  color: var(--ink);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
+}
+
+.inbox__body {
+  margin-block-start: var(--space-1);
+  color: var(--text2);
+  font-size: var(--fs-label);
+}
+
+.inbox__read {
+  margin-block-start: var(--space-2);
+  padding-inline: 0;
+  color: var(--link);
+  font-size: var(--fs-xs);
+}

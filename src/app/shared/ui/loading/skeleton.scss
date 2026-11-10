@@ -1,3 +1,6 @@
+/* Soft pills on the glass, shimmering from the faint tint to the hairline
+   colour. The global reduced-motion rule stops the shimmer and leaves the
+   shapes. */
 .skeleton {
   display: flex;
   flex-direction: column;
@@ -7,14 +10,9 @@
 
 .skeleton__line {
   display: block;
-  height: 12px;
-  border-radius: var(--radius-sm);
-  background: linear-gradient(
-    90deg,
-    var(--c-surface-muted) 25%,
-    var(--c-border) 37%,
-    var(--c-surface-muted) 63%
-  );
+  block-size: 12px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--soft) 25%, var(--line) 37%, var(--soft) 63%);
   background-size: 400% 100%;
   animation: skeleton-shimmer 1400ms ease-in-out infinite;
 }

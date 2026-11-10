@@ -1,6 +1,8 @@
 import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, output } from '@angular/core';
 
+import { Icon } from '@shared/ui/icon/icon';
+
 import { LAYOUT_COPY } from '../layout.copy';
 
 /**
@@ -17,6 +19,7 @@ import { LAYOUT_COPY } from '../layout.copy';
 @Component({
   selector: 'app-global-search-trigger',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Icon],
   template: `
     <button
       type="button"
@@ -25,7 +28,7 @@ import { LAYOUT_COPY } from '../layout.copy';
       aria-keyshortcuts="Control+K Meta+K"
       (click)="activate()"
     >
-      <span class="search-trigger__glyph" aria-hidden="true">⌕</span>
+      <app-icon class="search-trigger__glyph" name="search" [size]="18" [stroke]="2" />
       <span class="search-trigger__text">{{ copy.searchPlaceholder }}</span>
       <kbd class="search-trigger__kbd" aria-hidden="true">{{ copy.searchShortcutHint }}</kbd>
     </button>

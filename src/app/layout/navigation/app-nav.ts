@@ -5,8 +5,11 @@ import { PermissionService } from '@core/access/permission.service';
 import { ServedPorts, UNSERVED_ROUTE } from '@core/access/served-ports';
 import { SessionStore } from '@core/auth/session.store';
 import { NAVIGATION, type NavItem, type NavSection } from '@core/navigation/navigation';
+import { Icon } from '@shared/ui/icon/icon';
+import type { IconName } from '@shared/ui/icon/icons';
 
 import { LAYOUT_COPY } from '../layout.copy';
+import { NAV_ICONS } from './nav-icons';
 
 /**
  * The sidebar navigation list.
@@ -14,7 +17,10 @@ import { LAYOUT_COPY } from '../layout.copy';
  * Every primary module is a direct link, which is what makes the "reachable in
  * at most two navigation actions" guarantee hold: one action on desktop (click
  * the link), two on mobile (open the drawer, then click). There are no nested
- * fly-outs, so no module is ever three levels deep.
+ * fly-outs, so no module is ever three levels deep. The console mock-ups fold
+ * each section behind a toggle; that would make every module outside the
+ * current section one action further away, so the sections stay open
+ * (`DL-201`).
  *
  * Entries are filtered by permission, mirroring the route guards — a user is
  * never shown a link that would bounce them to /forbidden (`CLAUDE.md` rule 8).
@@ -32,7 +38,7 @@ import { LAYOUT_COPY } from '../layout.copy';
 @Component({
   selector: 'app-nav',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [Icon, RouterLink, RouterLinkActive],
   template: `
     <nav class="nav" [attr.aria-label]="copy.navLandmark">
       @for (section of sections(); track section.title) {
@@ -50,7 +56,12 @@ import { LAYOUT_COPY } from '../layout.copy';
                   [title]="item.description"
                   (click)="navigated.emit()"
                 >
-                  <span class="nav__glyph" aria-hidden="true">{{ item.glyph }}</span>
+                  @let icon = iconFor(item.route);
+                  @if (icon) {
+                    <app-icon class="nav__icon" [name]="icon" />
+                  } @else {
+                    <span class="nav__glyph" aria-hidden="true">{{ item.glyph }}</span>
+                  }
                   <span class="nav__label">{{ item.label }}</span>
                 </a>
               </li>
@@ -75,7 +86,7 @@ import { LAYOUT_COPY } from '../layout.copy';
               "
               (click)="navigated.emit()"
             >
-              <span class="nav__glyph" aria-hidden="true">NC</span>
+              <app-icon class="nav__icon" name="unplugged" />
               <span class="nav__label">{{ copy.navUnserved }}</span>
             </a>
           </li>
@@ -114,6 +125,10 @@ export class AppNav {
       ),
     })).filter((section) => section.items.length > 0),
   );
+
+  protected iconFor(route: string): IconName | undefined {
+    return NAV_ICONS[route];
+  }
 
   /** The route's `scopeGuard` would refuse this reader, whatever the role holds (`DL-185`). */
   private closedToScope(item: NavItem): boolean {

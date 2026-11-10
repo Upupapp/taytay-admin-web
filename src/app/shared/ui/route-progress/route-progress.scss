@@ -5,14 +5,15 @@
   z-index: 90;
   block-size: 3px;
   overflow: hidden;
-  background: var(--c-brand-soft);
+  background: var(--blue-100);
 }
 
 .route-progress__bar {
   display: block;
   block-size: 100%;
   inline-size: 40%;
-  background: var(--brand-primary);
+  border-radius: var(--r-pill);
+  background: var(--primary);
   animation: route-progress-slide 1100ms ease-in-out infinite;
 }
 

@@ -1,29 +1,62 @@
+/* The console mock-ups' title block: a large display title straight on the page
+   wash, a muted lead, and the page's actions bottom-aligned beside it. The
+   design's gradient header is drawn for the residents' app, not the console
+   (DL-201); `--grad-header` and its shapes stay defined, so adopting it would
+   change this stylesheet and nothing else. */
 .page-header {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: space-between;
   gap: var(--space-4);
-  margin-bottom: var(--space-5);
+  margin-block-end: var(--space-5);
+}
+
+.page-header__text {
+  display: flex;
+  flex: 1 1 420px;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  max-inline-size: 820px;
 }
 
 .page-header__title {
-  font-size: 22px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  font-weight: var(--fw-medium);
+  line-height: var(--lh-display);
+  letter-spacing: var(--ls-display);
+  overflow-wrap: anywhere;
 }
 
 .page-header__subtitle {
-  max-width: 72ch;
-  margin-top: var(--space-1);
-  color: var(--c-text-muted);
-  font-size: 14px;
+  max-inline-size: 72ch;
+  color: var(--muted);
+  font-size: var(--fs-section);
+  text-wrap: pretty;
 }
 
 .page-header__actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-3);
 }
 
 .page-header__actions:empty {
   display: none;
+}
+
+@media (width <= 900px) {
+  .page-header__title {
+    font-size: calc(var(--fs-display) * 0.8);
+  }
+}
+
+@media (width <= 640px) {
+  .page-header__title {
+    font-size: calc(var(--fs-display) * 0.66);
+  }
 }

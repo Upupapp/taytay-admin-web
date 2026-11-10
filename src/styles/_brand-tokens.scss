@@ -22,18 +22,12 @@
 :root {
   /* ── Brand ramp ───────────────────────────────────────────────────────── */
   --brand-primary: var(--primary);
-  /* The dark end of the ramp (the sidebar fill until the shell is restyled).
-     A primary button's hover is lighter in the design: --primary-hover. */
+  /* The dark end of the ramp. A primary button's hover is lighter in the
+     design: --primary-hover. */
   --brand-primary-hover: var(--deep);
   --brand-primary-soft: var(--blue-50);
   /* Ink used for text placed ON the primary brand colour. */
   --brand-on-primary: var(--on-primary);
-
-  /* Sidebar ink, on the brand-hover fill. All three are audited against that
-     fill in brand-palette.spec.ts. */
-  --brand-nav-ink: #dce8f4;
-  --brand-nav-ink-muted: #a9c3dc;
-  --brand-nav-section: #8fb0cf;
 
   /* ── Focus ring ───────────────────────────────────────────────────────── */
   /* Two rings, one set of tokens, so every focus style is identical and

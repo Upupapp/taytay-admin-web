@@ -1,46 +1,58 @@
+/* The console mock-ups' "no rows" panel: a soft box, centred, with a display
+   heading and a muted line under it. */
 .empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-7) var(--space-5);
+  gap: var(--space-2);
+  padding: var(--space-6);
+  border-radius: var(--r-xl);
+  background: var(--soft2);
   text-align: center;
 }
 
-.empty__glyph {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--tone-neutral-bg);
-  color: var(--tone-neutral-fg);
-  font-size: 20px;
-  line-height: 1;
+.empty__illustration {
+  inline-size: 168px;
+  max-inline-size: 100%;
+  block-size: auto;
+  margin-block-end: var(--space-1);
+}
+
+.empty__tile {
+  display: grid;
+  place-items: center;
+  inline-size: var(--tile-lg);
+  block-size: var(--tile-lg);
+  margin-block-end: var(--space-1);
+  border-radius: var(--r-tile-lg);
+  background: var(--blue-50);
+  color: var(--primary);
 }
 
 .empty__heading {
-  font-size: 16px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-title-sm);
+  font-weight: var(--fw-medium);
 }
 
 .empty__message {
-  max-width: 44ch;
-  color: var(--c-text-muted);
-  font-size: 14px;
+  max-inline-size: 52ch;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  text-wrap: pretty;
 }
 
-.empty--error .empty__glyph {
+.empty .btn {
+  margin-block-start: var(--space-2);
+}
+
+.empty--error .empty__tile {
   background: var(--tone-danger-bg);
   color: var(--tone-danger-fg);
 }
 
-.empty--forbidden .empty__glyph {
+.empty--forbidden .empty__tile {
   background: var(--tone-warning-bg);
   color: var(--tone-warning-fg);
-}
-
-.empty--no-results .empty__glyph {
-  background: var(--tone-info-bg);
-  color: var(--tone-info-fg);
 }

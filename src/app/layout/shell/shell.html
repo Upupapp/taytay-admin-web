@@ -5,7 +5,7 @@
 
   <!-- Before the nav and before the content: an officer who cannot save needs
        to know before they spend five minutes typing, not after. -->
-  <app-connection-banner />
+  <app-connection-banner class="shell__banner" />
 
   <!-- Compact only: dismisses the drawer without needing to hit the toggle. -->
   @if (isCompact() && navOpen()) {
@@ -29,7 +29,7 @@
     [attr.inert]="isCompact() && !navOpen() ? '' : null"
   >
     <div class="shell__brand">
-      <app-brand-mark tone="light" sealSize="md" secondaryLine="unit" priority />
+      <app-brand-mark tone="dark" sealSize="md" secondaryLine="unit" priority />
     </div>
 
     <app-nav class="shell__nav" (navigated)="closeNav()" />
@@ -37,9 +37,19 @@
     <!-- Identity and sign-out live here rather than in the topbar so they stay
          reachable at every width — see the note in AppTopbar. -->
     <footer class="shell__account">
-      <span class="shell__account-name">{{ session.displayName() }}</span>
-      <span class="shell__account-meta">{{ session.user()?.roleLabel }} · {{ scopeLabel() }}</span>
+      <div class="shell__identity">
+        @if (initials(); as letters) {
+          <span class="shell__avatar" aria-hidden="true">{{ letters }}</span>
+        }
+        <span class="shell__identity-text">
+          <span class="shell__account-name">{{ session.displayName() }}</span>
+          <span class="shell__account-meta"
+            >{{ session.user()?.roleLabel }} · {{ scopeLabel() }}</span
+          >
+        </span>
+      </div>
       <button type="button" class="btn shell__sign-out" (click)="signOut()">
+        <app-icon name="signOut" [size]="16" [stroke]="2" />
         {{ copy.signOut }}
       </button>
     </footer>
@@ -64,30 +74,7 @@
   [heading]="copy.notificationsHeading"
   [description]="copy.notificationsDescription"
 >
-  <div drawer-body>
-    @for (item of notifications.inbox(); track item.id) {
-      <article class="inbox__item" [class.inbox__item--unread]="item.readAt === null">
-        <div class="inbox__meta">
-          <span class="inbox__severity" [class]="'inbox__severity--' + item.severity"></span>
-          <time>{{ item.createdAt | relativeTime }}</time>
-        </div>
-        <h3 class="inbox__title">{{ item.title }}</h3>
-        @if (item.body; as body) {
-          <p class="inbox__body">{{ body }}</p>
-        }
-        @if (item.readAt === null) {
-          <button type="button" class="btn btn--subtle inbox__read" (click)="markRead(item.id)">
-            {{ copy.markRead }}
-          </button>
-        }
-      </article>
-    } @empty {
-      <app-empty-state
-        [heading]="copy.notificationsEmptyHeading"
-        [message]="copy.notificationsEmptyBody"
-      />
-    }
-  </div>
+  <app-notification-list drawer-body />
 
   <button
     drawer-actions

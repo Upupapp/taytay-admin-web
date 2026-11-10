@@ -9405,3 +9405,65 @@ palette, not a change to any screen.
 **Not changed.** Component, layout and feature stylesheets (the redesign's later phases restyle
 them, one commit each), the residents' app, and the seal (`DL-199`). Easiest to reverse: the old
 values are in git history at `17911eb`, and the tokens are the only place they live.
+
+## DL-201 — the console's frame and shared pieces take the redesign: the title stays on the page, the menu stays open, and icons are drawn inline
+
+**Status:** Settled (10 November 2026). Phase 2 of `DL-200`. Presentation only: no selector, input,
+output, content slot, route, guard or live region changed.
+
+**What moved.** The shell (sidebar, navigation, topbar, breadcrumb, search trigger) and every shared
+piece in `shared/ui` (page header, table, empty state, status badge, dialog, side panel, toasts,
+loading, connection banner, saved views, chart table, route progress) are drawn as the console
+mock-ups draw them: a glass sidebar floating on the page wash with the page's 16px margin, a header
+row of glass pills that scrolls with the page, rounded tables with a soft header band, white dialogs
+with large corners on a navy scrim. The pieces a screen repeats (chips, tabs, KPI figures, icon
+tiles, notices, filter rows, fact lists, the dashboard grid) are defined once in
+`src/styles/_patterns.scss`, on the reasoning of `DL-120`.
+
+**The page title stays on the page.** The task file asked for the page header in "blue gradient +
+shapes". None of the twelve console mock-ups draws one: every page sets a 42px display title on the
+page wash, a muted lead and a pill-shaped action. The gradient header is the residents' app's, and
+`DL-200` already settled that the console mock-ups win where they and the README differ. The
+gradient and shape tokens (`--grad-header`, `--header-shape-*`) stay defined and unused, so
+switching is a change to `page-header.scss` alone.
+
+**The menu stays open.** The mock-ups fold each navigation section behind a toggle. That would put
+every module outside the current section one action further away and break the "at most two
+navigation actions" guarantee the navigation is built and tested on, so the sections are always
+open and the section titles are headings, not buttons. Everything else in the navigation is as
+before: every entry, its permission and scope filter, the unserved link (`DL-167`, `DL-168`).
+
+**Icons are drawn inline.** One `<app-icon>` component draws a path from a typed set
+(`shared/ui/icon/icons.ts`): the mock-ups' line icons and the reference's solid ones, only those in
+use. Inline rather than image files, so an icon takes the colour of its text and costs no request.
+Its host is `aria-hidden`, always; a control with only an icon keeps its own name and the
+`.icon-button` class, and `check:shell` now counts an `<app-icon>` as an icon-only button's glyph
+(stricter: before, those buttons would not have been checked at all). The sidebar's icon for each
+module is keyed by route in `layout/navigation/nav-icons.ts`, because `core/` may not import
+`shared/`; the two-letter glyph remains the fallback, and a spec fails while any module lacks an
+icon.
+
+**Status is never colour alone.** A badge keeps its label; a toast and an inbox entry show a
+different icon shape for each severity; the banner keeps its "Offline" / "Connection restored"
+label; the current page in the menu is `aria-current` and bold as well as filled.
+
+**The dark sidebar's inks are retired.** The sidebar is glass now, so `--brand-nav-ink`,
+`--brand-nav-ink-muted` and `--brand-nav-section` went, with their mirror in `brand-palette.ts`,
+their audit pairs and their entries in `check:brand`'s token map. The brand mark's light tone (for a
+navy fill, unused today) prints both lines in white, an audited pair. Gold on the primary fill (the
+account initials, the current page's icon) is audited as text.
+
+**The empty state's two illustrations.** The reference's search illustration is drawn for
+`no-results`; its offline illustration for `error` while the device is offline, which is when it is
+true. A failure while online, `empty` and `forbidden` draw an icon tile instead, so `empty` and
+`no-results` never look alike. The files are copied to `public/illustrations/` unchanged. No input
+was added: a screen that needs the offline picture while online would need an `offline` variant.
+
+**Smaller things.** The topbar no longer sticks (the mock-ups scroll it); the focus scroll margin
+stays tied to its height, so making it sticky again cannot regress WCAG 2.4.11. Closed on a small
+screen, the sidebar is hidden as well as moved, because reduced motion drops the transform that
+moved it and left it over the page. Dialog widths are 480/640/960 (were 420/620/880) and side
+panels 420/660 (were 400/640), towards the mock-ups' wider dialogs. The notification list in the
+inbox drawer is its own component, so the shell's stylesheet stays inside the component-style
+budget. Not measured: contrast of muted text on the glass sidebar and cards over the wash (open
+since `DL-200`; the redesign's final phase measures it on the rendered screens).

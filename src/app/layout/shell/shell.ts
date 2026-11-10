@@ -16,15 +16,15 @@ import { filter } from 'rxjs';
 import { SessionStore } from '@core/auth/session.store';
 import { ViewportService } from '@core/layout/viewport.service';
 import { NotificationStore } from '@core/notifications/notification.store';
-import { barangayName, type NotificationId } from '@domain/index';
+import { barangayName } from '@domain/index';
 import { BrandMark } from '@shared/brand/brand-mark';
-import { RelativeTimePipe } from '@shared/pipes/relative-time.pipe';
 import { ConnectionBanner } from '@shared/ui/connection-banner/connection-banner';
 import { Drawer } from '@shared/ui/drawer/drawer';
-import { EmptyState } from '@shared/ui/empty-state/empty-state';
+import { Icon } from '@shared/ui/icon/icon';
 import { RouteProgress } from '@shared/ui/route-progress/route-progress';
 
 import { AppNav } from '../navigation/app-nav';
+import { NotificationList } from '../notifications/notification-list';
 import { AppTopbar } from '../topbar/app-topbar';
 import { LAYOUT_COPY } from '../layout.copy';
 
@@ -50,8 +50,8 @@ import { LAYOUT_COPY } from '../layout.copy';
     BrandMark,
     ConnectionBanner,
     Drawer,
-    EmptyState,
-    RelativeTimePipe,
+    Icon,
+    NotificationList,
     RouteProgress,
   ],
   templateUrl: './shell.html',
@@ -86,6 +86,12 @@ export class Shell {
       ? this.copy.scopeAssignedCases
       : this.copy.scopeAllBarangays;
   });
+
+  /**
+   * The account's initials for the avatar beside its name, derived from the name the session
+   * holds. Decoration: the name itself is printed next to it.
+   */
+  protected readonly initials = computed(() => initialsOf(this.session.user()?.displayName ?? ''));
 
   constructor() {
     // Returning to a wide viewport must not leave a stale overlay state behind.
@@ -135,10 +141,6 @@ export class Shell {
     this.inboxOpen.set(true);
   }
 
-  protected markRead(id: NotificationId): void {
-    this.notifications.markRead(id);
-  }
-
   /**
    * The search feature is a later TAB. The trigger is real; the response is an
    * honest notice rather than a dead click.
@@ -161,4 +163,15 @@ export class Shell {
     const toggle = this.document.querySelector<HTMLElement>('.topbar__nav-toggle');
     toggle?.focus();
   }
+}
+
+/** First letter of the first and the last word, e.g. "Marisol Alcantara" → "MA". */
+export function initialsOf(name: string): string {
+  const words = name.split(/[\s,]+/).filter((word) => /\p{L}/u.test(word));
+  const first = words[0];
+  const last = words.length > 1 ? words[words.length - 1] : undefined;
+  return [first, last]
+    .map((word) => (word === undefined ? '' : (/\p{L}/u.exec(word)?.[0] ?? '')))
+    .join('')
+    .toLocaleUpperCase();
 }

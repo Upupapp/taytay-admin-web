@@ -1,57 +1,71 @@
+/* The console mock-ups' header row: the breadcrumb on the left, then a glass
+   search pill and a round glass notifications button. It sits on the page wash
+   and scrolls with the page (DL-201). No backdrop filter: nothing here needs
+   one, and the row holds no fixed overlay. */
 .topbar {
-  position: sticky;
-  inset-block-start: 0;
-  z-index: 20;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-snug);
-  /* min-block-size rather than a fixed height: the bar grows if content wraps
+  gap: var(--space-3);
+  /* min-block-size rather than a fixed height: the row grows if content wraps
      instead of clipping it. */
-  min-block-size: var(--shell-topbar-height);
-  padding: var(--space-compact) var(--space-card);
-  border-block-end: 1px solid var(--c-border);
-  background: var(--c-surface);
+  min-block-size: var(--h-icon-btn);
+  padding: var(--space-1) var(--space-2) 0;
   /* Critical for overflow: a flex child defaults to min-width:auto, which makes
      long content push the row wider than the viewport. */
   min-inline-size: 0;
 }
 
+.topbar__nav-toggle,
+.topbar__inbox {
+  position: relative;
+  flex: none;
+  inline-size: var(--h-icon-btn);
+  block-size: var(--h-icon-btn);
+  border: 1px solid var(--card-edge);
+  border-radius: var(--r-pill);
+  background: var(--card);
+  color: var(--ink);
+}
+
+.topbar__nav-toggle:hover:not(:disabled),
+.topbar__inbox:hover:not(:disabled) {
+  background: var(--hover);
+}
+
 .topbar__nav-toggle {
   /* Shown only when the sidebar collapses into a drawer. */
   display: none;
-  flex: none;
 }
 
 .topbar__crumbs {
+  flex: 1 1 180px;
   min-inline-size: 0;
   overflow: hidden;
 }
 
-.topbar__spacer {
-  flex: 1 1 auto;
+.topbar__search {
+  flex: 0 1 380px;
   min-inline-size: 0;
 }
 
-.topbar__inbox {
-  position: relative;
-  flex: none;
-}
-
+/* The count is in the button's accessible name; this repeats it for the eye.
+   White on the danger ink, ringed in white so it reads over the glass. */
 .topbar__badge {
   position: absolute;
-  inset-block-start: -2px;
-  inset-inline-end: -2px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-inline-size: 16px;
-  block-size: 16px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: var(--tone-danger-fg);
-  color: #fff;
-  font-size: 10.5px;
-  font-weight: 700;
+  inset-block-start: 3px;
+  inset-inline-end: 1px;
+  display: grid;
+  place-items: center;
+  min-inline-size: 18px;
+  block-size: 18px;
+  padding: 0 5px;
+  border: 2px solid var(--ring);
+  border-radius: var(--r-pill);
+  background: var(--red-ink);
+  color: var(--on-primary);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-bold);
   line-height: 1;
 }
 
@@ -63,12 +77,18 @@
 
 @media (width <= 640px) {
   .topbar {
-    padding-inline: var(--space-snug);
+    flex-wrap: nowrap;
+    padding-inline: 0;
   }
 
   /* The breadcrumb is redundant on a small screen where the page heading is
      immediately below; dropping it keeps the row on one line. */
   .topbar__crumbs {
     display: none;
+  }
+
+  .topbar__search {
+    flex: none;
+    margin-inline-start: auto;
   }
 }

@@ -1,6 +1,7 @@
 /* Global stylesheet: design tokens, reset and the shared primitives every
-   screen uses (`.btn`, `.field`, `.card`, `.check`). Component-specific
-   styling lives in component styles.
+   screen uses (`.btn`, `.field`, `.card`, `.check`), then the page patterns
+   in ./styles/_patterns.scss. Component-specific styling lives in component
+   styles.
 
    The tokens are the redesign's (DL-200): the admin mock-ups in `design/admin`
    (later `docs/design/`) where they say something, the design README where
@@ -12,6 +13,7 @@
    The brand identity layer (brand ramp, focus ring, semantic spacing, seal
    sizing) lives in ./styles/_brand-tokens.scss. */
 
+@use 'sass:meta';
 @use './styles/fonts';
 @use './styles/brand-tokens';
 @use './styles/motion';
@@ -603,3 +605,7 @@ option {
 
 /* Reduced-motion handling lives in ./styles/_motion.scss, which draws the
    distinction between transitional and ambient motion. */
+
+/* Page patterns (chips, tabs, KPI figures, icon tiles, notices, filter rows,
+   the dashboard grid). Loaded last, so a pattern can refine a primitive. */
+@include meta.load-css('./styles/patterns');

@@ -1,10 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
-import {
-  NetworkStatus,
-  OFFLINE_NOTICE,
-  RECONNECTED_NOTICE,
-} from '@core/network/network-status';
+import { NetworkStatus, OFFLINE_NOTICE, RECONNECTED_NOTICE } from '@core/network/network-status';
+
+import { Icon } from '../icon/icon';
 
 /**
  * The connection banner.
@@ -28,9 +26,13 @@ import {
 @Component({
   selector: 'app-connection-banner',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Icon],
   template: `
     @if (isOffline()) {
       <div class="connection connection--offline" role="status">
+        <span class="connection__icon" aria-hidden="true">
+          <app-icon name="cloudOff" [size]="20" />
+        </span>
         <p class="connection__message">
           <span class="connection__label">Offline</span>
           {{ offlineNotice }}
@@ -38,11 +40,14 @@ import {
       </div>
     } @else if (showReconnected()) {
       <div class="connection connection--restored" role="status">
+        <span class="connection__icon" aria-hidden="true">
+          <app-icon name="cloud" [size]="20" />
+        </span>
         <p class="connection__message">
           <span class="connection__label">Connection restored</span>
           {{ reconnectedNotice }}
         </p>
-        <button type="button" class="connection__dismiss" (click)="acknowledge()">
+        <button type="button" class="btn connection__dismiss" (click)="acknowledge()">
           Dismiss
         </button>
       </div>

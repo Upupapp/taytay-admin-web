@@ -1,8 +1,12 @@
+/* A side panel in the console mock-ups' dialog dress: the same scrim, a solid
+   white panel and a display heading. It floats inside the viewport with the
+   page's own 16px margin, like the sidebar, rather than running edge to edge. */
 .drawer {
   position: fixed;
   inset: 0;
   z-index: 55;
   display: flex;
+  padding: var(--space-4);
 }
 
 .drawer--end {
@@ -18,7 +22,7 @@
   inset: 0;
   border: 0;
   padding: 0;
-  background: rgb(16 33 51 / 35%);
+  background: var(--scrim);
   cursor: pointer;
 }
 
@@ -30,19 +34,21 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  width: 100%;
-  height: 100%;
-  background: var(--c-surface);
-  box-shadow: var(--shadow-lg);
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: hidden;
+  border-radius: var(--r-panel);
+  background: var(--card-solid);
+  color: var(--text);
   animation: drawer-in 160ms ease-out;
 }
 
 .drawer__panel--narrow {
-  max-width: 400px;
+  max-inline-size: 420px;
 }
 
 .drawer__panel--wide {
-  max-width: 640px;
+  max-inline-size: 660px;
 }
 
 .drawer__header {
@@ -50,37 +56,52 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-5);
-  border-bottom: 1px solid var(--c-border);
+  padding: 20px var(--space-5);
+  border-block-end: 1px solid var(--soft);
 }
 
 .drawer__heading {
-  font-size: 16px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-title-sm);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--ls-title);
 }
 
 .drawer__description {
-  margin-top: var(--space-1);
-  color: var(--c-text-muted);
-  font-size: 13px;
+  margin-block-start: var(--space-1);
+  color: var(--muted);
+  font-size: var(--fs-label);
+  text-wrap: pretty;
 }
 
 .drawer__close {
   flex: none;
-  padding: var(--space-1) var(--space-2);
+  inline-size: var(--h-btn);
+  block-size: var(--h-btn);
+  border-radius: var(--r-pill);
+  background: var(--soft);
+  color: var(--ink);
+}
+
+.drawer__close:hover:not(:disabled) {
+  background: var(--line);
 }
 
 .drawer__body {
-  flex: 1;
+  flex: 1 1 auto;
+  min-block-size: 0;
   overflow-y: auto;
-  padding: var(--space-5);
+  padding: 20px var(--space-5);
 }
 
 .drawer__actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
-  gap: var(--space-3);
+  gap: 10px;
   padding: var(--space-4) var(--space-5);
-  border-top: 1px solid var(--c-border);
+  border-block-start: 1px solid var(--soft);
 }
 
 .drawer__actions:empty {
@@ -102,5 +123,11 @@
   from {
     opacity: 0.4;
     transform: translateX(-12px);
+  }
+}
+
+@media (width <= 640px) {
+  .drawer {
+    padding: var(--space-2);
   }
 }

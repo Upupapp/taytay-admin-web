@@ -42,11 +42,6 @@ export const BRAND_PALETTE = {
   focusRing: '#f5da18',
   focusRingInner: '#08124a',
 
-  // Sidebar ink, used on the brand-hover fill.
-  sidebarInk: '#dce8f4',
-  sidebarInkMuted: '#a9c3dc',
-  sidebarSectionTitle: '#8fb0cf',
-
   // Seal placeholder (deliberately not seal-like — see DL-22)
   sealPlaceholderBg: '#eceff2',
   sealPlaceholderFg: '#46525f',
@@ -113,7 +108,7 @@ export const AUDITED_PAIRS: readonly AuditedPair[] = [
     },
   ]),
 
-  // Text on brand fills (primary buttons, sidebar).
+  // Text on brand fills (primary buttons, the current page in the navigation).
   {
     label: 'on-primary text on brand primary',
     foreground: BRAND_PALETTE.brandOnPrimary,
@@ -132,23 +127,20 @@ export const AUDITED_PAIRS: readonly AuditedPair[] = [
     background: BRAND_PALETTE.primaryHover,
     requirement: 'text',
   },
+  // The design's gold on the primary fill: the account initials in the sidebar
+  // and the current page's icon in the navigation. Held to the text threshold.
+  {
+    label: 'gold on brand primary (sidebar initials, current-page icon)',
+    foreground: BRAND_PALETTE.focusRing,
+    background: BRAND_PALETTE.brandPrimary,
+    requirement: 'text',
+  },
   {
     label: 'brand text on brand soft',
     foreground: BRAND_PALETTE.brandPrimaryHover,
     background: BRAND_PALETTE.brandPrimarySoft,
     requirement: 'text',
   },
-
-  // Sidebar. Every ink used on the dark fill, including the small section
-  // headings that are easiest to get wrong.
-  ...(['sidebarInk', 'sidebarInkMuted', 'sidebarSectionTitle'] as const).map(
-    (ink): AuditedPair => ({
-      label: `${ink} on sidebar fill`,
-      foreground: BRAND_PALETTE[ink],
-      background: BRAND_PALETTE.brandPrimaryHover,
-      requirement: 'text',
-    }),
-  ),
 
   // Status badge labels. The label — not the tint — carries the meaning.
   ...(

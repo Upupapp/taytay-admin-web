@@ -17,6 +17,7 @@ import {
   type SavedViewId,
   type SavedViewResource,
 } from '@domain/index';
+import { Icon } from '../icon/icon';
 import { Modal } from '../modal/modal';
 
 /**
@@ -35,7 +36,7 @@ import { Modal } from '../modal/modal';
 @Component({
   selector: 'app-saved-views-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Modal, RouterLink],
+  imports: [Icon, Modal, RouterLink],
   template: `
     <section class="views" [attr.aria-label]="heading()">
       <h2 class="visually-hidden">{{ heading() }}</h2>
@@ -75,7 +76,7 @@ import { Modal } from '../modal/modal';
                 [attr.aria-label]="'Remove saved view ' + view.name"
                 (click)="remove(view.id)"
               >
-                ×
+                <app-icon name="close" [size]="14" [stroke]="2.2" />
               </button>
             }
           </li>
@@ -97,14 +98,9 @@ import { Modal } from '../modal/modal';
       [description]="saveDescription()"
       size="small"
     >
-      <label class="views__field" modal-body>
-        <span class="views__field-label">{{ nameLabel() }}</span>
-        <input
-          class="views__field-input"
-          type="text"
-          [value]="draftName()"
-          (input)="onName($event)"
-        />
+      <label class="field" modal-body>
+        <span class="field__label">{{ nameLabel() }}</span>
+        <input class="field__input" type="text" [value]="draftName()" (input)="onName($event)" />
       </label>
 
       <button

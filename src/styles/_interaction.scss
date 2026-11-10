@@ -12,9 +12,10 @@
   --target-min: 24px;
 
   /* WCAG 2.2 §2.4.11 Focus Not Obscured (Minimum), Level AA — a focused
-     component must not be *entirely* hidden by author content. The shell has a
-     sticky topbar, so anything scrolled to by keyboard must stop below it.
-     One token, so the offset can never drift from the real bar height. */
+     component must not be *entirely* hidden by author content. The topbar has
+     scrolled with the page since the redesign (DL-201), and sticky table
+     headers remain; the margin stays tied to the bar's height so that making
+     the bar sticky again cannot quietly regress 2.4.11. */
   --focus-scroll-margin: calc(var(--shell-topbar-height) + var(--space-3));
 }
 

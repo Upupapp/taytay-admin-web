@@ -1,3 +1,5 @@
+/* The console mock-ups' breadcrumb: muted links, a slash between, and the
+   current page in the heading ink. */
 .crumbs {
   min-inline-size: 0;
 }
@@ -6,32 +8,34 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-compact);
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
+  color: var(--muted);
+  font-size: var(--fs-sm);
   list-style: none;
-  font-size: 13px;
 }
 
 .crumbs__item {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-compact);
+  gap: var(--space-2);
   min-inline-size: 0;
 }
 
 .crumbs__link {
-  color: var(--c-text-muted);
+  color: var(--muted);
   text-decoration: none;
 }
 
 .crumbs__link:hover {
+  color: var(--ink);
   text-decoration: underline;
 }
 
 .crumbs__current {
-  color: var(--c-text);
-  font-weight: 600;
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
   /* Truncates instead of pushing the topbar wider on a narrow screen. */
   overflow: hidden;
   text-overflow: ellipsis;
@@ -39,5 +43,11 @@
 }
 
 .crumbs__sep {
-  color: var(--c-text-subtle);
+  color: var(--muted2);
+}
+
+/* A section is a grouping, not a destination: muted, like the links. */
+.crumbs__section {
+  color: var(--muted);
+  font-weight: var(--fw-regular);
 }

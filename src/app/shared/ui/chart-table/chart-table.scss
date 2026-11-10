@@ -1,40 +1,42 @@
+/* The console mock-ups' "records by barangay" bars: the label, a soft pill
+   track with a navy fill, and the figure at the end of the row. */
 .chart {
   inline-size: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--fs-sm);
   /* Lets the surrounding card shrink rather than widening the page. */
   min-inline-size: 0;
 }
 
 .chart__caption {
-  margin-block-end: var(--space-snug);
-  color: var(--c-text);
-  font-size: 15px;
-  font-weight: 600;
+  margin-block-end: var(--space-3);
+  color: var(--ink);
+  font-size: var(--fs-section);
+  font-weight: var(--fw-bold);
   text-align: start;
 }
 
 .chart__summary {
   display: block;
   margin-block-start: 2px;
-  color: var(--c-text-muted);
-  font-size: 12.5px;
-  font-weight: 400;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-regular);
 }
 
 .chart th,
 .chart td {
-  padding: var(--space-compact) 0;
-  border-block-end: 1px solid var(--c-border);
+  padding: 6px 0;
   text-align: start;
   vertical-align: middle;
 }
 
 .chart thead th {
-  color: var(--c-text-muted);
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  padding-block: 0 var(--space-2);
+  color: var(--muted2);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-caps);
   text-transform: uppercase;
 }
 
@@ -47,56 +49,74 @@
 }
 
 .chart__value {
-  padding-inline-start: var(--space-snug);
-  font-weight: 600;
+  padding-inline-start: var(--space-3);
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
 }
 
 .chart__label-cell {
-  position: relative;
   inline-size: 100%;
   min-inline-size: 0;
-  font-weight: 400;
+  color: var(--text2);
+  font-weight: var(--fw-semibold);
 }
 
-/* The bar sits behind the label rather than beside it, so a long barangay name
-   never squeezes the chart into an unreadable column on a narrow screen. */
-.chart__bar {
-  position: absolute;
-  inset-block: 4px;
-  inset-inline-start: 0;
-  z-index: 0;
-  border-radius: var(--radius-sm);
-  background: var(--brand-primary-soft);
+.chart__label-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  align-items: center;
+  gap: var(--space-3);
 }
 
 .chart__label,
 .chart__link {
-  position: relative;
-  z-index: 1;
   display: inline-block;
-  padding-inline: var(--space-compact);
   /* Comfortably above the 24px pointer-target minimum (WCAG 2.5.8). */
   min-block-size: 28px;
+  padding-inline: 6px;
+  border-radius: var(--r-sm);
   line-height: 28px;
   overflow-wrap: anywhere;
 }
 
 .chart__link {
-  color: var(--c-text);
-  text-decoration: none;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--line2);
+  text-underline-offset: 3px;
 }
 
 .chart__link:hover {
-  text-decoration: underline;
+  background: var(--hover);
+  text-decoration-color: currentcolor;
 }
 
-.chart__row:last-child th,
-.chart__row:last-child td {
-  border-block-end: none;
+.chart__track {
+  display: block;
+  block-size: 14px;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: var(--soft);
+}
+
+.chart__bar {
+  display: block;
+  block-size: 100%;
+  border-radius: var(--r-pill);
+  background: var(--bar);
 }
 
 .chart__empty {
-  padding-block: var(--space-base);
-  color: var(--c-text-subtle);
-  font-size: 13px;
+  padding-block: var(--space-4);
+  color: var(--muted);
+  font-size: var(--fs-label);
+}
+
+/* On a narrow screen the bar goes under its label rather than squeezing a long
+   barangay name into a column too thin to read. */
+@media (width <= 640px) {
+  .chart__label-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
 }

@@ -19,8 +19,9 @@ export interface ChartRow {
  * beside it.
  *
  * The markup is a real `<table>` with a `<caption>`, header row and one row per
- * category. The bar is an `aria-hidden` span inside the label cell, sized by
- * percentage of the largest value. So:
+ * category. The bar is an `aria-hidden` span inside the label cell, beside the
+ * label as the console mock-ups draw it, sized by percentage of the largest
+ * value. So:
  *
  *  - **Screen readers** get a properly structured table — the same numbers, in
  *    the same order, with no "chart not accessible" fallback to maintain.
@@ -56,23 +57,27 @@ export interface ChartRow {
         @for (row of rows(); track row.key) {
           <tr class="chart__row">
             <th scope="row" class="chart__label-cell">
-              <!-- Decoration only. The value beside it carries the meaning. -->
-              <span
-                class="chart__bar"
-                aria-hidden="true"
-                [style.inline-size.%]="percentOf(row.value)"
-              ></span>
-              @if (row.routerLink) {
-                <a
-                  class="chart__link"
-                  [routerLink]="row.routerLink"
-                  [queryParams]="row.queryParams ?? {}"
-                >
-                  {{ row.label }}
-                </a>
-              } @else {
-                <span class="chart__label">{{ row.label }}</span>
-              }
+              <span class="chart__label-row">
+                @if (row.routerLink) {
+                  <a
+                    class="chart__link"
+                    [routerLink]="row.routerLink"
+                    [queryParams]="row.queryParams ?? {}"
+                  >
+                    {{ row.label }}
+                  </a>
+                } @else {
+                  <span class="chart__label">{{ row.label }}</span>
+                }
+                <!-- Decoration only. The value beside it carries the meaning. -->
+                <span class="chart__track" aria-hidden="true">
+                  <span
+                    class="chart__bar"
+                    aria-hidden="true"
+                    [style.inline-size.%]="percentOf(row.value)"
+                  ></span>
+                </span>
+              </span>
             </th>
             <td class="chart__value">{{ row.display ?? row.value }}</td>
           </tr>

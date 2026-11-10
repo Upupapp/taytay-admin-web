@@ -64,7 +64,8 @@ for (const property of ['min-inline-size', 'min-block-size']) {
 }
 
 /* Every icon-only control must opt into that contract. An icon-only button is
-   one whose entire visible content is an aria-hidden glyph. */
+   one whose entire visible content is an aria-hidden glyph — a span, or an
+   <app-icon>, whose host is aria-hidden by construction (DL-201). */
 const templates = [...walk('src/app', new Set(['.html'])), ...walk('src/app', new Set(['.ts']))];
 let iconButtons = 0;
 for (const file of templates) {
@@ -76,7 +77,7 @@ for (const file of templates) {
       .replace(/<span[^>]*class="visually-hidden"[^>]*>[\s\S]*?<\/span>/g, '')
       .replace(/<[^>]+>/g, '')
       .trim();
-    const hasGlyph = /aria-hidden="true"/.test(button);
+    const hasGlyph = /aria-hidden="true"|<app-icon\b/.test(button);
     if (!hasGlyph || visibleText.length > 0) continue;
 
     iconButtons += 1;
