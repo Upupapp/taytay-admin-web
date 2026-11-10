@@ -23,6 +23,7 @@ import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/vie
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { PLATFORM_AUDIT_COPY } from './platform-audit.copy';
@@ -45,7 +46,7 @@ const PAGE_SIZE = 50;
 @Component({
   selector: 'app-platform-audit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DataTable, DatePipe, PageHeader],
+  imports: [AsyncContent, DataTable, DatePipe, Icon, PageHeader],
   templateUrl: './platform-audit-page.html',
   styleUrl: './platform-audit-page.scss',
 })

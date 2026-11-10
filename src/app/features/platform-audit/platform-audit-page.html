@@ -1,15 +1,20 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <button type="button" page-actions class="btn" (click)="reload()">{{ copy.newest }}</button>
+  <button type="button" page-actions class="btn" (click)="reload()">
+    <app-icon name="history" [size]="16" [stroke]="2" />
+    {{ copy.newest }}
+  </button>
 </app-page-header>
 
-<section class="card audit" aria-labelledby="audit-heading">
+<section class="card card--panel card--padded audit" aria-labelledby="audit-heading">
   <h2 id="audit-heading" class="visually-hidden">{{ copy.caption }}</h2>
 
-  <ul class="audit__limits">
-    @for (limit of limits; track $index) {
-      <li>{{ limit }}</li>
-    }
-  </ul>
+  <div class="note-box audit__limits-box">
+    <ul class="audit__limits">
+      @for (limit of limits; track $index) {
+        <li>{{ limit }}</li>
+      }
+    </ul>
+  </div>
 
   <app-async-content
     [state]="first()"
@@ -28,8 +33,8 @@
       />
 
       @if (rows().length > 0) {
-        <div class="audit__more">
-          <p class="audit__note" role="status">
+        <div class="list-more audit__more">
+          <p class="status-line audit__note" role="status">
             {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
           </p>
           @if (hasMore()) {

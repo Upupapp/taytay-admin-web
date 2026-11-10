@@ -1,31 +1,33 @@
-/* Layout only: every action, account and record is text in the DOM. */
+/* Layout only: every action, account and record is text in the DOM. The
+   Residents list pattern: what a row records (and does not) as a quiet note,
+   then the table, then the count and Show older. */
 
-.audit,
-.audit__more {
+.audit {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-snug);
+  gap: 14px;
 }
 
-.audit__limits {
-  margin: 0;
-  font-size: 13px;
-  color: var(--c-text-muted);
+.audit__limits-box {
+  max-inline-size: 90ch;
 }
 
-.audit__note,
 .audit__problem {
-  margin: 0;
-  font-size: 13px;
+  flex-basis: 100%;
+  color: var(--red-ink);
+  font-size: var(--fs-label);
 }
 
 .audit__note {
-  color: var(--c-text-muted);
+  color: var(--muted);
 }
 
+/* Ids and action codes as given, never looked up (DL-171). */
 .audit__code {
   display: block;
-  font-size: 12px;
+  margin-block-start: 2px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
   overflow-wrap: anywhere;
 }
