@@ -2,21 +2,24 @@
   <a page-actions class="btn" routerLink="/referrals">{{ copy.back }}</a>
 </app-page-header>
 
-<div class="card directory">
-  <div class="filters">
-    <label class="filters__field filters__field--wide">
-      <span class="filters__label">{{ copy.search }}</span>
-      <input
-        type="search"
-        class="filters__input"
-        [placeholder]="copy.searchPlaceholder"
-        (input)="onSearch($event)"
-      />
+<section class="card card--panel card--padded stack directory" [attr.aria-label]="copy.title">
+  <div class="toolbar">
+    <label class="field directory__search">
+      <span class="field__label">{{ copy.search }}</span>
+      <span class="search-field">
+        <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+        <input
+          type="search"
+          class="field__input field__input--pill"
+          [placeholder]="copy.searchPlaceholder"
+          (input)="onSearch($event)"
+        />
+      </span>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.status }}</span>
-      <select class="filters__input" (change)="onStatus($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.status }}</span>
+      <select class="field__input field__input--pill" (change)="onStatus($event)">
         <option value="">{{ copy.allStatuses }}</option>
         @for (value of statuses; track value) {
           <option [value]="value">{{ statusLabel(value) }}</option>
@@ -33,23 +36,25 @@
   >
     <ng-template #body>
       @if (providers().length === 0) {
-        <div class="directory__empty">
-          <h2 class="directory__empty-heading">{{ copy.emptyHeading }}</h2>
+        <div class="subpanel subpanel--soft directory__empty">
+          <h2 class="section-title directory__empty-heading">{{ copy.emptyHeading }}</h2>
           <p class="directory__empty-message">{{ copy.emptyMessage }}</p>
         </div>
       } @else {
-        <ul class="providers">
+        <ul class="provider-grid providers">
           @for (provider of providers(); track provider.id) {
-            <li class="providers__item">
+            <li class="soft-row soft-row--stacked providers__item">
               <p class="providers__head">
                 <span class="providers__name">{{ provider.name }}</span>
-                <span class="providers__kind">{{ destinationLabel(provider) }}</span>
+                <span class="chip chip--info providers__kind">{{
+                  destinationLabel(provider)
+                }}</span>
               </p>
 
               <!-- Said in words. A worker who cannot see that a shelter is full
                    will keep sending families there. -->
               @if (!accepting(provider)) {
-                <p class="providers__closed">
+                <p class="callout callout--warning providers__closed">
                   {{ provider.status === 'retired' ? copy.retired : copy.notAccepting }}
                 </p>
               }
@@ -62,7 +67,7 @@
               <p class="providers__meta">
                 <span class="providers__label">{{ copy.channels }}</span>
                 @for (channel of provider.channels; track channel) {
-                  <span class="providers__chip">{{ channelLabel(channel) }}</span>
+                  <span class="chip providers__chip">{{ channelLabel(channel) }}</span>
                 }
               </p>
 
@@ -99,4 +104,4 @@
       }
     </ng-template>
   </app-async-content>
-</div>
+</section>

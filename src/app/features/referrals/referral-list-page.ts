@@ -62,6 +62,7 @@ import { PersonPicker } from '@shared/residents/person-picker';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { failureDetail, saidByTheHttpLayer } from './referral-failure';
 import { REFERRALS_COPY } from './referrals.copy';
@@ -133,7 +134,6 @@ interface LinkChoices {
 
 const NO_CHOICES: LinkChoices = { cases: [], requests: [], more: false };
 
-
 /**
  * The referral queue.
  *
@@ -146,7 +146,14 @@ const NO_CHOICES: LinkChoices = { cases: [], requests: [], more: false };
   selector: 'app-referral-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    PersonPicker,DataTable, HasPermissionDirective, PageHeader, RouterLink, StatusBadge],
+    DataTable,
+    HasPermissionDirective,
+    Icon,
+    PageHeader,
+    PersonPicker,
+    RouterLink,
+    StatusBadge,
+  ],
   templateUrl: './referral-list-page.html',
   styleUrl: './referral-list-page.scss',
 })
@@ -315,9 +322,7 @@ export class ReferralListPage {
       return;
     }
 
-    const provider = await firstValueFrom(
-      this.repository.getProvider(asId<ServiceProviderId>(id)),
-    );
+    const provider = await firstValueFrom(this.repository.getProvider(asId<ServiceProviderId>(id)));
 
     if (provider === null) {
       return;
@@ -539,7 +544,10 @@ export class ReferralListPage {
     if (this.searchTimer !== null) {
       clearTimeout(this.searchTimer);
     }
-    this.searchTimer = setTimeout(() => this.patch({ q: value.trim() || null }), SEARCH_DEBOUNCE_MS);
+    this.searchTimer = setTimeout(
+      () => this.patch({ q: value.trim() || null }),
+      SEARCH_DEBOUNCE_MS,
+    );
   }
 
   protected onStatus(event: Event): void {

@@ -1,10 +1,21 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions *appHasPermission="'referral.view'" class="btn" routerLink="/referrals/providers">
+    {{ copy.directory }}
+  </a>
+</app-page-header>
+
 @if (canCompose()) {
   <!--
     Composing sits above the list. The list is what the office has already done; this is the act.
   -->
-  <section class="card referrals__compose" aria-labelledby="compose-heading">
-    <h2 class="referrals__heading" id="compose-heading">{{ copy.composeHeading }}</h2>
-    <p class="referrals__hint">{{ copy.composeHint }}</p>
+  <section
+    class="card card--panel card--padded referrals__compose"
+    aria-labelledby="compose-heading"
+  >
+    <h2 class="section-title section-title--display referrals__heading" id="compose-heading">
+      {{ copy.composeHeading }}
+    </h2>
+    <p class="status-line referrals__hint">{{ copy.composeHint }}</p>
 
     <!--
       What the referral is about (DL-185). A caseload starts from its own cases and requests — the
@@ -19,20 +30,22 @@
     @if (isCaseload() || client() !== null) {
       @switch (linkState().kind) {
         @case ('loading') {
-          <p class="referrals__hint" role="status">{{ copy.linksLoading }}</p>
+          <p class="status-line referrals__hint" role="status">{{ copy.linksLoading }}</p>
         }
         @case ('error') {
-          <p class="referrals__problem" role="alert">{{ copy.linksFailed }}</p>
+          <p class="callout callout--danger referrals__problem" role="alert">
+            {{ copy.linksFailed }}
+          </p>
         }
         @default {
           @if (isCaseload() && linkOptions().length === 0) {
-            <p class="referrals__hint" role="note">{{ copy.linksNoneOfYours }}</p>
+            <p class="status-line referrals__hint" role="note">{{ copy.linksNoneOfYours }}</p>
           } @else {
             <label class="field" for="compose-link">
               <span class="field__label">
                 {{ isCaseload() ? copy.linkLabelCaseload : copy.linkLabel }}
               </span>
-              <select id="compose-link" class="field__control" (change)="onLink($event)">
+              <select id="compose-link" class="field__input" (change)="onLink($event)">
                 <option value="" [selected]="link() === null">
                   {{ isCaseload() ? copy.linkChoose : copy.linkNone }}
                 </option>
@@ -48,7 +61,7 @@
               </span>
             </label>
             @if (linkMore()) {
-              <p class="referrals__hint" role="note">{{ copy.linksMore }}</p>
+              <p class="status-line referrals__hint" role="note">{{ copy.linksMore }}</p>
             }
           }
         }
@@ -57,7 +70,7 @@
 
     <label class="field" for="compose-provider">
       <span class="field__label">{{ copy.providerLabel }}</span>
-      <select id="compose-provider" class="field__control" (change)="chooseProvider($event)">
+      <select id="compose-provider" class="field__input" (change)="chooseProvider($event)">
         <option value="">{{ copy.providerNone }}</option>
         @for (provider of providers(); track provider.id) {
           <option [value]="provider.id">{{ provider.name }}</option>
@@ -68,7 +81,7 @@
 
     <label class="field" for="compose-destination">
       <span class="field__label">{{ copy.destinationLabel }}</span>
-      <select id="compose-destination" class="field__control" (change)="onComposeDestination($event)">
+      <select id="compose-destination" class="field__input" (change)="onComposeDestination($event)">
         @for (option of destinationOptions; track option) {
           <option [value]="option" [selected]="option === destination()">
             {{ destinationLabels[option] }}
@@ -81,7 +94,7 @@
       <span class="field__label">{{ copy.destinationNameLabel }}</span>
       <input
         id="compose-destination-name"
-        class="field__control"
+        class="field__input"
         type="text"
         [value]="destinationName()"
         (input)="onDestinationName($event)"
@@ -92,7 +105,7 @@
       <span class="field__label">{{ copy.destinationContactLabel }}</span>
       <input
         id="compose-contact"
-        class="field__control"
+        class="field__input"
         type="text"
         [value]="destinationContact()"
         (input)="onDestinationContact($event)"
@@ -101,7 +114,7 @@
 
     <label class="field" for="compose-urgency">
       <span class="field__label">{{ copy.urgencyLabel }}</span>
-      <select id="compose-urgency" class="field__control" (change)="onComposeUrgency($event)">
+      <select id="compose-urgency" class="field__input" (change)="onComposeUrgency($event)">
         @for (option of urgencyOptions; track option) {
           <option [value]="option" [selected]="option === urgency()">
             {{ urgencyLabels[option] }}
@@ -114,7 +127,7 @@
       <span class="field__label">{{ copy.serviceLabel }}</span>
       <input
         id="compose-service"
-        class="field__control"
+        class="field__input"
         type="text"
         [value]="serviceRequested()"
         (input)="onService($event)"
@@ -125,7 +138,7 @@
       <span class="field__label">{{ copy.reasonLabel }}</span>
       <input
         id="compose-reason"
-        class="field__control"
+        class="field__input"
         type="text"
         [value]="reason()"
         (input)="onReason($event)"
@@ -138,29 +151,26 @@
   </section>
 }
 
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a page-actions *appHasPermission="'referral.view'" class="btn" routerLink="/referrals/providers">
-    {{ copy.directory }}
-  </a>
-</app-page-header>
-
-<div class="card referrals">
-  <div class="filters">
-    <label class="filters__field filters__field--wide">
-      <span class="filters__label">{{ copy.search }}</span>
-      <input
-        type="search"
-        class="filters__input"
-        [placeholder]="copy.searchPlaceholder"
-        [value]="searchText()"
-        aria-describedby="referral-search-hint"
-        (input)="onSearch($event)"
-      />
+<section class="card card--panel card--padded stack referrals" [attr.aria-label]="copy.caption">
+  <div class="toolbar">
+    <label class="field referrals__search">
+      <span class="field__label">{{ copy.search }}</span>
+      <span class="search-field">
+        <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+        <input
+          type="search"
+          class="field__input field__input--pill"
+          [placeholder]="copy.searchPlaceholder"
+          [value]="searchText()"
+          aria-describedby="referral-search-hint"
+          (input)="onSearch($event)"
+        />
+      </span>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.status }}</span>
-      <select class="filters__input" (change)="onStatus($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.status }}</span>
+      <select class="field__input field__input--pill" (change)="onStatus($event)">
         <option value="" [selected]="!filter().status">{{ copy.allStatuses }}</option>
         @for (status of statuses; track status) {
           <option [value]="status" [selected]="filter().status === status">
@@ -170,9 +180,9 @@
       </select>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.destination }}</span>
-      <select class="filters__input" (change)="onDestination($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.destination }}</span>
+      <select class="field__input field__input--pill" (change)="onDestination($event)">
         <option value="" [selected]="!filter().destination">{{ copy.allDestinations }}</option>
         @for (destination of destinations; track destination) {
           <option [value]="destination" [selected]="filter().destination === destination">
@@ -182,9 +192,9 @@
       </select>
     </label>
 
-    <label class="filters__field">
-      <span class="filters__label">{{ copy.urgency }}</span>
-      <select class="filters__input" (change)="onUrgency($event)">
+    <label class="field">
+      <span class="field__label">{{ copy.urgency }}</span>
+      <select class="field__input field__input--pill" (change)="onUrgency($event)">
         <option value="" [selected]="!filter().urgency">{{ copy.allUrgencies }}</option>
         @for (urgency of urgencies; track urgency) {
           <option [value]="urgency" [selected]="filter().urgency === urgency">
@@ -194,7 +204,7 @@
       </select>
     </label>
 
-    <label class="filters__check">
+    <label class="check-pill">
       <input
         type="checkbox"
         [checked]="filter().overdueOnly === true"
@@ -203,20 +213,22 @@
       <span>{{ copy.overdueOnly }}</span>
     </label>
 
-    <label class="filters__check">
+    <label class="check-pill">
       <input type="checkbox" [checked]="filter().openOnly === true" (change)="onOpenOnly($event)" />
       <span>{{ copy.openOnly }}</span>
     </label>
 
     @if (hasFilters()) {
-      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+      <button type="button" class="btn referrals__clear" (click)="clearFilters()">
+        {{ copy.clear }}
+      </button>
     }
   </div>
 
-  <p class="filters__hint" id="referral-search-hint">{{ copy.searchHint }}</p>
+  <p class="status-line filters__hint" id="referral-search-hint">{{ copy.searchHint }}</p>
 
   @if (notNarrowed().length > 0) {
-    <p class="referrals__hint" role="note">{{ copy.notNarrowed(notNarrowed()) }}</p>
+    <p class="status-line referrals__hint" role="note">{{ copy.notNarrowed(notNarrowed()) }}</p>
   }
 
   <app-data-table
@@ -233,13 +245,13 @@
   />
 
   @if (failure(); as message) {
-    <p class="referrals__problem" role="alert">{{ message }}</p>
+    <p class="callout callout--danger referrals__problem" role="alert">{{ message }}</p>
   }
 
   @if (rows().length > 0) {
-    <div class="referrals__more">
+    <div class="list-more referrals__more">
       <!-- What has been read, and whether more exist: never "page 1 of N", the API sends no total. -->
-      <p class="referrals__hint" role="status">
+      <p class="status-line referrals__hint" role="status">
         {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
       </p>
       @if (hasMore()) {
@@ -253,14 +265,14 @@
         </button>
       }
       @if (moreFailed()) {
-        <p class="referrals__problem" role="alert">{{ copy.moreFailed }}</p>
+        <p class="callout callout--danger referrals__problem" role="alert">{{ copy.moreFailed }}</p>
       }
     </div>
   }
-</div>
+</section>
 
 <ng-template #referenceCell let-referral>
-  <a class="referrals__reference" [routerLink]="detailLink(referral)">
+  <a class="record-link referrals__reference" [routerLink]="detailLink(referral)">
     {{ referral.referenceNumber }}
   </a>
   <span class="referrals__service">{{ referral.serviceRequested }}</span>
@@ -278,7 +290,9 @@
     <!-- Said in words, not by colour alone: an overdue row has to announce
          itself to every reader (WCAG 1.4.1). -->
     @if (isOverdue(referral)) {
-      <span class="referrals__overdue" [title]="copy.overdueHint">{{ copy.overdue }}</span>
+      <span class="chip chip--danger referrals__overdue" [title]="copy.overdueHint">{{
+        copy.overdue
+      }}</span>
     }
   } @else {
     <span class="referrals__muted">{{ copy.noFollowUp }}</span>

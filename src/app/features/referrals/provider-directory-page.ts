@@ -17,6 +17,7 @@ import { debouncedTerm } from '@shared/state/debounced';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { REFERRALS_COPY } from './referrals.copy';
 
@@ -31,7 +32,7 @@ import { REFERRALS_COPY } from './referrals.copy';
 @Component({
   selector: 'app-provider-directory-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, PageHeader, RouterLink],
+  imports: [AsyncContent, Icon, PageHeader, RouterLink],
   templateUrl: './provider-directory-page.html',
   styleUrl: './provider-directory-page.scss',
 })

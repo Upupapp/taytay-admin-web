@@ -1,178 +1,99 @@
-.referral {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: var(--space-base);
-  align-items: start;
+// ResidentRecord mock-up as the referral record: about, disclosure, the send act, the sheet
+// across the width (the one thing printed, DL-81), outcome, notes, follow-up.
+
+.referral__withheld {
+  margin-block-end: var(--space-4);
 }
 
-.referral__panel {
-  padding: var(--space-base);
-}
-
-/* The sheet is the artefact that leaves the building, so it gets the full
-   width rather than sharing a column with the office's own working notes. */
-.referral__panel--wide {
-  grid-column: 1 / -1;
-}
-
-.referral__heading {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
+.referral__panel > .btn {
+  align-self: flex-start;
 }
 
 .referral__subheading {
-  margin: var(--space-base) 0 var(--space-compact);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.referral__hint {
-  margin: var(--space-micro) 0 0;
-  color: var(--c-text-subtle);
-  font-size: 12.5px;
-}
-
-.referral__empty {
-  margin: var(--space-snug) 0 0;
-  color: var(--c-text-muted);
-  font-size: 13px;
+  margin-block-start: var(--space-2);
+  color: var(--ink);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-bold);
 }
 
 .referral__outcome {
-  margin: var(--space-snug) 0 0;
-  font-size: 13.5px;
+  color: var(--text);
+  font-size: var(--fs-sm);
 }
 
 .referral__back {
-  margin-block-start: var(--space-base);
+  margin-block-start: var(--space-4);
 }
 
 .referral__status {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-compact);
-  margin: var(--space-snug) 0 0;
+  gap: var(--space-2);
 }
 
-.referral__urgency {
-  padding: 1px var(--space-compact);
-  border-radius: var(--radius-sm);
-  background: var(--tone-neutral-bg);
-  color: var(--tone-neutral-fg);
-  font-size: 11.5px;
-  font-weight: 600;
-}
-
-.referral__overdue {
-  padding: 1px var(--space-compact);
-  border-radius: var(--radius-sm);
-  background: var(--tone-danger-bg);
-  color: var(--tone-danger-fg);
-  font-size: 11.5px;
-  font-weight: 700;
-}
-
-.facts {
-  margin: var(--space-snug) 0 0;
-}
-
-.facts__item {
-  padding-block: var(--space-compact);
-  border-block-start: 1px solid var(--c-border);
-}
-
-.facts__item:first-child {
-  border-block-start: none;
-}
-
-.facts__item dt {
-  color: var(--c-text-muted);
-  font-size: 11.5px;
-  font-weight: 600;
-}
-
-.facts__item dd {
-  margin: 0;
-  font-size: 13px;
-}
-
-.shared {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.shared__item {
-  padding-block: var(--space-compact);
-  border-block-start: 1px solid var(--c-border);
-}
-
-.shared__item:first-child {
-  border-block-start: none;
+.field__hint--caution {
+  color: var(--gold-ink2);
+  font-weight: var(--fw-semibold);
 }
 
 .shared__field {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .shared__because {
-  display: block;
-  color: var(--c-text-subtle);
-  font-size: 12px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
 }
 
-/* ── the sheet ────────────────────────────────────────────────────────────── */
+.notes__body {
+  color: var(--text);
+}
+
+/* ── the sheet: a paper form handed to another organisation ──────────────── */
 
 .sheet__header {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-snug);
+  gap: var(--space-3);
 }
 
 .sheet {
-  margin-block-start: var(--space-base);
-  padding: var(--space-loose);
-  border: 1px solid var(--c-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--c-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-xl);
+  background: var(--card-solid);
 }
 
 .sheet__line {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-snug);
-  margin: 0 0 var(--space-compact);
-  font-size: 13.5px;
+  gap: var(--space-1) var(--space-3);
+  color: var(--ink);
+  font-size: var(--fs-sm);
 }
 
 .sheet__label {
   min-inline-size: 160px;
-  color: var(--c-text-muted);
-  font-weight: 600;
+  color: var(--muted);
+  font-weight: var(--fw-semibold);
 }
 
 .sheet__value {
   flex: 1 1 240px;
+  overflow-wrap: anywhere;
 }
 
 .sheet__authority {
-  margin: var(--space-base) 0 0;
-  font-size: 12.5px;
-  font-weight: 600;
-}
-
-.sheet__notice {
-  margin: var(--space-compact) 0 0;
-  padding-block-start: var(--space-compact);
-  border-block-start: 1px solid var(--c-border);
-  color: var(--c-text-muted);
-  font-size: 12px;
+  margin-block-start: var(--space-2);
+  color: var(--ink);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
 }
 
 /* Only the sheet is printed. The office's own queue, notes and controls are
@@ -188,39 +109,4 @@
     border: none;
     padding: 0;
   }
-}
-
-/* ── forms ────────────────────────────────────────────────────────────────── */
-
-.notes {
-  margin: var(--space-snug) 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.notes__item {
-  padding-block: var(--space-snug);
-  border-block-start: 1px solid var(--c-border);
-}
-
-.notes__item:first-child {
-  border-block-start: none;
-}
-
-.notes__body {
-  margin: 0;
-  font-size: 13px;
-}
-
-.notes__meta {
-  margin: var(--space-micro) 0 0;
-  color: var(--c-text-subtle);
-  font-size: 12px;
-}
-
-.referral__withheld {
-  margin: 0 0 var(--space-4);
-  padding: var(--space-2) var(--space-4);
-  border-left: 3px solid var(--c-border-strong);
-  font-size: 13.5px;
 }
