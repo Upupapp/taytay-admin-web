@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import APP_CONFIG from '../fixtures/app-config.json';
-import { toAppConfig, toWireAppConfigChanges } from './app-config.mapper';
+import {
+  fromWireReviewTimeRefusal,
+  toAppConfig,
+  toWireAppConfigChanges,
+} from './app-config.mapper';
 
 describe('the app settings mapper (DL-170)', () => {
   it('reads every setting, the flags by name, and both texts whole with their versions (DL-186)', () => {
@@ -54,6 +58,79 @@ describe('the app settings mapper (DL-170)', () => {
       feature_flags: { show_digital_id: null, new_flag: 'on' },
     });
     expect(JSON.parse(JSON.stringify(toWireAppConfigChanges({})))).toEqual({});
+  });
+
+  describe('the review time (DL-205)', () => {
+    it('reads the range as sent, and null as the app stating none', () => {
+      expect(toAppConfig(APP_CONFIG.data)?.verificationReviewWorkingDays).toEqual({
+        min: 2,
+        max: 5,
+      });
+      expect(
+        toAppConfig({ ...APP_CONFIG.data, verification_review_working_days: null })
+          ?.verificationReviewWorkingDays,
+      ).toBeNull();
+    });
+
+    it('reads an API that does not send it as unknown: neither none nor a number of its own', () => {
+      const older = Object.fromEntries(
+        Object.entries(APP_CONFIG.data).filter(
+          ([key]) => key !== 'verification_review_working_days',
+        ),
+      );
+      const config = toAppConfig(older);
+
+      expect(config).not.toBeNull();
+      expect(config?.verificationReviewWorkingDays).toBeUndefined();
+      expect(config !== null && 'verificationReviewWorkingDays' in config).toBe(true);
+    });
+
+    it('refuses a review time it cannot read, rather than showing it as none', () => {
+      for (const unreadable of [
+        '1-3',
+        { min: 1 },
+        { min: 1.5, max: 3 },
+        { min: '1', max: '3' },
+        { min: 4, max: 2 },
+        { min: 0, max: 2 },
+      ]) {
+        expect(
+          toAppConfig({ ...APP_CONFIG.data, verification_review_working_days: unreadable }),
+        ).toBeNull();
+      }
+    });
+
+    it('sends the range whole under its own key, null to state none, and nothing when unchanged', () => {
+      const send = (changes: Parameters<typeof toWireAppConfigChanges>[0]): unknown =>
+        JSON.parse(JSON.stringify(toWireAppConfigChanges(changes)));
+
+      expect(send({ verificationReviewWorkingDays: { min: 2, max: 5 } })).toEqual({
+        verification_review_working_days: { min: 2, max: 5 },
+      });
+      expect(send({ verificationReviewWorkingDays: null })).toEqual({
+        verification_review_working_days: null,
+      });
+      expect(send({ contactLine: null })).toEqual({ contact_line: null });
+    });
+
+    it('puts each of the server’s sentences with the input it is about, and leaves the rest', () => {
+      expect(
+        fromWireReviewTimeRefusal({
+          'verification_review_working_days.min': ['At least 1 working day.'],
+          'verification_review_working_days.max': [
+            'The fewest working days cannot be more than the most.',
+          ],
+          verification_review_working_days: ['Expected object, received string'],
+          support_email: ['Invalid email'],
+        }),
+      ).toEqual([
+        { field: 'min', message: 'At least 1 working day.' },
+        { field: 'max', message: 'The fewest working days cannot be more than the most.' },
+        { field: 'range', message: 'Expected object, received string' },
+      ]);
+      expect(fromWireReviewTimeRefusal({ support_email: ['Invalid email'] })).toEqual([]);
+      expect(fromWireReviewTimeRefusal(null)).toEqual([]);
+    });
   });
 
   it('publishes a text and its version together, as the API reads them (DL-186)', () => {

@@ -17,7 +17,8 @@
         "minimum_app_version",
         "privacy_version",
         "support_email",
-        "terms_version"
+        "terms_version",
+        "verification_review_working_days"
       ]
     },
     {
@@ -523,7 +524,8 @@
         "minimum_app_version",
         "privacy_version",
         "support_email",
-        "terms_version"
+        "terms_version",
+        "verification_review_working_days"
       ]
     },
     {

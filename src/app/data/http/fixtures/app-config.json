@@ -5,6 +5,7 @@
     "privacy_version": "placeholder",
     "terms_version": "2026-01",
     "minimum_app_version": "1.4.0",
+    "verification_review_working_days": { "min": 2, "max": 5 },
     "feature_flags": { "tulong_catalogue": "on", "show_digital_id": "true" },
     "privacy_notice": {
       "version": "placeholder",

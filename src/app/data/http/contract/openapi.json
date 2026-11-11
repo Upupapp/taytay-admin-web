@@ -2081,7 +2081,7 @@
       "get": {
         "operationId": "getAppConfig",
         "summary": "Public app bootstrap",
-        "description": "LGU contact line, support email, current privacy and terms versions, minimum app version, public feature flags, the privacy notice and the Terms of Use (each a placeholder until published: version 'placeholder'). Flags are not secrets.",
+        "description": "LGU contact line, support email, current privacy and terms versions, minimum app version, how many working days the app says an ID review usually takes (null: the app states none), public feature flags, the privacy notice and the Terms of Use (each a placeholder until published: version 'placeholder'). Flags are not secrets.",
         "security": [],
         "responses": {
           "200": { "description": "Bootstrap config.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AppConfigEnvelope" } } } }
@@ -2092,7 +2092,7 @@
       "patch": {
         "operationId": "patchAppConfig",
         "summary": "Update public app config",
-        "description": "Admin only. Null clears a field. A feature flag value of null deletes that key. privacy_notice and terms publish the privacy notice and the Terms of Use the same way: version and body_markdown together, and privacy_version or terms_version set to that version (a different one beside it is 422). The version is the administrator's choice and is never bumped by the API; a new version is what asks residents to accept again.",
+        "description": "Admin only. Null clears a field. A feature flag value of null deletes that key. verification_review_working_days is written whole, min and max together, each an integer with 1 <= min <= max <= 30 (anything else is 422); null clears it, and the app then states no review time. privacy_notice and terms publish the privacy notice and the Terms of Use the same way: version and body_markdown together, and privacy_version or terms_version set to that version (a different one beside it is 422). The version is the administrator's choice and is never bumped by the API; a new version is what asks residents to accept again.",
         "security": [{ "firebaseIdToken": [] }],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AppConfigPatch" } } } },
         "responses": {
@@ -18272,13 +18272,17 @@
       },
       "AppConfig": {
         "type": "object",
-        "required": ["contact_line", "support_email", "privacy_version", "terms_version", "minimum_app_version", "feature_flags", "privacy_notice", "terms", "updated_at"],
+        "required": ["contact_line", "support_email", "privacy_version", "terms_version", "minimum_app_version", "verification_review_working_days", "feature_flags", "privacy_notice", "terms", "updated_at"],
         "properties": {
           "contact_line": { "type": ["string", "null"] },
           "support_email": { "type": ["string", "null"] },
           "privacy_version": { "type": ["string", "null"], "description": "Kept for older clients. Publishing privacy_notice sets it to the same version." },
           "terms_version": { "type": ["string", "null"], "description": "Kept for older clients. Publishing terms sets it to the same version." },
           "minimum_app_version": { "type": ["string", "null"] },
+          "verification_review_working_days": {
+            "oneOf": [{ "$ref": "#/components/schemas/VerificationReviewWorkingDays" }, { "type": "null" }],
+            "description": "How many working days the app tells a resident an ID review usually takes. Null: the app states no review time."
+          },
           "feature_flags": { "type": "object", "additionalProperties": { "type": "string" } },
           "privacy_notice": { "$ref": "#/components/schemas/PrivacyNotice" },
           "terms": { "$ref": "#/components/schemas/TermsOfUse" },
@@ -18338,7 +18342,21 @@
           "privacy_notice": { "$ref": "#/components/schemas/PrivacyNoticeWrite" },
           "terms": { "$ref": "#/components/schemas/TermsOfUseWrite" },
           "minimum_app_version": { "type": ["string", "null"] },
+          "verification_review_working_days": {
+            "oneOf": [{ "$ref": "#/components/schemas/VerificationReviewWorkingDays" }, { "type": "null" }],
+            "description": "Written whole, min and max together. Null clears it, and the app then states no review time."
+          },
           "feature_flags": { "type": "object", "additionalProperties": { "type": ["string", "null"] } }
+        }
+      },
+      "VerificationReviewWorkingDays": {
+        "type": "object",
+        "description": "A range of working days, both ends counted. The server refuses min greater than max, a non-integer, or a value outside 1 to 30.",
+        "additionalProperties": false,
+        "required": ["min", "max"],
+        "properties": {
+          "min": { "type": "integer", "minimum": 1, "maximum": 30 },
+          "max": { "type": "integer", "minimum": 1, "maximum": 30, "description": "Not less than min." }
         }
       },
       "DeviceWrite": {

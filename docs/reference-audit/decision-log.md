@@ -9658,6 +9658,58 @@ frames after each key: the reduced-motion rule turns every property into a 0.01m
 style read in the same frame sees where the transition starts — an outline in the text colour, no
 inner ring, a skip link still above the page — which first read as faint rings and a hidden skip link.
 
+## DL-205 — an administrator sets how long the app says an ID review usually takes, or makes it say nothing; the console never supplies a number of its own
+
+**Status:** Settled (11 November 2026). The residents' app tells a resident who has sent their ID
+that the review "usually takes 1–3 working days". No such service standard is published. The owner
+kept that copy for now and asked that an administrator be able to change it here. The API serves the
+setting from `taytay-backend` `39d650b`, vendored here at that commit; the app is to read it in a
+later step.
+
+**What the setting is.** `verification_review_working_days` in the app's settings: `{ min, max }`,
+whole working days with both ends counted, 1 ≤ min ≤ max ≤ 30, or `null`. It is read where every app
+reads its settings (`GET app/config`) and written with the rest of them (`PATCH admin/app/config`),
+audited like the rest (one `app.config_updated` row naming no setting). In the console it is
+`AppConfig.verificationReviewWorkingDays`, under "Verification review time" on App settings: two
+whole-number inputs (`.field-row`, a pattern added for a range's two ends), or "Don't state a review
+time", which sends `null`. Beside them is the sentence the app will say, made by one function,
+`reviewTimePhrase`, using the rule all three repositories build to: "usually takes {min}–{max}
+working days", and one number when both ends are the same ("1 working day", "4 working days"). The
+confirmation says what the change does ("The app will tell residents an ID review usually takes 2–5
+working days", "The app will stop saying how long an ID review takes") and that an app too old to
+read the setting keeps saying what it was built to say. It asks for no acknowledgement: it changes a
+sentence and asks no resident to update or accept again, and an acknowledgement nobody needs teaches
+administrators to tick without reading.
+
+**Null and absent are different answers.** `null` is the office's decision that the app states no
+review time. A response without the key comes from an API older than the setting, and that is
+**unknown**. The mapper reads it as `undefined`, the screen says the API did not say and offers
+nothing to change, and nothing about it is sent. Reading it as `null` would show "Don't state a
+review time" as chosen, and the next save would make that true. Reading it as 1–3 would put a number
+in the office's mouth. A value that is present but not a range (a string, half a range, fewest above
+most) makes the whole configuration unreadable, the rule `DL-170` already applies to every setting.
+The upper bound is not enforced on read, because it is the server's policy to change.
+
+**No default in the console.** No standard is published, so the figure is the office's own estimate,
+and the console never supplies one: not when the API is silent, not when the app states none and an
+administrator chooses to state one (the inputs start empty), not as a placeholder. The only 1–3 in
+the console is the mock adapter's seed, which is the value the API's migration stores. The checks on
+what is typed mirror the server's, in the server's own words, for usability only. A 422 that names
+`verification_review_working_days.min` or `.max` comes back through the data layer as
+`AppConfigRefusedError` with each sentence keyed to its input, so the feature never names a wire
+field. The confirmation closes and the sentence stands beside that input (`aria-invalid`, named by
+`aria-describedby`) until the review time is edited.
+
+**The app keeps today's copy until an administrator changes it.** The migration stores `{ min: 1,
+max: 3 }`, the sentence the app already shows, and leaves `updated_at` alone, so nothing a resident
+sees changes until somebody here edits the setting. Staging serves it only after a redeploy.
+
+`check:app-settings` rule 9 holds all of the above: the effects and their listing, no acknowledgement,
+the app's rule and the preview built from it, no range written into the page, copy, domain or
+mapper, absent read as unknown and never sent, the range sent whole under its own key, the refusal
+returned by input, and each input's error named on it. It was validated against 19 planted
+regressions, all caught and then removed.
+
 ## DL-206 — Netlify serves the staging console, with the style nonce from an edge function
 
 **Status:** Settled (11 November 2026). Closes the Netlify half of `DL-172`.

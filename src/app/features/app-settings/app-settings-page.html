@@ -110,6 +110,95 @@
           </fieldset>
         </div>
 
+        <!-- DL-205: how long the app tells a resident an ID review usually takes. -->
+        <fieldset class="form-section settings__group" aria-describedby="settings-review-lead">
+          <legend class="form-section__legend">{{ copy.reviewTimeHeading }}</legend>
+          <p class="form-section__note" id="settings-review-lead">{{ copy.reviewLead }}</p>
+
+          @if (current.verificationReviewWorkingDays === undefined) {
+            <p class="note-box" role="note">{{ copy.reviewNotSent }}</p>
+          } @else {
+            <fieldset class="choice-list">
+              <legend>{{ copy.reviewChoiceLegend }}</legend>
+              <label class="choice">
+                <input
+                  type="radio"
+                  name="settings-review-time"
+                  value="stated"
+                  [checked]="reviewStated()"
+                  (change)="chooseReviewStated(true)"
+                />
+                <span class="choice__text">
+                  {{ copy.reviewStateLabel }}
+                  <span class="choice__hint">{{ copy.reviewStateHint }}</span>
+                </span>
+              </label>
+              <label class="choice">
+                <input
+                  type="radio"
+                  name="settings-review-time"
+                  value="none"
+                  [checked]="!reviewStated()"
+                  (change)="chooseReviewStated(false)"
+                />
+                <span class="choice__text">
+                  {{ copy.reviewNoneLabel }}
+                  <span class="choice__hint">{{ copy.reviewNoneHint }}</span>
+                </span>
+              </label>
+            </fieldset>
+
+            @if (reviewStated()) {
+              <div class="field-row">
+                <div class="field field--narrow">
+                  <label class="field__label" for="settings-review-min">{{ copy.reviewMin }}</label>
+                  <p class="field__hint" id="settings-review-min-hint">{{ copy.reviewMinHint }}</p>
+                  <input
+                    id="settings-review-min"
+                    class="field__input"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    [attr.aria-describedby]="reviewDescribedBy().min"
+                    [attr.aria-invalid]="reviewErrors().min === null ? null : 'true'"
+                    [value]="reviewMin()"
+                    (input)="setReviewDays('min', text($event))"
+                  />
+                  @if (reviewErrors().min; as message) {
+                    <p class="field__error" id="settings-review-min-error">{{ message }}</p>
+                  }
+                </div>
+                <div class="field field--narrow">
+                  <label class="field__label" for="settings-review-max">{{ copy.reviewMax }}</label>
+                  <p class="field__hint" id="settings-review-max-hint">{{ copy.reviewMaxHint }}</p>
+                  <input
+                    id="settings-review-max"
+                    class="field__input"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    [attr.aria-describedby]="reviewDescribedBy().max"
+                    [attr.aria-invalid]="reviewErrors().max === null ? null : 'true'"
+                    [value]="reviewMax()"
+                    (input)="setReviewDays('max', text($event))"
+                  />
+                  @if (reviewErrors().max; as message) {
+                    <p class="field__error" id="settings-review-max-error">{{ message }}</p>
+                  }
+                </div>
+              </div>
+              @if (reviewErrors().range; as message) {
+                <p class="field__error" id="settings-review-range-error">{{ message }}</p>
+              }
+            }
+
+            <div class="note-box" id="settings-review-preview">
+              <p>
+                <strong>{{ copy.reviewPreviewLead }}</strong>
+              </p>
+              <p>{{ reviewPreview() }}</p>
+            </div>
+          }
+        </fieldset>
+
         <!-- DL-186: the texts residents accept, shown as text and published with their version. -->
         <fieldset class="form-section settings__group">
           <legend class="form-section__legend">{{ copy.legalHeading }}</legend>
@@ -286,7 +375,7 @@
 
         @if (attempted() && problems().length > 0) {
           <div class="settings__problems" role="alert">
-            <p>{{ copy.problemsLead }}</p>
+            <p>{{ problemsLead() }}</p>
             <ul>
               @for (message of problems(); track $index) {
                 <li>{{ message }}</li>

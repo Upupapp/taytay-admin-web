@@ -5,6 +5,7 @@ import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import {
   ACCESS_CONTEXT,
   asId,
+  isAppConfigRefusal,
   isPermissionDenied,
   ROLE_DEFINITIONS,
   type AccessContext,
@@ -86,5 +87,55 @@ describe('MockAppConfigRepository (DL-170)', () => {
       { key: 'new_flag', value: 'on' },
       { key: 'tulong_catalogue', value: 'on' },
     ]);
+  });
+
+  describe('the review time (DL-205)', () => {
+    it('starts from the range the API’s migration stores, and is kept by any other change', async () => {
+      const settings = signedInAs('system-administrator');
+      expect((await firstValueFrom(settings.read())).verificationReviewWorkingDays).toEqual({
+        min: 1,
+        max: 3,
+      });
+      const changed = await firstValueFrom(settings.change({ contactLine: null }));
+      expect(changed.verificationReviewWorkingDays).toEqual({ min: 1, max: 3 });
+    });
+
+    it('stores a new range, and null for the app to state none', async () => {
+      const settings = signedInAs('system-administrator');
+      const ranged = await firstValueFrom(
+        settings.change({ verificationReviewWorkingDays: { min: 2, max: 5 } }),
+      );
+      expect(ranged.verificationReviewWorkingDays).toEqual({ min: 2, max: 5 });
+
+      const cleared = await firstValueFrom(
+        settings.change({ verificationReviewWorkingDays: null }),
+      );
+      expect(cleared.verificationReviewWorkingDays).toBeNull();
+    });
+
+    it('refuses what the API refuses, each sentence by the end it is about', async () => {
+      const settings = signedInAs('system-administrator');
+      const refusal: unknown = await firstValueFrom(
+        settings.change({ verificationReviewWorkingDays: { min: 5, max: 2 } }),
+      ).catch((e: unknown) => e);
+
+      expect(isAppConfigRefusal(refusal)).toBe(true);
+      if (isAppConfigRefusal(refusal)) {
+        expect(refusal.reviewTime).toEqual([
+          { field: 'max', message: 'The fewest working days cannot be more than the most.' },
+        ]);
+      }
+      const tooMany: unknown = await firstValueFrom(
+        settings.change({ verificationReviewWorkingDays: { min: 0, max: 31 } }),
+      ).catch((e: unknown) => e);
+      expect(isAppConfigRefusal(tooMany) ? tooMany.reviewTime : null).toEqual([
+        { field: 'min', message: 'At least 1 working day.' },
+        { field: 'max', message: 'At most 30 working days.' },
+      ]);
+      expect((await firstValueFrom(settings.read())).verificationReviewWorkingDays).toEqual({
+        min: 1,
+        max: 3,
+      });
+    });
   });
 });

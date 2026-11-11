@@ -3,8 +3,10 @@ import { throwError, type Observable } from 'rxjs';
 
 import {
   ACCESS_CONTEXT,
+  AppConfigRefusedError,
   appConfigProblems,
   asIsoDateTime,
+  workingDayRangeProblems,
   type AppConfig,
   type AppConfigChanges,
   type AppConfigRepository,
@@ -19,7 +21,8 @@ import { MockLatency } from './mock-latency';
  * The residents' app's settings, for the `local-mock` configuration (`DL-170`). Fictional: the
  * contact line dials nobody in particular, the address is at `settings.example.test`, a reserved
  * name and a `check:bundle` marker, and the privacy notice and the Terms of Use are the API's own
- * placeholders: no legal text is invented here either (`DL-186`).
+ * placeholders: no legal text is invented here either (`DL-186`). The review time is the range the
+ * API's migration `0046` stores, today's copy in the app (`DL-205`).
  */
 export const MOCK_APP_CONFIG: AppConfig = {
   contactLine: '(02) 8000 0100',
@@ -27,6 +30,7 @@ export const MOCK_APP_CONFIG: AppConfig = {
   privacyVersion: 'placeholder',
   termsVersion: '2026-01',
   minimumAppVersion: '1.0.0',
+  verificationReviewWorkingDays: { min: 1, max: 3 },
   featureFlags: [
     { key: 'show_digital_id', value: 'true' },
     { key: 'tulong_catalogue', value: 'on' },
@@ -64,6 +68,14 @@ export class MockAppConfigRepository implements AppConfigRepository {
   change(changes: AppConfigChanges): Observable<AppConfig> {
     const denied = denyUnless<AppConfig>(this.access.currentUser(), 'app-config.manage');
     if (denied) return denied;
+    // The review time is refused as the API refuses it, each sentence by the end it is about.
+    const range = changes.verificationReviewWorkingDays;
+    const refusedTime = range === undefined || range === null ? [] : workingDayRangeProblems(range);
+    if (refusedTime.length > 0) {
+      return throwError(
+        () => new AppConfigRefusedError('The request could not be validated.', refusedTime),
+      );
+    }
     // Refused as the API refuses it, with a 422: a placeholder version, an empty text, two versions.
     const refused = appConfigProblems(changes)[0];
     if (refused !== undefined) return throwError(() => new Error(refused.message));
@@ -98,6 +110,8 @@ export class MockAppConfigRepository implements AppConfigRepository {
       privacyNotice: published(changes.privacyNotice, this.config.privacyNotice),
       terms: published(changes.terms, this.config.terms),
       minimumAppVersion: pick(changes.minimumAppVersion, this.config.minimumAppVersion),
+      verificationReviewWorkingDays:
+        range === undefined ? this.config.verificationReviewWorkingDays : range,
       featureFlags: [...flags]
         .map(([key, value]) => ({ key, value }))
         .sort((a, b) => a.key.localeCompare(b.key)),

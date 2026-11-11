@@ -16,6 +16,12 @@ export interface AppConfig {
   readonly privacyVersion: string | null;
   readonly termsVersion: string | null;
   readonly minimumAppVersion: string | null;
+  /**
+   * How long the app tells a resident an ID review usually takes (`DL-205`): a range of working
+   * days, or `null` when the app states none. `undefined` when the API did not send it at all — one
+   * older than the setting — which is unknown: never read as `null`, and never given a number.
+   */
+  readonly verificationReviewWorkingDays: WorkingDayRange | null | undefined;
   readonly featureFlags: readonly FeatureFlag[];
   /**
    * The privacy notice residents are asked to accept, with its text. An administrator publishes it
@@ -94,6 +100,8 @@ export interface AppConfigChanges {
   readonly privacyVersion?: string | null;
   readonly termsVersion?: string | null;
   readonly minimumAppVersion?: string | null;
+  /** Sent whole, both ends together; `null` makes the app state no review time (`DL-205`). */
+  readonly verificationReviewWorkingDays?: WorkingDayRange | null;
   readonly featureFlags?: readonly { readonly key: string; readonly value: string | null }[];
   /** Publishes the Terms of Use: the text and its version together (`DL-186`). */
   readonly terms?: LegalTextDraft;
@@ -130,6 +138,124 @@ export function compareAppVersions(a: string, b: string): number {
     if (difference !== 0) return Math.sign(difference);
   }
   return 0;
+}
+
+/* ── how long an ID review usually takes (`DL-205`) ──────────────────────── */
+
+/**
+ * The working days the app tells a resident an ID review usually takes, both ends counted. No
+ * service standard for it is published: it is the office's own estimate, set by an administrator,
+ * and the console never supplies one of its own.
+ */
+export interface WorkingDayRange {
+  readonly min: number;
+  readonly max: number;
+}
+
+/** Read from `src/modules/app-config/schemas.ts` at `39d650b`: whole numbers, fewest ≤ most. */
+export const REVIEW_DAYS_BOUNDS = { fewest: 1, most: 30 } as const;
+
+/** The server's own sentences for what it refuses in a range (`39d650b`). */
+export const REVIEW_DAYS_MESSAGES = {
+  missingMin: 'Give the fewest working days.',
+  missingMax: 'Give the most working days.',
+  whole: 'Working days are a whole number.',
+  tooFew: `At least ${REVIEW_DAYS_BOUNDS.fewest} working day.`,
+  tooMany: `At most ${REVIEW_DAYS_BOUNDS.most} working days.`,
+  order: 'The fewest working days cannot be more than the most.',
+} as const;
+
+/** The input a sentence about the range belongs to; `range` when it is about the whole value. */
+export type ReviewTimePart = 'min' | 'max' | 'range';
+
+/**
+ * The words the app uses, by the app's own rule (the F3 contract the three repositories share):
+ * "usually takes 2–5 working days", or one number when both ends are the same — "1 working day",
+ * "4 working days". Shown on the page as typed, and in the confirmation, from this one place.
+ */
+export function reviewTimePhrase(range: WorkingDayRange): string {
+  if (range.min === range.max) {
+    return `usually takes ${range.min} working ${range.min === 1 ? 'day' : 'days'}`;
+  }
+  return `usually takes ${range.min}–${range.max} working days`;
+}
+
+function boundProblem(field: 'min' | 'max', value: number): FieldProblem<'min' | 'max'> | null {
+  if (!Number.isInteger(value)) return { field, message: REVIEW_DAYS_MESSAGES.whole };
+  if (value < REVIEW_DAYS_BOUNDS.fewest) return { field, message: REVIEW_DAYS_MESSAGES.tooFew };
+  if (value > REVIEW_DAYS_BOUNDS.most) return { field, message: REVIEW_DAYS_MESSAGES.tooMany };
+  return null;
+}
+
+/** What the server would refuse in a range, by the end it belongs to, in the server's words. */
+export function workingDayRangeProblems(
+  range: WorkingDayRange,
+): readonly FieldProblem<'min' | 'max'>[] {
+  const problems = [boundProblem('min', range.min), boundProblem('max', range.max)].filter(
+    (problem): problem is FieldProblem<'min' | 'max'> => problem !== null,
+  );
+  if (problems.length === 0 && range.min > range.max) {
+    problems.push({ field: 'max', message: REVIEW_DAYS_MESSAGES.order });
+  }
+  return problems;
+}
+
+/** `null` for nothing typed, `undefined` for something that is not a whole number. */
+function typedDays(typed: string): number | null | undefined {
+  const trimmed = typed.trim();
+  if (trimmed === '') return null;
+  return /^[+-]?\d+$/.test(trimmed) ? Number(trimmed) : undefined;
+}
+
+/**
+ * The two ends as typed, read the way the server reads them: the range when it would accept it,
+ * and otherwise each end's problem — so a screen can say it beside the input it belongs to. A
+ * usability courtesy only; the server decides.
+ */
+export function readWorkingDayRange(
+  minTyped: string,
+  maxTyped: string,
+): {
+  readonly range: WorkingDayRange | null;
+  readonly problems: readonly FieldProblem<'min' | 'max'>[];
+} {
+  const min = typedDays(minTyped);
+  const max = typedDays(maxTyped);
+  if (typeof min === 'number' && typeof max === 'number') {
+    const problems = workingDayRangeProblems({ min, max });
+    return { range: problems.length === 0 ? { min, max } : null, problems };
+  }
+  const problems: FieldProblem<'min' | 'max'>[] = [];
+  for (const [field, value, missing] of [
+    ['min', min, REVIEW_DAYS_MESSAGES.missingMin],
+    ['max', max, REVIEW_DAYS_MESSAGES.missingMax],
+  ] as const) {
+    if (value === null) problems.push({ field, message: missing });
+    else if (value === undefined) problems.push({ field, message: REVIEW_DAYS_MESSAGES.whole });
+    else {
+      const problem = boundProblem(field, value);
+      if (problem !== null) problems.push(problem);
+    }
+  }
+  return { range: null, problems };
+}
+
+/**
+ * A change the server refused, with what it said about the review time by the input each sentence
+ * belongs to (`DL-205`), so the screen can put it there. `message` is the server's own.
+ */
+export class AppConfigRefusedError extends Error {
+  readonly reviewTime: readonly FieldProblem<ReviewTimePart>[];
+
+  constructor(message: string, reviewTime: readonly FieldProblem<ReviewTimePart>[]) {
+    super(message);
+    this.name = 'AppConfigRefusedError';
+    this.reviewTime = reviewTime;
+  }
+}
+
+export function isAppConfigRefusal(error: unknown): error is AppConfigRefusedError {
+  return error instanceof AppConfigRefusedError;
 }
 
 export type AppConfigField = Exclude<keyof AppConfigChanges, 'featureFlags'> | 'featureFlags';
@@ -178,6 +304,12 @@ export function appConfigProblems(
         'A version is numbers joined by dots — two to four of them, such as 1.4 or 1.4.2 — up to ' +
         `${APP_CONFIG_LIMITS.minimumAppVersion} characters.`,
     });
+  }
+  const reviewTime = changes.verificationReviewWorkingDays;
+  if (reviewTime !== undefined && reviewTime !== null) {
+    for (const problem of workingDayRangeProblems(reviewTime)) {
+      problems.push({ field: 'verificationReviewWorkingDays', message: problem.message });
+    }
   }
   for (const [field, draft, name, alongside, alongsideName] of [
     ['terms', changes.terms, 'Terms of Use', termsVersion, 'terms version'],
@@ -292,6 +424,9 @@ function legalTextProblems(
  * one they accepted (`taytay-mobile-app`, `auth_api_repository.dart`), so a new version **makes**
  * every resident accept again — said plainly, before the button.
  */
+const APP_TOO_OLD_FOR_REVIEW_TIME =
+  'An app too old to read this setting keeps saying what it was built to say.';
+
 export const APP_CONFIG_EFFECTS = {
   minimumRaised: (version: string) => [
     `This can force every resident whose app is older than ${version} to update before using it: ` +
@@ -354,6 +489,18 @@ export const APP_CONFIG_EFFECTS = {
       'this console writes, suggests or fills in legal text.',
   ],
   contact: ['Residents see the new contact details in the app.'],
+  /**
+   * The review time (`DL-205`, from `39d650b`): the app is given the range or `null`, and says the
+   * one or says nothing. It asks nothing of a resident, so it needs no acknowledgement.
+   */
+  reviewTimeStated: (range: WorkingDayRange) => [
+    `The app will tell residents an ID review ${reviewTimePhrase(range)}.`,
+    APP_TOO_OLD_FOR_REVIEW_TIME,
+  ],
+  reviewTimeCleared: [
+    'The app will stop saying how long an ID review takes.',
+    APP_TOO_OLD_FOR_REVIEW_TIME,
+  ],
   flags: [
     'The app reads each flag and decides what it does; this console cannot see what that is. A ' +
       'deleted flag is no longer given to the app at all.',
@@ -365,7 +512,10 @@ export const APP_CONFIG_EFFECTS = {
   ],
 } as const;
 
-/** True for a change that can stop residents using the app until they act. */
+/**
+ * True for a change that can stop residents using the app until they act. The review time is not
+ * one: it changes a sentence, and asks nobody to update or accept (`DL-205`).
+ */
 export function asksEveryResident(current: AppConfig, changes: AppConfigChanges): boolean {
   const minimum = changes.minimumAppVersion;
   const raised =
@@ -448,6 +598,14 @@ export function appConfigEffects(current: AppConfig, changes: AppConfigChanges):
         ),
       );
     }
+  }
+  const reviewTime = changes.verificationReviewWorkingDays;
+  if (reviewTime !== undefined) {
+    effects.push(
+      ...(reviewTime === null
+        ? APP_CONFIG_EFFECTS.reviewTimeCleared
+        : APP_CONFIG_EFFECTS.reviewTimeStated(reviewTime)),
+    );
   }
   if (changes.contactLine !== undefined || changes.supportEmail !== undefined) {
     effects.push(...APP_CONFIG_EFFECTS.contact);

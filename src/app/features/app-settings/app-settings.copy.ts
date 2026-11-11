@@ -1,3 +1,5 @@
+import { REVIEW_DAYS_BOUNDS } from '@domain/index';
+
 /**
  * Every sentence the app settings page says (`DL-170`). What a change does is the domain's
  * (`APP_CONFIG_EFFECTS`), read from the backend.
@@ -6,8 +8,8 @@ export const APP_SETTINGS_COPY = {
   title: 'App settings',
   subtitle:
     'Residents see this in the Taytay app: the contact details it shows, the terms and privacy ' +
-    'notice it asks residents to accept, the oldest app version it allows, and its feature flags. ' +
-    'A change here reaches every resident.',
+    'notice it asks residents to accept, the oldest app version it allows, how long it says an ID ' +
+    'review takes, and its feature flags. A change here reaches every resident.',
   caption: 'The Taytay app’s settings',
   lastChanged: (when: string) => `Last changed ${when}.`,
 
@@ -27,6 +29,28 @@ export const APP_SETTINGS_COPY = {
     'under “Privacy notice” below, with its own version.',
   minimumAppVersion: 'Oldest app version allowed',
   minimumAppVersionHint: 'Numbers joined by dots, such as 1.4 or 1.4.2. Empty for none.',
+
+  reviewTimeHeading: 'Verification review time',
+  reviewLead:
+    'How long the app tells a resident an ID review usually takes, after they send their ID. No ' +
+    'standard for it is published: it is the office’s own estimate, in working days.',
+  reviewNotSent:
+    'The API did not say what the app is told about review time: it is older than this setting. ' +
+    'Nothing about it can be changed here until the API is updated, and the app keeps saying what ' +
+    'it says now.',
+  reviewChoiceLegend: 'In the app',
+  reviewStateLabel: 'State a review time',
+  reviewStateHint: 'The app says how many working days a review usually takes.',
+  reviewNoneLabel: 'Don’t state a review time',
+  reviewNoneHint: 'The app says nothing about how long a review takes.',
+  reviewMin: 'Fewest working days',
+  reviewMinHint: `A whole number from ${REVIEW_DAYS_BOUNDS.fewest} to ${REVIEW_DAYS_BOUNDS.most}.`,
+  reviewMax: 'Most working days',
+  reviewMaxHint: `From the fewest to ${REVIEW_DAYS_BOUNDS.most}. The same number for an exact time.`,
+  reviewPreviewLead: 'What the app will say',
+  reviewPreview: (phrase: string) => `“This ${phrase}.”`,
+  reviewPreviewNone: 'Nothing about how long a review takes.',
+  reviewPreviewIncomplete: 'Give both numbers above to see the sentence.',
 
   legalHeading: 'Terms of Use and privacy notice',
   legalLead:
@@ -85,6 +109,7 @@ export const APP_SETTINGS_COPY = {
   removeNewFlag: (index: number) => `Remove new flag ${index}`,
 
   problemsLead: 'Not sent — the API would refuse it:',
+  refusedLead: 'Not saved — the server refused it:',
   unchanged: 'Nothing has changed yet.',
   review: 'Review the change',
   reviewHeading: 'Change the app’s settings?',

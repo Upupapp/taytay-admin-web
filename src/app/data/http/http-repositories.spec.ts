@@ -15,6 +15,7 @@ import {
   centavos,
   describeMembershipChange,
   HOTLINE_LIST_CAP,
+  isAppConfigRefusal,
   isFamilyDraftInvalid,
   isHouseholdCompositionError,
   isRelationshipInvalid,
@@ -2645,6 +2646,72 @@ describe('the Node adapters', () => {
       });
       patch.flush(APP_CONFIG);
       await changed;
+    });
+
+    it('reads the review time and sends it whole under its own key (DL-205)', async () => {
+      const settings = TestBed.inject(HttpAppConfigRepository);
+      const changed = firstValueFrom(
+        settings.change({ verificationReviewWorkingDays: { min: 1, max: 1 } }),
+      );
+      const patch = http.expectOne({ method: 'PATCH', url: `${BASE}/admin/app/config` });
+      expect(JSON.parse(JSON.stringify(patch.request.body))).toEqual({
+        verification_review_working_days: { min: 1, max: 1 },
+      });
+      patch.flush(APP_CONFIG);
+
+      expect((await changed).verificationReviewWorkingDays).toEqual({ min: 2, max: 5 });
+    });
+
+    it('hands the server’s refusal of a review time on by the input it is about (DL-205)', async () => {
+      const settings = TestBed.inject(HttpAppConfigRepository);
+      const changed = firstValueFrom(
+        settings.change({ verificationReviewWorkingDays: { min: 5, max: 2 } }),
+      ).catch((failure: unknown) => failure);
+      http.expectOne({ method: 'PATCH', url: `${BASE}/admin/app/config` }).flush(
+        {
+          error: {
+            code: 'VALIDATION_FAILED',
+            message: 'The request could not be validated.',
+            details: {
+              'verification_review_working_days.max': [
+                'The fewest working days cannot be more than the most.',
+              ],
+            },
+            request_id: 'fixture-request',
+          },
+        },
+        { status: 422, statusText: 'Unprocessable Entity' },
+      );
+
+      const refusal = await changed;
+      expect(isAppConfigRefusal(refusal)).toBe(true);
+      if (isAppConfigRefusal(refusal)) {
+        expect(refusal.message).toBe('The request could not be validated.');
+        expect(refusal.reviewTime).toEqual([
+          { field: 'max', message: 'The fewest working days cannot be more than the most.' },
+        ]);
+      }
+    });
+
+    it('passes any other refusal on as it came', async () => {
+      const settings = TestBed.inject(HttpAppConfigRepository);
+      const changed = firstValueFrom(settings.change({ supportEmail: 'not-an-address' })).catch(
+        (failure: unknown) => failure,
+      );
+      http.expectOne({ method: 'PATCH', url: `${BASE}/admin/app/config` }).flush(
+        {
+          error: {
+            code: 'VALIDATION_FAILED',
+            message: 'The request could not be validated.',
+            details: { support_email: ['Invalid email'] },
+          },
+        },
+        { status: 422, statusText: 'Unprocessable Entity' },
+      );
+
+      const refusal = await changed;
+      expect(isAppConfigRefusal(refusal)).toBe(false);
+      expect(refusal).toBeInstanceOf(HttpErrorResponse);
     });
   });
 

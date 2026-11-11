@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import {
   catchError,
@@ -15,8 +16,9 @@ import {
 
 import { AuthTokenHolder } from '@core/auth/auth-token.holder';
 import type { SessionRefresher } from '@core/auth/session-refresher';
-import { isNotFound } from '@core/http/api-failure';
+import { isApiFailure, isNotFound, readApiError } from '@core/http/api-failure';
 import {
+  AppConfigRefusedError,
   fromServerIdentity,
   mediaFor,
   SignInError,
@@ -411,7 +413,11 @@ import {
   toWireOfficeDraft,
 } from './mappers/directory-office.mapper';
 import { toHotline } from './mappers/hotline.mapper';
-import { toAppConfig, toWireAppConfigChanges } from './mappers/app-config.mapper';
+import {
+  fromWireReviewTimeRefusal,
+  toAppConfig,
+  toWireAppConfigChanges,
+} from './mappers/app-config.mapper';
 import {
   toHomeBanner,
   toHomePreview,
@@ -1411,10 +1417,24 @@ export class HttpAppConfigRepository implements AppConfigRepository {
   }
 
   change(changes: AppConfigChanges): Observable<AppConfig> {
-    return this.api
-      .patch(API_ENDPOINTS.adminAppConfig, toWireAppConfigChanges(changes))
-      .pipe(map(readAppConfig));
+    return this.api.patch(API_ENDPOINTS.adminAppConfig, toWireAppConfigChanges(changes)).pipe(
+      map(readAppConfig),
+      catchError((failure: unknown) => throwError(() => withReviewTimeRefusal(failure))),
+    );
   }
+}
+
+/**
+ * A 422 that names the review time, as the domain's refusal with each sentence by its input, so
+ * the screen can say it there (`DL-205`); any other failure exactly as it came.
+ */
+function withReviewTimeRefusal(failure: unknown): unknown {
+  const read = failure instanceof HttpErrorResponse ? readApiError(failure) : failure;
+  if (!isApiFailure(read) || read.status !== 422) {
+    return failure;
+  }
+  const reviewTime = fromWireReviewTimeRefusal(read.details);
+  return reviewTime.length === 0 ? failure : new AppConfigRefusedError(read.message, reviewTime);
 }
 
 function readAppConfig(wire: unknown): AppConfig {

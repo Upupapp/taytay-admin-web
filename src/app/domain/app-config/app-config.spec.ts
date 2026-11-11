@@ -9,6 +9,9 @@ import {
   compareAppVersions,
   isPlaceholderText,
   legalTextDraftFrom,
+  readWorkingDayRange,
+  reviewTimePhrase,
+  workingDayRangeProblems,
   type AppConfig,
 } from './app-config';
 
@@ -18,6 +21,7 @@ const CONFIG: AppConfig = {
   privacyVersion: '2026-01',
   termsVersion: '2026-01',
   minimumAppVersion: '1.4.0',
+  verificationReviewWorkingDays: { min: 1, max: 3 },
   featureFlags: [{ key: 'show_digital_id', value: 'true' }],
   privacyNotice: {
     version: '2026-01',
@@ -158,5 +162,67 @@ describe('the texts residents accept (DL-186)', () => {
       'The version stays 2026-01, so the text changes without asking anyone to accept again',
     );
     expect(corrected).not.toContain('accept the privacy notice again in the app');
+  });
+});
+
+describe('how long an ID review usually takes (DL-205)', () => {
+  it('words the range by the app’s rule, one number when both ends are the same', () => {
+    expect(reviewTimePhrase({ min: 2, max: 5 })).toBe('usually takes 2–5 working days');
+    expect(reviewTimePhrase({ min: 1, max: 1 })).toBe('usually takes 1 working day');
+    expect(reviewTimePhrase({ min: 4, max: 4 })).toBe('usually takes 4 working days');
+  });
+
+  it('reads what is typed as the server reads it, each problem by the end it is about', () => {
+    expect(readWorkingDayRange(' 2 ', '5')).toEqual({ range: { min: 2, max: 5 }, problems: [] });
+    expect(readWorkingDayRange('', '').problems).toEqual([
+      { field: 'min', message: 'Give the fewest working days.' },
+      { field: 'max', message: 'Give the most working days.' },
+    ]);
+    expect(readWorkingDayRange('1.5', 'three').problems).toEqual([
+      { field: 'min', message: 'Working days are a whole number.' },
+      { field: 'max', message: 'Working days are a whole number.' },
+    ]);
+    expect(readWorkingDayRange('0', '31').problems).toEqual([
+      { field: 'min', message: 'At least 1 working day.' },
+      { field: 'max', message: 'At most 30 working days.' },
+    ]);
+    expect(readWorkingDayRange('0', '').problems).toEqual([
+      { field: 'min', message: 'At least 1 working day.' },
+      { field: 'max', message: 'Give the most working days.' },
+    ]);
+    const reversed = readWorkingDayRange('5', '2');
+    expect(reversed.range).toBeNull();
+    expect(reversed.problems).toEqual([
+      { field: 'max', message: 'The fewest working days cannot be more than the most.' },
+    ]);
+    expect(workingDayRangeProblems({ min: 1, max: 30 })).toEqual([]);
+  });
+
+  it('refuses a range the API refuses, and nothing for null', () => {
+    expect(appConfigProblems({ verificationReviewWorkingDays: { min: 3, max: 2 } })).toEqual([
+      {
+        field: 'verificationReviewWorkingDays',
+        message: 'The fewest working days cannot be more than the most.',
+      },
+    ]);
+    expect(appConfigProblems({ verificationReviewWorkingDays: null })).toEqual([]);
+  });
+
+  it('says what the app will say, or that it will stop, and asks nobody to acknowledge it', () => {
+    const stated = appConfigEffects(CONFIG, { verificationReviewWorkingDays: { min: 2, max: 5 } });
+    expect(stated[0]).toBe(
+      'The app will tell residents an ID review usually takes 2–5 working days.',
+    );
+    expect(stated.join(' ')).toContain('An app too old to read this setting keeps saying');
+    expect(appConfigEffects(CONFIG, { verificationReviewWorkingDays: { min: 1, max: 1 } })[0]).toBe(
+      'The app will tell residents an ID review usually takes 1 working day.',
+    );
+    expect(appConfigEffects(CONFIG, { verificationReviewWorkingDays: null })[0]).toBe(
+      'The app will stop saying how long an ID review takes.',
+    );
+    expect(asksEveryResident(CONFIG, { verificationReviewWorkingDays: null })).toBe(false);
+    expect(asksEveryResident(CONFIG, { verificationReviewWorkingDays: { min: 9, max: 30 } })).toBe(
+      false,
+    );
   });
 });

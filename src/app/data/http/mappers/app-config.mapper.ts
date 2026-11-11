@@ -2,11 +2,14 @@ import type {
   AppConfig,
   AppConfigChanges,
   FeatureFlag,
+  FieldProblem,
   LegalText,
   LegalTextDraft,
+  ReviewTimePart,
+  WorkingDayRange,
 } from '@domain/index';
 
-import { dateTime, field, str } from './wire';
+import { dateTime, field, int, str } from './wire';
 
 /** A nullable setting: a string, or `null` — and `undefined` when the wire is neither. */
 function setting(value: unknown): string | null | undefined {
@@ -42,6 +45,28 @@ function legalTextOf(value: unknown): LegalText | null {
 }
 
 /**
+ * The review time, as sent (`DL-205`): a range, `null` when the app states none — and, when the key
+ * is not there at all, `undefined`: an API older than the setting, which is unknown rather than
+ * "none". Read as `null`, the next save would offer to keep the app silent; no number stands in for
+ * it either. Anything else is unreadable, and with it the whole configuration (the rule below).
+ * Fewest ≤ most is read as the server keeps it; how many days at most is the server's policy.
+ */
+function reviewTimeOf(
+  value: unknown,
+):
+  | { readonly readable: true; readonly days: WorkingDayRange | null | undefined }
+  | { readonly readable: false } {
+  if (value === undefined || value === null) {
+    return { readable: true, days: value };
+  }
+  const min = int(field(value, 'min'));
+  const max = int(field(value, 'max'));
+  return min === null || max === null || min < 1 || min > max
+    ? { readable: false }
+    : { readable: true, days: { min, max } };
+}
+
+/**
  * `AppConfig` → `AppConfig` (`DL-170`).
  *
  * Every setting is required by the spec, nullable, and read as it is: a setting the console could
@@ -60,6 +85,7 @@ export function toAppConfig(wire: unknown): AppConfig | null {
   const privacyVersion = setting(field(wire, 'privacy_version'));
   const termsVersion = setting(field(wire, 'terms_version'));
   const minimumAppVersion = setting(field(wire, 'minimum_app_version'));
+  const reviewTime = reviewTimeOf(field(wire, 'verification_review_working_days'));
   const featureFlags = flagsOf(field(wire, 'feature_flags'));
   const privacyNotice = legalTextOf(field(wire, 'privacy_notice'));
   const terms = legalTextOf(field(wire, 'terms'));
@@ -71,6 +97,7 @@ export function toAppConfig(wire: unknown): AppConfig | null {
     privacyVersion === undefined ||
     termsVersion === undefined ||
     minimumAppVersion === undefined ||
+    !reviewTime.readable ||
     featureFlags === null ||
     privacyNotice === null ||
     terms === null ||
@@ -85,6 +112,7 @@ export function toAppConfig(wire: unknown): AppConfig | null {
     privacyVersion,
     termsVersion,
     minimumAppVersion,
+    verificationReviewWorkingDays: reviewTime.days,
     featureFlags,
     privacyNotice,
     terms,
@@ -99,6 +127,7 @@ export interface AppConfigPatchWire {
   readonly privacy_version: string | null | undefined;
   readonly terms_version: string | null | undefined;
   readonly minimum_app_version: string | null | undefined;
+  readonly verification_review_working_days: WorkingDaysWire | null | undefined;
   readonly feature_flags: Readonly<Record<string, string | null>> | undefined;
   readonly terms: LegalTextWire | undefined;
   readonly privacy_notice: LegalTextWire | undefined;
@@ -108,6 +137,19 @@ export interface AppConfigPatchWire {
 export interface LegalTextWire {
   readonly version: string;
   readonly body_markdown: string;
+}
+
+/** `VerificationReviewWorkingDays`: both ends together, whole numbers (`DL-205`). */
+export interface WorkingDaysWire {
+  readonly min: number;
+  readonly max: number;
+}
+
+/** The range whole, or `null` to make the app state none; `undefined` leaves it as stored. */
+function toWireWorkingDays(
+  range: WorkingDayRange | null | undefined,
+): WorkingDaysWire | null | undefined {
+  return range === undefined || range === null ? range : { min: range.min, max: range.max };
 }
 
 function toWireLegalText(draft: LegalTextDraft | undefined): LegalTextWire | undefined {
@@ -123,6 +165,7 @@ export function toWireAppConfigChanges(changes: AppConfigChanges): AppConfigPatc
     privacy_version: changes.privacyVersion,
     terms_version: changes.termsVersion,
     minimum_app_version: changes.minimumAppVersion,
+    verification_review_working_days: toWireWorkingDays(changes.verificationReviewWorkingDays),
     feature_flags:
       changes.featureFlags === undefined || changes.featureFlags.length === 0
         ? undefined
@@ -130,4 +173,27 @@ export function toWireAppConfigChanges(changes: AppConfigChanges): AppConfigPatc
     terms: toWireLegalText(changes.terms),
     privacy_notice: toWireLegalText(changes.privacyNotice),
   };
+}
+
+/**
+ * Where each of the server's sentences about the review time belongs (`DL-205`): its 422 names the
+ * end it refused (`….min`, `….max`), or the whole value when it is not a range at all.
+ */
+const REVIEW_TIME_DETAIL_KEYS: Readonly<Record<string, ReviewTimePart>> = {
+  'verification_review_working_days.min': 'min',
+  'verification_review_working_days.max': 'max',
+  verification_review_working_days: 'range',
+};
+
+/** The server's sentences about the review time, each by the input it belongs to, in its words. */
+export function fromWireReviewTimeRefusal(
+  details: Readonly<Record<string, readonly string[]>> | null,
+): readonly FieldProblem<ReviewTimePart>[] {
+  const problems: FieldProblem<ReviewTimePart>[] = [];
+  for (const [key, messages] of Object.entries(details ?? {})) {
+    const part = REVIEW_TIME_DETAIL_KEYS[key];
+    if (part === undefined) continue;
+    for (const message of messages) problems.push({ field: part, message });
+  }
+  return problems;
 }

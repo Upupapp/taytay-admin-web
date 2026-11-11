@@ -17,12 +17,18 @@ import {
   appConfigEffects,
   appConfigProblems,
   asksEveryResident,
+  isAppConfigRefusal,
   isPlaceholderText,
   legalTextDraftFrom,
+  readWorkingDayRange,
+  reviewTimePhrase,
   type AppConfig,
   type AppConfigChanges,
+  type FieldProblem,
   type LegalText,
   type LegalTextDraft,
+  type ReviewTimePart,
+  type WorkingDayRange,
 } from '@domain/index';
 import { blankToNull, readChecked, readText } from '@shared/forms/form-values';
 import { failureReason } from '@shared/state/failure-reason';
@@ -67,6 +73,13 @@ export type LegalTextKind = 'terms' | 'privacyNotice';
  * version changes the text without asking anyone, and the review says so. Nothing here writes legal
  * text: the editor starts from the published text, or from nothing while the API still serves its
  * placeholder, which the screen says has no text yet. The text is shown as text, never rendered.
+ *
+ * ## How long an ID review usually takes (`DL-205`)
+ *
+ * Two whole numbers or "don't state one", with the sentence the app will say beside them, from the
+ * domain's `reviewTimePhrase`. Nothing is filled in that the server did not send: an API that does
+ * not send the setting is said not to, and offers nothing to change. The server's refusal of a
+ * number is put beside the input it is about, and stays there until the review time is edited.
  */
 @Component({
   selector: 'app-app-settings-page',
@@ -97,6 +110,16 @@ export class AppSettingsPage {
   protected readonly flagValues = signal<ReadonlyMap<string, string>>(new Map());
   protected readonly deletedFlags = signal<ReadonlySet<string>>(new Set());
   protected readonly newFlags = signal<readonly NewFlag[]>([]);
+
+  /** The review time as edited: whether the app states one, and both ends as typed (`DL-205`). */
+  protected readonly reviewStated = signal(false);
+  protected readonly reviewMin = signal('');
+  protected readonly reviewMax = signal('');
+  /** What the server refused about the review time, by input, until the review time is edited. */
+  protected readonly reviewRefused = signal<readonly FieldProblem<ReviewTimePart>[]>([]);
+  private readonly reviewRead = computed(() =>
+    readWorkingDayRange(this.reviewMin(), this.reviewMax()),
+  );
 
   /** Each text's editor: closed until asked for, and started from `legalTextDraftFrom` only. */
   protected readonly editing = signal<ReadonlySet<LegalTextKind>>(new Set());
@@ -146,6 +169,8 @@ export class AppSettingsPage {
       privacyNotice,
     );
     const minimumAppVersion = changed(this.minimumAppVersion(), config.minimumAppVersion);
+    const reviewTime = this.reviewTimeChange(config.verificationReviewWorkingDays);
+    if (reviewTime !== undefined) changes.verificationReviewWorkingDays = reviewTime;
     if (contactLine !== undefined) changes.contactLine = contactLine;
     if (supportEmail !== undefined) changes.supportEmail = supportEmail;
     if (termsVersion !== undefined) changes.termsVersion = termsVersion;
@@ -170,7 +195,60 @@ export class AppSettingsPage {
     return changes;
   });
 
-  protected readonly unchanged = computed(() => Object.keys(this.changes()).length === 0);
+  /** What the console finds wrong in the two numbers, while the app is to state a review time. */
+  private readonly reviewTimeProblems = computed<readonly FieldProblem<'min' | 'max'>[]>(() => {
+    const known = this.config()?.verificationReviewWorkingDays !== undefined;
+    return known && this.reviewStated() ? this.reviewRead().problems : [];
+  });
+
+  /** Each review-time input's sentence: the console's own once a review is asked for, and the server's. */
+  protected readonly reviewErrors = computed<Readonly<Record<ReviewTimePart, string | null>>>(
+    () => {
+      const said = [
+        ...(this.attempted() ? this.reviewTimeProblems() : []),
+        ...this.reviewRefused(),
+      ];
+      const sentence = (part: ReviewTimePart): string | null => {
+        const about = said.filter((problem) => problem.field === part);
+        return about.length === 0 ? null : about.map((problem) => problem.message).join(' ');
+      };
+      return { min: sentence('min'), max: sentence('max'), range: sentence('range') };
+    },
+  );
+
+  /** Each input's hint, then its own error, then an error about the range as a whole. */
+  protected readonly reviewDescribedBy = computed<Readonly<Record<'min' | 'max', string>>>(() => {
+    const errors = this.reviewErrors();
+    const ids = (part: 'min' | 'max'): string =>
+      [
+        `settings-review-${part}-hint`,
+        errors[part] === null ? null : `settings-review-${part}-error`,
+        errors.range === null ? null : 'settings-review-range-error',
+      ]
+        .filter((id) => id !== null)
+        .join(' ');
+    return { min: ids('min'), max: ids('max') };
+  });
+
+  /** The sentence the app will say, as the numbers are typed. */
+  protected readonly reviewPreview = computed(() => {
+    if (!this.reviewStated()) {
+      return this.copy.reviewPreviewNone;
+    }
+    const range = this.reviewRead().range;
+    return range === null
+      ? this.copy.reviewPreviewIncomplete
+      : this.copy.reviewPreview(reviewTimePhrase(range));
+  });
+
+  /** An edit that cannot be sent yet is still a change, so the review is offered and says why. */
+  protected readonly unchanged = computed(
+    () => Object.keys(this.changes()).length === 0 && this.reviewTimeProblems().length === 0,
+  );
+
+  protected readonly problemsLead = computed(() =>
+    this.reviewRefused().length > 0 ? this.copy.refusedLead : this.copy.problemsLead,
+  );
 
   protected readonly problems = computed<readonly string[]>(() => {
     const config = this.config();
@@ -184,6 +262,8 @@ export class AppSettingsPage {
       );
     return [
       ...appConfigProblems(changes).map((problem) => problem.message),
+      ...this.reviewTimeProblems().map((problem) => problem.message),
+      ...this.reviewRefused().map((problem) => problem.message),
       ...(clash
         ? ['A new flag has the name of one the app already has; change that one instead.']
         : []),
@@ -218,6 +298,39 @@ export class AppSettingsPage {
 
   protected reload(): void {
     this.generation.update((n) => n + 1);
+  }
+
+  protected chooseReviewStated(stated: boolean): void {
+    this.reviewStated.set(stated);
+    this.reviewRefused.set([]);
+  }
+
+  protected setReviewDays(part: 'min' | 'max', typed: string): void {
+    if (part === 'min') this.reviewMin.set(typed);
+    else this.reviewMax.set(typed);
+    this.reviewRefused.set([]);
+  }
+
+  /**
+   * The review time to send, or `undefined` when it is as stored, cannot be sent yet, or the API did
+   * not send it: what is not known is not offered, so it is not sent either.
+   */
+  private reviewTimeChange(
+    current: WorkingDayRange | null | undefined,
+  ): WorkingDayRange | null | undefined {
+    if (current === undefined) {
+      return undefined;
+    }
+    if (!this.reviewStated()) {
+      return current === null ? undefined : null;
+    }
+    const range = this.reviewRead().range;
+    if (range === null) {
+      return undefined;
+    }
+    return current !== null && current.min === range.min && current.max === range.max
+      ? undefined
+      : range;
   }
 
   protected setFlag(key: string, value: string): void {
@@ -343,6 +456,12 @@ export class AppSettingsPage {
         },
         error: (failure: unknown) => {
           this.busy.set(false);
+          // The server's word on a number belongs beside its input, which the dialog would cover.
+          if (isAppConfigRefusal(failure) && failure.reviewTime.length > 0) {
+            this.reviewRefused.set(failure.reviewTime);
+            this.reviewing.set(false);
+            return;
+          }
           this.problem.set(this.copy.notDone(failureReason(failure) ?? this.copy.failed));
         },
       });
@@ -354,6 +473,11 @@ export class AppSettingsPage {
     this.termsVersion.set(config?.termsVersion ?? '');
     this.privacyVersion.set(config?.privacyVersion ?? '');
     this.minimumAppVersion.set(config?.minimumAppVersion ?? '');
+    const days = config?.verificationReviewWorkingDays;
+    this.reviewStated.set(days !== undefined && days !== null);
+    this.reviewMin.set(days === undefined || days === null ? '' : String(days.min));
+    this.reviewMax.set(days === undefined || days === null ? '' : String(days.max));
+    this.reviewRefused.set([]);
     this.flagValues.set(new Map());
     this.deletedFlags.set(new Set());
     this.newFlags.set([]);

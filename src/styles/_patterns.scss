@@ -1050,6 +1050,24 @@ a.kpi:focus-visible .kpi__arrow {
   font-size: var(--fs-label);
 }
 
+/* Short fields that belong together side by side — the two ends of a range —
+   labels above, top-aligned so an error under one does not move the other;
+   they wrap onto two lines when the row is narrow (DL-205). */
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3) var(--space-4);
+}
+
+.field-row > .field {
+  flex: 1 1 12rem;
+}
+
+.field-row > .field + .field {
+  margin-block-start: 0;
+}
+
 /* A problem line that is always in the DOM (an alert region) but says
    nothing until there is something to say. */
 .form-problem:empty {

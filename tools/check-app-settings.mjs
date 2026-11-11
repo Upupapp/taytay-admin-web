@@ -29,6 +29,14 @@
  *      written in the code; the placeholder's version is refused; the texts are shown as text, never
  *      rendered as HTML; the mapper reads each text whole and sends each with its version; and the
  *      mock invents no legal text.
+ *   9. How long an ID review usually takes (`DL-205`): the effects say what the app will say, in
+ *      the words of `reviewTimePhrase`, and that it will stop saying it — and `appConfigEffects` lists
+ *      both; `asksEveryResident` leaves it out, because it asks nothing of a resident and a needless
+ *      acknowledgement teaches ticking without reading; the preview is `reviewTimePhrase`'s; no range
+ *      is written into the page, the copy, the domain or the mapper (only the mock seeds the API's
+ *      migration value); an API that does not send the setting is read as unknown and offers nothing
+ *      to send; the range goes out whole under its own key and the server's refusal comes back by
+ *      input; and each input names its error with `aria-describedby` and `aria-invalid`.
  *
  * Each rule was validated against a planted regression before being trusted.
  */
@@ -278,6 +286,113 @@ for (const key of ['privacyNotice', 'terms']) {
   }
 }
 
+/* ── 9. how long an ID review usually takes (DL-205) ─────────────────────── */
+
+for (const [pattern, said] of [
+  [/reviewTimeStated:[\s\S]{0,80}The app will tell residents an ID review \$\{reviewTimePhrase\(range\)\}/, 'what the app will tell residents, in reviewTimePhrase’s words'],
+  [/reviewTimeCleared:\s*\[\s*'The app will stop saying how long an ID review takes\.'/, 'that the app will stop saying how long a review takes'],
+]) {
+  if (!pattern.test(effectsText)) failures.push(`APP_CONFIG_EFFECTS no longer says ${said} (DL-205).`);
+}
+for (const effect of ['APP_CONFIG_EFFECTS.reviewTimeStated', 'APP_CONFIG_EFFECTS.reviewTimeCleared']) {
+  if (!listed.includes(effect)) {
+    failures.push(`appConfigEffects no longer lists ${effect}, so the confirmation would not say it (DL-205).`);
+  }
+}
+if (asks.includes('verificationReviewWorkingDays')) {
+  failures.push(
+    'asksEveryResident covers the review time. It asks nothing of a resident, and an acknowledgement ' +
+      'nobody needs teaches administrators to tick without reading (DL-205).',
+  );
+}
+const phrase = block(domain, domain.indexOf('export function reviewTimePhrase'));
+if (!/usually takes \$\{range\.min\}–\$\{range\.max\} working days/.test(phrase) || !/range\.min === range\.max/.test(phrase)) {
+  failures.push("reviewTimePhrase no longer words the range by the app's rule: “usually takes {min}–{max} working days”, one number when they are equal (DL-205).");
+}
+const preview = block(page, page.indexOf('protected readonly reviewPreview'));
+if (!/reviewTimePhrase\(/.test(preview) || !/id="settings-review-preview"[\s\S]{0,200}\{\{\s*reviewPreview\(\)\s*\}\}/.test(template)) {
+  failures.push('The preview no longer shows the sentence reviewTimePhrase makes, beside the inputs (DL-205).');
+}
+
+// No range is invented: the console never fills in the copy the app shipped with, or any other.
+const copy = code(copyText);
+for (const [file, text] of [[PAGE, page], [TEMPLATE, template], [COPY, copy], [DOMAIN, domain], [MAPPER, code(readFileSync(MAPPER, 'utf8'))]]) {
+  const found = /\b(?:min|max)\s*:\s*\d|\b\d+\s*[–-]\s*\d+\s+working\b|setReviewDays\([^,)]*,\s*['"`\d]/.exec(text);
+  if (found !== null) {
+    failures.push(`${shown(file)} writes a review time of its own (${found[0]}). Only the server says how long a review takes (DL-205).`);
+  }
+}
+// Each end is set to what was typed, what the server sent, or nothing: once the empty strings are
+// taken out of its argument, no literal is left in it.
+for (const call of page.matchAll(/(?:reviewMin|reviewMax)\s*\.\s*set\s*\(/g)) {
+  const open = (call.index ?? 0) + call[0].length - 1;
+  let end = open;
+  for (let i = open, depth = 0; i < page.length; i++) {
+    if (page[i] === '(') depth++;
+    else if (page[i] === ')' && --depth === 0) {
+      end = i;
+      break;
+    }
+  }
+  if (/['"`]|\b\d/.test(page.slice(open + 1, end).replace(/''/g, ''))) {
+    failures.push('A review time input is set to a number written in the code. Only the server says how long a review takes (DL-205).');
+    break;
+  }
+}
+if (!/verificationReviewWorkingDays:\s*\{\s*min:\s*1,\s*max:\s*3\s*\}/.test(mock)) {
+  failures.push("The mock no longer seeds the range the API's migration stores, today's copy in the app (DL-205).");
+}
+
+// Not sent is unknown, not "none": read as undefined, shown as such, and never sent.
+// Matched on the function's text: its return type is an object literal, which `block` would take.
+if (
+  !/reviewTimeOf\(\s*field\(\s*wire\s*,\s*'verification_review_working_days'\s*\)\s*\)/.test(mapper) ||
+  !/function reviewTimeOf\([\s\S]{0,300}?if \(value === undefined \|\| value === null\)\s*\{\s*return \{ readable: true, days: value \}/.test(mapper) ||
+  /reviewTime\s*===\s*null/.test(block(mapper, mapper.indexOf('export function toAppConfig')))
+) {
+  failures.push('The mapper no longer reads an absent review time as unknown, beside null as the app stating none (DL-205).');
+}
+if (!/@if \(current\.verificationReviewWorkingDays === undefined\)\s*\{\s*<p[^>]*>\{\{\s*copy\s*\.\s*reviewNotSent\s*\}\}/.test(template)) {
+  failures.push('The page no longer says so when the API does not send the review time (DL-205).');
+}
+if (!/if \(current === undefined\) \{\s*return undefined;/.test(methodBody(page, 'reviewTimeChange'))) {
+  failures.push('A review time the API did not send can be sent. What is not known is not offered (DL-205).');
+}
+
+// Out whole under its own key; the refusal back by input.
+const toWireDays = block(mapper, mapper.indexOf('function toWireWorkingDays'));
+if (
+  !/verification_review_working_days:\s*toWireWorkingDays\(\s*changes\s*\.\s*verificationReviewWorkingDays\s*\)/.test(mapper) ||
+  !/\{\s*min:\s*range\.min,\s*max:\s*range\.max\s*\}/.test(toWireDays)
+) {
+  failures.push('The mapper no longer sends the review time whole, min and max together, under its own key (DL-205).');
+}
+if (
+  !/'verification_review_working_days\.min':\s*'min'/.test(mapper) ||
+  !/'verification_review_working_days\.max':\s*'max'/.test(mapper) ||
+  !/catchError\(\s*\(\s*failure\s*:\s*unknown\s*\)\s*=>\s*throwError\(\s*\(\)\s*=>\s*withReviewTimeRefusal\(\s*failure\s*\)\s*\)\s*\)/.test(
+    block(
+      code(read(APP, 'data', 'http', 'http-repositories.ts')),
+      code(read(APP, 'data', 'http', 'http-repositories.ts')).search(/\n\s+change\(changes: AppConfigChanges\)/),
+    ),
+  )
+) {
+  failures.push("The server's refusal of a review time no longer comes back by the input it is about (DL-205).");
+}
+for (const part of ['min', 'max']) {
+  const input = template.slice(template.indexOf(`id="settings-review-${part}"`), template.indexOf('/>', template.indexOf(`id="settings-review-${part}"`)));
+  if (
+    !input.includes(`[attr.aria-describedby]="reviewDescribedBy().${part}"`) ||
+    !input.includes(`[attr.aria-invalid]="reviewErrors().${part} === null ? null : 'true'"`) ||
+    !template.includes(`class="field__error" id="settings-review-${part}-error"`)
+  ) {
+    failures.push(`The review time's ${part} input no longer names its error (aria-describedby, aria-invalid, .field__error) (DL-205).`);
+  }
+}
+if (!/`settings-review-\$\{part\}-error`/.test(block(page, page.indexOf('protected readonly reviewDescribedBy')))) {
+  failures.push("reviewDescribedBy no longer points each input at its own error (DL-205).");
+}
+
 /* ── 6. no log, no storage ───────────────────────────────────────────────── */
 
 const LEAK =
@@ -321,6 +436,7 @@ function report() {
     `App settings check passed (${moduleFiles.length} files: residents told, sent only after the review, ` +
       'acknowledged where it can stop residents, effects before the button, flags not secret, the key ' +
       'the administrator’s; the Terms of Use and privacy notice published with their version, a new ' +
-      'version acknowledged, no legal text written or rendered here).',
+      'version acknowledged, no legal text written or rendered here; the review time said in the ' +
+      'app’s words, never invented, unknown when not sent, and refused beside its input).',
   );
 }

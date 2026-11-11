@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   APP_CONFIG_REPOSITORY,
+  AppConfigRefusedError,
   asIsoDateTime,
   type AppConfig,
   type AppConfigChanges,
@@ -19,6 +20,7 @@ const CONFIG: AppConfig = {
   privacyVersion: '2026-01',
   termsVersion: '2026-01',
   minimumAppVersion: '1.4.0',
+  verificationReviewWorkingDays: { min: 1, max: 3 },
   featureFlags: [{ key: 'show_digital_id', value: 'true' }],
   privacyNotice: {
     version: '2026-01',
@@ -39,24 +41,36 @@ class RecordingConfig implements AppConfigRepository {
   readonly changes: AppConfigChanges[] = [];
   reads = 0;
   refuseWith: string | null = null;
+  /** A refusal to answer with, as the adapter raises it. */
+  refusal: Error | null = null;
+
+  private readonly config: AppConfig;
+
+  constructor(config: AppConfig) {
+    this.config = config;
+  }
 
   read(): Observable<AppConfig> {
     this.reads++;
-    return of(CONFIG);
+    return of(this.config);
   }
 
   change(changes: AppConfigChanges): Observable<AppConfig> {
+    if (this.refusal !== null) {
+      const refusal = this.refusal;
+      return throwError(() => refusal);
+    }
     if (this.refuseWith !== null) {
       const message = this.refuseWith;
       return throwError(() => new Error(message));
     }
     this.changes.push(changes);
-    return of(CONFIG);
+    return of(this.config);
   }
 }
 
-function configure(): RecordingConfig {
-  const repository = new RecordingConfig();
+function configure(config: AppConfig = CONFIG): RecordingConfig {
+  const repository = new RecordingConfig(config);
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [provideRouter([]), { provide: APP_CONFIG_REPOSITORY, useValue: repository }],
@@ -349,5 +363,195 @@ describe('AppSettingsPage — the Terms of Use and the privacy notice (DL-186)',
     expect(problems).toContain('marks the text that ships until the approved one is written');
     expect(problems).toContain('Nothing is written for the Terms of Use.');
     expect(repository.changes).toEqual([]);
+  });
+});
+
+describe('AppSettingsPage — how long an ID review usually takes (DL-205)', () => {
+  const input = (id: string): HTMLInputElement | null =>
+    document.querySelector<HTMLInputElement>(`#${id}`);
+  const preview = (): string =>
+    document.querySelector('#settings-review-preview')?.textContent?.replace(/\s+/g, ' ').trim() ??
+    '';
+  const choose = (value: 'stated' | 'none'): void => {
+    const radio = document.querySelector<HTMLInputElement>(
+      `input[name="settings-review-time"][value="${value}"]`,
+    );
+    if (radio === null) throw new Error(`No ${value} choice.`);
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change'));
+  };
+
+  it('starts from the range the server holds, and shows the sentence the app says', async () => {
+    configure();
+    const element = await settle(TestBed.createComponent(AppSettingsPage));
+
+    expect(element.textContent).toContain('Verification review time');
+    expect(input('settings-review-min')?.value).toBe('1');
+    expect(input('settings-review-max')?.value).toBe('3');
+    expect(preview()).toContain('“This usually takes 1–3 working days.”');
+    expect(element.textContent).toContain('Nothing has changed yet.');
+  });
+
+  it('previews as the numbers are typed, one number when both ends are the same', async () => {
+    configure();
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+
+    type('#settings-review-min', '2');
+    type('#settings-review-max', '5');
+    await settle(fixture);
+    expect(preview()).toContain('“This usually takes 2–5 working days.”');
+
+    type('#settings-review-min', '1');
+    type('#settings-review-max', '1');
+    await settle(fixture);
+    expect(preview()).toContain('“This usually takes 1 working day.”');
+
+    type('#settings-review-min', '4');
+    type('#settings-review-max', '4');
+    await settle(fixture);
+    expect(preview()).toContain('“This usually takes 4 working days.”');
+  });
+
+  it('says what the app will say before saving, asks no acknowledgement, and sends the range', async () => {
+    const repository = configure();
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+
+    type('#settings-review-min', '2');
+    type('#settings-review-max', '5');
+    await settle(fixture);
+    const dialog = await review(fixture);
+
+    expect(dialog?.textContent).toContain(
+      'The app will tell residents an ID review usually takes 2–5 working days.',
+    );
+    expect(dialog?.querySelector('input[type="checkbox"]')).toBeNull();
+    expect(repository.changes).toEqual([]);
+    buttonNamed('Save the settings')?.click();
+    await settle(fixture);
+    expect(repository.changes).toEqual([{ verificationReviewWorkingDays: { min: 2, max: 5 } }]);
+  });
+
+  it('sends null when the app is to state no review time, and says it will stop', async () => {
+    const repository = configure();
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+
+    choose('none');
+    await settle(fixture);
+    expect(input('settings-review-min')).toBeNull();
+    expect(preview()).toContain('Nothing about how long a review takes.');
+    const dialog = await review(fixture);
+    expect(dialog?.textContent).toContain('The app will stop saying how long an ID review takes.');
+    buttonNamed('Save the settings')?.click();
+    await settle(fixture);
+
+    expect(repository.changes).toEqual([{ verificationReviewWorkingDays: null }]);
+  });
+
+  it('says beside each input what the server would refuse, and sends nothing', async () => {
+    const repository = configure();
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+
+    type('#settings-review-min', '');
+    type('#settings-review-max', '0');
+    await settle(fixture);
+    expect(await review(fixture)).toBeNull();
+
+    const min = input('settings-review-min');
+    const max = input('settings-review-max');
+    expect(min?.getAttribute('aria-invalid')).toBe('true');
+    expect(min?.getAttribute('aria-describedby')).toBe(
+      'settings-review-min-hint settings-review-min-error',
+    );
+    expect(document.querySelector('#settings-review-min-error')?.textContent).toContain(
+      'Give the fewest working days.',
+    );
+    expect(document.querySelector('#settings-review-max-error')?.textContent).toContain(
+      'At least 1 working day.',
+    );
+    expect(preview()).toContain('Give both numbers above to see the sentence.');
+
+    type('#settings-review-min', '5');
+    type('#settings-review-max', '2');
+    await settle(fixture);
+    expect(min?.getAttribute('aria-invalid')).toBeNull();
+    expect(max?.getAttribute('aria-invalid')).toBe('true');
+    expect(document.querySelector('#settings-review-max-error')?.textContent).toContain(
+      'The fewest working days cannot be more than the most.',
+    );
+
+    type('#settings-review-min', '2.5');
+    type('#settings-review-max', '31');
+    await settle(fixture);
+    expect(document.querySelector('#settings-review-min-error')?.textContent).toContain(
+      'Working days are a whole number.',
+    );
+    expect(document.querySelector('#settings-review-max-error')?.textContent).toContain(
+      'At most 30 working days.',
+    );
+    expect(await review(fixture)).toBeNull();
+    expect(repository.changes).toEqual([]);
+  });
+
+  it('puts the server’s refusal beside the input it is about, until that is edited', async () => {
+    const repository = configure();
+    repository.refusal = new AppConfigRefusedError('The request could not be validated.', [
+      { field: 'max', message: 'At most 30 working days.' },
+    ]);
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+
+    type('#settings-review-max', '7');
+    await settle(fixture);
+    await review(fixture);
+    buttonNamed('Save the settings')?.click();
+    await settle(fixture);
+
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(input('settings-review-max')?.getAttribute('aria-invalid')).toBe('true');
+    expect(input('settings-review-max')?.getAttribute('aria-describedby')).toContain(
+      'settings-review-max-error',
+    );
+    expect(document.querySelector('#settings-review-max-error')?.textContent).toContain(
+      'At most 30 working days.',
+    );
+    expect(document.querySelector('.settings__problems')?.textContent).toContain(
+      'Not saved — the server refused it:',
+    );
+
+    type('#settings-review-max', '6');
+    await settle(fixture);
+    expect(input('settings-review-max')?.getAttribute('aria-invalid')).toBeNull();
+    expect(document.querySelector('#settings-review-max-error')).toBeNull();
+  });
+
+  it('starts empty when the app states none, and never fills in a number of its own', async () => {
+    configure({ ...CONFIG, verificationReviewWorkingDays: null });
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+
+    expect(
+      document.querySelector<HTMLInputElement>('input[name="settings-review-time"][value="none"]')
+        ?.checked,
+    ).toBe(true);
+    expect(input('settings-review-min')).toBeNull();
+
+    choose('stated');
+    await settle(fixture);
+    expect(input('settings-review-min')?.value).toBe('');
+    expect(input('settings-review-max')?.value).toBe('');
+  });
+
+  it('says so when the API does not send the setting, and offers nothing to change', async () => {
+    configure({ ...CONFIG, verificationReviewWorkingDays: undefined });
+    const element = await settle(TestBed.createComponent(AppSettingsPage));
+
+    expect(element.textContent).toContain('The API did not say what the app is told about review');
+    expect(element.querySelector('input[name="settings-review-time"]')).toBeNull();
+    expect(element.querySelector('#settings-review-min')).toBeNull();
+    expect(element.textContent).toContain('Nothing has changed yet.');
   });
 });
