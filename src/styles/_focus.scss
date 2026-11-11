@@ -1,0 +1,15 @@
+/* The focus ring, written once (DESIGN_SYSTEM.md §2, "Focus"). Two rings, so
+ * one of them always contrasts: the gold outline, and the inner ring in
+ * `--focus-ring-inner` (navy in light, a blue in dark) against the gold.
+ * Forced-colours mode drops the inner ring and draws the outline in the
+ * system colour.
+ *
+ * A mixin, not a class, so every place that draws the ring includes the same
+ * three declarations: the global `:focus-visible` rule (styles.scss),
+ * `.focus-ring` for a custom element (_brand-tokens.scss), and a tab that
+ * draws its radio's ring (_patterns.scss). This file emits no CSS. */
+@mixin ring {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  box-shadow: 0 0 0 var(--focus-ring-offset) var(--focus-ring-inner);
+}

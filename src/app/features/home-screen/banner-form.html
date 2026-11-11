@@ -2,7 +2,6 @@
   <div class="home-form__main">
     <div class="field">
       <label class="field__label" for="banner-title">{{ copy.title }}</label>
-      <p class="field__hint" id="banner-title-hint">{{ copy.titleHint }}</p>
       <input
         id="banner-title"
         class="field__input"
@@ -11,11 +10,11 @@
         [value]="title()"
         (input)="title.set(text($event))"
       />
+      <p class="field__hint" id="banner-title-hint">{{ copy.titleHint }}</p>
     </div>
 
     <div class="field">
       <label class="field__label" for="banner-href">{{ copy.href }}</label>
-      <p class="field__hint" id="banner-href-hint">{{ common.hrefHint }}</p>
       <input
         id="banner-href"
         class="field__input"
@@ -25,11 +24,11 @@
         [value]="href()"
         (input)="href.set(text($event))"
       />
+      <p class="field__hint" id="banner-href-hint">{{ common.hrefHint }}</p>
     </div>
 
     <div class="field field--narrow">
       <label class="field__label" for="banner-order">{{ common.order }}</label>
-      <p class="field__hint" id="banner-order-hint">{{ common.orderHint }}</p>
       <input
         id="banner-order"
         class="field__input"
@@ -39,6 +38,7 @@
         [value]="sortOrder()"
         (input)="sortOrder.set(text($event))"
       />
+      <p class="field__hint" id="banner-order-hint">{{ common.orderHint }}</p>
     </div>
 
     <label class="check">

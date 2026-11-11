@@ -14,7 +14,6 @@
     @if (creating()) {
       <div class="field">
         <label class="field__label" for="service-slug">{{ copy.slug }}</label>
-        <p class="field__hint" id="service-slug-hint">{{ copy.slugHint }}</p>
         <input
           id="service-slug"
           class="field__input"
@@ -24,10 +23,10 @@
           [value]="slug()"
           (input)="slug.set(text($event))"
         />
+        <p class="field__hint" id="service-slug-hint">{{ copy.slugHint }}</p>
       </div>
       <div class="field">
         <label class="field__label" for="service-category">{{ copy.category }}</label>
-        <p class="field__hint" id="service-category-hint">{{ copy.optional }}</p>
         <input
           id="service-category"
           class="field__input"
@@ -36,12 +35,12 @@
           [value]="category()"
           (input)="category.set(text($event))"
         />
+        <p class="field__hint" id="service-category-hint">{{ copy.optional }}</p>
       </div>
     }
 
     <div class="field">
       <label class="field__label" for="service-summary">{{ copy.summary }}</label>
-      <p class="field__hint" id="service-summary-hint">{{ copy.summaryHint }}</p>
       <textarea
         id="service-summary"
         class="field__input"
@@ -50,6 +49,7 @@
         [value]="summary()"
         (input)="summary.set(text($event))"
       ></textarea>
+      <p class="field__hint" id="service-summary-hint">{{ copy.summaryHint }}</p>
     </div>
 
     <div class="field">
@@ -66,9 +66,6 @@
     @if (creating()) {
       <div class="field">
         <label class="field__label" for="service-eligibility">{{ copy.eligibility }}</label>
-        <p class="field__hint" id="service-eligibility-hint">
-          {{ copy.eligibilityHint }} {{ copy.optional }}
-        </p>
         <textarea
           id="service-eligibility"
           class="field__input"
@@ -77,12 +74,14 @@
           [value]="eligibility()"
           (input)="eligibility.set(text($event))"
         ></textarea>
+        <p class="field__hint" id="service-eligibility-hint">
+          {{ copy.eligibilityHint }} {{ copy.optional }}
+        </p>
       </div>
     }
 
     <div class="field">
       <label class="field__label" for="service-requirements">{{ copy.requirements }}</label>
-      <p class="field__hint" id="service-requirements-hint">{{ copy.linesHint }}</p>
       <textarea
         id="service-requirements"
         class="field__input"
@@ -91,11 +90,11 @@
         [value]="requirements()"
         (input)="requirements.set(text($event))"
       ></textarea>
+      <p class="field__hint" id="service-requirements-hint">{{ copy.linesHint }}</p>
     </div>
 
     <div class="field">
       <label class="field__label" for="service-steps">{{ copy.claimSteps }}</label>
-      <p class="field__hint" id="service-steps-hint">{{ copy.linesHint }}</p>
       <textarea
         id="service-steps"
         class="field__input"
@@ -104,6 +103,7 @@
         [value]="claimSteps()"
         (input)="claimSteps.set(text($event))"
       ></textarea>
+      <p class="field__hint" id="service-steps-hint">{{ copy.linesHint }}</p>
     </div>
 
     <fieldset class="directory-form__group">
@@ -224,7 +224,6 @@
 
     <div class="field">
       <label class="field__label" for="service-schedule">{{ copy.schedule }}</label>
-      <p class="field__hint" id="service-schedule-hint">{{ copy.optional }}</p>
       <input
         id="service-schedule"
         class="field__input"
@@ -233,11 +232,11 @@
         [value]="schedule()"
         (input)="schedule.set(text($event))"
       />
+      <p class="field__hint" id="service-schedule-hint">{{ copy.optional }}</p>
     </div>
 
     <div class="field">
       <label class="field__label" for="service-legal-basis">{{ copy.legalBasis }}</label>
-      <p class="field__hint" id="service-legal-basis-hint">{{ copy.optional }}</p>
       <input
         id="service-legal-basis"
         class="field__input"
@@ -246,12 +245,12 @@
         [value]="legalBasis()"
         (input)="legalBasis.set(text($event))"
       />
+      <p class="field__hint" id="service-legal-basis-hint">{{ copy.optional }}</p>
     </div>
 
     <div class="directory-form__pair">
       <div class="field">
         <label class="field__label" for="service-badge">{{ copy.badge }}</label>
-        <p class="field__hint" id="service-badge-hint">{{ copy.badgeHint }}</p>
         <input
           id="service-badge"
           class="field__input"
@@ -260,10 +259,10 @@
           [value]="badge()"
           (input)="badge.set(text($event))"
         />
+        <p class="field__hint" id="service-badge-hint">{{ copy.badgeHint }}</p>
       </div>
       <div class="field">
         <label class="field__label" for="service-icon">{{ copy.iconKey }}</label>
-        <p class="field__hint" id="service-icon-hint">{{ copy.iconKeyHint }}</p>
         <input
           id="service-icon"
           class="field__input"
@@ -273,10 +272,10 @@
           [value]="iconKey()"
           (input)="iconKey.set(text($event))"
         />
+        <p class="field__hint" id="service-icon-hint">{{ copy.iconKeyHint }}</p>
       </div>
       <div class="field">
         <label class="field__label" for="service-colour">{{ copy.tileColor }}</label>
-        <p class="field__hint" id="service-colour-hint">{{ copy.tileColorHint }}</p>
         <input
           id="service-colour"
           class="field__input"
@@ -286,6 +285,7 @@
           [value]="tileColor()"
           (input)="tileColor.set(text($event))"
         />
+        <p class="field__hint" id="service-colour-hint">{{ copy.tileColorHint }}</p>
       </div>
     </div>
 
@@ -307,7 +307,6 @@
 
     <div class="field">
       <label class="field__label" for="service-headline">{{ copy.featuredHeadline }}</label>
-      <p class="field__hint" id="service-headline-hint">{{ copy.optional }}</p>
       <input
         id="service-headline"
         class="field__input"
@@ -316,6 +315,7 @@
         [value]="featuredHeadline()"
         (input)="featuredHeadline.set(text($event))"
       />
+      <p class="field__hint" id="service-headline-hint">{{ copy.optional }}</p>
     </div>
   </div>
 

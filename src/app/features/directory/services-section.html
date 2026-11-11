@@ -14,7 +14,6 @@
   <form class="directory-section__find" (submit)="$event.preventDefault(); find()">
     <div class="field">
       <label class="field__label" for="service-find">{{ copy.findHeading }}</label>
-      <p class="field__hint" id="service-find-hint">{{ copy.findHint }}</p>
       <input
         id="service-find"
         class="field__input"
@@ -24,6 +23,7 @@
         [value]="address()"
         (input)="address.set(text($event))"
       />
+      <p class="field__hint" id="service-find-hint">{{ copy.findHint }}</p>
     </div>
     <button type="submit" class="btn btn--secondary" [disabled]="finding()">
       {{ finding() ? copy.finding : copy.find }}

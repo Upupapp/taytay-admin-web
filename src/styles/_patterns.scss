@@ -8,6 +8,8 @@
  * one. Colours are tokens only; the audited tone pairs carry every label.
  */
 
+@use 'focus';
+
 /* ── Page header actions ──────────────────────────────────────────────────
    The page's own call to action is the mock-ups' large pill (48px). The
    header projects it, so it is sized here rather than in the component. */
@@ -262,8 +264,8 @@
 /* ── Tabs ─────────────────────────────────────────────────────────────────
    A glass pill of pill-shaped choices; the current one is filled. Mark it
    with `aria-current` (links) or `aria-selected` (a tablist) as well as the
-   class, so it is not told by colour alone. No backdrop filter: a dialog may
-   open beside it. */
+   class, or, for a radio group, by the radio's own `:checked`, so it is not
+   told by colour alone. No backdrop filter: a dialog may open beside it. */
 .tabs {
   display: flex;
   flex-wrap: wrap;
@@ -294,14 +296,18 @@
   cursor: pointer;
 }
 
-.tab:hover {
+/* Hover lightens a tab that is not chosen. `:where()` keeps it at one class's
+   weight, so every chosen state below outranks it and the chosen tab keeps
+   its fill under the pointer. */
+.tab:where(:hover) {
   background: var(--hover);
   color: var(--ink);
 }
 
 .tab--active,
 .tab[aria-current='page'],
-.tab[aria-selected='true'] {
+.tab[aria-selected='true'],
+.tab:has(> input:checked) {
   background: var(--primary);
   color: var(--on-primary);
 }
@@ -337,13 +343,33 @@
 }
 
 /* A radio group drawn as tabs: each `.tab` is a <label> around a radio with
-   `.visually-hidden`, the chosen one is `.tab--active`, and a focused radio's
-   ring is drawn on its tab, so it is every other tab's ring. Native radios
-   keep the arrow keys and what a screen reader announces (DL-204). */
+   `.visually-hidden`. The chosen tab is read from the radio
+   (`:has(> input:checked)`), never from a class that could disagree with it,
+   and is underlined as well as filled: a mark that is not a colour, and that
+   forced colours keep. A focused radio's ring is drawn on its tab, so it is
+   every other tab's ring. Native radios keep the arrow keys and what a screen
+   reader announces (DL-204). */
+.tab:has(> input:checked) {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
 .tab:has(> input:focus-visible) {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
-  box-shadow: 0 0 0 var(--focus-ring-offset) var(--focus-ring-inner);
+  @include focus.ring;
+}
+
+/* Forced colours replace every fill with the system's canvas, which would
+   leave the chosen tab unmarked: it takes the system's selection colours (a
+   radio tab keeps its underline as well). */
+@media (forced-colors: active) {
+  .tab--active,
+  .tab[aria-current='page'],
+  .tab[aria-selected='true'],
+  .tab:has(> input:checked) {
+    background: Highlight;
+    color: HighlightText;
+  }
 }
 
 /* ── Filter row ───────────────────────────────────────────────────────────
@@ -1051,17 +1077,23 @@ a.kpi:focus-visible .kpi__arrow {
 }
 
 /* Short fields that belong together side by side — the two ends of a range —
-   labels above, top-aligned so an error under one does not move the other;
-   they wrap onto two lines when the row is narrow (DL-205). */
+   each up to the `.field--narrow` width, wrapping when the row is narrow.
+   A field's parts, in the form skeleton's order (label, input, hint, error),
+   sit on the row's four shared tracks (subgrid): the inputs stay level
+   whatever a label or a hint wraps to, and an error under one moves neither
+   the other field nor its own input (DL-205). Stacked, the empty error track
+   and its gaps space one field from the next by `--space-3`. */
 .field-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: var(--space-3) var(--space-4);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 240px));
+  align-items: start;
+  gap: 6px var(--space-4);
 }
 
 .field-row > .field {
-  flex: 1 1 12rem;
+  display: grid;
+  grid-row: span 4;
+  grid-template-rows: subgrid;
 }
 
 .field-row > .field + .field {

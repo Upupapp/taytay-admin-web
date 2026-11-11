@@ -20,53 +20,6 @@
   font-size: var(--fs-xs);
 }
 
-/* The two views as a segmented pill, like the console's tabs. */
-.graph__views {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  align-self: flex-start;
-  gap: 6px;
-  margin: 0;
-  padding: 5px 5px 5px var(--space-3);
-  border: 1px solid var(--card-edge);
-  border-radius: var(--r-pill);
-  background: var(--card);
-}
-
-.graph__views-legend {
-  float: inline-start;
-  padding-inline-end: var(--space-2);
-  color: var(--muted);
-  font-size: var(--fs-2xs);
-  font-weight: var(--fw-semibold);
-}
-
-.graph__view {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-block-size: var(--h-btn-sm);
-  padding: 0 14px;
-  border-radius: var(--r-pill);
-  color: var(--text2);
-  font-size: var(--fs-label);
-  font-weight: var(--fw-semibold);
-  cursor: pointer;
-}
-
-.graph__view:has(input:checked) {
-  background: var(--primary);
-  color: var(--on-primary);
-}
-
-.graph__view input {
-  inline-size: 16px;
-  block-size: 16px;
-  margin: 0;
-  accent-color: var(--gold);
-}
-
 .graph__row {
   padding-block-start: var(--space-3);
   border-block-start: 1px solid var(--soft);

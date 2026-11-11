@@ -13,7 +13,6 @@
 
     <div class="field">
       <label class="field__label" for="office-slug">{{ copy.slug }}</label>
-      <p class="field__hint" id="office-slug-hint">{{ copy.slugHint }}</p>
       <input
         id="office-slug"
         class="field__input"
@@ -23,16 +22,11 @@
         [value]="slug()"
         (input)="slug.set(text($event))"
       />
+      <p class="field__hint" id="office-slug-hint">{{ copy.slugHint }}</p>
     </div>
 
     <div class="field">
       <label class="field__label" for="office-short-name">{{ copy.shortName }}</label>
-      <p class="field__hint" id="office-short-name-hint">
-        {{ copy.shortNameHint }}
-        @if (!creating()) {
-          {{ copy.shortNameKept }}
-        }
-      </p>
       <input
         id="office-short-name"
         class="field__input"
@@ -41,11 +35,16 @@
         [value]="shortName()"
         (input)="shortName.set(text($event))"
       />
+      <p class="field__hint" id="office-short-name-hint">
+        {{ copy.shortNameHint }}
+        @if (!creating()) {
+          {{ copy.shortNameKept }}
+        }
+      </p>
     </div>
 
     <div class="field">
       <label class="field__label" for="office-category">{{ copy.category }}</label>
-      <p class="field__hint" id="office-category-hint">{{ copy.optional }}</p>
       <input
         id="office-category"
         class="field__input"
@@ -54,6 +53,7 @@
         [value]="category()"
         (input)="category.set(text($event))"
       />
+      <p class="field__hint" id="office-category-hint">{{ copy.optional }}</p>
     </div>
 
     @if (creating()) {

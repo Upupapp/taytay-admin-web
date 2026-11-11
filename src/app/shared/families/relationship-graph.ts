@@ -43,7 +43,9 @@ export interface EndRelationshipRequest {
  *  - **A second view for checking.** The per-person view answers "who is this
  *    person to everyone else"; the edge view lists every link exactly once,
  *    which is the question somebody proof-reading the record is actually
- *    asking. Both are rendered from the same data.
+ *    asking. Both are rendered from the same data. The choice between them is
+ *    the design system's radio group drawn as tabs (`.choice-list` + `.tabs`),
+ *    the one the Appearance control uses, not a pill of its own.
  */
 @Component({
   selector: 'app-relationship-graph',
@@ -56,26 +58,30 @@ export interface EndRelationshipRequest {
         <p class="graph__summary">{{ copy.graphSummary }}</p>
       </header>
 
-      <fieldset class="graph__views">
-        <legend class="graph__views-legend">{{ copy.viewLabel }}</legend>
-        <label class="graph__view">
-          <input
-            type="radio"
-            name="relationship-view"
-            [checked]="view() === 'people'"
-            (change)="view.set('people')"
-          />
-          <span>{{ copy.listView }}</span>
-        </label>
-        <label class="graph__view">
-          <input
-            type="radio"
-            name="relationship-view"
-            [checked]="view() === 'edges'"
-            (change)="view.set('edges')"
-          />
-          <span>{{ copy.edgeView }}</span>
-        </label>
+      <fieldset class="choice-list">
+        <legend>{{ copy.viewLabel }}</legend>
+        <div class="tabs">
+          <label class="tab">
+            <input
+              type="radio"
+              class="visually-hidden"
+              name="relationship-view"
+              [checked]="view() === 'people'"
+              (change)="view.set('people')"
+            />
+            {{ copy.listView }}
+          </label>
+          <label class="tab">
+            <input
+              type="radio"
+              class="visually-hidden"
+              name="relationship-view"
+              [checked]="view() === 'edges'"
+              (change)="view.set('edges')"
+            />
+            {{ copy.edgeView }}
+          </label>
+        </div>
       </fieldset>
 
       @if (view() === 'people') {

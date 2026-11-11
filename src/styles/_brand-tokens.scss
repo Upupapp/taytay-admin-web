@@ -1,8 +1,9 @@
 /* Taytay Rizal Social Welfare — brand token layer.
  *
  * The digital identity of the staff console. Three things live here and
- * nowhere else: the focus ring, the semantic spacing aliases, and the
- * brand-surface sizing used by the logo/seal components. The colours
+ * nowhere else: the focus ring (its tokens and `.focus-ring`; the
+ * declarations are the mixin in _focus.scss), the semantic spacing aliases,
+ * and the brand-surface sizing used by the logo/seal components. The colours
  * themselves are the design tokens in styles.scss (DL-200, DL-202).
  *
  * IMPORTANT — these colours are this application's palette. They are NOT
@@ -15,6 +16,8 @@
  * Level AA by `src/app/shared/brand/brand-palette.spec.ts`. Change a value and
  * the test tells you whether it still conforms.
  */
+
+@use 'focus';
 
 :root {
   /* The brand ramp (`--brand-primary`, `-hover`, `-soft`, `--brand-on-primary`)
@@ -64,10 +67,9 @@
   --seal-placeholder-border: #7d8894;
 }
 
-/* Standard focus treatment. Applied globally in styles.scss; exposed here as a
-   mixin-like class so component styles can opt a custom element in. */
+/* Standard focus treatment (the ring itself is the mixin in _focus.scss).
+   Applied globally in styles.scss; exposed here as a class so a component can
+   opt a custom element in. */
 .focus-ring {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
-  box-shadow: 0 0 0 var(--focus-ring-offset) var(--focus-ring-inner);
+  @include focus.ring;
 }

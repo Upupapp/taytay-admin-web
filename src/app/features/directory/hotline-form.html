@@ -13,12 +13,6 @@
 
     <div class="field">
       <label class="field__label" for="hotline-number">{{ copy.number }}</label>
-      <p class="field__hint" id="hotline-number-hint">
-        {{ copy.numberHint }}
-        @if (hotline(); as current) {
-          {{ copy.numberWas(current.number) }}
-        }
-      </p>
       <input
         id="hotline-number"
         class="field__input"
@@ -28,11 +22,16 @@
         [value]="number()"
         (input)="number.set(text($event))"
       />
+      <p class="field__hint" id="hotline-number-hint">
+        {{ copy.numberHint }}
+        @if (hotline(); as current) {
+          {{ copy.numberWas(current.number) }}
+        }
+      </p>
     </div>
 
     <div class="field">
       <label class="field__label" for="hotline-category">{{ copy.category }}</label>
-      <p class="field__hint" id="hotline-category-hint">{{ copy.categoryHint }}</p>
       <input
         id="hotline-category"
         class="field__input"
@@ -41,11 +40,11 @@
         [value]="category()"
         (input)="category.set(text($event))"
       />
+      <p class="field__hint" id="hotline-category-hint">{{ copy.categoryHint }}</p>
     </div>
 
     <div class="field field--narrow">
       <label class="field__label" for="hotline-order">{{ copy.sortOrder }}</label>
-      <p class="field__hint" id="hotline-order-hint">{{ copy.sortOrderHint }}</p>
       <input
         id="hotline-order"
         class="field__input"
@@ -55,6 +54,7 @@
         [value]="sortOrder()"
         (input)="sortOrder.set(text($event))"
       />
+      <p class="field__hint" id="hotline-order-hint">{{ copy.sortOrderHint }}</p>
     </div>
 
     <label class="check">

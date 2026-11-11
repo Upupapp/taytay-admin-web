@@ -15,6 +15,7 @@
 
 @use 'sass:meta';
 @use './styles/fonts';
+@use './styles/focus';
 @use './styles/brand-tokens';
 @use './styles/motion';
 @use './styles/interaction';
@@ -502,16 +503,14 @@ table {
    Two rings, so one of them always contrasts: navy against every light
    surface, gold against the navy fills (primary buttons, the current page in
    the navigation). Forced-colours mode drops the inner ring and keeps the
-   outline in the system colour. Driven by the focus tokens so every
-   occurrence is identical. */
+   outline in the system colour. Drawn by the one mixin (_focus.scss), from
+   the focus tokens, so every occurrence is identical. */
 :focus-visible,
 /* A date or time field moves focus between its own parts (day, month, year);
    Chromium stops matching :focus-visible on the field after the first part,
    which left the ring off while the keyboard was still inside it. */
 input:is([type='date'], [type='time'], [type='datetime-local'], [type='month'], [type='week']):focus-within {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
-  box-shadow: 0 0 0 var(--focus-ring-offset) var(--focus-ring-inner);
+  @include focus.ring;
 }
 
 .visually-hidden {
@@ -663,8 +662,10 @@ input:is([type='date'], [type='time'], [type='datetime-local'], [type='month'], 
   opacity: 1;
 }
 
+/* A boundary, so 3:1 (WCAG 1.4.11): `--link` is the primary's blue in light and
+   holds 8:1 on the dark card, where `--primary` is a fill at 2.6:1 (DL-204). */
 .field__input:focus {
-  border-color: var(--primary);
+  border-color: var(--link);
   background: var(--card-solid);
 }
 
@@ -725,7 +726,7 @@ option {
 .check input {
   inline-size: 18px;
   block-size: 18px;
-  accent-color: var(--primary);
+  accent-color: var(--link);
 }
 
 /* White glass on the page wash. No backdrop filter: two dialogs open inside a

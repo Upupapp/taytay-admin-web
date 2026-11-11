@@ -8,12 +8,13 @@
   font-size: var(--fs-sm);
 }
 
-/* A ring in the hairline colour with a navy arc: the primary colour, as on
-   the mock-ups' primary controls. */
+/* A ring in the hairline colour with a brand-blue arc. The arc is a graphic,
+   so 3:1 applies: `--link` is the primary's blue in light; in dark the
+   primary is a fill (2.6:1 on the card) and the link blue holds 8:1 (DL-204). */
 .loading__spinner {
   display: block;
   border: 2px solid var(--line2);
-  border-block-start-color: var(--primary);
+  border-block-start-color: var(--link);
   border-radius: 50%;
   animation: loading-spin 700ms linear infinite;
 }

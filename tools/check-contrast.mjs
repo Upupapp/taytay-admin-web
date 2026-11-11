@@ -249,8 +249,12 @@ function audit(theme, tokens) {
   }
 }
 
-audit('light', hexTokens(light));
-audit('dark', hexTokens(dark));
+const THEMES = [
+  ['light', hexTokens(light)],
+  ['dark', hexTokens(dark)],
+];
+
+for (const [theme, tokens] of THEMES) audit(theme, tokens);
 
 /*
  * ── the roles the pairs assume ─────────────────────────────────────────────
@@ -259,7 +263,30 @@ audit('dark', hexTokens(dark));
  * stylesheet that paints text in `--primary`, or puts white on a red ink, is a combination they do
  * not measure — and in the dark theme it fails outright (`--primary` on the dark card is 2.6:1; white
  * on the dark red ink is 2.3:1).
+ *
+ * A boundary or a graphic in `--primary` is the same mistake at the 3:1 threshold (WCAG 1.4.11): a
+ * focused field's edge, a checkbox's accent, a spinner's arc, drawn on the theme's surfaces. That
+ * rule is measured rather than assumed: it applies while `--primary` falls below 3:1 on any surface
+ * in either theme, and names the measurement. A fill with its own label on it (`background`) is not
+ * a boundary and is not matched.
  */
+const SURFACES = ['--page-base', '--card-solid', '--fill'];
+const primaryBelowBoundary = THEMES.flatMap(([theme, tokens]) =>
+  SURFACES.filter(
+    (surface) =>
+      tokens['--primary'] !== undefined &&
+      tokens[surface] !== undefined &&
+      ratio(tokens['--primary'], tokens[surface]) < COMPONENT_MINIMUM,
+  ).map(
+    (surface) =>
+      `${ratio(tokens['--primary'], tokens[surface]).toFixed(2)}:1 on the ${theme} ${surface}`,
+  ),
+);
+const BOUNDARY_PROPERTY =
+  '(?:border(?:-(?:block|inline)(?:-(?:start|end))?|-(?:top|right|bottom|left))?(?:-color)?' +
+  '|outline(?:-color)?|accent-color|caret-color|column-rule(?:-color)?' +
+  '|text-decoration(?:-color)?|fill|stroke)';
+
 const MISUSE = [
   [
     /(?<![\w-])color\s*:\s*var\(--primary\)/,
@@ -271,6 +298,15 @@ const MISUSE = [
     'fills with a red ink. In the dark theme the red inks are text colours for a tint; a filled ' +
       'destructive control is --danger-fill (or --danger-fill-hover).',
   ],
+  ...(primaryBelowBoundary.length === 0
+    ? []
+    : [
+        [
+          new RegExp(`(?<![\\w-])${BOUNDARY_PROPERTY}\\s*:[^;{}]*var\\(--primary\\)`),
+          `draws a boundary or graphic in --primary, which is ${primaryBelowBoundary.join(', ')}: ` +
+            'below the 3:1 a boundary needs. Use --link, the same blue in light.',
+        ],
+      ]),
 ];
 
 function walk(dir) {

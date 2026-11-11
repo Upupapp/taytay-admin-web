@@ -13,7 +13,9 @@
   block-size: 100%;
   inline-size: 40%;
   border-radius: var(--r-pill);
-  background: var(--primary);
+  /* A graphic on its track, so 3:1: the dark primary is 1.7:1 on the dark
+     `--blue-100`; `--link` is the same blue in light and 5.5:1 in dark. */
+  background: var(--link);
   animation: route-progress-slide 1100ms ease-in-out infinite;
 }
 
