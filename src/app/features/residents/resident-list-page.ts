@@ -101,8 +101,9 @@ export class ResidentListPage {
   protected readonly ageGroups = RESIDENT_AGE_GROUPS;
 
   /**
-   * A protected sector is offered as a filter only to a reader cleared for it: the list of who is a
-   * VAWC survivor is the disclosure, and the server refuses the question without the grant (`DL-174`).
+   * The sector tabs, in the domain's order. A protected sector is offered only to a reader cleared
+   * for it: the list of who is a VAWC survivor is the disclosure, and the server refuses the
+   * question without the grant (`DL-174`).
    */
   protected readonly sectors = computed<readonly VulnerabilitySector[]>(() =>
     VULNERABILITY_SECTORS.filter(
@@ -210,6 +211,11 @@ export class ResidentListPage {
     return VULNERABILITY_SECTOR_LABELS[sector];
   }
 
+  /** The tab's short label ("PWD"); the chips in the table keep the full one. */
+  protected sectorTab(sector: VulnerabilitySector): string {
+    return this.copy.sectorTabs[sector];
+  }
+
   protected ageGroupLabel(group: ResidentAgeGroup): string {
     return RESIDENT_AGE_GROUP_LABELS[group];
   }
@@ -242,10 +248,6 @@ export class ResidentListPage {
 
   protected onBarangay(event: Event): void {
     this.patch({ barangay: selectValue(event) });
-  }
-
-  protected onSector(event: Event): void {
-    this.patch({ sector: selectValue(event) });
   }
 
   protected onAgeGroup(event: Event): void {

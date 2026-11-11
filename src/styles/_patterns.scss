@@ -328,6 +328,26 @@
   background: var(--primary-hover);
 }
 
+/* Tabs that stay on one line, however many there are (the registry's sector filter): the row is
+   as wide as its tabs up to its container, then scrolls sideways inside itself rather than
+   wrapping or widening the page. Positioned, like every scrolling box. */
+.tabs--scroll {
+  position: relative;
+  flex-wrap: nowrap;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.tabs--scroll > li {
+  flex: 0 0 auto;
+}
+
+.tabs--scroll .tab {
+  white-space: nowrap;
+}
+
 /* Tabs that share their box's width equally, for a short choice in a narrow
    column (the Appearance control in the sidebar's account footer). */
 .tabs--fill {

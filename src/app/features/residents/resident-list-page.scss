@@ -1,7 +1,13 @@
-// Residents mock-up: the registry panel (filters, saved views, table, "more").
+// CitizenRegistry mock-up: the sector tabs, then the registry panel (saved views, filters, table,
+// "more"). Layout only; the shapes are `.tabs`, `.toolbar`, `.check-pill`, `.record-link` and
+// `.list-more` from the patterns.
 
 .residents__cta-icon {
   color: var(--gold);
+}
+
+.residents__sectors {
+  margin-block-end: var(--space-4);
 }
 
 .residents__search {
@@ -12,30 +18,20 @@
   min-inline-size: 170px;
 }
 
-// "Include retired records": a pill the height of the fields beside it.
-.residents__check {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-block-size: var(--h-btn);
-  padding: 0 14px;
-  border-radius: var(--r-pill);
-  background: var(--soft2);
-  color: var(--text2);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  cursor: pointer;
-
-  input {
-    inline-size: 18px;
-    block-size: 18px;
-    margin: 0;
-    accent-color: var(--link);
-  }
-}
-
 .residents__clear {
   min-block-size: var(--h-btn);
+}
+
+// The search hint on the left, the order on the right, as on the board.
+.residents__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+
+  p {
+    margin: 0;
+  }
 }
 
 .residents__problem {
@@ -49,22 +45,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-}
-
-.residents__name {
-  display: inline-block;
-  min-block-size: var(--target-min);
-  line-height: var(--target-min);
-  color: var(--ink);
-  font-weight: var(--fw-semibold);
-  text-decoration: underline;
-  text-decoration-color: var(--line2);
-  text-underline-offset: 3px;
-  overflow-wrap: anywhere;
-
-  &:hover {
-    text-decoration-color: currentcolor;
-  }
 }
 
 // Stated in words, never by colour alone: a masked record has to announce
@@ -95,12 +75,4 @@
 
 .residents__status--retired {
   color: var(--muted);
-}
-
-.residents__more {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
 }

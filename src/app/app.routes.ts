@@ -97,7 +97,7 @@ export const routes: Routes = [
           {
             path: '',
             pathMatch: 'full',
-            title: 'Residents — Taytay Social Welfare',
+            title: 'Citizen registry — Taytay Social Welfare',
             // Saved views degrade in place on this screen; only the registry gates it (DL-175).
             canActivate: [
               servedGuard('resident'),

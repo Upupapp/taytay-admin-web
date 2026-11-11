@@ -9837,3 +9837,41 @@ Administration: the section is added, nothing is removed.
 
 **Not changed.** Page titles and headings, which their own prompts (A2, A4) restyle. Easiest to
 reverse: move the two entries back to their sections.
+
+## DL-209 — the registry's sector filter is a row of tabs; no bulk bar until the API serves a bulk act
+
+**Status:** Settled (12 November 2026). The citizen design pack, prompt A2; board
+`docs/design/admin/screens/CitizenRegistry.dc.html`. Restyle of `features/residents/resident-list-page`.
+
+**What changed.**
+
+1. **The sector filter is one row of tabs**: All citizens, then each sector in the domain's order,
+   with short labels ("PWD", "4Ps", "CICL") held in `residents.copy.ts`. Each tab is a link to the
+   same list with `sector` set (merged with the other filters, replacing the history entry as the
+   select did), so the URL is still the filter (`DL-36`) and a saved view still names it. The chosen
+   tab carries `aria-current="true"` as well as the fill. The row never wraps: a new pattern,
+   `.tabs--scroll`, keeps it as wide as its tabs up to its container and scrolls sideways inside
+   itself, positioned like every scrolling box.
+2. **VAWC and CICL tabs only for `request.view-sensitive`**, the rule the select had (`DL-174`), and
+   the server's refusal stands behind it. The data layer still redacts (`DL-38`).
+3. **Search, barangay, age group and Include retired records stay**, in one toolbar as on the board;
+   the checkbox is the shared `.check-pill`, the name link `.record-link`, the "more" row
+   `.list-more` — their local copies are deleted. The page and the route are titled "Citizen
+   registry", the label the Citizens section gives it (`DL-208`).
+4. **Every column, link and action stays**: Resident, Barangay, Age, Sectors, Status, the saved views
+   (or their not-connected note), Register a resident, Show more.
+
+**Left out, and why.**
+
+- **The bulk bar.** The prompt asks for it with "only actions the API serves", and none is: there is
+  no export of residents, no programme list and no printed sector list in the API, and the per-person
+  writes that exist do not bulk honestly — adding a sector takes *what was checked* for that person
+  (`DL-174`), and retiring a record takes that record's reason. A selection that can do nothing is
+  noise, and a checkbox column implies an act; so there is no selection until an act exists.
+- **Tab counts.** `GET /office/residents` sends no total (`DL-161`); a count nobody computed is a
+  claim.
+- **The sex filter, the App and Digital ID filter and the Import button**: not served by
+  `GET /office/residents`; they come with A6 and A7.
+
+**Checks.** The residents spec reads the tabs instead of the select's options for the protected-sector
+rule, and holds the chosen tab's `aria-current`. Easiest to reverse: restore the select.

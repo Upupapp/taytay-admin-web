@@ -10,6 +10,40 @@
   </a>
 </app-page-header>
 
+<!-- The sector filter as one row of tabs (CitizenRegistry mock-up). Each is a link to the same
+     list with `sector` set, so the URL stays the filter; the row scrolls inside itself rather than
+     wrapping. A protected sector is offered only to a reader cleared for it (`DL-174`). -->
+<nav class="residents__sectors" [attr.aria-label]="copy.sector">
+  <ul class="tabs tabs--scroll">
+    <li>
+      <a
+        class="tab"
+        [routerLink]="[]"
+        [queryParams]="{ sector: null }"
+        queryParamsHandling="merge"
+        [replaceUrl]="true"
+        [class.tab--active]="!filter().sector"
+        [attr.aria-current]="!filter().sector ? 'true' : null"
+        >{{ copy.allSectorsTab }}</a
+      >
+    </li>
+    @for (sector of sectors(); track sector) {
+      <li>
+        <a
+          class="tab"
+          [routerLink]="[]"
+          [queryParams]="{ sector }"
+          queryParamsHandling="merge"
+          [replaceUrl]="true"
+          [class.tab--active]="filter().sector === sector"
+          [attr.aria-current]="filter().sector === sector ? 'true' : null"
+          >{{ sectorTab(sector) }}</a
+        >
+      </li>
+    }
+  </ul>
+</nav>
+
 <section class="card card--panel card--padded stack residents" [attr.aria-label]="copy.caption">
   @if (servesSavedViews) {
     <app-saved-views-bar
@@ -50,18 +84,6 @@
     </label>
 
     <label class="field">
-      <span class="field__label">{{ copy.sector }}</span>
-      <select class="field__input field__input--pill" (change)="onSector($event)">
-        <option value="" [selected]="!filter().sector">{{ copy.allSectors }}</option>
-        @for (sector of sectors(); track sector) {
-          <option [value]="sector" [selected]="filter().sector === sector">
-            {{ sectorLabel(sector) }}
-          </option>
-        }
-      </select>
-    </label>
-
-    <label class="field">
       <span class="field__label">{{ copy.ageGroup }}</span>
       <select class="field__input field__input--pill" (change)="onAgeGroup($event)">
         <option value="" [selected]="!filter().ageGroup">{{ copy.allAges }}</option>
@@ -73,7 +95,7 @@
       </select>
     </label>
 
-    <label class="residents__check">
+    <label class="check-pill residents__check">
       <input
         type="checkbox"
         [checked]="filter().includeInactive === true"
@@ -89,7 +111,10 @@
     }
   </div>
 
-  <p class="status-line" id="resident-search-hint">{{ copy.searchHint }} {{ copy.order }}</p>
+  <div class="residents__meta">
+    <p class="status-line" id="resident-search-hint">{{ copy.searchHint }}</p>
+    <p class="status-line">{{ copy.order }}</p>
+  </div>
 
   @if (failure(); as message) {
     <div class="callout callout--danger residents__problem" role="alert">
@@ -112,7 +137,7 @@
   />
 
   @if (rows().length > 0) {
-    <div class="residents__more">
+    <div class="list-more residents__more">
       <p class="status-line" role="status">
         {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
       </p>
@@ -141,7 +166,7 @@
 <ng-template #nameCell let-view>
   <span class="residents__who">
     <span class="avatar" aria-hidden="true">{{ view.listedName | initials }}</span>
-    <a class="residents__name" [routerLink]="detailLink(view)">{{ view.listedName }}</a>
+    <a class="record-link residents__name" [routerLink]="detailLink(view)">{{ view.listedName }}</a>
     @if (view.isProtected) {
       <span class="chip chip--danger residents__protected">{{ copy.restricted }}</span>
     }

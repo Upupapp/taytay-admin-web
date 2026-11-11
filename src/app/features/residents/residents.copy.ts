@@ -1,4 +1,9 @@
-import type { ResidentDraftField, ResidentDraftRule, ResidentField } from '@domain/index';
+import type {
+  ResidentDraftField,
+  ResidentDraftRule,
+  ResidentField,
+  VulnerabilitySector,
+} from '@domain/index';
 
 /**
  * Every user-facing string for the registry, in one typed place (`DL-23`).
@@ -9,8 +14,9 @@ import type { ResidentDraftField, ResidentDraftRule, ResidentField } from '@doma
  */
 export const RESIDENTS_COPY = {
   list: {
-    title: 'Residents',
-    subtitle: 'The registry every case, payout and referral is filed against.',
+    title: 'Citizen registry',
+    subtitle:
+      'Every citizen the office has on file: where they live and which sectors they belong to. Every case, payout and referral is filed against it.',
     caption: 'Residents registered with the MSWDO',
     search: 'Search',
     searchPlaceholder: 'Surname or given name',
@@ -23,6 +29,20 @@ export const RESIDENTS_COPY = {
     allBarangays: 'All barangays',
     sector: 'Sector',
     allSectors: 'All sectors',
+    allSectorsTab: 'All citizens',
+    // The tabs' short labels (CitizenRegistry mock-up): one row that never wraps, so "PWD".
+    sectorTabs: {
+      'senior-citizen': 'Senior citizens',
+      pwd: 'PWD',
+      'solo-parent': 'Solo parents',
+      'four-ps': '4Ps',
+      'indigenous-people': 'Indigenous people',
+      unemployed: 'Unemployed',
+      'out-of-school-youth': 'Out-of-school youth',
+      'vawc-survivor': 'VAWC survivors',
+      cicl: 'CICL',
+      'displaced-worker': 'Displaced workers',
+    } satisfies Readonly<Record<VulnerabilitySector, string>>,
     ageGroup: 'Age group',
     allAges: 'All ages',
     includeInactive: 'Include retired records',

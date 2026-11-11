@@ -100,7 +100,8 @@ function staffRepository(user: StaffUser | null): StaffRepository {
     list: (): Observable<Page<StaffUser>> => of(emptyPage<StaffUser>()),
     getById: (): Observable<StaffUser | null> => of(user),
     currentUser: (): Observable<AuthenticatedUser | null> => of(authenticated),
-    signIn: (): Observable<SignInOutcome> => of({ kind: 'authenticated', user: authenticated as AuthenticatedUser }),
+    signIn: (): Observable<SignInOutcome> =>
+      of({ kind: 'authenticated', user: authenticated as AuthenticatedUser }),
     completeMfa: (): Observable<AuthenticatedUser> => of(authenticated as AuthenticatedUser),
     signOut: (): Observable<void> => of(undefined),
   };
@@ -318,10 +319,27 @@ describe('the resident list', () => {
   });
 
   it('offers a protected sector as a filter only to a role cleared for it', async () => {
-    const options = (element: HTMLElement) =>
-      Array.from(element.querySelectorAll('option')).map((option) => option.textContent?.trim());
-    expect(options(html(await openList('intake-officer')))).not.toContain('VAWC survivor');
-    expect(options(html(await openList('social-worker')))).toContain('VAWC survivor');
+    // The sector filter is a row of tabs since the CitizenRegistry restyle (DL-209).
+    const tabs = (element: HTMLElement) =>
+      Array.from(element.querySelectorAll('.residents__sectors .tab')).map((tab) =>
+        tab.textContent?.trim(),
+      );
+    const intake = tabs(html(await openList('intake-officer')));
+    expect(intake).toContain('PWD');
+    expect(intake).not.toContain('VAWC survivors');
+    expect(intake).not.toContain('CICL');
+    expect(tabs(html(await openList('social-worker')))).toContain('VAWC survivors');
+  });
+
+  it('marks the chosen sector tab in words as well as fill, and All when none is chosen', async () => {
+    const current = (element: HTMLElement) =>
+      Array.from(element.querySelectorAll('.residents__sectors .tab[aria-current="true"]')).map(
+        (tab) => tab.textContent?.trim(),
+      );
+    expect(current(html(await openList()))).toEqual([RESIDENTS_COPY.list.allSectorsTab]);
+    expect(current(html(await openList('intake-officer', '/residents?sector=pwd')))).toEqual([
+      'PWD',
+    ]);
   });
 
   it('applies the filter that arrived in the URL', async () => {
