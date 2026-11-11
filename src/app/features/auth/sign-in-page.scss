@@ -27,6 +27,15 @@
   padding: 20px 28px var(--space-5);
 }
 
+/* The seal on the left, the theme switch on the right (DL-207), so the theme can
+   be changed before anyone signs in. */
+.sign-in__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
 .sign-in__column {
   display: flex;
   flex: 1 1 auto;

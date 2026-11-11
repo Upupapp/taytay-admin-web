@@ -4,6 +4,7 @@
  * finds it instead of re-inventing it.
  */
 export * from './state/debounced';
+export * from './state/theme.service';
 export * from './state/view-state';
 export * from './brand/app-image';
 export * from './brand/asset-manifest';
@@ -54,4 +55,5 @@ export * from './ui/page-header/page-header';
 export * from './ui/route-progress/route-progress';
 export * from './ui/saved-views/saved-views-bar';
 export * from './ui/status-badge/status-badge';
+export * from './ui/theme-toggle/theme-toggle';
 export * from './ui/toast-host/toast-host';

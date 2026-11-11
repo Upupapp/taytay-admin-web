@@ -60,8 +60,8 @@ whether it changes, and why — and is audited in both.
   brand palette spec `npx ng test --include='src/app/shared/brand/**/*.spec.ts'`, then
   `npm run verify`.
 - **Browser sweep** for a colour, surface, size or radius change (DESIGN_SYSTEM.md §10): build the mock
-  console, visit every route at 1280 and 1440 **in both themes** (emulate `prefers-color-scheme`, and
-  pick the theme with the sidebar's Appearance control), and confirm no new overflow, no Tab stop
+  console, visit every route at 1280 and 1440 **in both themes** (light as it opens, then dark with the
+  sidebar's Dark mode button; `prefers-color-scheme` no longer switches it, `DL-207`), and confirm no new overflow, no Tab stop
   without a ring, and — for colours on glass — no text run below AA. The static audits cannot see
   translucent surfaces, and the dark glass sits over brighter parts of the wash than the light.
 

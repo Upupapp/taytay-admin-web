@@ -15,6 +15,7 @@ import {
 import { BRAND_COPY } from '@shared/brand/brand.copy';
 import { MunicipalSeal } from '@shared/brand/municipal-seal';
 import { Icon } from '@shared/ui/icon/icon';
+import { ThemeToggle } from '@shared/ui/theme-toggle/theme-toggle';
 
 import { AUTH_COPY } from './auth.copy';
 import { SignInArt } from './sign-in-art';
@@ -47,7 +48,7 @@ import { SignInArt } from './sign-in-art';
 @Component({
   selector: 'app-sign-in-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MunicipalSeal, Icon, SignInArt],
+  imports: [MunicipalSeal, Icon, SignInArt, ThemeToggle],
   templateUrl: './sign-in-page.html',
   styleUrl: './sign-in-page.scss',
 })

@@ -9577,6 +9577,9 @@ in the vocabulary of the other checks.
 redesign's mock-ups draw and `DL-200` left for later. Presentation, and one control in the frame: no
 route, guard, port, model or wording outside the frame changed.
 
+*Its default and its control are superseded by `DL-207` (12 November 2026): the console opens light
+on every computer, and one Dark mode button switches it. The palette and the no-storage rule stand.*
+
 **Where the colours come from.** The `.theme-dark` block of the admin mock-ups — the same in all
 twelve — is `@mixin theme-dark` in `src/styles.scss`, laid over the light `:root`. A token the mixin
 does not name keeps its light value in both themes: the palette, the icon tiles, the seal placeholder,
@@ -9760,3 +9763,40 @@ stays absent until the certificate chain is confirmed (`check:headers` rule 5).
 `docs/turnover/operations-runbook.md` §4. Easiest to reverse: revert the commit, and take the
 origin out of `CORS_ALLOWED_ORIGINS` (a backup of the file from before the change is beside it on
 the server).
+
+## DL-207 — the console opens light on every computer, and one Dark mode button switches it
+
+**Status:** Settled (12 November 2026). Supersedes `DL-204`'s default ("System follows this
+computer") and its three-way Appearance control. `DL-204`'s dark palette, its measurements and its
+no-storage rule stand.
+
+**Why.** The owner opened https://taytayadmin.netlify.app on a computer set to dark and asked why
+the console was dark: "light mode is the default always", with "a button to change light and dark
+mode". Under `DL-204` a computer set to dark opened the console dark, because the stylesheet followed
+`prefers-color-scheme` whenever nobody had chosen, and the choice was three radios — System, Light,
+Dark — in the sidebar only, so the sign-in page could not change it at all.
+
+**What changed.**
+
+1. **The stylesheet no longer reads `prefers-color-scheme`.** `@mixin theme-dark` is included once,
+   under `:root[data-theme='dark']`, screen only; the reduced-transparency restatement follows it at
+   the same selector. With no attribute the console is light, on every computer. `index.html`
+   declares `color-scheme: light`.
+2. **One control, a toggle button.** `ThemeToggle` (`shared/ui/theme-toggle/`) is a
+   `.btn.btn--secondary.btn--small` with `aria-pressed` and a label that never changes ("Dark
+   mode"), so a screen reader hears its state rather than a name that swaps; the icon (moon, sun) is
+   decorative. It is in the sidebar's account footer, where the radios were, and at the top of the
+   sign-in page beside the seal. `ThemeSwitch` and its copy are removed.
+3. **`ThemeService` moved to `shared/state/`** and knows two themes: `light` (no attribute) and
+   `dark`, with `toggle()`. It moved because the sign-in feature and the shell both use the button,
+   and `shared/` may not import `core/`.
+4. **Still nothing stored** (`check:auth`, `DL-204`): the choice lasts for the tab, and a reload opens
+   light again — which is now the default asked for rather than a limitation to apologise for.
+
+**Checks.** `ThemeService`'s spec opens light with no attribute, sets and clears `dark`, toggles, and
+writes nothing to storage; `ThemeToggle`'s spec holds the one button, its `aria-pressed`, its
+unchanging name and its hidden icon; the shell and sign-in specs find the button where it belongs.
+The contrast and brand checks read `@mixin theme-dark` itself and are unaffected.
+
+**Not changed.** The dark palette and every token. Easiest to reverse: restore the
+`prefers-color-scheme` block in `styles.scss` and the System option.

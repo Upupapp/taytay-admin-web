@@ -381,26 +381,21 @@
   }
 }
 
-/* The theme is an attribute on <html>, set by ThemeService from the control
-   in the sidebar: `dark`, `light`, or absent for "follow the system". Screen
-   only, so a printed page is always the light theme. */
+/* The theme is an attribute on <html>, set by ThemeService from the Dark mode
+   button: `dark`, or absent for light. Light is the default on every computer,
+   including one set to dark — the stylesheet does not read
+   `prefers-color-scheme` (DL-207). Screen only, so a printed page is always the
+   light theme. */
 @media screen {
   :root[data-theme='dark'] {
     @include theme-dark;
   }
 }
 
-@media screen and (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    @include theme-dark;
-  }
-}
-
-/* Restated after both dark rules and at their specificity, which `:root` alone
-   would lose to. Where the light theme applies this selector changes nothing
-   the light rule above has not already. */
+/* Restated after the dark rule and at its specificity, which `:root` alone
+   would lose to. */
 @media screen and (prefers-reduced-transparency: reduce) {
-  :root:not([data-theme='light']) {
+  :root[data-theme='dark'] {
     @include reduced-transparency;
   }
 }

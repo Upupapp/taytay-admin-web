@@ -469,12 +469,12 @@ describe('Shell', () => {
     expect(account?.querySelector('.shell__sign-out')?.textContent).toContain(LAYOUT_COPY.signOut);
   });
 
-  it('offers the appearance choice in the account footer, reachable at every width (DL-204)', async () => {
+  it('offers the dark-mode button in the account footer, reachable at every width (DL-207)', async () => {
     const { element } = await render(true);
-    const radios = element.querySelectorAll(
-      '#app-sidebar .shell__account app-theme-switch input[type="radio"]',
+    const buttons = element.querySelectorAll(
+      '#app-sidebar .shell__account app-theme-toggle button[aria-pressed]',
     );
-    expect(radios.length).toBe(3);
+    expect(buttons.length).toBe(1);
   });
 
   it('draws the account’s initials as decoration beside the printed name', async () => {

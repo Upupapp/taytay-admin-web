@@ -190,6 +190,17 @@ describe('no admin self-registration', () => {
 
 /* ── credential handling ──────────────────────────────────────────────────── */
 
+describe('the theme on the sign-in page (DL-207)', () => {
+  it('opens light and offers the dark-mode button before anyone signs in', async () => {
+    const element = (await setUp()).nativeElement as HTMLElement;
+    const toggle = element.querySelector('.sign-in__top app-theme-toggle button');
+
+    expect(toggle?.getAttribute('type')).toBe('button');
+    expect(toggle?.getAttribute('aria-pressed')).toBe('false');
+    expect(document.documentElement.getAttribute('data-theme')).toBeNull();
+  });
+});
+
 describe('credential handling', () => {
   it('signs a known staff member in and lands them on the dashboard', async () => {
     const fixture = await setUp();

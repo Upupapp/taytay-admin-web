@@ -195,24 +195,20 @@ of the mock-ups (the same in all twelve).
 **How the tokens are paired.** `:root` holds every token's light value. `@mixin theme-dark` in
 `src/styles.scss` holds the dark value of each colour and surface that differs; a token it does not
 name keeps its light value in both themes — the palette (`--blue` … `--sky`), the tiles, the seal
-placeholder, type, radii, sizes. The mixin is included twice, both for the screen only, so a printed
-page is always light:
+placeholder, type, radii, sizes. The mixin is included once, for the screen only, so a printed page is
+always light, and only when the Dark mode button has put `data-theme="dark"` on `<html>`. The
+stylesheet does not read `prefers-color-scheme`: the console opens light on every computer, including
+one set to dark (`DL-207`).
 
 ```scss
 @media screen {
   :root[data-theme='dark'] {
-    @include theme-dark; // Dark picked in the control
-  }
-}
-
-@media screen and (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    @include theme-dark; // System, on a computer set to dark
+    @include theme-dark; // Dark mode turned on with the button
   }
 }
 ```
 
-Reduced transparency is restated after both, at their specificity, so it turns the dark glass solid
+Reduced transparency is restated after it, at its specificity, so it turns the dark glass solid
 as well. An alias resolves within its theme: the light `--danger-fill: var(--red-ink)` would land on
 the dark red ink if `theme-dark` did not restate it, exactly as in the browser.
 
@@ -250,23 +246,22 @@ either.
 
 `.claude/commands/change-token.md` walks through it.
 
-**The control.** "Appearance — System, Light, Dark" sits in the sidebar's account footer, beside the
-identity and sign-out, so it is there at every width (`layout/theme/theme-switch.ts`), and it is built from the
-patterns only: a `.choice-list` fieldset whose legend names the group, a `.tabs.tabs--fill` pill whose
-`.tab` labels each hold a `.visually-hidden` native radio (the chosen one `.tab--active`, as the
-mock-ups' Light / Dark switch is drawn), and a `.field__hint`. Arrow keys move and choose, a screen
-reader announces the group, the option and whether it is checked, and the tab draws a focused radio's
-ring (§4, Tabs). `ThemeService` (`core/layout/theme.service.ts`) sets `data-theme` on
-`<html>` to `light` or `dark`, or removes it for System. System is the default and needs no script:
-the stylesheet follows `prefers-color-scheme` on its own, so nothing flashes before the app starts —
-and the CSP (`script-src 'self'`) refuses the inline snippet a stored choice would need.
-`<meta name="color-scheme" content="light dark">` and each theme's `color-scheme` give native
-controls, the date picker and scrollbars the matching scheme.
+**The control** (`DL-207`). One "Dark mode" button, `app-theme-toggle`
+(`shared/ui/theme-toggle/theme-toggle.ts`): a `.btn.btn--secondary.btn--small` toggle button with
+`aria-pressed`, a moon icon while the console is light and a sun while it is dark, and a label that
+never changes, so a screen reader hears "Dark mode, pressed" or "not pressed". It sits in the
+sidebar's account footer beside the identity and sign-out, so it is there at every width, and at the
+top of the sign-in page beside the seal, so the theme can be changed before signing in.
+`ThemeService` (`shared/state/theme.service.ts`) sets `data-theme="dark"` on `<html>`, or removes it
+for light. Light is the default and needs no script, so nothing flashes before the app starts — and
+the CSP (`script-src 'self'`) refuses the inline snippet a stored choice would need.
+`<meta name="color-scheme" content="light">` and each theme's `color-scheme` give native controls,
+the date picker and scrollbars the matching scheme.
 
 **Storage: none.** `check:auth` refuses `localStorage`, `sessionStorage`, cookies and IndexedDB
 anywhere in `src/` — a rule about _whether_ the console stores anything, which needs no judgement —
-so the choice is held in memory for the tab. A reload returns to System, and the hint under the
-control says so (`DL-204`).
+so the choice is held in memory for the tab. A reload opens light again, which is the default the
+owner asked for (`DL-207`).
 
 **Images.** The seal and photographs are never recoloured for the dark theme (`DL-199`, `DL-22`).
 
@@ -522,8 +517,8 @@ Usually reached through `AsyncContent` or `DataTable [loading]` rather than plac
 ## 6. The frame (`src/app/layout/`)
 
 `app-shell` mounts, in order: `app-route-progress`, the skip link, `app-connection-banner`, the glass
-sidebar (`app-brand-mark`, `app-nav`, the signed-in identity, the Appearance control
-`app-theme-switch` and sign-out), and the main column
+sidebar (`app-brand-mark`, `app-nav`, the signed-in identity, the Dark mode button
+`app-theme-toggle` and sign-out), and the main column
 (`app-topbar`: the navigation toggle, `app-breadcrumb`, `app-global-search-trigger` and the
 notification inbox button; then `main#main-content`). The notification inbox is an `app-drawer` holding `app-notification-list`.
 
@@ -820,9 +815,9 @@ and `axe-core`, which this repository does not depend on. To repeat it:
 4. It navigates **inside the app** (`history.pushState` + a `popstate` event): a reload loses the
    in-memory session. It visits every `NAVIGATION` route, the routes outside the menu (`/residents/new`,
    `/administration/roles`, `/forbidden`, a not-found path, …) and the first record of every list, at
-   1280×800 and 1440×900, **once per theme**: the browser context emulates `prefers-color-scheme`,
-   and at one width the theme is picked with the Appearance control while the system is set to the
-   other, so both ways of reaching a theme are measured.
+   1280×800 and 1440×900, **once per theme**: light as the console opens, then dark after pressing
+   the Dark mode button. Emulating `prefers-color-scheme` no longer reaches the dark theme
+   (`DL-207`); run one pass with the system set to dark to confirm the console still opens light.
 5. On each page it records:
    - **overflow** — the document wider than the viewport (`scrollWidth > clientWidth`), any
      element that pokes past its clipping ancestor without being a scroll box, and clipped text;
@@ -844,8 +839,8 @@ computed styles instead.
 
 ## 11. Known gaps
 
-- The theme choice is not remembered across a reload: the console stores nothing in the browser
-  (`check:auth`, `DL-204`). Remembering it would need a server-side preference on the staff account.
+- The theme choice is not remembered across a reload, which opens light again: the console stores
+  nothing in the browser (`check:auth`, `DL-204`, `DL-207`). Remembering it would need a server-side preference on the staff account.
 - The gradient page header is defined (`--grad-header`) but unused (`DL-201`).
 - KPI rows, trend charts and per-section counts drawn in the mock-ups wait for API fields (counts,
   totals, per-week series, office category); they are listed in the redesign's notes and are not
