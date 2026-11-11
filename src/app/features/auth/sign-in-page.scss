@@ -1,6 +1,10 @@
 // SignIn mock-up: a glass frame holding the deep artwork panel and the form.
 .sign-in {
   display: grid;
+  /* One track the width of the page. Left to `auto`, the track took the frame's
+     preferred width — the form's 420px basis plus padding — and on a phone the
+     card ran 50px past the screen, with a sideways scroll (DL-207). */
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   min-block-size: 100vh;
   padding: var(--space-5);

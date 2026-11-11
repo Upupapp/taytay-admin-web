@@ -45,7 +45,7 @@ export interface EndRelationshipRequest {
  *    which is the question somebody proof-reading the record is actually
  *    asking. Both are rendered from the same data. The choice between them is
  *    the design system's radio group drawn as tabs (`.choice-list` + `.tabs`),
- *    the one the Appearance control uses, not a pill of its own.
+ *    whose reference this is, not a pill of its own.
  */
 @Component({
   selector: 'app-relationship-graph',

@@ -9798,5 +9798,12 @@ writes nothing to storage; `ThemeToggle`'s spec holds the one button, its `aria-
 unchanging name and its hidden icon; the shell and sign-in specs find the button where it belongs.
 The contrast and brand checks read `@mixin theme-dark` itself and are unaffected.
 
+**Also fixed, found while checking the button on a phone.** The sign-in page scrolled sideways at
+390px: `.sign-in` is a grid whose `auto` track took the frame's preferred width (the form's 420px
+basis plus padding), so the card ran about 50px past the screen and cut off the fields, the Sign in
+button and the new switch. The track is now `minmax(0, 1fr)`; measured on the live site, the page
+is exactly the screen's width at 390px and unchanged at 1440px. It predates this entry; the button
+only made it visible.
+
 **Not changed.** The dark palette and every token. Easiest to reverse: restore the
 `prefers-color-scheme` block in `styles.scss` and the System option.
