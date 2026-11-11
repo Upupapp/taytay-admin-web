@@ -50,7 +50,8 @@
 }
 
 /* The count is in the button's accessible name; this repeats it for the eye.
-   White on the danger ink, ringed in white so it reads over the glass. */
+   White on the danger fill, ringed in --ring (white, or the page colour in
+   the dark theme) so it reads over the glass. */
 .topbar__badge {
   position: absolute;
   inset-block-start: 3px;
@@ -62,7 +63,7 @@
   padding: 0 5px;
   border: 2px solid var(--ring);
   border-radius: var(--r-pill);
-  background: var(--red-ink);
+  background: var(--danger-fill);
   color: var(--on-primary);
   font-size: var(--fs-micro);
   font-weight: var(--fw-bold);

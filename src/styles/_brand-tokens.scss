@@ -26,7 +26,10 @@
   /* Two rings, one set of tokens, so every focus style is identical and
      auditable: a gold outline (the design's) around a navy inner ring. The
      inner ring meets WCAG 1.4.11 (3:1) against every light surface; the gold
-     meets it against the navy fills, where the inner ring disappears. */
+     meets it against the navy fills, where the inner ring disappears. The
+     dark theme keeps the gold and gives the inner ring a blue that holds 3:1
+     against the dark surfaces and the gold (`theme-dark` in styles.scss,
+     DL-204), so both themes audit the same focus pairs. */
   --focus-ring-color: var(--gold);
   --focus-ring-inner: var(--navy);
   --focus-ring-width: 3px;

@@ -99,6 +99,11 @@
   --red-ink2: #7a0506;
   --green-tint: rgb(46 160 90 / 16%);
   --green-ink: #17663a;
+  /* A filled destructive control (the confirming button, the unread badge)
+     with white on it. Its own role, because the dark theme's red ink is a
+     light pink for text on a tint and cannot carry white (DL-204). */
+  --danger-fill: var(--red-ink);
+  --danger-fill-hover: var(--red-ink2);
 
   /* Charts */
   --axis: rgb(10 32 113 / 16%);
@@ -245,14 +250,158 @@
   --shell-topbar-height: 60px;
 }
 
+/* ── Dark theme (DL-204) ─────────────────────────────────────────────────
+   The admin mock-ups' `.theme-dark` block, over the light values above: a
+   token not named here keeps its light value (the palette, the tiles, the
+   seal placeholder, the type and sizes). Every colour pair `check:contrast`
+   and `check:brand` audit for light is audited here too, so a value below
+   that differs from the mock-up is one that failed WCAG AA as drawn; each
+   says why. Applied when the person picks Dark, or picks nothing and the
+   system asks for dark; never in print (see the rules after the mixin). */
+@mixin theme-dark {
+  color-scheme: dark;
+
+  --fill: #142257;
+  --divider: #1f2c5d;
+  --blue-50: #1a2d6f;
+  --blue-100: #223780;
+
+  --page-base: #040a22;
+  --page:
+    radial-gradient(640px 520px at 6% 4%, rgb(45 84 224 / 65%), transparent 70%),
+    radial-gradient(520px 440px at 96% 8%, rgb(245 218 24 / 22%), transparent 70%),
+    radial-gradient(640px 520px at 88% 74%, rgb(224 9 10 / 30%), transparent 70%),
+    radial-gradient(700px 560px at 16% 80%, rgb(91 130 255 / 35%), transparent 70%),
+    radial-gradient(520px 420px at 52% 40%, rgb(10 32 113 / 90%), transparent 70%), var(--page-base);
+  /* The mock-ups' glass (white, 12% to 4%) laid on a 70% veil of the page's
+     own colour. Over the plain page it looks as drawn; over the bright blue
+     at the top-left, where the sidebar sits, the mock-up's glass let light
+     muted text fall to 2.9:1 (and links to 3.6:1, red ink to 3.1:1). The veil
+     damps the glow under a card and keeps it around one. */
+  --card:
+    linear-gradient(135deg, rgb(255 255 255 / 12%), rgb(255 255 255 / 4%)),
+    linear-gradient(rgb(4 10 34 / 70%), rgb(4 10 34 / 70%));
+  --card-solid: #0c1a4f;
+  --card-flat: rgb(255 255 255 / 5%);
+  --card-edge: rgb(255 255 255 / 16%);
+  --soft: rgb(255 255 255 / 6%);
+  --soft2: rgb(255 255 255 / 4%);
+  --field: rgb(255 255 255 / 5%);
+  --sel: rgb(91 130 255 / 14%);
+  --hover: rgb(255 255 255 / 8%);
+  --line: rgb(255 255 255 / 8%);
+  --line2: rgb(255 255 255 / 16%);
+  /* The mock-ups' white at 24% is 2.1:1 on the solid card; a field's
+     boundary identifies it, so 3:1 applies (WCAG 1.4.11). Solid, so it can
+     be audited: 4.4:1 on the solid card, 4.1:1 on the soft fill. */
+  --field-line: #7884aa;
+
+  /* The mock-ups' #2d54e0, a shade darker: the gold initials and current-page
+     icon on it measured 4.3:1. White on it is 6.4:1. */
+  --primary: #2c51d9;
+  --deep: #0a2071;
+  --ink: #ffffff;
+  --text: #e6ebf7;
+  --text2: #c9d2e8;
+  /* A shade lighter than the mock-ups' #9aa6c4, which measured 4.2:1 in the
+     browser where a hint sits on the gold-tinted "late" bucket over the glass
+     (work, visits, releases). One value for both names, as in light (DL-202):
+     the mock-ups' #8c98b8 falls to 4.0:1 on the glass at the top-left. */
+  --muted: #a4b0cc;
+  --muted2: var(--muted);
+  --link: #9db6ff;
+  --link-hover: #c4d3ff;
+  /* On the primary fill (a tally, the app-figures notice) the light value
+     measured 4.0:1. */
+  --on-deep-muted: #d6def2;
+
+  --blue-tint: rgb(91 130 255 / 18%);
+  --gold-tint: rgb(245 218 24 / 14%);
+  --gold-tint2: rgb(245 218 24 / 10%);
+  --gold-ink: #f5da18;
+  --gold-ink2: #f7e27a;
+  --red-tint: rgb(224 9 10 / 18%);
+  --red-ink: #ff8a8a;
+  --red-ink2: #ffb3b3;
+  --green-tint: rgb(46 160 90 / 18%);
+  --green-ink: #6ee7a0;
+  /* The mock-ups' own red badge (#e0090a, white 5.0:1) and the light theme's
+     red ink under the pointer (white 7.3:1). */
+  --danger-fill: var(--red);
+  --danger-fill-hover: #b00708;
+
+  --axis: rgb(255 255 255 / 12%);
+  --dash: rgb(255 255 255 / 30%);
+  --area: rgb(45 84 224 / 35%);
+  --bar: #3a63f0;
+  --chart-line: #7c9bff;
+  --accent-line: #5b82ff;
+
+  --scrim: rgb(2 6 20 / 72%);
+  --scrim2: rgb(2 6 20 / 78%);
+  --ring: #040a22;
+  --option-bg: #0b1640;
+  --option-ink: #ffffff;
+
+  /* Status tones: the dark tints laid over the solid card, as hex, with the
+     dark inks (each pair audited). */
+  --tone-neutral-fg: #c9d2e8;
+  --tone-neutral-bg: #1f2c5d;
+  --tone-info-fg: #9db6ff;
+  --tone-info-bg: #1a2d6f;
+  --tone-progress-fg: #d4bcf5;
+  --tone-progress-bg: #2b2c6d;
+  --tone-success-fg: #6ee7a0;
+  --tone-success-bg: #123251;
+  --tone-warning-fg: #f5da18;
+  --tone-warning-bg: #2d3547;
+  --tone-danger-fg: #ff8a8a;
+  --tone-danger-bg: #321743;
+
+  /* The focus ring keeps its gold outline, which carries it on every dark
+     surface (10:1 and up) and on the primary fill (4.5:1). The light theme's
+     navy inner ring would vanish here; this blue holds 3:1 against the dark
+     surfaces and against the gold, so the two rings stay distinct and a
+     gold-filled control still shows its ring (_brand-tokens.scss). */
+  --focus-ring-inner: #4169f2;
+}
+
 /* Glass is a convenience to the eye, not a requirement: somebody who has asked
-   the system for less transparency gets solid white cards. */
+   the system for less transparency gets solid cards, in either theme. */
+@mixin reduced-transparency {
+  --card: var(--card-solid);
+  --card-flat: var(--card-solid);
+  --field: var(--card-solid);
+  --hover: var(--fill);
+}
+
 @media (prefers-reduced-transparency: reduce) {
   :root {
-    --card: var(--card-solid);
-    --card-flat: var(--card-solid);
-    --field: var(--card-solid);
-    --hover: var(--fill);
+    @include reduced-transparency;
+  }
+}
+
+/* The theme is an attribute on <html>, set by ThemeService from the control
+   in the sidebar: `dark`, `light`, or absent for "follow the system". Screen
+   only, so a printed page is always the light theme. */
+@media screen {
+  :root[data-theme='dark'] {
+    @include theme-dark;
+  }
+}
+
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    @include theme-dark;
+  }
+}
+
+/* Restated after both dark rules and at their specificity, which `:root` alone
+   would lose to. Where the light theme applies this selector changes nothing
+   the light rule above has not already. */
+@media screen and (prefers-reduced-transparency: reduce) {
+  :root:not([data-theme='light']) {
+    @include reduced-transparency;
   }
 }
 
@@ -437,11 +586,11 @@ input:is([type='date'], [type='time'], [type='datetime-local'], [type='month'], 
 
 /* A destructive act confirmed in a dialog (cancelling an event). */
 .btn--danger {
-  background: var(--red-ink);
+  background: var(--danger-fill);
 }
 
 .btn--danger:hover:not(:disabled) {
-  background: var(--red-ink2);
+  background: var(--danger-fill-hover);
   color: var(--on-primary);
 }
 

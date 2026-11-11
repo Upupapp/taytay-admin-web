@@ -25,6 +25,7 @@ import { RouteProgress } from '@shared/ui/route-progress/route-progress';
 
 import { AppNav } from '../navigation/app-nav';
 import { NotificationList } from '../notifications/notification-list';
+import { ThemeSwitch } from '../theme/theme-switch';
 import { AppTopbar } from '../topbar/app-topbar';
 import { LAYOUT_COPY } from '../layout.copy';
 import { initialsOf } from '@shared/pipes/initials.pipe';
@@ -54,6 +55,7 @@ import { initialsOf } from '@shared/pipes/initials.pipe';
     Icon,
     NotificationList,
     RouteProgress,
+    ThemeSwitch,
   ],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',

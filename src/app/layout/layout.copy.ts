@@ -40,6 +40,13 @@ export const LAYOUT_COPY = {
   unreadCountLabel: (count: number): string =>
     count === 1 ? '1 unread notification' : `${count} unread notifications`,
 
+  // Appearance (DL-204). The choice is not saved, and the hint says so before anyone relies on it.
+  themeLegend: 'Appearance',
+  themeSystem: 'System',
+  themeLight: 'Light',
+  themeDark: 'Dark',
+  themeHint: 'System follows this computer. Not saved: a reload returns to System.',
+
   // Identity
   signOut: 'Sign out',
   scopeAllBarangays: 'All barangays',

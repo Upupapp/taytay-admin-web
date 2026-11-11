@@ -5,7 +5,8 @@
  * Runs as part of `npm run verify`. It enforces four things that a unit test
  * cannot, because they are about files and the repository as a whole:
  *
- *   1. The SCSS tokens and the TypeScript palette have not drifted apart.
+ *   1. The SCSS tokens and the TypeScript palette have not drifted apart,
+ *      in the light theme or the dark one (DL-204), status tones included.
  *      The palette is only a trustworthy audit subject if it still describes
  *      the stylesheet.
  *   2. No colour-system claim is made that this project cannot support —
@@ -26,11 +27,12 @@ const notes = [];
 
 const read = (relative) => readFileSync(join(root, relative), 'utf8');
 
-/* ── 1. SCSS <-> TypeScript token parity ─────────────────────────────────── */
+/* ── 1. SCSS <-> TypeScript token parity, in both themes ─────────────────── */
 
 /**
  * The contract between the stylesheet custom properties and the TypeScript
- * mirror. Left: CSS custom property. Right: key in BRAND_PALETTE.
+ * mirror. Left: CSS custom property. Right: key in BRAND_PALETTE and
+ * BRAND_PALETTE_DARK.
  */
 const TOKEN_MAP = {
   '--page-base': 'bg',
@@ -46,6 +48,9 @@ const TOKEN_MAP = {
   '--blue-50': 'brandPrimarySoft',
   '--on-primary': 'brandOnPrimary',
   '--gold-ink': 'accent',
+  '--link': 'link',
+  '--danger-fill': 'dangerFill',
+  '--danger-fill-hover': 'dangerFillHover',
   '--focus-ring-color': 'focusRing',
   '--focus-ring-inner': 'focusRingInner',
   '--primary-hover': 'primaryHover',
@@ -55,72 +60,160 @@ const TOKEN_MAP = {
   '--seal-placeholder-fg': 'sealPlaceholderFg',
   '--seal-placeholder-border': 'sealPlaceholderBorder',
 };
+const TONES = ['neutral', 'info', 'progress', 'success', 'warning', 'danger'];
 
-const styleSources = ['src/styles.scss', 'src/styles/_brand-tokens.scss'];
-// Every declaration, then each one followed through its `var()` aliases. Since the
-// redesign (DL-200) several design tokens are aliases (`--primary` is `var(--blue)`),
-// and a parser that read only literal hex would silently stop comparing them — which is
-// the drift this check exists to catch. The pre-redesign names this map used to carry
-// (`--c-*`, `--brand-primary*`) were retired in Phase 4 (DL-202).
-const declared = new Map();
-for (const file of styleSources) {
-  const text = read(file).replace(/\/\*[\s\S]*?\*\//g, '');
-  for (const match of text.matchAll(/(--[\w-]+):\s*([^;{}]+);/g)) {
+// The light theme is the `:root` block of each token file; the dark theme is the light one with
+// the declarations of `@mixin theme-dark` (styles.scss) laid over it, as the cascade lays them
+// (DL-204). Each declaration is then followed through its `var()` aliases. Since the redesign
+// (DL-200) several design tokens are aliases (`--primary` is `var(--blue)`), and a parser that read
+// only literal hex would silently stop comparing them — which is the drift this check exists to
+// catch. The pre-redesign names this map used to carry (`--c-*`, `--brand-primary*`) were retired
+// in Phase 4 (DL-202).
+const stripComments = (text) => text.replace(/\/\*[\s\S]*?\*\//g, '');
+const blockBody = (text, opener) => {
+  const match = opener.exec(text);
+  if (!match) return undefined;
+  const start = match.index + match[0].length;
+  let depth = 1;
+  let at = start;
+  for (; at < text.length && depth > 0; at++) {
+    if (text[at] === '{') depth += 1;
+    else if (text[at] === '}') depth -= 1;
+  }
+  return depth === 0 ? text.slice(start, at - 1) : undefined;
+};
+const declarationsOf = (body) => {
+  const declared = new Map();
+  for (const match of (body ?? '').matchAll(/(--[\w-]+):\s*([^;{}]+);/g)) {
     declared.set(match[1], match[2].trim());
   }
-}
-const resolve = (name, seen = new Set()) => {
-  const value = declared.get(name);
-  if (value === undefined || seen.has(name)) return undefined;
-  seen.add(name);
-  const alias = /^var\((--[\w-]+)\)$/.exec(value);
-  return alias ? resolve(alias[1], seen) : value;
+  return declared;
 };
-const cssTokens = new Map();
-for (const name of declared.keys()) {
-  const value = resolve(name);
-  if (value !== undefined && /^#[0-9a-fA-F]{3,8}$/.test(value)) {
-    cssTokens.set(name, value.toLowerCase());
-  }
+const styleSources = ['src/styles/_brand-tokens.scss', 'src/styles.scss'];
+const lightDeclared = new Map();
+for (const file of styleSources) {
+  const body = blockBody(stripComments(read(file)), /^:root\s*\{/m);
+  if (body === undefined)
+    problems.push(`${file} has no top-level :root block to read tokens from.`);
+  for (const [name, value] of declarationsOf(body)) lightDeclared.set(name, value);
 }
+const darkBody = blockBody(stripComments(read('src/styles.scss')), /@mixin theme-dark\s*\{/);
+if (darkBody === undefined) {
+  problems.push(
+    'src/styles.scss has no `@mixin theme-dark` block, so the dark palette cannot be compared ' +
+      '(DL-204).',
+  );
+}
+const darkDeclared = new Map([...lightDeclared, ...declarationsOf(darkBody)]);
+
+const hexTokens = (declared) => {
+  const resolve = (name, seen = new Set()) => {
+    const value = declared.get(name);
+    if (value === undefined || seen.has(name)) return undefined;
+    seen.add(name);
+    const alias = /^var\((--[\w-]+)\)$/.exec(value);
+    return alias ? resolve(alias[1], seen) : value;
+  };
+  const tokens = new Map();
+  for (const name of declared.keys()) {
+    const value = resolve(name);
+    if (value !== undefined && /^#[0-9a-fA-F]{3,8}$/.test(value)) {
+      tokens.set(name, value.toLowerCase());
+    }
+  }
+  return tokens;
+};
 
 const paletteSource = read('src/app/shared/brand/brand-palette.ts');
-const paletteBody = paletteSource.slice(
-  paletteSource.indexOf('export const BRAND_PALETTE'),
-  paletteSource.indexOf('} as const;'),
+/** The object literal assigned to `export const <name> =`, by brace matching. */
+const objectBody = (name) => {
+  const start = paletteSource.search(new RegExp(`export const ${name}\\b[^=]*=\\s*\\{`));
+  if (start === -1) return '';
+  return blockBody(paletteSource.slice(start), /=\s*\{/) ?? '';
+};
+const tsHex = (body) => {
+  const tokens = new Map();
+  for (const match of body.matchAll(/(\w+):\s*'(#[0-9a-fA-F]{3,8})'/g)) {
+    tokens.set(match[1], match[2].toLowerCase());
+  }
+  return tokens;
+};
+const tsTones = (body) => {
+  const tones = new Map();
+  for (const match of body.matchAll(
+    /(\w+):\s*\{\s*fg:\s*'(#[0-9a-fA-F]{3,8})',\s*bg:\s*'(#[0-9a-fA-F]{3,8})'\s*,?\s*\}/g,
+  )) {
+    tones.set(match[1], { fg: match[2].toLowerCase(), bg: match[3].toLowerCase() });
+  }
+  return tones;
+};
+
+const THEMES = [
+  ['light', lightDeclared, 'BRAND_PALETTE', 'TONE_PALETTE'],
+  ['dark', darkDeclared, 'BRAND_PALETTE_DARK', 'TONE_PALETTE_DARK'],
+];
+
+for (const [theme, declared, paletteName, toneName] of THEMES) {
+  const cssTokens = hexTokens(declared);
+  const tsTokens = tsHex(objectBody(paletteName));
+  const tsToneTokens = tsTones(objectBody(toneName));
+
+  if (tsTokens.size === 0) {
+    problems.push(
+      `Could not parse ${paletteName} from brand-palette.ts — the ${theme} parity check is blind.`,
+    );
+  }
+
+  for (const [cssName, tsName] of Object.entries(TOKEN_MAP)) {
+    const cssValue = cssTokens.get(cssName);
+    const tsValue = tsTokens.get(tsName);
+
+    if (cssValue === undefined) {
+      problems.push(
+        `${theme}: token ${cssName} is mapped but does not resolve to a hex colour in the ` +
+          `${theme} theme, directly or through var() aliases.`,
+      );
+      continue;
+    }
+    if (tsValue === undefined) {
+      problems.push(`${paletteName}.${tsName} is mapped but missing from brand-palette.ts.`);
+      continue;
+    }
+    if (cssValue !== tsValue) {
+      problems.push(
+        `Token drift (${theme}): ${cssName} is ${cssValue} in SCSS but ${paletteName}.${tsName} ` +
+          `is ${tsValue}. The contrast audit tests the TypeScript value, so this makes the audit ` +
+          'meaningless.',
+      );
+    }
+  }
+
+  // The status tones: StatusBadge paints the SCSS pair; the spec audits the TypeScript one.
+  for (const tone of TONES) {
+    const ts = tsToneTokens.get(tone);
+    for (const part of ['fg', 'bg']) {
+      const cssName = `--tone-${tone}-${part}`;
+      const cssValue = cssTokens.get(cssName);
+      if (cssValue === undefined) {
+        problems.push(
+          `${theme}: ${cssName} does not resolve to a hex colour in the ${theme} theme.`,
+        );
+      } else if (ts === undefined) {
+        problems.push(`${toneName}.${tone} is missing from brand-palette.ts.`);
+      } else if (ts[part] !== cssValue) {
+        problems.push(
+          `Token drift (${theme}): ${cssName} is ${cssValue} in SCSS but ` +
+            `${toneName}.${tone}.${part} is ${ts[part]}. The badge audit would be measuring a ` +
+            'colour no screen paints.',
+        );
+      }
+    }
+  }
+}
+notes.push(
+  `token parity: ${Object.keys(TOKEN_MAP).length} tokens and ${TONES.length * 2} tone tokens ` +
+    `compared in ${THEMES.length} themes`,
 );
-const tsTokens = new Map();
-for (const match of paletteBody.matchAll(/(\w+):\s*'(#[0-9a-fA-F]{3,8})'/g)) {
-  tsTokens.set(match[1], match[2].toLowerCase());
-}
-
-if (tsTokens.size === 0) {
-  problems.push('Could not parse BRAND_PALETTE from brand-palette.ts — the parity check is blind.');
-}
-
-for (const [cssName, tsName] of Object.entries(TOKEN_MAP)) {
-  const cssValue = cssTokens.get(cssName);
-  const tsValue = tsTokens.get(tsName);
-
-  if (cssValue === undefined) {
-    problems.push(
-      `Token ${cssName} is mapped but is not declared in any stylesheet as a hex colour, ` +
-        'directly or through var() aliases.',
-    );
-    continue;
-  }
-  if (tsValue === undefined) {
-    problems.push(`BRAND_PALETTE.${tsName} is mapped but missing from brand-palette.ts.`);
-    continue;
-  }
-  if (cssValue !== tsValue) {
-    problems.push(
-      `Token drift: ${cssName} is ${cssValue} in SCSS but BRAND_PALETTE.${tsName} is ${tsValue}. ` +
-        'The contrast audit tests the TypeScript value, so this makes the audit meaningless.',
-    );
-  }
-}
-notes.push(`token parity: ${Object.keys(TOKEN_MAP).length} tokens compared`);
 
 /* ── 2. No unsupportable colour-system claims ────────────────────────────── */
 

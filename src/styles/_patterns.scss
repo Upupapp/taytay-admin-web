@@ -322,6 +322,30 @@
   background: var(--primary-hover);
 }
 
+/* Tabs that share their box's width equally, for a short choice in a narrow
+   column (the Appearance control in the sidebar's account footer). */
+.tabs--fill {
+  flex-wrap: nowrap;
+  align-self: stretch;
+}
+
+.tabs--fill > .tab {
+  flex: 1 1 0;
+  justify-content: center;
+  min-inline-size: 0;
+  padding-inline: 0;
+}
+
+/* A radio group drawn as tabs: each `.tab` is a <label> around a radio with
+   `.visually-hidden`, the chosen one is `.tab--active`, and a focused radio's
+   ring is drawn on its tab, so it is every other tab's ring. Native radios
+   keep the arrow keys and what a screen reader announces (DL-204). */
+.tab:has(> input:focus-visible) {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  box-shadow: 0 0 0 var(--focus-ring-offset) var(--focus-ring-inner);
+}
+
 /* ── Filter row ───────────────────────────────────────────────────────────
    Labelled controls above a list, bottom-aligned so labels of different
    lengths do not stagger the fields. Filter fields are pills. */
@@ -698,7 +722,7 @@ a.kpi:focus-visible .kpi__arrow {
 
 .icon-tile--soft {
   background: var(--blue-50);
-  color: var(--primary);
+  color: var(--link);
 }
 
 /* Tinted tiles: the tone's tint with its ink (an urgent section's mark). */
@@ -721,7 +745,7 @@ a.kpi:focus-visible .kpi__arrow {
   block-size: 34px;
   border-radius: var(--r-pill);
   background: var(--blue-50);
-  color: var(--primary);
+  color: var(--link);
   font-size: var(--fs-xs);
   font-weight: var(--fw-bold);
 }
@@ -1232,7 +1256,7 @@ a.kpi:focus-visible .kpi__arrow {
   border: 0;
   border-radius: var(--r-pill);
   background: var(--blue-50);
-  color: var(--primary);
+  color: var(--link);
   font: inherit;
   font-weight: var(--fw-semibold);
   cursor: pointer;

@@ -21,10 +21,21 @@
  * That a colour is *used* where the check assumes. It pairs each foreground token with the
  * background token it is named for; a screen that puts `--tone-danger-fg` on `--primary` is a
  * combination no static rule anticipated, and only a person looking at the screen will see it.
+ *
+ * ## Two themes, one list of pairs
+ *
+ * The console has a light and a dark theme (DL-204). The light values are the `:root` blocks of
+ * `src/styles/_brand-tokens.scss` and `src/styles.scss`; the dark values are those with the
+ * declarations of `@mixin theme-dark` in `src/styles.scss` laid over them, exactly as the cascade
+ * lays them over `:root`. Every pair below is measured in **both**, against the same threshold. A
+ * pair names a *role* — the brand's text, a destructive button's fill — so a token that plays the
+ * role in both themes is named, and the roles the pairs assume are themselves checked (a stylesheet
+ * that paints text in `--primary` or white on a red ink fails, because in the dark theme those are
+ * a fill and a text colour respectively).
  */
 
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -32,46 +43,112 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const TEXT_MINIMUM = 4.5;
 const COMPONENT_MINIMUM = 3;
 
-const source = readFileSync(join(ROOT, 'src/styles.scss'), 'utf8');
+const failures = [];
+
+const stripComments = (text) => text.replace(/\/\*[\s\S]*?\*\//g, '');
+const styles = stripComments(readFileSync(join(ROOT, 'src/styles.scss'), 'utf8'));
+const brandTokens = stripComments(
+  readFileSync(join(ROOT, 'src/styles/_brand-tokens.scss'), 'utf8'),
+);
+
+/** The text between the brace that `opener` ends with and the brace that closes it. */
+function blockBody(text, opener) {
+  const match = opener.exec(text);
+
+  if (!match) {
+    return undefined;
+  }
+
+  const start = match.index + match[0].length;
+  let depth = 1;
+  let at = start;
+
+  for (; at < text.length && depth > 0; at++) {
+    if (text[at] === '{') depth++;
+    else if (text[at] === '}') depth--;
+  }
+
+  return depth === 0 ? text.slice(start, at - 1) : undefined;
+}
+
+function declarationsOf(body) {
+  /** @type {Map<string, string>} */
+  const declared = new Map();
+
+  for (const [, name, value] of (body ?? '').matchAll(/(--[a-z0-9-]+):\s*([^;{}]+);/g)) {
+    declared.set(name, value.trim());
+  }
+
+  return declared;
+}
 
 /*
  * Each token is followed through its `var()` aliases to the colour it lands on. Since the
  * redesign (DL-200) several design tokens are aliases (`--primary` is `var(--blue)`, `--deep` is
  * `var(--navy)`); reading only literal hex would have skipped them, and a skipped pair is a pair
- * nobody measured. The pre-redesign names (`--c-text`, `--c-brand`, …) were retired in Phase 4
- * (DL-202) and every pair below names the design token that replaced them.
+ * nobody measured. An alias resolves within its theme: the light `--danger-fill: var(--red-ink)`
+ * would land on the dark red ink if the dark block did not restate it, as it would in a browser.
  */
-/** @type {Map<string, string>} */
-const declared = new Map();
+const lightRoot = blockBody(styles, /^:root\s*\{/m);
+const darkMixin = blockBody(styles, /@mixin theme-dark\s*\{/);
 
-for (const [, name, value] of source
-  .replace(/\/\*[\s\S]*?\*\//g, '')
-  .matchAll(/(--[a-z0-9-]+):\s*([^;{}]+);/g)) {
-  declared.set(name, value.trim());
+if (lightRoot === undefined) {
+  failures.push(
+    'src/styles.scss has no top-level `:root { … }` block: the light theme cannot be read.',
+  );
 }
 
-function resolve(name, seen = new Set()) {
-  const value = declared.get(name);
-
-  if (value === undefined || seen.has(name)) {
-    return undefined;
-  }
-
-  seen.add(name);
-  const alias = /^var\((--[a-z0-9-]+)\)$/.exec(value);
-
-  return alias ? resolve(alias[1], seen) : value;
+if (darkMixin === undefined) {
+  failures.push(
+    'src/styles.scss has no `@mixin theme-dark { … }` block: the dark theme (DL-204) cannot be ' +
+      'read, so none of its pairs can be measured.',
+  );
 }
 
-/** @type {Record<string, string>} */
-const tokens = {};
+const light = new Map([
+  ...declarationsOf(blockBody(brandTokens, /^:root\s*\{/m)),
+  ...declarationsOf(lightRoot),
+]);
+const darkOverrides = declarationsOf(darkMixin);
+const dark = new Map([...light, ...darkOverrides]);
 
-for (const name of declared.keys()) {
-  const value = resolve(name);
-
-  if (value !== undefined && /^#[0-9a-fA-F]{3,8}$/.test(value)) {
-    tokens[name] = value;
+// A token the dark block declares that the light theme does not would be undefined in light: the
+// two themes must name the same tokens.
+for (const name of darkOverrides.keys()) {
+  if (!light.has(name)) {
+    failures.push(
+      `${name} is declared by the dark theme only. Declare it in :root as well, so the light theme ` +
+        'has a value for it and both are audited.',
+    );
   }
+}
+
+function hexTokens(declared) {
+  const resolve = (name, seen = new Set()) => {
+    const value = declared.get(name);
+
+    if (value === undefined || seen.has(name)) {
+      return undefined;
+    }
+
+    seen.add(name);
+    const alias = /^var\((--[a-z0-9-]+)\)$/.exec(value);
+
+    return alias ? resolve(alias[1], seen) : value;
+  };
+
+  /** @type {Record<string, string>} */
+  const tokens = {};
+
+  for (const name of declared.keys()) {
+    const value = resolve(name);
+
+    if (value !== undefined && /^#[0-9a-fA-F]{3,8}$/.test(value)) {
+      tokens[name] = value;
+    }
+  }
+
+  return tokens;
 }
 
 function channel(value) {
@@ -81,9 +158,7 @@ function channel(value) {
 }
 
 function luminance(hex) {
-  const full = hex.length === 4
-    ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`
-    : hex;
+  const full = hex.length === 4 ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}` : hex;
 
   const r = parseInt(full.slice(1, 3), 16);
   const g = parseInt(full.slice(3, 5), 16);
@@ -93,72 +168,138 @@ function luminance(hex) {
 }
 
 function ratio(a, b) {
-  const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  const [lighter, darker] = [luminance(a), luminance(b)].sort((x, y) => y - x);
 
-  return (light + 0.05) / (dark + 0.05);
+  return (lighter + 0.05) / (darker + 0.05);
 }
 
-const failures = [];
 let checked = 0;
 
-function require(foreground, background, minimum, what) {
-  // A pair whose colour cannot be found used to be skipped in silence. It fails now: a rename
-  // that left a token behind would otherwise turn this check green by measuring less.
-  if (tokens[foreground] === undefined || tokens[background] === undefined) {
-    failures.push(
-      `${what}: ${foreground} on ${background} does not resolve to a hex colour in ` +
-        'src/styles.scss, so it cannot be measured.',
-    );
+function audit(theme, tokens) {
+  function require(foreground, background, minimum, what) {
+    // A pair whose colour cannot be found used to be skipped in silence. It fails now: a rename
+    // that left a token behind would otherwise turn this check green by measuring less.
+    if (tokens[foreground] === undefined || tokens[background] === undefined) {
+      failures.push(
+        `${theme}: ${what}: ${foreground} on ${background} does not resolve to a hex colour in ` +
+          'the token files, so it cannot be measured.',
+      );
 
-    return;
+      return;
+    }
+
+    checked++;
+
+    const value = ratio(tokens[foreground], tokens[background]);
+
+    if (value < minimum) {
+      failures.push(
+        `${theme}: ${what}: ${foreground} on ${background} is ${value.toFixed(2)}:1, below ${minimum}:1.\n` +
+          `    ${tokens[foreground]} on ${tokens[background]}. A caseworker reads this screen forty\n` +
+          `    times a day, on an older monitor in a bright office.`,
+      );
+    }
   }
 
-  checked++;
+  // ── body text ────────────────────────────────────────────────────────────
+  for (const background of ['--page-base', '--card-solid', '--fill']) {
+    require('--text', background, TEXT_MINIMUM, 'body text');
+    require('--muted', background, TEXT_MINIMUM, 'muted text');
+    require('--muted2', background, TEXT_MINIMUM, 'subtle text');
+    require('--ink', background, TEXT_MINIMUM, 'heading ink');
+    require('--text2', background, TEXT_MINIMUM, 'secondary text');
+  }
 
-  const value = ratio(tokens[foreground], tokens[background]);
+  // ── white text on the filled buttons (DL-200) ────────────────────────────
+  require('--on-primary', '--primary', TEXT_MINIMUM, 'primary button label');
+  require('--on-primary', '--primary-hover', TEXT_MINIMUM, 'primary button label on hover');
+  // A filled destructive control (`.btn--danger`, the unread badge). In light the fill is the red
+  // ink, as before DL-204; in dark the red ink is text on a tint, so the fill is its own role.
+  require('--on-primary', '--danger-fill', TEXT_MINIMUM, 'danger button label');
+  require('--on-primary', '--danger-fill-hover', TEXT_MINIMUM, 'danger button label on hover');
 
-  if (value < minimum) {
-    failures.push(
-      `${what}: ${foreground} on ${background} is ${value.toFixed(2)}:1, below ${minimum}:1.\n` +
-        `    ${tokens[foreground]} on ${tokens[background]}. A caseworker reads this screen forty\n` +
-        `    times a day, on an older monitor in a bright office.`,
-    );
+  // ── text on the deep panel (sign-in artwork, the dashboard's dark card) ──
+  require('--on-deep', '--deep', TEXT_MINIMUM, 'text on the deep panel');
+  require('--on-deep-muted', '--deep', TEXT_MINIMUM, 'muted text on the deep panel');
+  require('--on-deep-muted', '--primary', TEXT_MINIMUM, 'muted text on a primary panel');
+
+  // ── brand text: links, and the brand glyph on a soft brand tile ──────────
+  // `--link` is the brand's text colour in both themes; in light it is the same blue as
+  // `--primary`, which these pairs named before the dark theme made `--primary` a fill (DL-204).
+  require('--link', '--card-solid', TEXT_MINIMUM, 'brand text');
+  require('--link', '--page-base', TEXT_MINIMUM, 'brand text');
+  require('--link', '--blue-50', TEXT_MINIMUM, 'brand glyph on a soft brand tile');
+  require('--gold-ink', '--card-solid', TEXT_MINIMUM, 'accent text');
+
+  // ── status tones, each on its own background ─────────────────────────────
+  for (const tone of ['neutral', 'info', 'progress', 'success', 'warning', 'danger']) {
+    require(`--tone-${tone}-fg`, `--tone-${tone}-bg`, TEXT_MINIMUM, `${tone} status text`);
+  }
+
+  // ── interface components: borders must be visible against what they enclose
+  require('--field-line', '--card-solid', COMPONENT_MINIMUM, 'strong border');
+  require('--field-line', '--page-base', COMPONENT_MINIMUM, 'strong border');
+
+  // ── the focus ring: two rings, and between them it shows on everything ────
+  for (const background of ['--page-base', '--card-solid', '--fill']) {
+    require('--focus-ring-inner', background, COMPONENT_MINIMUM, 'focus ring (inner)');
+  }
+  for (const fill of ['--primary', '--deep', '--focus-ring-inner']) {
+    require('--focus-ring-color', fill, COMPONENT_MINIMUM, 'focus ring (outline)');
   }
 }
 
-// ── body text ──────────────────────────────────────────────────────────────
-for (const background of ['--page-base', '--card-solid', '--fill']) {
-  require('--text', background, TEXT_MINIMUM, 'body text');
-  require('--muted', background, TEXT_MINIMUM, 'muted text');
-  require('--muted2', background, TEXT_MINIMUM, 'subtle text');
-  require('--ink', background, TEXT_MINIMUM, 'heading ink');
-  require('--text2', background, TEXT_MINIMUM, 'secondary text');
+audit('light', hexTokens(light));
+audit('dark', hexTokens(dark));
+
+/*
+ * ── the roles the pairs assume ─────────────────────────────────────────────
+ *
+ * The pairs measure `--link` as the brand's text and `--danger-fill` as the destructive fill. A
+ * stylesheet that paints text in `--primary`, or puts white on a red ink, is a combination they do
+ * not measure — and in the dark theme it fails outright (`--primary` on the dark card is 2.6:1; white
+ * on the dark red ink is 2.3:1).
+ */
+const MISUSE = [
+  [
+    /(?<![\w-])color\s*:\s*var\(--primary\)/,
+    'paints text in --primary. It is a fill in the dark theme (2.6:1 on the dark card); brand text ' +
+      'is --link, the same blue in light.',
+  ],
+  [
+    /(?<![\w-])background(?:-color)?\s*:\s*var\(--red-ink2?\)/,
+    'fills with a red ink. In the dark theme the red inks are text colours for a tint; a filled ' +
+      'destructive control is --danger-fill (or --danger-fill-hover).',
+  ],
+];
+
+function walk(dir) {
+  const out = [];
+
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+
+    if (statSync(full).isDirectory()) out.push(...walk(full));
+    else if (
+      /\.(scss|css)$/.test(entry) ||
+      (entry.endsWith('.ts') && !entry.endsWith('.spec.ts'))
+    ) {
+      out.push(full);
+    }
+  }
+
+  return out;
 }
 
-// ── white text on the filled buttons (DL-200) ──────────────────────────────
-require('--on-primary', '--primary', TEXT_MINIMUM, 'primary button label');
-require('--on-primary', '--primary-hover', TEXT_MINIMUM, 'primary button label on hover');
-require('--on-primary', '--red-ink', TEXT_MINIMUM, 'danger button label');
-require('--on-primary', '--red-ink2', TEXT_MINIMUM, 'danger button label on hover');
+for (const file of walk(join(ROOT, 'src'))) {
+  const text = stripComments(readFileSync(file, 'utf8')).replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
-// ── text on the deep panel (sign-in artwork, the dashboard's dark card) ────
-require('--on-deep', '--deep', TEXT_MINIMUM, 'text on the deep panel');
-require('--on-deep-muted', '--deep', TEXT_MINIMUM, 'muted text on the deep panel');
-require('--on-deep-muted', '--primary', TEXT_MINIMUM, 'muted text on a primary panel');
-
-// ── brand, which carries links and primary buttons ─────────────────────────
-require('--primary', '--card-solid', TEXT_MINIMUM, 'brand text');
-require('--primary', '--page-base', TEXT_MINIMUM, 'brand text');
-require('--gold-ink', '--card-solid', TEXT_MINIMUM, 'accent text');
-
-// ── status tones, each on its own background ───────────────────────────────
-for (const tone of ['neutral', 'info', 'progress', 'success', 'warning', 'danger']) {
-  require(`--tone-${tone}-fg`, `--tone-${tone}-bg`, TEXT_MINIMUM, `${tone} status text`);
+  for (const [pattern, why] of MISUSE) {
+    if (pattern.test(text)) {
+      failures.push(`${relative(ROOT, file).split(sep).join('/')} ${why}`);
+    }
+  }
 }
-
-// ── interface components: borders must be visible against what they enclose ─
-require('--field-line', '--card-solid', COMPONENT_MINIMUM, 'strong border');
-require('--field-line', '--page-base', COMPONENT_MINIMUM, 'strong border');
 
 /*
  * ── colour is never the only signal ────────────────────────────────────────

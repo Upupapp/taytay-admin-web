@@ -15,17 +15,17 @@ shapes, never their content.
 
 ## 1. Where things live
 
-| File                                    | Holds                                                                                                                                                                        |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/styles.scss`                       | Every colour, gradient, type, radius, height, spacing and status-tone token (`:root`); the reset; the primitives `.btn`, `.field`, `.check`, `.card`; the global focus ring. |
-| `src/styles/_brand-tokens.scss`         | Focus-ring tokens, semantic spacing aliases (`DL-17`), seal sizes and the seal placeholder's colours; the `.focus-ring` class.                                               |
-| `src/styles/_interaction.scss`          | `--target-min` (24px), `--focus-scroll-margin`, the `.icon-button` contract.                                                                                                 |
-| `src/styles/_motion.scss`               | `--motion-*` durations and easings, `.motion-micro` / `.motion-panel`, the reduced-motion rules.                                                                             |
-| `src/styles/_fonts.scss`                | The self-hosted Inter and Inter Tight faces (`src/styles/fonts/`). Never add a Google Fonts link: the CSP has no font origin for it.                                         |
-| `src/styles/_patterns.scss`             | The page patterns (§4): chips, tabs, KPI figures, notices, fact lists, form sections, grids. Loaded last, so a pattern can refine a primitive.                               |
-| `src/app/shared/ui/`                    | The shared components (§5), exported from `@shared/index`.                                                                                                                   |
-| `src/app/layout/`                       | The frame: shell, sidebar navigation, topbar, breadcrumb, search trigger, notification list (§6).                                                                            |
-| `src/app/shared/brand/brand-palette.ts` | The audited TypeScript mirror of the colour tokens. `check:brand` keeps it equal to the SCSS; `check:contrast` measures its pairs.                                           |
+| File                                    | Holds                                                                                                                                                                                                                    |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/styles.scss`                       | Every colour, gradient, type, radius, height, spacing and status-tone token (`:root`) and their dark values (`@mixin theme-dark`); the reset; the primitives `.btn`, `.field`, `.check`, `.card`; the global focus ring. |
+| `src/styles/_brand-tokens.scss`         | Focus-ring tokens, semantic spacing aliases (`DL-17`), seal sizes and the seal placeholder's colours; the `.focus-ring` class.                                                                                           |
+| `src/styles/_interaction.scss`          | `--target-min` (24px), `--focus-scroll-margin`, the `.icon-button` contract.                                                                                                                                             |
+| `src/styles/_motion.scss`               | `--motion-*` durations and easings, `.motion-micro` / `.motion-panel`, the reduced-motion rules.                                                                                                                         |
+| `src/styles/_fonts.scss`                | The self-hosted Inter and Inter Tight faces (`src/styles/fonts/`). Never add a Google Fonts link: the CSP has no font origin for it.                                                                                     |
+| `src/styles/_patterns.scss`             | The page patterns (§4): chips, tabs, KPI figures, notices, fact lists, form sections, grids. Loaded last, so a pattern can refine a primitive.                                                                           |
+| `src/app/shared/ui/`                    | The shared components (§5), exported from `@shared/index`.                                                                                                                                                               |
+| `src/app/layout/`                       | The frame: shell, sidebar navigation, topbar, breadcrumb, search trigger, notification list (§6).                                                                                                                        |
+| `src/app/shared/brand/brand-palette.ts` | The audited TypeScript mirror of the colour tokens, light and dark. `check:brand` keeps it equal to the SCSS; its spec measures its pairs in both themes.                                                                |
 
 A feature stylesheet holds layout for that screen only: grids, gaps, widths, the order of things. It
 takes every colour, type size, radius and height from a token, and every repeated shape from a
@@ -37,8 +37,9 @@ of that (§9).
 ## 2. Tokens (CSS custom properties)
 
 All in `:root`. Names in the first groups are the mock-ups' own, so a rule translated from a mock-up
-can keep `var(--card)` as it is written there. Light theme only: the mock-ups' dark theme is not
-built (`DL-200`).
+can keep `var(--card)` as it is written there. The values below are the light theme's; the dark
+theme restates the colours and surfaces in `@mixin theme-dark` ("Dark theme", the end of this
+section).
 
 ### Colours
 
@@ -48,18 +49,19 @@ exempt from 1.4.11), `--blue-50` #ecf1fc, `--blue-100` #dce5fa.
 
 **Inks**
 
-| Token                                         | Use                                                                                                                        |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `--primary` (= `--blue`)                      | Primary buttons, current tab, links' colour family, chart line.                                                            |
-| `--primary-hover` #3a63f0                     | Primary button hover.                                                                                                      |
-| `--on-primary` #fff                           | Text on `--primary`, `--red-ink` and the deep fills.                                                                       |
-| `--deep` (= `--navy`)                         | Deep record cards, the sign-in artwork.                                                                                    |
-| `--ink` #08124a                               | Headings, names, figures.                                                                                                  |
-| `--text` #1b2540                              | Body text (`body` default).                                                                                                |
-| `--text2` #2b3550                             | Secondary text, field labels, `.check` labels.                                                                             |
-| `--muted`, `--muted2` #4f586c                 | Hints, captions, placeholders. Darkened in `DL-202` to hold 4.5:1 on glass; both names stay because the mock-ups use both. |
-| `--link` (= `--blue`), `--link-hover` #1d3a9c | Text links.                                                                                                                |
-| `--on-deep` #fff, `--on-deep-muted` #c3cde6   | Text on `--deep` (audited).                                                                                                |
+| Token                                         | Use                                                                                                                                                       |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--primary` (= `--blue`)                      | Primary buttons, current tab, chart line. A fill, never a text colour: brand text is `--link` (`DL-204`).                                                 |
+| `--primary-hover` #3a63f0                     | Primary button hover.                                                                                                                                     |
+| `--on-primary` #fff                           | Text on `--primary`, `--danger-fill` and the deep fills.                                                                                                  |
+| `--deep` (= `--navy`)                         | Deep record cards, the sign-in artwork.                                                                                                                   |
+| `--ink` #08124a                               | Headings, names, figures.                                                                                                                                 |
+| `--text` #1b2540                              | Body text (`body` default).                                                                                                                               |
+| `--text2` #2b3550                             | Secondary text, field labels, `.check` labels.                                                                                                            |
+| `--muted`, `--muted2` #4f586c                 | Hints, captions, placeholders. Darkened in `DL-202` to hold 4.5:1 on glass; both names stay because the mock-ups use both.                                |
+| `--link` (= `--blue`), `--link-hover` #1d3a9c | Text links.                                                                                                                                               |
+| `--danger-fill`, `--danger-fill-hover`        | A filled destructive control: `.btn--danger`, the unread badge. The red ink in light; its own token because the dark red ink is a text colour (`DL-204`). |
+| `--on-deep` #fff, `--on-deep-muted` #c3cde6   | Text on `--deep` (audited).                                                                                                                               |
 
 **Tints and their inks** (chips, notices, effects lists — a tint always carries its own ink):
 `--blue-tint`, `--gold-tint`, `--gold-tint2`, `--gold-ink` #5c4d00, `--gold-ink2` #3d3505,
@@ -185,6 +187,89 @@ after their first part (`DL-202`).
 `--motion-ease-decelerate`. Reduced motion removes ambient animation outright (`_motion.scss`,
 `check:shell`).
 
+### Dark theme
+
+The console has a light and a dark theme (`DL-204`), the dark one drawn from the `.theme-dark` block
+of the mock-ups (the same in all twelve).
+
+**How the tokens are paired.** `:root` holds every token's light value. `@mixin theme-dark` in
+`src/styles.scss` holds the dark value of each colour and surface that differs; a token it does not
+name keeps its light value in both themes — the palette (`--blue` … `--sky`), the tiles, the seal
+placeholder, type, radii, sizes. The mixin is included twice, both for the screen only, so a printed
+page is always light:
+
+```scss
+@media screen {
+  :root[data-theme='dark'] {
+    @include theme-dark; // Dark picked in the control
+  }
+}
+
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    @include theme-dark; // System, on a computer set to dark
+  }
+}
+```
+
+Reduced transparency is restated after both, at their specificity, so it turns the dark glass solid
+as well. An alias resolves within its theme: the light `--danger-fill: var(--red-ink)` would land on
+the dark red ink if `theme-dark` did not restate it, exactly as in the browser.
+
+**Where the dark values leave the mock-up.** Each failed WCAG AA as drawn; the comment beside each
+value in `styles.scss` gives the measurement.
+
+| Token                                                        | Mock-up                         | Dark value                                      | Why                                                                                                                                                  |
+| ------------------------------------------------------------ | ------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--card`                                                     | white 12% → 4%                  | the same, over a 70% veil of `--page-base`      | Over the bright blue at the top-left (the sidebar) muted text fell to 2.9:1, links 3.6:1, red ink 3.1:1.                                             |
+| `--primary`                                                  | #2d54e0                         | #2c51d9                                         | Gold initials and the current-page icon on it measured 4.3:1.                                                                                        |
+| `--muted`, `--muted2`                                        | #9aa6c4, #8c98b8                | #a4b0cc for both                                | Measured 4.2:1 on the gold-tinted "late" bucket over the glass, and #8c98b8 4.0:1 at the top-left; one value for both names, as in light (`DL-202`). |
+| `--field-line`                                               | white 24%                       | #7884aa                                         | 2.1:1 on the solid card, and an alpha cannot be audited.                                                                                             |
+| `--on-deep-muted`                                            | — (light #c3cde6)               | #d6def2                                         | 4.0:1 on the dark primary (a tally, the app-figures notice).                                                                                         |
+| `--focus-ring-inner`                                         | — (gold outline only)           | #4169f2                                         | The light navy vanishes on dark; this holds 3:1 on the dark surfaces and against the gold.                                                           |
+| `--danger-fill`, `--danger-fill-hover`                       | #e0090a badge                   | `var(--red)`, #b00708                           | The dark red ink is a pink for text on a tint; white on it is 2.3:1.                                                                                 |
+| `--fill`, `--divider`, `--blue-50`, `--blue-100`, `--tone-*` | — (README palette, light tints) | the dark tints laid over `--card-solid`, as hex | Not in the mock-up; solid so they can be audited.                                                                                                    |
+
+**Two roles the audit holds.** Brand text is `--link` (the same blue as `--primary` in light): never
+`color: var(--primary)`, because in dark the primary is a fill (2.6:1 on the dark card). A filled
+destructive control is `--danger-fill`: never a red ink as a background. `check:contrast` fails on
+either.
+
+**Adding a colour token, in both themes.**
+
+1. Declare it in `:root` beside its group, with a comment saying what it is for.
+2. Declare its dark value in `theme-dark`, unless it is a fixed brand colour that reads on both (then
+   say so in the comment). A token declared only in `theme-dark` fails `check:contrast`.
+3. If it is painted as text or as a boundary, add its pair to `tools/check-contrast.mjs` and to
+   `auditedPairsFor` in `brand-palette.ts`: each list runs once per theme. If it is in `TOKEN_MAP`
+   (`tools/check-brand-assets.mjs`) or is a status tone, give it the same values in `BRAND_PALETTE` /
+   `BRAND_PALETTE_DARK` (or `TONE_PALETTE` / `TONE_PALETTE_DARK`).
+4. A value that fails in one theme is changed in that theme, never the threshold. A token that plays
+   a different part in each theme is two tokens, each named for its part.
+5. Sweep the screens it is painted on in both themes (§10): glass is not audited statically.
+
+`.claude/commands/change-token.md` walks through it.
+
+**The control.** "Appearance — System, Light, Dark" sits in the sidebar's account footer, beside the
+identity and sign-out, so it is there at every width (`layout/theme/theme-switch.ts`), and it is built from the
+patterns only: a `.choice-list` fieldset whose legend names the group, a `.tabs.tabs--fill` pill whose
+`.tab` labels each hold a `.visually-hidden` native radio (the chosen one `.tab--active`, as the
+mock-ups' Light / Dark switch is drawn), and a `.field__hint`. Arrow keys move and choose, a screen
+reader announces the group, the option and whether it is checked, and the tab draws a focused radio's
+ring (§4, Tabs). `ThemeService` (`core/layout/theme.service.ts`) sets `data-theme` on
+`<html>` to `light` or `dark`, or removes it for System. System is the default and needs no script:
+the stylesheet follows `prefers-color-scheme` on its own, so nothing flashes before the app starts —
+and the CSP (`script-src 'self'`) refuses the inline snippet a stored choice would need.
+`<meta name="color-scheme" content="light dark">` and each theme's `color-scheme` give native
+controls, the date picker and scrollbars the matching scheme.
+
+**Storage: none.** `check:auth` refuses `localStorage`, `sessionStorage`, cookies and IndexedDB
+anywhere in `src/` — a rule about _whether_ the console stores anything, which needs no judgement —
+so the choice is held in memory for the tab. A reload returns to System, and the hint under the
+control says so (`DL-204`).
+
+**Images.** The seal and photographs are never recoloured for the dark theme (`DL-199`, `DL-22`).
+
 ---
 
 ## 3. Global primitives (`src/styles.scss`, `_interaction.scss`)
@@ -214,22 +299,22 @@ Defined once and never redefined in a feature stylesheet (`DL-120`, `check:harde
 
 Use the class; do not re-type the mock-up's inline styles.
 
-| Group             | Classes                                                                                                                                                                                                                                                                                                                                                                |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cards             | `.card--padded` (20/22 padding), `.card--panel` (r28, big panels), `.card--deep` (navy record card), `.stack` (column, gap 14).                                                                                                                                                                                                                                        |
-| Headings          | `.section-title` (15/700), `.section-title--display` (20, Inter Tight), `.eyebrow` (11px capitals), `.status-line` (the count line under a list; give it `role="status"` when it changes).                                                                                                                                                                             |
-| Filters           | `.toolbar` (a row of `.field`s, labels above), `.filter-bar` + `__field` / `__note` (the dashboard's single glass pill), `.search-field` / `.icon-field` + `__icon` (a field with a leading glyph), `.check-pill` (a checkbox filter).                                                                                                                                 |
-| Tables            | `app-data-table` for any list (§5); `.table-scroll` + `.simple-table` (+ `__num`) for a plain table in feature markup; `.table-scroll--simple` when a check reads the table's own class. Every scrolling box is `position: relative`.                                                                                                                                  |
-| Chips             | `.chip` + `--info                                                                                                                                                                                                                                                                                                                                                      | progress                 | success                                                                                                                                                  | warning                                      | danger`, `ul.chip-list`. Sectors and categories only — **a status is always `app-status-badge`**. |
-| Tabs              | `ul.tabs` of `.tab` (+ `.tab--active` or `aria-current` / `aria-selected`), `.tab__count`, `.step-number` (numbered steps).                                                                                                                                                                                                                                            |
-| Figures           | `.kpi` / `a.kpi` (+ `__label`, `__value`, `__value--long`, `__hint`, `__arrow`): a link KPI fills primary on hover and focus. `.tally-row` + `.tally` (+ `--primary                                                                                                                                                                                                    | gold                     | red                                                                                                                                                      | soft`, `--figure-first`): a record's totals. |
-| Grids             | `.bento` + `.span-3` … `.span-9` (12 columns; halves ≤1100px, full ≤700px; no page uses it yet), `.record-grid` (+ `__wide`): auto-fit two columns of panels, `.split` + `__main` / `__side` (3fr/2fr work page with a context column, one column ≤1100px).                                                                                                            |
-| Records           | `dl.facts` (+ `.facts__row`, `.facts__row--wide`, `.facts--pairs`), `.soft-list` of `.soft-row` (+ `--stacked`, `__meta`), `.subpanel` (+ `--soft`, `--deep`), `.record-link`, `.withheld` (words withheld from this reader).                                                                                                                                          |
-| Icons and people  | `.icon-tile` (+ `--sm                                                                                                                                                                                                                                                                                                                                                  | lg`, `--round`, `--green | gold                                                                                                                                                     | red                                          | navy                                                                                              | sky | soft | blue-soft | red-soft`), `.avatar`/`.avatar--lg`(initials from`InitialsPipe`, always `aria-hidden`). |
-| Notices           | `.callout` (+ `--warning                                                                                                                                                                                                                                                                                                                                               | danger                   | success`, `__title`, an inner `ul`), `.effects`(+`__lead`): "what this does", always **before** its button; `.note-box` (a quiet note with a left rule). |
-| Forms             | `.form-panel`, `.form-section` (+ `__legend`, `__note`): a hairline fieldset with its legend in the edge; `.choice-list` + `.choice` (+ `__text`, `__hint`): radio/checkbox tiles; `.form-footer` (Cancel + submit, end-aligned 48px pills); `.form-problem:empty` hides an empty alert line (never on a live region). `.field input[type='file']` is styled globally. |
-| Navigation        | `.action-link` (+ `--primary`, `__label`, `__arrow`): a quick action with a leading tile; `.back-link` + `__arrow`; `.list-more` (count line + Show more).                                                                                                                                                                                                             |
-| Whole-page notice | `.notice-page` (+ `--under-header`): not found, no access, not built yet — an `app-empty-state` in one centred 720px panel.                                                                                                                                                                                                                                            |
+| Group             | Classes                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cards             | `.card--padded` (20/22 padding), `.card--panel` (r28, big panels), `.card--deep` (navy record card), `.stack` (column, gap 14).                                                                                                                                                                                                                                                                                                           |
+| Headings          | `.section-title` (15/700), `.section-title--display` (20, Inter Tight), `.eyebrow` (11px capitals), `.status-line` (the count line under a list; give it `role="status"` when it changes).                                                                                                                                                                                                                                                |
+| Filters           | `.toolbar` (a row of `.field`s, labels above), `.filter-bar` + `__field` / `__note` (the dashboard's single glass pill), `.search-field` / `.icon-field` + `__icon` (a field with a leading glyph), `.check-pill` (a checkbox filter).                                                                                                                                                                                                    |
+| Tables            | `app-data-table` for any list (§5); `.table-scroll` + `.simple-table` (+ `__num`) for a plain table in feature markup; `.table-scroll--simple` when a check reads the table's own class. Every scrolling box is `position: relative`.                                                                                                                                                                                                     |
+| Chips             | `.chip` + `--info                                                                                                                                                                                                                                                                                                                                                                                                                         | progress                 | success                                                                                                                                                  | warning                                      | danger`, `ul.chip-list`. Sectors and categories only — **a status is always `app-status-badge`**. |
+| Tabs              | `ul.tabs` of `.tab` (+ `.tab--active` or `aria-current` / `aria-selected`), `.tab__count`, `.step-number` (numbered steps). `.tabs--fill`: the tabs share the box's width (a short choice in a narrow column). A radio group drawn as tabs: each `.tab` a `<label>` around a `.visually-hidden` radio, the chosen one `.tab--active`; the tab draws the focused radio's ring (`.tab:has(> input:focus-visible)`, the Appearance control). |
+| Figures           | `.kpi` / `a.kpi` (+ `__label`, `__value`, `__value--long`, `__hint`, `__arrow`): a link KPI fills primary on hover and focus. `.tally-row` + `.tally` (+ `--primary                                                                                                                                                                                                                                                                       | gold                     | red                                                                                                                                                      | soft`, `--figure-first`): a record's totals. |
+| Grids             | `.bento` + `.span-3` … `.span-9` (12 columns; halves ≤1100px, full ≤700px; no page uses it yet), `.record-grid` (+ `__wide`): auto-fit two columns of panels, `.split` + `__main` / `__side` (3fr/2fr work page with a context column, one column ≤1100px).                                                                                                                                                                               |
+| Records           | `dl.facts` (+ `.facts__row`, `.facts__row--wide`, `.facts--pairs`), `.soft-list` of `.soft-row` (+ `--stacked`, `__meta`), `.subpanel` (+ `--soft`, `--deep`), `.record-link`, `.withheld` (words withheld from this reader).                                                                                                                                                                                                             |
+| Icons and people  | `.icon-tile` (+ `--sm                                                                                                                                                                                                                                                                                                                                                                                                                     | lg`, `--round`, `--green | gold                                                                                                                                                     | red                                          | navy                                                                                              | sky | soft | blue-soft | red-soft`), `.avatar`/`.avatar--lg`(initials from`InitialsPipe`, always `aria-hidden`). |
+| Notices           | `.callout` (+ `--warning                                                                                                                                                                                                                                                                                                                                                                                                                  | danger                   | success`, `__title`, an inner `ul`), `.effects`(+`__lead`): "what this does", always **before** its button; `.note-box` (a quiet note with a left rule). |
+| Forms             | `.form-panel`, `.form-section` (+ `__legend`, `__note`): a hairline fieldset with its legend in the edge; `.choice-list` + `.choice` (+ `__text`, `__hint`): radio/checkbox tiles; `.form-footer` (Cancel + submit, end-aligned 48px pills); `.form-problem:empty` hides an empty alert line (never on a live region). `.field input[type='file']` is styled globally.                                                                    |
+| Navigation        | `.action-link` (+ `--primary`, `__label`, `__arrow`): a quick action with a leading tile; `.back-link` + `__arrow`; `.list-more` (count line + Show more).                                                                                                                                                                                                                                                                                |
+| Whole-page notice | `.notice-page` (+ `--under-header`): not found, no access, not built yet — an `app-empty-state` in one centred 720px panel.                                                                                                                                                                                                                                                                                                               |
 
 ---
 
@@ -437,7 +522,8 @@ Usually reached through `AsyncContent` or `DataTable [loading]` rather than plac
 ## 6. The frame (`src/app/layout/`)
 
 `app-shell` mounts, in order: `app-route-progress`, the skip link, `app-connection-banner`, the glass
-sidebar (`app-brand-mark`, `app-nav`, the signed-in identity and sign-out), and the main column
+sidebar (`app-brand-mark`, `app-nav`, the signed-in identity, the Appearance control
+`app-theme-switch` and sign-out), and the main column
 (`app-topbar`: the navigation toggle, `app-breadcrumb`, `app-global-search-trigger` and the
 notification inbox button; then `main#main-content`). The notification inbox is an `app-drawer` holding `app-notification-list`.
 
@@ -682,9 +768,11 @@ attachments open only after a warning, and nothing is logged (`check:inbox`).
 8. **Checks win over a mock-up.** Privacy, access and domain checks (`check:verification`,
    `check:inbox`, `check:directory`, `check:balita`, …) and the decision log outrank any drawing.
    Where they read a class or an exact attribute, keep it beside the new classes.
-9. **Contrast is audited.** Colour tokens are hex or `var()` of hex in `styles.scss` /
-   `_brand-tokens.scss`, mirrored in `brand-palette.ts`; text pairs hold 4.5:1, boundaries 3:1. On
-   glass, measure in the browser (§10).
+9. **Contrast is audited, in both themes.** Colour tokens are hex or `var()` of hex in `styles.scss` /
+   `_brand-tokens.scss` (light in `:root`, dark in `theme-dark`), mirrored in `brand-palette.ts`; text
+   pairs hold 4.5:1, boundaries 3:1. On glass, measure in the browser in both themes (§10). Dark is
+   the same design with dark tokens: no dark-only layout and no `[data-theme]` selector outside the
+   token file (§2, "Dark theme").
 10. **Budget and CSP.** A component stylesheet warns at 4 kB and fails at 8 kB (`angular.json`);
     move a reusable rule to `_patterns.scss` or split a child component. No static `style=""`
     attributes (the CSP is `style-src 'self'`); `[style.x]` bindings are fine.
@@ -698,8 +786,8 @@ attachments open only after a warning, and nothing is logged (`check:inbox`).
 | Command                   | Holds                                                                                                                                                                                             |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `npm run check:styles`    | No colour literal (hex, `rgb()`, `hsl()`, …, named colours), no px font size, no shadow or glow anywhere under `src/`, except a token's value in `styles.scss` / `_brand-tokens.scss` (`DL-203`). |
-| `npm run check:contrast`  | The audited colour pairs in `styles.scss` meet their thresholds.                                                                                                                                  |
-| `npm run check:brand`     | SCSS colour tokens equal `brand-palette.ts`; no unsupportable colour-system claim; brand images registered.                                                                                       |
+| `npm run check:contrast`  | The audited colour pairs meet their thresholds in the light theme and the dark one; no text in `--primary`, no fill in a red ink (`DL-204`).                                                      |
+| `npm run check:brand`     | SCSS colour tokens and status tones equal `brand-palette.ts` in both themes; no unsupportable colour-system claim; brand images registered.                                                       |
 | `npm run check:shell`     | Target size, focus scroll margin, reduced motion, icon-only buttons, overflow rules in the frame.                                                                                                 |
 | `npm run check:hardening` | `.btn`, `.field`, `.card` are not redefined in a feature (`DL-120`); overlays trap focus.                                                                                                         |
 | `ng build`                | The component-style budget.                                                                                                                                                                       |
@@ -726,7 +814,9 @@ and `axe-core`, which this repository does not depend on. To repeat it:
 4. It navigates **inside the app** (`history.pushState` + a `popstate` event): a reload loses the
    in-memory session. It visits every `NAVIGATION` route, the routes outside the menu (`/residents/new`,
    `/administration/roles`, `/forbidden`, a not-found path, …) and the first record of every list, at
-   1280×800 and 1440×900.
+   1280×800 and 1440×900, **once per theme**: the browser context emulates `prefers-color-scheme`,
+   and at one width the theme is picked with the Appearance control while the system is set to the
+   other, so both ways of reaching a theme are measured.
 5. On each page it records:
    - **overflow** — the document wider than the viewport (`scrollWidth > clientWidth`), any
      element that pokes past its clipping ancestor without being a scroll box, and clipped text;
@@ -734,9 +824,11 @@ and `axe-core`, which this repository does not depend on. To repeat it:
      itself or a close ancestor, and none may land on a hidden element;
    - **contrast** — axe-core's `color-contrast` rule, plus a pixel measurement for text on glass
      (axe leaves it "incomplete"): hide all text, screenshot, read the pixels behind each text run,
-     compare with the text colour at the 2nd percentile.
+     compare with the text colour at the 2nd percentile;
+   - **ring contrast** — the outline's colour against the backgrounds behind the ringed element.
 6. It writes a JSON report and prints a compact summary. Phase 4 ended at 0 page overflows, 0 focus
-   stops without a ring, 0 axe violations and 0 measured runs below AA (2,992 runs).
+   stops without a ring, 0 axe violations and 0 measured runs below AA (2,992 runs); the dark theme's
+   results are in `DL-204`.
 
 For a spot check of one page, the Playwright MCP tools (navigate, resize to 1280/1440, Tab, read
 computed styles) do the same by hand. Keep screenshots out of the conversation; read the DOM and
@@ -746,7 +838,8 @@ computed styles instead.
 
 ## 11. Known gaps
 
-- Light theme only; a dark theme needs a second, audited token block (`DL-200`).
+- The theme choice is not remembered across a reload: the console stores nothing in the browser
+  (`check:auth`, `DL-204`). Remembering it would need a server-side preference on the staff account.
 - The gradient page header is defined (`--grad-header`) but unused (`DL-201`).
 - KPI rows, trend charts and per-section counts drawn in the mock-ups wait for API fields (counts,
   totals, per-week series, office category); they are listed in the redesign's notes and are not

@@ -9567,3 +9567,90 @@ than `none` or the focus ring built from the focus tokens; any `text-shadow`; `d
 
 stylelint was not added: one more dependency and configuration for three rules a short script states
 in the vocabulary of the other checks.
+
+## DL-204 — the console has a dark theme: it follows the computer unless somebody picks one, and the choice is kept for the tab, not stored
+
+**Status:** Settled (11 November 2026). The owner asked for the admin side's dark mode, which the
+redesign's mock-ups draw and `DL-200` left for later. Presentation, and one control in the frame: no
+route, guard, port, model or wording outside the frame changed.
+
+**Where the colours come from.** The `.theme-dark` block of the admin mock-ups — the same in all
+twelve — is `@mixin theme-dark` in `src/styles.scss`, laid over the light `:root`. A token the mixin
+does not name keeps its light value in both themes: the palette, the icon tiles, the seal placeholder,
+type and sizes. The seal and photographs are never recoloured (`DL-199`). Where a drawn value failed
+WCAG AA (text 4.5:1, large text and interface parts 3:1) it was changed the way `DL-202` changed the
+light ones, and the comment beside each value says what was measured:
+
+- **The glass** keeps the mock-ups' white sheen (12% → 4%) but lays it on a 70% veil of the page's own
+  colour. Over the plain page that looks as drawn; over the bright blue at the top-left of the wash,
+  where the sidebar sits, the drawn glass let muted text fall to 2.9:1, links to 3.6:1 and the red ink
+  to 3.1:1. The veil damps the glow under a card and leaves it around one.
+- `--primary` is a shade darker than the drawn #2d54e0 (#2c51d9): the gold initials and current-page
+  icon on it measured 4.3:1. `--muted` is a shade lighter than the drawn #9aa6c4 (#a4b0cc): in the
+  browser, a hint on the gold-tinted "late" bucket over the glass measured 4.2:1 (work, visits,
+  releases). `--muted2` is `--muted`, as in light (the drawn #8c98b8 measured 4.0:1 on the glass). `--field-line` is a solid #7884aa (the drawn white at 24% is 2.1:1, and an alpha cannot
+  be audited). `--on-deep-muted` lightens to #d6def2 (4.0:1 on the dark primary).
+- **The focus ring** keeps its gold outline, which carries it on every dark surface; the navy inner
+  ring would vanish there, so the dark inner ring is a blue (#4169f2) that holds 3:1 against the dark
+  surfaces and against the gold. The light theme's focus pairs are therefore the dark theme's too.
+- **Two roles split.** In light the red ink is both a text colour and the fill of a destructive
+  button; in dark it is a pink for text on a tint, and white on it is 2.3:1. The fill is its own token,
+  `--danger-fill` (light: the red ink, as before; dark: the palette red, white 5.0:1). Likewise
+  `--primary` was painted as text in five places, which in dark would be 2.6:1 on the card; they paint
+  `--link`, the same blue in light. `check:contrast` now fails on text in `--primary` or a red ink as a
+  fill.
+- The tokens the mock-ups do not draw in dark (the soft fill, the divider, the soft brand blues, the
+  status tones) are the dark tints laid over the solid dark card, as hex, so they can be audited.
+
+**The audits run twice.** `check:contrast` reads the light theme from the `:root` blocks of both token
+files and the dark theme from them with `theme-dark` laid over, follows aliases within each, and
+measures the same 40 pairs in each (80). It gained the focus-ring pairs, the brand glyph on its soft
+tile, and the danger fill; it fails when the dark block is missing, when it declares a token light does
+not, and — as for light — when a pair does not resolve. `brand-palette.ts` gains `BRAND_PALETTE_DARK`
+and `TONE_PALETTE_DARK` (held to the light names by `satisfies`) and builds its audited pairs once per
+theme, so the spec measures 45 pairs in each; `check:brand` compares 24 tokens and the 12 status-tone
+tokens with the stylesheet in both themes. Each extension was validated against planted regressions
+(a light-era muted grey in dark, a dark tone left to fall back to its light ink, an alpha where a hex
+belongs, a dark-only token, text in `--primary`, a red-ink fill, drift in the dark mirror, the mixin
+removed); all were reported, then removed.
+
+**How a theme is chosen.** By default the console follows the computer's setting
+(`prefers-color-scheme`). "Appearance — System, Light, Dark" in the sidebar's account footer, beside
+the identity and sign-out so it is there at every width, overrides it. It is built from the design
+system and nothing else: the `.choice-list` fieldset, the `.tabs` pill the mock-ups draw their own
+Light / Dark switch with (the chosen tab `.tab--active`), and `.field__hint`. Each tab is a label
+around a visually hidden native radio, so arrow keys move and choose and a screen reader announces
+the group, the option and its state; the one addition to the patterns is `.tabs--fill` (tabs that
+share a narrow box) and the rule that a tab draws its focused radio's ring with the focus tokens. `ThemeService` sets `data-theme` on `<html>` to `light` or `dark`, or removes it for System.
+The default needs no script, so no wrong theme flashes before the app starts; that matters because
+the CSP (`script-src 'self'`, `check:headers`) refuses the inline snippet that usually reads a stored
+choice before the page paints. A printed page is always light: both dark rules are screen-only.
+Reduced transparency turns the dark glass solid as it does the light.
+
+**What is stored, and where: nothing.** A theme is not personal data and not a credential, and one
+key holding `dark` would be harmless in itself. But `check:auth` refuses `localStorage`,
+`sessionStorage`, cookies and IndexedDB anywhere in the console — deliberately a rule about _whether_
+the console stores anything, because a rule about _what_ it stores needs somebody to judge every
+case correctly forever (ADR 0006, `DL-110`, `DL-166`). An exception for a harmless value is exactly
+that judgement, so none is made and the check is unchanged. The choice is a signal in
+`ThemeService`, held for the tab. A reload returns to System; it already asks the person to sign in
+again, since nothing of the session is stored either. The hint under the control says the choice is
+not saved, before anybody relies on it. Remembering it across sign-ins would be a preference on the
+staff account, served by the API — a change for the backend, not for browser storage.
+
+**Measured in the browser.** The mock console (local-mock, every module as an administrator, the first
+record of every list) at 1280×800 and 1440×900 in each theme: 128 pages a theme, reached at 1280 through
+the system setting and at 1440 through the control with the system set to the other theme. The first
+dark run found six runs of muted text below 4.5:1 (4.16–4.31:1, the hint on the gold-tinted "late"
+bucket of the work queue, field visits and releases), which is why `--muted` is a shade lighter than
+drawn. Afterwards, in each theme: every page in the theme asked for; no page wider than the window
+(the roles matrix still scrolls inside its card, by design, as in `DL-202`) and nothing past its box;
+axe-core reports no colour-contrast violation; and of the text it leaves "incomplete" on glass, every
+run measured from pixels holds its threshold (3,069 runs in dark, 3,070 in light). Tabbing through every page and through the frame from the
+Appearance control back to the skip link, all 1,618 stops in each theme draw a ring, none on a hidden
+element, and the ring holds at least 4.5:1 against what is behind it in dark (10.2:1 in light); the
+Appearance radios are ringed on their tab. The arrow keys
+move and choose within the Appearance group in both themes. The sweep's focus probe now waits two
+frames after each key: the reduced-motion rule turns every property into a 0.01ms transition, and a
+style read in the same frame sees where the transition starts — an outline in the text colour, no
+inner ring, a skip link still above the page — which first read as faint rings and a hidden skip link.

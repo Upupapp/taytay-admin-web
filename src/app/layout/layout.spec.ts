@@ -469,6 +469,14 @@ describe('Shell', () => {
     expect(account?.querySelector('.shell__sign-out')?.textContent).toContain(LAYOUT_COPY.signOut);
   });
 
+  it('offers the appearance choice in the account footer, reachable at every width (DL-204)', async () => {
+    const { element } = await render(true);
+    const radios = element.querySelectorAll(
+      '#app-sidebar .shell__account app-theme-switch input[type="radio"]',
+    );
+    expect(radios.length).toBe(3);
+  });
+
   it('draws the account’s initials as decoration beside the printed name', async () => {
     const { element } = await render();
     const avatar = element.querySelector('#app-sidebar .shell__avatar');

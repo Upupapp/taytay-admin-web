@@ -1,4 +1,12 @@
-import { AUDITED_PAIRS, BRAND_PALETTE, DOCUMENTED_EXEMPTIONS, TONE_PALETTE } from './brand-palette';
+import {
+  AUDITED_PAIRS,
+  BRAND_PALETTE,
+  BRAND_PALETTE_DARK,
+  DOCUMENTED_EXEMPTIONS,
+  TONE_PALETTE,
+  TONE_PALETTE_DARK,
+  type Theme,
+} from './brand-palette';
 import {
   contrastRatio,
   contrastRatioRounded,
@@ -65,6 +73,27 @@ describe('brand palette conforms to WCAG 2.2 Level AA', () => {
     for (const [tone, pair] of Object.entries(TONE_PALETTE)) {
       expect(meetsAa(pair.fg, pair.bg, 'text'), `${tone} label`).toBe(true);
     }
+    for (const [tone, pair] of Object.entries(TONE_PALETTE_DARK)) {
+      expect(meetsAa(pair.fg, pair.bg, 'text'), `dark ${tone} label`).toBe(true);
+    }
+  });
+
+  it('audits the dark theme with every pair it audits for light (DL-204)', () => {
+    const named = (theme: Theme): string[] =>
+      AUDITED_PAIRS.filter((pair) => pair.theme === theme).map((pair) =>
+        pair.label.replace(`${theme}: `, ''),
+      );
+
+    expect(named('light').length).toBeGreaterThanOrEqual(25);
+    expect(named('dark')).toEqual(named('light'));
+  });
+
+  it('measures the dark theme in its own colours, not the light ones', () => {
+    const dark = AUDITED_PAIRS.find((pair) => pair.label === 'dark: textMuted on surface');
+
+    expect(dark?.foreground).toBe(BRAND_PALETTE_DARK.textMuted);
+    expect(dark?.background).toBe(BRAND_PALETTE_DARK.surface);
+    expect(BRAND_PALETTE_DARK.surface).not.toBe(BRAND_PALETTE.surface);
   });
 
   it('records a reason for every deliberate exemption', () => {
