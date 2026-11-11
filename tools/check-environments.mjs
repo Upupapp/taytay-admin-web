@@ -270,37 +270,70 @@ if (staging !== undefined && production !== undefined) {
  * `staging-api.<approved-domain>`. Both plausible, neither wrong on its own, and together a
  * console that silently cannot work.
  */
-const hosting = ['netlify.toml', 'public/_headers']
-  .map((file) => {
-    try {
-      return readFileSync(join(ROOT, file), 'utf8');
-    } catch {
-      return '';
-    }
-  })
-  .join('\n');
+const hostingFiles = ['netlify.toml', 'public/_headers'].map((file) => {
+  try {
+    return readFileSync(join(ROOT, file), 'utf8');
+  } catch {
+    return '';
+  }
+});
+const uncommented = (source) =>
+  source
+    .split('\n')
+    .filter((line) => !line.trim().startsWith('#'))
+    .join('\n');
+// Only the policies count. A host named in a comment is not a host the browser will allow.
+const hostingPolicies = hostingFiles
+  .map(uncommented)
+  .flatMap((source) =>
+    [...source.matchAll(/Content-Security-Policy[^\n]*?[:=]\s*"?([^"\n]+)"?/g)].map((m) => m[1]),
+  );
+
+/*
+ * DL-206: Netlify applies one policy to every context, so the policy has to name the API of the
+ * configuration netlify.toml BUILDS — not every configuration in the matrix. The rule used to ask
+ * the second question: it held production's placeholder origin in the policy, and the build served
+ * a production console that could reach nothing while the check stayed green.
+ */
+const commands = [...uncommented(hostingFiles[0] ?? '').matchAll(/command\s*=\s*"([^"]+)"/g)].map(
+  (m) => m[1],
+);
+const builtConfigurations = new Set(
+  commands.map((command) => /--configuration[ =](\S+)/.exec(command)?.[1] ?? 'production'),
+);
+if (hostingFiles[0] !== '' && commands.length === 0) {
+  failures.push('netlify.toml has no build command, so nothing says which configuration it serves.');
+}
 
 for (const [file, env] of Object.entries(environments)) {
+  if (!builtConfigurations.has(env.name ?? '')) {
+    continue;
+  }
   const url = env.apiBaseUrl ?? '';
-
-  // Only the deployed configurations have a CSP to agree with; localhost has none.
   if (!url.startsWith('https://')) {
+    failures.push(
+      `netlify.toml builds '${env.name}', whose API (${url || 'none'}) is not https. A hosted console ` +
+        `cannot reach a local API, and upgrade-insecure-requests refuses http.`,
+    );
     continue;
   }
 
   /*
-   * Sliced textually rather than parsed. Every URL here still carries the
-   * `<approved-domain>` placeholder, and `new URL` throws on it — so the first version of
-   * this rule caught the exception, skipped, and could never fail. A check that cannot fail
-   * is worse than no check: it reports a guarantee nobody has.
+   * Sliced textually rather than parsed. A URL may still carry the `<approved-domain>`
+   * placeholder, and `new URL` throws on it — so the first version of this rule caught the
+   * exception, skipped, and could never fail. A check that cannot fail is worse than no check:
+   * it reports a guarantee nobody has.
    */
   const origin = url.split('/').slice(0, 3).join('/');
+  const allowed = (policy) =>
+    (/connect-src\s+([^;]*)/.exec(policy)?.[1] ?? '').trim().split(/\s+/).includes(origin);
 
-  if (hosting !== '' && !hosting.includes(origin)) {
+  if (hostingPolicies.length === 0 || !hostingPolicies.every(allowed)) {
     failures.push(
-      `src/environments/${file} calls ${origin}, which no CSP in netlify.toml or public/_headers allows.\n` +
-        `    The application would load and be unable to reach its API — every request blocked by the\n` +
-        `    browser before it leaves, with nothing in any server log to explain it.`,
+      `netlify.toml builds '${env.name}' (src/environments/${file}), which calls ${origin}, and a CSP\n` +
+        `    in netlify.toml or public/_headers does not allow it. The application would load and be\n` +
+        `    unable to reach its API — every request blocked by the browser before it leaves, with\n` +
+        `    nothing in any server log to explain it.`,
     );
   }
 }

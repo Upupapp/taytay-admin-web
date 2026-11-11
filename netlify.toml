@@ -19,17 +19,37 @@
 # a weakened directive shows up in a diff, where clicking one into a hosting console shows
 # up nowhere.
 #
-# ── Before this is used ──────────────────────────────────────────────────────────────
+# ── What Netlify serves: the staging console, in every context (DL-206) ──────────────
 #
-# Every `<approved-domain>` below is a placeholder and must be replaced with the real
-# hostnames. `npm run check:contract` fails a build whose `apiBaseUrl` still carries a
-# placeholder; nothing yet fails a build on a placeholder *here*, because this file is
-# read by the host and not by the bundler — so it is a line item on TAB 18's signed
-# configuration checklist instead.
+# The Netlify project `taytayadmin` (https://taytayadmin.netlify.app) is a staging console.
+# There is no production API yet, so a production build here could reach nothing. Every
+# context builds `--configuration staging`, which calls the staging API on
+# LGUIDS-SHARED-LINODE — the same one the Linode staging console calls.
+#
+# Netlify applies `[[headers]]` to every context; it cannot scope them ("headers set in the
+# netlify.toml are global for all builds and cannot be scoped for specific branches or deploy
+# contexts", docs.netlify.com). So there is ONE policy below, and it must name the API of the
+# configuration built here. `check:environments` holds the two together.
+#
+# When a production API exists: change the command to the production configuration and the
+# policy's API origin in the same commit, or split the policy per context with Netlify's
+# documented workaround (a `_headers` file per context, copied in by each context's command).
 
 [build]
-  command = "npm run build"
+  command = "npx ng build --configuration staging"
   publish = "dist/taytay-social-welfare/browser"
+
+# ── The style nonce ──────────────────────────────────────────────────────────────────
+#
+# Angular injects component styles as <style> blocks, and the policy below admits only those
+# carrying this response's nonce. A static host cannot mint one, so this edge function does:
+# it adds `ngCspNonce` to <app-root> and `'nonce-…'` to `style-src` in the same response, and
+# refuses an HTML page that arrives without a policy (DL-172, DL-206). Assets are excluded:
+# a policy only governs a document.
+[[edge_functions]]
+  function = "csp-nonce"
+  path = "/*"
+  excludedPath = ["/*.js", "/*.css", "/*.png", "/*.svg", "/*.ico", "/*.webp", "/*.woff2", "/media/*"]
 
 # ── Single-page application routing ──────────────────────────────────────────────────
 #
@@ -63,7 +83,12 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://api.<approved-domain> https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; upgrade-insecure-requests"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://taytay-api.139-162-51-165.sslip.io https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; upgrade-insecure-requests"
+
+    # A staging console carries test data and unreleased screens. Keeping it out of search
+    # results is not secrecy; it is not publishing a half-built welfare console under the
+    # municipality's name.
+    X-Robots-Tag = "noindex, nofollow"
 
     # A referrer carrying a case identifier to a third party is a personal-data leak.
     Referrer-Policy = "strict-origin-when-cross-origin"
@@ -114,24 +139,11 @@
 
 # ── Deploy previews ──────────────────────────────────────────────────────────────────
 #
-# A preview gets a generated *.netlify.app origin. It must reach the STAGING API and
-# never production: anybody can create a site on that domain, so a preview trusted by the
-# production API would be a public front door to residents' records.
+# A preview gets a generated *.netlify.app origin, and builds the same staging configuration
+# under the same policy as everything above, because headers cannot differ per context. It
+# must never reach a production API: anybody can create a site on that domain. The staging API
+# answers only the exact origins in its CORS_ALLOWED_ORIGINS, so a preview loads and cannot
+# sign in until somebody adds its origin there — on purpose.
 #
-# The environment is chosen at BUILD time by angular.json's configuration, not by a variable:
-# nothing in the app reads NG_APP_ENVIRONMENT, so a preview used to build `production` and call
-# the production API host that this context's CSP refuses. The command picks staging explicitly.
-[context.deploy-preview]
-  command = "npx ng build --configuration staging"
-  [context.deploy-preview.environment]
-    NG_APP_ENVIRONMENT = "staging"
-
-[[context.deploy-preview.headers]]
-  for = "/*"
-  [context.deploy-preview.headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://taytay-api.139-162-51-165.sslip.io https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; upgrade-insecure-requests"
-
-    # Previews carry synthetic data and unreleased screens. Keeping them out of search
-    # results is not secrecy, it is not publishing a half-built welfare console under the
-    # municipality's name.
-    X-Robots-Tag = "noindex, nofollow"
+# This block used to carry its own `[[context.deploy-preview.headers]]` policy. Netlify
+# ignores headers scoped to a context, so that policy never applied to any deploy (DL-206).

@@ -48,7 +48,7 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
@@ -259,6 +259,77 @@ if (existsSync(INDEX)) {
       "The production index.html contains an inline <script>. `script-src 'self'` blocks it, and\n" +
         '    that directive is the one the authentication model actually leans on.',
     );
+  }
+}
+
+/*
+ * ── 9. the style nonce is minted per response, and only ever narrows (DL-172, DL-206) ──────────
+ *
+ * `style-src 'self'` with no 'unsafe-inline' admits Angular's injected <style> blocks only when they
+ * carry this response's nonce. On Netlify an edge function mints it; without the function the
+ * console renders unstyled, and the tempting fix is exactly the 'unsafe-inline' rule 2 forbids. So
+ * the function must be declared, and it is imported and exercised here rather than trusted.
+ */
+const EDGE = 'netlify/edge-functions/csp-nonce.ts';
+const tomlSource = existsSync(join(ROOT, 'netlify.toml')) ? code(readFileSync(join(ROOT, 'netlify.toml'), 'utf8')) : '';
+const declared = /\[\[edge_functions\]\]\s*\n\s*function\s*=\s*"csp-nonce"\s*\n\s*path\s*=\s*"\/\*"/.test(tomlSource);
+if (!declared) {
+  failures.push(
+    'netlify.toml does not declare the csp-nonce edge function on "/*".\n' +
+      '    Without it no response carries a style nonce, and the console renders unstyled (DL-172).',
+  );
+}
+if (!existsSync(join(ROOT, EDGE))) {
+  failures.push(`${EDGE} is missing. It mints the per-response style nonce (DL-206).`);
+} else {
+  const edge = await import(pathToFileURL(join(ROOT, EDGE)).href);
+  const tomlPolicy = policiesIn(tomlSource)[0] ?? '';
+  const page = (headers) =>
+    new Response('<!doctype html><html><body><app-root></app-root></body></html>', { headers });
+  const first = edge.newNonce();
+  const second = edge.newNonce();
+  if (first === second || first.length < 22) {
+    failures.push(`${EDGE}: newNonce() must return a fresh value of at least 128 bits each call.`);
+  }
+
+  const stamped = await edge.stampNonce(
+    page({ 'content-type': 'text/html; charset=utf-8', 'content-security-policy': tomlPolicy }),
+    'TESTNONCE',
+  );
+  const stampedPolicy = stamped.headers.get('content-security-policy') ?? '';
+  const body = await stamped.text();
+  const directives = (policy) => policy.split(';').map((d) => d.trim()).filter(Boolean);
+  const changed = directives(stampedPolicy).filter((d) => !directives(tomlPolicy).includes(d));
+  if (!body.includes('<app-root ngCspNonce="TESTNONCE">')) {
+    failures.push(`${EDGE}: the page's <app-root> did not receive ngCspNonce.`);
+  }
+  if (
+    changed.length !== 1 ||
+    !/^style-src .*'nonce-TESTNONCE'$/.test(changed[0] ?? '') ||
+    directives(stampedPolicy).length !== directives(tomlPolicy).length
+  ) {
+    failures.push(
+      `${EDGE}: the policy must change in exactly one place — 'nonce-…' added to style-src — and it\n` +
+        `    changed: ${changed.join(' | ') || 'nothing'}.`,
+    );
+  }
+  for (const banned of FORBIDDEN) {
+    if (stampedPolicy.includes(banned)) {
+      failures.push(`${EDGE}: the policy it returns contains ${banned}.`);
+    }
+  }
+
+  const unguarded = await edge.stampNonce(page({ 'content-type': 'text/html' }), 'TESTNONCE');
+  if (unguarded.status !== 503 || (await unguarded.text()).includes('<app-root')) {
+    failures.push(
+      `${EDGE}: an HTML page that arrives without a policy must be refused (503), not served.\n` +
+        '    A console that looks right with nothing in front of it is the failure nobody sees.',
+    );
+  }
+
+  const script = new Response('console.log(1)', { headers: { 'content-type': 'text/javascript' } });
+  if ((await edge.stampNonce(script, 'TESTNONCE')) !== script) {
+    failures.push(`${EDGE}: a response that is not HTML must pass through untouched.`);
   }
 }
 

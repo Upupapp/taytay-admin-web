@@ -6305,6 +6305,9 @@ button styled, zero CSP violations. Still no `'unsafe-inline'`. The recipe is in
 an Edge Function that rewrites the attribute and the header together. Until one exists, a
 production deploy from this repository renders unstyled. Recorded as a launch blocker.
 
+*Closed by `DL-206` (11 November 2026): the edge function exists, and Netlify serves the staging
+console with it.*
+
 **`base-uri 'none'` → `'self'`.** The same browser run reported one more violation: `index.html`
 carries `<base href="/">`, which `'none'` refuses, so a reload on a deep path resolved the
 script URLs relative to that path and fetched the shell instead of JavaScript. `'self'` admits
@@ -9654,3 +9657,54 @@ move and choose within the Appearance group in both themes. The sweep's focus pr
 frames after each key: the reduced-motion rule turns every property into a 0.01ms transition, and a
 style read in the same frame sees where the transition starts — an outline in the text colour, no
 inner ring, a skip link still above the page — which first read as faint rings and a hidden skip link.
+
+## DL-206 — Netlify serves the staging console, with the style nonce from an edge function
+
+**Status:** Settled (11 November 2026). Closes the Netlify half of `DL-172`.
+
+**Why.** The owner asked for the Netlify projects to be "deployed properly", and for `taytaadmin`
+to become `taytayadmin`, address included. Fetched on 11 November 2026, https://taytaadmin.netlify.app
+served a production build: its policy still named `https://api.<approved-domain>`, so no request
+could leave, and `style-src 'self'` with no nonce refused every component style — the unstyled
+console `DL-172` recorded as a launch blocker. The project is now `taytayadmin`, at
+https://taytayadmin.netlify.app. The old address answers 404: Netlify does not forward a renamed
+project.
+
+**What changed.**
+
+1. **Every Netlify context builds `--configuration staging`.** No production API exists, so a
+   production build on Netlify can reach nothing. The console names itself "(staging)".
+2. **One policy, naming the staging API.** Netlify applies headers to every context: "headers set
+   in the netlify.toml are global for all builds and cannot be scoped for specific branches or
+   deploy contexts" (docs.netlify.com, read 11 November 2026). So the
+   `[[context.deploy-preview.headers]]` block never applied to any deploy, and is removed. Its
+   `X-Robots-Tag: noindex, nofollow` is now global, because every Netlify build is a staging one.
+3. **The edge function `netlify/edge-functions/csp-nonce.ts`**, declared in `netlify.toml`, mints
+   128 random bits per HTML response, stamps `ngCspNonce` on `<app-root>` and adds `'nonce-…'` to
+   `style-src` in the same response — the Linode Caddy's recipe. It never creates a policy: an HTML
+   page that reaches it without one gets 503, not the console, because a console that looks right
+   with nothing in front of it is the failure `DL-172` found and nobody would see.
+4. **The staging API's `CORS_ALLOWED_ORIGINS` names `https://taytayadmin.netlify.app`** beside the
+   Linode console. An exact origin; deploy previews stay off the list, so a preview loads and
+   cannot sign in.
+
+**Checks.** `check:environments` asked whether every deployed environment's API appeared somewhere
+in the hosting files, comments included. Production's placeholder origin therefore held the
+placeholder in the policy, and the check passed while Netlify served a console that could reach
+nothing. It now asks which configuration `netlify.toml` builds, and requires that configuration's
+API in every policy, read from the policy lines only. `check:headers` rule 9 requires the edge
+function declared on `/*`, imports it and exercises it: a fresh nonce each call, `<app-root>`
+stamped, the policy changed in exactly one place, nothing from the forbidden list, 503 without a
+policy, and anything that is not HTML untouched. Each rule was validated against planted
+regressions (wrong API in either file, a production build command, the function undeclared, an
+`'unsafe-inline'` added, a page served without a policy).
+
+**When production comes.** Change the build command and the policy's API origin in one commit —
+`check:environments` fails on either alone — or split the policy per context with Netlify's
+documented workaround: a `_headers` file per context, copied in by each context's command. HSTS
+stays absent until the certificate chain is confirmed (`check:headers` rule 5).
+
+**Not changed.** The Linode staging console and its Caddy nonce. The procedure is in
+`docs/turnover/operations-runbook.md` §4. Easiest to reverse: revert the commit, and take the
+origin out of `CORS_ALLOWED_ORIGINS` (a backup of the file from before the change is beside it on
+the server).

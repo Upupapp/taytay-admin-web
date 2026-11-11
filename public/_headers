@@ -5,12 +5,16 @@
 # dashboard rather than from the repository — and survives somebody moving the console to
 # a different static host that reads `_headers` but not `netlify.toml`.
 #
+# The policy names the staging API because every Netlify build is the staging configuration
+# (DL-206); `check:environments` holds the API origin here to the configuration netlify.toml builds.
+#
 # If the two ever disagree, netlify.toml wins on Netlify. Keep them in step: TAB 13's
 # acceptance is "fetch the deployed origin and read the response headers", precisely
 # because a policy in a file is not a policy in production.
 
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://api.<approved-domain> https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://taytay-api.139-162-51-165.sslip.io https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; upgrade-insecure-requests
+  X-Robots-Tag: noindex, nofollow
   Referrer-Policy: strict-origin-when-cross-origin
   X-Content-Type-Options: nosniff
   Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()

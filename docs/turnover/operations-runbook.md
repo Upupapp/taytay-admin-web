@@ -119,6 +119,24 @@ Source: staging README, "Deploy the console" and "The console's style nonce".
 
 3. Open https://taytay.139-162-51-165.sslip.io, sign in, and open one list.
 
+### The second staging console, on Netlify
+
+https://taytayadmin.netlify.app is the same console, built by Netlify (project `taytayadmin`, team
+Operations) from `main` on every push, with no step on the server (`DL-206`). It calls the same
+staging API. Three things make it work, and each one, if lost, fails in its own way:
+
+- `netlify.toml` builds `--configuration staging`, and its policy names the staging API. A wrong
+  API shows as a sign-in that cannot connect; `check:environments` fails the build on it first.
+- The edge function `netlify/edge-functions/csp-nonce.ts` supplies the style nonce that Caddy
+  supplies on the Linode. Without it the console loads unstyled; if a page reaches it without a
+  policy, it answers 503 rather than serve the console unguarded.
+- The API's `CORS_ALLOWED_ORIGINS` (in `/opt/taytay/.env.api` on the server) names
+  `https://taytayadmin.netlify.app` beside the Linode console. Without it, sign-in cannot reach the
+  API. A Netlify deploy preview has its own address and is not on that list, on purpose.
+
+Check it after a deploy: open the address, sign in, and open one list. Renaming the Netlify project
+changes the address, so the CORS list and this page change with it.
+
 ## 5. Roll back
 
 Sources: staging README, "Roll back"; `docs/integration/rollback.md` (who decides, what a rollback
