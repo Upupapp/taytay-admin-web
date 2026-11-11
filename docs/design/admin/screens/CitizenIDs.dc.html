@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Citizen IDs — Taytay Social Welfare</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Inter+Tight:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#EEF1F6}
+.theme-light{--page:radial-gradient(620px 520px at 6% 4%, rgba(45,84,224,0.55), transparent 70%), radial-gradient(560px 460px at 96% 10%, rgba(245,218,24,0.55), transparent 70%), radial-gradient(640px 520px at 88% 72%, rgba(224,9,10,0.22), transparent 70%), radial-gradient(700px 560px at 18% 78%, rgba(10,32,113,0.30), transparent 70%), radial-gradient(520px 420px at 52% 40%, rgba(91,130,255,0.25), transparent 70%), #E7ECF7;--card:linear-gradient(135deg, rgba(255,255,255,0.62), rgba(255,255,255,0.28));--card-solid:#FFFFFF;--card-flat:rgba(255,255,255,0.4);--card-edge:rgba(255,255,255,0.7);--card-shadow:none;--primary:#0A2071;--deep:#08124A;--ink:#08124A;--text:#1B2540;--text2:#2B3550;--muted:#5A6478;--muted2:#6B7489;--soft:rgba(10,32,113,0.06);--soft2:rgba(255,255,255,0.42);--field:rgba(255,255,255,0.55);--sel:rgba(45,84,224,0.12);--hover:rgba(255,255,255,0.55);--line:rgba(10,32,113,0.10);--line2:rgba(10,32,113,0.18);--field-line:#8A93A6;--axis:rgba(10,32,113,0.16);--dash:#9AA3B5;--area:rgba(45,84,224,0.16);--bar:#1D3A9C;--gold-tint:rgba(245,218,24,0.28);--gold-tint2:rgba(245,218,24,0.18);--gold-ink:#5C4D00;--gold-ink2:#3D3505;--red-tint:rgba(224,9,10,0.12);--red-ink:#B00708;--red-ink2:#7A0506;--green-tint:rgba(46,160,90,0.16);--green-ink:#17663A;--blue-tint:rgba(45,84,224,0.14);--link:#0A2071;--link-hover:#1D3A9C;--accent-line:#0A2071;--chart-line:#0A2071;--glow:none;--scrim:rgba(8,18,74,0.5);--scrim2:rgba(8,18,74,0.55);--ring:#FFFFFF;--option-bg:#FFFFFF;--option-ink:#08124A;color-scheme:light}
+.theme-dark{--page:radial-gradient(640px 520px at 6% 4%, rgba(45,84,224,0.65), transparent 70%), radial-gradient(520px 440px at 96% 8%, rgba(245,218,24,0.22), transparent 70%), radial-gradient(640px 520px at 88% 74%, rgba(224,9,10,0.30), transparent 70%), radial-gradient(700px 560px at 16% 80%, rgba(91,130,255,0.35), transparent 70%), radial-gradient(520px 420px at 52% 40%, rgba(10,32,113,0.9), transparent 70%), #040A22;--card:linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));--card-solid:#0C1A4F;--card-flat:rgba(255,255,255,0.05);--card-edge:rgba(255,255,255,0.16);--card-shadow:none;--primary:#2D54E0;--deep:#0A2071;--ink:#FFFFFF;--text:#E6EBF7;--text2:#C9D2E8;--muted:#9AA6C4;--muted2:#8C98B8;--soft:rgba(255,255,255,0.06);--soft2:rgba(255,255,255,0.04);--field:rgba(255,255,255,0.05);--sel:rgba(91,130,255,0.14);--hover:rgba(255,255,255,0.08);--line:rgba(255,255,255,0.08);--line2:rgba(255,255,255,0.16);--field-line:rgba(255,255,255,0.24);--axis:rgba(255,255,255,0.12);--dash:rgba(255,255,255,0.3);--area:rgba(45,84,224,0.35);--bar:#3A63F0;--gold-tint:rgba(245,218,24,0.14);--gold-tint2:rgba(245,218,24,0.10);--gold-ink:#F5DA18;--gold-ink2:#F7E27A;--red-tint:rgba(224,9,10,0.18);--red-ink:#FF8A8A;--red-ink2:#FFB3B3;--green-tint:rgba(46,160,90,0.18);--green-ink:#6EE7A0;--blue-tint:rgba(91,130,255,0.18);--link:#9DB6FF;--link-hover:#C4D3FF;--accent-line:#5B82FF;--chart-line:#7C9BFF;--glow:none;--scrim:rgba(2,6,20,0.72);--scrim2:rgba(2,6,20,0.78);--ring:#040A22;--option-bg:#0B1640;--option-ink:#FFFFFF;color-scheme:dark}
+body:has(.theme-dark){background:#040A22}
+select{-webkit-appearance:none;appearance:none;padding-right:46px !important;cursor:pointer;background-image:linear-gradient(45deg, transparent 50%, currentColor 50%),linear-gradient(135deg, currentColor 50%, transparent 50%) !important;background-position:calc(100% - 24px) 50%,calc(100% - 18px) 50% !important;background-size:6px 6px,6px 6px !important;background-repeat:no-repeat !important}
+option{background:var(--option-bg);color:var(--option-ink)}
+[style*="var(--card)"]{border:1px solid var(--card-edge);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%)}
+.theme-btn[aria-pressed="false"]:hover{background:var(--hover) !important}
+a{color:var(--link)}a:hover{color:var(--link-hover)}
+button,select,input,textarea{font:inherit}
+:focus-visible{outline:3px solid #F5DA18;outline-offset:2px}
+.skip{position:absolute;left:-9999px}.skip:focus{left:24px;top:24px;z-index:10;background:#FFFFFF;padding:10px 16px;border-radius:999px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.nav-item:hover{background:var(--hover)}
+.pill:hover{background:var(--hover)}
+.pill-dark:hover{background:#3A63F0}
+.trow:hover{background:var(--field)}
+.kpi{transition:background-color 160ms ease,color 160ms ease,box-shadow 160ms ease}
+.kpi:hover{background:var(--primary) !important;color:#FFFFFF !important}
+.kpi:hover span{color:#FFFFFF !important}
+.bento-r{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
+@media (max-width:1100px){.bento-r>*{grid-column:span 6 !important}}
+@media (max-width:700px){.bento-r>*{grid-column:span 12 !important}}
+.barrow:hover{background:var(--hover) !important}
+.fld{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--text2);min-width:0}
+.opt{font-weight:500;color:var(--muted)}
+.hint{font-size:12.5px;font-weight:400;color:var(--muted)}
+.inp{min-height:46px;box-sizing:border-box;width:100%;padding:0 14px;border:1px solid var(--field-line);border-radius:14px;background:var(--field);color:var(--ink);font-size:14px;font-weight:400}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;padding:5px;border-radius:999px;background:var(--card);align-self:flex-start}
+.tab{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 18px;border:0;border-radius:999px;background:transparent;color:var(--text2);font-size:14px;font-weight:600;cursor:pointer}
+.tab:hover{background:var(--hover)}
+.tab.on{background:var(--primary);color:#FFFFFF}
+.tab .n{min-width:22px;padding:1px 7px;border-radius:999px;background:var(--soft);font-size:12px;font-weight:700}
+.tab.on .n{background:rgba(255,255,255,0.2)}
+.btnp{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border:0;border-radius:999px;background:var(--primary);color:#FFFFFF;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none}
+.btnp:hover{background:#3A63F0;color:#FFFFFF}
+.btnp.red{background:#B00708}
+.btnp.off{background:var(--line);color:var(--muted);cursor:not-allowed}
+.btns{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:0 14px;border:1px solid var(--line2);border-radius:999px;background:var(--card-flat);color:var(--ink);font-size:13.5px;font-weight:600;cursor:pointer;text-decoration:none}
+.btns:hover{background:var(--hover);color:var(--ink)}
+.btns.danger{color:var(--red-ink);border-color:var(--red-tint)}
+.th{text-align:left;padding:10px 16px;font-size:11.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted2);background:var(--soft2)}
+.td{padding:12px 16px;border-bottom:1px solid var(--soft);vertical-align:middle}
+.chipst{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.effects{padding:14px 16px;border-radius:16px;background:var(--soft2);display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:var(--text2)}
+.effects ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.effects b{color:var(--ink)}
+.fixed dt{font-size:12px;color:var(--muted)}
+.fixed dd{margin:2px 0 0;font-weight:600;color:var(--ink)}
+.msg{max-width:78%;display:flex;flex-direction:column;gap:4px}
+.msg .who{font-size:12px;font-weight:600;color:var(--muted)}
+.msg .bub{padding:12px 14px;border-radius:18px;font-size:14px;line-height:1.5}
+.msg.res{align-self:flex-start}
+.msg.res .bub{background:var(--card-flat);border:1px solid var(--line);color:var(--ink);border-radius:18px 18px 18px 6px}
+.msg.off{align-self:flex-end;align-items:flex-end}
+.msg.off .bub{background:var(--primary);color:#FFFFFF;border-radius:18px 18px 6px 18px}
+.imgbox{margin-top:8px;padding:10px 12px;border-radius:12px;background:var(--soft2);border:1px dashed var(--line2);display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--text2)}
+.card2{padding:20px 22px;border-radius:24px;background:var(--card);display:flex;flex-direction:column;gap:14px;min-width:0}
+.h2c{margin:0;font-size:15px;font-weight:700;color:var(--ink)}
+.subc{font-size:12.5px;color:var(--muted)}
+.selp{min-height:40px;padding:0 14px;border:1px solid var(--line2);border-radius:999px;background:var(--card-flat);color:var(--ink);font:inherit;font-size:13.5px;font-weight:600}
+.selp option{background:var(--option-bg);color:var(--option-ink)}
+.bign{font-family:'Inter Tight','Inter',sans-serif;font-size:34px;line-height:1.05;font-weight:500;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;color:var(--ink)}
+.heroc{position:relative;overflow:hidden;isolation:isolate;padding:26px 30px;border-radius:28px;background:linear-gradient(150deg,#08124A 0%,#0A2071 50%,#2D54E0 100%);color:#FFFFFF;display:flex;flex-wrap:wrap;align-items:center;gap:20px}
+.heroc>*{position:relative;z-index:1}
+.heroc::before{content:'';position:absolute;z-index:0;right:-80px;top:-110px;width:300px;height:300px;border-radius:999px;background:rgba(255,255,255,0.07)}
+.heroc::after{content:'';position:absolute;z-index:0;left:-50px;bottom:-90px;width:200px;height:200px;border-radius:999px;background:rgba(245,218,24,0.16)}
+.heroc h1{margin:0;font-family:'Inter Tight','Inter',sans-serif;font-size:34px;line-height:1.08;font-weight:500;letter-spacing:-0.02em;color:#FFFFFF}
+.heroc p{margin:0;font-size:15px;line-height:1.55;color:#D5DDF2}
+.heroc .hb{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.35);background:rgba(255,255,255,0.08);color:#FFFFFF;font-size:13.5px;font-weight:600;text-decoration:none;cursor:pointer}
+.heroc .hb:hover{background:rgba(255,255,255,0.18);color:#FFFFFF}
+.heroc .hb.gold{background:#F5DA18;border-color:#F5DA18;color:#08124A}
+.heroc .hb.gold:hover{background:#FFE443;color:#08124A}
+.smp{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,0.14);font-size:11.5px;font-weight:600;color:#FFFFFF}
+.kpc{display:flex;flex-direction:column;gap:6px;padding:16px 18px;border-radius:22px;background:var(--card);min-width:0}
+.kpc .l{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--text2)}
+.kpc .ico{width:32px;height:32px;flex:0 0 32px;border-radius:10px;display:grid;place-items:center;color:#FFFFFF}
+.kpc .v{font-family:'Inter Tight','Inter',sans-serif;font-size:32px;line-height:1.05;font-weight:500;letter-spacing:-0.02em;color:var(--ink);font-variant-numeric:tabular-nums}
+.kpc .h{font-size:12.5px;color:var(--muted)}
+.kpc .f{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:auto;padding-top:8px;border-top:1px solid var(--line)}
+.kpc .d{font-size:12.5px;font-weight:700}
+.grid6{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media (max-width:1200px){.grid6{grid-template-columns:repeat(3,minmax(0,1fr))}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.grid6,.grid4{grid-template-columns:minmax(0,1fr)}}
+.fbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.fbar .asof{margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.hb2{display:grid;grid-template-columns:120px minmax(0,1fr) 70px;align-items:center;gap:12px;font-size:13.5px;font-weight:600;color:var(--text2)}
+.hb2 .tr{height:14px;border-radius:999px;background:var(--soft);overflow:hidden}
+.hb2 .tr i{display:block;height:100%;border-radius:999px}
+.hb2 .n{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+.funnel{display:flex;flex-direction:column;gap:8px}
+.funnel .st{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:46px;padding:0 16px;border-radius:14px;color:#FFFFFF;font-size:14px;font-weight:600}
+.funnel .st b{font-family:'Inter Tight','Inter',sans-serif;font-size:20px;font-weight:500;font-variant-numeric:tabular-nums}
+.funnel .pc{font-size:12px;color:var(--muted);text-align:center}
+.pyr{display:grid;grid-template-columns:52px minmax(0,1fr) 64px minmax(0,1fr) 52px;align-items:center;gap:8px;font-size:12.5px;color:var(--text2);font-variant-numeric:tabular-nums}
+.pyr .l{display:flex;justify-content:flex-end}.pyr .r{display:flex;justify-content:flex-start}
+.pyr .l i,.pyr .r i{display:block;height:20px;border-radius:6px}
+.pyr .c{text-align:center;font-weight:600;color:var(--ink)}
+.dq{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--soft2);text-decoration:none;color:var(--text2)}
+.dq:hover{background:var(--hover);color:var(--text2)}
+.dq b{font-family:'Inter Tight','Inter',sans-serif;font-size:22px;font-weight:500;color:var(--ink);min-width:56px;font-variant-numeric:tabular-nums}
+.dq span{flex:1 1 auto;font-size:13.5px}
+.tblw{overflow-x:auto;border-radius:18px;border:1px solid var(--line)}
+.tblw table{width:100%;border-collapse:collapse;font-size:13.5px}
+.tblw tbody tr:hover{background:var(--field)}
+.av{width:34px;height:34px;flex:0 0 34px;border-radius:999px;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--blue-tint);color:var(--link)}
+.sc{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.cb{width:18px;height:18px;margin:0;accent-color:var(--primary)}
+.bulk{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 14px;border-radius:16px;background:var(--primary);color:#FFFFFF;font-size:13.5px;font-weight:600}
+.bulk button,.bulk a{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 14px;border:1px solid rgba(255,255,255,0.35);border-radius:999px;background:transparent;color:#FFFFFF;font:inherit;font-size:13px;cursor:pointer;text-decoration:none}
+.bulk button:hover,.bulk a:hover{background:rgba(255,255,255,0.14);color:#FFFFFF}
+.stepper{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0;padding:0}
+.stepper li{flex:1 1 150px;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:16px;background:var(--soft2);font-size:13.5px;font-weight:600;color:var(--muted)}
+.stepper li .nb{width:28px;height:28px;flex:0 0 28px;border-radius:999px;display:grid;place-items:center;font-size:12.5px;font-weight:700;background:var(--soft);color:var(--muted)}
+.stepper li.on{background:var(--primary);color:#FFFFFF}
+.stepper li.on .nb{background:#F5DA18;color:#08124A}
+.stepper li.done{color:var(--green-ink)}
+.stepper li.done .nb{background:var(--green-tint);color:var(--green-ink)}
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:220px;padding:24px;border:2px dashed var(--line2);border-radius:22px;background:var(--soft2);text-align:center;color:var(--text2)}
+.drop .ic{width:56px;height:56px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(135deg,#0A2071,#2D54E0);color:#FFFFFF}
+.srcopt{display:flex;align-items:flex-start;gap:12px;padding:14px;border-radius:18px;border:1.5px solid transparent;background:var(--soft2);cursor:pointer;font-size:13.5px;color:var(--text2)}
+.srcopt.on{border-color:var(--primary);background:var(--sel)}
+.srcopt input{margin:3px 0 0;accent-color:var(--primary)}
+.srcopt b{display:block;font-size:14px;color:var(--ink)}
+.pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.pair .side{padding:14px;border-radius:16px;background:var(--soft2);display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.pair .side .k{font-size:11.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)}
+.pair .diff{background:var(--gold-tint2);border-radius:6px;padding:0 4px}
+.segbtn{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border:1px solid var(--line2);border-radius:999px;background:var(--card-flat);color:var(--ink);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.segbtn.on{background:var(--primary);border-color:var(--primary);color:#FFFFFF}
+.idcard{position:relative;width:100%;max-width:420px;aspect-ratio:1.586;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,#F7F8FC,#E8EDF8);color:#08124A;font-family:'Inter',sans-serif}
+.idcard .band{position:absolute;left:0;right:0;top:0;height:22%;background:linear-gradient(120deg,#08124A,#0A2071 60%,#2D54E0);display:flex;align-items:center;gap:10px;padding:0 16px;color:#FFFFFF}
+.idcard .band .sl{width:30px;height:30px;border-radius:999px;background:#FFFFFF;border:1.5px dashed #9AA3B5}
+.idcard .band b{display:block;font-size:11px;letter-spacing:0.08em}
+.idcard .band span{display:block;font-size:9.5px;opacity:0.8;letter-spacing:0.06em}
+.idcard .ph{position:absolute;left:16px;top:30%;width:24%;height:52%;border-radius:10px;background:#D7DEEC;display:grid;place-items:center;color:#6B7489;font-size:10px;text-align:center}
+.idcard .fl{position:absolute;left:32%;top:30%;right:16px;display:flex;flex-direction:column;gap:6px}
+.idcard .fl i{display:block;font-style:normal;font-size:8.5px;letter-spacing:0.08em;color:#5A6478}
+.idcard .fl b{display:block;font-size:14px;letter-spacing:0.02em}
+.idcard .stripe{position:absolute;left:0;right:0;bottom:0;height:6px;background:linear-gradient(90deg,#0A2071 0 55%,#E0090A 55% 75%,#F5DA18 75%)}
+.flowd{display:flex;flex-wrap:wrap;align-items:stretch;gap:10px}
+.fnode{flex:1 1 150px;display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:18px;background:var(--card-flat);border:1px solid var(--line);font-size:13px;color:var(--text2);min-width:0}
+.fnode b{font-size:14px;color:var(--ink)}
+.fnode .who{align-self:flex-start;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:700}
+.farrow{display:grid;place-items:center;color:var(--muted);flex:0 0 22px}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="position: relative; min-height: 100vh; box-sizing: border-box; display: flex; flex-wrap: wrap; gap: 16px; padding: 16px; background: var(--page); font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14.5px; line-height: 1.5; color: var(--text)">
+  <a href="#main-content" class="skip">Skip to main content</a>
+
+  <aside aria-label="Main navigation" style="flex: 1 1 256px; max-width: 100%; box-sizing: border-box; background: var(--card); border-radius: 24px; padding: 20px 14px 16px; display: flex; flex-direction: column; gap: 16px">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 2px 6px; text-decoration: none">
+      <span role="img" aria-label="Municipal seal not available" title="The official seal has not been supplied to this application. A neutral placeholder is shown in its place." style="width: 46px; height: 46px; flex: 0 0 46px; border-radius: 999px; border: 1.5px dashed var(--dash); background: var(--soft2); display: grid; place-items: center; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: var(--muted)"><span aria-hidden="true">TR</span></span>
+      <span style="display: flex; flex-direction: column; line-height: 1.25; min-width: 0">
+        <span style="font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 16px; font-weight: 600; color: var(--ink)">Taytay Social Welfare</span>
+        <span style="font-size: 11.5px; color: var(--muted)">Municipal Social Welfare and Development Office</span>
+      </span>
+    </a>
+    <nav aria-label="Main navigation" style="display: flex; flex-direction: column; gap: 4px">
+      <sc-for list="{{nav}}" as="section" hint-placeholder-count="5">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <button type="button" class="nav-item" onClick="{{section.toggle}}" aria-expanded="{{section.open}}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 34px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: var(--muted2); font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; cursor: pointer; text-align: left">
+            <span>{{section.title}}</span>
+            <sc-if value="{{section.open}}" hint-placeholder-val="{{true}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></sc-if>
+            <sc-if value="{{section.closed}}" hint-placeholder-val="{{false}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg></sc-if>
+          </button>
+          <sc-if value="{{section.open}}" hint-placeholder-val="{{true}}">
+            <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px">
+              <sc-for list="{{section.items}}" as="item" hint-placeholder-count="4">
+                <li>
+                  <sc-if value="{{item.active}}" hint-placeholder-val="{{false}}">
+                    <a href="{{item.href}}" aria-current="page" style="display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 0 12px; border-radius: 12px; background: var(--primary); color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none">
+                      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5DA18" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: 0 0 18px"><path d="{{item.icon}}"></path></svg>
+                      <span>{{item.label}}</span>
+                    </a>
+                  </sc-if>
+                  <sc-if value="{{item.inactive}}" hint-placeholder-val="{{true}}">
+                    <a href="{{item.href}}" class="nav-item" style="display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 12px; border-radius: 12px; color: var(--text2); font-size: 14px; font-weight: 500; text-decoration: none">
+                      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: 0 0 18px"><path d="{{item.icon}}"></path></svg>
+                      <span>{{item.label}}</span>
+                    </a>
+                  </sc-if>
+                </li>
+              </sc-for>
+            </ul>
+          </sc-if>
+        </div>
+      </sc-for>
+    </nav>
+    <footer style="margin-top: auto; display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 18px; background: var(--soft2)">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span aria-hidden="true" style="width: 38px; height: 38px; flex: 0 0 38px; border-radius: 999px; background: var(--primary); color: #F5DA18; display: grid; place-items: center; font-size: 13px; font-weight: 700">MA</span>
+        <span style="display: flex; flex-direction: column; line-height: 1.3; min-width: 0">
+          <span style="font-size: 14px; font-weight: 600; color: var(--ink)">Marisol Alcantara</span>
+          <span style="font-size: 12.5px; color: var(--muted)">Administrator · All barangays</span>
+        </span>
+      </div>
+      <a href="SignIn.dc.html" class="pill" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; border-radius: 999px; border: 1px solid var(--line2); background: var(--card); color: var(--ink); font-size: 13.5px; font-weight: 600; text-decoration: none">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path></svg>Sign out</a>
+    </footer>
+  </aside>
+
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+    <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 4px 8px 0">
+      <nav aria-label="Breadcrumb" style="flex: 1 1 180px; font-size: 13.5px; color: var(--muted)">
+        <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+          <li><a href="Main.dc.html" style="color: var(--muted); text-decoration: none">Dashboard</a></li>
+          <li aria-hidden="true">/</li>
+          <li><a href="CitizensOverview.dc.html" style="color: var(--muted); text-decoration: none">Citizens</a></li><li aria-hidden="true">›</li><li aria-current="page" style="color: var(--ink); font-weight: 600">Citizen IDs</li>
+        </ol>
+      </nav>
+      <a href="#" class="pill" style="flex: 0 1 380px; display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 8px 0 16px; border-radius: 999px; background: var(--card); color: var(--muted); text-decoration: none; font-size: 14px">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <span style="flex: 1 1 auto"><span class="vh">Search: </span>Search residents, requests, programmes…</span>
+      </a>
+      <div role="group" aria-label="Appearance" style="display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--card)"><button type="button" class="theme-btn" aria-pressed="{{isLight}}" onClick="{{setLight}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: {{lightBg}}; color: {{lightFg}}; font-size: 13.5px; font-weight: 600; cursor: pointer"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>Light</button><button type="button" class="theme-btn" aria-pressed="{{isDark}}" onClick="{{setDark}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: {{darkBg}}; color: {{darkFg}}; font-size: 13.5px; font-weight: 600; cursor: pointer"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>Dark</button></div>
+      <button type="button" aria-label="Notifications, 3 unread notifications" class="pill" style="position: relative; width: 46px; height: 46px; display: grid; place-items: center; border: 0; border-radius: 999px; background: var(--card); color: var(--ink); cursor: pointer">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+        <span aria-hidden="true" style="position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: #E0090A; color: #FFFFFF; font-size: 11px; font-weight: 700; display: grid; place-items: center; border: 2px solid var(--ring)">3</span>
+      </button>
+    </header>
+
+
+    <main id="main-content" style="display: flex; flex-direction: column; gap: 18px; padding: 0 8px 8px">
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+        <div style="flex: 1 1 420px; display: flex; flex-direction: column; gap: 8px; max-width: 820px">
+          <h1 style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 42px; line-height: 1.05; font-weight: 500; letter-spacing: -0.025em; color: var(--ink)">Citizen IDs</h1>
+          <p style="margin: 0; font-size: 15px; color: var(--muted); text-wrap: pretty">The Taytay Digital ID: the municipality’s own card, shown in the residents’ app with a QR code. It is not a national government identifier, and only a verified resident can hold one.</p>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px"><button type="button" class="btns" onClick="{{openCheck}}"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z"></path></svg>Check a card</button><button type="button" class="btnp" onClick="{{openIssue}}"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F5DA18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18v14H3zM8 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM5 16c.6-1.6 1.7-2 3-2s2.4.4 3 2M14 9h4M14 13h4"></path></svg>Issue the next card</button></div>
+      </div>
+      <section class="card2" aria-labelledby="lc-h">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px"><h2 id="lc-h" class="h2c">From sign-up to card</h2><a href="CitizenFlows.dc.html" style="font-size: 13px; font-weight: 600; color: var(--link)">See the whole flow</a></div>
+        <div class="flowd">
+          <sc-for list="{{life}}" as="l" hint-placeholder-count="5">
+            <a href="{{l.href}}" class="fnode" style="text-decoration: none; border-color: {{l.edge}}"><span class="who" style="background: {{l.wbg}}; color: {{l.wfg}}">{{l.who}}</span><b>{{l.label}}</b><span class="bign" style="font-size: 26px">{{l.n}}</span><span>{{l.note}}</span></a>
+          </sc-for>
+        </div>
+      </section>
+      <div class="tabs" role="tablist" aria-label="Cards"><sc-for list="{{tabs}}" as="t" hint-placeholder-count="4"><button type="button" role="tab" aria-selected="{{t.on}}" class="{{t.cls}}" onClick="{{t.pick}}">{{t.label}}<span class="n">{{t.count}}</span></button></sc-for></div>
+      <section class="card2" aria-labelledby="ct-h" style="padding: 20px; border-radius: 28px">
+        <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px"><h2 id="ct-h" class="h2c">{{tabTitle}}</h2><span class="subc">{{tabNote}}</span></div>
+        <div class="tblw"><table><caption class="vh">{{tabTitle}}</caption>
+          <thead><tr><th class="th">Resident</th><th class="th">Barangay</th><th class="th">Verified</th><th class="th">Card number</th><th class="th">Issued</th><th class="th">Expires</th><th class="th">Status</th><th class="th"><span class="vh">Action</span></th></tr></thead>
+          <tbody><sc-for list="{{rows}}" as="r" hint-placeholder-count="6"><tr>
+            <td class="td"><span style="display: flex; align-items: center; gap: 10px"><span class="av" aria-hidden="true">{{r.ini}}</span><span style="display: flex; flex-direction: column"><b style="color: var(--ink); font-weight: 600">{{r.name}}</b><span class="subc">{{r.email}}</span></span></span></td>
+            <td class="td">{{r.brgy}}</td><td class="td subc">{{r.verified}}</td><td class="td" style="font-variant-numeric: tabular-nums; color: var(--ink)">{{r.num}}</td><td class="td subc">{{r.issued}}</td><td class="td" style="color: {{r.expCol}}">{{r.expires}}</td>
+            <td class="td"><span class="sc" style="background: {{r.bg}}; color: {{r.fg}}">{{r.status}}</span></td>
+            <td class="td"><sc-if value="{{r.needs}}" hint-placeholder-val="{{false}}"><button type="button" class="btnp" style="min-height: 36px; padding: 0 14px; font-size: 13px" onClick="{{openIssue}}">Issue a card</button></sc-if><sc-if value="{{r.has}}" hint-placeholder-val="{{true}}"><a href="CitizenIDRecord.dc.html" class="btns" style="min-height: 36px">Open the card</a></sc-if></td>
+          </tr></sc-for></tbody>
+        </table></div>
+      </section>
+      <p class="subc" style="margin: 4px 4px 0">Sample residents and counts for the design. The API keeps no list of cards today, so these lists need a cards listing in the API; a card is otherwise found through the resident’s account.</p>
+    </main>
+  </div>
+  <sc-if value="{{checkOpen}}" hint-placeholder-val="{{false}}">
+    <div style="position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 24px; background: var(--scrim)">
+      <section role="dialog" aria-modal="true" aria-labelledby="checkOpen-h" style="width: min(560px, 100%); max-height: 90vh; overflow-y: auto; box-sizing: border-box; padding: 24px; border-radius: 26px; background: var(--card-solid); display: flex; flex-direction: column; gap: 14px; color: var(--text)">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px"><h2 id="checkOpen-h" style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 24px; font-weight: 500; color: var(--ink)">Check a resident’s card</h2><button type="button" onClick="{{closeModal}}" aria-label="Close" class="btns" style="min-height: 36px; padding: 0 10px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+        <p style="margin: 0; color: var(--text2)">Paste or type what the resident’s QR code holds, and the API says whose card it is and whether it is in force.</p>
+        <label class="fld">The QR code’s contents<textarea class="inp" rows="3" style="padding: 12px 14px; min-height: 90px; resize: vertical">tyt1.eyJjYXJkIjoiVFlULTAwNDItMTE4NyJ9…</textarea><span class="hint">Kept only until you press Check: the field is emptied as soon as the code is sent.</span></label>
+        <div class="effects"><b>Before you check:</b><ul><li>A code is accepted for 2 minutes after the app shows it; an older one is refused as not valid.</li><li>The API records that you checked this card, under your account. This console keeps nothing: the answer is gone when you check another code or leave the page.</li><li>The answer is the holder’s name, the card’s status, whether it has expired and the barangay — what the API returns, and nothing looked up beside it.</li></ul></div>
+        <button type="button" class="btnp" style="align-self: flex-start">Check this card</button>
+        <section aria-label="What the API says about this card" style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 18px; border: 1px solid var(--line)">
+          <b style="color: var(--ink)">What the API says about this card</b>
+          <dl class="fixed" style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+            <div><dt>Name</dt><dd>Teodoro M. Aquino</dd></div><div><dt>Card</dt><dd><span class="sc" style="background: var(--green-tint); color: var(--green-ink)">Active</span></dd></div>
+            <div><dt>Expiry</dt><dd>Not expired</dd></div><div><dt>Barangay</dt><dd>Santa Ana</dd></div>
+          </dl>
+          <button type="button" class="btns" style="align-self: flex-start">Show the photo on the card</button>
+        </section>
+      </section>
+    </div>
+  </sc-if>  <sc-if value="{{issueOpen}}" hint-placeholder-val="{{false}}">
+    <div style="position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 24px; background: var(--scrim)">
+      <section role="dialog" aria-modal="true" aria-labelledby="issueOpen-h" style="width: min(560px, 100%); max-height: 90vh; overflow-y: auto; box-sizing: border-box; padding: 24px; border-radius: 26px; background: var(--card-solid); display: flex; flex-direction: column; gap: 14px; color: var(--text)">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px"><h2 id="issueOpen-h" style="margin: 0; font-family: 'Inter Tight', 'Inter', sans-serif; font-size: 24px; font-weight: 500; color: var(--ink)">Issue a digital ID?</h2><button type="button" onClick="{{closeModal}}" aria-label="Close" class="btns" style="min-height: 36px; padding: 0 10px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+        <p style="margin: 0; color: var(--text2)">For <b style="color: var(--ink)">Danilo S. Cruz</b> · Dolores · verified 4 Nov 2026</p>
+        <div class="effects"><b>What this does</b><ul><li>Issues a card valid for 365 days, with a new card number.</li><li>The photo on the card is the resident’s latest approved verification selfie; this console offers no other.</li><li>Refused if the account is not a verified resident, is closed, or already holds a current card.</li><li>The resident sees the card in the app, with a QR code, straight away.</li></ul><b>Whichever you choose:</b><ul><li>The API records the act in its audit trail under your account. It keeps no reason: none is asked for.</li><li>Nothing is sent to the resident by this console; they see the change the next time the app reads the card.</li></ul></div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end"><button type="button" class="btns" onClick="{{closeModal}}">Keep it as it is</button><a href="CitizenIDRecord.dc.html" class="btnp">Issue the card</a></div>
+      </section>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1060}}'>
+class Component extends DCLogic {
+  nav(activeLabel) {
+    var self = this;
+    var I = {
+      grid: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z', upload: 'M12 16V4M7 9l5-5 5 5M4 20h16', flow: 'M5 5h5v5H5zM14 14h5v5h-5zM10 7.5h4a2 2 0 0 1 2 2V14',
+       check: 'M9 11l3 3 8-8M20 12v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11',
+      folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', file: 'M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M9 13h6M9 17h6',
+      user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0', heart: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
+      home: 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-5h4v5', users: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-4-6.3',
+      pin: 'M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', share: 'M15 4h5v5M20 4l-8 8M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
+      layers: 'M12 3l9 5-9 5-9-5zM3 13l9 5 9-5', cash: 'M3 7h18v10H3zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 10v.01M18 14v.01', chart: 'M4 20V10M10 20V4M16 20v-7M2 20h20',
+      cal: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4', shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4', inbox: 'M3 13l3-8h12l3 8v6H3zM3 13h5l1 3h6l1-3h5',
+      doc: 'M14 3H6v18h12V7zM14 3v4h4M12 11v6M9 14h6', ucog: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 11-5.7M18 15v6M15 18h6',
+      building: 'M4 21V5l8-2v18M12 7l8 2v12M7 9h2M7 13h2M7 17h2M15 12h2M15 16h2M2 21h20', phone: 'M7 2h10a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM11 18h2',
+      sliders: 'M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4', idcard: 'M3 5h18v14H3zM8 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM5 16c.6-1.6 1.7-2 3-2s2.4.4 3 2M14 9h4M14 13h4',
+      news: 'M4 5h13v14a1 1 0 0 0 1 1H5a1 1 0 0 1-1-1zM17 9h3v10a1 1 0 0 1-2 0M7 9h7M7 13h7M7 17h4', history: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2',
+      staff: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6', clip: 'M9 4h6v3H9zM7 5H5v16h14V5h-2M9 12h6M9 16h4',
+      gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1'
+    };
+    var NAV = [
+      { title: 'Citizens', items: [['Citizen overview', 'chart', 'CitizensOverview.dc.html'], ['Citizen registry', 'users', 'CitizenRegistry.dc.html'], ['Sectors', 'heart', 'SectorSeniors.dc.html'], ['Import citizens', 'upload', 'CitizenImport.dc.html'], ['Citizen IDs', 'idcard', 'CitizenIDs.dc.html'], ['Citizen flows', 'flow', 'CitizenFlows.dc.html']] },
+      { title: 'Casework', items: [['Dashboard', 'grid', 'Main.dc.html'], ['My work', 'check'], ['Cases', 'folder'], ['Assistance requests', 'file'], ['Residents', 'user', 'Residents.dc.html'], ['Beneficiaries', 'heart'], ['Households', 'home'], ['Families', 'users'], ['Field visits', 'pin'], ['Referrals', 'share']] },
+      { title: 'Delivery', items: [['Programs', 'layers'], ['Releases', 'cash'], ['Reports', 'chart']] },
+      { title: 'Community', items: [['Events', 'cal']] },
+      { title: 'Residents’ app', items: [['ID verification', 'shield', 'VerificationQueue.dc.html'], ['Office inbox', 'inbox', 'OfficeInbox.dc.html'], ['Resident document requests', 'doc'], ['Users and roles', 'ucog', 'Users.dc.html'], ['App directory', 'building', 'AppDirectory.dc.html'], ['Home screen', 'phone'], ['App settings', 'sliders'], ['Digital IDs', 'idcard', 'CitizenIDs.dc.html'], ['Balita', 'news'], ['App audit trail', 'history']] },
+      { title: 'Administration', items: [['Staff and roles', 'staff'], ['Audit trail', 'clip'], ['Settings', 'gear']] }
+    ];
+    var open = (this.state && this.state.open) || {};
+    return NAV.map(function (s) {
+      var hasActive = s.items.some(function (i) { return i[0] === activeLabel; });
+      var isOpen = open[s.title] === undefined ? hasActive : open[s.title];
+      return {
+        title: s.title, open: isOpen, closed: !isOpen,
+        toggle: function () { var next = Object.assign({}, open); next[s.title] = !isOpen; self.setState({ open: next }); },
+        items: s.items.map(function (i) { var active = i[0] === activeLabel; return { label: i[0], icon: I[i[1]], href: i[2] || '#', active: active, inactive: !active }; })
+      };
+    });
+  }
+  renderVals() {
+    var self = this;
+    var st = this.state || {};
+    var theme = st.theme || (function () { try { return localStorage.getItem('taytay-theme') || 'light'; } catch (e) { return 'light'; } })();
+    var setTheme = function (v) { try { localStorage.setItem('taytay-theme', v); } catch (e) {} self.setState({ theme: v }); };
+    var nf = function (n) { return Math.round(n).toLocaleString('en-US'); };
+    var spark = function (arr, w, h) { w = w || 96; h = h || 28; var mx = Math.max.apply(null, arr), mn = Math.min.apply(null, arr); var r = mx - mn || 1; return arr.map(function (v, i) { return (i * (w / (arr.length - 1))).toFixed(1) + ',' + (h - 2 - ((v - mn) / r) * (h - 4)).toFixed(1); }).join(' '); };
+    var chip = function (tone) { return { blue: ['var(--blue-tint)', 'var(--link)'], green: ['var(--green-tint)', 'var(--green-ink)'], gold: ['var(--gold-tint)', 'var(--gold-ink)'], red: ['var(--red-tint)', 'var(--red-ink)'], grey: ['var(--soft)', 'var(--muted)'] }[tone]; };
+
+    var tab = st.tab || 'needs';
+    var modal = st.modal || '';
+    var R = {
+      needs: [['Cruz, Danilo S.', 'DC', 'd.cruz@example.com', 'Dolores', '4 Nov 2026'], ['Garcia, Marites L.', 'MG', 'marites.g@example.com', 'Santa Ana', '30 Oct 2026'], ['Villanueva, Ernesto G.', 'EV', 'No email given', 'Santa Ana', '18 Oct 2026'], ['Navarro, Pedro S.', 'PN', 'pnavarro@example.com', 'Dolores', '15 Oct 2026'], ['Lim, Carmela S.', 'CL', 'carmela.lim@example.com', 'San Isidro', '9 Oct 2026']],
+      active: [['Aquino, Teodoro M.', 'TA', 'teo.aquino@example.com', 'Santa Ana', '10 Oct 2026', 'TYT-0042-1187', '12 Oct 2026', '12 Oct 2027'], ['Dela Peña, Corazon R.', 'CD', 'cora.dp@example.com', 'Muzon', '2 Oct 2026', 'TYT-0039-0921', '3 Oct 2026', '3 Oct 2027'], ['Domingo, Elvira T.', 'ED', 'elvira.d@example.com', 'San Isidro', '20 Sep 2026', 'TYT-0031-0655', '21 Sep 2026', '21 Sep 2027'], ['Santos, Ligaya F.', 'LS', 'ligaya.s@example.com', 'Dolores', '11 Nov 2025', 'TYT-0007-0233', '12 Nov 2025', '12 Nov 2026'], ['Castillo, Rowena M.', 'RC', 'rowena.c@example.com', 'San Juan', '5 Dec 2025', 'TYT-0011-0611', '6 Dec 2025', '6 Dec 2026']],
+      suspended: [['Mercado, Rosalinda B.', 'RM', 'rosalinda.m@example.com', 'San Isidro', '2 Sep 2026', 'TYT-0028-0412', '3 Sep 2026', '3 Sep 2027']]
+    };
+    R.expiring = R.active.slice(3);
+    var TABS = [['needs', 'Verified, no card', 55, 'Verified residents with no card yet', 'Issue each card from here; the photo is the approved verification selfie.'], ['active', 'Active', 548, 'Active cards', 'Shown in the app with a QR code until they expire.'], ['expiring', 'Expiring in 30 days', 23, 'Cards that expire in the next 30 days', 'Replace a card to give the resident 365 more days.'], ['suspended', 'Suspended', 9, 'Suspended cards', 'No route makes a suspended card active again: revoke or replace it.']];
+    var cur = TABS.filter(function (t) { return t[0] === tab; })[0];
+    var who = { app: ['Residents’ app', 'var(--gold-tint)', 'var(--gold-ink)'], staff: ['Staff console', 'var(--blue-tint)', 'var(--link)'] };
+    var L = [['app', 'Signed up on the app', '1,240', 'Accounts in the residents’ app', 'Users.dc.html'], ['app', 'Sent an ID for review', '12', 'Waiting · oldest 5 days', 'VerificationQueue.dc.html'], ['staff', 'Verified residents', '612', 'Approved in ID verification', 'VerificationQueue.dc.html'], ['staff', 'Card issued', '557', '548 active · 9 suspended', '#'], ['app', 'Card shown with a QR code', '548', 'QR codes last 2 minutes', '#']];
+    var close = function () { self.setState({ modal: '' }); };
+    return {
+      themeClass: 'theme-' + theme, isLight: theme === 'light', isDark: theme === 'dark',
+      setLight: function () { setTheme('light'); }, setDark: function () { setTheme('dark'); },
+      lightBg: theme === 'light' ? 'var(--primary)' : 'transparent', lightFg: theme === 'light' ? '#FFFFFF' : 'var(--text2)',
+      darkBg: theme === 'dark' ? 'var(--primary)' : 'transparent', darkFg: theme === 'dark' ? '#FFFFFF' : 'var(--text2)',
+      nav: this.nav('Citizen IDs'),
+      openCheck: function () { self.setState({ modal: 'check' }); }, openIssue: function () { self.setState({ modal: 'issue' }); }, closeModal: close,
+      checkOpen: modal === 'check', issueOpen: modal === 'issue',
+      life: L.map(function (l, i) { var w = who[l[0]]; return { who: w[0], wbg: w[1], wfg: w[2], label: l[1], n: l[2], note: l[3], href: l[4], edge: i === 3 ? 'var(--primary)' : 'var(--line)' }; }),
+      tabs: TABS.map(function (t) { var on = t[0] === tab; return { label: t[1], count: nf(t[2]), on: on ? 'true' : 'false', cls: on ? 'tab on' : 'tab', pick: function () { self.setState({ tab: t[0] }); } }; }),
+      tabTitle: cur[3], tabNote: cur[4],
+      rows: R[tab].map(function (r) { var needs = tab === 'needs'; var st2 = needs ? ['No card', 'gold'] : (tab === 'suspended' ? ['Suspended', 'red'] : (tab === 'expiring' ? ['Expiring soon', 'gold'] : ['Active', 'green'])); var c = chip(st2[1]);
+        return { name: r[0], ini: r[1], email: r[2], brgy: r[3], verified: r[4], num: r[5] || '—', issued: r[6] || '—', expires: r[7] || '—', expCol: tab === 'expiring' ? 'var(--red-ink)' : 'var(--text2)', status: st2[0], bg: c[0], fg: c[1], needs: needs, has: !needs }; })
+    };
+  }
+}
+</script>
+</body>
+</html>
