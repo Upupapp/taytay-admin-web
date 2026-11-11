@@ -313,7 +313,10 @@ describe('navigation when the API cannot serve a module', () => {
     ).map((a) => a.getAttribute('href'));
 
     expect(links).not.toContain('/dashboard');
-    expect(buildCrumbs('/residents', null).map((c) => c.label)).toEqual(['Casework', 'Residents']);
+    expect(buildCrumbs('/residents', null).map((c) => c.label)).toEqual([
+      'Citizens',
+      'Citizen registry',
+    ]);
   });
 
   it('withholds the search trigger, and its shortcut, when search is not served', async () => {
@@ -336,8 +339,8 @@ describe('buildCrumbs', () => {
   it('builds home, section and page', () => {
     expect(buildCrumbs('/residents').map((c) => c.label)).toEqual([
       LAYOUT_COPY.breadcrumbHome,
-      'Casework',
-      'Residents',
+      'Citizens',
+      'Citizen registry',
     ]);
   });
 
@@ -348,11 +351,11 @@ describe('buildCrumbs', () => {
 
   it('keeps matching when a detail segment is appended', () => {
     const crumbs = buildCrumbs('/residents/res-0001');
-    expect(crumbs[crumbs.length - 1]?.label).toBe('Residents');
+    expect(crumbs[crumbs.length - 1]?.label).toBe('Citizen registry');
   });
 
   it('ignores query strings and fragments', () => {
-    expect(buildCrumbs('/residents?page=2#top').map((c) => c.label)).toContain('Residents');
+    expect(buildCrumbs('/residents?page=2#top').map((c) => c.label)).toContain('Citizen registry');
   });
 
   it('falls back to home for an unknown route', () => {

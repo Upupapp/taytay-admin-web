@@ -9807,3 +9807,33 @@ only made it visible.
 
 **Not changed.** The dark palette and every token. Easiest to reverse: restore the
 `prefers-color-scheme` block in `styles.scss` and the System option.
+
+## DL-208 — a Citizens section in the sidebar holds the registry and the Citizen IDs
+
+**Status:** Settled (12 November 2026). The citizen design pack, prompt A1; board
+`docs/design/admin/screens/CitizensOverview.dc.html`.
+
+**Why.** The pack groups everything about the people of Taytay — the registry, the sector lists,
+imports and the card the residents' app shows — under one heading, "Citizens". Until now the
+registry sat in Casework as "Residents" and the cards under Residents' app as "Digital IDs", so a
+clerk looking for a person and then for their ID looked in two sections.
+
+**What changed.**
+
+1. **A `Citizens` section, placed after Casework** as the prompt says. The board draws it first, above
+   Casework; the prompt's placement wins, because Dashboard and My work are where a session starts.
+2. **"Residents" moved into it as "Citizen registry"** and **"Digital IDs" as "Citizen IDs"**. Each
+   keeps its route (`/residents`, `/digital-ids`), its `reads`, its permissions and `closedTo`, so the
+   route guards they mirror (rule 8, `check:unserved`, `check:digital-ids`) are unchanged and no
+   bookmark breaks. The glyphs follow the labels (`CR`, `CI`).
+3. **Icons as on the board:** the registry draws `users`, the IDs keep `idCard`.
+4. **Only pages that exist are listed.** Citizen overview, Sectors and Import citizens join the section
+   when their pages are built (A3, A6, A7). "Citizen flows" is a design note on the boards, not a
+   page, and never joins.
+
+**Checks.** The layout spec's breadcrumbs now read Citizens › Citizen registry, and the unserved page's
+spec names Citizen IDs and Citizen registry. `check:community` still finds Casework, Delivery and
+Administration: the section is added, nothing is removed.
+
+**Not changed.** Page titles and headings, which their own prompts (A2, A4) restyle. Easiest to
+reverse: move the two entries back to their sections.

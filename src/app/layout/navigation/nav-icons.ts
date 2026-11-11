@@ -14,7 +14,7 @@ export const NAV_ICONS: Readonly<Record<string, IconName>> = {
   '/work': 'checkSquare',
   '/cases': 'folder',
   '/assistance-requests': 'file',
-  '/residents': 'user',
+  '/residents': 'users',
   '/beneficiaries': 'heart',
   '/households': 'home',
   '/families': 'users',

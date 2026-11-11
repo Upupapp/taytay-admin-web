@@ -72,18 +72,6 @@ export const NAVIGATION: readonly NavSection[] = [
         description: 'Intake, assessment, endorsement and approval.',
       },
       {
-        label: 'Residents',
-        route: '/residents',
-        reads: ['resident'],
-        glyph: 'RS',
-        permissions: ['resident.view'],
-        closedTo: ['assigned-cases'],
-        // Was "Beneficiary and household registry" before TAB 13. The two are
-        // now distinct screens answering different questions, and one label
-        // covering both is how a caseworker ends up on the wrong one.
-        description: 'The registry: who is on file, and their details.',
-      },
-      {
         label: 'Beneficiaries',
         route: '/beneficiaries',
         reads: ['beneficiary', 'program', 'saved-view'],
@@ -125,6 +113,36 @@ export const NAVIGATION: readonly NavSection[] = [
         glyph: 'RF',
         permissions: ['referral.view'],
         description: 'Cases routed to partner offices and agencies.',
+      },
+    ],
+  },
+  {
+    // `DL-208`. The office's registry of the people of Taytay, and the card the residents' app
+    // shows them: one section, so a clerk looking for a person or their ID looks in one place.
+    // The entries keep the routes and guards they had in Casework and Residents' app.
+    title: 'Citizens',
+    items: [
+      {
+        label: 'Citizen registry',
+        route: '/residents',
+        reads: ['resident'],
+        glyph: 'CR',
+        permissions: ['resident.view'],
+        closedTo: ['assigned-cases'],
+        // Was "Beneficiary and household registry" before TAB 13 and "Residents" in Casework before
+        // `DL-208`. The registry and the beneficiaries are distinct screens answering different
+        // questions, and one label covering both is how a caseworker ends up on the wrong one.
+        description: 'The registry: who is on file, and their details.',
+      },
+      {
+        // `DL-171`. A resident's card in the app: checked by staff, kept by an administrator.
+        // "Digital IDs" under Residents' app before `DL-208`; the route stays for bookmarks.
+        label: 'Citizen IDs',
+        route: '/digital-ids',
+        reads: ['digital-id', 'app-account'],
+        glyph: 'CI',
+        permissions: ['digital-id.verify', 'digital-id.manage'],
+        description: 'Check the digital ID a resident shows, and issue, suspend or revoke cards.',
       },
     ],
   },
@@ -246,15 +264,6 @@ export const NAVIGATION: readonly NavSection[] = [
         glyph: 'AS',
         permissions: ['app-config.manage'],
         description: 'Contact details, required versions and feature flags of the Taytay app.',
-      },
-      {
-        // `DL-171`. A resident's card in the app: checked by staff, kept by an administrator.
-        label: 'Digital IDs',
-        route: '/digital-ids',
-        reads: ['digital-id', 'app-account'],
-        glyph: 'DI',
-        permissions: ['digital-id.verify', 'digital-id.manage'],
-        description: 'Check the digital ID a resident shows, and issue, suspend or revoke cards.',
       },
       {
         // `DL-171`. The news residents read in the app — the console's one news channel (`DL-194`).

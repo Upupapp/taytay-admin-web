@@ -206,7 +206,6 @@ describe('the http adapter set', () => {
       'not assigned to an office',
     );
   });
-
 });
 
 describe('a port the API does not serve', () => {
@@ -258,12 +257,12 @@ describe('a port the API does not serve', () => {
     expect(text).toContain('App directory —');
     expect(text).toContain('Home screen —');
     expect(text).toContain('App settings —');
-    expect(text).toContain('Digital IDs —');
+    expect(text).toContain('Citizen IDs —');
     expect(text).toContain('Balita —');
     expect(text).toContain('App audit trail —');
     expect(text).toContain('Resident document requests —');
-    expect(text).not.toContain('Residents.');
-    expect(text).toContain('Residents —');
+    expect(text).not.toContain('Citizen registry.');
+    expect(text).toContain('Citizen registry —');
     for (const port of UNSERVED) {
       expect(text.toLowerCase(), port).toContain(DATA_PORT_HOLDINGS[port].toLowerCase());
     }
