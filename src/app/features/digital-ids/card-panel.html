@@ -5,23 +5,53 @@
   }
   @case ('ready') {
     @if (cardValue(); as current) {
-      <dl class="facts facts--pairs digital-ids__facts">
-        <dt>{{ copy.number }}</dt>
-        <dd>
-          {{ current.number }}
-          <span class="digital-ids__aside">{{ copy.numberNote }}</span>
-        </dd>
-        <dt>{{ copy.status }}</dt>
-        <dd><app-status-badge [catalog]="catalog" [status]="current.status" /></dd>
-        <dt>{{ copy.issued }}</dt>
-        <dd>{{ current.issuedAt | date: 'd MMM y' }}</dd>
-        <dt>{{ copy.expires }}</dt>
-        <dd>{{ current.expiresAt | date: 'd MMM y' }}</dd>
-      </dl>
-      @if (pastExpiry(current)) {
-        <p class="status-line digital-ids__note">{{ copy.pastExpiry }}</p>
-      }
-      <app-card-photo [photo]="current.photo" [whose]="whose()" />
+      <!-- The CitizenIDRecord mock-up: the card as the app draws it, its facts, its history, in one
+           row. The photo's button sits beside the heading; the image appears in the card's own
+           photo slot, and only after CardPhoto's warning. -->
+      <section class="card-record" aria-labelledby="card-record-heading">
+        <div class="card-record__head">
+          <h3 id="card-record-heading" class="section-title">{{ copy.cardHeading }}</h3>
+          <app-card-photo
+            [photo]="current.photo"
+            [whose]="whose()"
+            [inline]="false"
+            (shown)="showPhoto(current, $event)"
+          />
+        </div>
+        <div class="card-record__row">
+          <app-id-card-face
+            [name]="whose()"
+            [number]="current.number"
+            [status]="current.status"
+            [issuedAt]="current.issuedAt"
+            [expiresAt]="current.expiresAt"
+            [photoUrl]="photoUrlFor(current)"
+            [photoAlt]="photoAlt()"
+          />
+          <div class="card-record__facts">
+            <dl class="facts facts--pairs digital-ids__facts">
+              <dt>{{ copy.number }}</dt>
+              <dd>
+                {{ current.number }}
+                <span class="digital-ids__aside">{{ copy.numberNote }}</span>
+              </dd>
+              <dt>{{ copy.status }}</dt>
+              <dd><app-status-badge [catalog]="catalog" [status]="current.status" /></dd>
+              <dt>{{ copy.issued }}</dt>
+              <dd>{{ current.issuedAt | date: 'd MMM y' }}</dd>
+              <dt>{{ copy.expires }}</dt>
+              <dd>{{ current.expiresAt | date: 'd MMM y' }}</dd>
+            </dl>
+            @if (pastExpiry(current)) {
+              <p class="status-line digital-ids__note">{{ copy.pastExpiry }}</p>
+            }
+          </div>
+          <div class="card-record__history">
+            <h4 class="section-title">{{ copy.historyHeading }}</h4>
+            <app-not-connected figure="card-history" />
+          </div>
+        </div>
+      </section>
 
       <h3 class="section-title digital-ids__subheading">{{ copy.actsHeading }}</h3>
       <div class="digital-ids__actions">

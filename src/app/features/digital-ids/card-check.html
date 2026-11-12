@@ -1,5 +1,13 @@
-<section class="card card--padded stack digital-ids__section" aria-labelledby="card-check-heading">
-  <h2 id="card-check-heading" class="section-title digital-ids__heading">{{ copy.heading }}</h2>
+<!-- Styled as the CitizenIDs mock-up's check dialog (DL-211): a solid panel, the display heading,
+     the field, what the check does, then its one button. Still in the page, so nothing changes in
+     how a check is made: the field is emptied as the code is sent, and nothing is kept. -->
+<section
+  class="card card--panel card--padded stack digital-ids__section card-check"
+  aria-labelledby="card-check-heading"
+>
+  <h2 id="card-check-heading" class="section-title section-title--display digital-ids__heading">
+    {{ copy.heading }}
+  </h2>
   <p class="status-line digital-ids__note">{{ copy.lead }}</p>
   <p class="status-line digital-ids__note">{{ copy.noCamera }}</p>
 

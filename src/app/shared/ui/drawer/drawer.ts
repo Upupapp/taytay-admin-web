@@ -12,7 +12,8 @@ import { Icon } from '../icon/icon';
 import { bindOverlay } from '../overlay/overlay.behavior';
 
 export type DrawerSide = 'end' | 'start';
-export type DrawerSize = 'narrow' | 'wide';
+/** `record`: a whole record beside the list, laid out in a row (the Citizen ID record, `DL-211`). */
+export type DrawerSize = 'narrow' | 'wide' | 'record';
 
 /**
  * Edge-anchored panel for context that sits alongside a list — a case summary,

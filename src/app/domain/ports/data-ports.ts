@@ -119,6 +119,9 @@ export const UNSERVED_FIGURES = {
   'sector-attention':
     'which of a sector’s members need attention (an ID or a renewal due, a milestone birthday)',
   'sector-fields': 'a sector’s own fields (ID number, validity, social pension, disability type)',
+  // `DL-211`. The API keeps no list of a card's past states, and its audit trail is read whole.
+  'card-history':
+    'a card’s history (when it was issued, suspended or replaced, and when it was checked)',
 } as const satisfies Readonly<Record<string, string>>;
 
 export type UnservedFigure = keyof typeof UNSERVED_FIGURES;

@@ -8,6 +8,7 @@ import { PermissionService } from '@core/access/permission.service';
 import {
   APP_ACCOUNT_REPOSITORY,
   asId,
+  notSentSentence,
   asIsoDateTime,
   DIGITAL_ID_EFFECTS,
   DIGITAL_ID_REPOSITORY,
@@ -370,5 +371,68 @@ describe('CardPanel (DL-171)', () => {
     expect(element.textContent).toContain(COPY.panel.none);
     expect(element.textContent).toContain(COPY.panel.noneWhy);
     expect(button(element, COPY.panel.act.issue)).not.toBeNull();
+  });
+});
+
+describe('CardPanel as the CitizenIDRecord board (DL-211)', () => {
+  async function panel(): Promise<{
+    fixture: ComponentFixture<CardPanel>;
+    element: HTMLElement;
+    repository: RecordingCards;
+  }> {
+    const { cards: repository } = configure();
+    const fixture = TestBed.createComponent(CardPanel);
+    fixture.componentRef.setInput('account', account('a', 'verified'));
+    const element = await settle(fixture);
+    return { fixture, element, repository };
+  }
+
+  it('draws the card as the app does — the number, the validity, the status — and no QR code', async () => {
+    const { element } = await panel();
+    const face = element.querySelector('.id-card');
+    expect(face?.getAttribute('aria-label')).toBe(COPY.face.label('TAY-2026-000001'));
+    expect(face?.textContent).toContain('Person a');
+    expect(face?.textContent).toContain('TAY-2026-000001');
+    expect(face?.querySelector('app-status-badge')).not.toBeNull();
+    expect(face?.querySelector('.id-card__photo')?.textContent).toContain(COPY.face.photoHidden);
+    expect(face?.querySelector('.id-card__photo img')).toBeNull();
+    expect(face?.textContent).not.toMatch(/\bqr\b/i);
+    expect(face?.querySelector('canvas')).toBeNull();
+  });
+
+  it('puts the photo button beside the Card heading, and the photo only after the warning', async () => {
+    const { fixture, element, repository } = await panel();
+    const head = element.querySelector('.card-record__head');
+    expect(head?.querySelector('h3')?.textContent?.trim()).toBe(COPY.panel.cardHeading);
+    const show = button(head ?? element, COPY.photo.show);
+    expect(show).not.toBeNull();
+
+    show?.click();
+    await settle(fixture);
+    expect(repository.calls.filter((call) => call.startsWith('photo:'))).toEqual([]);
+
+    button(document.body, COPY.photo.confirm)?.click();
+    await vi.waitFor(
+      async () => {
+        await settle(fixture);
+        const image = element.querySelector<HTMLImageElement>('.id-card__photo img');
+        expect(image?.getAttribute('alt')).toBe(COPY.photo.alt('Person a'));
+      },
+      { timeout: 5_000, interval: 50 },
+    );
+    expect(element.querySelector('.digital-ids__photo')).toBeNull();
+
+    button(head ?? element, COPY.photo.hide)?.click();
+    await settle(fixture);
+    expect(element.querySelector('.id-card__photo img')).toBeNull();
+  });
+
+  it('says in its place that the card’s history is not sent, rather than drawing an empty one', async () => {
+    const { element } = await panel();
+    const history = element.querySelector('.card-record__history');
+    expect(history?.querySelector('h4')?.textContent?.trim()).toBe(COPY.panel.historyHeading);
+    expect(history?.querySelector('[role="note"]')?.textContent?.trim()).toBe(
+      notSentSentence('card-history'),
+    );
   });
 });

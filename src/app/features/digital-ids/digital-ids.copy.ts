@@ -3,7 +3,7 @@ import type { DigitalIdAct } from '@domain/index';
 /** Every sentence the digital IDs screen says (`DL-171`). */
 export const DIGITAL_IDS_COPY = {
   page: {
-    title: 'Digital IDs',
+    title: 'Citizen IDs',
     subtitle:
       'Residents carry this card in the Taytay app. Check the card a resident shows you, and keep the cards residents hold.',
   },
@@ -80,6 +80,19 @@ export const DIGITAL_IDS_COPY = {
     noManage: 'Keeping residents’ cards is for an administrator. You can check a card above.',
   },
 
+  /** The card as the app draws it (`DL-211`): the words printed on it, and its label. */
+  face: {
+    label: (number: string) => `Taytay resident Digital ID, card ${number}`,
+    province: 'Lalawigan ng Rizal',
+    town: 'Municipality of Taytay',
+    kind: 'Resident Digital ID',
+    photoHidden: 'Photo hidden',
+    name: 'Name',
+    number: 'ID number',
+    issued: 'Issued',
+    expires: 'Expires',
+  },
+
   panel: {
     heading: (name: string) => `Digital ID of ${name}`,
     loading: 'Reading the card…',
@@ -94,6 +107,8 @@ export const DIGITAL_IDS_COPY = {
     issued: 'Issued',
     expires: 'Expires',
     pastExpiry: 'This card’s expiry has passed. The app shows no QR code for it.',
+    cardHeading: 'Card',
+    historyHeading: 'Card history',
     actsHeading: 'Change this card',
     effectsLead: (act: string) => `${act} — what it does:`,
     always: 'Whichever you choose:',

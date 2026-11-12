@@ -9926,6 +9926,46 @@ only from its dialog with a reason; Add refusing without a person. `not-connecte
 figure's sentence. `ResidentRepository.endSector` is now reached from a screen, so `check:port-adoption`'s
 floor drops from six unreached methods to five. Easiest to reverse: remove the three routes and entries.
 
+## DL-211 — a Citizen ID record looks like the card in the app: card, facts and history in one row
+
+**Status:** Settled (12 November 2026). The citizen design pack, prompt A4; boards
+`CitizenIDRecord.dc.html` (the record) and `CitizenIDs.dc.html` (the check dialog). Restyle of
+`features/digital-ids`; behaviour unchanged.
+
+**What changed in its look.**
+
+1. **The card as the resident sees it.** `IdCardFace` (`id-card-face.ts`) draws the deep band with the
+   municipal seal and a gold rule, the photo slot, the name, the ID number, the issue and expiry dates,
+   the status badge and the municipal stripe — in tokens, every text pair an audited one. It is
+   presentation only: it is handed what `CardPanel` already read and fetches nothing. It draws no QR
+   code and nothing made to look like one (the board's barcode bars are left out): the code is what the
+   resident shows, not something the office keeps (`DL-171`).
+2. **Card, facts and history in one row**, in a drawer wide enough to hold them: `Drawer` gains a
+   `record` size (1080px), still beside the list, still dismissed to the same place. Under 1100px the
+   row becomes one column.
+3. **The Show/Hide photo button sits beside the "Card" heading.** `CardPhoto` still alone fetches the
+   photo, only from its warning's own button, and alone revokes the object URL; with `inline` off it
+   hands the URL to `CardPanel` through a `shown` output, and the card face draws it in its own slot. The
+   panel forgets the URL whenever no card is shown, so a revoked URL is never drawn on another card.
+4. **Issue, Suspend, Revoke and Reissue are unchanged**: the same buttons, the same centred confirmation
+   with the act's effects before its button, the card read again afterwards.
+5. **The card check is styled as the board's check dialog** — a solid panel at the dialog's width, the
+   display heading, the field, "Before you check:", one button — and stays in the page, so how a check
+   is made does not change: the field is emptied as the code is sent and nothing is kept.
+6. **The page is titled "Citizen IDs"**, the label the Citizens section gives it (`DL-208`).
+
+**Left out, for lack of an API field.** The board's facts *Barangay* (a card carries none; an account's
+barangay is a staff scope, not an address), *Card photo* (what kind of photo it is), *Checked N times*
+and *Valid for N days*. The **card history** is not served — `/admin/digital-ids` keeps no past states
+("a revoked card is not shown, and no list of past cards exists"), and the app's audit trail is read
+whole, never looked up beside a record (`DL-171`) — so its column shows
+`<app-not-connected figure="card-history">` (`DL-210`'s figures).
+
+**Checks.** The digital IDs spec holds the card face (its label, number, status, the photo hidden, no
+QR), the photo button beside the heading with the photo fetched only after the warning and drawn in the
+card's slot, and the history's not-connected note. `check:digital-ids` passes unchanged. Easiest to
+reverse: put `CardPhoto` back to inline and the facts list back alone in a wide drawer.
+
 ## DL-216 — App settings publishes the biometric (selfie) consent; until it does, the page says the app cannot take selfies
 
 **Status:** Settled (12 November 2026). Extends `DL-186` (the texts residents accept) to a third

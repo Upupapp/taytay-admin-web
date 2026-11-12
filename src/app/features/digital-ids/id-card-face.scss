@@ -1,0 +1,136 @@
+/* The resident's card as the app draws it (CitizenIDRecord mock-up), in tokens: the deep band with
+   the seal and a gold rule, the photo beside the fields, the status, the municipal stripe. Every
+   pair here is an audited one: --on-deep / --on-deep-muted on --deep, --ink / --muted on
+   --card-solid. Decoration (the rule, the stripe) carries nothing a reader needs. */
+
+:host {
+  display: block;
+}
+
+.id-card {
+  display: flex;
+  flex-direction: column;
+  inline-size: 100%;
+  max-inline-size: 440px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--card-solid);
+  color: var(--ink);
+}
+
+.id-card__band {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px var(--space-4);
+  border-block-end: 3px solid var(--gold);
+  background: var(--deep);
+  color: var(--on-deep);
+}
+
+.id-card__issuer {
+  display: flex;
+  flex-direction: column;
+  line-height: var(--lh-snug);
+}
+
+.id-card__province {
+  color: var(--on-deep-muted);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+}
+
+.id-card__town {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+}
+
+.id-card__kind {
+  margin-inline-start: auto;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  text-align: end;
+}
+
+.id-card__body {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4) 0;
+}
+
+.id-card__photo {
+  display: flex;
+  flex: 0 0 27%;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--soft);
+
+  img {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+}
+
+.id-card__photo-note {
+  padding: var(--space-1);
+  color: var(--muted);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-bold);
+  text-align: center;
+}
+
+.id-card__fields {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 6px var(--space-3);
+  min-inline-size: 0;
+  margin: 0;
+
+  dt {
+    color: var(--muted);
+    font-size: var(--fs-micro);
+    font-weight: var(--fw-bold);
+    letter-spacing: var(--ls-caps);
+    text-transform: uppercase;
+  }
+
+  dd {
+    margin: 0;
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-bold);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+}
+
+.id-card__field--full {
+  grid-column: 1 / -1;
+}
+
+.id-card__name {
+  text-transform: uppercase;
+}
+
+.id-card__foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-2) var(--space-4);
+}
+
+.id-card__stripe {
+  block-size: 7px;
+  background: linear-gradient(90deg, var(--deep) 0 70%, var(--red) 70% 88%, var(--gold) 88%);
+}

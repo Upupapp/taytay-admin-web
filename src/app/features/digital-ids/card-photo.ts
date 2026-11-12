@@ -5,6 +5,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
 } from '@angular/core';
@@ -47,9 +48,11 @@ type PhotoState =
         <button type="button" class="btn" (click)="ask()">{{ copy.show }}</button>
       }
       @case ('open') {
-        <figure class="digital-ids__photo">
-          <img [src]="openUrl()" [alt]="copy.alt(whose())" width="150" />
-        </figure>
+        @if (inline()) {
+          <figure class="digital-ids__photo">
+            <img [src]="openUrl()" [alt]="copy.alt(whose())" width="150" />
+          </figure>
+        }
         <button type="button" class="btn" (click)="hide()">{{ copy.hide }}</button>
       }
     }
@@ -84,6 +87,14 @@ export class CardPhoto {
   readonly photo = input.required<MediaId>();
   /** Whose card, for the image's text alternative. */
   readonly whose = input.required<string>();
+  /**
+   * Whether the image is drawn here, under the button (the card check), or handed to the parent to
+   * draw in the card's own photo slot (the card record, `DL-211`). Either way the bytes are fetched
+   * only here, after the warning, and the object URL is revoked only here.
+   */
+  readonly inline = input(true);
+  /** The object URL while the photo is shown, `null` once it is hidden or revoked. */
+  readonly shown = output<string | null>();
 
   protected readonly copy = DIGITAL_IDS_COPY.photo;
   protected readonly warning = signal(false);
@@ -120,7 +131,9 @@ export class CardPhoto {
         next: (blob) => {
           // Answered after another card was shown: this is not that card's photo.
           if (this.photo() === photo) {
-            this.state.set({ kind: 'open', url: this.objectUrls.make(blob) });
+            const url = this.objectUrls.make(blob);
+            this.state.set({ kind: 'open', url });
+            this.shown.emit(url);
           }
         },
         error: () => this.state.set({ kind: 'failed' }),
@@ -130,5 +143,6 @@ export class CardPhoto {
   protected hide(): void {
     this.objectUrls.revokeAll();
     this.state.set({ kind: 'closed' });
+    this.shown.emit(null);
   }
 }

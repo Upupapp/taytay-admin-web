@@ -721,7 +721,7 @@ export const routes: Routes = [
         // administrators; this guard opens for either, as the menu entry does, and each section asks
         // for its own. Not the protection (rule 4). Keeping cards reads the app accounts as well.
         path: 'digital-ids',
-        title: 'Digital IDs — Taytay Social Welfare',
+        title: 'Citizen IDs — Taytay Social Welfare',
         canActivate: [
           servedGuard('digital-id', 'app-account'),
           permissionGuard('digital-id.verify', 'digital-id.manage'),

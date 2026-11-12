@@ -4,13 +4,16 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   inject,
   input,
   signal,
+  untracked,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { combineLatest, switchMap, type Observable } from 'rxjs';
 
+import { NotConnected } from '@core/access/not-connected';
 import {
   actsOn,
   DIGITAL_ID_ALWAYS,
@@ -21,6 +24,7 @@ import {
   type AppAccount,
   type DigitalIdAct,
   type DigitalIdCard,
+  type MediaId,
 } from '@domain/index';
 import { failureReason } from '@shared/state/failure-reason';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
@@ -28,6 +32,7 @@ import { Modal } from '@shared/ui/modal/modal';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { CardPhoto } from './card-photo';
+import { IdCardFace } from './id-card-face';
 import { DIGITAL_IDS_COPY } from './digital-ids.copy';
 
 /**
@@ -44,7 +49,7 @@ import { DIGITAL_IDS_COPY } from './digital-ids.copy';
 @Component({
   selector: 'app-card-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CardPhoto, DatePipe, Modal, StatusBadge],
+  imports: [CardPhoto, DatePipe, IdCardFace, Modal, NotConnected, StatusBadge],
   templateUrl: './card-panel.html',
   styleUrl: './digital-ids.scss',
 })
@@ -73,6 +78,16 @@ export class CardPanel {
   protected readonly cardValue = computed(() => valueOf(this.card()));
 
   protected readonly whose = computed(() => this.account().name ?? this.account().email ?? '');
+  protected readonly photoAlt = computed(() => DIGITAL_IDS_COPY.photo.alt(this.whose()));
+
+  /**
+   * The photo `CardPhoto` has opened, and for which card: the card face draws it in its own slot
+   * (`DL-211`). Only `CardPhoto` fetches it and revokes it; this holds the URL it hands over, and
+   * forgets it whenever no card is shown — `CardPhoto` has gone, and its URL with it.
+   */
+  private readonly shownPhoto = signal<{ readonly photo: MediaId; readonly url: string } | null>(
+    null,
+  );
 
   /** The act whose confirmation is open; nothing is sent until its own button is pressed. */
   protected readonly pending = signal<DigitalIdAct | null>(null);
@@ -80,6 +95,23 @@ export class CardPanel {
   protected readonly problem = signal('');
   /** The live region's text: the outcome of the last act. */
   protected readonly outcome = signal('');
+
+  constructor() {
+    effect(() => {
+      if (this.cardValue() === null) {
+        untracked(() => this.shownPhoto.set(null));
+      }
+    });
+  }
+
+  protected showPhoto(card: DigitalIdCard, url: string | null): void {
+    this.shownPhoto.set(url === null ? null : { photo: card.photo, url });
+  }
+
+  protected photoUrlFor(card: DigitalIdCard): string | null {
+    const shown = this.shownPhoto();
+    return shown !== null && shown.photo === card.photo ? shown.url : null;
+  }
 
   protected actsOn(card: DigitalIdCard): readonly DigitalIdAct[] {
     return actsOn(card);
