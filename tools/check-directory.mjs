@@ -59,6 +59,12 @@
  *      and the mock raise as the domain's refusal; the list shows the kind as words; and the section
  *      says plainly when no line is marked as the command center.
  *
+ *      Since `DL-220` an **absent** kind is not set rather than unreadable — the console tolerates an
+ *      API older than kinds — and the rule holds that from both sides: the mapper reads absence as
+ *      `null` and an unknown value as unreadable, never as `other`; the list says "Type not set" in
+ *      words and how many lines have none; and the form offers "not set" only while it is, and sends
+ *      no kind for a line nobody gave one.
+ *
  * Each rule was validated against a planted regression before being trusted.
  */
 
@@ -326,11 +332,14 @@ for (const kind of specKinds) {
 const hotlineMapper = code(read(APP, 'data', 'http', 'mappers', 'hotline.mapper.ts'));
 if (
   !/const kind = kindOf\(field\(wire, 'kind'\)\)/.test(hotlineMapper) ||
-  !/return isHotlineKind\(value\) \? value : null;/.test(hotlineMapper) ||
-  !/kind === null \|\|/.test(hotlineMapper) ||
+  !/return isHotlineKind\(value\) \? value : undefined;/.test(hotlineMapper) ||
+  !/kind === undefined \|\|/.test(hotlineMapper) ||
   /'other'/.test(hotlineMapper)
 ) {
   failures.push("The hotline mapper no longer reads a kind strictly. An unknown kind read as 'other' hides a command center.");
+}
+if (!/if \(value === undefined \|\| value === null \|\| value === ''\) \{\s*return null;\s*\}/.test(hotlineMapper)) {
+  failures.push('The hotline mapper no longer reads an absent kind as not set (DL-220): an older API would empty the list.');
 }
 const created = block(hotlines, hotlines.indexOf('create(draft'));
 const updated = block(hotlines, hotlines.indexOf('update(id'));
@@ -397,8 +406,25 @@ if (/command|taken|kind/i.test(submitTag)) {
 
 const sectionTemplate = code(read(FEATURE, 'hotlines-section.html'));
 const sectionClass = code(read(FEATURE, 'hotlines-section.ts'));
-if (!/key:\s*'kind',[\s\S]{0,80}value:\s*\(hotline\)\s*=>\s*HOTLINE_KIND_LABELS\[hotline\s*\.\s*kind\]/.test(sectionClass)) {
-  failures.push("The hotline list no longer shows each line's kind as words.");
+if (
+  !/key:\s*'kind',[\s\S]{0,80}value:\s*\(hotline\)\s*=>\s*hotlineKindLabel\(hotline\s*\.\s*kind\)/.test(sectionClass) ||
+  !/export const HOTLINE_KIND_NOT_SET = 'Type not set';/.test(hotlineDomain) ||
+  !/return kind === null \? HOTLINE_KIND_NOT_SET : HOTLINE_KIND_LABELS\[kind\];/.test(hotlineDomain)
+) {
+  failures.push("The hotline list no longer shows each line's kind as words, or a kind not set as “Type not set” (DL-220).");
+}
+if (
+  !/linesWithoutKind\(\s*this\s*\.\s*rows\(\)\s*\)/.test(sectionClass) ||
+  !/copy\s*\.\s*kindsNotSet\(withoutKind\(\)\)/.test(sectionTemplate)
+) {
+  failures.push('The hotlines section no longer says how many lines have no type set (DL-220).');
+}
+if (
+  !/@if \(kind\(\) === null\) \{\s*<option value="" selected disabled>\{\{\s*copy\s*\.\s*kindNotSet\s*\}\}<\/option>/.test(formTemplate) ||
+  !/if \(draft\s*\.\s*kind !== null && draft\s*\.\s*kind !== hotline\s*\.\s*kind\) changes\s*\.\s*kind = draft\s*\.\s*kind;/.test(formClass) ||
+  /\?\?\s*'other'/.test(formClass)
+) {
+  failures.push('The hotline form no longer keeps a kind not set as not set: it offers it, and sends no kind nobody chose (DL-220).');
 }
 if (
   !/@if \(commandCenter\(\); as center\)[\s\S]{0,200}\}\s*@else\s*\{\s*<p[^>]*>[\s\S]{0,120}copy\s*\.\s*noCommandCenterTitle/.test(sectionTemplate) ||

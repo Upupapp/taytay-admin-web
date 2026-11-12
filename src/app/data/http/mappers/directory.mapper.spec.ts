@@ -192,7 +192,18 @@ describe('toHotline (DL-170)', () => {
     expect(HOTLINES.data.map((wire) => toHotline(wire)?.kind)).toEqual(['disaster', 'medical']);
     expect(toHotline({ ...HOTLINES.data[0], kind: 'command-center' })?.kind).toBe('command-center');
     // Read as "other", a command center would have the page say the office has none.
-    expect(toHotline({ ...HOTLINES.data[0], kind: undefined })).toBeNull();
     expect(toHotline({ ...HOTLINES.data[0], kind: 'Command Center' })).toBeNull();
+    expect(toHotline({ ...HOTLINES.data[0], kind: 7 })).toBeNull();
+  });
+
+  it('reads a line from an API older than kinds as one whose kind is not set (DL-220)', () => {
+    const older = Object.fromEntries(
+      Object.entries(HOTLINES.data[0] ?? {}).filter(([key]) => key !== 'kind'),
+    );
+
+    expect(toHotline(older)).not.toBeNull();
+    expect(toHotline(older)?.kind).toBeNull();
+    expect(toHotline({ ...HOTLINES.data[0], kind: null })?.kind).toBeNull();
+    expect(toHotline({ ...HOTLINES.data[0], kind: '' })?.kind).toBeNull();
   });
 });

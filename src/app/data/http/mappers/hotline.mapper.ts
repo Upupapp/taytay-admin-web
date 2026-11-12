@@ -7,9 +7,15 @@ function flag(value: unknown): boolean | null {
   return typeof value === 'boolean' ? value : null;
 }
 
-/** One of the API's kinds, or `null` for anything else. */
-function kindOf(value: unknown): HotlineKind | null {
-  return isHotlineKind(value) ? value : null;
+/**
+ * One of the API's kinds; `null` when the API sent none (`DL-220`); `undefined` for a value it
+ * does not know, which makes the line unreadable.
+ */
+function kindOf(value: unknown): HotlineKind | null | undefined {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+  return isHotlineKind(value) ? value : undefined;
 }
 
 /**
@@ -20,8 +26,12 @@ function kindOf(value: unknown): HotlineKind | null {
  * Whether a line is shown is never guessed: a missing or unreadable `active` makes it unreadable,
  * because "hidden" said of a line residents can see is as wrong as the reverse.
  *
- * Nor is its kind (`DL-217`): a missing or unknown `kind` is never read as `other`. A line read
- * as "not the command center" when it is one would have the page tell the office it has none.
+ * Nor is its kind (`DL-217`): it is never read as `other`. A line read as "not the command
+ * center" when it is one would have the page tell the office it has none. An **absent** kind is
+ * not set (`DL-220`): the console and the API deploy separately, and an API older than `ebd7aeb`
+ * sends none — refusing every line would empty the list over a field the server does not have. An
+ * **unknown** kind stays unreadable: that is a server newer than this console, saying something it
+ * cannot word.
  *
  * @consumes GET admin/hotlines
  * @consumes POST admin/hotlines
@@ -42,7 +52,7 @@ export function toHotline(wire: unknown): Hotline | null {
     name === null ||
     number === null ||
     category === null ||
-    kind === null ||
+    kind === undefined ||
     sortOrder === null ||
     active === null ||
     updatedAt === null

@@ -694,6 +694,46 @@ describe('HotlinesSection — a line’s kind and the command center (DL-217)', 
     expect(document.querySelector('#hotline-kind-taken')).toBeNull();
   });
 
+  it('shows a line the server sent with no kind as not set, never as Other (DL-220)', async () => {
+    const { hotlines } = configure();
+    hotlines.rows = [
+      hotline('old', { name: 'Old line', kind: null }),
+      hotline('fire', { name: 'Fire', kind: 'fire' }),
+    ];
+    const element = await settle(TestBed.createComponent(HotlinesSection));
+
+    const rows = [...element.querySelectorAll('tbody tr')].map((row) => row.textContent ?? '');
+    expect(rows[0]).toContain('Type not set');
+    expect(rows[0]).not.toContain('Other');
+    expect(element.textContent).toContain('1 line has no type set: the server did not say');
+  });
+
+  it('edits a line whose kind is not set, and sends no kind until one is chosen', async () => {
+    const { hotlines } = configure();
+    hotlines.rows = [hotline('old', { name: 'Old line', kind: null })];
+    const fixture = TestBed.createComponent(HotlinesSection);
+    await settle(fixture);
+
+    buttonNamed('Edit Old line')?.click();
+    await settle(fixture);
+    const kind = document.querySelector<HTMLSelectElement>('#hotline-kind');
+    expect(kind?.selectedOptions[0]?.textContent?.trim()).toBe('Type not set — choose one');
+    type('#hotline-name', 'Old line, renamed');
+    await settle(fixture);
+    submit();
+    await settle(fixture);
+    expect(hotlines.updated.at(-1)?.changes).toEqual({ name: 'Old line, renamed' });
+
+    buttonNamed('Edit Old line')?.click();
+    await settle(fixture);
+    select('#hotline-kind', 'medical');
+    await settle(fixture);
+    expect(document.querySelector('#hotline-kind option[value=""]')).toBeNull();
+    submit();
+    await settle(fixture);
+    expect(hotlines.updated.at(-1)?.changes).toEqual({ kind: 'medical' });
+  });
+
   it('says what giving up the role does, before saving', async () => {
     const { hotlines } = configure();
     hotlines.rows = [hotline('rescue', { name: 'Rescue', kind: 'command-center' })];

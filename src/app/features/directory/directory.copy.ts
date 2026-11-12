@@ -222,6 +222,11 @@ export const DIRECTORY_COPY = {
     noCommandCenter:
       'The app has no line of the office’s own to show when it tells residents to call for an ' +
       'emergency. Edit the line that should be it, and set its kind to Command center.',
+    /** DL-220: a line the server sent with no kind — an API older than kinds — is not set. */
+    kindsNotSet: (count: number) =>
+      count === 1
+        ? '1 line has no type set: the server did not say what it is for. Edit it and choose its kind.'
+        : `${count} lines have no type set: the server did not say what they are for. Edit each and choose its kind.`,
     commandCenterIs: (name: string, number: string) =>
       `The command center is ${name}, ${number}: the line the app shows when it tells residents to ` +
       'call for an emergency.',
@@ -249,6 +254,8 @@ export const DIRECTORY_COPY = {
       'What the line is for. The app picks a line by its kind, never by its name. Command center ' +
       'is the one line the app shows when it tells residents to call for an emergency; only one ' +
       'active line can be it.',
+    /** The select's first option while an existing line's type is not set (`DL-220`). */
+    kindNotSet: 'Type not set — choose one',
     kindTakenLead: 'Before you save:',
     kindRefused: (message: string) =>
       `${message} Change the line that is the command center first — another kind, or inactive — ` +

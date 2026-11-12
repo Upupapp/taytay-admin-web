@@ -16,7 +16,8 @@ import {
   APP_VISIBILITY_CATALOG,
   COMMAND_CENTER_EFFECTS,
   HOTLINE_EFFECTS,
-  HOTLINE_KIND_LABELS,
+  hotlineKindLabel,
+  linesWithoutKind,
   HOTLINE_LIST_CAP,
   HOTLINE_REPOSITORY,
   visibilityOf,
@@ -69,6 +70,8 @@ export class HotlinesSection {
   protected readonly rows = computed(() => valueOf(this.listing())?.hotlines ?? []);
   /** The active command center in the list as read, or `null` when no line is marked as one. */
   protected readonly commandCenter = computed(() => activeCommandCenter(this.rows()));
+  /** Lines the server sent with no kind (`DL-220`): shown as not set, never as `other`. */
+  protected readonly withoutKind = computed(() => linesWithoutKind(this.rows()));
   protected readonly mayBeIncomplete = computed(
     () => valueOf(this.listing())?.mayBeIncomplete === true,
   );
@@ -85,7 +88,7 @@ export class HotlinesSection {
     {
       key: 'kind',
       header: this.copy.columnKind,
-      value: (hotline) => HOTLINE_KIND_LABELS[hotline.kind],
+      value: (hotline) => hotlineKindLabel(hotline.kind),
     },
     { key: 'category', header: this.copy.columnCategory, value: (hotline) => hotline.category },
     {

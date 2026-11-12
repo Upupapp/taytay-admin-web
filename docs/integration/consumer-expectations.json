@@ -174,13 +174,14 @@
         "active",
         "category",
         "id",
-        "kind",
         "name",
         "number",
         "sort_order",
         "updated_at"
       ],
-      "optional": []
+      "optional": [
+        "kind"
+      ]
     },
     {
       "method": "POST",
@@ -190,13 +191,14 @@
         "active",
         "category",
         "id",
-        "kind",
         "name",
         "number",
         "sort_order",
         "updated_at"
       ],
-      "optional": []
+      "optional": [
+        "kind"
+      ]
     },
     {
       "method": "PATCH",
@@ -206,13 +208,14 @@
         "active",
         "category",
         "id",
-        "kind",
         "name",
         "number",
         "sort_order",
         "updated_at"
       ],
-      "optional": []
+      "optional": [
+        "kind"
+      ]
     },
     {
       "method": "POST",

@@ -39,6 +39,9 @@
         [attr.aria-invalid]="kindRefused() === '' ? null : 'true'"
         (change)="chooseKind($event)"
       >
+        @if (kind() === null) {
+          <option value="" selected disabled>{{ copy.kindNotSet }}</option>
+        }
         @for (option of kinds; track option) {
           <option [value]="option" [selected]="option === kind()">{{ kindLabels[option] }}</option>
         }

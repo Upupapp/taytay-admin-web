@@ -10160,3 +10160,38 @@ regressions. `check:accounts` rule 10 (own account asked first and refused in `o
 `registered` and `verification.review`, the shared dialog only, the panel offers it, the role
 effect points to it): 7 planted regressions. A console bound to no verification server shows
 `<app-not-connected>` in place of the button (`DL-175`).
+
+## DL-220 — the console reads the previous API: a field it does not send is unknown, not a broken record
+
+**Status:** Settled (12 November 2026). Applies to every field added by the G backend work
+(`6c82f32` to `5209f75`).
+
+**Why.** The console and the API are deployed separately — the console to Netlify and the Linode
+staging host, the API to Linode — so for a while a new console talks to the previous API. A mapper
+that refuses a record over a field the previous API never had empties a whole list on that day:
+the directory's hotlines were the case, refused whole when `kind` was missing (`DL-217`). The
+established practice for a client of an evolving API is to be tolerant in what it reads — an added
+field is optional to the reader until both sides have shipped — while staying strict about a value
+it does not understand, because that is a newer server saying something the console cannot word.
+
+**What changed.**
+
+1. **Hotline `kind`.** Absent, `null` or empty reads as **not set** (`Hotline.kind: null`), never as
+   `other`: the list says "Type not set", the section says how many lines have none and asks for
+   each to be given one, and the form starts such a line at "Type not set — choose one" and sends
+   no `kind` until somebody chooses one. A line not set is never the command center, and the "no
+   command center" sentence still stands. An unknown non-empty kind stays unreadable, as `DL-217`
+   had it.
+2. **Verification fields, reviewed.** `selfie_erased_at` absent reads as not erased (that API
+   erased nothing), so a request stays readable and its selfie is offered as before (`DL-218`).
+   `verification_method` is on `GET /me` only, the signed-in staff member's own profile, which no
+   screen here shows: it is not read, so its absence breaks nothing. An unknown verification
+   **status** stays unreadable, because a closed request read as waiting would offer a decision.
+3. **Not tolerated:** a field a record cannot be described without (an id, a number, whether a line
+   is shown). That is the API breaking its contract, and the list still refuses it rather than
+   showing less than there is.
+
+**Checks.** `check:directory` rule 11 now holds both sides: absence read as not set in the mapper,
+an unknown kind unreadable, "Type not set" in the list and the count beside it, the form's not-set
+option and no kind sent for it, and no `?? 'other'` in the form. Validated against 9 planted
+regressions.

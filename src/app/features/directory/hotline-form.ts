@@ -70,7 +70,11 @@ export class HotlineForm {
   protected readonly name = signal('');
   protected readonly number = signal('');
   protected readonly category = signal('');
-  protected readonly kind = signal<HotlineKind>('other');
+  /**
+   * The kind chosen. `null` only while an existing line's type is not set and none is chosen
+   * (`DL-220`): the save then leaves the kind alone rather than inventing one.
+   */
+  protected readonly kind = signal<HotlineKind | null>('other');
   /** The server's refusal of the kind, in its words, until the kind or the shown box is changed. */
   protected readonly kindRefused = signal('');
   protected readonly sortOrder = signal('0');
@@ -82,7 +86,8 @@ export class HotlineForm {
 
   protected readonly creating = computed(() => this.hotline() === null);
 
-  private readonly draft = computed<HotlineDraft>(() => ({
+  /** The form as typed, its kind possibly not set. */
+  private readonly fields = computed(() => ({
     name: this.name().trim(),
     number: this.number().trim(),
     category: this.category().trim(),
@@ -91,17 +96,23 @@ export class HotlineForm {
     active: this.active(),
   }));
 
+  /** A new line, as sent: its kind always chosen, never left to the server's default. */
+  private readonly draft = computed<HotlineDraft | null>(() => {
+    const fields = this.fields();
+    return fields.kind === null ? null : { ...fields, kind: fields.kind };
+  });
+
   private readonly changes = computed<HotlineChanges>(() => {
     const hotline = this.hotline();
     if (hotline === null) {
       return {};
     }
-    const draft = this.draft();
+    const draft = this.fields();
     const changes: Mutable<HotlineChanges> = {};
     if (draft.name !== hotline.name) changes.name = draft.name;
     if (draft.number !== hotline.number) changes.number = draft.number;
     if (draft.category !== hotline.category) changes.category = draft.category;
-    if (draft.kind !== hotline.kind) changes.kind = draft.kind;
+    if (draft.kind !== null && draft.kind !== hotline.kind) changes.kind = draft.kind;
     if (draft.sortOrder !== hotline.sortOrder) changes.sortOrder = draft.sortOrder;
     if (draft.active !== hotline.active) changes.active = draft.active;
     return changes;
@@ -112,7 +123,7 @@ export class HotlineForm {
   );
 
   protected readonly problems = computed<readonly string[]>(() =>
-    hotlineProblems(this.creating() ? this.draft() : this.changes()).map((p) => p.message),
+    hotlineProblems(this.creating() ? (this.draft() ?? {}) : this.changes()).map((p) => p.message),
   );
 
   /** The line that is the command center, when saving this one would make a second. */
@@ -140,7 +151,7 @@ export class HotlineForm {
   );
 
   protected readonly effects = computed<readonly string[]>(() => {
-    const role = commandCenterEffects(this.hotline(), this.draft());
+    const role = commandCenterEffects(this.hotline(), this.fields());
     if (this.creating()) {
       return [
         ...role,
@@ -171,7 +182,8 @@ export class HotlineForm {
         this.name.set(hotline?.name ?? '');
         this.number.set(hotline?.number ?? '');
         this.category.set(hotline?.category ?? '');
-        this.kind.set(hotline?.kind ?? 'other');
+        // A line the server sent with no kind stays not set until one is chosen (`DL-220`).
+        this.kind.set(hotline === null ? 'other' : hotline.kind);
         this.kindRefused.set('');
         this.sortOrder.set(String(hotline?.sortOrder ?? 0));
         this.active.set(hotline?.active ?? true);
@@ -206,10 +218,16 @@ export class HotlineForm {
       return;
     }
     const hotline = this.hotline();
+    const draft = this.draft();
     const work =
-      hotline === null
-        ? this.repository.create(this.draft())
-        : this.repository.update(hotline.id, this.changes());
+      hotline !== null
+        ? this.repository.update(hotline.id, this.changes())
+        : draft !== null
+          ? this.repository.create(draft)
+          : null;
+    if (work === null) {
+      return;
+    }
 
     this.busy.set(true);
     this.outcome.set('');

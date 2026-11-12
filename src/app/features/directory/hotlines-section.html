@@ -39,6 +39,9 @@
           >
         </p>
       }
+      @if (withoutKind() > 0) {
+        <p class="directory-section__note">{{ copy.kindsNotSet(withoutKind()) }}</p>
+      }
       @if (mayBeIncomplete()) {
         <p class="directory-section__problem" role="alert">{{ copy.capped(cap) }}</p>
       }

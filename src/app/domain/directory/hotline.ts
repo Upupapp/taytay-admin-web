@@ -16,8 +16,13 @@ export interface Hotline {
   readonly number: string;
   /** Free text: the API keeps no list of categories, and no client picks a line by it. */
   readonly category: string;
-  /** What the line is for, so a client picks a line by it rather than by its name (`DL-217`). */
-  readonly kind: HotlineKind;
+  /**
+   * What the line is for, so a client picks a line by it rather than by its name (`DL-217`).
+   * `null` is **not set**: the API sent no kind, as one older than `ebd7aeb` does (`DL-220`). It is
+   * shown as "Type not set" and can be edited; it is never read as `other`, which would be a claim
+   * about the line nobody made.
+   */
+  readonly kind: HotlineKind | null;
   /** The app lists hotlines by this number, lowest first, then by name. */
   readonly sortOrder: number;
   /** Shown in the app. An inactive hotline is kept here and shown nowhere else. */
@@ -160,6 +165,19 @@ export function isHotlineKind(value: unknown): value is HotlineKind {
   return typeof value === 'string' && (HOTLINE_KINDS as readonly string[]).includes(value);
 }
 
+/** A line whose kind the API did not send (`DL-220`), in words. */
+export const HOTLINE_KIND_NOT_SET = 'Type not set';
+
+/** A line's kind in words, or that it is not set. */
+export function hotlineKindLabel(kind: HotlineKind | null): string {
+  return kind === null ? HOTLINE_KIND_NOT_SET : HOTLINE_KIND_LABELS[kind];
+}
+
+/** How many lines have no kind set: an API older than kinds, or a line nobody has typed yet. */
+export function linesWithoutKind(hotlines: readonly Hotline[]): number {
+  return hotlines.filter((line) => line.kind === null).length;
+}
+
 /** Each kind in words, as the form offers it and the list shows it — text, never a colour alone. */
 export const HOTLINE_KIND_LABELS: Readonly<Record<HotlineKind, string>> = {
   'command-center': 'Command center',
@@ -186,7 +204,11 @@ export function activeCommandCenter(hotlines: readonly Hotline[]): Hotline | nul
  * ago, so it warns and never blocks: the server decides (`DL-129`'s rule).
  */
 export function commandCenterHolder(
-  line: { readonly id: HotlineId | null; readonly kind: HotlineKind; readonly active: boolean },
+  line: {
+    readonly id: HotlineId | null;
+    readonly kind: HotlineKind | null;
+    readonly active: boolean;
+  },
   holder: Hotline | null,
 ): Hotline | null {
   return line.active && line.kind === 'command-center' && holder !== null && holder.id !== line.id
@@ -233,8 +255,8 @@ export const COMMAND_CENTER_EFFECTS = {
 
 /** The command center's part of what a save does: it becomes one, it stops being one, or neither. */
 export function commandCenterEffects(
-  before: { readonly kind: HotlineKind; readonly active: boolean } | null,
-  after: { readonly kind: HotlineKind; readonly active: boolean },
+  before: { readonly kind: HotlineKind | null; readonly active: boolean } | null,
+  after: { readonly kind: HotlineKind | null; readonly active: boolean },
 ): readonly string[] {
   const was = before !== null && before.active && before.kind === 'command-center';
   const is = after.active && after.kind === 'command-center';
