@@ -31,6 +31,36 @@
     </div>
 
     <div class="field">
+      <label class="field__label" for="hotline-kind">{{ copy.kind }}</label>
+      <select
+        id="hotline-kind"
+        class="field__input"
+        [attr.aria-describedby]="kindDescribedBy()"
+        [attr.aria-invalid]="kindRefused() === '' ? null : 'true'"
+        (change)="chooseKind($event)"
+      >
+        @for (option of kinds; track option) {
+          <option [value]="option" [selected]="option === kind()">{{ kindLabels[option] }}</option>
+        }
+      </select>
+      <p class="field__hint" id="hotline-kind-hint">{{ copy.kindHint }}</p>
+      <!-- DL-217: the one-command-center rule, said before the button, naming the line that has it. -->
+      @if (takenWarning().length > 0) {
+        <p class="callout callout--warning" id="hotline-kind-taken" role="note">
+          <span
+            ><strong>{{ copy.kindTakenLead }}</strong>
+            @for (sentence of takenWarning(); track $index) {
+              {{ sentence }}
+            }
+          </span>
+        </p>
+      }
+      @if (kindRefused(); as message) {
+        <p class="field__error" id="hotline-kind-error">{{ message }}</p>
+      }
+    </div>
+
+    <div class="field">
       <label class="field__label" for="hotline-category">{{ copy.category }}</label>
       <input
         id="hotline-category"
@@ -58,7 +88,7 @@
     </div>
 
     <label class="check">
-      <input type="checkbox" [checked]="active()" (change)="active.set(checked($event))" />
+      <input type="checkbox" [checked]="active()" (change)="chooseActive($event)" />
       {{ copy.active }}
     </label>
   </div>

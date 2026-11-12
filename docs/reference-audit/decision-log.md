@@ -9934,3 +9934,42 @@ would have passed. The "no text written yet" sentence is now required three time
 decision; the checklist asks the office to say so and invents none. The verification screen does not
 yet read `selfie_erased_at` (G1): an erased selfie reads 404 there and the server refuses its
 approval with a 409.
+
+## DL-217 — a hotline says what it is for, and the directory says when no line is the command center
+
+**Status:** Settled (12 November 2026). Backend `ebd7aeb` (G5).
+
+**Why.** The residents' app now picks a line by its `kind`, never by its name: the active
+`command-center` is the line it shows when it tells a resident to call for an emergency. The API
+allows at most one active command center (a partial unique index; a second is `409`), and its
+backfill made every line `other` except 911 (`emergency`), so after deploy no line is the command
+center until the office marks one.
+
+**What changed.**
+
+1. **`kind` on every line.** `HOTLINE_KINDS` is the spec's `HotlineKind`, each with words in
+   `HOTLINE_KIND_LABELS` (Command center, Emergency 911, Police, Fire, Medical, Disaster and rescue,
+   Other). The mapper reads it strictly: an unknown or missing kind makes the line unreadable, never
+   `other`, because a command center read as `other` would have the page tell the office it has none.
+   A new line's kind is chosen in the form and sent, never left to the server's default.
+2. **The form.** A select after the number, with a hint that says the command center is the one line
+   the app shows when it tells residents to call for an emergency, and that only one active line can
+   be it. Choosing it, active, while another line holds the role shows a warning before the button
+   naming that line and saying the server will refuse until that line is given another kind or made
+   inactive. It warns and does not block: the list is a moment old, and the server decides
+   (`DL-129`). The server's `409` comes back as `HotlineCommandCenterTakenError` (adapter and mock)
+   and is put beside the kind with `aria-invalid`, until the kind or "Show in the app" changes.
+3. **No automatic hand-over.** The console does not demote the old line and promote the new one in
+   two requests: the second could fail after the first succeeded, leaving the app with no command
+   center and nobody told. The server's own instruction is "change or deactivate the old one first",
+   and the warning says exactly that.
+4. **The list.** A "Kind" column of words; the old "Kind" column, which was the free-text category,
+   is now headed "Category". Below the list the section names the command center, or says plainly
+   "No line is marked as the command center." with what to do. Becoming, giving up or deleting the
+   command center says what it does before the button.
+
+**Checks.** `check:directory` rule 11: the kinds equal the vendored spec's enum, each in words; the
+mapper's strict read; the kind sent on create and update; the `409` mapped to the domain's refusal in
+the adapter and the mock; the select, its hint, the warning before the button, the button never held
+by it, the refusal beside the kind; the kind column as words; and the "no command center" sentence.
+Validated against 14 planted regressions.

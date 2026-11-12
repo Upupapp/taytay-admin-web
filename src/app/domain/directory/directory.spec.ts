@@ -14,7 +14,20 @@ import {
   slugProblems,
   type OfficeDraft,
 } from './directory-office';
-import { HOTLINE_EFFECTS, hotlineProblems, isDialable } from './hotline';
+import {
+  activeCommandCenter,
+  COMMAND_CENTER_EFFECTS,
+  commandCenterEffects,
+  commandCenterHolder,
+  HOTLINE_EFFECTS,
+  HOTLINE_KIND_LABELS,
+  HOTLINE_KINDS,
+  hotlineProblems,
+  isDialable,
+  isHotlineKind,
+  type Hotline,
+} from './hotline';
+import { asId, asIsoDateTime, type HotlineId } from '../shared/ids';
 import {
   listingOf,
   SERVICE_EFFECTS,
@@ -192,5 +205,63 @@ describe('hotlines (DL-170)', () => {
     expect(visibilityOf(true)).toBe('shown');
     expect(APP_VISIBILITY_CATALOG.hidden.label).toBe('Hidden from the app');
     expect(APP_VISIBILITY_TRANSITIONS.hidden).toEqual(['shown']);
+  });
+});
+
+describe('a hotline’s kind (DL-217)', () => {
+  const line = (key: string, kind: Hotline['kind'], active = true): Hotline => ({
+    id: asId<HotlineId>(key),
+    name: key,
+    number: '(02) 8000 0100',
+    category: 'Emergency',
+    kind,
+    sortOrder: 0,
+    active,
+    updatedAt: asIsoDateTime('2026-11-01T00:00:00.000Z'),
+  });
+
+  it('knows the API’s kinds, each in words', () => {
+    expect(HOTLINE_KINDS).toHaveLength(7);
+    expect(HOTLINE_KINDS.every((kind) => HOTLINE_KIND_LABELS[kind].length > 0)).toBe(true);
+    expect(isHotlineKind('command-center')).toBe(true);
+    expect(isHotlineKind('Command Center')).toBe(false);
+  });
+
+  it('finds the one active command center, and none when it is inactive or unmarked', () => {
+    const center = line('center', 'command-center');
+    expect(activeCommandCenter([line('a', 'other'), center])).toBe(center);
+    expect(activeCommandCenter([line('b', 'command-center', false)])).toBeNull();
+    expect(activeCommandCenter([line('c', 'emergency')])).toBeNull();
+  });
+
+  it('names the line that holds the role when a save would make a second', () => {
+    const center = line('center', 'command-center');
+    const other = line('other', 'police');
+    expect(commandCenterHolder({ ...other, kind: 'command-center' }, center)).toBe(center);
+    expect(commandCenterHolder({ id: null, kind: 'command-center', active: true }, center)).toBe(
+      center,
+    );
+    // The line itself, an inactive one, or another kind is no second.
+    expect(commandCenterHolder(center, center)).toBeNull();
+    expect(
+      commandCenterHolder({ ...other, kind: 'command-center', active: false }, center),
+    ).toBeNull();
+    expect(commandCenterHolder(other, center)).toBeNull();
+    expect(commandCenterHolder({ ...other, kind: 'command-center' }, null)).toBeNull();
+  });
+
+  it('says what a save does to the command center, before the button', () => {
+    const center = line('center', 'command-center');
+    expect(commandCenterEffects(null, center)).toBe(COMMAND_CENTER_EFFECTS.becomes);
+    expect(commandCenterEffects(center, { ...center, kind: 'other' })).toBe(
+      COMMAND_CENTER_EFFECTS.leaves,
+    );
+    expect(commandCenterEffects(center, { ...center, active: false })).toBe(
+      COMMAND_CENTER_EFFECTS.leaves,
+    );
+    expect(commandCenterEffects(center, center)).toEqual([]);
+    expect(COMMAND_CENTER_EFFECTS.taken('Rescue', '911').join(' ')).toContain(
+      'The server will refuse this until Rescue is given another kind or made inactive',
+    );
   });
 });

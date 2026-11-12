@@ -9,8 +9,10 @@ import {
   asId,
   asIsoDateTime,
   DIRECTORY_OFFICE_REPOSITORY,
+  COMMAND_CENTER_EFFECTS,
   HOTLINE_EFFECTS,
   HOTLINE_LIST_CAP,
+  HotlineCommandCenterTakenError,
   HOTLINE_REPOSITORY,
   OFFICE_EFFECTS,
   OFFICE_REPOSITORY,
@@ -99,6 +101,7 @@ function hotline(key: string, values: Partial<Hotline> = {}): Hotline {
     name: `Line ${key}`,
     number: '(02) 8000 0111',
     category: 'Emergency',
+    kind: 'other',
     sortOrder: 1,
     active: true,
     updatedAt: STAMP,
@@ -189,17 +192,23 @@ class RecordingHotlines implements HotlineRepository {
   capped = false;
   readonly updated: { id: HotlineId; changes: HotlineChanges }[] = [];
   readonly created: HotlineDraft[] = [];
+  /** A refusal to answer a save with, as the adapter raises it. */
+  refusal: Error | null = null;
 
   list(): Observable<HotlineListing> {
     return of({ hotlines: this.rows, mayBeIncomplete: this.capped });
   }
 
   create(draft: HotlineDraft): Observable<Hotline> {
+    const refusal = this.refusal;
+    if (refusal !== null) return throwError(() => refusal);
     this.created.push(draft);
     return of(hotline('new', draft));
   }
 
   update(id: HotlineId, changes: HotlineChanges): Observable<Hotline> {
+    const refusal = this.refusal;
+    if (refusal !== null) return throwError(() => refusal);
     this.updated.push({ id, changes });
     return of(hotline('rescue', changes));
   }
@@ -565,6 +574,182 @@ describe('HotlinesSection (DL-170)', () => {
     expect(hotlines.created).toEqual([]);
     expect(document.querySelector('app-hotline-form [role="alert"]')?.textContent).toContain(
       'A number is digits',
+    );
+  });
+});
+
+describe('HotlinesSection — a line’s kind and the command center (DL-217)', () => {
+  function select(selector: string, value: string): void {
+    const element = document.querySelector<HTMLSelectElement>(selector);
+    if (element === null) throw new Error(`No ${selector}.`);
+    element.value = value;
+    element.dispatchEvent(new Event('change'));
+  }
+
+  function submit(): void {
+    document.querySelector<HTMLButtonElement>('app-hotline-form button[type="submit"]')?.click();
+  }
+
+  it('shows each line’s kind as words, and says plainly when no line is the command center', async () => {
+    configure();
+    const element = await settle(TestBed.createComponent(HotlinesSection));
+
+    const cells = [...element.querySelectorAll('td, th')].map((cell) => cell.textContent?.trim());
+    expect(cells).toContain('Kind');
+    expect(cells).toContain('Other');
+    const note = element.querySelector('.callout--warning');
+    expect(note?.textContent).toContain('No line is marked as the command center.');
+    expect(note?.textContent).toContain('set its kind to Command center');
+  });
+
+  it('names the command center when one is marked, and not an inactive one', async () => {
+    const { hotlines } = configure();
+    hotlines.rows = [
+      hotline('rescue', { name: 'Rescue', number: '(02) 8000 0111', kind: 'command-center' }),
+      hotline('old', { kind: 'command-center', active: false }),
+    ];
+    const element = await settle(TestBed.createComponent(HotlinesSection));
+
+    expect(element.textContent).toContain('The command center is Rescue, (02) 8000 0111');
+    expect(element.textContent).toContain('Command center');
+    expect(element.querySelector('.callout--warning')).toBeNull();
+  });
+
+  it('offers every kind with the command center explained, and sends the one chosen', async () => {
+    const { hotlines } = configure();
+    const fixture = TestBed.createComponent(HotlinesSection);
+    await settle(fixture);
+
+    buttonNamed('Add a hotline')?.click();
+    await settle(fixture);
+    const options = [...document.querySelectorAll('#hotline-kind option')].map((option) =>
+      option.textContent?.trim(),
+    );
+    expect(options).toEqual([
+      'Command center',
+      'Emergency 911',
+      'Police',
+      'Fire',
+      'Medical',
+      'Disaster and rescue',
+      'Other',
+    ]);
+    expect(document.querySelector('#hotline-kind-hint')?.textContent).toContain(
+      'the one line the app shows when it tells residents to call for an emergency',
+    );
+    type('#hotline-name', 'Emergency');
+    type('#hotline-number', '911');
+    type('#hotline-category', 'Emergency');
+    select('#hotline-kind', 'emergency');
+    await settle(fixture);
+    submit();
+    await settle(fixture);
+
+    expect(hotlines.created).toEqual([
+      {
+        name: 'Emergency',
+        number: '911',
+        category: 'Emergency',
+        kind: 'emergency',
+        sortOrder: 0,
+        active: true,
+      },
+    ]);
+  });
+
+  it('says before the button that the role is held by another line, and says it becomes one otherwise', async () => {
+    const { hotlines } = configure();
+    hotlines.rows = [
+      hotline('rescue', { name: 'Rescue', number: '(02) 8000 0111', kind: 'command-center' }),
+      hotline('police', { name: 'Police', kind: 'police' }),
+    ];
+    const fixture = TestBed.createComponent(HotlinesSection);
+    await settle(fixture);
+
+    buttonNamed('Edit Police')?.click();
+    await settle(fixture);
+    select('#hotline-kind', 'command-center');
+    await settle(fixture);
+
+    const warning = document.querySelector('#hotline-kind-taken');
+    expect(warning?.textContent).toContain('Rescue ((02) 8000 0111) is the command center now');
+    expect(warning?.textContent).toContain(
+      'The server will refuse this until Rescue is given another kind',
+    );
+    expect(document.querySelector('#hotline-kind')?.getAttribute('aria-describedby')).toContain(
+      'hotline-kind-taken',
+    );
+    const submitButton = document.querySelector('app-hotline-form button[type="submit"]');
+    expect(
+      warning !== null &&
+        submitButton !== null &&
+        (warning.compareDocumentPosition(submitButton) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+    ).toBe(true);
+    // A warning, not a block: the list is a moment old, and the server decides.
+    expect(submitButton?.hasAttribute('disabled')).toBe(false);
+
+    // Hidden, it is no second command center, and the warning goes.
+    tick('Show in the app', false);
+    await settle(fixture);
+    expect(document.querySelector('#hotline-kind-taken')).toBeNull();
+  });
+
+  it('says what giving up the role does, before saving', async () => {
+    const { hotlines } = configure();
+    hotlines.rows = [hotline('rescue', { name: 'Rescue', kind: 'command-center' })];
+    const fixture = TestBed.createComponent(HotlinesSection);
+    await settle(fixture);
+
+    buttonNamed('Edit Rescue')?.click();
+    await settle(fixture);
+    select('#hotline-kind', 'disaster');
+    await settle(fixture);
+
+    expect(
+      document.querySelector('app-hotline-form .directory-form__effects')?.textContent,
+    ).toContain(COMMAND_CENTER_EFFECTS.leaves[0]);
+  });
+
+  it('puts the server’s refusal of a second command center beside the kind, until it is changed', async () => {
+    const { hotlines } = configure();
+    hotlines.rows = [hotline('police', { name: 'Police', kind: 'police' })];
+    hotlines.refusal = new HotlineCommandCenterTakenError(
+      'An active command-center hotline already exists.',
+    );
+    const fixture = TestBed.createComponent(HotlinesSection);
+    await settle(fixture);
+
+    buttonNamed('Edit Police')?.click();
+    await settle(fixture);
+    select('#hotline-kind', 'command-center');
+    await settle(fixture);
+    submit();
+    await settle(fixture);
+
+    const kind = document.querySelector('#hotline-kind');
+    expect(document.querySelector('#hotline-kind-error')?.textContent).toContain(
+      'An active command-center hotline already exists.',
+    );
+    expect(kind?.getAttribute('aria-invalid')).toBe('true');
+    expect(kind?.getAttribute('aria-describedby')).toContain('hotline-kind-error');
+    expect(document.querySelector('.directory-form__outcome')).toBeNull();
+
+    select('#hotline-kind', 'police');
+    await settle(fixture);
+    expect(document.querySelector('#hotline-kind-error')).toBeNull();
+  });
+
+  it('says deleting the command center leaves the app without one', async () => {
+    const { hotlines } = configure();
+    hotlines.rows = [hotline('rescue', { name: 'Rescue', kind: 'command-center' })];
+    const fixture = TestBed.createComponent(HotlinesSection);
+    await settle(fixture);
+
+    buttonNamed('Delete Rescue')?.click();
+    await settle(fixture);
+
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
+      COMMAND_CENTER_EFFECTS.leaves[0],
     );
   });
 });

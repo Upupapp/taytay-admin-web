@@ -14,8 +14,10 @@ export interface Hotline {
   readonly id: HotlineId;
   readonly name: string;
   readonly number: string;
-  /** Free text: the API keeps no list of categories. */
+  /** Free text: the API keeps no list of categories, and no client picks a line by it. */
   readonly category: string;
+  /** What the line is for, so a client picks a line by it rather than by its name (`DL-217`). */
+  readonly kind: HotlineKind;
   /** The app lists hotlines by this number, lowest first, then by name. */
   readonly sortOrder: number;
   /** Shown in the app. An inactive hotline is kept here and shown nowhere else. */
@@ -27,6 +29,7 @@ export interface HotlineDraft {
   readonly name: string;
   readonly number: string;
   readonly category: string;
+  readonly kind: HotlineKind;
   readonly sortOrder: number;
   readonly active: boolean;
 }
@@ -133,3 +136,109 @@ export const HOTLINE_EFFECTS = {
     'The server records that you deleted it, and when.',
   ],
 } as const;
+
+/* ── what a line is for (`DL-217`) ──────────────────────────────────────────── */
+
+/**
+ * `HotlineKind`, as the API declares it at `ebd7aeb` — `check:directory` holds this list to the
+ * vendored spec's enum. A client picks a line by its kind, never by its name or category: the
+ * residents' app shows the active command center when it tells a resident to call for an emergency.
+ */
+export const HOTLINE_KINDS = [
+  'command-center',
+  'emergency',
+  'police',
+  'fire',
+  'medical',
+  'disaster',
+  'other',
+] as const;
+
+export type HotlineKind = (typeof HOTLINE_KINDS)[number];
+
+export function isHotlineKind(value: unknown): value is HotlineKind {
+  return typeof value === 'string' && (HOTLINE_KINDS as readonly string[]).includes(value);
+}
+
+/** Each kind in words, as the form offers it and the list shows it — text, never a colour alone. */
+export const HOTLINE_KIND_LABELS: Readonly<Record<HotlineKind, string>> = {
+  'command-center': 'Command center',
+  emergency: 'Emergency 911',
+  police: 'Police',
+  fire: 'Fire',
+  medical: 'Medical',
+  disaster: 'Disaster and rescue',
+  other: 'Other',
+};
+
+/**
+ * The one active line the app shows when it tells residents to call for an emergency, or `null`
+ * when no active line is marked as the command center. The server allows at most one (a partial
+ * unique index), so a second in a list is not something to choose between.
+ */
+export function activeCommandCenter(hotlines: readonly Hotline[]): Hotline | null {
+  return hotlines.find((line) => line.active && line.kind === 'command-center') ?? null;
+}
+
+/**
+ * The line that already holds the command center role, when saving `line` as it would be would make
+ * a second active one — which the server refuses with a 409. The office's own list, read a moment
+ * ago, so it warns and never blocks: the server decides (`DL-129`'s rule).
+ */
+export function commandCenterHolder(
+  line: { readonly id: HotlineId | null; readonly kind: HotlineKind; readonly active: boolean },
+  holder: Hotline | null,
+): Hotline | null {
+  return line.active && line.kind === 'command-center' && holder !== null && holder.id !== line.id
+    ? holder
+    : null;
+}
+
+/**
+ * The server refused a line because another active line is the command center (409, `ebd7aeb`),
+ * with its own words, so the form can say it beside the kind it is about.
+ */
+export class HotlineCommandCenterTakenError extends Error {
+  readonly field = 'kind';
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'HotlineCommandCenterTakenError';
+  }
+}
+
+export function isCommandCenterTaken(error: unknown): error is HotlineCommandCenterTakenError {
+  return error instanceof HotlineCommandCenterTakenError;
+}
+
+/**
+ * What a change to the command center does, before the button (`DL-217`). Read from `ebd7aeb`: one
+ * active `command-center` at most, a second refused rather than moved — the old line is changed or
+ * made inactive first — and nobody made the command center by inference after the backfill.
+ */
+export const COMMAND_CENTER_EFFECTS = {
+  taken: (name: string, number: string) => [
+    `${name} (${number}) is the command center now, and only one active line can be. The server ` +
+      `will refuse this until ${name} is given another kind or made inactive: change that line ` +
+      'first, then this one.',
+  ],
+  becomes: [
+    'This becomes the line the app shows when it tells residents to call for an emergency.',
+  ],
+  leaves: [
+    'No line will be the command center: the app will have no line of the office’s own to show ' +
+      'when it tells residents to call for an emergency, until another is marked as one.',
+  ],
+} as const;
+
+/** The command center's part of what a save does: it becomes one, it stops being one, or neither. */
+export function commandCenterEffects(
+  before: { readonly kind: HotlineKind; readonly active: boolean } | null,
+  after: { readonly kind: HotlineKind; readonly active: boolean },
+): readonly string[] {
+  const was = before !== null && before.active && before.kind === 'command-center';
+  const is = after.active && after.kind === 'command-center';
+  if (is && !was) return COMMAND_CENTER_EFFECTS.becomes;
+  if (was && !is) return COMMAND_CENTER_EFFECTS.leaves;
+  return [];
+}

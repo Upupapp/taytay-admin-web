@@ -210,12 +210,21 @@ export const DIRECTORY_COPY = {
     caption: 'Hotlines in the app',
     columnName: 'Line',
     columnNumber: 'Number',
-    columnCategory: 'Kind',
+    columnCategory: 'Category',
+    columnKind: 'Kind',
     columnOrder: 'Order',
     columnShown: 'In the app',
     columnActions: 'Actions',
     emptyHeading: 'No hotlines',
     emptyMessage: 'The app lists no number for residents to call. Add one.',
+    /** DL-217: after the API's backfill no line is the command center until the office marks one. */
+    noCommandCenterTitle: 'No line is marked as the command center.',
+    noCommandCenter:
+      'The app has no line of the office’s own to show when it tells residents to call for an ' +
+      'emergency. Edit the line that should be it, and set its kind to Command center.',
+    commandCenterIs: (name: string, number: string) =>
+      `The command center is ${name}, ${number}: the line the app shows when it tells residents to ` +
+      'call for an emergency.',
     count: (count: number) => `${count} ${count === 1 ? 'line' : 'lines'}, shown and hidden.`,
     capped: (cap: number) =>
       `This is ${cap} lines — the most the API sends, to this screen and to the app alike. There may be more that neither shows.`,
@@ -235,8 +244,17 @@ export const DIRECTORY_COPY = {
     number: 'Number',
     numberHint: 'As a resident dials it, such as (02) 8123 4567. Check every digit.',
     numberWas: (number: string) => `Currently ${number}.`,
-    category: 'Kind of line',
-    categoryHint: 'Such as Emergency or Health.',
+    kind: 'Kind',
+    kindHint:
+      'What the line is for. The app picks a line by its kind, never by its name. Command center ' +
+      'is the one line the app shows when it tells residents to call for an emergency; only one ' +
+      'active line can be it.',
+    kindTakenLead: 'Before you save:',
+    kindRefused: (message: string) =>
+      `${message} Change the line that is the command center first — another kind, or inactive — ` +
+      'then this one.',
+    category: 'Category',
+    categoryHint: 'Shown with the line in the app, such as Emergency or Health.',
     sortOrder: 'Order',
     sortOrderHint: 'A whole number from 0 to 1000; lower comes first in the app.',
     active: 'Show in the app',

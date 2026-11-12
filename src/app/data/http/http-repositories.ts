@@ -57,6 +57,7 @@ import {
   type NameCorrection,
   type OfficeRoleChange,
   HOTLINE_LIST_CAP,
+  HotlineCommandCenterTakenError,
   type DirectoryOffice,
   type DirectoryOfficeRepository,
   type Hotline,
@@ -1178,10 +1179,11 @@ export class HttpHotlineRepository implements HotlineRepository {
         name: draft.name,
         number: draft.number,
         category: draft.category,
+        kind: draft.kind,
         sort_order: draft.sortOrder,
         active: draft.active,
       })
-      .pipe(map(readHotline));
+      .pipe(map(readHotline), catchError(withCommandCenterRefusal));
   }
 
   /** A field left `undefined` is not serialised, so only what changed is sent. */
@@ -1191,15 +1193,30 @@ export class HttpHotlineRepository implements HotlineRepository {
         name: changes.name,
         number: changes.number,
         category: changes.category,
+        kind: changes.kind,
         sort_order: changes.sortOrder,
         active: changes.active,
       })
-      .pipe(map(readHotline));
+      .pipe(map(readHotline), catchError(withCommandCenterRefusal));
   }
 
   remove(id: HotlineId): Observable<void> {
     return this.api.delete(`${API_ENDPOINTS.adminHotlines}/${id}`).pipe(map(() => undefined));
   }
+}
+
+/**
+ * A 409 on a hotline write is the one conflict the API has there: a second active command center
+ * (`ebd7aeb`). It comes back as the domain's refusal, in the server's words, so the form can put it
+ * beside the kind (`DL-217`); any other failure exactly as it came.
+ */
+function withCommandCenterRefusal(failure: unknown): Observable<never> {
+  const read = failure instanceof HttpErrorResponse ? readApiError(failure) : failure;
+  return throwError(() =>
+    isApiFailure(read) && read.status === 409
+      ? new HotlineCommandCenterTakenError(read.message)
+      : failure,
+  );
 }
 
 function readDirectoryOffice(wire: unknown): DirectoryOffice {

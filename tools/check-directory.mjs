@@ -48,6 +48,17 @@
  *  10. `office.manage`, `service.manage` and `hotline.manage` are in `PERMISSIONS`, named by no role,
  *      not classified read-only, and asked for by the route and the menu entry.
  *
+ * ## What a hotline is for (`DL-217`)
+ *
+ *  11. `HOTLINE_KINDS` is exactly the vendored spec's `HotlineKind`, each kind in words; the mapper
+ *      reads a kind only through `isHotlineKind` and never stands `other` in for one it does not
+ *      know; a new line's kind is sent, not left to the server's default, and a change of kind is
+ *      sent; the form offers every kind from the list, explains the command center beside it, warns
+ *      before its button when another line holds the role (a warning, never a disabled button), and
+ *      puts the server's 409 beside the kind (`aria-invalid`, `aria-describedby`), which the adapter
+ *      and the mock raise as the domain's refusal; the list shows the kind as words; and the section
+ *      says plainly when no line is marked as the command center.
+ *
  * Each rule was validated against a planted regression before being trusted.
  */
 
@@ -295,6 +306,111 @@ for (const key of KEYS) {
   }
 }
 
+/* ── 11. what a hotline is for (DL-217) ─────────────────────────────────── */
+
+const hotlineDomain = code(read(DOMAIN, 'hotline.ts'));
+const spec = JSON.parse(read(APP, 'data', 'http', 'contract', 'openapi.json'));
+const specKinds = spec.components?.schemas?.HotlineKind?.enum ?? [];
+const kindList = /export const HOTLINE_KINDS = \[([\s\S]*?)\] as const;/.exec(hotlineDomain)?.[1] ?? '';
+const domainKinds = [...kindList.matchAll(/'([^']+)'/g)].map((match) => match[1]);
+if (specKinds.length === 0 || domainKinds.join() !== specKinds.join()) {
+  failures.push(
+    `HOTLINE_KINDS (${domainKinds.join(', ')}) is not the spec's HotlineKind (${specKinds.join(', ')}). A kind the API sends and the console does not know makes the list unreadable; one it does not send is refused.`,
+  );
+}
+const labels = block(hotlineDomain, hotlineDomain.indexOf('export const HOTLINE_KIND_LABELS'));
+for (const kind of specKinds) {
+  if (!new RegExp(`'?${kind}'?:\\s*'[^']+'`).test(labels)) failures.push(`HOTLINE_KIND_LABELS has no words for ${kind}.`);
+}
+
+const hotlineMapper = code(read(APP, 'data', 'http', 'mappers', 'hotline.mapper.ts'));
+if (
+  !/const kind = kindOf\(field\(wire, 'kind'\)\)/.test(hotlineMapper) ||
+  !/return isHotlineKind\(value\) \? value : null;/.test(hotlineMapper) ||
+  !/kind === null \|\|/.test(hotlineMapper) ||
+  /'other'/.test(hotlineMapper)
+) {
+  failures.push("The hotline mapper no longer reads a kind strictly. An unknown kind read as 'other' hides a command center.");
+}
+const created = block(hotlines, hotlines.indexOf('create(draft'));
+const updated = block(hotlines, hotlines.indexOf('update(id'));
+if (!/kind:\s*draft\.kind/.test(created) || !/kind:\s*changes\.kind/.test(updated)) {
+  failures.push("HttpHotlineRepository no longer sends a line's kind: a new line's is chosen, never the server's default.");
+}
+if (
+  [created, updated].some((body) => !/catchError\(withCommandCenterRefusal\)/.test(body)) ||
+  !/read\s*\.\s*status === 409\s*\?\s*new HotlineCommandCenterTakenError\(\s*read\s*\.\s*message\s*\)/.test(adapters)
+) {
+  failures.push("HttpHotlineRepository no longer hands a second command center back as the domain's refusal, in the server's words.");
+}
+if (!/HotlineCommandCenterTakenError\(/.test(code(readFileSync(MOCK, 'utf8')))) {
+  failures.push('The mock no longer refuses a second active command center as the server does.');
+}
+
+const formTemplate = code(read(FEATURE, 'hotline-form.html'));
+const formClass = code(read(FEATURE, 'hotline-form.ts'));
+const kindSelect = formTemplate.slice(formTemplate.indexOf('<select'), formTemplate.indexOf('</select>'));
+if (
+  !/id="hotline-kind"/.test(kindSelect) ||
+  !/@for \(option of kinds; track option\)/.test(kindSelect) ||
+  !/\{\{\s*kindLabels\[option\]\s*\}\}/.test(kindSelect) ||
+  !/kinds = HOTLINE_KINDS/.test(formClass)
+) {
+  failures.push('The hotline form no longer offers every kind, in words, from HOTLINE_KINDS.');
+}
+if (
+  !/\[attr\s*\.\s*aria-describedby\]="kindDescribedBy\(\)"/.test(kindSelect) ||
+  !/\[attr\s*\.\s*aria-invalid\]="kindRefused\(\) === '' \? null : 'true'"/.test(kindSelect) ||
+  !/class="field__error" id="hotline-kind-error"/.test(formTemplate) ||
+  !/'hotline-kind-error'/.test(
+    formClass.slice(formClass.indexOf('protected readonly kindDescribedBy')).slice(0, 400),
+  )
+) {
+  failures.push("The kind no longer names its error: the server's refusal of a second command center goes beside it.");
+}
+if (!/isCommandCenterTaken\(failure\)\)\s*\{\s*this\s*\.\s*kindRefused\s*\.\s*set\(/.test(formClass)) {
+  failures.push("The hotline form no longer puts the server's refusal of a second command center on the kind.");
+}
+const directoryCopy = read(FEATURE, 'directory.copy.ts').replace(/'\s*\+\s*'/g, '');
+if (
+  !/kindHint:[\s\S]{0,200}Command center is the one line the app shows when it tells residents to call for an emergency; only one active line can be it/.test(directoryCopy) ||
+  !/\{\{\s*copy\s*\.\s*kindHint\s*\}\}/.test(formTemplate)
+) {
+  failures.push('The hotline form no longer explains the command center beside the kind.');
+}
+const takenAt = formTemplate.search(/@if \(takenWarning\(\)\s*\.\s*length > 0\)/);
+const submitAt = formTemplate.indexOf('type="submit"');
+if (
+  takenAt === -1 ||
+  !(takenAt < submitAt) ||
+  !/commandCenterHolder\(/.test(
+    formClass.slice(formClass.indexOf('protected readonly commandCenterTaken')).slice(0, 300),
+  ) ||
+  !/only one active line can be\. The server will refuse this until/.test(hotlineDomain.replace(/['`]\s*\+\s*['`]/g, ''))
+) {
+  failures.push('The hotline form no longer warns, before its button, that another line holds the command center.');
+}
+const submitTag = formTemplate.slice(submitAt, formTemplate.indexOf('>', submitAt));
+if (/command|taken|kind/i.test(submitTag)) {
+  failures.push("The hotline form's button is held by the command center. It warns; the server decides.");
+}
+
+const sectionTemplate = code(read(FEATURE, 'hotlines-section.html'));
+const sectionClass = code(read(FEATURE, 'hotlines-section.ts'));
+if (!/key:\s*'kind',[\s\S]{0,80}value:\s*\(hotline\)\s*=>\s*HOTLINE_KIND_LABELS\[hotline\s*\.\s*kind\]/.test(sectionClass)) {
+  failures.push("The hotline list no longer shows each line's kind as words.");
+}
+if (
+  !/@if \(commandCenter\(\); as center\)[\s\S]{0,200}\}\s*@else\s*\{\s*<p[^>]*>[\s\S]{0,120}copy\s*\.\s*noCommandCenterTitle/.test(sectionTemplate) ||
+  !/noCommandCenterTitle:\s*'No line is marked as the command center\.'/.test(directoryCopy) ||
+  !/activeCommandCenter\(\s*this\s*\.\s*rows\(\)\s*\)/.test(sectionClass)
+) {
+  failures.push('The hotlines section no longer says plainly when no line is marked as the command center.');
+}
+if (!/\[commandCenter\]="commandCenter\(\)"/.test(sectionTemplate)) {
+  failures.push('The hotline form is no longer told which line is the command center, so it cannot warn.');
+}
+
 report();
 
 function report() {
@@ -306,6 +422,8 @@ function report() {
   console.log(
     `Directory check passed (${moduleFiles.length} files: residents told, effects before every button, ` +
       'deletes only through a confirmation, not a programme, no image address, every file refused first, ' +
-      'a capped list said so, the keys the administrator’s).',
+      'a capped list said so, the keys the administrator’s; every kind the API’s, in words, read ' +
+      'strictly, the one command center explained and warned about before the button, its refusal ' +
+      'beside the kind, and none said plainly).',
   );
 }

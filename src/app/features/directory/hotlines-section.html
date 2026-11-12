@@ -27,6 +27,18 @@
       @if (rows().length > 0) {
         <p class="directory-section__note" role="status">{{ copy.count(rows().length) }}</p>
       }
+      <!-- DL-217: which line the app shows for an emergency, or plainly that none is marked. -->
+      @if (commandCenter(); as center) {
+        <p class="directory-section__note">
+          {{ copy.commandCenterIs(center.name, center.number) }}
+        </p>
+      } @else {
+        <p class="callout callout--warning" role="note">
+          <span
+            ><strong>{{ copy.noCommandCenterTitle }}</strong> {{ copy.noCommandCenter }}</span
+          >
+        </p>
+      }
       @if (mayBeIncomplete()) {
         <p class="directory-section__problem" role="alert">{{ copy.capped(cap) }}</p>
       }
@@ -66,7 +78,11 @@
     (dismissed)="closeDrawer()"
   >
     <div modal-body>
-      <app-hotline-form [hotline]="drawerHotline()" (saved)="onSaved($event)" />
+      <app-hotline-form
+        [hotline]="drawerHotline()"
+        [commandCenter]="commandCenter()"
+        (saved)="onSaved($event)"
+      />
     </div>
   </app-modal>
 }
@@ -80,7 +96,7 @@
     <div modal-body class="directory-section__warning">
       <p>{{ listCopy.effectsLead }}</p>
       <ul>
-        @for (effect of removeEffects; track $index) {
+        @for (effect of removeEffects(); track $index) {
           <li>{{ effect }}</li>
         }
       </ul>

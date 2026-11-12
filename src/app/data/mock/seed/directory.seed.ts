@@ -131,6 +131,9 @@ const hotline = (
   name,
   number,
   category,
+  // As the API's backfill leaves every line (`ebd7aeb`): `other`, 911 alone `emergency`, and none
+  // the command center until the office marks one (`DL-217`).
+  kind: number === '911' ? 'emergency' : 'other',
   sortOrder,
   active,
   updatedAt: STAMP,

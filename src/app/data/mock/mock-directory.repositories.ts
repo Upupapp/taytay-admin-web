@@ -6,7 +6,10 @@ import {
   APP_IMAGE_POLICY,
   asId,
   asIsoDateTime,
+  activeCommandCenter,
+  commandCenterHolder,
   HOTLINE_LIST_CAP,
+  HotlineCommandCenterTakenError,
   type CursorPage,
   type CursorRequest,
   type DirectoryOffice,
@@ -235,6 +238,8 @@ export class MockHotlineRepository implements HotlineRepository {
     const denied = denyUnless<Hotline>(this.access.currentUser(), 'hotline.manage');
     if (denied) return denied;
     const hotline: Hotline = { ...draft, id: asId<HotlineId>(nextId('hotline')), updatedAt: now() };
+    const refused = this.secondCommandCenter(hotline);
+    if (refused) return refused;
     this.hotlines = [...this.hotlines, hotline];
     return this.latency.respond(hotline);
   }
@@ -245,8 +250,20 @@ export class MockHotlineRepository implements HotlineRepository {
     const existing = this.hotlines.find((hotline) => hotline.id === id);
     if (existing === undefined) return throwError(() => new Error('That hotline was not found.'));
     const hotline = { ...existing, ...changes, updatedAt: now() };
+    const refused = this.secondCommandCenter(hotline);
+    if (refused) return refused;
     this.hotlines = this.hotlines.map((candidate) => (candidate.id === id ? hotline : candidate));
     return this.latency.respond(hotline);
+  }
+
+  /** Refused as the API's partial unique index refuses it: a second active command center, 409. */
+  private secondCommandCenter(line: Hotline): Observable<never> | null {
+    return commandCenterHolder(line, activeCommandCenter(this.hotlines)) === null
+      ? null
+      : throwError(
+          () =>
+            new HotlineCommandCenterTakenError('An active command-center hotline already exists.'),
+        );
   }
 
   remove(id: HotlineId): Observable<void> {

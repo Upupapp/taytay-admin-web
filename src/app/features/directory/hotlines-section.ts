@@ -12,8 +12,11 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { switchMap } from 'rxjs';
 
 import {
+  activeCommandCenter,
   APP_VISIBILITY_CATALOG,
+  COMMAND_CENTER_EFFECTS,
   HOTLINE_EFFECTS,
+  HOTLINE_KIND_LABELS,
   HOTLINE_LIST_CAP,
   HOTLINE_REPOSITORY,
   visibilityOf,
@@ -36,6 +39,10 @@ import { HotlineForm } from './hotline-form';
  * Hotlines (`DL-170`): every line, shown and hidden, in the order the app lists them. The API answers
  * the list whole, up to a cap, with no word of more — so a list that reaches the cap says there may
  * be lines neither this screen nor the app shows, rather than presenting itself as the whole.
+ *
+ * Each line's kind is a column of words (`DL-217`), and the section says which line is the command
+ * center — or, plainly, that none is: after the API's backfill no line is one until the office marks
+ * it, and the app then has no line of the office's own to show for an emergency.
  */
 @Component({
   selector: 'app-hotlines-section',
@@ -50,7 +57,6 @@ export class HotlinesSection {
 
   protected readonly copy = DIRECTORY_COPY.hotlines;
   protected readonly listCopy = DIRECTORY_COPY.list;
-  protected readonly removeEffects = HOTLINE_EFFECTS.remove;
   protected readonly visibility = APP_VISIBILITY_CATALOG;
   protected readonly visibilityOf = visibilityOf;
   protected readonly cap = HOTLINE_LIST_CAP;
@@ -61,6 +67,8 @@ export class HotlinesSection {
     { initialValue: LOADING as ViewState<HotlineListing> },
   );
   protected readonly rows = computed(() => valueOf(this.listing())?.hotlines ?? []);
+  /** The active command center in the list as read, or `null` when no line is marked as one. */
+  protected readonly commandCenter = computed(() => activeCommandCenter(this.rows()));
   protected readonly mayBeIncomplete = computed(
     () => valueOf(this.listing())?.mayBeIncomplete === true,
   );
@@ -74,6 +82,11 @@ export class HotlinesSection {
   protected readonly columns = computed<readonly TableColumn<Hotline>[]>(() => [
     { key: 'name', header: this.copy.columnName, value: (hotline) => hotline.name },
     { key: 'number', header: this.copy.columnNumber, value: (hotline) => hotline.number },
+    {
+      key: 'kind',
+      header: this.copy.columnKind,
+      value: (hotline) => HOTLINE_KIND_LABELS[hotline.kind],
+    },
     { key: 'category', header: this.copy.columnCategory, value: (hotline) => hotline.category },
     {
       key: 'order',
@@ -93,6 +106,13 @@ export class HotlinesSection {
 
   protected readonly editing = signal<Hotline | 'new' | null>(null);
   protected readonly removing = signal<Hotline | null>(null);
+  /** Deleting the command center leaves the app without one, and says so first (`DL-217`). */
+  protected readonly removeEffects = computed<readonly string[]>(() => {
+    const hotline = this.removing();
+    return hotline !== null && hotline.id === this.commandCenter()?.id
+      ? [...COMMAND_CENTER_EFFECTS.leaves, ...HOTLINE_EFFECTS.remove]
+      : HOTLINE_EFFECTS.remove;
+  });
   protected readonly removeBusy = signal(false);
   protected readonly removeProblem = signal('');
   protected readonly outcome = signal('');

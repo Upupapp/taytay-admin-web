@@ -187,4 +187,12 @@ describe('toHotline (DL-170)', () => {
     expect(toHotline({ ...HOTLINES.data[0], number: '' })).toBeNull();
     expect(toHotline({ ...HOTLINES.data[0], sort_order: 1.5 })).toBeNull();
   });
+
+  it('reads each kind the API names, and never guesses one it does not (DL-217)', () => {
+    expect(HOTLINES.data.map((wire) => toHotline(wire)?.kind)).toEqual(['disaster', 'medical']);
+    expect(toHotline({ ...HOTLINES.data[0], kind: 'command-center' })?.kind).toBe('command-center');
+    // Read as "other", a command center would have the page say the office has none.
+    expect(toHotline({ ...HOTLINES.data[0], kind: undefined })).toBeNull();
+    expect(toHotline({ ...HOTLINES.data[0], kind: 'Command Center' })).toBeNull();
+  });
 });

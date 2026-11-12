@@ -16,6 +16,7 @@ import {
   describeMembershipChange,
   HOTLINE_LIST_CAP,
   isAppConfigRefusal,
+  isCommandCenterTaken,
   isFamilyDraftInvalid,
   isHouseholdCompositionError,
   isRelationshipInvalid,
@@ -2450,6 +2451,7 @@ describe('the Node adapters', () => {
           name: 'Police station',
           number: '(02) 8000 0112',
           category: 'Emergency',
+          kind: 'police',
           sortOrder: 2,
           active: true,
         }),
@@ -2459,11 +2461,13 @@ describe('the Node adapters', () => {
         name: 'Police station',
         number: '(02) 8000 0112',
         category: 'Emergency',
+        kind: 'police',
         sort_order: 2,
         active: true,
       });
       post.flush(HOTLINE, { status: 201, statusText: 'Created' });
       expect((await created).id).toBe(hotlineId);
+      expect((await created).kind).toBe('police');
 
       const changed = firstValueFrom(hotlines.update(hotlineId, { active: false }));
       const patch = http.expectOne({ method: 'PATCH', url: `${BASE}/admin/hotlines/${hotlineId}` });
@@ -2474,6 +2478,70 @@ describe('the Node adapters', () => {
       const removed = firstValueFrom(hotlines.remove(hotlineId));
       http.expectOne({ method: 'DELETE', url: `${BASE}/admin/hotlines/${hotlineId}` }).flush(DELETED);
       await expect(removed).resolves.toBeUndefined();
+    });
+  });
+
+  describe('a hotline’s kind (DL-217)', () => {
+    const hotlineId = asId<HotlineId>(HOTLINE.data.id);
+
+    beforeEach(() => tokens.hold('fixture-token', null));
+
+    it('reads each line’s kind, and refuses a line whose kind it does not know', async () => {
+      const hotlines = TestBed.inject(HttpHotlineRepository);
+      const listing = firstValueFrom(hotlines.list());
+      http.expectOne(`${BASE}/admin/hotlines`).flush(HOTLINES);
+      expect((await listing).hotlines.map((line) => line.kind)).toEqual(['disaster', 'medical']);
+
+      const [line] = HOTLINES.data;
+      const unknown = firstValueFrom(hotlines.list()).catch((failure: unknown) => failure);
+      http.expectOne(`${BASE}/admin/hotlines`).flush({
+        ...HOTLINES,
+        data: [{ ...line, kind: 'ambulance' }],
+      });
+      expect(await unknown).toBeInstanceOf(Error);
+    });
+
+    it('sends a change of kind, and hands a second command center back as the domain’s refusal', async () => {
+      const hotlines = TestBed.inject(HttpHotlineRepository);
+      const changed = firstValueFrom(
+        hotlines.update(hotlineId, { kind: 'command-center' }),
+      ).catch((failure: unknown) => failure);
+      const patch = http.expectOne({ method: 'PATCH', url: `${BASE}/admin/hotlines/${hotlineId}` });
+      expect(JSON.parse(JSON.stringify(patch.request.body))).toEqual({ kind: 'command-center' });
+      patch.flush(
+        {
+          error: {
+            code: 'CONFLICT',
+            message: 'An active command-center hotline already exists.',
+            request_id: 'fixture-request',
+          },
+        },
+        { status: 409, statusText: 'Conflict' },
+      );
+
+      const refusal = await changed;
+      expect(isCommandCenterTaken(refusal)).toBe(true);
+      expect(refusal instanceof Error ? refusal.message : null).toBe(
+        'An active command-center hotline already exists.',
+      );
+    });
+
+    it('passes any other refusal on as it came', async () => {
+      const hotlines = TestBed.inject(HttpHotlineRepository);
+      const changed = firstValueFrom(hotlines.update(hotlineId, { name: '' })).catch(
+        (failure: unknown) => failure,
+      );
+      http.expectOne(`${BASE}/admin/hotlines/${hotlineId}`).flush(
+        {
+          error: {
+            code: 'VALIDATION_FAILED',
+            message: 'The request could not be validated.',
+            request_id: 'fixture-request',
+          },
+        },
+        { status: 422, statusText: 'Unprocessable Entity' },
+      );
+      expect(isCommandCenterTaken(await changed)).toBe(false);
     });
   });
 

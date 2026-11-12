@@ -5,6 +5,7 @@ import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import {
   ACCESS_CONTEXT,
   asId,
+  isCommandCenterTaken,
   isPermissionDenied,
   ROLE_DEFINITIONS,
   type AccessContext,
@@ -191,6 +192,7 @@ describe('MockHotlineRepository (DL-170)', () => {
         name: 'Rescue',
         number: '911',
         category: 'Emergency',
+        kind: 'emergency',
         sortOrder: 0,
         active: true,
       }),
@@ -199,5 +201,42 @@ describe('MockHotlineRepository (DL-170)', () => {
     await firstValueFrom(hotlines.remove(line.id));
     const listing = await firstValueFrom(hotlines.list());
     expect(listing.hotlines.map((hotline) => hotline.id)).not.toContain(line.id);
+  });
+
+  it('starts as the API’s backfill leaves it: no command center, until the office marks one (DL-217)', async () => {
+    signedInAs('system-administrator');
+    const listing = await firstValueFrom(TestBed.inject(MockHotlineRepository).list());
+    expect(listing.hotlines.every((line) => line.kind === 'other')).toBe(true);
+  });
+
+  it('refuses a second active command center, as the server does, and takes a hand-over (DL-217)', async () => {
+    signedInAs('system-administrator');
+    const hotlines = TestBed.inject(MockHotlineRepository);
+    const [first, second] = (await firstValueFrom(hotlines.list())).hotlines;
+    if (first === undefined || second === undefined) throw new Error('No seeded lines.');
+
+    await firstValueFrom(hotlines.update(first.id, { kind: 'command-center' }));
+    const refusal: unknown = await firstValueFrom(
+      hotlines.update(second.id, { kind: 'command-center' }),
+    ).catch((e: unknown) => e);
+    expect(isCommandCenterTaken(refusal)).toBe(true);
+    const created: unknown = await firstValueFrom(
+      hotlines.create({
+        name: 'Command center',
+        number: '(02) 8000 0100',
+        category: 'Emergency',
+        kind: 'command-center',
+        sortOrder: 0,
+        active: true,
+      }),
+    ).catch((e: unknown) => e);
+    expect(isCommandCenterTaken(created)).toBe(true);
+    // An inactive one is no second, and a hand-over works once the first is changed.
+    expect(
+      (await firstValueFrom(hotlines.update(second.id, { kind: 'command-center', active: false })))
+        .kind,
+    ).toBe('command-center');
+    await firstValueFrom(hotlines.update(first.id, { kind: 'other' }));
+    expect((await firstValueFrom(hotlines.update(second.id, { active: true }))).active).toBe(true);
   });
 });
