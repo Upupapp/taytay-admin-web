@@ -113,6 +113,12 @@ import type {
   ResidentImportSummary,
 } from '../residents/resident-import';
 import type {
+  SectorApplication,
+  SectorApplicationDetail,
+  SectorApplicationStatus,
+  SectorApproval,
+} from '../residents/sector-application';
+import type {
   HouseholdDraft,
   HouseholdFilter,
   MembershipChange,
@@ -131,6 +137,7 @@ import type {
   OfficeThreadId,
   QuickLinkId,
   ResidentImportId,
+  SectorApplicationId,
   TulongServiceId,
   VerificationRequestId,
   IssuanceAttachmentId,
@@ -2035,4 +2042,35 @@ export interface ResidentImportRepository {
 
 export const RESIDENT_IMPORT_REPOSITORY = new InjectionToken<ResidentImportRepository>(
   'ResidentImportRepository',
+);
+
+/* ── sector applications from the residents' app (`DL-215`) ──────────────── */
+
+/**
+ * A resident's application, from the app, to be recorded in a sector (`resident.update`, because
+ * approving records it). A proof is read as bytes only after its warning; approving links the
+ * account to a registry record once, when it is not yet linked; returning writes nothing.
+ */
+export interface SectorApplicationRepository {
+  /** One cursor page: waiting oldest first, decided newest first. No total. */
+  list(
+    page: CursorRequest,
+    status: SectorApplicationStatus,
+  ): Observable<CursorPage<SectorApplication>>;
+
+  /** `null` for "not found or outside your barangay", as the server answers both. */
+  get(id: SectorApplicationId): Observable<SectorApplicationDetail | null>;
+
+  /** One proof's bytes, with the bearer in a header; never a URL. Recorded by the server. */
+  openProof(id: SectorApplicationId, proof: MediaId): Observable<Blob>;
+
+  /** Records the sector, with a reason; links the account first when it is not linked. */
+  approve(id: SectorApplicationId, approval: SectorApproval): Observable<SectorApplication>;
+
+  /** Sends it back with the reason the resident reads; nothing is recorded. */
+  returnToApplicant(id: SectorApplicationId, reason: string): Observable<SectorApplication>;
+}
+
+export const SECTOR_APPLICATION_REPOSITORY = new InjectionToken<SectorApplicationRepository>(
+  'SectorApplicationRepository',
 );

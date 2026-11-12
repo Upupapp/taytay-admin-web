@@ -59,6 +59,7 @@ export * from './referrals/service-provider';
 export * from './residents/resident';
 export * from './residents/resident-summary';
 export * from './residents/resident-import';
+export * from './residents/sector-application';
 export * from './reports/report-definition';
 export * from './reports/report-disclosure';
 export * from './reports/report-result';

@@ -1,0 +1,71 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+
+<section class="card card--panel card--padded stack" aria-labelledby="applications-heading">
+  <h2 id="applications-heading" class="visually-hidden">{{ copy.caption }}</h2>
+
+  <div class="toolbar">
+    <label class="field">
+      <span class="field__label">{{ copy.filterLabel }}</span>
+      <select class="field__input field__input--pill" (change)="onStatus($event)">
+        @for (option of statuses; track option) {
+          <option [value]="option" [selected]="status() === option">
+            {{ catalog[option].label }}
+          </option>
+        }
+      </select>
+    </label>
+  </div>
+  <p class="status-line">{{ copy.order }}</p>
+
+  <app-async-content
+    [state]="first()"
+    [content]="listContent"
+    [skeletonLines]="6"
+    (retryRequested)="reload()"
+  >
+    <ng-template #listContent>
+      <app-data-table
+        [caption]="copy.caption"
+        [columns]="columns()"
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [emptyHeading]="status() === 'pending' ? copy.emptyHeading : copy.emptyDecidedHeading"
+        [emptyMessage]="status() === 'pending' ? copy.emptyMessage : copy.emptyDecidedMessage"
+      />
+
+      @if (rows().length > 0) {
+        <div class="list-more">
+          <p class="status-line" role="status">
+            {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
+          </p>
+          @if (hasMore()) {
+            <button type="button" class="btn" [disabled]="loadingMore()" (click)="showMore()">
+              {{ loadingMore() ? copy.loadingMore : copy.showMore }}
+            </button>
+          }
+          @if (moreFailed()) {
+            <p class="callout callout--danger" role="alert">{{ copy.moreFailed }}</p>
+          }
+        </div>
+      }
+    </ng-template>
+  </app-async-content>
+</section>
+
+<ng-template #statusCell let-row>
+  <app-status-badge [catalog]="catalog" [status]="row.status" />
+</ng-template>
+
+<ng-template #actionCell let-row>
+  <button type="button" class="btn btn--small" [attr.aria-label]="reviewLabel(row)" (click)="open(row)">
+    {{ copy.reviewAction }}
+  </button>
+</ng-template>
+
+@if (selected(); as application) {
+  <app-modal [open]="true" size="large" [heading]="copy.review.heading" (dismissed)="close()">
+    <div modal-body>
+      <app-sector-application-review [application]="application" (decided)="onDecided($event)" />
+    </div>
+  </app-modal>
+}

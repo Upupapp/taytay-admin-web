@@ -1,0 +1,328 @@
+<app-async-content
+  [state]="detail()"
+  [content]="body"
+  [skeletonLines]="6"
+  [errorHeading]="copy.errorHeading"
+/>
+
+<ng-template #body let-detail>
+  @if (detail === null) {
+    <p class="callout callout--warning">{{ copy.notFound }}</p>
+  } @else {
+    <div class="applications__review">
+      <div class="stack">
+        <section class="subpanel subpanel--soft" aria-labelledby="application-facts">
+          <h3 id="application-facts" class="section-title">{{ copy.facts }}</h3>
+          <dl class="facts">
+            <div class="facts__row">
+              <dt>{{ copy.applicant }}</dt>
+              <dd>
+                {{ detail.applicant.name ?? '—' }}
+                @if (detail.applicant.barangayName; as place) {
+                  · {{ place }}
+                }
+              </dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.sector }}</dt>
+              <dd>{{ sectorLabel(detail.sector) }}</dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.sent }}</dt>
+              <dd>
+                <time [attr.datetime]="detail.submittedAt">{{
+                  detail.submittedAt | date: 'd MMM y, HH:mm'
+                }}</time>
+              </dd>
+            </div>
+            <div class="facts__row">
+              <dt>{{ copy.status }}</dt>
+              <dd><app-status-badge [catalog]="catalog" [status]="detail.status" /></dd>
+            </div>
+            @if (detail.decidedAt; as decidedAt) {
+              <div class="facts__row">
+                <dt>{{ copy.decided }}</dt>
+                <dd>
+                  {{ decidedAt | date: 'd MMM y, HH:mm' }}
+                  @if (detail.decidedBy; as by) {
+                    {{ copy.decidedBy }} {{ by }}
+                  }
+                </dd>
+              </div>
+            }
+            @if (detail.returnReason; as reason) {
+              <div class="facts__row facts__row--wide">
+                <dt>{{ copy.givenReason }}</dt>
+                <dd>{{ reason }}</dd>
+              </div>
+            }
+          </dl>
+        </section>
+
+        <section class="subpanel" aria-labelledby="application-proofs">
+          <h3 id="application-proofs" class="section-title">
+            {{ copy.proofsHeading(detail.proofs.length) }}
+          </h3>
+          @if (proofs(); as opened) {
+            <div class="applications__proofs">
+              @for (proof of opened; track proof.url) {
+                <img class="applications__proof" [src]="proof.url" [alt]="proof.label" />
+              }
+            </div>
+            <button type="button" class="btn" (click)="discardProofs()">{{ copy.hide }}</button>
+          } @else {
+            <button type="button" class="btn" (click)="warningOpen.set(true)">
+              {{ copy.open }}
+            </button>
+          }
+          @if (proofsFailed()) {
+            <p class="callout callout--danger" role="alert">{{ copy.proofsFailed }}</p>
+          }
+        </section>
+
+        <section class="subpanel" aria-labelledby="application-record">
+          <h3 id="application-record" class="section-title">{{ copy.recordHeading }}</h3>
+          @if (detail.linkedResident; as linked) {
+            <p class="status-line">{{ copy.linked }}</p>
+            <a class="record-link" [routerLink]="['/residents', linked.residentId]">{{
+              linked.name
+            }}</a>
+            <span class="status-line"> · {{ barangay(linked.barangayId) }}</span>
+          } @else {
+            @if (detail.candidates.length === 0) {
+              <p class="callout callout--warning">{{ copy.noCandidates }}</p>
+            } @else {
+              <p class="status-line">{{ copy.candidatesLead }}</p>
+            }
+            @if (detail.status === 'pending') {
+              <fieldset class="choice-list">
+                <legend class="visually-hidden">{{ copy.recordHeading }}</legend>
+                @for (candidate of detail.candidates; track candidate.residentId) {
+                  <label class="choice">
+                    <input
+                      type="radio"
+                      name="application-record"
+                      [checked]="chosen() === candidate.residentId"
+                      (change)="suggest(candidate.residentId)"
+                    />
+                    <span class="choice__text">
+                      {{ candidate.name }}
+                      <span class="choice__hint">{{ barangay(candidate.barangayId) }}</span>
+                    </span>
+                  </label>
+                }
+              </fieldset>
+              <app-person-picker
+                [label]="copy.pickerLabel"
+                [hint]="copy.pickerHint"
+                (chosen)="pick($event)"
+              />
+              @if (pickedName(); as name) {
+                <p class="status-line" role="status">{{ copy.picked(name) }}</p>
+              }
+              <label class="field">
+                <span class="field__label">{{ copy.linkReason }}</span>
+                <textarea
+                  class="field__input"
+                  rows="2"
+                  [attr.maxlength]="maxLength"
+                  aria-describedby="application-link-hint"
+                  [value]="linkReason()"
+                  (input)="linkReason.set(text($event))"
+                ></textarea>
+                <span class="field__hint" id="application-link-hint">{{ copy.linkReasonHint }}</span>
+              </label>
+            }
+          }
+        </section>
+      </div>
+
+      <div class="stack">
+        @if (detail.status !== 'pending') {
+          <p class="callout callout--info">{{ copy.alreadyDecided }}</p>
+        } @else {
+          <form
+            class="subpanel stack"
+            novalidate
+            aria-labelledby="application-approve"
+            (submit)="$event.preventDefault(); approve(detail)"
+          >
+            <h3 id="application-approve" class="section-title">{{ copy.approveHeading }}</h3>
+
+            <fieldset class="form-section">
+              <legend class="form-section__legend">{{ copy.detailsHeading }}</legend>
+              @if (!detail.detailsWritable) {
+                <p class="form-section__note">{{ copy.detailsLocked }}</p>
+              } @else {
+                <label class="field">
+                  <span class="field__label">{{ copy.idLastFour }}</span>
+                  <input
+                    class="field__input"
+                    maxlength="4"
+                    autocomplete="off"
+                    aria-describedby="application-id-hint"
+                    [attr.aria-invalid]="lastFourInvalid() ? 'true' : null"
+                    [value]="idLastFour()"
+                    (input)="idLastFour.set(text($event))"
+                  />
+                  <span class="field__hint" id="application-id-hint">{{ copy.idLastFourHint }}</span>
+                  @if (lastFourInvalid()) {
+                    <span class="field__error">{{ copy.idLastFourInvalid }}</span>
+                  }
+                </label>
+                <div class="field-row">
+                  <label class="field">
+                    <span class="field__label">{{ copy.issuedOn }}</span>
+                    <input
+                      type="date"
+                      class="field__input"
+                      [value]="issuedOn()"
+                      (input)="issuedOn.set(text($event))"
+                    />
+                  </label>
+                  <label class="field">
+                    <span class="field__label">{{ copy.validUntil }}</span>
+                    <input
+                      type="date"
+                      class="field__input"
+                      [value]="validUntil()"
+                      (input)="validUntil.set(text($event))"
+                    />
+                  </label>
+                </div>
+                @if (detail.sector === 'senior-citizen') {
+                  <label class="check-pill">
+                    <input
+                      type="checkbox"
+                      [checked]="socialPension()"
+                      (change)="socialPension.set(checked($event))"
+                    />
+                    <span>{{ copy.socialPension }}</span>
+                  </label>
+                }
+                @if (detail.sector === 'pwd') {
+                  <label class="field">
+                    <span class="field__label">{{ copy.disabilityType }}</span>
+                    <input
+                      class="field__input"
+                      maxlength="80"
+                      [value]="disabilityType()"
+                      (input)="disabilityType.set(text($event))"
+                    />
+                  </label>
+                }
+              }
+            </fieldset>
+
+            <label class="field">
+              <span class="field__label">{{ copy.approveReason }}</span>
+              <textarea
+                class="field__input"
+                rows="2"
+                [attr.maxlength]="maxLength"
+                aria-describedby="application-approve-hint"
+                [value]="approveReason()"
+                (input)="approveReason.set(text($event))"
+              ></textarea>
+              <span class="field__hint" id="application-approve-hint">{{
+                copy.approveReasonHint
+              }}</span>
+            </label>
+
+            <div class="effects" id="application-approve-effects">
+              <p class="effects__lead">{{ copy.effectsLead }}</p>
+              <ul>
+                @for (effect of effects.approve; track $index) {
+                  <li>{{ effect }}</li>
+                }
+                @if (detail.linkedResident === null) {
+                  @for (effect of effects.link; track $index) {
+                    <li>{{ effect }}</li>
+                  }
+                }
+              </ul>
+            </div>
+            <div class="form-footer">
+              <button
+                type="submit"
+                class="btn btn--primary"
+                aria-describedby="application-approve-effects"
+                [disabled]="busy()"
+              >
+                {{ busy() ? copy.approving : copy.approve }}
+              </button>
+            </div>
+          </form>
+
+          <form
+            class="subpanel stack"
+            novalidate
+            aria-labelledby="application-return"
+            (submit)="$event.preventDefault(); giveBack(detail)"
+          >
+            <h3 id="application-return" class="section-title">{{ copy.returnHeading }}</h3>
+            <label class="field">
+              <span class="field__label">{{ copy.returnReason }}</span>
+              <textarea
+                class="field__input"
+                rows="3"
+                [attr.maxlength]="maxLength"
+                aria-describedby="application-return-hint"
+                [value]="returnReason()"
+                (input)="returnReason.set(text($event))"
+              ></textarea>
+              <span class="field__hint" id="application-return-hint">{{
+                copy.returnReasonHint
+              }}</span>
+            </label>
+            <div class="effects" id="application-return-effects">
+              <p class="effects__lead">{{ copy.effectsLead }}</p>
+              <ul>
+                @for (effect of effects.return; track $index) {
+                  <li>{{ effect }}</li>
+                }
+              </ul>
+            </div>
+            <div class="form-footer">
+              <button
+                type="submit"
+                class="btn"
+                aria-describedby="application-return-effects"
+                [disabled]="busy()"
+              >
+                {{ busy() ? copy.returning : copy.return }}
+              </button>
+            </div>
+          </form>
+        }
+
+        @if (problem(); as message) {
+          <p class="callout callout--danger" role="alert">{{ message }}</p>
+        }
+        <p class="status-line" role="status">{{ outcome() }}</p>
+      </div>
+    </div>
+
+    @if (warningOpen()) {
+      <app-modal
+        [open]="true"
+        size="small"
+        [heading]="copy.warningHeading"
+        (dismissed)="warningOpen.set(false)"
+      >
+        <div modal-body class="stack">
+          <span class="icon-tile icon-tile--gold icon-tile--round" aria-hidden="true">
+            <app-icon name="warning" [size]="22" [stroke]="2" />
+          </span>
+          <p>{{ detail.proofWarning }}</p>
+        </div>
+        <button type="button" modal-actions class="btn btn--secondary" (click)="warningOpen.set(false)">
+          {{ copy.warningCancel }}
+        </button>
+        <button type="button" modal-actions class="btn btn--primary" (click)="confirmOpen(detail)">
+          {{ copy.warningProceed }}
+        </button>
+      </app-modal>
+    }
+  }
+</ng-template>

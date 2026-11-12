@@ -194,6 +194,11 @@ export const API_ENDPOINTS = {
    */
   officeImports: 'office/imports',
   /**
+   * Residents' sector applications (`DL-215`, `resident.update`): `GET` a cursor page by status;
+   * one by `{id}`; `{id}/proofs/{mediaId}` as bytes; `POST {id}/approve` and `{id}/return`.
+   */
+  officeSectorApplications: 'office/sector-applications',
+  /**
    * The office's household register (casework phase 1c): an address and who lives there, recorded
    * by staff — not the residents' app households at `households`. Cursor-paged by reference number,
    * `resident_id` naming the one household a person is in; one by `{id}`; `POST` to register;

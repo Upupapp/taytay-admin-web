@@ -36,6 +36,7 @@ import {
   TULONG_SERVICE_REPOSITORY,
   ISSUANCE_REPOSITORY,
   RESIDENT_IMPORT_REPOSITORY,
+  SECTOR_APPLICATION_REPOSITORY,
 } from '@domain/index';
 
 import { MockAssistanceRequestRepository } from './mock/mock-assistance-request.repository';
@@ -73,6 +74,7 @@ import { MockBalitaRepository } from './mock/mock-balita.repository';
 import { MockPlatformAuditRepository } from './mock/mock-platform-audit.repository';
 import { MockIssuanceRepository } from './mock/mock-issuance.repository';
 import { MockResidentImportRepository } from './mock/mock-resident-import.repository';
+import { MockSectorApplicationRepository } from './mock/mock-sector-application.repository';
 
 /**
  * THE MOCK/HTTP SEAM — the mock half.
@@ -119,6 +121,7 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: PLATFORM_AUDIT_REPOSITORY, useClass: MockPlatformAuditRepository },
     { provide: ISSUANCE_REPOSITORY, useClass: MockIssuanceRepository },
     { provide: RESIDENT_IMPORT_REPOSITORY, useClass: MockResidentImportRepository },
+    { provide: SECTOR_APPLICATION_REPOSITORY, useClass: MockSectorApplicationRepository },
     // The mock serves every port, and says so rather than leaving the token unbound (`DL-167`).
     { provide: UNSERVED_PORTS, useValue: [] },
   ]);

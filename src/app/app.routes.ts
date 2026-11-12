@@ -139,6 +139,21 @@ export const routes: Routes = [
           import('@features/resident-import/import-page').then((m) => m.ImportPage),
       },
       {
+        // `DL-215`. The API reads sector applications for `resident.update`, because approving
+        // records a sector, and refuses a caseload; this mirrors it and is not the protection (rule 4).
+        path: 'residents/sector-applications',
+        title: 'Sector applications — Taytay Social Welfare',
+        canActivate: [
+          servedGuard('sector-application', 'resident'),
+          permissionGuard('resident.update'),
+          scopeGuard('assigned-cases'),
+        ],
+        loadComponent: () =>
+          import('@features/sector-applications/sector-applications-page').then(
+            (m) => m.SectorApplicationsPage,
+          ),
+      },
+      {
         path: 'residents',
         // `new` must precede `:id`, or "new" is read as a resident id and the
         // create screen becomes unreachable.

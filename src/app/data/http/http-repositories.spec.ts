@@ -36,6 +36,7 @@ import {
   type ResidentDraft,
   type ResidentId,
   type ResidentImportId,
+  type SectorApplicationId,
   type SavedViewId,
   type BalitaArticleId,
   type DigitalIdId,
@@ -90,6 +91,7 @@ import DIGITAL_ID_CARD from './fixtures/digital-id-card.json';
 import DIGITAL_ID_LIST_PAGE from './fixtures/digital-id-list-page.json';
 import OFFICE_RESIDENTS_SUMMARY from './fixtures/office-residents-summary.json';
 import RESIDENT_IMPORT from './fixtures/resident-import.json';
+import SECTOR_APPLICATION_DETAIL from './fixtures/sector-application-detail.json';
 import DIGITAL_ID_HOLDER from './fixtures/digital-id-holder.json';
 import NEWS from './fixtures/news.json';
 import NEWS_PAGE from './fixtures/news-page.json';
@@ -131,6 +133,7 @@ import {
   HttpPlatformAuditRepository,
   HttpResidentImportRepository,
   HttpResidentRepository,
+  HttpSectorApplicationRepository,
   HttpProgramRepository,
   HttpSavedViewRepository,
   HttpSessionRefresher,
@@ -191,6 +194,7 @@ describe('the Node adapters', () => {
         HttpPlatformAuditRepository,
         HttpResidentImportRepository,
   HttpResidentRepository,
+  HttpSectorApplicationRepository,
         HttpHouseholdRepository,
         HttpFamilyRepository,
         HttpProgramRepository,
@@ -3112,6 +3116,70 @@ describe('the Node adapters', () => {
       });
       post.flush(RESIDENT_IMPORT);
       expect((await resolved).groups.match).toHaveLength(1);
+    });
+  });
+
+  describe('sector applications from the app (DL-215)', () => {
+    beforeEach(() => tokens.hold('fixture-token', null));
+    const ID = asId<SectorApplicationId>('9c1d2e3f-4a5b-4c6d-8e7f-0a1b2c3d4e01');
+    const { proofs, proof_warning, linked_resident, candidates, details_writable, ...ROW } =
+      SECTOR_APPLICATION_DETAIL.data;
+
+    it('lists by status, and reads a proof as bytes with the token in a header', async () => {
+      expect([proofs, proof_warning, linked_resident, candidates, details_writable]).toHaveLength(5);
+      const applications = TestBed.inject(HttpSectorApplicationRepository);
+      const page = firstValueFrom(applications.list({ limit: 20, cursor: null }, 'pending'));
+      const list = http.expectOne((candidate) => candidate.url === `${BASE}/office/sector-applications`);
+      expect(list.request.params.get('status')).toBe('pending');
+      list.flush({ data: [ROW], meta: { pagination: { has_more: false, next_cursor: null } } });
+      expect((await page).items[0]?.sector).toBe('senior-citizen');
+
+      const proof = firstValueFrom(
+        applications.openProof(ID, asId<MediaId>('33333333-3333-4333-8333-333333333334')),
+      );
+      const bytes = http.expectOne(
+        `${BASE}/office/sector-applications/${ID}/proofs/33333333-3333-4333-8333-333333333334`,
+      );
+      expect(bytes.request.responseType).toBe('blob');
+      expect(bytes.request.urlWithParams).not.toContain('token');
+      bytes.flush(new Blob(['x']));
+      expect(await proof).toBeInstanceOf(Blob);
+    });
+
+    it('approves with the link and the card’s last four, and returns with the reason', async () => {
+      const applications = TestBed.inject(HttpSectorApplicationRepository);
+      const approved = firstValueFrom(
+        applications.approve(ID, {
+          reason: 'Card seen.',
+          link: {
+            residentId: asId<ResidentId>('1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01'),
+            reason: 'Same person.',
+          },
+          details: { idLastFour: '1234', socialPension: false },
+        }),
+      );
+      const approve = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/office/sector-applications/${ID}/approve`,
+      });
+      expect(approve.request.body).toEqual({
+        reason: 'Card seen.',
+        resident_id: '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01',
+        link_reason: 'Same person.',
+        id_number: '1234',
+        social_pension: false,
+      });
+      approve.flush({ data: { ...ROW, status: 'approved' }, meta: {} });
+      expect((await approved).status).toBe('approved');
+
+      const returned = firstValueFrom(applications.returnToApplicant(ID, ' Too dark. '));
+      const back = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/office/sector-applications/${ID}/return`,
+      });
+      expect(back.request.body).toEqual({ reason: 'Too dark.' });
+      back.flush({ data: { ...ROW, status: 'returned', return_reason: 'Too dark.' }, meta: {} });
+      expect((await returned).returnReason).toBe('Too dark.');
     });
   });
 

@@ -94,6 +94,8 @@ export type HomeBannerId = Branded<string, 'HomeBannerId'>;
 export type QuickLinkId = Branded<string, 'QuickLinkId'>;
 /** A file of the office's own list, held for checking before it reaches the registry (`DL-214`). */
 export type ResidentImportId = Branded<string, 'ResidentImportId'>;
+/** A resident's application from the app to be recorded in a sector (`DL-215`). */
+export type SectorApplicationId = Branded<string, 'SectorApplicationId'>;
 /** A resident’s digital ID card, as the API numbers its record — not the card number (`DL-171`). */
 export type DigitalIdId = Branded<string, 'DigitalIdId'>;
 /** A Balita article in the residents' app — the console's one news channel (`DL-171`, `DL-194`). */

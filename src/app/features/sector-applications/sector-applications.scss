@@ -1,0 +1,20 @@
+// Sector applications: the review dialog's two columns (facts and proof; the decision), as the
+// verification review lays them out. Layout only.
+
+.applications__review {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.applications__proofs {
+  display: grid;
+  gap: var(--space-3);
+  margin-block-end: var(--space-3);
+}
+
+.applications__proof {
+  max-inline-size: 100%;
+  border-radius: var(--r-field);
+}

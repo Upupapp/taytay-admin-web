@@ -202,6 +202,17 @@ export const NAVIGATION: readonly NavSection[] = [
         closedTo: ['assigned-cases'],
         description: 'Bring in a list the office keeps, checking every row before the registry changes.',
       },
+      {
+        // `DL-215`. Residents ask in the app to be recorded in a sector; the office decides.
+        label: 'Sector applications',
+        route: '/residents/sector-applications',
+        // The record an account is linked to may be found through the registry search.
+        reads: ['sector-application', 'resident'],
+        glyph: 'SA',
+        permissions: ['resident.update'],
+        closedTo: ['assigned-cases'],
+        description: 'Applications from the app to be recorded as a senior, PWD or solo parent.',
+      },
     ],
   },
   {

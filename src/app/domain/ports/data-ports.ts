@@ -42,6 +42,7 @@ export const DATA_PORTS = [
   'platform-audit',
   'issuance',
   'resident-import',
+  'sector-application',
 ] as const;
 
 export type DataPort = (typeof DATA_PORTS)[number];
@@ -86,6 +87,7 @@ export const DATA_PORT_HOLDINGS: Readonly<Record<DataPort, string>> = {
   'platform-audit': 'the app’s audit trail',
   issuance: 'residents’ document requests and the document catalogue',
   'resident-import': 'imports of the office’s lists into the registry',
+  'sector-application': 'residents’ sector applications from the app',
 };
 
 /**

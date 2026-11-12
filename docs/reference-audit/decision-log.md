@@ -10331,3 +10331,46 @@ API attaches, it never updates.
 
 Easiest to reverse: delete the two `residents/import` routes, the menu entry, the registry button
 and `features/resident-import/`.
+
+## DL-215 — the office decides a resident's sector application: approve records it, return says why
+
+**Status:** Settled (12 November 2026). The citizen design pack, prompt A8 (no board). Inbox
+pattern, as `verification/verification-queue-page` and `verification-review`. Backend B5,
+`office/sector-applications` (`resident.update`), vendored from the backend's working tree while it
+was uncommitted there.
+
+**What the office can now do.** Open `/residents/sector-applications`, "Sector applications" under
+Citizens, see the applications residents sent from the app — waiting first, oldest first; approved
+or returned by choice — open one in a centred dialog, view its proof after a warning, and either
+**approve**, which records the sector on the registry record, or **return** it with a reason the
+resident reads in the app.
+
+**Decisions.**
+
+1. **The proof only after the API's own warning, and gone on leave**, as the ID review holds its
+   images (`DL-167`): bytes with the bearer in a header (`openProof`), an object URL revoked on hide,
+   on another application, and when the dialog goes. The API records each opening.
+2. **An account is linked to a record once, with its own reason.** When the account is not linked,
+   the reviewer chooses among the records the API suggests — a suggestion, never a link — or finds
+   the record with the registry's own search (`PersonPicker`), and says why; the effects say the link
+   is never moved. With no suggestion the page says so and offers the search, or registering first.
+   The route and the menu read the registry as well, for that search. A candidate's birth date is
+   not read: every one shares the account's (`DL-73`).
+3. **A card number is taken as its last four characters only** (`DL-183`, the clash `PROGRESS.md`
+   settles): the field holds four, says the registry keeps no more, and refuses anything the API's
+   pattern would. The card's details are optional, and offered only when the API says this reader
+   may record them (`details_writable`, `resident.view-sensitive`); social pension for seniors,
+   disability type for PWD.
+4. **Every decision states its effects before its button and takes a reason**: approving's reason
+   goes into the record's history, returning's to the resident. A decided application is shown, and
+   not offered again.
+5. **Never a protected sector.** The app can apply only for senior citizen, PWD or solo parent; the
+   mapper refuses any other.
+6. New port `SectorApplicationRepository` (`sector-application`); `SECTOR_APPLICATION_STATUS_CATALOG`
+   and its transitions in the domain (rule 7). `resident.update` guards the route and the menu, as
+   the API guards the reads.
+
+**Left out.** Nothing the API serves; there is no board. The resident is notified by the API, not by
+this console.
+
+Easiest to reverse: delete the route, the menu entry and `features/sector-applications/`.

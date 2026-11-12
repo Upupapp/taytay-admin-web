@@ -38,6 +38,7 @@ export const NAV_ICONS: Readonly<Record<string, IconName>> = {
   '/citizen-ids': 'idCard',
   '/residents/overview': 'chart',
   '/residents/import': 'docPlus',
+  '/residents/sector-applications': 'clipboard',
   '/balita': 'news',
   '/app-audit': 'history',
   '/administration/staff': 'staff',

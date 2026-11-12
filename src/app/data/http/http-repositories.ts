@@ -102,6 +102,12 @@ import {
   type ResidentImportId,
   type ResidentImportRepository,
   type ResidentImportSummary,
+  type SectorApplication,
+  type SectorApplicationDetail,
+  type SectorApplicationId,
+  type SectorApplicationRepository,
+  type SectorApplicationStatus,
+  type SectorApproval,
   type DigitalIdId,
   type DigitalIdRepository,
   type BalitaArticle,
@@ -432,6 +438,12 @@ import {
   toWireImportResolve,
   toWireImportUpload,
 } from './mappers/resident-import.mapper';
+import {
+  toSectorApplication,
+  toSectorApplicationDetail,
+  toWireSectorApproval,
+  toWireSectorReturn,
+} from './mappers/sector-application.mapper';
 import { toOffice } from './mappers/office.mapper';
 import {
   toDirectoryOffice,
@@ -5528,4 +5540,80 @@ function readImport(wire: unknown, barangays: BarangayIndex): ResidentImport {
     );
   }
   return record;
+}
+
+/**
+ * Residents' sector applications (`DL-215`, `resident.update`). A proof is bytes through the data
+ * layer (`ApiClient.blob`), never an address; every decision answers the application as decided.
+ */
+@Injectable()
+export class HttpSectorApplicationRepository implements SectorApplicationRepository {
+  private readonly api = inject(ApiClient);
+  private readonly barangayJoin = new BarangayJoin();
+
+  list(
+    page: CursorRequest,
+    status: SectorApplicationStatus,
+  ): Observable<CursorPage<SectorApplication>> {
+    return this.api
+      .cursorPage(API_ENDPOINTS.officeSectorApplications, page, { status })
+      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readSectorApplication) })));
+  }
+
+  /** `null` for "not found **or** not yours" — the server answers both with a 404. */
+  get(id: SectorApplicationId): Observable<SectorApplicationDetail | null> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .optionalItem(`${API_ENDPOINTS.officeSectorApplications}/${id}`)
+          .pipe(
+            map((wire) => (wire === null ? null : readSectorApplicationDetail(wire, barangays))),
+          ),
+      ),
+    );
+  }
+
+  openProof(id: SectorApplicationId, proof: MediaId): Observable<Blob> {
+    return this.api.blob(`${API_ENDPOINTS.officeSectorApplications}/${id}/proofs/${proof}`);
+  }
+
+  approve(id: SectorApplicationId, approval: SectorApproval): Observable<SectorApplication> {
+    return this.api
+      .post(
+        `${API_ENDPOINTS.officeSectorApplications}/${id}/approve`,
+        toWireSectorApproval(approval),
+      )
+      .pipe(map(readSectorApplication));
+  }
+
+  returnToApplicant(id: SectorApplicationId, reason: string): Observable<SectorApplication> {
+    return this.api
+      .post(`${API_ENDPOINTS.officeSectorApplications}/${id}/return`, toWireSectorReturn(reason))
+      .pipe(map(readSectorApplication));
+  }
+}
+
+function readSectorApplication(wire: unknown): SectorApplication {
+  const application = toSectorApplication(wire);
+  if (application === null) {
+    throw new Error(
+      'An application from the server could not be read, so none is shown rather than one with a ' +
+        'guessed sector or status.',
+    );
+  }
+  return application;
+}
+
+function readSectorApplicationDetail(
+  wire: unknown,
+  barangays: BarangayIndex,
+): SectorApplicationDetail {
+  const detail = toSectorApplicationDetail(wire, barangays);
+  if (detail === null) {
+    throw new Error(
+      'The application from the server could not be read whole, so none of it is shown: a decision ' +
+        'made on part of it is made on a guess.',
+    );
+  }
+  return detail;
 }

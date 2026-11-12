@@ -134,6 +134,7 @@ import DIGITAL_ID_HOLDER from './digital-id-holder.json';
 import DIGITAL_ID_LIST_PAGE from './digital-id-list-page.json';
 import OFFICE_RESIDENTS_SUMMARY from './office-residents-summary.json';
 import RESIDENT_IMPORT from './resident-import.json';
+import SECTOR_APPLICATION_DETAIL from './sector-application-detail.json';
 import NEWS from './news.json';
 import NEWS_PAGE from './news-page.json';
 import NEWS_CATEGORIES from './news-categories.json';
@@ -456,6 +457,7 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['digital-id-list-page', DIGITAL_ID_LIST_PAGE, 'DigitalIdListEnvelope'],
     ['office-residents-summary', OFFICE_RESIDENTS_SUMMARY, 'OfficeResidentSummaryEnvelope'],
     ['resident-import', RESIDENT_IMPORT, 'ResidentImportEnvelope'],
+    ['sector-application-detail', SECTOR_APPLICATION_DETAIL, 'SectorApplicationDetailEnvelope'],
     ['news', NEWS, 'NewsEnvelope'],
     ['news-page', NEWS_PAGE, 'NewsListEnvelope'],
     ['news-categories', NEWS_CATEGORIES, 'NewsCategoryListEnvelope'],
