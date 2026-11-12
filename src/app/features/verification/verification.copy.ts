@@ -126,6 +126,13 @@ export const VERIFICATION_COPY = {
       'The resident may correct this request and send it again from the app. It then returns to ' +
       'the queue; nothing is done here until it does.',
 
+    /** Where the counter check is made: from the account, with the person there (`DL-219`). */
+    inPersonBefore:
+      'If the resident comes to the office with their ID — for example because they declined or ' +
+      'withdrew the selfie — verify them in person instead, from their account in ',
+    inPersonLink: 'Users and roles',
+    inPersonAfter: '. That closes this request and erases its selfie.',
+
     outcomeApproved: 'Approved. The server marked the account verified.',
     outcomeRejected: 'Rejected. The resident can now read your reason in the app.',
     notRecorded: (why: string): string => `The decision was not recorded. ${why}`,

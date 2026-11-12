@@ -17,6 +17,7 @@ import {
   HOTLINE_LIST_CAP,
   isAppConfigRefusal,
   isCommandCenterTaken,
+  isInPersonRefused,
   isFamilyDraftInvalid,
   isHouseholdCompositionError,
   isRelationshipInvalid,
@@ -61,6 +62,7 @@ import VERIFICATION_APPROVED from './fixtures/verification-approved.json';
 import VERIFICATION_REJECTED from './fixtures/verification-rejected.json';
 import VERIFICATION_PAGE from './fixtures/verification-requests-page.json';
 import VERIFICATION_SUPERSEDED from './fixtures/verification-superseded.json';
+import IN_PERSON_VERIFICATION from './fixtures/in-person-verification.json';
 import OFFICES_PAGE from './fixtures/offices-page.json';
 import THREAD from './fixtures/thread.json';
 import THREAD_MESSAGES_PAGE from './fixtures/thread-messages-page.json';
@@ -651,6 +653,83 @@ describe('the Node adapters', () => {
 
       const answer = await page;
       expect(answer.items.map((item) => item.status)).toEqual(['superseded']);
+    });
+
+    describe('verifying an account in person (DL-219)', () => {
+      const account = asId<AppAccountId>(IN_PERSON_VERIFICATION.data.user_id);
+      const check = {
+        idType: 'philid',
+        idLastFour: '4C7K',
+        confirmedName: 'Ana Cruz',
+        correctedName: null,
+      } as const;
+      const url = `${BASE}/admin/users/${account}/in-person-verifications`;
+
+      it('posts the check as JSON with the key in the body, and no image', async () => {
+        const intent = new WriteIntent();
+        const done = firstValueFrom(verification.verifyInPerson(account, check, intent));
+
+        const sent = http.expectOne(url);
+        expect(sent.request.method).toBe('POST');
+        expect(sent.request.body).toEqual({
+          idempotency_key: intent.key,
+          id_type: 'philid',
+          id_last_four: '4C7K',
+          confirmed_name: 'Ana Cruz',
+          id_shows_name: true,
+        });
+        expect(sent.request.body).not.toBeInstanceOf(FormData);
+        expect(sent.request.headers.has('Idempotency-Key')).toBe(false);
+        sent.flush(IN_PERSON_VERIFICATION, { status: 201, statusText: 'Created' });
+
+        expect((await done).supersededRequestId).toBe(
+          IN_PERSON_VERIFICATION.data.superseded_request_id,
+        );
+      });
+
+      it.each([
+        [403, 'FORBIDDEN', 'You cannot verify your own account.', 'forbidden'],
+        [404, 'NOT_FOUND', 'That user was not found.', 'conflict'],
+        [409, 'CONFLICT', 'This account is already verified.', 'conflict'],
+      ] as const)(
+        'reads a %i as the domain’s refusal, in the server’s words',
+        async (status, code, message, kind) => {
+          const done = firstValueFrom(
+            verification.verifyInPerson(account, check, new WriteIntent()),
+          );
+          http
+            .expectOne(url)
+            .flush(
+              { error: { code, message, details: {}, request_id: 'r' } },
+              { status, statusText: code },
+            );
+
+          const refusal: unknown = await done.catch((error: unknown) => error);
+          expect(isInPersonRefused(refusal)).toBe(true);
+          expect(refusal).toMatchObject({ message, kind, fields: {} });
+        },
+      );
+
+      it('reads a 422 with the fields it names, in the domain’s terms', async () => {
+        const done = firstValueFrom(verification.verifyInPerson(account, check, new WriteIntent()));
+        http.expectOne(url).flush(
+          {
+            error: {
+              code: 'VALIDATION_FAILED',
+              message: 'The request could not be validated.',
+              details: { id_last_four: ['Only the last four characters of the ID number.'] },
+              request_id: 'r',
+            },
+          },
+          { status: 422, statusText: 'Unprocessable Entity' },
+        );
+
+        const refusal: unknown = await done.catch((error: unknown) => error);
+        expect(refusal).toMatchObject({
+          kind: 'invalid',
+          fields: { idLastFour: 'Only the last four characters of the ID number.' },
+        });
+      });
     });
 
     it('asks for no image a request does not carry', async () => {

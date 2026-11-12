@@ -46,6 +46,14 @@
  *      say the server keeps none and keeps the earlier name; the port takes a `NameCorrection` and
  *      the adapter posts it to `name-corrections` with the name shown and `id_checked: true`.
  *
+ * ## Verified in person (`DL-219`): from the account, never one's own
+ *  10. `AccountInPerson` asks about the reader's own account before the button that opens the counter
+ *      check, and `open` refuses it too; it is offered for a resident account not yet verified
+ *      (`takesInPersonCheck`: role `registered`) to a reader who holds `verification.review`; the
+ *      form is the shared `VerifyInPersonDialog` (held by `check:verification` rule 10), with no
+ *      field of the section's own; the panel offers it; and verifying by role points to it, because
+ *      only the counter check records how the person was checked.
+ *
  * Each rule was validated against a planted regression before being trusted.
  */
 
@@ -373,6 +381,59 @@ if (
   failures.push('HttpAppAccountRepository must post the correction to name-corrections with the name shown and id_checked.');
 }
 
+/* ── 10. verified in person: from the account, never one's own ──────────── */
+
+const IN_PERSON_PANEL = join(FEATURE, 'account-in-person.ts');
+const IN_PERSON_TEMPLATE = join(FEATURE, 'account-in-person.html');
+const inPersonCode = existsSync(IN_PERSON_PANEL) ? code(read(IN_PERSON_PANEL)) : '';
+const inPersonTemplate = existsSync(IN_PERSON_TEMPLATE) ? code(read(IN_PERSON_TEMPLATE)) : '';
+if (inPersonCode === '' || inPersonTemplate === '') {
+  failures.push(
+    'AccountInPerson is missing, so a resident who declines the selfie has no way to be verified (DL-219).',
+  );
+} else {
+  const ownAt = inPersonTemplate.indexOf('@if (own())');
+  const openAt = inPersonTemplate.indexOf('(click)="open()"');
+  if (ownAt === -1 || openAt === -1 || ownAt > openAt) {
+    failures.push(
+      "The counter check is offered before asking whether it is the reader's own account.",
+    );
+  }
+  if (!/this\s*\.\s*own\s*\(\s*\)/.test(methodBody(inPersonCode, 'open'))) {
+    failures.push("AccountInPerson.open no longer refuses the reader's own account.");
+  }
+  if (
+    !/applies\s*=\s*computed\(\s*\(\)\s*=>\s*takesInPersonCheck\s*\(/.test(inPersonCode) ||
+    !/canVerify\s*=\s*this\s*\.\s*permissions\s*\.\s*can\s*\(\s*'verification\.review'\s*\)/.test(
+      inPersonCode,
+    ) ||
+    !/@if \(applies\(\) && canVerify\(\)\)/.test(inPersonTemplate) ||
+    !/return account\.role === 'registered';/.test(
+      code(read(APP, 'domain', 'verification', 'in-person-verification.ts')),
+    )
+  ) {
+    failures.push(
+      'The counter check is not confined to a resident not yet verified and a reader who reviews IDs (DL-219).',
+    );
+  }
+  if (
+    !/<app-verify-in-person-dialog\b/.test(inPersonTemplate) ||
+    /<textarea|<input/.test(inPersonTemplate)
+  ) {
+    failures.push(
+      'The counter check is not the shared VerifyInPersonDialog, or the section asks for something of its own.',
+    );
+  }
+  if (!/<app-account-in-person\b/.test(panelTemplate)) {
+    failures.push('The account panel no longer offers the counter check (DL-219).');
+  }
+}
+if (!/Verify in[\s\S]{0,40}person/.test(effects)) {
+  failures.push(
+    'ROLE_CHANGE_EFFECTS.verified no longer points to “Verify in person”, which records how the person was checked.',
+  );
+}
+
 report();
 
 function report() {
@@ -384,6 +445,6 @@ function report() {
   console.log(
     `Accounts check passed (${moduleFiles.length} files: the minimum shown, effects before every button, ` +
       'no reason collected but for the office role, which keeps it; not one’s own role; the keys the administrator’s; ' +
-      'a checked name corrected only against an ID seen).',
+      'a checked name corrected only against an ID seen; a resident verified in person from the account).',
   );
 }

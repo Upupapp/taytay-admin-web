@@ -400,6 +400,21 @@
       "optional": []
     },
     {
+      "method": "POST",
+      "path": "admin/users/{id}/in-person-verifications",
+      "consumer": "verification.mapper.ts#toInPersonVerification",
+      "required": [],
+      "optional": [
+        "id",
+        "id_type",
+        "method",
+        "name_corrected",
+        "superseded_request_id",
+        "user_id",
+        "verified_at"
+      ]
+    },
+    {
       "method": "PATCH",
       "path": "admin/users/{id}/office",
       "consumer": "app-account.mapper.ts#toAppAccount",

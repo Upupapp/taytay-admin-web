@@ -1,6 +1,6 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { of, throwError, type Observable } from 'rxjs';
+import { EMPTY, of, throwError, type Observable } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -11,6 +11,7 @@ import {
   type ConfirmedIdentity,
   type CursorPage,
   type CursorRequest,
+  type InPersonVerification,
   type MediaId,
   type VerificationFilter,
   type VerificationImageKind,
@@ -88,6 +89,11 @@ class RecordingVerifications implements VerificationRepository {
   openImage(_request: VerificationRequest, kind: VerificationImageKind): Observable<Blob> {
     this.opened.push(kind);
     return of(new Blob(['image bytes'], { type: 'image/png' }));
+  }
+
+  /** Never made from these screens: the counter check is made from the account (`DL-219`). */
+  verifyInPerson(): Observable<InPersonVerification> {
+    return EMPTY;
   }
 
   private decide(
@@ -479,6 +485,18 @@ describe('VerificationReview', () => {
     expect(element.querySelector('[aria-live="polite"]')?.textContent).toContain(
       'The decision was not recorded. That verification request is no longer pending.',
     );
+  });
+
+  it('points to the counter check in Users and roles, which closes the request', async () => {
+    const { fixture } = review();
+    const element = await settle(fixture);
+
+    const link = [...element.querySelectorAll('a')].find(
+      (anchor) => anchor.textContent?.trim() === VERIFICATION_COPY.review.inPersonLink,
+    );
+    expect(link?.getAttribute('href')).toBe('/users?verification=pending');
+    expect(element.textContent).toContain('verify them in person instead');
+    expect(element.textContent).toContain('closes this request and erases its selfie');
   });
 
   it('offers no decision on a request already decided', async () => {

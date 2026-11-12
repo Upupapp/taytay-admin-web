@@ -1,0 +1,14 @@
+{
+  "data": {
+    "id": "3e2d1c0b-9a8f-4e7d-8c6b-5a4f3e2d1c01",
+    "user_id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c03",
+    "method": "in-person",
+    "id_type": "philid",
+    "id_last_four": "4C7K",
+    "name_corrected": false,
+    "superseded_request_id": "7c1e2d3f-4a5b-4c6d-8e7f-9a0b1c2d3e03",
+    "verified_by": "5f4e3d2c-1b0a-4f9e-8d7c-6b5a4f3e2d01",
+    "verified_at": "2026-11-12T03:15:00.000Z"
+  },
+  "meta": {}
+}

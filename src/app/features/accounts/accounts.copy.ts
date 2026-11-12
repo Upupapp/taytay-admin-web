@@ -142,6 +142,23 @@ export const ACCOUNTS_COPY = {
     failed: 'The server refused it or could not be reached.',
   },
 
+  /** Verifying a resident's account in person, at the counter (`DL-219`). */
+  inPerson: {
+    heading: 'Verify in person',
+    intro:
+      'For a resident at the counter with a government ID — for example one who declined the ' +
+      'selfie, which the app takes only with its own consent. No photo or biometric data is taken.',
+    ownAccount: 'This is your own account. The server refuses to verify your own account.',
+    noName:
+      'The account gives no name, so there is nothing to check an ID against. The resident adds ' +
+      'the name printed on their ID in the app first.',
+    open: 'Verify in person…',
+    done: 'Verified in person. The account is now a verified resident account.',
+    doneSuperseded:
+      'Verified in person. The account is now a verified resident account; its waiting ID review ' +
+      'was closed and its selfie erased.',
+  },
+
   /** Correcting a verified account's name at the counter (`DL-198`). */
   nameCorrection: {
     heading: 'Correct the name',

@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
+import { WriteIntent } from '@domain/index';
+
+import IN_PERSON from '../fixtures/in-person-verification.json';
 import APPROVED from '../fixtures/verification-approved.json';
 import REJECTED from '../fixtures/verification-rejected.json';
 import SUPERSEDED from '../fixtures/verification-superseded.json';
 import PAGE from '../fixtures/verification-requests-page.json';
 
-import { toVerificationRequest } from './verification.mapper';
+import {
+  toInPersonFieldErrors,
+  toInPersonVerification,
+  toVerificationRequest,
+  toWireInPersonCheck,
+} from './verification.mapper';
 
 const WITH_BACK: Record<string, unknown> = { ...PAGE.data[0] };
 const WITHOUT_BACK: Record<string, unknown> = { ...PAGE.data[1] };
@@ -115,5 +123,81 @@ describe('toVerificationRequest', () => {
   it('never widens an ID type or a status it does not know', () => {
     expect(toVerificationRequest({ ...WITH_BACK, id_type: 'barangay_clearance' })).toBeNull();
     expect(toVerificationRequest({ ...WITH_BACK, status: 'verified' })).toBeNull();
+  });
+});
+
+describe('the in-person check on the wire (DL-219)', () => {
+  const intent = new WriteIntent('9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d');
+  const check = {
+    idType: 'drivers-license',
+    idLastFour: '4C7K',
+    confirmedName: 'Ana Cruz',
+    correctedName: null,
+  } as const;
+
+  it('sends the type in the API’s words, the four characters, the name shown and the tick', () => {
+    expect(toWireInPersonCheck(check, intent)).toEqual({
+      idempotency_key: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
+      id_type: 'drivers_license',
+      id_last_four: '4C7K',
+      confirmed_name: 'Ana Cruz',
+      id_shows_name: true,
+    });
+  });
+
+  it('adds a corrected name only when there is one, never an empty one', () => {
+    expect(toWireInPersonCheck({ ...check, correctedName: 'Ana Cruz Reyes' }, intent)).toEqual(
+      expect.objectContaining({ corrected_name: 'Ana Cruz Reyes' }),
+    );
+    expect(Object.keys(toWireInPersonCheck(check, intent))).not.toContain('corrected_name');
+  });
+
+  it('reads what the server recorded, and not the four characters or who recorded it', () => {
+    const record = toInPersonVerification(IN_PERSON.data);
+
+    expect(record).toEqual({
+      id: '3e2d1c0b-9a8f-4e7d-8c6b-5a4f3e2d1c01',
+      accountId: '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c03',
+      idType: 'philid',
+      nameCorrected: false,
+      supersededRequestId: '7c1e2d3f-4a5b-4c6d-8e7f-9a0b1c2d3e03',
+      verifiedAt: '2026-11-12T03:15:00.000Z',
+    });
+    expect(JSON.stringify(record)).not.toContain('4C7K');
+  });
+
+  it('reads no superseded request when there was none', () => {
+    expect(
+      toInPersonVerification({ ...IN_PERSON.data, superseded_request_id: null })
+        ?.supersededRequestId,
+    ).toBeNull();
+  });
+
+  it.each(['id', 'user_id', 'id_type', 'name_corrected', 'verified_at'])(
+    'refuses a record without %s',
+    (missing) => {
+      const rest = Object.fromEntries(
+        Object.entries(IN_PERSON.data).filter(([key]) => key !== missing),
+      );
+      expect(toInPersonVerification(rest)).toBeNull();
+    },
+  );
+
+  it('refuses a record that is not an in-person check', () => {
+    expect(toInPersonVerification({ ...IN_PERSON.data, method: 'selfie' })).toBeNull();
+  });
+
+  it('reads a 422 as the form’s fields, the first sentence each, and drops a key it has no field for', () => {
+    expect(
+      toInPersonFieldErrors({
+        id_last_four: ['Only the last four characters of the ID number.', 'Second.'],
+        id_shows_name: ['Invalid literal value, expected true'],
+        confirmed_name: ['Required'],
+      }),
+    ).toEqual({
+      idLastFour: 'Only the last four characters of the ID number.',
+      idShowsName: 'Invalid literal value, expected true',
+    });
+    expect(toInPersonFieldErrors(null)).toEqual({});
   });
 });

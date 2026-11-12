@@ -156,6 +156,13 @@
         idPrefix="verification-decision"
         (confirmed)="decide($event)"
       />
+      <p class="review__note">
+        {{ copy.inPersonBefore
+        }}<a routerLink="/users" [queryParams]="{ verification: 'pending' }">{{
+          copy.inPersonLink
+        }}</a
+        >{{ copy.inPersonAfter }}
+      </p>
     } @else if (request().status === 'rejected') {
       <p class="review__said">{{ copy.awaitingResident }}</p>
     } @else if (request().status === 'superseded') {

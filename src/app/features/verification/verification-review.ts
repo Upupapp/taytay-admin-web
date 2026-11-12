@@ -13,6 +13,7 @@ import {
   untracked,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { forkJoin, map } from 'rxjs';
 
 import {
@@ -97,7 +98,7 @@ interface OpenedImage {
 @Component({
   selector: 'app-verification-review',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, Icon, Modal, StatusBadge, StatusTransition],
+  imports: [DatePipe, Icon, Modal, RouterLink, StatusBadge, StatusTransition],
   templateUrl: './verification-review.html',
   styleUrl: './verification-review.scss',
 })

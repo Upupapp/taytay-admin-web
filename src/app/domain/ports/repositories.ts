@@ -182,6 +182,7 @@ import type {
   VerificationImageKind,
   VerificationRequest,
 } from '../verification/verification-request';
+import type { InPersonCheck, InPersonVerification } from '../verification/in-person-verification';
 import type {
   Family,
   FamilyDraft,
@@ -1576,6 +1577,21 @@ export interface VerificationRepository {
    * in no URL (rule 5).
    */
   openImage(request: VerificationRequest, kind: VerificationImageKind): Observable<Blob>;
+
+  /**
+   * Verifies a resident's account in person, against a government ID somebody at the office has
+   * seen at the counter (`DL-219`): for a resident who declines the selfie. No image is sent or
+   * kept. A waiting selfie request is closed as `superseded` and its selfie erased, in the same act.
+   *
+   * The `intent` is the press of the button (`WriteIntent`), held by the screen across retries of
+   * the same check: the API answers a retry under the same key with the first record. A refusal is
+   * `InPersonRefusedError`, with the fields it named in the domain's terms.
+   */
+  verifyInPerson(
+    accountId: AppAccountId,
+    check: InPersonCheck,
+    intent: WriteIntent,
+  ): Observable<InPersonVerification>;
 }
 
 export const VERIFICATION_REPOSITORY = new InjectionToken<VerificationRepository>(

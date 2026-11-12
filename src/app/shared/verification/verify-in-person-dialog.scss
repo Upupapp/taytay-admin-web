@@ -1,0 +1,30 @@
+/* Layout only: `.field`, `.field-row`, `.form-section`, `.effects`, `.check` and `.callout` are
+   the global primitives and patterns (DL-120), and are not redefined. */
+
+.in-person {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.in-person > * {
+  margin: 0;
+}
+
+.in-person__name {
+  font-family: var(--font-display);
+  font-size: var(--fs-title-md);
+  font-weight: var(--fw-medium);
+  overflow-wrap: anywhere;
+}
+
+.in-person__statement {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.in-person__statement .field__hint,
+.in-person__statement .field__error {
+  margin: 0;
+}

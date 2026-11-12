@@ -59,6 +59,9 @@ import {
   type OfficeRoleChange,
   HOTLINE_LIST_CAP,
   HotlineCommandCenterTakenError,
+  InPersonRefusedError,
+  type InPersonCheck,
+  type InPersonVerification,
   type DirectoryOffice,
   type DirectoryOfficeRepository,
   type Hotline,
@@ -506,7 +509,12 @@ import {
   type CaseWorkspaceParts,
 } from './mappers/case.mapper';
 import { toSavedView, toWireSavedViewDraft } from './mappers/saved-view.mapper';
-import { toVerificationRequest } from './mappers/verification.mapper';
+import {
+  toInPersonFieldErrors,
+  toInPersonVerification,
+  toVerificationRequest,
+  toWireInPersonCheck,
+} from './mappers/verification.mapper';
 import {
   toIssuanceFileGrant,
   toIssuanceRequest,
@@ -839,6 +847,61 @@ export class HttpVerificationRepository implements VerificationRepository {
     return media === null
       ? throwError(() => new Error('This request carries no such image.'))
       : this.api.blob(`${API_ENDPOINTS.media}/${media}/content`);
+  }
+
+  /**
+   * `POST admin/users/{id}/in-person-verifications` (`DL-219`): JSON, no image, the key in the body
+   * because the API's CORS policy allows no idempotency header. A refusal comes back as the domain's
+   * `InPersonRefusedError`, its fields already in the domain's terms.
+   */
+  verifyInPerson(
+    accountId: AppAccountId,
+    check: InPersonCheck,
+    intent: WriteIntent,
+  ): Observable<InPersonVerification> {
+    return this.api
+      .post(
+        `${API_ENDPOINTS.adminUsers}/${accountId}/in-person-verifications`,
+        toWireInPersonCheck(check, intent),
+      )
+      .pipe(map(readInPersonVerification), catchError(withInPersonRefusal));
+  }
+}
+
+function readInPersonVerification(wire: unknown): InPersonVerification {
+  const record = toInPersonVerification(wire);
+  if (record === null) {
+    throw new Error(
+      'The server answered, but its record of the check could not be read. Read the account ' +
+        'again before doing anything else: it may now be verified.',
+    );
+  }
+  return record;
+}
+
+/**
+ * The server's refusal of a counter check, as the domain words it (`DL-219`): a 403 is not the
+ * reader's to make (or their own account), a 404 or 409 is the account as it stands now, and a 422
+ * names the fields the form has. Anything else — no answer at all — exactly as it came.
+ */
+function withInPersonRefusal(failure: unknown): Observable<never> {
+  const read = failure instanceof HttpErrorResponse ? readApiError(failure) : failure;
+  if (!isApiFailure(read)) {
+    return throwError(() => failure);
+  }
+  switch (read.status) {
+    case 403:
+      return throwError(() => new InPersonRefusedError(read.message, 'forbidden'));
+    case 404:
+    case 409:
+      return throwError(() => new InPersonRefusedError(read.message, 'conflict'));
+    case 422:
+      return throwError(
+        () =>
+          new InPersonRefusedError(read.message, 'invalid', toInPersonFieldErrors(read.details)),
+      );
+    default:
+      return throwError(() => failure);
   }
 }
 

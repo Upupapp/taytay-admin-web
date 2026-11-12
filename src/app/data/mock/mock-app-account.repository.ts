@@ -26,7 +26,7 @@ import {
 import { denyUnless } from './mock-access';
 import { mockVerificationOf } from './mock-account-verification';
 import { MockLatency } from './mock-latency';
-import { MOCK_APP_ACCOUNTS } from './seed/app-accounts.seed';
+import { MockAppAccountStore } from './mock-app-account.store';
 import { MOCK_OFFICES } from './seed/offices.seed';
 
 /** The API's own ceiling on a page (`limit` maximum 50), kept so the mock pages like the server. */
@@ -47,7 +47,12 @@ export class MockAppAccountRepository implements AppAccountRepository {
   private readonly latency = inject(MockLatency);
   private readonly access = inject(ACCESS_CONTEXT);
 
-  private accounts: readonly AppAccount[] = MOCK_APP_ACCOUNTS;
+  /** Shared with the ID review's in-person check, which verifies an account too (`DL-219`). */
+  private readonly store = inject(MockAppAccountStore);
+
+  private get accounts(): readonly AppAccount[] {
+    return this.store.accounts;
+  }
 
   list(page: CursorRequest, filter: AppAccountFilter = {}): Observable<CursorPage<AppAccount>> {
     const denied = denyUnless<CursorPage<AppAccount>>(this.access.currentUser(), 'user.view');
@@ -184,9 +189,7 @@ export class MockAppAccountRepository implements AppAccountRepository {
   }
 
   private save(account: AppAccount): Observable<AppAccount> {
-    this.accounts = this.accounts.map((candidate) =>
-      candidate.id === account.id ? account : candidate,
-    );
+    this.store.save(account);
     return this.latency.respond(account);
   }
 }

@@ -1,0 +1,142 @@
+<app-modal
+  [open]="true"
+  size="medium"
+  [heading]="copy.heading"
+  [description]="copy.intro"
+  [dismissible]="!busy()"
+  (dismissed)="dismiss()"
+>
+  <div modal-body class="in-person">
+    @if (refusal(); as message) {
+      <div class="callout callout--danger" role="alert">
+        <p>{{ message }}</p>
+      </div>
+    }
+
+    <dl class="facts in-person__account">
+      <div>
+        <dt>{{ copy.accountName }}</dt>
+        <dd class="in-person__name">{{ subject().name }}</dd>
+      </div>
+    </dl>
+
+    <fieldset class="form-section">
+      <legend class="form-section__legend">{{ copy.idLegend }}</legend>
+
+      <div class="field-row">
+        <div class="field">
+          <label class="field__label" for="in-person-id-type">{{ copy.idType }}</label>
+          <select
+            id="in-person-id-type"
+            class="field__input"
+            [attr.aria-describedby]="describedBy().idType"
+            [attr.aria-invalid]="errors().idType === null ? null : 'true'"
+            [disabled]="busy()"
+            (change)="chooseType($event)"
+          >
+            <option value="" [selected]="idType() === null">{{ copy.idTypeChoose }}</option>
+            @for (type of types; track type) {
+              <option [value]="type" [selected]="type === idType()">{{ typeLabels[type] }}</option>
+            }
+          </select>
+          @if (errors().idType; as message) {
+            <p class="field__error" id="in-person-id-type-error">{{ message }}</p>
+          }
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="in-person-last-four">{{ copy.lastFour }}</label>
+          <input
+            id="in-person-last-four"
+            class="field__input"
+            type="text"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+            [attr.aria-describedby]="describedBy().idLastFour"
+            [attr.aria-invalid]="errors().idLastFour === null ? null : 'true'"
+            [value]="lastFour()"
+            [disabled]="busy()"
+            (input)="typeLastFour($event)"
+          />
+          <p class="field__hint" id="in-person-last-four-hint">{{ copy.lastFourHint }}</p>
+          @if (errors().idLastFour; as message) {
+            <p class="field__error" id="in-person-last-four-error">{{ message }}</p>
+          }
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="in-person-corrected">{{ copy.correctedLabel }}</label>
+        <input
+          id="in-person-corrected"
+          class="field__input"
+          type="text"
+          autocomplete="off"
+          [attr.maxlength]="nameMax"
+          [attr.aria-describedby]="describedBy().correctedName"
+          [attr.aria-invalid]="errors().correctedName === null ? null : 'true'"
+          [value]="corrected()"
+          [disabled]="busy()"
+          (input)="typeCorrected($event)"
+        />
+        <p class="field__hint" id="in-person-corrected-hint">{{ copy.correctedHint }}</p>
+        @if (errors().correctedName; as message) {
+          <p class="field__error" id="in-person-corrected-error">{{ message }}</p>
+        }
+      </div>
+    </fieldset>
+
+    <!-- What the server does, between the fields and the statement and button that do it. -->
+    <div class="effects" id="in-person-effects">
+      <p class="effects__lead">{{ copy.lead }}</p>
+      <ul>
+        @for (effect of effects(); track $index) {
+          <li>{{ effect }}</li>
+        }
+      </ul>
+    </div>
+
+    <div class="in-person__statement">
+      <label class="check">
+        <input
+          type="checkbox"
+          [attr.aria-describedby]="describedBy().idShowsName"
+          [attr.aria-invalid]="errors().idShowsName === null ? null : 'true'"
+          [checked]="seen()"
+          [disabled]="busy()"
+          (change)="tick($event)"
+        />
+        {{ copy.statement(named()) }}
+      </label>
+      <p class="field__hint" id="in-person-statement-hint">{{ copy.statementHint }}</p>
+      @if (errors().idShowsName; as message) {
+        <p class="field__error" id="in-person-statement-error">{{ message }}</p>
+      }
+    </div>
+
+    @if (!ready() && !busy()) {
+      <p class="status-line">{{ copy.waiting }}</p>
+    }
+  </div>
+
+  <button
+    type="button"
+    modal-actions
+    class="btn btn--secondary"
+    [disabled]="busy()"
+    (click)="dismiss()"
+  >
+    {{ copy.cancel }}
+  </button>
+  <button
+    type="button"
+    modal-actions
+    class="btn btn--primary"
+    aria-describedby="in-person-effects"
+    [disabled]="!ready()"
+    (click)="save()"
+  >
+    {{ busy() ? copy.saving : copy.confirm }}
+  </button>
+</app-modal>

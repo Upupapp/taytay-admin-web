@@ -10103,3 +10103,60 @@ no review move, the mapper's read, `imagesOf` and `approvalBar`, the adapter's r
 fetch, and the review's two sentences. Validated against 8 planted regressions.
 `tools/vendor-openapi.mjs` gained `--commit <rev>`, which copies the spec from that commit's tree, so
 another session's uncommitted backend work neither blocks a vendoring nor leaks into it.
+
+## DL-219 — a resident who declines the selfie is verified in person, from their account, with nothing biometric taken
+
+**Status:** Settled (12 November 2026). Backend `5209f75`. The owner's decision; this entry records
+how the console carries it.
+
+**Why.** RA 10173 s.3(b) asks for consent that is freely given, and the NPC treats the possibility of
+adverse consequences for refusing as making consent not free (Advisory 2023-01, Circular 2023-04).
+Since `44cae1b` the selfie needs its own biometric consent, so a resident who declined it had no way
+to be verified. The office already checks government IDs at the counter; the server now records
+that check (`POST admin/users/{id}/in-person-verifications`, key `verification.review`).
+
+**Decisions.**
+
+1. **From the account, not from the review queue.** The check needs the person and the ID at the
+   counter. Staff find a person by name in Users and roles; the ID review queue names nobody, by
+   design (`DL-197`). So the act is a section of the account panel, `AccountInPerson`, offered for
+   a resident account not yet verified (role `registered`) to a reader holding
+   `verification.review` — the same decision as approving an ID review, so no new key. It is not
+   offered for the reader's own account or one that gives no name, and the section says why. The
+   review only points to it ("verify them in person instead, from their account in Users and
+   roles"), because offering the form there would invite a check made without the person present.
+2. **A centred dialog, the form pattern** (`VerifyInPersonDialog`, in `shared/verification` because
+   two features may need it): the kind of ID from the app's own list; the last four characters,
+   with the hint that only these are recorded, never the whole number (`DL-183`) — no `maxlength`,
+   because a pasted full number cut to its first four would record the wrong four, so a longer
+   entry is refused in words instead; an optional name as the ID shows it (`DL-198`); the server's
+   effects; the statement "The ID shows the name “…”." worded as an approval words it (`DL-197`),
+   naming the corrected name when one is typed and unticked whenever it changes; then the button,
+   which waits for it.
+3. **What is said before the button:** the account becomes verified as an approval makes it, and
+   the resident can no longer change their name or birth date in the app; a waiting ID review is
+   closed as replaced and its selfie erased, a rejected one left alone; what is kept; "No photo or
+   biometric data is taken here."; no digital ID is issued, and a card photo, if the resident wants
+   a digital ID, is a separate step with its own consent when the card is issued (that step belongs
+   to the digital-ID module and is not built here); the resident's notification; the audit row
+   holds ids only. Nothing in the dialog can take an image: no camera, file field or `<img>`.
+4. **Refusals where they belong.** The adapter hands back `InPersonRefusedError`: a 403 (not the
+   reader's, or their own account), a 404 or 409 (gone, closed, already verified, not a resident's,
+   no name, the name changed) in the server's words above the fields with "Nothing was changed",
+   and a 422's `details` mapped to the form's own fields in the data layer, shown under the field
+   with `aria-invalid`. The press is a `WriteIntent`, kept while the same check is retried.
+5. **The record read back holds no ID characters**: `id_last_four` and `verified_by` are not read.
+   The panel shows the account as verified at once (the server's documented effect) and the list
+   is read again. The mock shares one account store between users and roles and the ID review, so
+   a counter check in the demo supersedes the request and verifies the account in both lists.
+6. **Verifying by role now points here.** Its effect says nothing records how the person was
+   checked, and to use "Verify in person" for a resident at the counter.
+
+**Checks.** `check:verification` rule 10 (the port, the JSON post through `toWireInPersonCheck`, the
+literal tick and no image in the body, no ID characters read back, no camera or file in the dialog,
+effects before statement before the one button that waits for it, the statement's wording and the
+four-character hint, the effects' no-biometric and separate-consent sentences): 11 planted
+regressions. `check:accounts` rule 10 (own account asked first and refused in `open`, confined to
+`registered` and `verification.review`, the shared dialog only, the panel offers it, the role
+effect points to it): 7 planted regressions. A console bound to no verification server shows
+`<app-not-connected>` in place of the button (`DL-175`).

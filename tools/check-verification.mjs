@@ -49,6 +49,17 @@
  *      selfie before asking for it; and the review says when it was erased, in place of the image,
  *      and why approval is not offered.
  *
+ * ## In person, nothing biometric is taken (`DL-219`)
+ *
+ *  10. The port's `verifyInPerson` takes the account, an `InPersonCheck` and a `WriteIntent`; the
+ *      http adapter posts it as JSON through `toWireInPersonCheck`, whose body carries the key, the
+ *      literal `id_shows_name: true` and no image field; the record read back holds no ID
+ *      characters; and the shared `VerifyInPersonDialog` has no camera, file or image, says only
+ *      the last four characters are recorded, puts the server's effects — no photo or biometric
+ *      data, a card photo a separate consented step — before the DL-197 statement and the
+ *      statement before the one button, which waits for it, and unticks it when the name changes.
+ *      Every file of the counter check is held to rules 1 and 5 like the review's.
+ *
  * Each rule was validated against a planted regression before being trusted.
  */
 
@@ -64,6 +75,11 @@ const shown = (file) => relative(ROOT, file).split(sep).join('/');
 const failures = [];
 
 const DOMAIN = join(APP, 'domain', 'verification', 'verification-request.ts');
+const IN_PERSON_DOMAIN = join(APP, 'domain', 'verification', 'in-person-verification.ts');
+const COUNTER = join(APP, 'shared', 'verification');
+const DIALOG = join(COUNTER, 'verify-in-person-dialog.ts');
+const DIALOG_TEMPLATE = join(COUNTER, 'verify-in-person-dialog.html');
+const DIALOG_COPY = join(COUNTER, 'verify-in-person.copy.ts');
 const FEATURE = join(APP, 'features', 'verification');
 const REVIEW = join(FEATURE, 'verification-review.ts');
 const REVIEW_TEMPLATE = join(FEATURE, 'verification-review.html');
@@ -72,7 +88,18 @@ const MAPPER = join(APP, 'data', 'http', 'mappers', 'verification.mapper.ts');
 const MOCK = join(APP, 'data', 'mock', 'mock-verification.repository.ts');
 const SEED = join(APP, 'data', 'mock', 'seed', 'verification-requests.seed.ts');
 
-for (const file of [DOMAIN, REVIEW, REVIEW_TEMPLATE, MAPPER, MOCK, SEED]) {
+for (const file of [
+  DOMAIN,
+  REVIEW,
+  REVIEW_TEMPLATE,
+  MAPPER,
+  MOCK,
+  SEED,
+  IN_PERSON_DOMAIN,
+  DIALOG,
+  DIALOG_TEMPLATE,
+  DIALOG_COPY,
+]) {
   if (!existsSync(file))
     failures.push(`${shown(file)} is missing, so nothing about it was checked.`);
 }
@@ -120,7 +147,9 @@ function methodBody(text, name) {
 const domain = code(read(DOMAIN));
 const moduleFiles = [
   ...walk(FEATURE),
+  ...walk(COUNTER),
   DOMAIN,
+  IN_PERSON_DOMAIN,
   MAPPER,
   MOCK,
   SEED,
@@ -255,7 +284,7 @@ if (
 
 /* ── 4. fetched only from the warning's own button ───────────────────────── */
 
-const featureCode = walk(FEATURE)
+const featureCode = [...walk(FEATURE), ...walk(COUNTER)]
   .filter((file) => file.endsWith('.ts'))
   .map((file) => ({ file, text: code(readFileSync(file, 'utf8')) }));
 const openCalls = featureCode.flatMap(({ file, text }) =>
@@ -467,6 +496,112 @@ if (
 ) {
   failures.push(
     'The review no longer says when the selfie was erased, in place of the image, or why approval is not offered.',
+  );
+}
+
+/* ── 10. in person, nothing biometric is taken ───────────────────────────── */
+
+const inPersonDomain = code(read(IN_PERSON_DOMAIN));
+const dialogCode = code(read(DIALOG));
+const dialogTemplate = read(DIALOG_TEMPLATE).replace(/<!--[\s\S]*?-->/g, '');
+const dialogCopy = read(DIALOG_COPY);
+const mapperCode = code(read(MAPPER));
+
+if (
+  port === null ||
+  !/verifyInPerson\(\s*accountId:\s*AppAccountId,\s*check:\s*InPersonCheck,\s*intent:\s*WriteIntent,?\s*\):\s*Observable<InPersonVerification>;/.test(
+    port,
+  )
+) {
+  failures.push(
+    'VerificationRepository.verifyInPerson must take the account, an InPersonCheck and a WriteIntent (DL-219).',
+  );
+}
+if (
+  !/this\s*\.\s*api\s*\.\s*post\(\s*`\$\{API_ENDPOINTS\.adminUsers\}\/\$\{accountId\}\/in-person-verifications`\s*,\s*toWireInPersonCheck\(check,\s*intent\)/.test(
+    httpClass,
+  ) ||
+  /postForm/.test(methodBody(httpClass, 'verifyInPerson') ?? '')
+) {
+  failures.push(
+    'HttpVerificationRepository.verifyInPerson must post JSON through toWireInPersonCheck to in-person-verifications: no form, no image.',
+  );
+}
+const wireBody = /export interface InPersonCheckWire \{([\s\S]*?)\n\}/.exec(mapperCode)?.[1] ?? '';
+if (
+  !/idempotency_key:\s*string;/.test(wireBody) ||
+  !/id_shows_name:\s*true;/.test(wireBody) ||
+  /image|selfie|photo|media|file/i.test(wireBody)
+) {
+  failures.push(
+    'InPersonCheckWire must carry the key and the literal id_shows_name: true, and no image of any kind.',
+  );
+}
+const recordBody =
+  /export interface InPersonVerification \{([\s\S]*?)\n\}/.exec(inPersonDomain)?.[1] ?? '';
+const readBack = /export function toInPersonVerification\([\s\S]*?\n\}/.exec(mapperCode)?.[0] ?? '';
+if (
+  recordBody === '' ||
+  /lastFour|last_four|number/i.test(recordBody) ||
+  /id_last_four/.test(readBack)
+) {
+  failures.push(
+    'The in-person record read back holds the ID’s characters. Nothing on screen needs them again (DL-183).',
+  );
+}
+if (
+  /type="file"|<video|<canvas|<img|getUserMedia|mediaDevices|capture=/i.test(
+    dialogTemplate + dialogCode,
+  )
+) {
+  failures.push('The counter check takes an image. Nothing biometric is taken in person (DL-219).');
+}
+const lastFourField = dialogTemplate.indexOf('id="in-person-last-four"');
+const effectsAt = dialogTemplate.indexOf('id="in-person-effects"');
+const statementAt = dialogTemplate.indexOf('type="checkbox"');
+const saveAt = dialogTemplate.indexOf('(click)="save()"');
+if (
+  lastFourField === -1 ||
+  effectsAt === -1 ||
+  statementAt === -1 ||
+  saveAt === -1 ||
+  !(lastFourField < effectsAt && effectsAt < statementAt && statementAt < saveAt) ||
+  [...dialogTemplate.matchAll(/save\(\)/g)].length !== 1 ||
+  !/copy\s*\.\s*statement\(named\(\)\)/.test(dialogTemplate) ||
+  !/@for \(effect of effects\(\); track \$index\)/.test(dialogTemplate)
+) {
+  failures.push(
+    "The counter check's effects, then its statement, no longer come before the one button that makes it (DL-219).",
+  );
+}
+if (
+  !/\[disabled\]="!ready\(\)"/.test(dialogTemplate) ||
+  !/ready\s*=\s*computed\([\s\S]*?this\s*\.\s*seen\s*\(\s*\)[\s\S]*?\);/.test(dialogCode) ||
+  !/this\s*\.\s*seen\s*\.\s*set\(\s*false\s*\)/.test(methodBody(dialogCode, 'typeCorrected') ?? '')
+) {
+  failures.push(
+    'The counter check no longer waits for the statement, or keeps it ticked for a name it does not name.',
+  );
+}
+if (
+  !/statement:\s*\(name: string\): string =>\s*`The ID shows the name “\$\{name\}”\.`/.test(
+    dialogCopy,
+  ) ||
+  !/lastFourHint:[\s\S]{0,40}'Only these four are recorded, never the whole number/.test(dialogCopy)
+) {
+  failures.push(
+    'The counter check no longer words its statement as an approval does (DL-197), or no longer says only four characters are recorded (DL-183).',
+  );
+}
+const effectsList = inPersonDomain.slice(inPersonDomain.indexOf('export const IN_PERSON_EFFECTS'));
+if (
+  !/No photo or biometric data is taken here/.test(effectsList) ||
+  !/separate step with its own consent/.test(effectsList) ||
+  !/selfie is erased/.test(effectsList) ||
+  !/IN_PERSON_EFFECTS/.test(dialogCode)
+) {
+  failures.push(
+    'IN_PERSON_EFFECTS no longer says no photo or biometric data is taken, that a card photo is its own consented step, or that a waiting selfie is erased.',
   );
 }
 

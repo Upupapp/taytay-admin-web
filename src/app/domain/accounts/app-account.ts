@@ -127,8 +127,9 @@ export const ROLE_CHANGE_EFFECTS: Readonly<Record<AccountRole, readonly string[]
     'It can no longer use this console, if it could.',
   ],
   verified: [
-    'The account is marked verified now, without an ID review. Do this only where the office has ' +
-      'verified the person some other way.',
+    'The account is marked verified now, without an ID review, and nothing records how the ' +
+      'person was checked. For a resident at the counter with a government ID, use “Verify in ' +
+      'person” instead: it keeps the kind of ID and the name it shows.',
     'No digital ID is issued by this change: an approved ID review issues one, a role change does ' +
       'not.',
     'It can no longer use this console, if it could.',

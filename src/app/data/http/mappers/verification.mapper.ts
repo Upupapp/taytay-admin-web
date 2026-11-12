@@ -2,12 +2,17 @@ import {
   VERIFICATION_STATUSES,
   type AppAccountId,
   type IdDocumentType,
+  type InPersonCheck,
+  type InPersonField,
+  type InPersonVerification,
+  type InPersonVerificationId,
   type MediaId,
   type VerificationRequest,
   type VerificationRequestId,
+  type WriteIntent,
 } from '@domain/index';
 
-import { date, dateTime, field, id, oneOf, str } from './wire';
+import { date, dateTime, field, flag, id, oneOf, str } from './wire';
 
 /** The API's ID types are `snake_case`; the domain's are kebab case, like every other union. */
 const ID_TYPE_BY_WIRE: Readonly<Record<string, IdDocumentType>> = {
@@ -111,4 +116,107 @@ export function toVerificationRequest(wire: unknown): VerificationRequest | null
           }
         : null,
   };
+}
+
+/** The domain's ID types back to the API's `snake_case`: `ID_TYPE_BY_WIRE`, the other way. */
+const ID_TYPE_TO_WIRE: Readonly<Record<IdDocumentType, string>> = {
+  philid: 'philid',
+  'drivers-license': 'drivers_license',
+  passport: 'passport',
+  umid: 'umid',
+  postal: 'postal',
+  voters: 'voters',
+  sss: 'sss',
+  other: 'other',
+};
+
+/** `InPersonVerificationInput` at `5209f75`. Strict on the server: nothing else is accepted. */
+export interface InPersonCheckWire {
+  readonly idempotency_key: string;
+  readonly id_type: string;
+  readonly id_last_four: string;
+  readonly confirmed_name: string;
+  readonly id_shows_name: true;
+  readonly corrected_name?: string;
+}
+
+/**
+ * `InPersonCheck` → its wire body (`DL-219`). `id_shows_name` is the literal the API demands: the
+ * button that sends it waited for the reviewer's tick. `corrected_name` is left out, never sent
+ * empty, when the ID shows the account's name — the schema refuses an empty one. No image field
+ * exists to fill: the operation takes none.
+ */
+export function toWireInPersonCheck(check: InPersonCheck, intent: WriteIntent): InPersonCheckWire {
+  const body: InPersonCheckWire = {
+    idempotency_key: intent.key,
+    id_type: ID_TYPE_TO_WIRE[check.idType],
+    id_last_four: check.idLastFour,
+    confirmed_name: check.confirmedName,
+    id_shows_name: true,
+  };
+  return check.correctedName === null ? body : { ...body, corrected_name: check.correctedName };
+}
+
+/**
+ * `InPersonVerification` → the domain's (`DL-219`). Every field the screen uses is one the spec
+ * requires, so a missing one is the API breaking its contract and the record is not readable.
+ *
+ * **Not read**: `id_last_four` (nothing here shows it again, and a screen that cannot receive it
+ * cannot leak it) and `verified_by` (an account id nobody here can name; the server's audit trail
+ * records who). `method` is checked to be `in-person` and otherwise not kept.
+ *
+ * @consumes POST admin/users/{id}/in-person-verifications
+ */
+export function toInPersonVerification(wire: unknown): InPersonVerification | null {
+  const recordId = id<InPersonVerificationId>(field(wire, 'id'));
+  const accountId = id<AppAccountId>(field(wire, 'user_id'));
+  const idType = ID_TYPE_BY_WIRE[str(field(wire, 'id_type')) ?? ''] ?? null;
+  const nameCorrected = flag(field(wire, 'name_corrected'));
+  const verifiedAt = dateTime(field(wire, 'verified_at'));
+
+  if (
+    recordId === null ||
+    accountId === null ||
+    str(field(wire, 'method')) !== 'in-person' ||
+    idType === null ||
+    nameCorrected === null ||
+    verifiedAt === null
+  ) {
+    return null;
+  }
+
+  return {
+    id: recordId,
+    accountId,
+    idType,
+    nameCorrected,
+    supersededRequestId: id<VerificationRequestId>(field(wire, 'superseded_request_id')),
+    verifiedAt,
+  };
+}
+
+/** The API's names for the fields a counter check can be refused on, in the domain's terms. */
+const IN_PERSON_FIELD_BY_WIRE: Readonly<Record<string, InPersonField>> = {
+  id_type: 'idType',
+  id_last_four: 'idLastFour',
+  corrected_name: 'correctedName',
+  id_shows_name: 'idShowsName',
+};
+
+/**
+ * A 422's `details`, read as the form's fields: the first sentence the server gave for each field
+ * the form has. A key the form has no field for is left out, and the refusal's message says it.
+ */
+export function toInPersonFieldErrors(
+  details: Readonly<Record<string, readonly string[]>> | null,
+): Partial<Record<InPersonField, string>> {
+  const fields: Partial<Record<InPersonField, string>> = {};
+  for (const [key, sentences] of Object.entries(details ?? {})) {
+    const named = IN_PERSON_FIELD_BY_WIRE[key];
+    const sentence = sentences[0];
+    if (named !== undefined && sentence !== undefined) {
+      fields[named] = sentence;
+    }
+  }
+  return fields;
 }

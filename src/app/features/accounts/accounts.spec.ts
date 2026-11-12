@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { of, throwError, type Observable } from 'rxjs';
+import { EMPTY, of, throwError, type Observable } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionService } from '@core/access/permission.service';
@@ -32,7 +32,19 @@ import {
   type OfficeRoleChange,
   type Permission,
   type StaffRole,
+  type InPersonCheck,
+  type InPersonVerification,
+  type InPersonVerificationId,
+  type VerificationRepository,
+  type VerificationRequestId,
+  type WriteIntent,
+  asIsoDateTime,
+  IN_PERSON_EFFECTS,
+  UNSERVED_PORTS,
+  VERIFICATION_REPOSITORY,
+  type DataPort,
 } from '@domain/index';
+import { VERIFY_IN_PERSON_COPY } from '@shared/verification/verify-in-person.copy';
 import { ready } from '@shared/state/view-state';
 
 import { AccountOfficeRole } from './account-office-role';
@@ -142,10 +154,43 @@ class RecordingAccounts implements AppAccountRepository {
   }
 }
 
+/** The counter checks the in-person dialog sends (`DL-219`); the rest of the port is unused here. */
+class RecordingChecks implements Pick<VerificationRepository, 'verifyInPerson'> {
+  readonly sent: { accountId: AppAccountId; check: InPersonCheck; intent: WriteIntent }[] = [];
+  superseding = false;
+
+  verifyInPerson(
+    accountId: AppAccountId,
+    check: InPersonCheck,
+    intent: WriteIntent,
+  ): Observable<InPersonVerification> {
+    this.sent.push({ accountId, check, intent });
+    return of({
+      id: asId<InPersonVerificationId>('in-person-1'),
+      accountId,
+      idType: check.idType,
+      nameCorrected: check.correctedName !== null,
+      supersededRequestId: this.superseding ? asId<VerificationRequestId>('vr-1') : null,
+      verifiedAt: asIsoDateTime('2026-11-12T03:15:00.000Z'),
+    });
+  }
+}
+
+let checks = new RecordingChecks();
+
 function configure(
   granted: readonly Permission[] = ['user.view', 'user.change-role', 'user.assign-office'],
+  unserved: readonly DataPort[] = [],
 ): RecordingAccounts {
   const repository = new RecordingAccounts();
+  checks = new RecordingChecks();
+  const verifications: VerificationRepository = {
+    list: () => EMPTY,
+    approve: () => EMPTY,
+    reject: () => EMPTY,
+    openImage: () => EMPTY,
+    verifyInPerson: (accountId, check, intent) => checks.verifyInPerson(accountId, check, intent),
+  };
   const offices: OfficeRepository = { list: () => of(OFFICES) };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -153,6 +198,8 @@ function configure(
       provideRouter([]),
       { provide: APP_ACCOUNT_REPOSITORY, useValue: repository },
       { provide: OFFICE_REPOSITORY, useValue: offices },
+      { provide: VERIFICATION_REPOSITORY, useValue: verifications },
+      { provide: UNSERVED_PORTS, useValue: unserved },
       { provide: SessionStore, useValue: { user: signal({ id: READER }) } },
       {
         provide: PermissionService,
@@ -231,8 +278,13 @@ describe('AccountsPage (DL-168)', () => {
 
 /* ── one account ─────────────────────────────────────────────────────────── */
 
-function panel(subject: AppAccount, own = false, granted?: readonly Permission[]) {
-  const repository = configure(granted);
+function panel(
+  subject: AppAccount,
+  own = false,
+  granted?: readonly Permission[],
+  unserved: readonly DataPort[] = [],
+) {
+  const repository = configure(granted, unserved);
   const fixture = TestBed.createComponent(AccountPanel);
   fixture.componentRef.setInput('account', subject);
   fixture.componentRef.setInput('offices', ready(OFFICES));
@@ -696,5 +748,97 @@ describe('AccountNameCorrection (DL-198)', () => {
     expect(liveRegion(element)).toBe(
       ACCOUNTS_COPY.nameCorrection.notDone('The account’s name is not the one shown.'),
     );
+  });
+});
+
+describe('AccountInPerson (DL-219)', () => {
+  const REVIEWER: readonly Permission[] = ['user.view', 'user.change-role', 'verification.review'];
+  const section = (element: HTMLElement) =>
+    element.querySelector('[aria-labelledby="account-in-person"]');
+
+  it('is offered for a resident not yet verified, and only to a reader who reviews IDs', async () => {
+    const resident = panel(account('r', 'registered'), false, REVIEWER);
+    expect(section(await settle(resident.fixture))).not.toBeNull();
+
+    for (const role of ['verified', 'staff', 'admin'] as const) {
+      const other = panel(account(`x-${role}`, role), false, REVIEWER);
+      expect(section(await settle(other.fixture))).toBeNull();
+    }
+    const noKey = panel(account('r', 'registered'));
+    expect(section(await settle(noKey.fixture))).toBeNull();
+  });
+
+  it('says why an account with no name, or the reader’s own, cannot be checked', async () => {
+    const nameless = panel({ ...account('r', 'registered'), name: null }, false, REVIEWER);
+    const element = await settle(nameless.fixture);
+    expect(section(element)?.textContent).toContain(ACCOUNTS_COPY.inPerson.noName);
+    expect(buttonNamed(element, ACCOUNTS_COPY.inPerson.open)).toBeNull();
+
+    const own = panel(account('r', 'registered'), true, REVIEWER);
+    const mine = await settle(own.fixture);
+    expect(section(mine)?.textContent).toContain(ACCOUNTS_COPY.inPerson.ownAccount);
+    expect(buttonNamed(mine, ACCOUNTS_COPY.inPerson.open)).toBeNull();
+  });
+
+  it('says so in place, and offers nothing, when no server serves the ID review', async () => {
+    const { fixture } = panel(account('r', 'registered'), false, REVIEWER, ['verification']);
+    const element = await settle(fixture);
+
+    expect(section(element)?.querySelector('app-not-connected')).not.toBeNull();
+    expect(buttonNamed(element, ACCOUNTS_COPY.inPerson.open)).toBeNull();
+  });
+
+  it('opens the counter form as a dialog, and says what the server does in it', async () => {
+    const { fixture } = panel(account('r', 'registered'), false, REVIEWER);
+    const element = await settle(fixture);
+
+    buttonNamed(element, ACCOUNTS_COPY.inPerson.open)?.click();
+    await settle(fixture);
+
+    const dialog = document.body.querySelector('[role="dialog"]');
+    expect(dialog?.textContent).toContain('Person r');
+    for (const effect of IN_PERSON_EFFECTS) expect(dialog?.textContent).toContain(effect);
+    expect(dialog?.querySelector('input[type="file"], video, img')).toBeNull();
+  });
+
+  it('verifies the account, shows it as verified and says what was done', async () => {
+    const { fixture } = panel(account('r', 'registered'), false, REVIEWER);
+    checks.superseding = true;
+    const changed: AppAccount[] = [];
+    fixture.componentInstance.changed.subscribe((next) => changed.push(next));
+    const element = await settle(fixture);
+
+    buttonNamed(element, ACCOUNTS_COPY.inPerson.open)?.click();
+    await settle(fixture);
+    const body = document.body;
+    const select = body.querySelector<HTMLSelectElement>('#in-person-id-type');
+    const four = body.querySelector<HTMLInputElement>('#in-person-last-four');
+    const box = body.querySelector<HTMLInputElement>('.in-person__statement input');
+    if (select === null || four === null || box === null) throw new Error('no counter form');
+    select.value = 'umid';
+    select.dispatchEvent(new Event('change'));
+    four.value = '0042';
+    four.dispatchEvent(new Event('input'));
+    await settle(fixture);
+    box.checked = true;
+    box.dispatchEvent(new Event('change'));
+    await settle(fixture);
+    buttonNamed(body, VERIFY_IN_PERSON_COPY.confirm)?.click();
+    await settle(fixture);
+
+    expect(checks.sent.map(({ accountId, check }) => ({ accountId, check }))).toEqual([
+      {
+        accountId: 'r',
+        check: {
+          idType: 'umid',
+          idLastFour: '0042',
+          confirmedName: 'Person r',
+          correctedName: null,
+        },
+      },
+    ]);
+    expect(changed.map((next) => next.role)).toEqual(['verified']);
+    expect(liveRegion(element)).toBe(ACCOUNTS_COPY.inPerson.doneSuperseded);
+    expect(document.body.querySelector('#in-person-id-type')).toBeNull();
   });
 });

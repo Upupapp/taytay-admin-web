@@ -158,6 +158,14 @@
       (announced)="outcome.set($event)"
     />
 
+    <!-- Its own section, for a resident not yet verified: checked at the counter (DL-219). -->
+    <app-account-in-person
+      [account]="account()"
+      [own]="own()"
+      (changed)="changed.emit($event)"
+      (announced)="outcome.set($event)"
+    />
+
     <!-- Its own section, for a verified account only: a checked name changes here alone (DL-198). -->
     <app-account-name-correction
       [account]="account()"

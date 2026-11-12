@@ -6,18 +6,23 @@ import {
   ACCESS_CONTEXT,
   asId,
   identityToConfirm,
+  isInPersonRefused,
   isPermissionDenied,
+  WriteIntent,
   ROLE_DEFINITIONS,
   type AccessContext,
   type AuthenticatedUser,
   type Permission,
   type StaffRole,
   type StaffUserId,
+  type AppAccountId,
+  type InPersonCheck,
   type VerificationRequest,
   type VerificationRequestId,
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
 
+import { MockAppAccountStore } from './mock-app-account.store';
 import { MockVerificationRepository } from './mock-verification.repository';
 import { SAMPLE_IMAGE_MARKER } from './seed/verification-requests.seed';
 
@@ -35,10 +40,10 @@ const TEST_ENVIRONMENT: AppEnvironment = {
   enableDevTools: false,
 };
 
-function signedInAs(role: StaffRole): MockVerificationRepository {
+function signedInAs(role: StaffRole, id = 'staff-x'): MockVerificationRepository {
   const definition = ROLE_DEFINITIONS[role];
   const user: AuthenticatedUser = {
-    id: asId<StaffUserId>('staff-x'),
+    id: asId<StaffUserId>(id),
     displayName: 'Test User',
     email: 'test@example.gov.ph',
     role,
@@ -195,6 +200,111 @@ describe('MockVerificationRepository', () => {
       firstValueFrom(repository.approve(erased.id, 'Selfie matches the ID photo.', identity)),
     ).rejects.toThrow(/withdrew their consent/);
     expect(await firstValueFrom(repository.openImage(erased, 'id-front'))).toBeInstanceOf(Blob);
+  });
+
+  describe('verifying an account in person (DL-219)', () => {
+    /** Rowena Samonte: a resident's account with a selfie request waiting, in both seeds. */
+    const ROWENA = asId<AppAccountId>('app-account-0012');
+    const check = (over: Partial<InPersonCheck> = {}): InPersonCheck => ({
+      idType: 'sss',
+      idLastFour: '4C7K',
+      confirmedName: 'Rowena Samonte',
+      correctedName: null,
+      ...over,
+    });
+    const refusalOf = (work: Promise<unknown>): Promise<unknown> =>
+      work.catch((error: unknown) => error);
+
+    it('verifies the account and supersedes its waiting request, erasing the selfie', async () => {
+      const repository = signedInAs('system-administrator');
+      const record = await firstValueFrom(
+        repository.verifyInPerson(ROWENA, check(), new WriteIntent()),
+      );
+
+      expect(record.supersededRequestId).toBe('vr-0008');
+      expect(record.nameCorrected).toBe(false);
+      expect(TestBed.inject(MockAppAccountStore).find(ROWENA)?.role).toBe('verified');
+      const closed = await firstValueFrom(repository.list({ status: 'superseded' }, { limit: 50 }));
+      const superseded = closed.items.find((item) => item.id === 'vr-0008');
+      expect(superseded?.selfieErasedAt).not.toBeNull();
+      expect(superseded?.reviewNote).toMatch(/verified this account in person/);
+    });
+
+    it('answers a retry under the same key with the first record, and refuses the key reused', async () => {
+      const repository = signedInAs('system-administrator');
+      const intent = new WriteIntent();
+      const first = await firstValueFrom(repository.verifyInPerson(ROWENA, check(), intent));
+      const again = await firstValueFrom(repository.verifyInPerson(ROWENA, check(), intent));
+      expect(again).toEqual(first);
+
+      const reused = await refusalOf(
+        firstValueFrom(repository.verifyInPerson(ROWENA, check({ idLastFour: '9999' }), intent)),
+      );
+      expect(reused).toMatchObject({ kind: 'conflict', message: expect.stringMatching(/key/) });
+    });
+
+    it('corrects the name in the same act when the ID shows another', async () => {
+      const repository = signedInAs('system-administrator');
+      const record = await firstValueFrom(
+        repository.verifyInPerson(
+          ROWENA,
+          check({ correctedName: 'Rowena Samonte Cruz' }),
+          new WriteIntent(),
+        ),
+      );
+      expect(record.nameCorrected).toBe(true);
+      expect(TestBed.inject(MockAppAccountStore).find(ROWENA)?.name).toBe('Rowena Samonte Cruz');
+    });
+
+    it.each([
+      ['app-account-0004', 'Danilo Ferrer', /already verified/],
+      ['app-account-0001', 'Teresita Valdez', /Only a resident’s account/],
+      ['app-account-0006', 'Anybody', /gives no name/],
+      ['app-account-0012', 'Somebody Else', /not the one confirmed/],
+      ['app-account-9999', 'Nobody', /not found/],
+    ])('refuses %s as the API does, changing nothing', async (key, name, words) => {
+      const repository = signedInAs('system-administrator');
+      const refusal = await refusalOf(
+        firstValueFrom(
+          repository.verifyInPerson(
+            asId<AppAccountId>(key),
+            check({ confirmedName: name }),
+            new WriteIntent(),
+          ),
+        ),
+      );
+      expect(isInPersonRefused(refusal)).toBe(true);
+      expect(refusal).toMatchObject({ kind: 'conflict', message: expect.stringMatching(words) });
+      expect(TestBed.inject(MockAppAccountStore).find(ROWENA)?.role).toBe('registered');
+    });
+
+    it('refuses more than four characters on the field, and the reader’s own account', async () => {
+      const repository = signedInAs('system-administrator');
+      const long = await refusalOf(
+        firstValueFrom(
+          repository.verifyInPerson(ROWENA, check({ idLastFour: '12345' }), new WriteIntent()),
+        ),
+      );
+      expect(long).toMatchObject({ kind: 'invalid', fields: { idLastFour: expect.any(String) } });
+
+      const own = await refusalOf(
+        firstValueFrom(
+          signedInAs('system-administrator', 'app-account-0012').verifyInPerson(
+            ROWENA,
+            check(),
+            new WriteIntent(),
+          ),
+        ),
+      );
+      expect(own).toMatchObject({ kind: 'forbidden' });
+    });
+
+    it('re-checks the grant, because hiding the button is not protection', async () => {
+      const refusal = await refusalOf(
+        firstValueFrom(signedInAs('mswdo-head').verifyInPerson(ROWENA, check(), new WriteIntent())),
+      );
+      expect(isPermissionDenied(refusal)).toBe(true);
+    });
   });
 
   it('hands over a drawn placeholder that says it is a sample, never a photograph', async () => {

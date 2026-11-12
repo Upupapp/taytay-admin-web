@@ -73,6 +73,8 @@ export type IdentityResolutionId = Branded<string, 'IdentityResolutionId'>;
 export type DuplicatePairId = Branded<string, 'DuplicatePairId'>;
 /** A residents' app identity review (`DL-167`). */
 export type VerificationRequestId = Branded<string, 'VerificationRequestId'>;
+/** An account verified in person, against an ID shown at the counter (`DL-219`). */
+export type InPersonVerificationId = Branded<string, 'InPersonVerificationId'>;
 /**
  * An account in the residents' app. **Not a `ResidentId`**: an app account is a person with a phone,
  * not a record in the office's registry, and the two are kept apart on purpose (`DL-164`).

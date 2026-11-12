@@ -1,0 +1,20 @@
+@if (applies() && canVerify()) {
+  <section class="subpanel panel__block" aria-labelledby="account-in-person">
+    <h3 id="account-in-person" class="section-title">{{ copy.heading }}</h3>
+    <p class="panel__note">{{ copy.intro }}</p>
+
+    @if (own()) {
+      <p class="panel__note">{{ copy.ownAccount }}</p>
+    } @else if (!servesVerification) {
+      <app-not-connected port="verification" />
+    } @else if (subject() === null) {
+      <p class="panel__note">{{ copy.noName }}</p>
+    } @else {
+      <button type="button" class="btn btn--primary" (click)="open()">{{ copy.open }}</button>
+    }
+  </section>
+
+  @if (servesVerification && opened() && subject(); as who) {
+    <app-verify-in-person-dialog [subject]="who" (verified)="done($event)" (dismissed)="close()" />
+  }
+}
