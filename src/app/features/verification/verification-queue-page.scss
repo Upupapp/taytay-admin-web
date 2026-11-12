@@ -59,3 +59,11 @@
   color: var(--red-ink);
   font-size: var(--fs-label);
 }
+
+/* Under the status, in words: a request whose selfie is gone cannot be approved (DL-218). */
+.queue__erased {
+  display: block;
+  margin-block-start: var(--space-1);
+  color: var(--muted);
+  font-size: var(--fs-label);
+}

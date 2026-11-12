@@ -16,6 +16,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin, map } from 'rxjs';
 
 import {
+  approvalBar,
   awaitsReview,
   ID_DOCUMENT_TYPE_LABELS,
   identityToConfirm,
@@ -82,6 +83,13 @@ interface OpenedImage {
  * read; the server refuses if the account no longer matches. An account with no name cannot be
  * approved at all: approval is not offered, and the screen says why.
  *
+ * ## An erased selfie is said, never fetched
+ *
+ * When the resident withdrew the biometric consent, or the office verified them in person, the
+ * server erased the selfie (`DL-218`). The review then says when, in place of the image, and never
+ * asks for it: `imagesOf` leaves it out, so only the ID is offered behind the warning. Approval is
+ * not offered either — the server refuses it with a 409 — and the screen says why.
+ *
  * The decision is not gated on having opened the images. A reviewer who has not is told so, beside
  * the button: a warning rather than a block, as elsewhere here (`DL-91`), because a rejection can
  * rest on what the resident wrote.
@@ -146,6 +154,17 @@ export class VerificationReview {
   protected readonly outcome = signal('');
 
   protected readonly idTypeLabel = computed(() => ID_DOCUMENT_TYPE_LABELS[this.request().idType]);
+  /** Why approval is not offered, when it is not: no name to check, or no selfie to see. */
+  protected readonly approvalBar = computed(() => approvalBar(this.request()));
+  /** When the selfie was erased, in words, or `null` while it is still held. */
+  protected readonly erasedOn = computed(() => {
+    const at = this.request().selfieErasedAt;
+    return at === null ? null : formatDate(at, 'd MMM y, HH:mm', this.locale);
+  });
+  /** The warning names what is about to appear: an ID alone once the selfie is gone. */
+  protected readonly warningSentences = computed(() =>
+    this.erasedOn() === null ? this.copy.warning : this.copy.warningIdOnly,
+  );
   protected readonly decidable = computed(() => awaitsReview(this.request()));
   protected readonly imageCount = computed(() => imagesOf(this.request()).length);
 

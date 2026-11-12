@@ -466,7 +466,8 @@
         "id_back_media_id",
         "message",
         "notes",
-        "reviewed_at"
+        "reviewed_at",
+        "selfie_erased_at"
       ]
     },
     {
@@ -488,7 +489,8 @@
         "id_back_media_id",
         "message",
         "notes",
-        "reviewed_at"
+        "reviewed_at",
+        "selfie_erased_at"
       ]
     },
     {
@@ -510,7 +512,8 @@
         "id_back_media_id",
         "message",
         "notes",
-        "reviewed_at"
+        "reviewed_at",
+        "selfie_erased_at"
       ]
     },
     {

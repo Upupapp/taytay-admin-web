@@ -34,6 +34,7 @@ function request(n: number, status: VerificationStatus = 'pending'): Verificatio
       idBack: n % 2 === 0 ? null : asId<MediaId>(`media-${n}-back`),
       selfie: asId<MediaId>(`media-${n}-selfie`),
     },
+    selfieErasedAt: null,
     status,
     submittedAt: `2026-11-0${n}T00:00:00.000Z` as VerificationRequest['submittedAt'],
     reviewedAt: null,
@@ -54,12 +55,17 @@ class RecordingVerifications implements VerificationRepository {
   }[] = [];
   /** What a decision fails with, or `null` to record it. */
   failWith: unknown = null;
+  /** The first page's rows, when a test needs others than the default two. */
+  page: readonly VerificationRequest[] | null = null;
 
   list(
     filter: VerificationFilter,
     page: CursorRequest,
   ): Observable<CursorPage<VerificationRequest>> {
     this.listed.push({ filter, page });
+    if (this.page !== null && !page.cursor) {
+      return of({ items: this.page, hasMore: false, nextCursor: null });
+    }
     return of(
       page.cursor
         ? { items: [request(3)], hasMore: false, nextCursor: null }
@@ -101,6 +107,9 @@ class RecordingVerifications implements VerificationRepository {
 
 const created: string[] = [];
 const revoked: string[] = [];
+
+/** When a selfie was erased, in the fixtures below (`DL-218`). */
+const ERASED_AT = '2026-11-03T09:10:00.000Z' as VerificationRequest['submittedAt'];
 
 beforeEach(() => {
   created.length = 0;
@@ -212,6 +221,28 @@ describe('VerificationQueuePage', () => {
       [],
       expect.objectContaining({ queryParams: { status: 'approved' } }),
     );
+  });
+
+  it('offers the superseded status in its filter, and says under a status when a selfie is gone', async () => {
+    const repository = configure();
+    repository.page = [
+      request(1),
+      { ...request(2), selfieErasedAt: ERASED_AT },
+      { ...request(3, 'superseded'), selfieErasedAt: ERASED_AT },
+    ];
+    const fixture = TestBed.createComponent(VerificationQueuePage);
+    const element = await settle(fixture);
+
+    const options = [...element.querySelectorAll<HTMLOptionElement>('#verification-status option')];
+    expect(options.map((option) => option.value)).toContain('superseded');
+    expect(options.map((option) => option.textContent?.trim())).toContain(
+      'Replaced by an in-person check',
+    );
+    const rows = [...element.querySelectorAll('tbody tr')].map((row) => row.textContent ?? '');
+    expect(rows[0]).not.toContain(VERIFICATION_COPY.queue.selfieErased);
+    expect(rows[1]).toContain(VERIFICATION_COPY.queue.selfieErased);
+    expect(rows[2]).toContain('Replaced by an in-person check');
+    expect(rows[2]).toContain(VERIFICATION_COPY.queue.selfieErased);
   });
 
   it('opens a review beside the list, named for when the request was sent', async () => {
@@ -457,6 +488,64 @@ describe('VerificationReview', () => {
     expect(element.querySelector('.transition__select')).toBeNull();
     expect(element.textContent).toContain(VERIFICATION_COPY.review.alreadyDecided);
     expect(element.textContent).not.toContain(VERIFICATION_COPY.review.accountHeading);
+  });
+
+  describe('a selfie the server erased (DL-218)', () => {
+    const erased = (): VerificationRequest => ({ ...request(1), selfieErasedAt: ERASED_AT });
+
+    it('says when it was erased, in place of the image, and never asks for it', async () => {
+      const { repository, fixture } = review(erased());
+      const element = await settle(fixture);
+
+      expect(element.querySelector('.review__erased')?.textContent).toMatch(
+        /^\s*Selfie erased on 3 Nov 2026, \d\d:\d\d \(consent withdrawn or replaced\)\.\s*$/,
+      );
+      expect(buttonNamed(element, VERIFICATION_COPY.review.openImages)).toBeNull();
+      buttonNamed(element, VERIFICATION_COPY.review.openIdOnly)?.click();
+      await settle(fixture);
+
+      expect(document.body.textContent).toContain(
+        'You are about to see a resident’s government ID.',
+      );
+      expect(document.body.textContent).not.toContain('photograph of their face');
+      buttonNamed(document.body, VERIFICATION_COPY.review.warningProceed)?.click();
+      await settle(fixture);
+
+      expect(repository.opened).toEqual(['id-front', 'id-back']);
+      expect([...element.querySelectorAll('img')].map((image) => image.alt)).toEqual([
+        'Front of the ID',
+        'Back of the ID',
+      ]);
+    });
+
+    it('offers no approval, and says the server refuses one and why', async () => {
+      const { fixture } = review(erased());
+      const element = await settle(fixture);
+
+      const options = [
+        ...element.querySelectorAll<HTMLOptionElement>('.transition__select option'),
+      ].map((option) => option.value);
+      expect(options).toEqual(['', 'rejected']);
+      expect(element.textContent).toContain('the server refuses to approve this request');
+      expect(element.textContent).toContain('withdrew their consent');
+    });
+
+    it('shows a superseded request as closed, with the server’s note and no decision', async () => {
+      const { fixture } = review({
+        ...request(1, 'superseded'),
+        selfieErasedAt: ERASED_AT,
+        reviewedAt: ERASED_AT,
+        reviewNote: 'Closed without a decision: the office verified this account in person.',
+      });
+      const element = await settle(fixture);
+
+      expect(element.querySelector('.transition__select')).toBeNull();
+      expect(element.textContent).toContain(VERIFICATION_COPY.review.supersededSaid);
+      expect(element.textContent).toContain(VERIFICATION_COPY.review.reviewNoteSuperseded);
+      expect(element.textContent).toContain('Replaced by an in-person check');
+      expect(element.querySelector('.review__erased')).not.toBeNull();
+      expect(element.textContent).not.toContain(VERIFICATION_COPY.review.accountHeading);
+    });
   });
 
   describe('the name the account gives (DL-197)', () => {

@@ -14,6 +14,7 @@ import SIGNED_OUT from './signed-out.json';
 import VALIDATION_FAILED from './validation-failed.json';
 import VERIFICATION_APPROVED from './verification-approved.json';
 import VERIFICATION_REJECTED from './verification-rejected.json';
+import VERIFICATION_SUPERSEDED from './verification-superseded.json';
 import VERIFICATION_REQUESTS_PAGE from './verification-requests-page.json';
 import OFFICES_PAGE from './offices-page.json';
 import THREAD from './thread.json';
@@ -284,6 +285,7 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['verification-requests-page', VERIFICATION_REQUESTS_PAGE, 'VerificationStaffListEnvelope'],
     ['verification-approved', VERIFICATION_APPROVED, 'VerificationStaffEnvelope'],
     ['verification-rejected', VERIFICATION_REJECTED, 'VerificationStaffEnvelope'],
+    ['verification-superseded', VERIFICATION_SUPERSEDED, 'VerificationStaffEnvelope'],
     ['threads-page', THREADS_PAGE, 'ThreadListEnvelope'],
     ['thread', THREAD, 'ThreadEnvelope'],
     ['thread-messages-page', THREAD_MESSAGES_PAGE, 'MessageListEnvelope'],

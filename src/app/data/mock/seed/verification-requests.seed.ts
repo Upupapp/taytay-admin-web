@@ -34,6 +34,10 @@ interface SeedRow {
   /** What the account gives; read only while pending, as the API sends it (`DL-197`). */
   readonly accountName?: string | null;
   readonly accountBirthDate?: string;
+  /** An account in `MOCK_APP_ACCOUNTS`, so an in-person check from the review reaches a real one. */
+  readonly accountKey?: string;
+  /** When the selfie was erased: consent withdrawn, or superseded by an in-person check (`DL-218`). */
+  readonly selfieErased?: string;
 }
 
 const HAND_WRITTEN: readonly SeedRow[] = [
@@ -83,6 +87,40 @@ const HAND_WRITTEN: readonly SeedRow[] = [
     reviewNote:
       'The photo of the ID is too blurred to read the name. Please take it again in good light.',
   },
+  {
+    // Superseded: the office verified the account in person, so the selfie went (`DL-218`).
+    n: 6,
+    idType: 'philid',
+    withBack: true,
+    status: 'superseded',
+    submitted: '2026-10-27T01:20:00.000Z',
+    reviewed: '2026-10-29T02:00:00.000Z',
+    selfieErased: '2026-10-29T02:00:00.000Z',
+    accountKey: 'app-account-0008',
+    reviewNote:
+      'Closed without a decision: the office verified this account in person, against a government ID shown at the counter.',
+  },
+  {
+    // Waiting, but the resident withdrew the biometric consent: no selfie, so no approval.
+    n: 7,
+    idType: 'postal',
+    withBack: false,
+    status: 'pending',
+    submitted: '2026-11-02T04:45:00.000Z',
+    selfieErased: '2026-11-03T09:10:00.000Z',
+    accountKey: 'app-account-0010',
+    accountName: 'Carmela Castillo',
+  },
+  {
+    // Waiting, for an account in the account list, so "Verify in person" reaches it in the demo.
+    n: 8,
+    idType: 'sss',
+    withBack: true,
+    status: 'pending',
+    submitted: '2026-11-01T06:30:00.000Z',
+    accountKey: 'app-account-0012',
+    accountName: 'Rowena Samonte',
+  },
 ];
 
 /**
@@ -103,13 +141,14 @@ function toRequest(row: SeedRow): VerificationRequest {
 
   return {
     id: asId<VerificationRequestId>(`vr-${key}`),
-    accountId: asId<AppAccountId>(`app-account-${key}`),
+    accountId: asId<AppAccountId>(row.accountKey ?? `app-account-${key}`),
     idType: row.idType,
     images: {
       idFront: asId<MediaId>(`media-${key}-front`),
       idBack: row.withBack ? asId<MediaId>(`media-${key}-back`) : null,
       selfie: asId<MediaId>(`media-${key}-selfie`),
     },
+    selfieErasedAt: row.selfieErased === undefined ? null : asIsoDateTime(row.selfieErased),
     status: row.status,
     submittedAt: asIsoDateTime(row.submitted),
     reviewedAt: row.reviewed === undefined ? null : asIsoDateTime(row.reviewed),

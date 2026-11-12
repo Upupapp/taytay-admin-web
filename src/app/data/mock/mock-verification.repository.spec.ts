@@ -98,7 +98,7 @@ describe('MockVerificationRepository', () => {
     const page = await firstValueFrom(repository.list({ status: null }, { limit: 50 }));
 
     expect(new Set(page.items.map((item) => item.status))).toEqual(
-      new Set(['pending', 'approved', 'rejected']),
+      new Set(['pending', 'approved', 'rejected', 'superseded']),
     );
   });
 
@@ -172,6 +172,29 @@ describe('MockVerificationRepository', () => {
     await expect(
       firstValueFrom(repository.approve(nameless.id, 'Selfie matches the ID photo.', ANY_NAME)),
     ).rejects.toThrow(/gives no name/);
+  });
+
+  it('holds a superseded request and a waiting one whose selfie is gone (DL-218)', async () => {
+    const repository = signedInAs('system-administrator');
+    const superseded = await firstValueFrom(
+      repository.list({ status: 'superseded' }, { limit: 50 }),
+    );
+    expect(superseded.items.length).toBeGreaterThan(0);
+    expect(superseded.items.every((item) => item.selfieErasedAt !== null)).toBe(true);
+
+    const page = await firstValueFrom(repository.list({ status: 'pending' }, { limit: 50 }));
+    const erased = page.items.find((item) => item.selfieErasedAt !== null);
+    if (erased === undefined) throw new Error('the samples hold no erased selfie');
+    const identity = identityToConfirm(erased);
+    if (identity === null) throw new Error('the erased sample gives no name');
+
+    await expect(firstValueFrom(repository.openImage(erased, 'selfie'))).rejects.toThrow(
+      /not found/,
+    );
+    await expect(
+      firstValueFrom(repository.approve(erased.id, 'Selfie matches the ID photo.', identity)),
+    ).rejects.toThrow(/withdrew their consent/);
+    expect(await firstValueFrom(repository.openImage(erased, 'id-front'))).toBeInstanceOf(Blob);
   });
 
   it('hands over a drawn placeholder that says it is a sample, never a photograph', async () => {

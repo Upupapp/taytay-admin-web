@@ -15,6 +15,18 @@
       "mobile": null,
       "email": null,
       "sectors": ["solo-parent"],
+      "sector_details": [
+        {
+          "sector": "solo-parent",
+          "since": "2026-11-06",
+          "id_number": null,
+          "issued_on": null,
+          "valid_until": null,
+          "social_pension": null,
+          "disability_type": null,
+          "details_withheld": true
+        }
+      ],
       "philsys_last_four": "4821",
       "monthly_income_centavos": 320000,
       "is_active": true,
@@ -41,6 +53,28 @@
       "mobile": "09170000102",
       "email": null,
       "sectors": ["senior-citizen", "pwd"],
+      "sector_details": [
+        {
+          "sector": "senior-citizen",
+          "since": "2026-11-05",
+          "id_number": null,
+          "issued_on": null,
+          "valid_until": null,
+          "social_pension": null,
+          "disability_type": null,
+          "details_withheld": true
+        },
+        {
+          "sector": "pwd",
+          "since": "2026-11-05",
+          "id_number": null,
+          "issued_on": null,
+          "valid_until": null,
+          "social_pension": null,
+          "disability_type": null,
+          "details_withheld": true
+        }
+      ],
       "philsys_last_four": null,
       "monthly_income_centavos": null,
       "is_active": true,

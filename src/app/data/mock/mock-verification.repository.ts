@@ -8,6 +8,7 @@ import {
   identityToConfirm,
   mediaFor,
   reviewNoteProblem,
+  selfieErased,
   type ConfirmedIdentity,
   type CursorPage,
   type CursorRequest,
@@ -90,6 +91,11 @@ export class MockVerificationRepository implements VerificationRepository {
     if (mediaFor(request, kind) === null) {
       return throwError(() => new Error('This request carries no such image.'));
     }
+    // An erased selfie's bytes are gone; the API answers 404 for them (`DL-218`).
+    const stored = this.requests.find((candidate) => candidate.id === request.id) ?? request;
+    if (kind === 'selfie' && selfieErased(stored)) {
+      return throwError(() => new Error('That image was not found.'));
+    }
 
     return this.latency.respond(samplePlaceholder(kind));
   }
@@ -117,6 +123,15 @@ export class MockVerificationRepository implements VerificationRepository {
     }
     if (!awaitsReview(current)) {
       return throwError(() => new Error('That verification request is no longer pending.'));
+    }
+    // The API's 409 for an approval whose selfie is gone (`44cae1b`, `DL-218`).
+    if (decision === 'approved' && selfieErased(current)) {
+      return throwError(
+        () =>
+          new Error(
+            'The resident withdrew their consent to the selfie, so it was erased. Reject the request and say a new selfie is needed.',
+          ),
+      );
     }
     // The API's two refusals, in its words (`DL-197`): nothing to check, or not what was checked.
     if (decision === 'approved') {

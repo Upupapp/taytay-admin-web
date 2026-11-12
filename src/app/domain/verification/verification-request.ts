@@ -34,6 +34,13 @@ export interface VerificationRequest {
   readonly accountId: AppAccountId;
   readonly idType: IdDocumentType;
   readonly images: VerificationImages;
+  /**
+   * When the selfie was erased (`DL-218`): the resident withdrew the biometric consent, or the office
+   * verified the account in person and the request was superseded. The image then reads 404, so it
+   * is never asked for, and the server refuses to approve the request. `null` when it was not — and
+   * when an API older than `44cae1b` sends no such field, because that API erased nothing.
+   */
+  readonly selfieErasedAt: IsoDateTime | null;
   readonly status: VerificationStatus;
   readonly submittedAt: IsoDateTime;
   readonly reviewedAt: IsoDateTime | null;
@@ -97,11 +104,19 @@ export const VERIFICATION_IMAGE_LABELS: Readonly<Record<VerificationImageKind, s
   selfie: 'Selfie',
 };
 
-/** The images a request actually carries, in the order a reviewer compares them. */
+/** True when the request's selfie is gone (`DL-218`): withdrawn consent, or superseded. */
+export function selfieErased(request: VerificationRequest): boolean {
+  return request.selfieErasedAt !== null;
+}
+
+/**
+ * The images a request can still be read for, in the order a reviewer compares them. An erased
+ * selfie is not among them: its bytes are gone, and asking for them would only fetch a 404.
+ */
 export function imagesOf(request: VerificationRequest): readonly VerificationImageKind[] {
-  return request.images.idBack === null
-    ? ['id-front', 'selfie']
-    : ['id-front', 'id-back', 'selfie'];
+  const ids: readonly VerificationImageKind[] =
+    request.images.idBack === null ? ['id-front'] : ['id-front', 'id-back'];
+  return selfieErased(request) ? ids : [...ids, 'selfie'];
 }
 
 export function mediaFor(
@@ -146,12 +161,12 @@ export const ID_DOCUMENT_TYPE_LABELS: Readonly<Record<IdDocumentType, string>> =
 
 /* ── the lifecycle, defined once (rule 7) ────────────────────────────────── */
 
-export const VERIFICATION_STATUSES = ['pending', 'approved', 'rejected'] as const;
+export const VERIFICATION_STATUSES = ['pending', 'approved', 'rejected', 'superseded'] as const;
 
 export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
 
-/** The two outcomes an office reviewer records. */
-export type VerificationDecision = Exclude<VerificationStatus, 'pending'>;
+/** The two outcomes an office reviewer records on a request. */
+export type VerificationDecision = Extract<VerificationStatus, 'approved' | 'rejected'>;
 
 export const VERIFICATION_STATUS_CATALOG: StatusCatalog<VerificationStatus> = {
   pending: {
@@ -174,6 +189,14 @@ export const VERIFICATION_STATUS_CATALOG: StatusCatalog<VerificationStatus> = {
       'An administrator rejected it with a reason the resident reads in the app. The resident ' +
       'may correct it and send it again.',
   },
+  superseded: {
+    value: 'superseded',
+    label: 'Replaced by an in-person check',
+    tone: 'neutral',
+    description:
+      'Closed without a decision: the office verified the account in person, against a ' +
+      'government ID shown at the counter. Its selfie was erased.',
+  },
 };
 
 /**
@@ -183,11 +206,17 @@ export const VERIFICATION_STATUS_CATALOG: StatusCatalog<VerificationStatus> = {
  * it back in the queue. It is in the map because it happens; it is never offered here, because the
  * office cannot make it (`VERIFICATION_REVIEW_MOVES`). `approved` is terminal: the API has no route
  * that un-verifies an account through this resource.
+ *
+ * `pending → superseded` is made by verifying the account **in person** (`DL-218`), an act on the
+ * account rather than a decision on this request: nobody checked the selfie, and nothing was wrong
+ * with it. So it is not a review move either. `superseded` is final, like `approved`; a rejected
+ * request is never superseded — it stays rejected.
  */
 export const VERIFICATION_STATUS_TRANSITIONS: StatusTransitions<VerificationStatus> = {
-  pending: ['approved', 'rejected'],
+  pending: ['approved', 'rejected', 'superseded'],
   approved: [],
   rejected: ['pending'],
+  superseded: [],
 };
 
 /** The moves an office reviewer makes. Resubmitting is the resident's, in the app. */
@@ -196,11 +225,21 @@ export const VERIFICATION_REVIEW_MOVES: readonly VerificationDecision[] = ['appr
 /**
  * The decisions open on this request. An account that gives no name has nothing to check against
  * the ID, so it can only be rejected — with a reason that asks the resident for the name (`DL-197`).
+ * Nor can a request whose selfie was erased be approved: the server refuses it with a 409, because
+ * nobody can now see the face the approval would vouch for (`DL-218`).
  */
 export function reviewMovesFor(request: VerificationRequest): readonly VerificationDecision[] {
-  return identityToConfirm(request) === null
-    ? VERIFICATION_REVIEW_MOVES.filter((move) => move !== 'approved')
-    : VERIFICATION_REVIEW_MOVES;
+  return approvalBar(request) === null
+    ? VERIFICATION_REVIEW_MOVES
+    : VERIFICATION_REVIEW_MOVES.filter((move) => move !== 'approved');
+}
+
+/** Why this request cannot be approved, or `null` when it can be. Said on screen, never implied. */
+export function approvalBar(request: VerificationRequest): 'no-name' | 'selfie-erased' | null {
+  if (selfieErased(request)) {
+    return 'selfie-erased';
+  }
+  return identityToConfirm(request) === null ? 'no-name' : null;
 }
 
 /** True when the office can decide this request now. */

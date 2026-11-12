@@ -32,6 +32,7 @@
         "mobile": "09170000103",
         "email": null,
         "sectors": [],
+        "sector_details": [],
         "philsys_last_four": null,
         "monthly_income_centavos": null,
         "is_active": true,
@@ -79,6 +80,18 @@
         "mobile": null,
         "email": null,
         "sectors": ["senior-citizen"],
+        "sector_details": [
+          {
+            "sector": "senior-citizen",
+            "since": "2026-11-05",
+            "id_number": null,
+            "issued_on": null,
+            "valid_until": null,
+            "social_pension": null,
+            "disability_type": null,
+            "details_withheld": true
+          }
+        ],
         "philsys_last_four": null,
         "monthly_income_centavos": null,
         "is_active": true,

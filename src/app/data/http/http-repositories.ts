@@ -21,6 +21,7 @@ import {
   AppConfigRefusedError,
   fromServerIdentity,
   mediaFor,
+  selfieErased,
   SignInError,
   type ConfirmedIdentity,
   type CursorPage,
@@ -826,11 +827,15 @@ export class HttpVerificationRepository implements VerificationRepository {
 
   /**
    * The bytes, with the bearer token in a header (`ApiClient.blob`). An image the request does not
-   * carry is refused here, without a request, rather than asked for by a missing id.
+   * carry is refused here, without a request, rather than asked for by a missing id — and so is a
+   * selfie the server erased (`DL-218`), whose id now reads 404.
    */
   openImage(request: VerificationRequest, kind: VerificationImageKind): Observable<Blob> {
     const media = mediaFor(request, kind);
 
+    if (kind === 'selfie' && selfieErased(request)) {
+      return throwError(() => new Error('This selfie was erased. Nothing was asked for.'));
+    }
     return media === null
       ? throwError(() => new Error('This request carries no such image.'))
       : this.api.blob(`${API_ENDPOINTS.media}/${media}/content`);

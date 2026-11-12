@@ -39,7 +39,17 @@
           @if (request().reviewNote; as note) {
             <div class="review__note-box">
               <dt>
-                {{ request().status === 'rejected' ? copy.reviewNoteForResident : copy.reviewNote }}
+                @switch (request().status) {
+                  @case ('rejected') {
+                    {{ copy.reviewNoteForResident }}
+                  }
+                  @case ('superseded') {
+                    {{ copy.reviewNoteSuperseded }}
+                  }
+                  @default {
+                    {{ copy.reviewNote }}
+                  }
+                }
               </dt>
               <dd class="review__words">{{ note }}</dd>
             </div>
@@ -78,12 +88,17 @@
     <section class="subpanel" aria-labelledby="review-images">
       <h3 id="review-images" class="section-title">{{ copy.imagesHeading }}</h3>
 
+      @if (erasedOn(); as erased) {
+        <!-- In place of the selfie, whose bytes the server discarded: never asked for (DL-218). -->
+        <p class="note-box review__erased">{{ copy.selfieErasedOn(erased) }}</p>
+      }
+
       @let state = images();
       @if (state.kind === 'idle') {
         <div class="review__closed">
-          <p>{{ copy.imagesClosed }}</p>
+          <p>{{ erasedOn() === null ? copy.imagesClosed : copy.imagesClosedIdOnly }}</p>
           <button type="button" class="btn btn--primary" (click)="askToOpen()">
-            {{ copy.openImages }}
+            {{ erasedOn() === null ? copy.openImages : copy.openIdOnly }}
           </button>
         </div>
       } @else if (state.kind === 'loading') {
@@ -91,7 +106,7 @@
       } @else if (state.kind === 'error') {
         <p class="review__problem" role="alert">{{ copy.imagesFailed }}</p>
         <button type="button" class="btn review__hide" (click)="askToOpen()">
-          {{ copy.openImages }}
+          {{ erasedOn() === null ? copy.openImages : copy.openIdOnly }}
         </button>
       } @else if (state.kind === 'ready') {
         <p class="review__note">{{ copy.imagesKept }}</p>
@@ -114,6 +129,12 @@
     <h3 id="review-decision" class="section-title">{{ copy.decisionHeading }}</h3>
 
     @if (decidable()) {
+      @if (approvalBar() === 'selfie-erased' && erasedOn(); as erased) {
+        <p class="callout callout--warning review__caution">
+          <app-icon name="warning" [size]="16" [stroke]="2" />
+          <span>{{ copy.selfieErasedNoApproval(erased) }}</span>
+        </p>
+      }
       @if (!opened()) {
         <p class="callout callout--warning review__caution">
           <app-icon name="warning" [size]="16" [stroke]="2" />
@@ -137,6 +158,8 @@
       />
     } @else if (request().status === 'rejected') {
       <p class="review__said">{{ copy.awaitingResident }}</p>
+    } @else if (request().status === 'superseded') {
+      <p class="review__said">{{ copy.supersededSaid }}</p>
     } @else {
       <p class="review__said">{{ copy.alreadyDecided }}</p>
     }
@@ -152,7 +175,7 @@
       <span class="icon-tile icon-tile--gold icon-tile--round" aria-hidden="true">
         <app-icon name="warning" [size]="22" [stroke]="2" />
       </span>
-      @for (sentence of copy.warning; track $index) {
+      @for (sentence of warningSentences(); track $index) {
         <p>{{ sentence }}</p>
       }
     </div>

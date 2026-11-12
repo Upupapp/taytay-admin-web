@@ -35,6 +35,7 @@ const ID_TYPE_BY_WIRE: Readonly<Record<string, IdDocumentType>> = {
  * | `id_front_media_id`  | `images.idFront`    | the record is not readable     |
  * | `id_back_media_id`   | `images.idBack`     | no back image                  |
  * | `selfie_media_id`    | `images.selfie`     | the record is not readable     |
+ * | `selfie_erased_at`   | `selfieErasedAt`    | not erased                     |
  * | `status`             | `status`            | the record is not readable     |
  * | `submitted_at`       | `submittedAt`       | the record is not readable     |
  * | `reviewed_at`        | `reviewedAt`        | not reviewed                   |
@@ -42,6 +43,12 @@ const ID_TYPE_BY_WIRE: Readonly<Record<string, IdDocumentType>> = {
  * | `notes`              | `reviewNote`        | no note                        |
  * | `account_name`       | `account.name`      | the account gives no name      |
  * | `account_birthdate`  | `account.birthDate` | the account holds no birth date |
+ *
+ * `selfie_erased_at` (`44cae1b`, `DL-218`) is required by the spec, but an API older than it sends
+ * nothing, and that API erased nothing: so an absent or unreadable value reads as not erased, and
+ * the record stays readable: the console and the API deploy separately, and the console tolerates the
+ * previous server. An unknown **status** stays unreadable, because `superseded` read as
+ * anything else would offer a decision on a closed request.
  *
  * The two `account_` fields come only while the request is `pending` (`DL-197`): the API sends what
  * the account says about its holder for the reviewer to check against the ID, and stops once a
@@ -90,6 +97,7 @@ export function toVerificationRequest(wire: unknown): VerificationRequest | null
       idBack: id<MediaId>(field(wire, 'id_back_media_id')),
       selfie,
     },
+    selfieErasedAt: dateTime(field(wire, 'selfie_erased_at')),
     status,
     submittedAt,
     reviewedAt: dateTime(field(wire, 'reviewed_at')),

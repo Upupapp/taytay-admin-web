@@ -198,6 +198,14 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
     'Made an account an administrator, by the bootstrap command run on the server',
   'verification.approved': 'Approved a resident’s ID verification',
   'verification.rejected': 'Rejected a resident’s ID verification',
+  // Read from `taytay-backend` `44cae1b` and `5209f75` (DL-218, DL-219): ids and codes only, never
+  // the ID's characters or an image.
+  'verification.in_person_verified':
+    'Verified a resident’s account in person, against a government ID shown at the counter; no photo was taken',
+  'verification.superseded':
+    'Closed a waiting ID verification without a decision, because the account was verified in person',
+  'verification.selfie_erased':
+    'Erased the selfie of an ID verification: consent withdrawn, or the account verified in person',
 };
 
 /** The action in words, or `null` when this console has none for the code. */

@@ -1,6 +1,7 @@
 import { asId, type AppAccountId, type MediaId, type VerificationRequestId } from '../shared/ids';
 import { nextStatuses } from '../shared/status';
 import {
+  approvalBar,
   awaitsReview,
   identityToConfirm,
   imagesOf,
@@ -8,6 +9,7 @@ import {
   REVIEW_NOTE_LIMITS,
   reviewMovesFor,
   reviewNoteProblem,
+  selfieErased,
   VERIFICATION_DECISION_EFFECTS,
   VERIFICATION_REVIEW_MOVES,
   VERIFICATION_STATUS_CATALOG,
@@ -30,6 +32,7 @@ function request(
       idBack: idBack === null ? null : asId<MediaId>(idBack),
       selfie: asId<MediaId>('media-selfie'),
     },
+    selfieErasedAt: null,
     status,
     submittedAt: '2026-11-05T00:00:00.000Z' as VerificationRequest['submittedAt'],
     reviewedAt: null,
@@ -52,6 +55,7 @@ describe('the verification lifecycle, defined once', () => {
     expect(nextStatuses(VERIFICATION_STATUS_TRANSITIONS, 'pending')).toEqual([
       'approved',
       'rejected',
+      'superseded',
     ]);
     expect(awaitsReview(request('pending'))).toBe(true);
     expect(awaitsReview(request('approved'))).toBe(false);
@@ -62,6 +66,15 @@ describe('the verification lifecycle, defined once', () => {
     expect(nextStatuses(VERIFICATION_STATUS_TRANSITIONS, 'approved')).toEqual([]);
     expect(nextStatuses(VERIFICATION_STATUS_TRANSITIONS, 'rejected')).toEqual(['pending']);
     expect(VERIFICATION_REVIEW_MOVES).not.toContain('pending');
+  });
+
+  it('keeps superseded final and out of the review: an in-person check makes it (DL-218)', () => {
+    expect(nextStatuses(VERIFICATION_STATUS_TRANSITIONS, 'superseded')).toEqual([]);
+    expect(nextStatuses(VERIFICATION_STATUS_TRANSITIONS, 'rejected')).not.toContain('superseded');
+    expect(VERIFICATION_REVIEW_MOVES).not.toContain('superseded');
+    expect(awaitsReview(request('superseded'))).toBe(false);
+    expect(VERIFICATION_STATUS_CATALOG.superseded.label).toBe('Replaced by an in-person check');
+    expect(VERIFICATION_STATUS_CATALOG.superseded.description).toMatch(/selfie was erased/);
   });
 });
 
@@ -107,6 +120,26 @@ describe('the images a request carries', () => {
     expect(identityToConfirm(nameless)).toBeNull();
     expect(reviewMovesFor(nameless)).toEqual(['rejected']);
     expect(identityToConfirm(request('approved'))).toBeNull();
+  });
+
+  it('never lists an erased selfie, and offers no approval without one (DL-218)', () => {
+    const erased: VerificationRequest = {
+      ...request('pending'),
+      selfieErasedAt: '2026-11-11T09:00:00.000Z' as VerificationRequest['submittedAt'],
+    };
+
+    expect(selfieErased(erased)).toBe(true);
+    expect(selfieErased(request('pending'))).toBe(false);
+    expect(imagesOf(erased)).toEqual(['id-front', 'id-back']);
+    expect(imagesOf({ ...erased, images: { ...erased.images, idBack: null } })).toEqual([
+      'id-front',
+    ]);
+    expect(reviewMovesFor(erased)).toEqual(['rejected']);
+    expect(approvalBar(erased)).toBe('selfie-erased');
+    expect(approvalBar(request('pending'))).toBeNull();
+    expect(approvalBar({ ...request('pending'), account: { name: null, birthDate: null } })).toBe(
+      'no-name',
+    );
   });
 
   it('says before an approval that the confirmed name is kept and can no longer be changed', () => {

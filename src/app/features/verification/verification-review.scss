@@ -160,3 +160,8 @@
 .review__warning p {
   margin: 0;
 }
+
+/* In place of an erased selfie (DL-218): a sentence, never an empty frame. */
+.review__erased {
+  margin: 0;
+}

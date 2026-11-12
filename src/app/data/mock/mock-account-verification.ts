@@ -24,7 +24,9 @@ export function mockVerificationOf(
       return 'pending';
     case 'rejected':
       return 'rejected';
+    // Superseded only by an in-person check, which verified the account (`DL-218`).
     case 'approved':
+    case 'superseded':
       return 'verified';
     case undefined:
       return 'unverified';

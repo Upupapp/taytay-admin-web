@@ -24,7 +24,13 @@
  * are not the bytes at that commit, and the record would be a lie nobody could detect. So an
  * uncommitted spec is refused rather than vendored.
  *
- * Usage: `npm run vendor:openapi [-- <path to taytay-backend>]`
+ * ## Or it reads a named commit
+ *
+ * `--commit <rev>` copies the spec from that commit's tree (`git show <rev>:openapi/openapi.json`)
+ * instead of the working tree. The bytes are then exactly the commit's, so a dirty working tree —
+ * somebody else's work in progress next door — neither blocks the copy nor leaks into it.
+ *
+ * Usage: `npm run vendor:openapi [-- [<path to taytay-backend>] [--commit <rev>]]`
  */
 
 import { createHash } from 'node:crypto';
@@ -34,13 +40,21 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const BACKEND = resolve(process.argv[2] ?? join(ROOT, '..', 'taytay-backend'));
+const args = process.argv.slice(2);
+const commitFlag = args.indexOf('--commit');
+const REV = commitFlag === -1 ? null : args[commitFlag + 1];
+if (commitFlag !== -1 && (REV === undefined || REV.startsWith('--'))) {
+  console.error('\n--commit needs a revision, e.g. --commit 5209f75.\n');
+  process.exit(1);
+}
+const positional = args.filter((_, index) => index !== commitFlag && index !== commitFlag + 1);
+const BACKEND = resolve(positional[0] ?? join(ROOT, '..', 'taytay-backend'));
 const SPEC_IN_BACKEND = 'openapi/openapi.json';
 const CONTRACT = join(ROOT, 'src', 'app', 'data', 'http', 'contract');
 
 const git = (...args) => execFileSync('git', args, { cwd: BACKEND, encoding: 'utf8' }).trim();
 
-const dirty = git('status', '--porcelain', '--', SPEC_IN_BACKEND);
+const dirty = REV === null ? git('status', '--porcelain', '--', SPEC_IN_BACKEND) : '';
 
 if (dirty !== '') {
   console.error(
@@ -50,11 +64,17 @@ if (dirty !== '') {
   process.exit(1);
 }
 
-const commit = git('rev-parse', 'HEAD');
+const commit = git('rev-parse', '--verify', `${REV ?? 'HEAD'}^{commit}`);
 const remote = git('remote', 'get-url', 'origin');
 const repository = /github\.com[:/](.+?)(?:\.git)?$/.exec(remote)?.[1] ?? remote;
 
-const bytes = readFileSync(join(BACKEND, ...SPEC_IN_BACKEND.split('/')));
+const bytes =
+  REV === null
+    ? readFileSync(join(BACKEND, ...SPEC_IN_BACKEND.split('/')))
+    : execFileSync('git', ['show', `${commit}:${SPEC_IN_BACKEND}`], {
+        cwd: BACKEND,
+        maxBuffer: 64 * 1024 * 1024,
+      });
 const spec = JSON.parse(bytes.toString('utf8'));
 
 const METHODS = new Set(['get', 'post', 'put', 'patch', 'delete']);

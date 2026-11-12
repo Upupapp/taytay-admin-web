@@ -31,6 +31,8 @@ export const VERIFICATION_COPY = {
     loadingMore: 'Loading more…',
     moreFailed: 'The next requests could not be loaded. The ones above are still correct.',
     drawerHeading: 'Review an ID verification',
+    /** Beside the status of a request whose selfie is gone, so the list says it cannot be approved. */
+    selfieErased: 'Selfie erased',
     noAccountDetail:
       'Besides the ID and the selfie, the server sends only the name and birth date the account ' +
       'gives, and only while a request is waiting — they appear in the review, not in this list. ' +
@@ -47,6 +49,7 @@ export const VERIFICATION_COPY = {
     residentMessage: 'What the resident wrote with their correction',
     reviewNote: 'Note recorded with the decision',
     reviewNoteForResident: 'Reason given to the resident',
+    reviewNoteSuperseded: 'Why it was closed (for the office; the resident does not see this)',
 
     accountHeading: 'What the account says',
     accountIntro:
@@ -70,7 +73,12 @@ export const VERIFICATION_COPY = {
     imagesClosed:
       'The ID and the selfie are not loaded until you ask. They are a government ID and a ' +
       'photograph of somebody’s face.',
+    imagesClosedIdOnly: 'The ID is not loaded until you ask. It is a government ID.',
     openImages: 'Show the ID and the selfie',
+    openIdOnly: 'Show the ID',
+    /** In place of the selfie, whose bytes the server discarded (`DL-218`). */
+    selfieErasedOn: (date: string): string =>
+      `Selfie erased on ${date} (consent withdrawn or replaced).`,
     hideImages: 'Hide the images',
     imagesLoading: 'Opening the images…',
     imagesFailed: 'The images could not be opened. Nothing was kept.',
@@ -83,6 +91,11 @@ export const VERIFICATION_COPY = {
       'You are about to see a resident’s government ID and a photograph of their face.',
       'Open them only to decide this request, and only where nobody else can see your screen.',
       'They are not saved on this computer. Do not copy, download or photograph them.',
+    ],
+    warningIdOnly: [
+      'You are about to see a resident’s government ID.',
+      'Open it only to decide this request, and only where nobody else can see your screen.',
+      'It is not saved on this computer. Do not copy, download or photograph it.',
     ],
     warningCancel: 'Cancel',
     warningProceed: 'Show them',
@@ -99,6 +112,16 @@ export const VERIFICATION_COPY = {
       'Required. The resident reads exactly these words in the app as what was wrong, so say what ' +
       'to fix. Up to 1,000 characters.',
     alreadyDecided: 'This request has been decided. Nothing further is done here.',
+    supersededSaid:
+      'This request was closed without a decision: the office verified the account in person, ' +
+      'against a government ID shown at the counter, and the selfie was erased. Nothing further ' +
+      'is done here.',
+    /** Why approval is not offered when the selfie is gone: the server refuses it with a 409. */
+    selfieErasedNoApproval: (date: string): string =>
+      `The selfie was erased on ${date}: the resident withdrew their consent to it. Nobody can ` +
+      'now see the face an approval would vouch for, so the server refuses to approve this ' +
+      'request and approval is not offered. Reject it with a reason asking for a new selfie — ' +
+      'the resident can send one after agreeing to the consent again.',
     awaitingResident:
       'The resident may correct this request and send it again from the app. It then returns to ' +
       'the queue; nothing is done here until it does.',

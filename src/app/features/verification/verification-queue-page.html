@@ -85,6 +85,9 @@
 
 <ng-template #statusCell let-request>
   <app-status-badge [catalog]="catalog" [status]="request.status" />
+  @if (request.selfieErasedAt) {
+    <span class="queue__erased">{{ copy.selfieErased }}</span>
+  }
 </ng-template>
 
 <ng-template #actionCell let-request>

@@ -1,0 +1,22 @@
+{
+  "data": {
+    "id": "7c1e2d3f-4a5b-4c6d-8e7f-9a0b1c2d3e03",
+    "user_id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c03",
+    "id_type": "philid",
+    "id_front_media_id": "aa11bb22-cc33-4d44-8e55-ff6600770806",
+    "id_back_media_id": "aa11bb22-cc33-4d44-8e55-ff6600770807",
+    "selfie_media_id": "aa11bb22-cc33-4d44-8e55-ff6600770808",
+    "selfie_erased_at": "2026-11-12T03:15:00.000Z",
+    "status": "superseded",
+    "reviewer_id": "5f4e3d2c-1b0a-4f9e-8d7c-6b5a4f3e2d01",
+    "message": null,
+    "submitted_at": "2026-11-10T01:20:00.000Z",
+    "can_edit": false,
+    "submitted_categories": ["philid", "id_front", "id_back", "selfie"],
+    "issues": [],
+    "created_at": "2026-11-10T01:20:00.000Z",
+    "reviewed_at": "2026-11-12T03:15:00.000Z",
+    "notes": "Closed without a decision: the office verified this account in person, against a government ID shown at the counter."
+  },
+  "meta": {}
+}

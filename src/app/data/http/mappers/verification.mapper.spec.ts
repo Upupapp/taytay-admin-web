@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import APPROVED from '../fixtures/verification-approved.json';
 import REJECTED from '../fixtures/verification-rejected.json';
+import SUPERSEDED from '../fixtures/verification-superseded.json';
 import PAGE from '../fixtures/verification-requests-page.json';
 
 import { toVerificationRequest } from './verification.mapper';
@@ -22,6 +23,7 @@ describe('toVerificationRequest', () => {
         idBack: 'aa11bb22-cc33-4d44-8e55-ff6600770802',
         selfie: 'aa11bb22-cc33-4d44-8e55-ff6600770803',
       },
+      selfieErasedAt: null,
       status: 'pending',
       submittedAt: '2026-11-04T08:15:00.000Z',
       reviewedAt: null,
@@ -65,6 +67,7 @@ describe('toVerificationRequest', () => {
         'residentMessage',
         'reviewNote',
         'reviewedAt',
+        'selfieErasedAt',
         'status',
         'submittedAt',
       ].sort(),
@@ -82,6 +85,31 @@ describe('toVerificationRequest', () => {
   ])('refuses a record without %s rather than inventing it', (field) => {
     const rest = Object.fromEntries(Object.entries(WITH_BACK).filter(([key]) => key !== field));
     expect(toVerificationRequest(rest)).toBeNull();
+  });
+
+  it('reads a superseded request as closed, with its erased selfie and the server’s note (DL-218)', () => {
+    const request = toVerificationRequest(SUPERSEDED.data);
+
+    expect(request?.status).toBe('superseded');
+    expect(request?.selfieErasedAt).toBe('2026-11-12T03:15:00.000Z');
+    expect(request?.account).toBeNull();
+    expect(request?.reviewNote).toMatch(/verified this account in person/);
+  });
+
+  it('reads when a waiting request’s selfie was erased, as the API says it', () => {
+    expect(
+      toVerificationRequest({ ...WITH_BACK, selfie_erased_at: '2026-11-11T09:00:00.000Z' })
+        ?.selfieErasedAt,
+    ).toBe('2026-11-11T09:00:00.000Z');
+  });
+
+  it('reads an API older than selfie_erased_at as not erased, and keeps the record (DL-218)', () => {
+    const older = Object.fromEntries(
+      Object.entries(WITH_BACK).filter(([key]) => key !== 'selfie_erased_at'),
+    );
+
+    expect(toVerificationRequest(older)?.selfieErasedAt).toBeNull();
+    expect(toVerificationRequest({ ...WITH_BACK, selfie_erased_at: 'not a date' })).not.toBeNull();
   });
 
   it('never widens an ID type or a status it does not know', () => {

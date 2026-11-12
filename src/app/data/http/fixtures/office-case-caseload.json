@@ -18,6 +18,7 @@
       "mobile": "09170000103",
       "email": "maria.delacruz@example.invalid",
       "sectors": [],
+      "sector_details": [],
       "philsys_last_four": "1290",
       "monthly_income_centavos": 850050,
       "is_active": true,

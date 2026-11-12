@@ -60,6 +60,7 @@ import SIGNED_OUT from './fixtures/signed-out.json';
 import VERIFICATION_APPROVED from './fixtures/verification-approved.json';
 import VERIFICATION_REJECTED from './fixtures/verification-rejected.json';
 import VERIFICATION_PAGE from './fixtures/verification-requests-page.json';
+import VERIFICATION_SUPERSEDED from './fixtures/verification-superseded.json';
 import OFFICES_PAGE from './fixtures/offices-page.json';
 import THREAD from './fixtures/thread.json';
 import THREAD_MESSAGES_PAGE from './fixtures/thread-messages-page.json';
@@ -626,6 +627,30 @@ describe('the Node adapters', () => {
       sent.flush(new Blob(['jpeg bytes'], { type: 'image/jpeg' }));
 
       expect(await image).toBeInstanceOf(Blob);
+    });
+
+    it('asks for no selfie the server erased (DL-218)', async () => {
+      const request = toVerificationRequest({
+        ...VERIFICATION_PAGE.data[0],
+        selfie_erased_at: '2026-11-11T09:00:00.000Z',
+      });
+      if (request === null) throw new Error('fixture unreadable');
+
+      await expect(firstValueFrom(verification.openImage(request, 'selfie'))).rejects.toThrow(
+        /erased/,
+      );
+      http.expectNone(`${BASE}/media/${request.images.selfie}/content`);
+    });
+
+    it('asks for the superseded requests by the status the API lists them under', async () => {
+      const page = firstValueFrom(verification.list({ status: 'superseded' }, { limit: 20 }));
+
+      const request = http.expectOne((r) => r.url === `${BASE}/admin/verification-requests`);
+      expect(request.request.params.get('status')).toBe('superseded');
+      request.flush({ data: [VERIFICATION_SUPERSEDED.data], meta: VERIFICATION_PAGE.meta });
+
+      const answer = await page;
+      expect(answer.items.map((item) => item.status)).toEqual(['superseded']);
     });
 
     it('asks for no image a request does not carry', async () => {

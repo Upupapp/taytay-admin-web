@@ -41,6 +41,14 @@
  *      queue list never renders the account's name — it belongs beside the ID, not in a list
  *      anybody scrolls.
  *
+ * ## An erased selfie is said, never fetched, never approved (`DL-218`)
+ *
+ *   9. The statuses are exactly the vendored spec's, `superseded` among them, final and no review
+ *      move; the mapper reads `selfie_erased_at`; `imagesOf` leaves an erased selfie out and
+ *      `reviewMovesFor` withholds approval through `approvalBar`; the http adapter refuses an erased
+ *      selfie before asking for it; and the review says when it was erased, in place of the image,
+ *      and why approval is not offered.
+ *
  * Each rule was validated against a planted regression before being trusted.
  */
 
@@ -389,6 +397,76 @@ const queueTemplate = read(FEATURE, 'verification-queue-page.html');
 if (/\baccount\b|accountName|identity/.test(queueTemplate)) {
   failures.push(
     "The queue list renders what the account gives. The name is shown in a review, beside the ID it is checked against (DL-197).",
+  );
+}
+
+/* ── 9. an erased selfie is said, never fetched, never approved ──────────── */
+
+const spec = JSON.parse(read(APP, 'data', 'http', 'contract', 'openapi.json'));
+const specStatuses = spec.components?.schemas?.VerificationRequest?.properties?.status?.enum ?? [];
+const statusList =
+  /export const VERIFICATION_STATUSES = \[([^\]]*)\] as const;/.exec(domain)?.[1] ?? '';
+const domainStatuses = [...statusList.matchAll(/'([^']+)'/g)].map((match) => match[1]);
+if (
+  specStatuses.length === 0 ||
+  domainStatuses.join(',') !== specStatuses.join(',') ||
+  !domainStatuses.includes('superseded')
+) {
+  failures.push(
+    `VERIFICATION_STATUSES (${domainStatuses.join(', ')}) is not the spec's VerificationRequest.status ` +
+      `(${specStatuses.join(', ')}). A status the API sends and the console does not know makes the queue unreadable.`,
+  );
+}
+if (
+  !/superseded:\s*\[\s*\]/.test(
+    domain.slice(domain.indexOf('export const VERIFICATION_STATUS_TRANSITIONS')),
+  ) ||
+  /VERIFICATION_REVIEW_MOVES[^=]*=\s*\[[^\]]*superseded/.test(domain)
+) {
+  failures.push(
+    'superseded must be final and no review move: an in-person check closes the request, not a reviewer.',
+  );
+}
+if (!/selfieErasedAt:\s*dateTime\(field\(wire, 'selfie_erased_at'\)\)/.test(code(read(MAPPER)))) {
+  failures.push(
+    'The verification mapper does not read selfie_erased_at, so an erased selfie would be asked for.',
+  );
+}
+const imagesOfBody = /export function imagesOf\([\s\S]*?\n\}/.exec(domain)?.[0] ?? '';
+const movesBody = /export function reviewMovesFor\([\s\S]*?\n\}/.exec(domain)?.[0] ?? '';
+const barBody = /export function approvalBar\([\s\S]*?\n\}/.exec(domain)?.[0] ?? '';
+if (!/selfieErased\(request\)/.test(imagesOfBody)) {
+  failures.push(
+    'imagesOf no longer leaves an erased selfie out. Its bytes are gone; asking only fetches a 404.',
+  );
+}
+if (
+  !/approvalBar\(request\)/.test(movesBody) ||
+  !/selfieErased\(request\)[\s\S]*?'selfie-erased'/.test(barBody)
+) {
+  failures.push(
+    'reviewMovesFor no longer withholds approval when the selfie was erased. The server refuses it with a 409.',
+  );
+}
+const openImageBody = methodBody(httpClass, 'openImage') ?? '';
+if (
+  !/kind === 'selfie' && selfieErased\(request\)[\s\S]*?throwError[\s\S]*?this\s*\.\s*api\s*\.\s*blob/.test(
+    openImageBody,
+  )
+) {
+  failures.push(
+    'HttpVerificationRepository.openImage no longer refuses an erased selfie before asking for it.',
+  );
+}
+if (
+  !/copy\s*\.\s*selfieErasedOn\(/.test(template) ||
+  !/approvalBar\(\) === 'selfie-erased'[\s\S]*?copy\s*\.\s*selfieErasedNoApproval\(/.test(
+    template,
+  ) ||
+  !/Selfie erased on \$\{date\} \(consent withdrawn or replaced\)/.test(copy)
+) {
+  failures.push(
+    'The review no longer says when the selfie was erased, in place of the image, or why approval is not offered.',
   );
 }
 

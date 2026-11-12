@@ -10063,3 +10063,43 @@ mapper's strict read; the kind sent on create and update; the `409` mapped to th
 the adapter and the mock; the select, its hint, the warning before the button, the button never held
 by it, the refusal beside the kind; the kind column as words; and the "no command center" sentence.
 Validated against 14 planted regressions.
+
+## DL-218 — an erased selfie is said, never fetched or approved, and a superseded review is closed
+
+**Status:** Settled (12 November 2026). Backend `44cae1b` (G1: `selfie_erased_at`) and `5209f75`
+(the status `superseded`); spec vendored from `5209f75` by commit, not from the working tree.
+
+**Why.** Two server changes reach the ID review. Withdrawing the biometric consent erases the
+resident's selfies in the same act: each request gets `selfie_erased_at`, its image reads `404`, and
+approving such a request is a `409`. And verifying an account in person (`DL-219`) closes a waiting
+selfie request as `superseded` — a new final status — and erases its selfie. The console's mapper
+refuses a status it does not know, so until it learned `superseded` one superseded request would
+have emptied the queue.
+
+**What changed.**
+
+1. **`superseded` in the domain, once** (rule 7). `VERIFICATION_STATUSES` is the spec's four; the
+   catalogue says "Replaced by an in-person check" (neutral tone) and why; the transition map has
+   `pending → superseded` and `superseded: []`. It is not a review move: nobody checked the selfie
+   and nothing was wrong with it, so neither approve nor reject describes it, and
+   `VerificationDecision` is now the two outcomes by name. A rejected request is never superseded.
+   The queue's filter offers it, and the review shows the server's staff note under "Why it was
+   closed" and says nothing further is done there.
+2. **An erased selfie is said, in place of the image.** The mapper reads `selfie_erased_at` as
+   `selfieErasedAt`. `imagesOf` leaves the selfie out, so the warning, the button ("Show the ID")
+   and the fetch cover the ID alone; the http adapter refuses an erased selfie before asking; the
+   images section says "Selfie erased on {date} (consent withdrawn or replaced)." The queue says
+   "Selfie erased" under the status, so the list shows which waiting requests cannot be approved.
+3. **No approval is offered, and the screen says why.** `approvalBar` names the two reasons —
+   `no-name` (`DL-197`) and `selfie-erased` — and `reviewMovesFor` withholds approval for either.
+   The review says the selfie was erased because the resident withdrew their consent, that the
+   server refuses an approval without it, and to reject asking for a new selfie. The mock refuses
+   the approval and the image as the server does, in its words.
+4. **The audit trail words three new acts:** `verification.in_person_verified`,
+   `verification.superseded` and `verification.selfie_erased` (the `bae460b` test found the first).
+
+**Checks.** `check:verification` rule 9: the statuses equal the spec's enum, `superseded` final and
+no review move, the mapper's read, `imagesOf` and `approvalBar`, the adapter's refusal before the
+fetch, and the review's two sentences. Validated against 8 planted regressions.
+`tools/vendor-openapi.mjs` gained `--commit <rev>`, which copies the spec from that commit's tree, so
+another session's uncommitted backend work neither blocks a vendoring nor leaks into it.
