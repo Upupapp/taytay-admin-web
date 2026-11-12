@@ -30,6 +30,13 @@ export interface AppConfig {
   readonly privacyNotice: LegalText;
   /** The Terms of Use residents are asked to accept, the same shape and the same rules (`DL-186`). */
   readonly terms: LegalText;
+  /**
+   * The consent a resident gives before the app may take a selfie (`DL-216`): a text of its own,
+   * agreed to as an act of its own, apart from the Terms and the privacy notice. While it is the
+   * placeholder the server refuses every selfie. `undefined` when the API did not send it — one
+   * older than the consent — which is unknown, and offers nothing to publish.
+   */
+  readonly biometricConsent: LegalText | undefined;
   readonly updatedAt: IsoDateTime;
 }
 
@@ -85,6 +92,19 @@ export function isNewLegalVersion(version: string, askedNow: string | null): boo
   return version.trim() !== (askedNow ?? '').trim();
 }
 
+/**
+ * The biometric consent version a resident can agree to now, or `null` while the text is the
+ * placeholder — the server's `biometric_consent_version`, derived by the same rule (`DL-216`).
+ */
+export function biometricVersionAskedNow(text: LegalText): string | null {
+  return isPlaceholderText(text) ? null : text.version;
+}
+
+/** Whether the server refuses every selfie: no biometric consent text is published (`DL-216`). */
+export function refusesEverySelfie(config: AppConfig): boolean {
+  return config.biometricConsent !== undefined && isPlaceholderText(config.biometricConsent);
+}
+
 export interface FeatureFlag {
   readonly key: string;
   readonly value: string;
@@ -107,6 +127,8 @@ export interface AppConfigChanges {
   readonly terms?: LegalTextDraft;
   /** Publishes the privacy notice, the same way. */
   readonly privacyNotice?: LegalTextDraft;
+  /** Publishes the biometric (selfie) consent, the same way (`DL-216`). */
+  readonly biometricConsent?: LegalTextDraft;
 }
 
 /**
@@ -333,6 +355,12 @@ export function appConfigProblems(
       });
     }
   }
+  // The biometric consent has no version setting beside it: its version is the text's own (`DL-216`).
+  if (changes.biometricConsent !== undefined) {
+    problems.push(
+      ...legalTextProblems('biometricConsent', changes.biometricConsent, 'biometric consent'),
+    );
+  }
   const flags = changes.featureFlags ?? [];
   if (flags.length > APP_CONFIG_LIMITS.flagsPerChange) {
     problems.push({
@@ -368,7 +396,7 @@ export function appConfigProblems(
 
 /** What the API would refuse in a published text, said before anything is sent (`DL-186`). */
 function legalTextProblems(
-  field: 'terms' | 'privacyNotice',
+  field: 'terms' | 'privacyNotice' | 'biometricConsent',
   draft: LegalTextDraft,
   name: string,
 ): readonly FieldProblem<AppConfigField>[] {
@@ -484,6 +512,34 @@ export const APP_CONFIG_EFFECTS = {
             'notice to accept. Keep the version only to correct a mistake that does not change ' +
             'what residents agree to.',
         ],
+  /**
+   * The biometric consent (`DL-216`), from `44cae1b`: the server takes a selfie only from an account
+   * whose standing biometric consent names the version published now, refuses every selfie while
+   * the text is the placeholder, and accepts no "placeholder" version back — so publishing it opens
+   * the selfie step for good, and a new version is agreed to again before the next selfie. Selfies
+   * already sent are kept. Nothing here stops a resident using the app, so none of it is
+   * acknowledged (`asksEveryResident`).
+   */
+  biometricFirstPublished: (version: string) => [
+    'Residents can send a selfie from now on. Until now the server refused every selfie, so no ' +
+      `resident could verify their ID by selfie. Each resident must agree to version ${version} ` +
+      'in the app, as an act of its own, before a selfie is sent.',
+    'This cannot be undone here: a later change can publish a new version or correct the text, ' +
+      'but the server never goes back to having no biometric consent text.',
+  ],
+  biometricPublished: (version: string, isNew: boolean) =>
+    isNew
+      ? [
+          `This is a new version, ${version}, so every resident who agreed to an earlier version ` +
+            `must agree to ${version} in the app before sending another selfie. Selfies already ` +
+            'sent are kept.',
+        ]
+      : [
+          `The version stays ${version}, so the text changes without asking anyone to agree ` +
+            `again: a resident who agreed to version ${version} sends their next selfie without ` +
+            'being shown the new text. Keep the version only to correct a mistake that does not ' +
+            'change what residents agree to.',
+        ],
   asWritten: [
     'The text is published exactly as written here, and the app shows it as written. Nothing in ' +
       'this console writes, suggests or fills in legal text.',
@@ -514,7 +570,9 @@ export const APP_CONFIG_EFFECTS = {
 
 /**
  * True for a change that can stop residents using the app until they act. The review time is not
- * one: it changes a sentence, and asks nobody to update or accept (`DL-205`).
+ * one: it changes a sentence, and asks nobody to update or accept (`DL-205`). Nor is the biometric
+ * consent: a new version is agreed to before a resident's next selfie, and stops nobody using the
+ * app; its effects say so in words (`DL-216`).
  */
 export function asksEveryResident(current: AppConfig, changes: AppConfigChanges): boolean {
   const minimum = changes.minimumAppVersion;
@@ -557,7 +615,21 @@ export function appConfigEffects(current: AppConfig, changes: AppConfigChanges):
       ),
     );
   }
-  if (changes.terms !== undefined || changes.privacyNotice !== undefined) {
+  const biometric = changes.biometricConsent;
+  if (biometric !== undefined && current.biometricConsent !== undefined) {
+    const version = biometric.version.trim();
+    const askedNow = biometricVersionAskedNow(current.biometricConsent);
+    effects.push(
+      ...(askedNow === null
+        ? APP_CONFIG_EFFECTS.biometricFirstPublished(version)
+        : APP_CONFIG_EFFECTS.biometricPublished(version, isNewLegalVersion(version, askedNow))),
+    );
+  }
+  if (
+    changes.terms !== undefined ||
+    changes.privacyNotice !== undefined ||
+    changes.biometricConsent !== undefined
+  ) {
     effects.push(...APP_CONFIG_EFFECTS.asWritten);
   }
   const minimum = changes.minimumAppVersion;

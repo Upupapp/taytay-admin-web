@@ -33,6 +33,12 @@ const CONFIG: AppConfig = {
     updatedAt: asIsoDateTime('2026-01-01T00:00:00.000Z'),
     bodyMarkdown: 'This is a placeholder for the Terms of Use.',
   },
+  // Still the API's placeholder too: the server refuses every selfie (DL-216).
+  biometricConsent: {
+    version: 'placeholder',
+    updatedAt: asIsoDateTime('2026-01-01T00:00:00.000Z'),
+    bodyMarkdown: 'This is a placeholder for the consent to use your selfie.',
+  },
   updatedAt: asIsoDateTime('2026-10-01T00:00:00.000Z'),
 };
 
@@ -553,5 +559,151 @@ describe('AppSettingsPage — how long an ID review usually takes (DL-205)', () 
     expect(element.querySelector('input[name="settings-review-time"]')).toBeNull();
     expect(element.querySelector('#settings-review-min')).toBeNull();
     expect(element.textContent).toContain('Nothing has changed yet.');
+  });
+});
+
+describe('AppSettingsPage — the biometric (selfie) consent (DL-216)', () => {
+  const published: AppConfig = {
+    ...CONFIG,
+    biometricConsent: {
+      version: '2026-11',
+      updatedAt: asIsoDateTime('2026-11-01T00:00:00.000Z'),
+      bodyMarkdown: 'The biometric consent the LGU published.',
+    },
+  };
+
+  it('says at the top, and where the text would be, that the app cannot take selfies', async () => {
+    configure();
+    const element = await settle(TestBed.createComponent(AppSettingsPage));
+    const warning = element.querySelector('.callout--warning');
+    const section = element.querySelector('#settings-biometricConsent-heading')?.closest('section');
+
+    expect(warning?.textContent).toContain('The app cannot take selfies.');
+    expect(warning?.textContent).toContain('no resident can verify their ID by selfie');
+    // Before every setting, because the editor that ends it is far down the page.
+    const firstGroup = element.querySelector('fieldset');
+    expect(
+      warning !== null &&
+        firstGroup !== null &&
+        (warning.compareDocumentPosition(firstGroup) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+    ).toBe(true);
+    expect(section?.textContent).toContain('No text has been written yet.');
+    expect(section?.textContent).toContain('the app cannot take a selfie');
+    expect(section?.textContent).not.toContain('This is a placeholder for the consent');
+    // In a group of its own, apart from the Terms and the privacy notice.
+    expect(section?.closest('fieldset')?.querySelector('legend')?.textContent).toContain(
+      'Biometric (selfie) consent',
+    );
+    expect(section?.closest('fieldset')?.querySelector('#settings-terms-heading')).toBeNull();
+  });
+
+  it('says nothing of the kind once a text is published, and shows it with its version', async () => {
+    configure(published);
+    const element = await settle(TestBed.createComponent(AppSettingsPage));
+    const section = element.querySelector('#settings-biometricConsent-heading')?.closest('section');
+
+    expect(element.textContent).not.toContain('The app cannot take selfies.');
+    expect(section?.textContent).toContain('Version 2026-11, published');
+    expect(section?.querySelector('.settings__legal-text')?.textContent).toBe(
+      'The biometric consent the LGU published.',
+    );
+  });
+
+  it('shows what the text has to cover beside an empty editor, and puts none of it in the field', async () => {
+    configure();
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+    expect(document.querySelector('.settings__requirements')).toBeNull();
+
+    buttonNamed('Write the biometric consent')?.click();
+    await settle(fixture);
+
+    const body = document.querySelector<HTMLTextAreaElement>('#settings-biometricConsent-body');
+    const version = document.querySelector<HTMLInputElement>('#settings-biometricConsent-version');
+    const checklist = document.querySelector('.settings__requirements');
+    expect(body?.value).toBe('');
+    expect(version?.value).toBe('');
+    expect(checklist?.textContent).toContain('What withdrawing does');
+    expect(checklist?.textContent).toContain('The server erases the resident’s selfies');
+    expect(checklist?.textContent).toContain('RA 10173 s. 13(a)');
+    expect(checklist?.textContent).toContain('NPC Circular 2023-04');
+    // Only the biometric consent's editor has it.
+    buttonNamed('Write the Terms of Use')?.click();
+    await settle(fixture);
+    expect(document.querySelectorAll('.settings__requirements')).toHaveLength(1);
+    expect(fixture.nativeElement.textContent).toContain('Nothing has changed yet.');
+  });
+
+  it('says what a first publication does, asks no acknowledgement, and sends the text', async () => {
+    const repository = configure();
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+
+    buttonNamed('Write the biometric consent')?.click();
+    await settle(fixture);
+    type('#settings-biometricConsent-version', '2026-11');
+    type('#settings-biometricConsent-body', 'The consent the LGU approved.');
+    await settle(fixture);
+    const dialog = await review(fixture);
+
+    const said = dialog?.textContent ?? '';
+    expect(said).toContain('Residents can send a selfie from now on.');
+    expect(said).toContain('This cannot be undone here');
+    expect(dialog?.querySelector('input[type="checkbox"]')).toBeNull();
+    const save = buttonNamed('Save the settings');
+    expect(save?.disabled).toBe(false);
+    save?.click();
+    await settle(fixture);
+
+    expect(repository.changes).toEqual([
+      { biometricConsent: { version: '2026-11', bodyMarkdown: 'The consent the LGU approved.' } },
+    ]);
+  });
+
+  it('says a new version is agreed to again before the next selfie', async () => {
+    configure(published);
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+
+    buttonNamed('Change the biometric consent')?.click();
+    await settle(fixture);
+    expect(
+      document.querySelector<HTMLTextAreaElement>('#settings-biometricConsent-body')?.value,
+    ).toBe('The biometric consent the LGU published.');
+    type('#settings-biometricConsent-version', '2026-12');
+    await settle(fixture);
+    const said = (await review(fixture))?.textContent ?? '';
+
+    expect(said).toContain('must agree to 2026-12 in the app before sending another selfie');
+    expect(said).not.toContain('from now on');
+  });
+
+  it('refuses the placeholder’s version before anything is sent', async () => {
+    const repository = configure();
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+
+    buttonNamed('Write the biometric consent')?.click();
+    await settle(fixture);
+    type('#settings-biometricConsent-version', 'placeholder');
+    type('#settings-biometricConsent-body', 'Text.');
+    await settle(fixture);
+
+    expect(await review(fixture)).toBeNull();
+    expect(document.querySelector('.settings__problems')?.textContent).toContain(
+      'Give the approved biometric consent a version of its own.',
+    );
+    expect(repository.changes).toEqual([]);
+  });
+
+  it('says so when the API does not send it, and offers nothing to publish', async () => {
+    configure({ ...CONFIG, biometricConsent: undefined });
+    const element = await settle(TestBed.createComponent(AppSettingsPage));
+    const section = element.querySelector('#settings-biometricConsent-heading')?.closest('section');
+
+    expect(section?.textContent).toContain('The API did not send this text');
+    expect(buttonNamed('Write the biometric consent')).toBeNull();
+    // Unknown is not "refused": nothing is claimed about selfies either way.
+    expect(element.textContent).not.toContain('The app cannot take selfies.');
   });
 });

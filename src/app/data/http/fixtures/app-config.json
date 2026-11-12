@@ -17,6 +17,12 @@
       "updated_at": "2026-01-01T00:00:00.000Z",
       "body_markdown": "This is a placeholder for the Terms of Use. The approved Terms of Use will replace this text."
     },
+    "biometric_consent_version": null,
+    "biometric_consent": {
+      "version": "placeholder",
+      "updated_at": "2026-01-01T00:00:00.000Z",
+      "body_markdown": "This is a placeholder for the consent to use your selfie to check your identity. The approved text will replace it. Until then, no selfie can be sent."
+    },
     "updated_at": "2026-10-01T00:00:00.000Z"
   },
   "meta": {}

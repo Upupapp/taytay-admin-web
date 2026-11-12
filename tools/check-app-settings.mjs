@@ -37,6 +37,16 @@
  *      migration value); an API that does not send the setting is read as unknown and offers nothing
  *      to send; the range goes out whole under its own key and the server's refusal comes back by
  *      input; and each input names its error with `aria-describedby` and `aria-invalid`.
+ *  10. The biometric (selfie) consent (`DL-216`): while it is the placeholder the page says, at its
+ *      top, that the app cannot take selfies and no resident can verify by selfie, and the copy says
+ *      it again where the text would be; the effects say that a first publication lets residents send
+ *      a selfie and cannot be undone here, that a new version is agreed to again before the next
+ *      selfie and keeps the selfies already sent, and that the same version changes the text without
+ *      asking anyone — and `appConfigEffects` lists them; `asksEveryResident` leaves it out, since it
+ *      stops nobody using the app; the mapper reads it whole, unknown when absent, and sends it with
+ *      its version; the mock's is the API's placeholder; and the checklist of what it has to cover
+ *      stands beside the editor as topics with their sources, while every draft is set from nothing
+ *      but what was typed, what is published, or empty — so no checklist line can reach the field.
  *
  * Each rule was validated against a planted regression before being trusted.
  */
@@ -59,8 +69,9 @@ const COPY = join(FEATURE, 'app-settings.copy.ts');
 const DOMAIN = join(APP, 'domain', 'app-config', 'app-config.ts');
 const MAPPER = join(APP, 'data', 'http', 'mappers', 'app-config.mapper.ts');
 const MOCK = join(APP, 'data', 'mock', 'mock-app-config.repository.ts');
+const REQUIREMENTS = join(APP, 'domain', 'app-config', 'biometric-consent-requirements.ts');
 
-for (const file of [PAGE, TEMPLATE, COPY, DOMAIN, MAPPER, MOCK]) {
+for (const file of [PAGE, TEMPLATE, COPY, DOMAIN, MAPPER, MOCK, REQUIREMENTS]) {
   if (!existsSync(file)) failures.push(`${shown(file)} is missing, so nothing about it was checked.`);
 }
 if (failures.length > 0) report();
@@ -101,7 +112,7 @@ function methodBody(text, name) {
 const page = code(readFileSync(PAGE, 'utf8'));
 const template = code(readFileSync(TEMPLATE, 'utf8'));
 const domain = code(readFileSync(DOMAIN, 'utf8'));
-const moduleFiles = [...walk(FEATURE), DOMAIN, MAPPER, MOCK];
+const moduleFiles = [...walk(FEATURE), DOMAIN, MAPPER, MOCK, REQUIREMENTS];
 
 /* ── 1. residents see it ─────────────────────────────────────────────────── */
 
@@ -210,10 +221,10 @@ for (const effect of [
 
 // The placeholder has no text, and the page says so for both.
 const copyText = readFileSync(COPY, 'utf8');
-if ([...copyText.matchAll(/No text has been written yet\./g)].length < 2) {
+if ([...copyText.matchAll(/No text has been written yet\./g)].length < 3) {
   failures.push(
-    'The copy no longer says, for both texts, that no text has been written yet while the version ' +
-      'is the placeholder (DL-186).',
+    'The copy no longer says, for each of the three texts, that no text has been written yet while ' +
+      'the version is the placeholder (DL-186, DL-216).',
   );
 }
 if (!/@if \(isPlaceholder\(published\)\)\s*\{\s*<p[^>]*>\{\{\s*words\s*\.\s*noText\s*\}\}/.test(template)) {
@@ -280,7 +291,7 @@ if (
 
 // The mock invents no legal text: both texts are the API's placeholders.
 const mock = code(readFileSync(MOCK, 'utf8'));
-for (const key of ['privacyNotice', 'terms']) {
+for (const key of ['privacyNotice', 'terms', 'biometricConsent']) {
   if (!new RegExp(`${key}: \\{\\s*version: 'placeholder'`).test(mock)) {
     failures.push(`The mock's ${key} is not the API's placeholder. No legal text is invented, in the demo either (DL-186).`);
   }
@@ -393,6 +404,121 @@ if (!/`settings-review-\$\{part\}-error`/.test(block(page, page.indexOf('protect
   failures.push("reviewDescribedBy no longer points each input at its own error (DL-205).");
 }
 
+/* ── 10. the biometric (selfie) consent (DL-216) ─────────────────────────── */
+
+/** A sentence as it reads: the string concatenations that wrap it at 100 columns undone. */
+const joined = (text) => text.replace(/['`]\s*\+\s*['`]/g, '');
+const effectsSaid = joined(effectsText);
+const copySaid = joined(copyText);
+
+for (const [pattern, said] of [
+  [/biometricFirstPublished:[\s\S]{0,120}Residents can send a selfie from now on/, 'that a first publication lets residents send a selfie'],
+  [/biometricFirstPublished:[\s\S]{0,300}no resident could verify their ID by selfie/, 'that until then no resident could verify by selfie'],
+  [/biometricFirstPublished:[\s\S]{0,600}This cannot be undone here/, 'that a first publication cannot be undone here'],
+  [/biometricPublished:[\s\S]{0,300}must agree to \$\{version\} in the app before sending another selfie/, 'that a new version is agreed to again before the next selfie'],
+  [/biometricPublished:[\s\S]{0,400}Selfies already sent are kept/, 'that the selfies already sent are kept'],
+  [/biometricPublished:[\s\S]{0,700}text changes without asking anyone to agree/, 'that the same version changes the text without asking anyone to agree again'],
+]) {
+  if (!pattern.test(effectsSaid)) failures.push(`APP_CONFIG_EFFECTS no longer says ${said} (DL-216).`);
+}
+for (const effect of ['APP_CONFIG_EFFECTS.biometricFirstPublished', 'APP_CONFIG_EFFECTS.biometricPublished']) {
+  if (!listed.includes(effect)) {
+    failures.push(`appConfigEffects no longer lists ${effect}, so the confirmation would not say it (DL-216).`);
+  }
+}
+if (!/changes\s*\.\s*biometricConsent !== undefined\s*\)\s*\{\s*effects\s*\.\s*push\(\.\.\.APP_CONFIG_EFFECTS\s*\.\s*asWritten\)/.test(listed)) {
+  failures.push('appConfigEffects no longer says the biometric consent is published as written (DL-216).');
+}
+if (asks.includes('biometricConsent')) {
+  failures.push(
+    'asksEveryResident covers the biometric consent. It stops nobody using the app, and an ' +
+      'acknowledgement nobody needs teaches administrators to tick without reading (DL-216).',
+  );
+}
+
+// Until it is published, the page says plainly that the app cannot take selfies — at its top.
+if (
+  !/selfiesRefusedTitle:\s*'The app cannot take selfies\.'/.test(copySaid) ||
+  !/selfiesRefused:\s*'No biometric consent is published, so the server refuses every selfie and no resident can verify their ID by selfie\./.test(copySaid) ||
+  !/Until the LGU’s approved biometric consent is published here, the app cannot take a selfie, so no resident can verify their ID by selfie/.test(copySaid)
+) {
+  failures.push('The copy no longer says plainly that the app cannot take selfies, so no resident can verify by selfie (DL-216).');
+}
+const refusedAt = template.search(/@if \(selfiesRefused\(\)\)\s*\{\s*<p[^>]*>[\s\S]{0,120}copy\s*\.\s*selfiesRefused\s*\}\}/);
+const firstFieldset = template.indexOf('<fieldset');
+if (refusedAt === -1 || firstFieldset === -1 || refusedAt > firstFieldset) {
+  failures.push('The page no longer says at its top, before any setting, that the app cannot take selfies (DL-216).');
+}
+if (!/config\s*\.\s*biometricConsent !== undefined && isPlaceholderText\(\s*config\s*\.\s*biometricConsent\s*\)/.test(block(domain, domain.indexOf('export function refusesEverySelfie')))) {
+  failures.push('refusesEverySelfie no longer says so exactly while the biometric consent is the placeholder (DL-216).');
+}
+if (!/refusesEverySelfie\(/.test(block(page, page.indexOf('protected readonly selfiesRefused')))) {
+  failures.push('selfiesRefused no longer asks refusesEverySelfie (DL-216).');
+}
+
+// Read whole, unknown when absent, sent with its version.
+const biometricOf = mapper.slice(mapper.indexOf('function biometricConsentOf'), mapper.indexOf('function reviewTimeOf'));
+if (
+  !/biometricConsentOf\(\s*field\(\s*wire\s*,\s*'biometric_consent'\s*\)\s*\)/.test(mapper) ||
+  !/if \(value === undefined\)\s*\{\s*return \{ readable: true, text: undefined \}/.test(biometricOf) ||
+  !/legalTextOf\(\s*value\s*\)/.test(biometricOf) ||
+  !/!biometricConsent\.readable/.test(block(mapper, mapper.indexOf('export function toAppConfig')))
+) {
+  failures.push('The mapper no longer reads the biometric consent whole, and as unknown when the API does not send it (DL-216).');
+}
+if (!/biometric_consent:\s*toWireLegalText\s*\(\s*changes\s*\.\s*biometricConsent\s*\)/.test(mapper)) {
+  failures.push('The mapper no longer sends the biometric consent with its version, together (DL-216).');
+}
+
+// The checklist: topics with their sources, beside the editor, and never in the field.
+const requirementsText = code(readFileSync(REQUIREMENTS, 'utf8'));
+const entries = [...requirementsText.matchAll(/\{\s*topic:\s*'([^']+)',\s*detail:[\s\S]*?basis:\s*([\s\S]*?),\s*\}/g)];
+if (entries.length < 8 || entries.some((entry) => !/RA 10173|NPC/.test(entry[2]))) {
+  failures.push('The biometric consent checklist lost topics, or a topic no longer names its source in RA 10173 or the NPC (DL-216).');
+}
+for (const topic of ['Purpose', 'How long it is kept', 'Freely given', 'Asked on its own', 'Withdrawing', 'What withdrawing does', 'Declining']) {
+  if (!entries.some((entry) => entry[1] === topic)) failures.push(`The biometric consent checklist no longer covers “${topic}” (DL-216).`);
+}
+if (!/The server erases the resident’s selfies/.test(requirementsText)) {
+  failures.push('The checklist no longer says that withdrawing erases the selfies, which the server does (DL-216).');
+}
+if (/export (?:async )?function|=>/.test(requirementsText)) {
+  failures.push('The biometric consent checklist does something. It is data: topics and sources, which decide nothing (DL-216).');
+}
+const editorAt = template.indexOf('@if (isEditing(kind))');
+const textareaAt = template.indexOf('<textarea', editorAt);
+const checklistAt = template.search(/@if \(kind === 'biometricConsent'\)\s*\{\s*<aside/);
+const putAwayAt = template.indexOf('(click)="stopEditing(kind)"', editorAt);
+if (editorAt === -1 || checklistAt === -1 || !(textareaAt < checklistAt && checklistAt < putAwayAt)) {
+  failures.push('The checklist of what a biometric consent has to cover no longer stands beside its editor (DL-216).');
+}
+if (!/@for \(requirement of requirements;[\s\S]{0,600}requirement\s*\.\s*basis/.test(template)) {
+  failures.push('The checklist no longer shows each topic with its source (DL-216).');
+}
+if ([...template.matchAll(/<textarea[\s\S]*?>/g)].some((tag) => !/\[value\]="draftBody\(\)\[kind\]"/.test(tag[0]))) {
+  failures.push('A text field shows something other than its own draft (DL-216).');
+}
+// Every draft is set from what was typed, what is published, or nothing: once the empty strings are
+// taken out, the argument names nothing but these. A checklist line put into a draft names more.
+const DRAFT_NAMES = new Set(['drafts', 'kind', 'draft', 'version', 'bodyMarkdown', 'value', 'terms', 'privacyNotice', 'biometricConsent']);
+for (const call of page.matchAll(/(?:draftBody|draftVersion)\s*\.\s*(?:set|update)\s*\(/g)) {
+  const open = (call.index ?? 0) + call[0].length - 1;
+  let end = open;
+  for (let i = open, depth = 0; i < page.length; i++) {
+    if (page[i] === '(') depth++;
+    else if (page[i] === ')' && --depth === 0) {
+      end = i;
+      break;
+    }
+  }
+  const names = page.slice(open + 1, end).replace(/''/g, '').match(/[A-Za-z_$][\w$]*/g) ?? [];
+  const stranger = names.find((name) => !DRAFT_NAMES.has(name));
+  if (stranger !== undefined) {
+    failures.push(`A legal text draft is set from ${stranger}, not from what was typed or published. Nothing here writes legal text (DL-186, DL-216).`);
+    break;
+  }
+}
+
 /* ── 6. no log, no storage ───────────────────────────────────────────────── */
 
 const LEAK =
@@ -437,6 +563,8 @@ function report() {
       'acknowledged where it can stop residents, effects before the button, flags not secret, the key ' +
       'the administrator’s; the Terms of Use and privacy notice published with their version, a new ' +
       'version acknowledged, no legal text written or rendered here; the review time said in the ' +
-      'app’s words, never invented, unknown when not sent, and refused beside its input).',
+      'app’s words, never invented, unknown when not sent, and refused beside its input; the ' +
+      'biometric consent said missing at the top, its effects before the button, and its checklist ' +
+      'beside the editor, never in it).',
   );
 }

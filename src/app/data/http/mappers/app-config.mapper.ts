@@ -45,6 +45,23 @@ function legalTextOf(value: unknown): LegalText | null {
 }
 
 /**
+ * The biometric consent, read whole like the other texts (`DL-216`) — and, when the key is not
+ * there at all, `undefined`: an API older than the consent, which is unknown rather than "the
+ * placeholder", and offers nothing to publish. Anything else unreadable makes the whole
+ * configuration unreadable, by the rule below.
+ */
+function biometricConsentOf(
+  value: unknown,
+):
+  { readonly readable: true; readonly text: LegalText | undefined } | { readonly readable: false } {
+  if (value === undefined) {
+    return { readable: true, text: undefined };
+  }
+  const text = legalTextOf(value);
+  return text === null ? { readable: false } : { readable: true, text };
+}
+
+/**
  * The review time, as sent (`DL-205`): a range, `null` when the app states none — and, when the key
  * is not there at all, `undefined`: an API older than the setting, which is unknown rather than
  * "none". Read as `null`, the next save would offer to keep the app silent; no number stands in for
@@ -74,7 +91,9 @@ function reviewTimeOf(
  * makes the whole configuration unreadable instead.
  *
  * The privacy notice and the Terms of Use are read with their text (`DL-186`), because an
- * administrator now publishes both here, and the screen shows what residents are shown.
+ * administrator now publishes both here, and the screen shows what residents are shown; the
+ * biometric consent the same way (`DL-216`). `biometric_consent_version` is not read: it is the
+ * text's version, or `null` while that is the placeholder, which `biometricVersionAskedNow` derives.
  *
  * @consumes GET app/config
  * @consumes PATCH admin/app/config
@@ -89,6 +108,7 @@ export function toAppConfig(wire: unknown): AppConfig | null {
   const featureFlags = flagsOf(field(wire, 'feature_flags'));
   const privacyNotice = legalTextOf(field(wire, 'privacy_notice'));
   const terms = legalTextOf(field(wire, 'terms'));
+  const biometricConsent = biometricConsentOf(field(wire, 'biometric_consent'));
   const updatedAt = dateTime(field(wire, 'updated_at'));
 
   if (
@@ -101,6 +121,7 @@ export function toAppConfig(wire: unknown): AppConfig | null {
     featureFlags === null ||
     privacyNotice === null ||
     terms === null ||
+    !biometricConsent.readable ||
     updatedAt === null
   ) {
     return null;
@@ -116,6 +137,7 @@ export function toAppConfig(wire: unknown): AppConfig | null {
     featureFlags,
     privacyNotice,
     terms,
+    biometricConsent: biometricConsent.text,
     updatedAt,
   };
 }
@@ -131,9 +153,10 @@ export interface AppConfigPatchWire {
   readonly feature_flags: Readonly<Record<string, string | null>> | undefined;
   readonly terms: LegalTextWire | undefined;
   readonly privacy_notice: LegalTextWire | undefined;
+  readonly biometric_consent: LegalTextWire | undefined;
 }
 
-/** `TermsOfUseWrite` and `PrivacyNoticeWrite`: the text and its version, always together. */
+/** `TermsOfUseWrite`, `PrivacyNoticeWrite` and `BiometricConsentWrite`: the text and its version, always together. */
 export interface LegalTextWire {
   readonly version: string;
   readonly body_markdown: string;
@@ -172,6 +195,7 @@ export function toWireAppConfigChanges(changes: AppConfigChanges): AppConfigPatc
         : Object.fromEntries(changes.featureFlags.map((flag) => [flag.key, flag.value])),
     terms: toWireLegalText(changes.terms),
     privacy_notice: toWireLegalText(changes.privacyNotice),
+    biometric_consent: toWireLegalText(changes.biometricConsent),
   };
 }
 

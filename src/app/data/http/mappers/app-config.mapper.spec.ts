@@ -133,6 +133,53 @@ describe('the app settings mapper (DL-170)', () => {
     });
   });
 
+  describe('the biometric consent (DL-216)', () => {
+    it('reads it whole with its version, the placeholder as sent', () => {
+      expect(toAppConfig(APP_CONFIG.data)?.biometricConsent).toEqual({
+        version: 'placeholder',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        bodyMarkdown:
+          'This is a placeholder for the consent to use your selfie to check your identity. The approved text will replace it. Until then, no selfie can be sent.',
+      });
+    });
+
+    it('reads an API that does not send it as unknown, never as the placeholder', () => {
+      const older: Record<string, unknown> = { ...APP_CONFIG.data };
+      delete older['biometric_consent'];
+      const config = toAppConfig(older);
+
+      expect(config).not.toBeNull();
+      expect(config?.biometricConsent).toBeUndefined();
+    });
+
+    it('refuses one it cannot read, rather than showing it as not written', () => {
+      expect(toAppConfig({ ...APP_CONFIG.data, biometric_consent: null })).toBeNull();
+      expect(
+        toAppConfig({
+          ...APP_CONFIG.data,
+          biometric_consent: { version: '2026-11', body_markdown: 'Text.' },
+        }),
+      ).toBeNull();
+    });
+
+    it('publishes it with its version, together, and nothing when it is not changed', () => {
+      expect(
+        JSON.parse(
+          JSON.stringify(
+            toWireAppConfigChanges({
+              biometricConsent: { version: ' 2026-11 ', bodyMarkdown: ' The approved consent. ' },
+            }),
+          ),
+        ),
+      ).toEqual({
+        biometric_consent: { version: '2026-11', body_markdown: 'The approved consent.' },
+      });
+      expect(JSON.parse(JSON.stringify(toWireAppConfigChanges({ supportEmail: null })))).toEqual({
+        support_email: null,
+      });
+    });
+  });
+
   it('publishes a text and its version together, as the API reads them (DL-186)', () => {
     const wire = toWireAppConfigChanges({
       terms: { version: ' 2026-11 ', bodyMarkdown: '  The text the LGU approved.  ' },

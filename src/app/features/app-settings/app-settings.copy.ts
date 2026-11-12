@@ -4,12 +4,20 @@ import { REVIEW_DAYS_BOUNDS } from '@domain/index';
  * Every sentence the app settings page says (`DL-170`). What a change does is the domain's
  * (`APP_CONFIG_EFFECTS`), read from the backend.
  */
+const LEGAL_VERSION_HINT =
+  'Your choice, up to 32 characters, such as 2026-11 — never “placeholder”. A new version makes ' +
+  'every resident accept the text again in the app; the same version changes the text without ' +
+  'asking anyone to accept again.';
+const LEGAL_BODY_HINT =
+  'The approved text, exactly as it should be shown, up to 20,000 characters.';
+
 export const APP_SETTINGS_COPY = {
   title: 'App settings',
   subtitle:
     'Residents see this in the Taytay app: the contact details it shows, the terms and privacy ' +
-    'notice it asks residents to accept, the oldest app version it allows, how long it says an ID ' +
-    'review takes, and its feature flags. A change here reaches every resident.',
+    'notice it asks residents to accept, the consent it asks for before a selfie, the oldest app ' +
+    'version it allows, how long it says an ID review takes, and its feature flags. A change here ' +
+    'reaches every resident.',
   caption: 'The Taytay app’s settings',
   lastChanged: (when: string) => `Last changed ${when}.`,
 
@@ -52,20 +60,44 @@ export const APP_SETTINGS_COPY = {
   reviewPreviewNone: 'Nothing about how long a review takes.',
   reviewPreviewIncomplete: 'Give both numbers above to see the sentence.',
 
-  legalHeading: 'Terms of Use and privacy notice',
-  legalLead:
-    'The texts residents are asked to accept in the app. They are the LGU’s to write: this console ' +
-    'never writes, suggests or fills in legal text. Each is published with a version you choose, and ' +
-    'a new version makes every resident accept the text again in the app.',
+  /** DL-216: said at the top of the page while the server refuses every selfie. */
+  selfiesRefusedTitle: 'The app cannot take selfies.',
+  selfiesRefused:
+    'No biometric consent is published, so the server refuses every selfie and no resident can ' +
+    'verify their ID by selfie. Publish the office’s approved text under “Biometric (selfie) ' +
+    'consent” below.',
+  textNotSent:
+    'The API did not send this text: it is older than this setting. Nothing about it can be ' +
+    'published here until the API is updated.',
+
+  legalGroups: {
+    accepted: {
+      heading: 'Terms of Use and privacy notice',
+      lead:
+        'The texts residents are asked to accept in the app. They are the LGU’s to write: this ' +
+        'console never writes, suggests or fills in legal text. Each is published with a version ' +
+        'you choose, and a new version makes every resident accept the text again in the app.',
+    },
+    biometric: {
+      heading: 'Biometric (selfie) consent',
+      lead:
+        'The consent residents give before the app may take a selfie to check their identity. ' +
+        'Residents agree to it on its own, apart from the Terms of Use and the privacy notice. It is ' +
+        'the LGU’s to write, like them: this console never writes, suggests or fills in legal text. ' +
+        'A new version asks residents to agree again before their next selfie.',
+    },
+  },
   legalCurrent: (version: string, when: string) => `Version ${version}, published ${when}.`,
   legalAsWritten:
     'Shown exactly as written. Formatting marks such as # or ** appear here as typed; the app lays ' +
     'them out.',
-  legalVersionHint:
-    'Your choice, up to 32 characters, such as 2026-11 — never “placeholder”. A new version makes ' +
-    'every resident accept the text again in the app; the same version changes the text without ' +
-    'asking anyone to accept again.',
-  legalBodyHint: 'The approved text, exactly as it should be shown, up to 20,000 characters.',
+  requirementsHeading: 'What the consent has to cover',
+  requirementsLead:
+    'Topics, not wording: nothing here is put into the text, and nothing here stops it being ' +
+    'published. Whether the text covers each one is for the office to read.',
+  requirementsCaveat:
+    'Have the office’s data protection officer approve the text before it is published. The ' +
+    'circular and the NPC order are cited from published summaries; check their own text first.',
   legalPutAway: 'Put the editor away',
   legal: {
     terms: {
@@ -77,7 +109,9 @@ export const APP_SETTINGS_COPY = {
       write: 'Write the Terms of Use',
       edit: 'Change the Terms of Use',
       version: 'Version of the Terms of Use',
+      versionHint: LEGAL_VERSION_HINT,
       body: 'Text of the Terms of Use',
+      bodyHint: LEGAL_BODY_HINT,
     },
     privacyNotice: {
       heading: 'Privacy notice',
@@ -88,7 +122,27 @@ export const APP_SETTINGS_COPY = {
       write: 'Write the privacy notice',
       edit: 'Change the privacy notice',
       version: 'Version of the privacy notice',
+      versionHint: LEGAL_VERSION_HINT,
       body: 'Text of the privacy notice',
+      bodyHint: LEGAL_BODY_HINT,
+    },
+    biometricConsent: {
+      heading: 'Biometric (selfie) consent',
+      noText:
+        'No text has been written yet. Until the LGU’s approved biometric consent is published ' +
+        'here, the app cannot take a selfie, so no resident can verify their ID by selfie.',
+      read: 'Read the biometric consent residents are shown',
+      write: 'Write the biometric consent',
+      edit: 'Change the biometric consent',
+      version: 'Version of the biometric consent',
+      versionHint:
+        'Your choice, up to 32 characters, such as 2026-11 — never “placeholder”. A new version ' +
+        'asks every resident to agree again before their next selfie; the same version changes the ' +
+        'text without asking anyone to agree again.',
+      body: 'Text of the biometric consent',
+      bodyHint:
+        'The approved text, exactly as it should be shown, up to 20,000 characters. The list ' +
+        'beside it says what it has to cover.',
     },
   },
 

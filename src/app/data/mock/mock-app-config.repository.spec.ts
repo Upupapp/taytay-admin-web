@@ -138,4 +138,34 @@ describe('MockAppConfigRepository (DL-170)', () => {
       });
     });
   });
+
+  describe('the biometric consent (DL-216)', () => {
+    it('starts as the API’s placeholder, so every selfie is refused, and keeps it through other changes', async () => {
+      const settings = signedInAs('system-administrator');
+      expect((await firstValueFrom(settings.read())).biometricConsent?.version).toBe('placeholder');
+      const changed = await firstValueFrom(settings.change({ contactLine: null }));
+      expect(changed.biometricConsent?.version).toBe('placeholder');
+    });
+
+    it('publishes the text with its version, and refuses the placeholder’s version', async () => {
+      const settings = signedInAs('system-administrator');
+      const refusal: unknown = await firstValueFrom(
+        settings.change({ biometricConsent: { version: 'placeholder', bodyMarkdown: 'Text.' } }),
+      ).catch((e: unknown) => e);
+      expect(refusal).toBeInstanceOf(Error);
+
+      const published = await firstValueFrom(
+        settings.change({
+          biometricConsent: { version: ' 2026-11 ', bodyMarkdown: ' The approved consent. ' },
+        }),
+      );
+      expect(published.biometricConsent).toMatchObject({
+        version: '2026-11',
+        bodyMarkdown: 'The approved consent.',
+      });
+      // It has no version setting of its own beside it, and touches none of the others.
+      expect(published.termsVersion).toBe('2026-01');
+      expect(published.privacyVersion).toBe('placeholder');
+    });
+  });
 });

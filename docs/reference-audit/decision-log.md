@@ -9875,3 +9875,62 @@ reverse: move the two entries back to their sections.
 
 **Checks.** The residents spec reads the tabs instead of the select's options for the protected-sector
 rule, and holds the chosen tab's `aria-current`. Easiest to reverse: restore the select.
+
+## DL-216 — App settings publishes the biometric (selfie) consent; until it does, the page says the app cannot take selfies
+
+**Status:** Settled (12 November 2026). Extends `DL-186` (the texts residents accept) to a third
+text. Backend `44cae1b` (G1), vendored with the spec at `ebd7aeb`.
+
+**Why.** The server now refuses every selfie (`403 BIOMETRIC_CONSENT_REQUIRED`) until the office
+publishes a biometric consent text and the resident agrees to its version as an act of its own.
+The text is not seeded, so on deploy no resident can verify by selfie, and the only place it can be
+published is this console.
+
+**What changed.**
+
+1. **A third text, in a group of its own.** `AppConfig.biometricConsent` is read whole, like the
+   Terms and the privacy notice, and published through `PATCH admin/app/config`
+   `{ biometric_consent: { version, body_markdown } }`. It sits in its own fieldset, "Biometric
+   (selfie) consent", because residents agree to it apart from the other two (NPC Circular 2023-04:
+   no bundled consent). `biometric_consent_version` is not read: it is the text's version, or `null`
+   while that is the placeholder, which `biometricVersionAskedNow` derives by the server's rule.
+2. **Said plainly while it is missing.** While the text is the placeholder a warning callout at the
+   top of the page says "The app cannot take selfies." and that no resident can verify their ID by
+   selfie, and the section says it again where the text would be. An API older than G1 sends no
+   `biometric_consent`: that is read as unknown (`undefined`), like the review time (`DL-205`), the
+   section says the API did not send it, nothing is offered to publish, and no claim about selfies
+   is made either way.
+3. **What publishing does, before the button.** A first publication: residents can send a selfie
+   from now on, each after agreeing to that version in the app, and it cannot be undone here — the
+   server accepts no "placeholder" version back. A new version: every resident who agreed to an
+   earlier one agrees again before their next selfie; selfies already sent are kept. The same
+   version: the text changes without asking anyone. The audit is the server's `app.config_updated`,
+   which `APP_CONFIG_EFFECTS.always` already describes.
+4. **No acknowledgement.** `asksEveryResident` leaves the biometric consent out: it stops nobody
+   using the app — the Terms and the privacy notice are what the app gates on — and a needless tick
+   teaches administrators to tick without reading (`DL-205`'s reasoning). The irreversibility is
+   said in the effects instead.
+5. **A checklist beside the editor, never wording.** `BIOMETRIC_CONSENT_REQUIREMENTS` lists ten
+   topics the text has to cover — purpose, what is collected, who sees it, how long it is kept,
+   freely given, asked on its own, withdrawing, what withdrawing does, who answers for it, declining
+   — each with its source (RA 10173 ss. 3(b), 13(a), 16(b), read on lawphil.net; NPC Circular
+   2023-04 and the NPC's 2025 order against Tools for Humanity, from published summaries, and the
+   page says to check their own text). "What withdrawing does" states what the server does: it
+   erases the selfies, a pending review cannot be approved until a new selfie is sent. The list is
+   data: nothing reads it to decide, and nothing puts it into the field.
+6. **`BIOMETRIC_CONSENT_REQUIRED`** joins `API_ERROR_CODES` (contract drift) and is told in the
+   server's words like `VERIFICATION_REQUIRED`; only a resident's app is ever sent it.
+
+**Checks.** `check:app-settings` rule 10: the top-of-page sentence and its place before every
+setting; the three effects and `appConfigEffects` listing them; the biometric consent kept out of
+`asksEveryResident`; the mapper reading it whole and unknown when absent, and sending it with its
+version; the mock's placeholder; the checklist's topics, sources and place beside the editor; and
+every draft set from nothing but what was typed, what is published or `''` — an identifier
+allow-list, stricter than rule 8's "no string literal", which a draft built from the checklist
+would have passed. The "no text written yet" sentence is now required three times. Validated against
+17 planted regressions.
+
+**Left open.** Whether a resident who declines can verify another way (in person) is the owner's
+decision; the checklist asks the office to say so and invents none. The verification screen does not
+yet read `selfie_erased_at` (G1): an erased selfie reads 404 there and the server refuses its
+approval with a 409.

@@ -13,6 +13,7 @@
         "updated_at"
       ],
       "optional": [
+        "biometric_consent",
         "contact_line",
         "minimum_app_version",
         "privacy_version",
@@ -520,6 +521,7 @@
         "updated_at"
       ],
       "optional": [
+        "biometric_consent",
         "contact_line",
         "minimum_app_version",
         "privacy_version",

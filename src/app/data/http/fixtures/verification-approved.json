@@ -6,6 +6,7 @@
     "id_front_media_id": "aa11bb22-cc33-4d44-8e55-ff6600770804",
     "id_back_media_id": null,
     "selfie_media_id": "aa11bb22-cc33-4d44-8e55-ff6600770805",
+    "selfie_erased_at": null,
     "status": "approved",
     "reviewer_id": "5f4e3d2c-1b0a-4f9e-8d7c-6b5a4f3e2d01",
     "message": null,

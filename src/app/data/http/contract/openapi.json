@@ -152,8 +152,8 @@
     "/api/v1/me/consents/withdraw": {
       "post": {
         "operationId": "withdrawConsent",
-        "summary": "Withdraw a privacy consent",
-        "description": "Sets withdrawn_at. Withdrawing again returns the same row. An unknown version is 404. Accepting the version again clears the withdrawal.",
+        "summary": "Withdraw a consent",
+        "description": "Sets withdrawn_at on the consent of that kind and version. Without kind (an older app), every terms, privacy and unspecified row of that version is withdrawn, and the newest of them is returned; a biometric consent is never withdrawn without kind. kind biometric withdraws every standing biometric consent and, in the same act, erases the account's selfies: each verification request gets selfie_erased_at, the stored images are discarded (their media ids then read 404), each erasure is audited verification.selfie_erased, a pending request can no longer be approved, and no new digital ID is issued from an erased selfie. The decision records stay. Withdrawing again returns the same row. A version never accepted under that kind is 404. Accepting the version again clears the withdrawal.",
         "security": [{ "firebaseIdToken": [] }],
         "requestBody": {
           "required": true,
@@ -162,6 +162,18 @@
         "responses": {
           "200": { "description": "Withdrawn.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConsentEnvelope" } } } },
           "404": { "description": "That version was never accepted.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/me/consents/current": {
+      "get": {
+        "operationId": "getConsentState",
+        "summary": "Where the account stands on each published text",
+        "description": "For terms and privacy: the version published now, the newest standing consent, and whether they match. Standing unspecified rows from older apps are listed apart and make neither text up to date.",
+        "security": [{ "firebaseIdToken": [] }],
+        "responses": {
+          "200": { "description": "Consent state.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConsentStateEnvelope" } } } },
+          "401": { "description": "Authentication is required.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
         }
       }
     },
@@ -190,7 +202,8 @@
       },
       "post": {
         "operationId": "acceptConsent",
-        "summary": "Record a privacy consent version",
+        "summary": "Record a consent to one text",
+        "description": "kind names the text: terms or privacy, recorded as separate acts, each with its own version and accepted_at. Without kind (an app built before kinds existed) the row is recorded as unspecified, which counts as neither text in GET /api/v1/me/consents/current. kind biometric is accepted only for the version published now (biometric_consent_version in GET /api/v1/app/config): 409 while none is published (the placeholder), 422 (details.version) for any other version.",
         "security": [{ "firebaseIdToken": [] }],
         "requestBody": {
           "required": true,
@@ -198,6 +211,8 @@
         },
         "responses": {
           "201": { "description": "Consent recorded.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConsentEnvelope" } } } },
+          "409": { "description": "kind biometric while no biometric consent text is published.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "Validation failed, or kind biometric with a version other than the one published now.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
           "200": { "description": "That version was already recorded, or a withdrawn version was accepted again.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConsentEnvelope" } } } }
         }
       }
@@ -245,7 +260,7 @@
       "post": {
         "operationId": "submitVerification",
         "summary": "Submit an identity verification request",
-        "description": "Registered residents only. One pending request per user. JPEG, PNG, or WebP, 5 MB each.",
+        "description": "Registered residents only. One pending request per user. JPEG, PNG, or WebP, 5 MB each. The selfie is biometric data: the account must hold a standing biometric consent to the version published now (GET /api/v1/me/consents/current, biometric.up_to_date), or the request is refused with 403 BIOMETRIC_CONSENT_REQUIRED before any image is stored. Deny by default: while the biometric text is a placeholder no selfie is accepted. An optional idempotency_key multipart field makes a retry safe (see VerificationSubmit); it travels in the body, as on every other route here, because the console's CORS policy allows four request headers. An Idempotency-Key header is ignored.",
         "security": [{ "firebaseIdToken": [] }],
         "requestBody": {
           "required": true,
@@ -257,7 +272,8 @@
         },
         "responses": {
           "201": { "description": "Request opened.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VerificationEnvelope" } } } },
-          "409": { "description": "A request is already pending, or the account is already verified.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "403": { "description": "FORBIDDEN for an account that is not registered; BIOMETRIC_CONSENT_REQUIRED when no biometric consent to the published text stands. Nothing is stored.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "A request is already pending, the account is already verified, or the idempotency_key was already used for a different submission.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
           "422": { "description": "Validation failed.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
         }
       }
@@ -266,7 +282,7 @@
       "post": {
         "operationId": "replaceVerificationDocuments",
         "summary": "Replace images on the caller's verification request",
-        "description": "Registered residents only, while the latest request is pending or rejected. At least one of id_front, id_back, or selfie is required.",
+        "description": "Registered residents only, while the latest request is pending or rejected. At least one of id_front, id_back, or selfie is required. A selfie needs the same standing biometric consent as on the first send (403 BIOMETRIC_CONSENT_REQUIRED otherwise, nothing stored); ID images alone do not. A new selfie clears selfie_erased_at.",
         "security": [{ "firebaseIdToken": [] }],
         "requestBody": {
           "required": true,
@@ -285,6 +301,7 @@
         },
         "responses": {
           "200": { "description": "Images replaced.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VerificationEnvelope" } } } },
+          "403": { "description": "BIOMETRIC_CONSENT_REQUIRED: a selfie was sent with no standing biometric consent to the published text.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
           "404": { "description": "No request yet.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
           "409": { "description": "The request is approved and can no longer be edited.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
         }
@@ -350,7 +367,7 @@
         "responses": {
           "200": { "description": "Approved. The response includes staff-only notes.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VerificationStaffEnvelope" } } } },
           "404": { "description": "Not found.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
-          "409": { "description": "Not pending, the account gives no name, or its name or birth date is not the one confirmed.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+          "409": { "description": "Not pending, the account gives no name, its name or birth date is not the one confirmed, or the resident withdrew the biometric consent and the selfie was erased (selfie_erased_at set; reject and ask for a new selfie).", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
         }
       }
     },
@@ -2050,6 +2067,7 @@
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HotlineWrite" } } } },
         "responses": {
           "201": { "description": "Created.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HotlineEnvelope" } } } },
+          "409": { "description": "An active command-center hotline already exists.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
           "422": { "description": "Validation failed.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
         }
       }
@@ -2063,7 +2081,8 @@
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HotlinePatch" } } } },
         "responses": {
           "200": { "description": "Updated.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HotlineEnvelope" } } } },
-          "404": { "description": "Not found.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+          "404": { "description": "Not found.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "The change would make a second active command-center hotline.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
         }
       },
       "delete": {
@@ -16396,7 +16415,7 @@
               "code": {
                 "type": "string",
                 "description": "Stable machine-readable code. Email and password-reset verification use code_invalid, code_expired, and code_locked.",
-                "enum": ["INVALID_JSON", "UNAUTHENTICATED", "FORBIDDEN", "VERIFICATION_REQUIRED", "NOT_FOUND", "CONFLICT", "PAYLOAD_TOO_LARGE", "VALIDATION_FAILED", "code_invalid", "code_expired", "code_locked", "RATE_LIMITED", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE"]
+                "enum": ["INVALID_JSON", "UNAUTHENTICATED", "FORBIDDEN", "VERIFICATION_REQUIRED", "BIOMETRIC_CONSENT_REQUIRED", "NOT_FOUND", "CONFLICT", "PAYLOAD_TOO_LARGE", "VALIDATION_FAILED", "code_invalid", "code_expired", "code_locked", "RATE_LIMITED", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE"]
               },
               "message": { "type": "string" },
               "details": {
@@ -16727,18 +16746,60 @@
       },
       "PrivacyConsent": {
         "type": "object",
-        "required": ["id", "version", "accepted_at", "withdrawn_at"],
+        "required": ["id", "kind", "version", "accepted_at", "withdrawn_at"],
         "properties": {
           "id": { "type": "string", "format": "uuid" },
+          "kind": { "$ref": "#/components/schemas/RecordedConsentKind" },
           "version": { "type": "string" },
           "accepted_at": { "type": "string", "format": "date-time" },
           "withdrawn_at": { "type": ["string", "null"], "format": "date-time" }
         }
       },
+      "ConsentKind": {
+        "type": "string",
+        "enum": ["terms", "privacy", "biometric"],
+        "description": "The text a consent is given to, each its own act: terms (the Terms of Use, a contract the resident accepts), privacy (the privacy notice the resident acknowledges) or biometric (the consent to use a selfie to check the resident is the person on their ID; the only consent a resident may refuse and still use the app)."
+      },
+      "RecordedConsentKind": {
+        "type": "string",
+        "enum": ["terms", "privacy", "biometric", "unspecified"],
+        "description": "A ConsentKind, or unspecified: a row recorded before kinds existed, or sent by an app that names none. Those apps asked for the Terms and the privacy notice under one tick, so an unspecified row counts as neither."
+      },
       "ConsentRequest": {
         "type": "object",
         "required": ["version"],
-        "properties": { "version": { "type": "string" } }
+        "additionalProperties": false,
+        "properties": {
+          "version": { "type": "string", "minLength": 1, "maxLength": 32 },
+          "kind": { "$ref": "#/components/schemas/ConsentKind" }
+        }
+      },
+      "ConsentStanding": {
+        "type": "object",
+        "required": ["published_version", "consent", "up_to_date"],
+        "properties": {
+          "published_version": { "type": ["string", "null"], "description": "The version residents are asked to accept now (terms_version or privacy_version in GET /api/v1/app/config); null when none is published." },
+          "consent": { "oneOf": [{ "$ref": "#/components/schemas/PrivacyConsent" }, { "type": "null" }], "description": "The newest consent of this kind still standing (not withdrawn), whatever its version." },
+          "up_to_date": { "type": "boolean", "description": "True only when a version is published and the standing consent names it." }
+        }
+      },
+      "ConsentState": {
+        "type": "object",
+        "required": ["terms", "privacy", "biometric", "unspecified"],
+        "properties": {
+          "terms": { "$ref": "#/components/schemas/ConsentStanding" },
+          "privacy": { "$ref": "#/components/schemas/ConsentStanding" },
+          "biometric": { "allOf": [{ "$ref": "#/components/schemas/ConsentStanding" }], "description": "published_version is null while the biometric text is a placeholder. up_to_date is exactly the condition under which the verification routes accept a selfie." },
+          "unspecified": { "type": "array", "items": { "$ref": "#/components/schemas/PrivacyConsent" }, "description": "Standing rows an older app recorded without naming the text. They make neither terms nor privacy up to date." }
+        }
+      },
+      "ConsentStateEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ConsentState" },
+          "meta": { "type": "object" }
+        }
       },
       "ConsentEnvelope": {
         "type": "object",
@@ -16809,7 +16870,8 @@
           "id_type": { "type": "string", "enum": ["philid", "drivers_license", "passport", "umid", "postal", "voters", "sss", "other"] },
           "id_front": { "type": "string", "format": "binary" },
           "id_back": { "type": "string", "format": "binary" },
-          "selfie": { "type": "string", "format": "binary" }
+          "selfie": { "type": "string", "format": "binary" },
+          "idempotency_key": { "type": "string", "format": "uuid", "description": "Optional. Minted in the app when the resident presses send and held across retries. A retry under the same key with the same id_type and the same image bytes answers 201 with the request the first send opened, storing nothing; the same key with another id_type or other images is 409. A refused send claims no key. Keys are kept, not expired. Without it the send works as before, unprotected." }
         }
       },
       "VerificationCorrection": {
@@ -16828,7 +16890,7 @@
       "VerificationRequest": {
         "type": "object",
         "description": "Citizen view. Reviewer notes are not included.",
-        "required": ["id", "user_id", "id_type", "id_front_media_id", "selfie_media_id", "status", "message", "submitted_at", "can_edit", "submitted_categories", "issues", "created_at"],
+        "required": ["id", "user_id", "id_type", "id_front_media_id", "selfie_media_id", "selfie_erased_at", "status", "message", "submitted_at", "can_edit", "submitted_categories", "issues", "created_at"],
         "properties": {
           "id": { "type": "string", "format": "uuid" },
           "user_id": { "type": "string", "format": "uuid" },
@@ -16836,6 +16898,7 @@
           "id_front_media_id": { "type": "string", "format": "uuid" },
           "id_back_media_id": { "type": ["string", "null"], "format": "uuid" },
           "selfie_media_id": { "type": "string", "format": "uuid" },
+          "selfie_erased_at": { "type": ["string", "null"], "format": "date-time", "description": "When the selfie was erased because the resident withdrew the biometric consent. The media id then reads 404; a pending request cannot be approved until a new selfie is sent." },
           "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
           "reviewer_id": { "type": ["string", "null"], "format": "uuid" },
           "message": { "type": ["string", "null"], "description": "Text the resident sent with a correction. Null until then." },
@@ -18222,14 +18285,20 @@
           "meta": { "type": "object" }
         }
       },
+      "HotlineKind": {
+        "type": "string",
+        "enum": ["command-center", "emergency", "police", "fire", "medical", "disaster", "other"],
+        "description": "What the line is for, so a client picks a line without matching on its name. command-center: the municipality's own command or operations center, the line an emergency button calls first; at most one active hotline is it. emergency: the national Emergency 911 hotline (EO 56, s. 2018). police (PNP), fire (BFP), medical (ambulance, health office, Red Cross), disaster (MDRRMO, rescue), other (anything else, and every row that existed before kinds)."
+      },
       "Hotline": {
         "type": "object",
-        "required": ["id", "name", "number", "category", "sort_order", "active", "created_at", "updated_at"],
+        "required": ["id", "name", "number", "category", "kind", "sort_order", "active", "created_at", "updated_at"],
         "properties": {
           "id": { "type": "string", "format": "uuid" },
           "name": { "type": "string" },
           "number": { "type": "string" },
           "category": { "type": "string" },
+          "kind": { "$ref": "#/components/schemas/HotlineKind" },
           "sort_order": { "type": "integer" },
           "active": { "type": "boolean" },
           "created_at": { "type": "string", "format": "date-time" },
@@ -18243,6 +18312,7 @@
           "name": { "type": "string" },
           "number": { "type": "string" },
           "category": { "type": "string" },
+          "kind": { "allOf": [{ "$ref": "#/components/schemas/HotlineKind" }], "description": "Optional; other when left out." },
           "sort_order": { "type": "integer" },
           "active": { "type": "boolean" }
         }
@@ -18253,6 +18323,7 @@
           "name": { "type": "string" },
           "number": { "type": "string" },
           "category": { "type": "string" },
+          "kind": { "$ref": "#/components/schemas/HotlineKind" },
           "sort_order": { "type": "integer" },
           "active": { "type": "boolean" }
         }
@@ -18272,7 +18343,7 @@
       },
       "AppConfig": {
         "type": "object",
-        "required": ["contact_line", "support_email", "privacy_version", "terms_version", "minimum_app_version", "verification_review_working_days", "feature_flags", "privacy_notice", "terms", "updated_at"],
+        "required": ["contact_line", "support_email", "privacy_version", "terms_version", "minimum_app_version", "verification_review_working_days", "feature_flags", "privacy_notice", "terms", "biometric_consent_version", "biometric_consent", "updated_at"],
         "properties": {
           "contact_line": { "type": ["string", "null"] },
           "support_email": { "type": ["string", "null"] },
@@ -18286,6 +18357,8 @@
           "feature_flags": { "type": "object", "additionalProperties": { "type": "string" } },
           "privacy_notice": { "$ref": "#/components/schemas/PrivacyNotice" },
           "terms": { "$ref": "#/components/schemas/TermsOfUse" },
+          "biometric_consent_version": { "type": ["string", "null"], "description": "The biometric consent version a resident can agree to now. Null while the text is the placeholder: no consent can be given and no selfie is accepted." },
+          "biometric_consent": { "$ref": "#/components/schemas/BiometricConsentText" },
           "updated_at": { "type": "string", "format": "date-time" }
         }
       },
@@ -18307,6 +18380,25 @@
           "version": { "type": "string" },
           "updated_at": { "type": "string", "format": "date-time" },
           "body_markdown": { "type": "string" }
+        }
+      },
+      "BiometricConsentText": {
+        "type": "object",
+        "description": "The consent a resident gives before the app may send a selfie, the same shape as the Terms. Until an administrator publishes the approved text, version is 'placeholder' and the body says it is a placeholder.",
+        "required": ["version", "updated_at", "body_markdown"],
+        "properties": {
+          "version": { "type": "string" },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "body_markdown": { "type": "string" }
+        }
+      },
+      "BiometricConsentWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["version", "body_markdown"],
+        "properties": {
+          "version": { "type": "string", "minLength": 1, "maxLength": 32, "description": "Not 'placeholder', in any case. A new version means every resident agrees again before their next selfie; selfies already stored are kept." },
+          "body_markdown": { "type": "string", "minLength": 1, "maxLength": 20000 }
         }
       },
       "TermsOfUseWrite": {
@@ -18341,6 +18433,7 @@
           "terms_version": { "type": ["string", "null"] },
           "privacy_notice": { "$ref": "#/components/schemas/PrivacyNoticeWrite" },
           "terms": { "$ref": "#/components/schemas/TermsOfUseWrite" },
+          "biometric_consent": { "$ref": "#/components/schemas/BiometricConsentWrite" },
           "minimum_app_version": { "type": ["string", "null"] },
           "verification_review_working_days": {
             "oneOf": [{ "$ref": "#/components/schemas/VerificationReviewWorkingDays" }, { "type": "null" }],

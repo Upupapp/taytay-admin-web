@@ -21,8 +21,9 @@ import { MockLatency } from './mock-latency';
  * The residents' app's settings, for the `local-mock` configuration (`DL-170`). Fictional: the
  * contact line dials nobody in particular, the address is at `settings.example.test`, a reserved
  * name and a `check:bundle` marker, and the privacy notice and the Terms of Use are the API's own
- * placeholders: no legal text is invented here either (`DL-186`). The review time is the range the
- * API's migration `0046` stores, today's copy in the app (`DL-205`).
+ * placeholders, and so is the biometric consent: no legal text is invented here either (`DL-186`,
+ * `DL-216`). The review time is the range the API's migration `0046` stores, today's copy in the
+ * app (`DL-205`).
  */
 export const MOCK_APP_CONFIG: AppConfig = {
   contactLine: '(02) 8000 0100',
@@ -46,6 +47,14 @@ export const MOCK_APP_CONFIG: AppConfig = {
     updatedAt: asIsoDateTime('2026-01-01T00:00:00.000Z'),
     bodyMarkdown:
       'This is a placeholder for the Terms of Use. The approved Terms of Use will replace this text.',
+  },
+  // The API's placeholder, as migration 0048 stores it: the server refuses every selfie (`DL-216`).
+  biometricConsent: {
+    version: 'placeholder',
+    updatedAt: asIsoDateTime('2026-01-01T00:00:00.000Z'),
+    bodyMarkdown:
+      'This is a placeholder for the consent to use your selfie to check your identity. The ' +
+      'approved text will replace it. Until then, no selfie can be sent.',
   },
   updatedAt: asIsoDateTime('2026-10-01T00:00:00.000Z'),
 };
@@ -109,6 +118,10 @@ export class MockAppConfigRepository implements AppConfigRepository {
         changes.terms?.version.trim() ?? pick(changes.termsVersion, this.config.termsVersion),
       privacyNotice: published(changes.privacyNotice, this.config.privacyNotice),
       terms: published(changes.terms, this.config.terms),
+      biometricConsent:
+        this.config.biometricConsent === undefined
+          ? undefined
+          : published(changes.biometricConsent, this.config.biometricConsent),
       minimumAppVersion: pick(changes.minimumAppVersion, this.config.minimumAppVersion),
       verificationReviewWorkingDays:
         range === undefined ? this.config.verificationReviewWorkingDays : range,

@@ -6,6 +6,7 @@
     "id_front_media_id": "aa11bb22-cc33-4d44-8e55-ff6600770801",
     "id_back_media_id": "aa11bb22-cc33-4d44-8e55-ff6600770802",
     "selfie_media_id": "aa11bb22-cc33-4d44-8e55-ff6600770803",
+    "selfie_erased_at": null,
     "status": "rejected",
     "reviewer_id": "5f4e3d2c-1b0a-4f9e-8d7c-6b5a4f3e2d01",
     "message": "I took the photo again in daylight so the name can be read.",

@@ -2662,6 +2662,22 @@ describe('the Node adapters', () => {
       expect((await changed).verificationReviewWorkingDays).toEqual({ min: 2, max: 5 });
     });
 
+    it('reads the biometric consent, and publishes it with its version (DL-216)', async () => {
+      const settings = TestBed.inject(HttpAppConfigRepository);
+      const changed = firstValueFrom(
+        settings.change({
+          biometricConsent: { version: '2026-11', bodyMarkdown: 'The consent the LGU approved.' },
+        }),
+      );
+      const patch = http.expectOne({ method: 'PATCH', url: `${BASE}/admin/app/config` });
+      expect(JSON.parse(JSON.stringify(patch.request.body))).toEqual({
+        biometric_consent: { version: '2026-11', body_markdown: 'The consent the LGU approved.' },
+      });
+      patch.flush(APP_CONFIG);
+
+      expect((await changed).biometricConsent?.version).toBe('placeholder');
+    });
+
     it('hands the server’s refusal of a review time on by the input it is about (DL-205)', async () => {
       const settings = TestBed.inject(HttpAppConfigRepository);
       const changed = firstValueFrom(

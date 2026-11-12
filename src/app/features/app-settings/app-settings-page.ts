@@ -14,6 +14,8 @@ import { switchMap } from 'rxjs';
 
 import {
   APP_CONFIG_REPOSITORY,
+  BIOMETRIC_CONSENT_REQUIREMENTS,
+  BIOMETRIC_CONSENT_SOURCES,
   appConfigEffects,
   appConfigProblems,
   asksEveryResident,
@@ -21,6 +23,7 @@ import {
   isPlaceholderText,
   legalTextDraftFrom,
   readWorkingDayRange,
+  refusesEverySelfie,
   reviewTimePhrase,
   type AppConfig,
   type AppConfigChanges,
@@ -47,8 +50,17 @@ interface NewFlag {
   readonly value: string;
 }
 
-/** The two texts residents accept, by the key `AppConfig` holds each under (`DL-186`). */
-export type LegalTextKind = 'terms' | 'privacyNotice';
+/**
+ * The texts residents agree to, by the key `AppConfig` holds each under: the Terms of Use and the
+ * privacy notice (`DL-186`), and the biometric consent, asked for on its own (`DL-216`).
+ */
+export type LegalTextKind = 'terms' | 'privacyNotice' | 'biometricConsent';
+
+/** The texts in two groups on the page: the two every resident accepts, and the selfie's own. */
+const LEGAL_GROUPS = [
+  { key: 'accepted', kinds: ['terms', 'privacyNotice'] },
+  { key: 'biometric', kinds: ['biometricConsent'] },
+] as const satisfies readonly { key: string; kinds: readonly LegalTextKind[] }[];
 
 /**
  * The residents' app's settings (`DL-170`): `GET app/config`, changed through
@@ -73,6 +85,13 @@ export type LegalTextKind = 'terms' | 'privacyNotice';
  * version changes the text without asking anyone, and the review says so. Nothing here writes legal
  * text: the editor starts from the published text, or from nothing while the API still serves its
  * placeholder, which the screen says has no text yet. The text is shown as text, never rendered.
+ *
+ * ## The biometric (selfie) consent (`DL-216`)
+ *
+ * Published the same way, in a group of its own because residents agree to it as an act of its own.
+ * While it is the placeholder the server refuses every selfie, and the page says so at its top. A
+ * checklist of what such a text has to cover under RA 10173 and the NPC's consent guidelines stands
+ * beside its editor — topics with their sources, never wording: nothing from it reaches the field.
  *
  * ## How long an ID review usually takes (`DL-205`)
  *
@@ -126,13 +145,23 @@ export class AppSettingsPage {
   protected readonly draftVersion = signal<Readonly<Record<LegalTextKind, string>>>({
     terms: '',
     privacyNotice: '',
+    biometricConsent: '',
   });
   protected readonly draftBody = signal<Readonly<Record<LegalTextKind, string>>>({
     terms: '',
     privacyNotice: '',
+    biometricConsent: '',
   });
   protected readonly isPlaceholder = isPlaceholderText;
-  protected readonly legalKinds: readonly LegalTextKind[] = ['terms', 'privacyNotice'];
+  protected readonly legalGroups = LEGAL_GROUPS;
+  protected readonly requirements = BIOMETRIC_CONSENT_REQUIREMENTS;
+  protected readonly sources = BIOMETRIC_CONSENT_SOURCES;
+
+  /** No biometric consent is published, so the server refuses every selfie (`DL-216`). */
+  protected readonly selfiesRefused = computed(() => {
+    const config = this.config();
+    return config !== null && refusesEverySelfie(config);
+  });
 
   protected readonly attempted = signal(false);
   protected readonly reviewing = signal(false);
@@ -159,6 +188,8 @@ export class AppSettingsPage {
     const privacyNotice = this.publishing('privacyNotice', config.privacyNotice);
     if (terms !== undefined) changes.terms = terms;
     if (privacyNotice !== undefined) changes.privacyNotice = privacyNotice;
+    const biometricConsent = this.publishing('biometricConsent', config.biometricConsent);
+    if (biometricConsent !== undefined) changes.biometricConsent = biometricConsent;
     // Publishing a text sets the version residents accept to its own; the same one typed above as
     // well says nothing more, and a different one is refused before anything is sent.
     const alongside = (typed: string | null | undefined, text: LegalTextDraft | undefined) =>
@@ -373,7 +404,12 @@ export class AppSettingsPage {
     if (config === null) {
       return;
     }
-    const draft = legalTextDraftFrom(config[kind]);
+    const published = config[kind];
+    // A text the API did not send is unknown, and nothing is offered to publish over it.
+    if (published === undefined) {
+      return;
+    }
+    const draft = legalTextDraftFrom(published);
     this.draftVersion.update((drafts) => ({ ...drafts, [kind]: draft.version }));
     this.draftBody.update((drafts) => ({ ...drafts, [kind]: draft.bodyMarkdown }));
     this.editing.update((kinds) => new Set([...kinds, kind]));
@@ -398,8 +434,11 @@ export class AppSettingsPage {
    * The text to publish, or `undefined` when its editor is closed, nothing is written in it yet, or
    * it holds exactly what is published.
    */
-  private publishing(kind: LegalTextKind, current: LegalText): LegalTextDraft | undefined {
-    if (!this.editing().has(kind)) {
+  private publishing(
+    kind: LegalTextKind,
+    current: LegalText | undefined,
+  ): LegalTextDraft | undefined {
+    if (current === undefined || !this.editing().has(kind)) {
       return undefined;
     }
     const draft = {
@@ -482,8 +521,8 @@ export class AppSettingsPage {
     this.deletedFlags.set(new Set());
     this.newFlags.set([]);
     this.editing.set(new Set());
-    this.draftVersion.set({ terms: '', privacyNotice: '' });
-    this.draftBody.set({ terms: '', privacyNotice: '' });
+    this.draftVersion.set({ terms: '', privacyNotice: '', biometricConsent: '' });
+    this.draftBody.set({ terms: '', privacyNotice: '', biometricConsent: '' });
     this.attempted.set(false);
   }
 }

@@ -205,7 +205,9 @@ export const httpErrorInterceptor: HttpInterceptorFn = (request, next) => {
       // A resident who has not finished verifying, refused a document request (`DL-186`). Only a
       // resident's app is ever sent it; should it reach this console it is a 403 that is not about
       // the account's grants, so it is said in the server's words rather than sent to /forbidden.
+      // A selfie sent with no standing biometric consent (`DL-216`) is the same kind of refusal.
       case 'VERIFICATION_REQUIRED':
+      case 'BIOMETRIC_CONSENT_REQUIRED':
         notifications.error('Request refused', describeFailure(failure));
         break;
 

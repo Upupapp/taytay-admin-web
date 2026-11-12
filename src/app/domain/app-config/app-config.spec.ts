@@ -6,10 +6,12 @@ import {
   appConfigEffects,
   appConfigProblems,
   asksEveryResident,
+  biometricVersionAskedNow,
   compareAppVersions,
   isPlaceholderText,
   legalTextDraftFrom,
   readWorkingDayRange,
+  refusesEverySelfie,
   reviewTimePhrase,
   workingDayRangeProblems,
   type AppConfig,
@@ -33,7 +35,21 @@ const CONFIG: AppConfig = {
     updatedAt: asIsoDateTime('2026-01-01T00:00:00.000Z'),
     bodyMarkdown: 'The Terms of Use as the LGU published them.',
   },
+  biometricConsent: {
+    version: 'placeholder',
+    updatedAt: asIsoDateTime('2026-01-01T00:00:00.000Z'),
+    bodyMarkdown: 'This is a placeholder for the consent to use your selfie.',
+  },
   updatedAt: asIsoDateTime('2026-10-01T00:00:00.000Z'),
+};
+
+const PUBLISHED: AppConfig = {
+  ...CONFIG,
+  biometricConsent: {
+    version: '2026-11',
+    updatedAt: asIsoDateTime('2026-11-01T00:00:00.000Z'),
+    bodyMarkdown: 'The biometric consent as the LGU published it.',
+  },
 };
 
 describe('the app’s settings (DL-170)', () => {
@@ -224,5 +240,64 @@ describe('how long an ID review usually takes (DL-205)', () => {
     expect(asksEveryResident(CONFIG, { verificationReviewWorkingDays: { min: 9, max: 30 } })).toBe(
       false,
     );
+  });
+});
+
+describe('the biometric (selfie) consent (DL-216)', () => {
+  it('refuses every selfie exactly while the text is the placeholder, and knows nothing when not sent', () => {
+    expect(refusesEverySelfie(CONFIG)).toBe(true);
+    expect(refusesEverySelfie(PUBLISHED)).toBe(false);
+    expect(refusesEverySelfie({ ...CONFIG, biometricConsent: undefined })).toBe(false);
+    expect(biometricVersionAskedNow(CONFIG.biometricConsent ?? PUBLISHED.terms)).toBeNull();
+    expect(biometricVersionAskedNow(PUBLISHED.terms)).toBe('2026-01');
+  });
+
+  it('refuses what the API refuses: no version, the placeholder’s, or no text', () => {
+    const fields = (draft: { version: string; bodyMarkdown: string }) =>
+      appConfigProblems({ biometricConsent: draft }).map((problem) => problem.field);
+
+    expect(fields({ version: '', bodyMarkdown: 'Text.' })).toEqual(['biometricConsent']);
+    expect(fields({ version: 'Placeholder', bodyMarkdown: 'Text.' })).toEqual(['biometricConsent']);
+    expect(fields({ version: '2026-11', bodyMarkdown: '  ' })).toEqual(['biometricConsent']);
+    expect(fields({ version: '2026-11', bodyMarkdown: 'The approved consent.' })).toEqual([]);
+  });
+
+  it('says a first publication lets residents send a selfie, and cannot be undone here', () => {
+    const effects = appConfigEffects(CONFIG, {
+      biometricConsent: { version: '2026-11', bodyMarkdown: 'The approved consent.' },
+    }).join(' ');
+
+    expect(effects).toContain('Residents can send a selfie from now on.');
+    expect(effects).toContain('no resident could verify their ID by selfie');
+    expect(effects).toContain('must agree to version 2026-11 in the app');
+    expect(effects).toContain('This cannot be undone here');
+    expect(effects).toContain('Nothing in this console writes, suggests or fills in legal text.');
+  });
+
+  it('says a new version is agreed to again before the next selfie, and the same one is not', () => {
+    const renewed = appConfigEffects(PUBLISHED, {
+      biometricConsent: { version: '2026-12', bodyMarkdown: 'Changed.' },
+    }).join(' ');
+    expect(renewed).toContain(
+      'must agree to 2026-12 in the app before sending another selfie. Selfies already sent are kept.',
+    );
+    expect(renewed).not.toContain('from now on');
+
+    const corrected = appConfigEffects(PUBLISHED, {
+      biometricConsent: { version: '2026-11', bodyMarkdown: 'Corrected.' },
+    }).join(' ');
+    expect(corrected).toContain(
+      'The version stays 2026-11, so the text changes without asking anyone to agree again',
+    );
+  });
+
+  it('asks nobody to acknowledge it: it stops nobody using the app', () => {
+    for (const config of [CONFIG, PUBLISHED]) {
+      expect(
+        asksEveryResident(config, {
+          biometricConsent: { version: '2026-12', bodyMarkdown: 'New.' },
+        }),
+      ).toBe(false);
+    }
   });
 });

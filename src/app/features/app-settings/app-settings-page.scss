@@ -145,3 +145,29 @@
 .settings__footer {
   align-items: center;
 }
+
+/* DL-216: the editor and, beside it, what a biometric consent has to cover; stacked when narrow. */
+.settings__compose {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.settings__compose-fields {
+  min-inline-size: 0;
+}
+
+.settings__requirements {
+  background: var(--card-solid);
+}
+
+.settings__sources {
+  margin: 0;
+  padding-inline-start: 18px;
+  font-size: var(--fs-label);
+}
+
+.settings__sources a {
+  color: var(--link);
+}
