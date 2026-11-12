@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PermissionService } from '@core/access/permission.service';
 import {
   APP_ACCOUNT_REPOSITORY,
+  CARD_PHOTO_CONSENT_STATEMENT,
   asId,
   notSentSentence,
   asIsoDateTime,
@@ -18,6 +19,7 @@ import {
   type AppAccountId,
   type AppAccountRepository,
   type CursorPage,
+  type CardPhotoConsent,
   type CursorRequest,
   type DigitalIdCard,
   type DigitalIdHolder,
@@ -26,6 +28,7 @@ import {
   type DigitalIdRepository,
   type MediaId,
   type Permission,
+  type TakenCardPhoto,
 } from '@domain/index';
 
 import { CardPanel } from './card-panel';
@@ -85,9 +88,20 @@ class RecordingCards implements DigitalIdRepository {
     this.calls.push(`cardOf:${id}`);
     return of(this.current);
   }
-  issue(id: AppAccountId): Observable<DigitalIdCard> {
-    this.calls.push(`issue:${id}`);
+  issue(id: AppAccountId, photo?: MediaId): Observable<DigitalIdCard> {
+    this.calls.push(photo === undefined ? `issue:${id}` : `issue:${id}:${photo}`);
     return of(card('active'));
+  }
+  takeCardPhoto(
+    id: AppAccountId,
+    photo: Blob,
+    consent: CardPhotoConsent,
+  ): Observable<TakenCardPhoto> {
+    this.calls.push(`takeCardPhoto:${id}:${photo.size}:${consent.confirmed}`);
+    return of({
+      media: asId<MediaId>('card-photo-1'),
+      takenAt: asIsoDateTime('2026-11-12T03:00:00.000Z'),
+    });
   }
   suspend(id: DigitalIdId): Observable<DigitalIdCard> {
     this.calls.push(`suspend:${id}`);
@@ -184,42 +198,43 @@ const COPY = DIGITAL_IDS_COPY;
  */
 vi.setConfig({ testTimeout: 20_000 });
 
-describe('DigitalIdsPage — checking a card (DL-171)', () => {
-  // The photo becomes an object URL. jsdom has none, and Node's own refuses a jsdom Blob — which of
-  // the two a worker holds depended on which spec files ran before this one, so the photo test passed
-  // alone and failed inside the full suite. A stand-in, as the other screens' specs use, restored
-  // exactly as it was found rather than deleted.
-  const found = {
-    create: Object.getOwnPropertyDescriptor(URL, 'createObjectURL'),
-    revoke: Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL'),
-  };
-  const restore = (
-    name: 'createObjectURL' | 'revokeObjectURL',
-    was: PropertyDescriptor | undefined,
-  ) => {
-    if (was === undefined) {
-      Reflect.deleteProperty(URL, name);
-    } else {
-      Object.defineProperty(URL, name, was);
-    }
-  };
-  beforeEach(() => {
-    Object.defineProperty(URL, 'createObjectURL', {
-      configurable: true,
-      writable: true,
-      value: vi.fn(() => 'blob:test/card-photo'),
-    });
-    Object.defineProperty(URL, 'revokeObjectURL', {
-      configurable: true,
-      writable: true,
-      value: vi.fn(),
-    });
+// The photo becomes an object URL. jsdom has none, and Node's own refuses a jsdom Blob — which of
+// the two a worker holds depended on which spec files ran before this one, so the photo test passed
+// alone and failed inside the full suite. A stand-in, as the other screens' specs use, restored
+// exactly as it was found rather than deleted. File-wide since DL-221: the card record's photo and
+// the card photo step make object URLs too, in every describe below.
+const found = {
+  create: Object.getOwnPropertyDescriptor(URL, 'createObjectURL'),
+  revoke: Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL'),
+};
+const restore = (
+  name: 'createObjectURL' | 'revokeObjectURL',
+  was: PropertyDescriptor | undefined,
+) => {
+  if (was === undefined) {
+    Reflect.deleteProperty(URL, name);
+  } else {
+    Object.defineProperty(URL, name, was);
+  }
+};
+beforeEach(() => {
+  Object.defineProperty(URL, 'createObjectURL', {
+    configurable: true,
+    writable: true,
+    value: vi.fn(() => 'blob:test/card-photo'),
   });
-  afterEach(() => {
-    restore('createObjectURL', found.create);
-    restore('revokeObjectURL', found.revoke);
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    configurable: true,
+    writable: true,
+    value: vi.fn(),
   });
+});
+afterEach(() => {
+  restore('createObjectURL', found.create);
+  restore('revokeObjectURL', found.revoke);
+});
 
+describe('DigitalIdsPage — checking a card (DL-171)', () => {
   it('says no camera is needed, and what a check does, before its button', async () => {
     configure();
     const element = await settle(TestBed.createComponent(DigitalIdsPage));
@@ -445,5 +460,81 @@ describe('CardPanel as the CitizenIDRecord board (DL-211)', () => {
     expect(history?.querySelector('[role="note"]')?.textContent?.trim()).toBe(
       notSentSentence('card-history'),
     );
+  });
+});
+
+describe('Take card photo (DL-221)', () => {
+  const PNG_HEAD = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d];
+
+  async function panelWithoutCard(): Promise<{
+    fixture: ComponentFixture<CardPanel>;
+    element: HTMLElement;
+    repository: RecordingCards;
+  }> {
+    const { cards: repository } = configure();
+    repository.current = null;
+    const fixture = TestBed.createComponent(CardPanel);
+    fixture.componentRef.setInput('account', account('a', 'verified'));
+    const element = await settle(fixture);
+    return { fixture, element, repository };
+  }
+
+  function tick(element: HTMLElement): void {
+    const box = [...element.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')].find(
+      (candidate) => candidate.closest('label')?.textContent?.includes(CARD_PHOTO_CONSENT_STATEMENT),
+    );
+    box?.click();
+  }
+
+  it('says the resident agreed, before the button, and sends nothing without a photo and the tick', async () => {
+    const { fixture, element, repository } = await panelWithoutCard();
+    const text = element.textContent ?? '';
+    expect(text.indexOf(CARD_PHOTO_CONSENT_STATEMENT)).toBeGreaterThan(-1);
+    expect(text.indexOf(CARD_PHOTO_CONSENT_STATEMENT)).toBeLessThan(
+      text.indexOf(COPY.take.submit, text.indexOf(CARD_PHOTO_CONSENT_STATEMENT)),
+    );
+    expect(text).toContain(COPY.panel.photoDefaultHint);
+
+    button(element, COPY.take.submit)?.click();
+    await settle(fixture);
+    expect(element.textContent).toContain(COPY.take.noPhoto);
+
+    tick(element);
+    button(element, COPY.take.submit)?.click();
+    await settle(fixture);
+    expect(repository.calls.some((call) => call.startsWith('takeCardPhoto'))).toBe(false);
+  });
+
+  it('sends the photo with the consent, chooses it for the card, and issues the card with it', async () => {
+    const { fixture, element, repository } = await panelWithoutCard();
+    const bytes = new Uint8Array(2048);
+    bytes.set(PNG_HEAD);
+    const photo = new File([bytes], 'counter.png', { type: 'image/png' });
+    const input = element.querySelector<HTMLInputElement>('app-card-photo-take input[type="file"]');
+    if (input === null) throw new Error('No file input.');
+    Object.defineProperty(input, 'files', { value: { item: () => photo, length: 1 } });
+    input.dispatchEvent(new Event('change'));
+    await vi.waitFor(() => expect(URL.createObjectURL).toHaveBeenCalled());
+    await settle(fixture);
+
+    button(element, COPY.take.submit)?.click();
+    await settle(fixture);
+    expect(element.textContent).toContain(COPY.take.noConsent);
+    expect(repository.calls.some((call) => call.startsWith('takeCardPhoto'))).toBe(false);
+
+    tick(element);
+    button(element, COPY.take.submit)?.click();
+    await settle(fixture);
+    expect(repository.calls).toContain('takeCardPhoto:a:2048:true');
+    const chosen = element.querySelector<HTMLInputElement>(
+      'input[name="card-photo-choice"]:checked',
+    );
+    expect(chosen?.closest('label')?.textContent).toContain(COPY.panel.photoCardHint);
+
+    button(element, COPY.panel.act.issue)?.click();
+    await settle(fixture);
+    button(document.body, COPY.panel.confirm.issue)?.click();
+    await settle(fixture);
+    expect(repository.calls).toContain('issue:a:card-photo-1');
   });
 });

@@ -19,6 +19,11 @@
  *   8. `digital-id.verify` and `digital-id.manage` are the server's keys: both in `PERMISSIONS`, the
  *      second named by no role and mutating, the first a read; the route and the menu ask for both.
  *
+ *   9. A card photo (`DL-221`) is sent from `CardPhotoTake.take()` alone, only after it has the
+ *      resident's agreement; the statement and its tick stand before the button, after which come
+ *      the effects; the statement says the photo is for the card only and never for face matching;
+ *      and the wire carries the consent the API requires.
+ *
  * Each rule was validated against a planted regression before being trusted.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -42,6 +47,9 @@ const FILES = {
   domain: join(APP, 'domain', 'digital-ids', 'digital-id.ts'),
   mapper: join(APP, 'data', 'http', 'mappers', 'digital-id.mapper.ts'),
   mock: join(APP, 'data', 'mock', 'mock-digital-id.repository.ts'),
+  take: join(FEATURE, 'card-photo-take.ts'),
+  takeTemplate: join(FEATURE, 'card-photo-take.html'),
+  cardPhoto: join(APP, 'domain', 'digital-ids', 'card-photo.ts'),
 };
 for (const file of Object.values(FILES)) {
   if (!existsSync(file))
@@ -228,6 +236,41 @@ for (const match of holder.matchAll(/field\(\s*wire\s*,\s*'([a-z_]+)'\s*\)/g)) {
     failures.push(
       `toDigitalIdHolder reads ${match[1]}. A check shows what the API answers, and nothing beside it.`,
     );
+}
+
+/* ── 9. a card photo only with the resident's agreement (DL-221) ─────────── */
+
+const take = source(FILES.take);
+const takeTemplate = source(FILES.takeTemplate);
+const takeCall = /this\s*\.\s*repository\s*\.\s*takeCardPhoto\s*\(/;
+const takeBody = methodBody(take, 'take');
+const moduleCalls = walk(FEATURE).reduce((total, file) => total + count(source(file), takeCall), 0);
+if (moduleCalls !== 1 || !takeCall.test(takeBody)) {
+  failures.push('A card photo is sent from somewhere other than CardPhotoTake.take.');
+}
+const agreedAt = takeBody.search(/if\s*\(\s*!\s*this\s*\.\s*agreed\s*\(\s*\)\s*\)/);
+if (agreedAt === -1 || agreedAt > takeBody.search(takeCall)) {
+  failures.push('CardPhotoTake.take no longer refuses before the resident\'s agreement is ticked.');
+}
+const statementAt = takeTemplate.indexOf('{{ statement }}');
+const tickAt = takeTemplate.indexOf('type="checkbox"');
+const takeEffectsAt = takeTemplate.indexOf('@for (effect of effects');
+const takeButtonAt = takeTemplate.indexOf('(click)="take()"');
+if (
+  statementAt === -1 ||
+  tickAt === -1 ||
+  takeEffectsAt === -1 ||
+  takeButtonAt === -1 ||
+  !(tickAt < takeButtonAt && statementAt < takeEffectsAt && takeEffectsAt < takeButtonAt) ||
+  count(takeTemplate, /\(click\)="take\(\)"/) !== 1
+) {
+  failures.push("The card photo's button is no longer after the resident's agreement and its effects.");
+}
+if (!/used on the card only, never for face matching/.test(source(FILES.cardPhoto))) {
+  failures.push('The card photo no longer says it is for the card only, never for face matching.');
+}
+if (!/consent_confirmed/.test(mapper)) {
+  failures.push('The card photo is sent without the consent the API requires.');
 }
 
 /* ── 8. the server's keys ────────────────────────────────────────────────── */

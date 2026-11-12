@@ -138,4 +138,19 @@ describe('MockDigitalIdRepository (DL-171)', () => {
     );
     expect(isPermissionDenied(error)).toBe(true);
   });
+
+  it('takes a card photo only with consent and names it on the card it issues (DL-221)', async () => {
+    const cards = signedInAs('system-administrator');
+    const account = asId<AppAccountId>('app-account-0017');
+    const taken = await firstValueFrom(
+      cards.takeCardPhoto(account, new Blob(['x']), { confirmed: true }),
+    );
+    const card = await firstValueFrom(cards.issue(account, taken.media));
+    expect(card.photo).toBe(taken.media);
+
+    const refused = await refusal(
+      firstValueFrom(cards.issue(asId<AppAccountId>('app-account-0020'), taken.media)),
+    );
+    expect((refused as Error).message).toContain('card photo of them');
+  });
 });

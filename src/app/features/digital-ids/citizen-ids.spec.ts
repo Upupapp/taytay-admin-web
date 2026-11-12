@@ -19,6 +19,7 @@ import {
   type DigitalIdListPage,
   type DigitalIdRepository,
   type Permission,
+  type TakenCardPhoto,
 } from '@domain/index';
 
 import { CitizenIdsPage } from './citizen-ids-page';
@@ -59,6 +60,9 @@ class Cards implements DigitalIdRepository {
     return of(null);
   }
   issue(): Observable<DigitalIdCard> {
+    return throwError(() => new Error('not in this test'));
+  }
+  takeCardPhoto(): Observable<TakenCardPhoto> {
     return throwError(() => new Error('not in this test'));
   }
   suspend(): Observable<DigitalIdCard> {

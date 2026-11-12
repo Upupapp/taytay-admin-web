@@ -185,6 +185,7 @@ import type {
 import type { AppConfig, AppConfigChanges } from '../app-config/app-config';
 import type { DigitalIdCard, DigitalIdHolder } from '../digital-ids/digital-id';
 import type { DigitalIdListFilter, DigitalIdListPage } from '../digital-ids/digital-id-list';
+import type { TakenCardPhoto, CardPhotoConsent } from '../digital-ids/card-photo';
 import type { PlatformAuditEntry } from '../platform-audit/platform-audit';
 import type {
   BalitaArticle,
@@ -1880,8 +1881,21 @@ export interface DigitalIdRepository {
   /** The account's current card — active or suspended — or `null` when it has none. */
   cardOf(account: AppAccountId): Observable<DigitalIdCard | null>;
 
-  /** A new card from the resident's latest approved verification selfie. */
-  issue(account: AppAccountId): Observable<DigitalIdCard>;
+  /**
+   * A new card. With a card photo named, that photo; with none, the API's own choice: the latest
+   * approved, unerased ID-review selfie, or failing one the newest card photo (`DL-221`).
+   */
+  issue(account: AppAccountId, photo?: MediaId): Observable<DigitalIdCard>;
+
+  /**
+   * A photo taken at the counter for the resident's card (`DL-221`), only with the staff member's
+   * confirmation that the resident agreed. Nothing is issued by it.
+   */
+  takeCardPhoto(
+    account: AppAccountId,
+    photo: Blob,
+    consent: CardPhotoConsent,
+  ): Observable<TakenCardPhoto>;
 
   suspend(card: DigitalIdId): Observable<DigitalIdCard>;
 

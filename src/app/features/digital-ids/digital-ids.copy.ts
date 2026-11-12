@@ -93,7 +93,31 @@ export const DIGITAL_IDS_COPY = {
     expires: 'Expires',
   },
 
+  /** Take card photo (`DL-221`). */
+  take: {
+    heading: 'Take card photo',
+    lead: 'For a resident with no reviewed ID selfie — one verified in person — choose the photo taken of them at the counter. This console does not use the camera.',
+    label: 'The photo taken at the counter',
+    hint: 'A clear photo of the resident’s face, as the card will show it.',
+    effectsLead: 'What taking the photo does:',
+    submit: 'Take card photo',
+    taking: 'Sending…',
+    taken: 'Taken. It is chosen for the card below.',
+    noPhoto: 'Choose the photo first.',
+    noConsent: 'Tick that the resident agreed first.',
+    notTaken: (reason: string) => `Not taken: ${reason}`,
+    noAnswer: 'the API did not answer.',
+  },
+
   panel: {
+    photoLegend: 'The photo for the card',
+    photoDefault: 'The API’s choice',
+    photoDefaultHint:
+      'The resident’s latest reviewed ID selfie, or, when there is none, the newest card photo taken of them. The API keeps no list of these to choose from here.',
+    photoCard: (taken: string) => `The card photo taken ${taken}`,
+    photoCardHint: 'Taken at the counter with the resident’s agreement.',
+    photoNeither:
+      'If the resident has neither a reviewed selfie nor a card photo, the API refuses the card: take a card photo first.',
     heading: (name: string) => `Digital ID of ${name}`,
     loading: 'Reading the card…',
     failed: 'The card could not be read. Nothing is shown rather than a guess.',

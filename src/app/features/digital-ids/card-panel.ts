@@ -25,6 +25,7 @@ import {
   type DigitalIdAct,
   type DigitalIdCard,
   type MediaId,
+  type TakenCardPhoto,
 } from '@domain/index';
 import { failureReason } from '@shared/state/failure-reason';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
@@ -32,6 +33,7 @@ import { Modal } from '@shared/ui/modal/modal';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { CardPhoto } from './card-photo';
+import { CardPhotoTake } from './card-photo-take';
 import { IdCardFace } from './id-card-face';
 import { DIGITAL_IDS_COPY } from './digital-ids.copy';
 
@@ -49,7 +51,7 @@ import { DIGITAL_IDS_COPY } from './digital-ids.copy';
 @Component({
   selector: 'app-card-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CardPhoto, DatePipe, IdCardFace, Modal, NotConnected, StatusBadge],
+  imports: [CardPhoto, CardPhotoTake, DatePipe, IdCardFace, Modal, NotConnected, StatusBadge],
   templateUrl: './card-panel.html',
   styleUrl: './digital-ids.scss',
 })
@@ -91,6 +93,14 @@ export class CardPanel {
   );
 
   /** The act whose confirmation is open; nothing is sent until its own button is pressed. */
+  /**
+   * Card photos taken for this account while the panel is open (`DL-221`). The API keeps no list to
+   * read them back from, so only these can be named; otherwise the API chooses.
+   */
+  protected readonly cardPhotos = signal<readonly TakenCardPhoto[]>([]);
+  /** The photo named for the card, or `null` for the API's choice. */
+  protected readonly photoChoice = signal<TakenCardPhoto | null>(null);
+
   protected readonly pending = signal<DigitalIdAct | null>(null);
   protected readonly busy = signal(false);
   protected readonly problem = signal('');
@@ -98,6 +108,14 @@ export class CardPanel {
   protected readonly outcome = signal('');
 
   constructor() {
+    // Another account's panel starts from the API's choice, with no photo taken.
+    effect(() => {
+      this.account();
+      untracked(() => {
+        this.cardPhotos.set([]);
+        this.photoChoice.set(null);
+      });
+    });
     effect(() => {
       if (this.cardValue() === null) {
         untracked(() => this.shownPhoto.set(null));
@@ -112,6 +130,12 @@ export class CardPanel {
   protected photoUrlFor(card: DigitalIdCard): string | null {
     const shown = this.shownPhoto();
     return shown !== null && shown.photo === card.photo ? shown.url : null;
+  }
+
+  /** A photo just taken is offered, and chosen, for the card; nothing is issued by it. */
+  protected photoTaken(photo: TakenCardPhoto): void {
+    this.cardPhotos.update((photos) => [...photos, photo]);
+    this.photoChoice.set(photo);
   }
 
   protected actsOn(card: DigitalIdCard): readonly DigitalIdAct[] {
@@ -163,7 +187,9 @@ export class CardPanel {
 
   private requestFor(act: DigitalIdAct, card: DigitalIdCard | null): Observable<unknown> | null {
     if (act === 'issue') {
-      return card === null ? this.repository.issue(this.account().id) : null;
+      return card === null
+        ? this.repository.issue(this.account().id, this.photoChoice()?.media)
+        : null;
     }
     if (card === null) return null;
     switch (act) {

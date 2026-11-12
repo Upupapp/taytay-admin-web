@@ -3012,6 +3012,40 @@ describe('the Node adapters', () => {
       http.expectNone(`${BASE}/admin/digital-ids`);
     });
 
+    it('sends a card photo as a form with the consent, and names it when issuing (DL-221)', async () => {
+      const cards = TestBed.inject(HttpDigitalIdRepository);
+      const account = asId<AppAccountId>('0f1e2d3c-4b5a-4968-8776-655443322102');
+      const photo = new Blob(['x'], { type: 'image/png' });
+      const taken = firstValueFrom(cards.takeCardPhoto(account, photo, { confirmed: true }));
+      const form = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/users/${account}/card-photos`,
+      });
+      const body = form.request.body as FormData;
+      expect(body).toBeInstanceOf(FormData);
+      expect(body.get('consent_confirmed')).toBe('true');
+      expect(body.get('file')).toBeInstanceOf(Blob);
+      form.flush({
+        data: {
+          media_id: '33333333-3333-4333-8333-333333333335',
+          kind: 'card-photo',
+          created_at: '2026-11-12T03:00:00.000Z',
+        },
+        meta: {},
+      });
+      const media = (await taken).media;
+      expect(media).toBe('33333333-3333-4333-8333-333333333335');
+
+      const issued = firstValueFrom(cards.issue(account, media));
+      const issue = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/users/${account}/digital-id`,
+      });
+      expect(issue.request.body).toEqual({ photo_media_id: media });
+      issue.flush(DIGITAL_ID_CARD);
+      await issued;
+    });
+
     it('reads the photo as bytes with the token in a header, never in the address', async () => {
       const cards = TestBed.inject(HttpDigitalIdRepository);
       const photo = firstValueFrom(

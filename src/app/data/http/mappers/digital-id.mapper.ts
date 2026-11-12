@@ -1,6 +1,8 @@
 import {
   DIGITAL_ID_STATUSES,
   type AppAccountId,
+  type TakenCardPhoto,
+  type CardPhotoConsent,
   type DigitalIdCard,
   type DigitalIdCounts,
   type DigitalIdHolder,
@@ -187,4 +189,46 @@ export function toDigitalIdCounts(meta: unknown): DigitalIdCounts | null {
   }
 
   return { active, expiring, expired, suspended, revoked };
+}
+
+/**
+ * `CardPhotoEnvelope.data` → `TakenCardPhoto` (`DL-221`).
+ *
+ * | wire         | domain    | if absent or malformed        |
+ * | ------------ | --------- | ----------------------------- |
+ * | `media_id`   | `media`   | the answer is not readable    |
+ * | `kind`       | —         | not `card-photo`: not readable |
+ * | `created_at` | `takenAt` | the answer is not readable    |
+ *
+ * @consumes POST admin/users/{id}/card-photos
+ */
+export function toCardPhoto(wire: unknown): TakenCardPhoto | null {
+  const media = id<MediaId>(field(wire, 'media_id'));
+  const takenAt = dateTime(field(wire, 'created_at'));
+  if (media === null || takenAt === null || field(wire, 'kind') !== 'card-photo') return null;
+  return { media, takenAt };
+}
+
+/**
+ * The card photo's form: the file, and the staff member's confirmation that the resident agreed,
+ * which the API requires as the literal `true` (`DL-221`). The consent is a parameter so that no
+ * caller can send a photo without having stated it.
+ */
+export interface CardPhotoWire {
+  readonly file: Blob;
+  readonly consent_confirmed: 'true';
+}
+
+export function toWireCardPhoto(photo: Blob, consent: CardPhotoConsent): CardPhotoWire {
+  // `consent` is `{ confirmed: true }` by its type, so the field can only read 'true'.
+  return { file: photo, consent_confirmed: `${consent.confirmed}` };
+}
+
+/** `DigitalIdIssue`: the photo named only when one was chosen; none, and the API chooses. */
+export interface DigitalIdIssueWire {
+  readonly photo_media_id?: string;
+}
+
+export function toWireDigitalIdIssue(photo: MediaId | undefined): DigitalIdIssueWire {
+  return photo === undefined ? {} : { photo_media_id: photo };
 }

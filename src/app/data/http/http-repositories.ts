@@ -90,6 +90,8 @@ import {
   type AppConfig,
   type AppConfigChanges,
   type AppConfigRepository,
+  type TakenCardPhoto,
+  type CardPhotoConsent,
   type DigitalIdCard,
   type DigitalIdHolder,
   type DigitalIdListFilter,
@@ -408,10 +410,13 @@ import {
   toWireOfficeRoleChange,
 } from './mappers/app-account.mapper';
 import {
+  toCardPhoto,
   toDigitalIdCard,
   toDigitalIdCounts,
   toDigitalIdHolder,
   toDigitalIdListing,
+  toWireCardPhoto,
+  toWireDigitalIdIssue,
   toWireDigitalIdVerify,
 } from './mappers/digital-id.mapper';
 import {
@@ -1623,11 +1628,25 @@ export class HttpDigitalIdRepository implements DigitalIdRepository {
       .pipe(map((wire) => (wire === null ? null : readCard(wire))));
   }
 
-  /** No photo is named, so the API uses the resident's latest approved verification selfie. */
-  issue(account: AppAccountId): Observable<DigitalIdCard> {
+  /** With no photo named, the API chooses: the latest reviewed selfie, else the newest card photo. */
+  issue(account: AppAccountId, photo?: MediaId): Observable<DigitalIdCard> {
     return this.api
-      .post(`${API_ENDPOINTS.adminUsers}/${account}/digital-id`, {})
+      .post(`${API_ENDPOINTS.adminUsers}/${account}/digital-id`, toWireDigitalIdIssue(photo))
       .pipe(map(readCard));
+  }
+
+  /** The photo as a form with the staff member's confirmation (`DL-221`); nothing is issued. */
+  takeCardPhoto(
+    account: AppAccountId,
+    photo: Blob,
+    consent: CardPhotoConsent,
+  ): Observable<TakenCardPhoto> {
+    return this.api
+      .postForm(
+        `${API_ENDPOINTS.adminUsers}/${account}/card-photos`,
+        toWireCardPhoto(photo, consent),
+      )
+      .pipe(map(readCardPhoto));
   }
 
   suspend(card: DigitalIdId): Observable<DigitalIdCard> {
@@ -1671,6 +1690,17 @@ function readDigitalIdListPage(
     nextCursor: answer.nextCursor,
     counts,
   };
+}
+
+function readCardPhoto(wire: unknown): TakenCardPhoto {
+  const photo = toCardPhoto(wire);
+  if (photo === null) {
+    throw new Error(
+      'The card photo was sent, but the answer could not be read, so it is not offered for the ' +
+        'card. Read the card again before taking another.',
+    );
+  }
+  return photo;
 }
 
 function readCard(wire: unknown): DigitalIdCard {

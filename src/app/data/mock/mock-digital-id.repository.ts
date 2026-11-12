@@ -12,6 +12,8 @@ import {
   DIGITAL_ID_SEARCH_MIN_LENGTH,
   isPastExpiry,
   type AppAccountId,
+  type TakenCardPhoto,
+  type CardPhotoConsent,
   type BarangayId,
   type CursorRequest,
   type DigitalIdCard,
@@ -107,6 +109,13 @@ export class MockDigitalIdRepository implements DigitalIdRepository {
   private readonly access = inject(ACCESS_CONTEXT);
   private cards: readonly HeldCard[] = SEED;
   private issued = SEED.length;
+  /** Card photos taken this session (`DL-221`): sample only, never a real face. */
+  private cardPhotos: readonly {
+    account: AppAccountId;
+    photo: TakenCardPhoto;
+    consent: CardPhotoConsent;
+  }[] = [];
+  private photosTaken = 0;
 
   list(page: CursorRequest, filter: DigitalIdListFilter): Observable<DigitalIdListPage> {
     const denied = denyUnless<DigitalIdListPage>(this.access.currentUser(), 'digital-id.manage');
@@ -180,7 +189,7 @@ export class MockDigitalIdRepository implements DigitalIdRepository {
     return this.latency.respond(this.current(account)?.card ?? null);
   }
 
-  issue(account: AppAccountId): Observable<DigitalIdCard> {
+  issue(account: AppAccountId, photo?: MediaId): Observable<DigitalIdCard> {
     const denied = denyUnless<DigitalIdCard>(this.access.currentUser(), 'digital-id.manage');
     if (denied) return denied;
 
@@ -192,12 +201,46 @@ export class MockDigitalIdRepository implements DigitalIdRepository {
     if (this.current(account) !== null) {
       return throwError(() => new Error('That resident already has a digital ID.'));
     }
-    const card = sampleCard(++this.issued, 'active', new Date().toISOString());
+    // As the API: a named photo must be a card photo taken of this resident (the sample registry
+    // keeps no selfies to name); none named, the sample face stands in for the reviewed selfie.
+    const taken = this.cardPhotos.filter((entry) => entry.account === account);
+    if (photo !== undefined && !taken.some((entry) => entry.photo.media === photo)) {
+      return throwError(
+        () => new Error('That photo is not this resident’s reviewed selfie or a card photo of them.'),
+      );
+    }
+    const card: DigitalIdCard = {
+      ...sampleCard(++this.issued, 'active', new Date().toISOString()),
+      ...(photo === undefined ? {} : { photo }),
+    };
     const barangay =
       this.cards.find((entry) => entry.account === account)?.barangay ??
       asId<BarangayId>('brgy-san-juan');
     this.cards = [...this.cards, { account, card, barangay }];
     return this.latency.respond(card);
+  }
+
+  takeCardPhoto(
+    account: AppAccountId,
+    photo: Blob,
+    consent: CardPhotoConsent,
+  ): Observable<TakenCardPhoto> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<TakenCardPhoto>(user, 'digital-id.manage');
+    if (denied) return denied;
+    const holder = MOCK_APP_ACCOUNTS.find((candidate) => candidate.id === account);
+    if (holder === undefined) return throwError(() => new Error('That user was not found.'));
+    if (holder.role !== 'verified') {
+      return throwError(() => new Error('Only a verified resident can have a card photo taken.'));
+    }
+    if (photo.size === 0) return throwError(() => new Error('That photo is empty.'));
+    const taken: TakenCardPhoto = {
+      media: asId<MediaId>(`card-photo-taken-${++this.photosTaken}`),
+      takenAt: asIsoDateTime(new Date()),
+    };
+    // Kept with the photo, as the API keeps `consent_confirmed_at`.
+    this.cardPhotos = [...this.cardPhotos, { account, photo: taken, consent }];
+    return this.latency.respond(taken);
   }
 
   suspend(card: DigitalIdId): Observable<DigitalIdCard> {
@@ -241,7 +284,10 @@ export class MockDigitalIdRepository implements DigitalIdRepository {
     const denied =
       denyUnless<Blob>(user, 'digital-id.manage') && denyUnless<Blob>(user, 'digital-id.verify');
     if (denied) return denied;
-    if (!this.cards.some((entry) => entry.card.photo === photo)) {
+    if (
+      !this.cards.some((entry) => entry.card.photo === photo) &&
+      !this.cardPhotos.some((entry) => entry.photo.media === photo)
+    ) {
       return throwError(() => new Error('That photo was not found.'));
     }
     return this.latency.respond(samplePlaceholder('selfie'));

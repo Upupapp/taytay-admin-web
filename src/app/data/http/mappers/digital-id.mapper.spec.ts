@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
+import { asId, type MediaId } from '@domain/index';
+
 import CARD from '../fixtures/digital-id-card.json';
 import HOLDER from '../fixtures/digital-id-holder.json';
 import LIST_PAGE from '../fixtures/digital-id-list-page.json';
 import {
+  toCardPhoto,
   toDigitalIdCard,
   toDigitalIdCounts,
   toDigitalIdHolder,
   toDigitalIdListing,
+  toWireCardPhoto,
+  toWireDigitalIdIssue,
   toWireDigitalIdVerify,
 } from './digital-id.mapper';
 
@@ -74,5 +79,27 @@ describe('digital ID mappers (DL-171)', () => {
     expect(
       toDigitalIdCounts({ counts: { ...LIST_PAGE.meta.counts, expiring_30d: null } }),
     ).toBeNull();
+  });
+
+  it('reads a card photo only as a card photo, and sends the consent as the literal true (DL-221)', () => {
+    const wire = {
+      media_id: '33333333-3333-4333-8333-333333333335',
+      kind: 'card-photo',
+      created_at: '2026-11-12T03:00:00.000Z',
+    };
+    expect(toCardPhoto(wire)).toEqual({
+      media: '33333333-3333-4333-8333-333333333335',
+      takenAt: '2026-11-12T03:00:00.000Z',
+    });
+    expect(toCardPhoto({ ...wire, kind: 'selfie' })).toBeNull();
+    const photo = new Blob(['x']);
+    expect(toWireCardPhoto(photo, { confirmed: true })).toEqual({
+      file: photo,
+      consent_confirmed: 'true',
+    });
+    expect(toWireDigitalIdIssue(undefined)).toEqual({});
+    expect(toWireDigitalIdIssue(asId<MediaId>(wire.media_id))).toEqual({
+      photo_media_id: wire.media_id,
+    });
   });
 });

@@ -52,7 +52,8 @@ describe('digital IDs (DL-171)', () => {
     );
     expect(DIGITAL_ID_EFFECTS.revoke.join(' ')).toContain('stops working in the app for good');
     expect(DIGITAL_ID_EFFECTS.reissue.join(' ')).toContain('new number');
-    expect(DIGITAL_ID_EFFECTS.issue.join(' ')).toContain('latest approved verification selfie');
+    expect(DIGITAL_ID_EFFECTS.issue.join(' ')).toContain('latest reviewed ID selfie');
+    expect(DIGITAL_ID_EFFECTS.issue.join(' ')).toContain('card photo taken at the counter');
     expect(DIGITAL_ID_ALWAYS.join(' ')).toContain('keeps no reason');
   });
 

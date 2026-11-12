@@ -398,6 +398,17 @@
       ]
     },
     {
+      "method": "POST",
+      "path": "admin/users/{id}/card-photos",
+      "consumer": "digital-id.mapper.ts#toCardPhoto",
+      "required": [],
+      "optional": [
+        "created_at",
+        "kind",
+        "media_id"
+      ]
+    },
+    {
       "method": "GET",
       "path": "admin/users/{id}/digital-id",
       "consumer": "digital-id.mapper.ts#toDigitalIdCard",

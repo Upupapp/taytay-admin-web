@@ -10374,3 +10374,38 @@ resident reads in the app.
 this console.
 
 Easiest to reverse: delete the route, the menu entry and `features/sector-applications/`.
+
+## DL-221 — a card photo is taken at the counter, only with the resident's agreement, for the card only
+
+**Status:** Settled (12 November 2026). Backend B6 at `98a4f19`: `POST admin/users/{id}/card-photos`
+(`digital-id.manage`, multipart `file` and `consent_confirmed=true`, 422 without it) and
+`photo_media_id` on `POST admin/users/{id}/digital-id`.
+
+**What the office can now do.** Issue a Citizen ID to a resident who sent no reviewed ID selfie — one
+verified in person (`DL-219`): the card record's issuance gains a **Take card photo** step, and the
+photo taken is chosen for the card.
+
+**Decisions.**
+
+1. **Only with the resident's agreement, said before the button.** The statement — "The resident
+   agreed to have a photo taken for their card. It is used on the card only, never for face
+   matching." — stands with its tick above the step's effects and its button. `takeCardPhoto` takes
+   a `CardPhotoConsent` (`{ confirmed: true }`), so no caller can send a photo without it, and the
+   wire mapper sends it as the literal `true` the API requires. `CardPhotoTake.take()` is the only
+   place a photo is sent from, and refuses without a photo and the tick. `check:digital-ids` rule 9
+   holds all of it, validated against two planted regressions.
+2. **No camera in this console** (`DL-171`, `check:digital-ids` rule 2). The photo taken at the
+   counter is chosen as a file through the shared `ImageFileField`, which refuses it before it is
+   sent if the API would: JPEG, PNG or WebP recognised by its bytes, 5 MB — the selfie's rules.
+3. **The picker names only what it can name.** The API keeps no list of a resident's reviewed
+   selfies or card photos to read back, so none is invented: the choice is "The API's choice" — the
+   latest reviewed, unerased ID selfie, or failing one the newest card photo, as the backend issues —
+   or a card photo taken in this panel, named by its media id. The page says so, and that the API
+   refuses a card when the resident has neither. No thumbnails are fetched.
+4. **Nothing is issued by taking a photo.** The issue confirmation is unchanged and stays the only
+   way a card is issued; its effects now say which photo goes on the card.
+5. The card photo is ordinary personal information for the card, not biometric processing: the API
+   never compares it, never shows it to the ID review, and does not erase it when the biometric
+   consent is withdrawn. The step's effects say so.
+
+Easiest to reverse: remove `CardPhotoTake` from the card record and the photo argument from `issue`.

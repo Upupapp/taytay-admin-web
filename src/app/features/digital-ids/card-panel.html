@@ -66,6 +66,40 @@
     } @else {
       <p class="status-line digital-ids__note">{{ copy.none }}</p>
       <p class="status-line digital-ids__note">{{ copy.noneWhy }}</p>
+
+      <!-- The face for the card (DL-221): the API's choice, or a card photo taken here. -->
+      <app-card-photo-take [account]="account().id" (taken)="photoTaken($event)" />
+      <fieldset class="choice-list">
+        <legend class="field__label">{{ copy.photoLegend }}</legend>
+        <label class="choice">
+          <input
+            type="radio"
+            name="card-photo-choice"
+            [checked]="photoChoice() === null"
+            (change)="photoChoice.set(null)"
+          />
+          <span class="choice__text">
+            {{ copy.photoDefault }}
+            <span class="choice__hint">{{ copy.photoDefaultHint }}</span>
+          </span>
+        </label>
+        @for (photo of cardPhotos(); track photo.media) {
+          <label class="choice">
+            <input
+              type="radio"
+              name="card-photo-choice"
+              [checked]="photoChoice()?.media === photo.media"
+              (change)="photoChoice.set(photo)"
+            />
+            <span class="choice__text">
+              {{ copy.photoCard((photo.takenAt | date: 'd MMM y, h:mm a') ?? '') }}
+              <span class="choice__hint">{{ copy.photoCardHint }}</span>
+            </span>
+          </label>
+        }
+      </fieldset>
+      <p class="status-line digital-ids__note">{{ copy.photoNeither }}</p>
+
       <button type="button" class="btn" [disabled]="busy()" (click)="choose('issue')">
         {{ copy.act.issue }}
       </button>

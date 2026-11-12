@@ -113,7 +113,7 @@ export const QR_PAYLOAD_MAX_LENGTH = 4000;
 export const DIGITAL_ID_EFFECTS: Readonly<Record<DigitalIdAct, readonly string[]>> = {
   issue: [
     `Issues a card valid for ${CARD_VALIDITY_DAYS} days, with a new card number.`,
-    'The photo on the card is the resident’s latest approved verification selfie; this console offers no other.',
+    'The photo on the card is the one chosen: a card photo taken at the counter, or, by the API’s choice, the resident’s latest reviewed ID selfie, failing which the newest card photo (`DL-221`).',
     'Refused if the account is not a verified resident, is closed, or already holds a current card.',
     'The resident sees the card in the app, with a QR code, straight away.',
   ],

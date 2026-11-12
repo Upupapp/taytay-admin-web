@@ -1,0 +1,42 @@
+<section class="subpanel stack" aria-labelledby="card-photo-take-heading">
+  <h4 id="card-photo-take-heading" class="section-title">{{ copy.heading }}</h4>
+  <p class="status-line digital-ids__note">{{ copy.lead }}</p>
+
+  <app-image-file-field
+    inputId="card-photo-take-file"
+    [label]="copy.label"
+    [hint]="copy.hint"
+    [disabled]="busy()"
+    (chosen)="chose($event)"
+  />
+
+  <!-- The resident's agreement, in words, before the button that sends the photo. -->
+  <label class="choice">
+    <input type="checkbox" [checked]="agreed()" [disabled]="busy()" (change)="tick($event)" />
+    <span class="choice__text">{{ statement }}</span>
+  </label>
+
+  <div class="effects digital-ids__effects" id="card-photo-take-effects">
+    <p class="effects__lead">{{ copy.effectsLead }}</p>
+    <ul>
+      @for (effect of effects; track $index) {
+        <li>{{ effect }}</li>
+      }
+    </ul>
+  </div>
+
+  @if (problem(); as message) {
+    <p class="callout callout--danger digital-ids__problem" role="alert">{{ message }}</p>
+  }
+
+  <button
+    type="button"
+    class="btn"
+    aria-describedby="card-photo-take-effects"
+    [disabled]="busy()"
+    (click)="take()"
+  >
+    {{ busy() ? copy.taking : copy.submit }}
+  </button>
+  <p class="status-line digital-ids__note" role="status">{{ outcome() }}</p>
+</section>

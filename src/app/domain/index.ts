@@ -92,6 +92,7 @@ export * from './app-config/app-config';
 export * from './app-config/biometric-consent-requirements';
 export * from './digital-ids/digital-id';
 export * from './digital-ids/digital-id-list';
+export * from './digital-ids/card-photo';
 export * from './balita/balita-article';
 export * from './platform-audit/platform-audit';
 export * from './issuance/issuance-type';
