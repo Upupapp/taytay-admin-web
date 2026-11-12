@@ -431,3 +431,12 @@ export function toReportExport(wire: unknown): ReportExport | null {
   };
   return { manifest, format, content, filename };
 }
+
+/**
+ * One aggregate series read with every rule `toSeries` holds — no figure below the threshold, a
+ * withheld row with nothing to open, a total at least the shown rows — for the Citizens overview,
+ * which answers the reports' own series shape (`DL-213`).
+ */
+export function toAggregateSeries(wire: unknown): ReportSeries | null {
+  return toSeries(wire, 'aggregate');
+}

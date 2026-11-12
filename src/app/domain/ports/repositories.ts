@@ -105,6 +105,7 @@ import type {
   ResidentFilter,
   VulnerabilitySector,
 } from '../residents/resident';
+import type { ResidentSummary, ResidentSummaryFilter } from '../residents/resident-summary';
 import type {
   HouseholdDraft,
   HouseholdFilter,
@@ -281,6 +282,13 @@ export interface ResidentRepository {
    * are available" and never "page 2 of 9" (`DL-161`).
    */
   list(filter: ResidentFilter, page: CursorRequest): Observable<CursorPage<ResidentView>>;
+
+  /**
+   * The registry counted by the server for the Citizens overview (`DL-213`), under the list's own
+   * scope, its small cells already withheld (`DL-105`). Each row that can be opened carries the
+   * registry filter that lists the same people.
+   */
+  summary(filter: ResidentSummaryFilter): Observable<ResidentSummary>;
 
   getById(id: ResidentId): Observable<ResidentView | null>;
   /**

@@ -101,6 +101,19 @@ export const routes: Routes = [
           import('@features/digital-ids/citizen-ids-page').then((m) => m.CitizenIdsPage),
       },
       {
+        // `DL-213`. The registry counted by the server, guarded as the registry's list is: a caseload
+        // reads its own clients, never the registry's figures. Not the protection (rule 4).
+        path: 'residents/overview',
+        title: 'Citizen overview — Taytay Social Welfare',
+        canActivate: [
+          servedGuard('resident'),
+          permissionGuard('resident.view'),
+          scopeGuard('assigned-cases'),
+        ],
+        loadComponent: () =>
+          import('@features/residents/citizens-overview-page').then((m) => m.CitizensOverviewPage),
+      },
+      {
         path: 'residents',
         // `new` must precede `:id`, or "new" is read as a resident id and the
         // create screen becomes unreachable.

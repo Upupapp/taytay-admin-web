@@ -188,6 +188,8 @@ export interface ResidentFilter {
   readonly barangayId?: BarangayId;
   readonly sector?: VulnerabilitySector;
   readonly ageGroup?: ResidentAgeGroup;
+  /** As recorded on the registry; the Citizens overview links here by it (DL-213). */
+  readonly sex?: Sex;
   readonly householdId?: HouseholdId;
   readonly includeInactive?: boolean;
 }
@@ -200,6 +202,7 @@ export function isResidentFilterActive(filter: ResidentFilter): boolean {
     filter.barangayId !== undefined ||
     filter.sector !== undefined ||
     filter.ageGroup !== undefined ||
+    filter.sex !== undefined ||
     filter.householdId !== undefined ||
     filter.includeInactive === true
   );

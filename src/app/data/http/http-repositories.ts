@@ -94,6 +94,8 @@ import {
   type DigitalIdHolder,
   type DigitalIdListFilter,
   type DigitalIdListPage,
+  type ResidentSummary,
+  type ResidentSummaryFilter,
   type DigitalIdId,
   type DigitalIdRepository,
   type BalitaArticle,
@@ -416,6 +418,7 @@ import {
   toWireSectorRecord,
   type BarangayIndex,
 } from './mappers/resident.mapper';
+import { toResidentSummary } from './mappers/resident-summary.mapper';
 import { toOffice } from './mappers/office.mapper';
 import {
   toDirectoryOffice,
@@ -1820,6 +1823,7 @@ export class HttpResidentRepository implements ResidentRepository {
             barangay_id: barangayId,
             sector: filter.sector,
             age_group: filter.ageGroup,
+            sex: filter.sex,
             include_inactive: filter.includeInactive === true ? 'true' : undefined,
           })
           .pipe(
@@ -1828,6 +1832,31 @@ export class HttpResidentRepository implements ResidentRepository {
               items: answer.items.map((wire) => readResidentView(wire, barangays)),
             })),
           );
+      }),
+    );
+  }
+
+  /**
+   * The Citizens overview's figures (`DL-213`), already suppressed for this reader by the server.
+   * A barangay the API does not know by the same name sends nothing, as on the list.
+   */
+  summary(filter: ResidentSummaryFilter): Observable<ResidentSummary> {
+    return this.barangays().pipe(
+      switchMap((barangays) => {
+        const barangayId =
+          filter.barangayId === undefined ? undefined : barangays.toApi(filter.barangayId);
+        if (barangayId === null) {
+          return throwError(() => unknownBarangay());
+        }
+        return this.api
+          .item(`${API_ENDPOINTS.officeResidents}/summary`, {
+            barangay_id: barangayId,
+            sector: filter.sector,
+            age_group: filter.ageGroup,
+            sex: filter.sex,
+            period: filter.period,
+          })
+          .pipe(map((wire) => readResidentSummary(wire, barangays)));
       }),
     );
   }
@@ -2005,6 +2034,19 @@ function unknownBarangay(): Error {
     'That barangay is not one the API knows by the same name, so nothing was sent. The barangay ' +
       'list on the server and this console\'s list need to agree first.',
   );
+}
+
+function readResidentSummary(wire: unknown, barangays: BarangayIndex): ResidentSummary {
+  const summary = toResidentSummary(wire, barangays);
+
+  if (summary === null) {
+    throw new Error(
+      'The figures from the server could not be read, so none is shown rather than some: a count ' +
+        'left out reads as none, and a count shown that should have been withheld names somebody.',
+    );
+  }
+
+  return summary;
 }
 
 function readResidentView(wire: unknown, barangays: BarangayIndex): ResidentView {

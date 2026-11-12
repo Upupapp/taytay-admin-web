@@ -1,0 +1,198 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions *appHasPermission="'resident.create'" class="btn btn--primary" routerLink="/residents/new">
+    <app-icon name="plus" [stroke]="2.2" />
+    {{ copy.register }}
+  </a>
+</app-page-header>
+
+<!-- Filter first: it governs every figure below. Only filters this reader can use are offered. -->
+<section class="filter-bar overview__filters" [attr.aria-label]="copy.filterHeading">
+  <label class="filter-bar__field">
+    <span>{{ copy.barangay }}</span>
+    <select class="field__input field__input--pill" (change)="onFilter('barangay', $event)">
+      <option value="" [selected]="!filter().barangayId">{{ copy.allBarangays }}</option>
+      @for (barangay of barangays; track barangay.id) {
+        <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
+          {{ barangay.name }}
+        </option>
+      }
+    </select>
+  </label>
+
+  <label class="filter-bar__field">
+    <span>{{ copy.sector }}</span>
+    <select class="field__input field__input--pill" (change)="onFilter('sector', $event)">
+      <option value="" [selected]="!filter().sector">{{ copy.allSectors }}</option>
+      @for (sector of sectors(); track sector) {
+        <option [value]="sector" [selected]="filter().sector === sector">
+          {{ sectorLabel(sector) }}
+        </option>
+      }
+    </select>
+  </label>
+
+  <label class="filter-bar__field">
+    <span>{{ copy.ageGroup }}</span>
+    <select class="field__input field__input--pill" (change)="onFilter('ageGroup', $event)">
+      <option value="" [selected]="!filter().ageGroup">{{ copy.allAges }}</option>
+      @for (group of ageGroups; track group) {
+        <option [value]="group" [selected]="filter().ageGroup === group">
+          {{ ageGroupLabel(group) }}
+        </option>
+      }
+    </select>
+  </label>
+
+  <label class="filter-bar__field">
+    <span>{{ copy.sex }}</span>
+    <select class="field__input field__input--pill" (change)="onFilter('sex', $event)">
+      <option value="" [selected]="!filter().sex">{{ copy.allSexes }}</option>
+      @for (sex of sexes; track sex) {
+        <option [value]="sex" [selected]="filter().sex === sex">{{ sexLabel(sex) }}</option>
+      }
+    </select>
+  </label>
+
+  <label class="filter-bar__field">
+    <span>{{ copy.period }}</span>
+    <select class="field__input field__input--pill" (change)="onPeriod($event)">
+      @for (period of periods; track period) {
+        <option [value]="period" [selected]="(filter().period ?? 'month') === period">
+          {{ periodLabel(period) }}
+        </option>
+      }
+    </select>
+  </label>
+
+  @if (filtered()) {
+    <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+  }
+</section>
+
+<app-async-content
+  [state]="state()"
+  [content]="overview"
+  [skeletonLines]="8"
+  [errorHeading]="copy.errorHeading"
+  (retryRequested)="retry()"
+/>
+
+<ng-template #overview let-summary>
+  <p class="status-line overview__as-of" role="status">{{ asOf(summary) }}</p>
+
+  <!-- Headline figures: a link where the registry can list the same people, text where it cannot. -->
+  <section class="bento" aria-label="Headline figures">
+    @for (figure of headlines(summary); track figure.key) {
+      @if (figure.link; as params) {
+        <a class="kpi span-3" routerLink="/residents" [queryParams]="params">
+          <span class="kpi__label">
+            {{ figure.label }}
+            <span class="kpi__arrow" aria-hidden="true">
+              <app-icon name="arrowUpRight" [size]="13" [stroke]="2.4" />
+            </span>
+          </span>
+          <span class="kpi__value">{{ figure.value }}</span>
+          @if (figure.compared) {
+            <span class="kpi__hint">{{ deltaText(figure.delta) }}</span>
+          }
+          <span class="kpi__hint">{{ figure.hint }}</span>
+          <span class="visually-hidden">{{ copy.viewRecords }}</span>
+        </a>
+      } @else {
+        <div class="kpi span-3">
+          <span class="kpi__label">{{ figure.label }}</span>
+          <span class="kpi__value">{{ figure.value === null ? copy.withheld : figure.value }}</span>
+          @if (figure.compared) {
+            <span class="kpi__hint">{{ deltaText(figure.delta) }}</span>
+          }
+          <span class="kpi__hint">{{ figure.value === null ? copy.withheldHint : figure.hint }}</span>
+          @if (figure.key === 'registered') {
+            <span class="kpi__hint">{{ copy.notLinked }}</span>
+          }
+        </div>
+      }
+    }
+
+    <section class="card card--panel card--padded span-6" aria-labelledby="overview-barangay">
+      <h2 id="overview-barangay" class="section-title">{{ copy.byBarangay }}</h2>
+      <app-chart-table
+        [caption]="summary.byBarangay.title"
+        [summary]="summary.byBarangay.summary"
+        [labelHeader]="summary.byBarangay.labelHeader"
+        [valueHeader]="summary.byBarangay.valueHeader"
+        [rows]="barangayRows(summary.byBarangay)"
+      />
+      <p class="status-line">{{ copy.total(summary.byBarangay.total) }}</p>
+      @if (summary.byBarangay.suppressionNotice; as notice) {
+        <p class="status-line">{{ notice }}</p>
+      }
+    </section>
+
+    <section class="card card--panel card--padded span-6" aria-labelledby="overview-sector">
+      <h2 id="overview-sector" class="section-title">{{ copy.bySector }}</h2>
+      <app-chart-table
+        [caption]="summary.bySector.title"
+        [summary]="summary.bySector.summary"
+        [labelHeader]="summary.bySector.labelHeader"
+        [valueHeader]="summary.bySector.valueHeader"
+        [rows]="sectorRows(summary.bySector)"
+      />
+      <p class="status-line">{{ copy.bySectorNote }}</p>
+      @if (summary.bySector.suppressionNotice; as notice) {
+        <p class="status-line">{{ notice }}</p>
+      }
+    </section>
+
+    <section class="card card--panel card--padded span-6" aria-labelledby="overview-age-sex">
+      <h2 id="overview-age-sex" class="section-title">{{ copy.byAgeSex }}</h2>
+      <app-chart-table
+        [caption]="summary.byAgeSex.title"
+        [summary]="summary.byAgeSex.summary"
+        [labelHeader]="summary.byAgeSex.labelHeader"
+        [valueHeader]="summary.byAgeSex.valueHeader"
+        [rows]="ageSexRows(summary.byAgeSex)"
+      />
+      <p class="status-line">{{ copy.total(summary.byAgeSex.total) }} {{ copy.byAgeSexNote }}</p>
+      @if (summary.byAgeSex.suppressionNotice; as notice) {
+        <p class="status-line">{{ notice }}</p>
+      }
+    </section>
+
+    <!-- Conditions of the records, counted: never a list of who (DL-98, DL-103). -->
+    <section class="card card--panel card--padded span-6 stack" aria-labelledby="overview-tidy">
+      <h2 id="overview-tidy" class="section-title">{{ copy.tidyHeading }}</h2>
+      <ul class="soft-list">
+        @for (item of summary.recordsToTidy; track item.key) {
+          <li class="soft-row soft-row--stacked">
+            <span>
+              <strong>{{ item.count === null ? '—' : item.count }}</strong>
+              {{ tidyLabel(item) }}
+            </span>
+            <span class="soft-row__meta">{{ item.basis }}</span>
+            @if (item.count === null) {
+              <span class="soft-row__meta">{{ copy.tidyNotRun }}</span>
+            } @else if (item.lastRunAt; as lastRun) {
+              <span class="soft-row__meta">{{ copy.tidyLastRun(when(lastRun)) }}</span>
+            }
+            @if (item.key === 'possible-duplicates' && item.count !== null && item.count > 0) {
+              <a
+                class="record-link"
+                routerLink="/beneficiaries/duplicates"
+                *appHasPermission="'beneficiary.review-duplicates'"
+                >{{ copy.tidyOpen }}</a
+              >
+            }
+          </li>
+        } @empty {
+          <li class="soft-row">{{ copy.tidyNone }}</li>
+        }
+      </ul>
+    </section>
+  </section>
+
+  <aside class="note-box overview__disclosure" aria-labelledby="overview-disclosure">
+    <h2 id="overview-disclosure" class="section-title">{{ copy.disclosureHeading }}</h2>
+    <p>{{ copy.disclosure(summary.disclosure.threshold) }}</p>
+    <p>{{ summary.disclosure.basis }} {{ summary.disclosure.provenance }}</p>
+  </aside>
+</ng-template>

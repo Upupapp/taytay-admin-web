@@ -22,6 +22,8 @@ import {
   RESIDENT_AGE_GROUP_LABELS,
   RESIDENT_AGE_GROUPS,
   RESIDENT_REPOSITORY,
+  SEX_LABELS,
+  SEXES,
   TAYTAY_BARANGAYS,
   VULNERABILITY_SECTOR_LABELS,
   VULNERABILITY_SECTORS,
@@ -29,6 +31,7 @@ import {
   type ResidentAgeGroup,
   type ResidentFilter,
   type ResidentView,
+  type Sex,
   type VulnerabilitySector,
 } from '@domain/index';
 import { InitialsPipe } from '@shared/pipes/initials.pipe';
@@ -98,6 +101,7 @@ export class ResidentListPage {
   protected readonly copy = RESIDENTS_COPY.list;
   protected readonly barangays = TAYTAY_BARANGAYS;
   protected readonly ageGroups = RESIDENT_AGE_GROUPS;
+  protected readonly sexes = SEXES;
 
   /**
    * The sector tabs, in the domain's order. A protected sector is offered only to a reader cleared
@@ -203,6 +207,10 @@ export class ResidentListPage {
     return RESIDENT_AGE_GROUP_LABELS[group];
   }
 
+  protected sexLabel(sex: Sex): string {
+    return SEX_LABELS[sex];
+  }
+
   /* ── filter changes are navigations ─────────────────────────────────────── */
 
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
@@ -235,6 +243,10 @@ export class ResidentListPage {
 
   protected onAgeGroup(event: Event): void {
     this.patch({ ageGroup: selectValue(event) });
+  }
+
+  protected onSex(event: Event): void {
+    this.patch({ sex: selectValue(event) });
   }
 
   protected onIncludeInactive(event: Event): void {

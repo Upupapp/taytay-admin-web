@@ -1,10 +1,12 @@
 import {
   RESIDENT_AGE_GROUPS,
+  SEXES,
   TAYTAY_BARANGAYS,
   VULNERABILITY_SECTORS,
   type BarangayId,
   type ResidentAgeGroup,
   type ResidentFilter,
+  type Sex,
   type VulnerabilitySector,
 } from '@domain/index';
 
@@ -39,6 +41,7 @@ export function readResidentFilter(params: ParamReader): ResidentFilter {
     barangayId?: BarangayId;
     sector?: VulnerabilitySector;
     ageGroup?: ResidentAgeGroup;
+    sex?: Sex;
     includeInactive?: boolean;
   } = {};
 
@@ -60,6 +63,11 @@ export function readResidentFilter(params: ParamReader): ResidentFilter {
   const ageGroup = params.get('ageGroup');
   if (ageGroup && (RESIDENT_AGE_GROUPS as readonly string[]).includes(ageGroup)) {
     filter.ageGroup = ageGroup as ResidentAgeGroup;
+  }
+
+  const sex = SEXES.find((candidate) => candidate === params.get('sex'));
+  if (sex !== undefined) {
+    filter.sex = sex;
   }
 
   if (params.get('inactive') === 'true') {
@@ -90,6 +98,9 @@ export function residentFilterParams(filter: ResidentFilter): Record<string, str
   }
   if (filter.ageGroup) {
     params['ageGroup'] = filter.ageGroup;
+  }
+  if (filter.sex) {
+    params['sex'] = filter.sex;
   }
   if (filter.includeInactive) {
     params['inactive'] = 'true';

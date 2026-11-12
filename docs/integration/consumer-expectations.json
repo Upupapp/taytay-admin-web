@@ -3327,6 +3327,23 @@
     },
     {
       "method": "GET",
+      "path": "office/residents/summary",
+      "consumer": "resident-summary.mapper.ts#toResidentSummary",
+      "required": [],
+      "optional": [
+        "as_of",
+        "by_age_sex",
+        "by_barangay",
+        "by_sector",
+        "disclosure",
+        "period",
+        "records_to_tidy",
+        "registered",
+        "residents"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "office/saved-views",
       "consumer": "saved-view.mapper.ts#toSavedView",
       "required": [

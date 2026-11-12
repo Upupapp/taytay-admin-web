@@ -45,6 +45,8 @@ export const RESIDENTS_COPY = {
     } satisfies Readonly<Record<VulnerabilitySector, string>>,
     ageGroup: 'Age group',
     allAges: 'All ages',
+    sex: 'Sex',
+    allSexes: 'Female and male',
     includeInactive: 'Include retired records',
     clear: 'Clear filters',
     create: 'Register a resident',

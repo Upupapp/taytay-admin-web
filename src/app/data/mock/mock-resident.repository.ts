@@ -28,6 +28,8 @@ import {
   type ResidentId,
   type ResidentProfile,
   type ResidentRepository,
+  type ResidentSummary,
+  type ResidentSummaryFilter,
   type ResidentView,
 
   isSensitiveSector,
@@ -40,6 +42,7 @@ import { MockAssistanceRequestStore } from './mock-assistance-request.store';
 import { MockCaseStore } from './mock-case.store';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
+import { mockResidentSummary } from './mock-resident-summary';
 
 /**
  * The registry adapter.
@@ -135,6 +138,29 @@ export class MockResidentRepository implements ResidentRepository {
       hasMore,
       nextCursor: hasMore ? String(end) : null,
     });
+  }
+
+  /** Refused as the API refuses it: a caseload, another barangay, a protected sector uncleared. */
+  summary(filter: ResidentSummaryFilter): Observable<ResidentSummary> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<ResidentSummary>(user, 'resident.view');
+    if (denied) {
+      return denied;
+    }
+    if (user?.scope === 'assigned-cases') {
+      return throwError(() => new PermissionDeniedError('resident.view'));
+    }
+    if (filter.barangayId !== undefined && !isWithinBarangayScope(user, filter.barangayId)) {
+      return throwError(() => new PermissionDeniedError('resident.view'));
+    }
+    const cleared = userHasPermission(user, 'request.view-sensitive');
+    if (filter.sector !== undefined && isSensitiveSector(filter.sector) && !cleared) {
+      return throwError(() => new PermissionDeniedError('request.view-sensitive'));
+    }
+    const inScope = this.store
+      .all()
+      .filter((resident) => isWithinBarangayScope(user, resident.address.barangayId));
+    return this.latency.respond(mockResidentSummary(inScope, filter, cleared));
   }
 
   getById(id: ResidentId): Observable<ResidentView | null> {
@@ -386,6 +412,9 @@ function matchesFilter(resident: Resident, filter: ResidentFilter, cleared: bool
     return false;
   }
   if (filter.ageGroup && !isInAgeGroup(resident.birthDate, filter.ageGroup)) {
+    return false;
+  }
+  if (filter.sex && resident.sex !== filter.sex) {
     return false;
   }
   if (filter.householdId && resident.householdId !== filter.householdId) {

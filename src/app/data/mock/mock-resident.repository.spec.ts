@@ -544,3 +544,31 @@ describe('saved views cost the same permission as the list they describe', () =>
     }
   });
 });
+
+describe('the Citizens overview is counted with small cells withheld (DL-213)', () => {
+  it('withholds a small count, never shows it as zero, and takes the total before', async () => {
+    signedInAs(authenticated('intake-officer'));
+    const summary = await firstValueFrom(repo().summary({}));
+    const rows = [...summary.byBarangay.rows, ...summary.bySector.rows, ...summary.byAgeSex.rows];
+
+    for (const row of rows) {
+      expect(row.isWithheld === true || row.value === 0 || row.value >= 5).toBe(true);
+    }
+    expect(summary.byBarangay.total).toBe(summary.residents.current);
+  });
+
+  it('does not count a protected sector for a reader without request.view-sensitive', async () => {
+    signedInAs(authenticated('intake-officer'));
+    const summary = await firstValueFrom(repo().summary({}));
+    const vawc = summary.bySector.rows.find((row) => row.key === 'vawc-survivor');
+
+    expect(vawc?.isWithheld).toBe(true);
+  });
+
+  it('refuses a caseload, as the API does', async () => {
+    signedInAs(authenticated('social-worker'));
+    await expect(firstValueFrom(repo().summary({}))).rejects.toBeInstanceOf(
+      PermissionDeniedError,
+    );
+  });
+});

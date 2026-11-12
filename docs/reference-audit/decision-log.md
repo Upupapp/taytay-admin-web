@@ -10238,3 +10238,47 @@ the cards route does not send; issuing stays on the accounts page. The check sta
 list, using `CardCheck` as it is.
 
 Easiest to reverse: delete the `citizen-ids` route, its menu entry and `citizen-ids-page.*`.
+
+## DL-213 — the Citizens overview draws the server's figures, withheld where small, each opening the registry
+
+**Status:** Settled (12 November 2026). The citizen design pack, prompt A6; board
+`docs/design/admin/screens/CitizensOverview.dc.html`. Dashboard pattern, from
+`dashboard/dashboard-page`. Backend B2, `GET office/residents/summary` (`resident.view`), vendored
+from the backend's working tree while it was uncommitted there.
+
+**What the office can now do.** Open `/residents/overview`, "Citizen overview", the first entry under
+Citizens, and see the registry counted: how many people are on it now and as the period began,
+how many were registered this period and the last, by barangay, by sector and by age group and sex,
+and the records that need tidying — under a barangay, sector, age group, sex and period filter kept
+in the URL. The registry gains the **sex** filter the overview links by.
+
+**Decisions.**
+
+1. **The server counts; the screen draws** (`DL-105`). Every figure is the API's, already withheld
+   where it is small enough to identify somebody. A withheld figure says "Withheld", never a zero,
+   and opens nothing; the series totals are the server's, taken before. The mapper refuses a summary
+   that shows a small figure, or that misses a series, by the reports' own rules
+   (`toAggregateSeries`, the reports' `toSeries` made public).
+2. **Every figure opens the registry filtered the same way** — the overview's filter in the
+   registry's own parameters, plus the row's barangay, sector or age group and sex. Where the
+   registry cannot list the same people (records added this period, records missing a contact) the
+   figure is text, and says so, rather than a link that would show somebody else. Under a sector
+   filter the board's per-sector figures stand aside, because the registry lists one sector at a
+   time and the overlap would not be the same people.
+3. **Value and up/down delta only, no sparklines.** A delta is drawn only when both figures were
+   shown: a difference against a withheld figure would disclose it.
+4. **Protected sectors** are offered as a filter only to `request.view-sensitive`; the server
+   withholds their counts from anybody else, and the sector panel says so.
+5. **Records to tidy are counts, never lists** (`DL-98`, `DL-103`): missing contact, and — for
+   `beneficiary.review-duplicates` only, as the server sends it — possible duplicates, linked to the
+   duplicate review. A count the server has not run yet says "Not checked yet", not 0.
+6. The port grows `ResidentRepository.summary`; the mock counts the sample registry the same way,
+   through the domain's own `suppressSmallCells`.
+
+**Left out, for lack of an API field.** The 12-month growth chart, the registry-to-Digital-ID funnel,
+the app-user and Digital ID headline figures, "Export summary" and "Recent imports" (A7 lists
+imports on its own page). The menu highlights "Citizen registry" too while the overview is open,
+as it does for the sector pages: `/residents` is matched as a prefix (`app-nav.ts`).
+
+Easiest to reverse: delete the `residents/overview` route, its menu entry and
+`citizens-overview-page.*`; the sex filter stands on its own.

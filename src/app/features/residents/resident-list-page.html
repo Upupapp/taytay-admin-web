@@ -95,6 +95,16 @@
       </select>
     </label>
 
+    <label class="field">
+      <span class="field__label">{{ copy.sex }}</span>
+      <select class="field__input field__input--pill" (change)="onSex($event)">
+        <option value="" [selected]="!filter().sex">{{ copy.allSexes }}</option>
+        @for (sex of sexes; track sex) {
+          <option [value]="sex" [selected]="filter().sex === sex">{{ sexLabel(sex) }}</option>
+        }
+      </select>
+    </label>
+
     <label class="check-pill residents__check">
       <input
         type="checkbox"

@@ -1,0 +1,23 @@
+// CitizensOverview mock-up: the filter bar, the as-of line, then the figures and breakdowns on the
+// shared `.bento` grid. Layout only; the shapes are `.filter-bar`, `.kpi`, `.soft-list`, `.note-box`.
+
+:host {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.overview__filters {
+  flex-wrap: wrap;
+}
+
+.overview__as-of {
+  margin: 0 0 var(--space-3);
+}
+
+.overview__disclosure {
+  margin-block-start: var(--space-4);
+
+  p {
+    margin: var(--space-2) 0 0;
+  }
+}

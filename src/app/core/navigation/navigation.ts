@@ -123,6 +123,16 @@ export const NAVIGATION: readonly NavSection[] = [
     title: 'Citizens',
     items: [
       {
+        // `DL-213`. The registry counted by the server; every figure opens the registry filtered.
+        label: 'Citizen overview',
+        route: '/residents/overview',
+        reads: ['resident'],
+        glyph: 'CO',
+        permissions: ['resident.view'],
+        closedTo: ['assigned-cases'],
+        description: 'The registry in figures: where people live, their sectors, age and sex.',
+      },
+      {
         label: 'Citizen registry',
         route: '/residents',
         reads: ['resident'],

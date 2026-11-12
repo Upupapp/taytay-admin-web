@@ -57,6 +57,7 @@ export * from './referrals/referral';
 export * from './referrals/referral-disclosure';
 export * from './referrals/service-provider';
 export * from './residents/resident';
+export * from './residents/resident-summary';
 export * from './reports/report-definition';
 export * from './reports/report-disclosure';
 export * from './reports/report-result';

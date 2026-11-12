@@ -1,0 +1,65 @@
+{
+  "data": {
+    "as_of": "2026-11-12T06:00:00.000Z",
+    "period": {
+      "kind": "month",
+      "from": "2026-11-01",
+      "to": "2026-11-12",
+      "previous_from": "2026-10-01",
+      "previous_to": "2026-10-31"
+    },
+    "applied_filter": { "barangay_id": null, "sector": null, "age_group": null, "sex": null },
+    "residents": { "current": 1204, "previous": 1180 },
+    "registered": {
+      "current": { "value": null, "withheld": "small-cell" },
+      "previous": { "value": 24, "withheld": null }
+    },
+    "by_barangay": {
+      "key": "by-barangay",
+      "title": "Residents by barangay",
+      "summary": "Active records by the barangay recorded now.",
+      "label_header": "Barangay",
+      "value_header": "Residents",
+      "measure": "people",
+      "rows": [
+        { "key": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04", "label": "San Juan", "value": 1201, "display": null, "withheld": null, "resident_id": null },
+        { "key": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01", "label": "Dolores", "value": null, "display": null, "withheld": "small-cell", "resident_id": null }
+      ],
+      "total": 1204,
+      "suppression_notice": "1 figure is withheld because the count is small enough to identify somebody."
+    },
+    "by_sector": {
+      "key": "by-sector",
+      "title": "Residents by sector",
+      "summary": "Sectors overlap.",
+      "label_header": "Sector",
+      "value_header": "Residents",
+      "measure": "people",
+      "rows": [
+        { "key": "senior-citizen", "label": "Senior citizens", "value": 210, "display": null, "withheld": null, "resident_id": null },
+        { "key": "vawc-survivor", "label": "VAWC survivors", "value": null, "display": null, "withheld": "protected-sector", "resident_id": null }
+      ],
+      "total": 210,
+      "suppression_notice": null
+    },
+    "by_age_sex": {
+      "key": "by-age-sex",
+      "title": "Residents by age group and sex",
+      "summary": "Ages in whole years today.",
+      "label_header": "Age group and sex",
+      "value_header": "Residents",
+      "measure": "people",
+      "rows": [
+        { "key": "senior.female", "label": "Senior citizens (60+), female", "value": 120, "display": null, "withheld": null, "resident_id": null }
+      ],
+      "total": 120,
+      "suppression_notice": null
+    },
+    "records_to_tidy": [
+      { "key": "missing-contact", "count": 31, "basis": "Active records with no mobile number and no email." },
+      { "key": "possible-duplicates", "count": null, "basis": "Same name and birth date.", "last_run_at": null }
+    ],
+    "disclosure": { "threshold": 5, "provenance": "convention-pending-confirmation", "basis": "DL-105" }
+  },
+  "meta": {}
+}

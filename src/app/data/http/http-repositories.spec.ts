@@ -87,6 +87,7 @@ import MEDIA from './fixtures/media.json';
 import APP_CONFIG from './fixtures/app-config.json';
 import DIGITAL_ID_CARD from './fixtures/digital-id-card.json';
 import DIGITAL_ID_LIST_PAGE from './fixtures/digital-id-list-page.json';
+import OFFICE_RESIDENTS_SUMMARY from './fixtures/office-residents-summary.json';
 import DIGITAL_ID_HOLDER from './fixtures/digital-id-holder.json';
 import NEWS from './fixtures/news.json';
 import NEWS_PAGE from './fixtures/news-page.json';
@@ -3013,6 +3014,50 @@ describe('the Node adapters', () => {
       expect(request.request.urlWithParams).not.toContain('token');
       request.flush(new Blob(['x']));
       expect(await photo).toBeInstanceOf(Blob);
+    });
+  });
+
+  describe('the Citizens overview (DL-213)', () => {
+    beforeEach(() => tokens.hold('fixture-token', null));
+
+    it('asks for the figures by the API’s names, the barangay by its id, and reads them whole', async () => {
+      const residents = TestBed.inject(HttpResidentRepository);
+      const answer = firstValueFrom(
+        residents.summary({
+          barangayId: asId<BarangayId>('brgy-san-juan'),
+          sector: 'senior-citizen',
+          ageGroup: 'senior',
+          sex: 'female',
+          period: 'quarter',
+        }),
+      );
+      http.expectOne({ method: 'GET', url: `${BASE}/barangays` }).flush({
+        data: [{ id: '6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04', code: 'san-juan', name: 'San Juan' }],
+        meta: {},
+      });
+      const request = http.expectOne(
+        (candidate) => candidate.url === `${BASE}/office/residents/summary`,
+      );
+      expect(request.request.params.get('barangay_id')).toBe('6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04');
+      expect(request.request.params.get('sector')).toBe('senior-citizen');
+      expect(request.request.params.get('age_group')).toBe('senior');
+      expect(request.request.params.get('sex')).toBe('female');
+      expect(request.request.params.get('period')).toBe('quarter');
+      request.flush(OFFICE_RESIDENTS_SUMMARY);
+
+      const summary = await answer;
+      expect(summary.residents.current).toBe(1204);
+      expect(summary.byBarangay.rows[0]?.key).toBe('brgy-san-juan');
+    });
+
+    it('sends the sex filter on the registry list (DL-213)', async () => {
+      const residents = TestBed.inject(HttpResidentRepository);
+      const page = firstValueFrom(residents.list({ sex: 'male' }, { limit: 20, cursor: null }));
+      http.expectOne({ method: 'GET', url: `${BASE}/barangays` }).flush({ data: [], meta: {} });
+      const request = http.expectOne((candidate) => candidate.url === `${BASE}/office/residents`);
+      expect(request.request.params.get('sex')).toBe('male');
+      request.flush({ data: [], meta: { pagination: { has_more: false, next_cursor: null } } });
+      expect((await page).items).toEqual([]);
     });
   });
 
