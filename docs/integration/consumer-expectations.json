@@ -2436,6 +2436,108 @@
     },
     {
       "method": "GET",
+      "path": "office/imports",
+      "consumer": "resident-import.mapper.ts#toResidentImportSummary",
+      "required": [],
+      "optional": [
+        "committed_at",
+        "committed_by",
+        "created_at",
+        "created_by",
+        "file_name",
+        "id",
+        "kind",
+        "result",
+        "row_count",
+        "status"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/imports",
+      "consumer": "resident-import.mapper.ts#toResidentImportSummary",
+      "required": [],
+      "optional": [
+        "committed_at",
+        "committed_by",
+        "created_at",
+        "created_by",
+        "file_name",
+        "id",
+        "kind",
+        "result",
+        "row_count",
+        "status"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/imports/{id}",
+      "consumer": "resident-import.mapper.ts#toResidentImport",
+      "required": [
+        "columns",
+        "fields",
+        "mapping",
+        "missing_fields",
+        "outcomes"
+      ],
+      "optional": [
+        "counts",
+        "groups"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/imports/{id}/commit",
+      "consumer": "resident-import.mapper.ts#toResidentImportSummary",
+      "required": [],
+      "optional": [
+        "committed_at",
+        "committed_by",
+        "created_at",
+        "created_by",
+        "file_name",
+        "id",
+        "kind",
+        "result",
+        "row_count",
+        "status"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "office/imports/{id}/mapping",
+      "consumer": "resident-import.mapper.ts#toResidentImport",
+      "required": [
+        "columns",
+        "fields",
+        "mapping",
+        "missing_fields",
+        "outcomes"
+      ],
+      "optional": [
+        "counts",
+        "groups"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/imports/{id}/rows/{row}/resolve",
+      "consumer": "resident-import.mapper.ts#toResidentImport",
+      "required": [
+        "columns",
+        "fields",
+        "mapping",
+        "missing_fields",
+        "outcomes"
+      ],
+      "optional": [
+        "counts",
+        "groups"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "office/issuance-requests",
       "consumer": "issuance.mapper.ts#toIssuanceRequestSummary",
       "required": [

@@ -1,0 +1,81 @@
+<form class="card card--panel card--padded form-panel" novalidate (submit)="$event.preventDefault(); save()">
+  <fieldset class="form-section">
+    <legend class="form-section__legend">{{ copy.heading }}</legend>
+    <p class="form-section__note">{{ copy.lead }}</p>
+
+    @if (locked()) {
+      <p class="callout callout--warning">{{ copy.locked }}</p>
+    }
+
+    <div class="table-scroll">
+      <table class="simple-table">
+        <thead>
+          <tr>
+            <th scope="col">{{ copy.field }}</th>
+            <th scope="col">{{ copy.column }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (spec of record().fields; track spec.field) {
+            <tr>
+              <th scope="row">
+                <label [attr.for]="'import-map-' + spec.field">{{ spec.label }}</label>
+                @if (spec.required) {
+                  <span class="chip chip--info">{{ copy.required }}</span>
+                }
+              </th>
+              <td>
+                <select
+                  class="field__input"
+                  [id]="'import-map-' + spec.field"
+                  [disabled]="locked() || saving()"
+                  (change)="choose(spec.field, $event)"
+                >
+                  <option value="" [selected]="columnOf(spec.field) === null">
+                    {{ copy.notInFile }}
+                  </option>
+                  @for (column of record().columns; track column.index) {
+                    <option [value]="column.index" [selected]="columnOf(spec.field) === column.index">
+                      {{ optionLabel(column) }}
+                    </option>
+                  }
+                </select>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <p class="status-line" role="status">
+      {{ record().missingFields.length === 0 ? copy.allMatched : copy.missing(missing()) }}
+    </p>
+  </fieldset>
+
+  @if (problem(); as message) {
+    <div class="callout callout--danger" role="alert"><p>{{ message }}</p></div>
+  }
+  @if (outcome(); as message) {
+    <p class="callout callout--success" role="status">{{ message }}</p>
+  }
+
+  @if (!locked()) {
+    <div class="effects" id="import-map-effects">
+      <ul>
+        @for (effect of copy.effects; track $index) {
+          <li>{{ effect }}</li>
+        }
+      </ul>
+    </div>
+    <div class="form-footer">
+      <button
+        type="submit"
+        class="btn btn--primary"
+        aria-describedby="import-map-effects"
+        [disabled]="saving()"
+      >
+        {{ saving() ? copy.saving : copy.save }}
+      </button>
+    </div>
+  }
+</form>

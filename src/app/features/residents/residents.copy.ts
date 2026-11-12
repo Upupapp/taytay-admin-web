@@ -47,6 +47,7 @@ export const RESIDENTS_COPY = {
     allAges: 'All ages',
     sex: 'Sex',
     allSexes: 'Female and male',
+    importCitizens: 'Import citizens',
     includeInactive: 'Include retired records',
     clear: 'Clear filters',
     create: 'Register a resident',

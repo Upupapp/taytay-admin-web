@@ -131,6 +131,9 @@ import MEDIA from './media.json';
 import APP_CONFIG from './app-config.json';
 import DIGITAL_ID_CARD from './digital-id-card.json';
 import DIGITAL_ID_HOLDER from './digital-id-holder.json';
+import DIGITAL_ID_LIST_PAGE from './digital-id-list-page.json';
+import OFFICE_RESIDENTS_SUMMARY from './office-residents-summary.json';
+import RESIDENT_IMPORT from './resident-import.json';
 import NEWS from './news.json';
 import NEWS_PAGE from './news-page.json';
 import NEWS_CATEGORIES from './news-categories.json';
@@ -450,6 +453,9 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['app-config', APP_CONFIG, 'AppConfigEnvelope'],
     ['digital-id-card', DIGITAL_ID_CARD, 'DigitalIdAdminEnvelope'],
     ['digital-id-holder', DIGITAL_ID_HOLDER, 'DigitalIdHolderEnvelope'],
+    ['digital-id-list-page', DIGITAL_ID_LIST_PAGE, 'DigitalIdListEnvelope'],
+    ['office-residents-summary', OFFICE_RESIDENTS_SUMMARY, 'OfficeResidentSummaryEnvelope'],
+    ['resident-import', RESIDENT_IMPORT, 'ResidentImportEnvelope'],
     ['news', NEWS, 'NewsEnvelope'],
     ['news-page', NEWS_PAGE, 'NewsListEnvelope'],
     ['news-categories', NEWS_CATEGORIES, 'NewsCategoryListEnvelope'],

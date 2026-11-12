@@ -188,6 +188,12 @@ export const API_ENDPOINTS = {
    */
   officeResidents: 'office/residents',
   /**
+   * Imports of the office's own lists (`DL-214`, `resident.import`): `GET` a cursor page, `POST` a
+   * file (multipart); one by `{id}`; `PUT {id}/mapping`, `POST {id}/rows/{row}/resolve` with a
+   * reason, `POST {id}/commit`.
+   */
+  officeImports: 'office/imports',
+  /**
    * The office's household register (casework phase 1c): an address and who lives there, recorded
    * by staff — not the residents' app households at `households`. Cursor-paged by reference number,
    * `resident_id` naming the one household a person is in; one by `{id}`; `POST` to register;

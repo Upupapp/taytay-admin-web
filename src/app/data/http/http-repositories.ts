@@ -96,6 +96,12 @@ import {
   type DigitalIdListPage,
   type ResidentSummary,
   type ResidentSummaryFilter,
+  type ImportMapping,
+  type ImportResolution,
+  type ResidentImport,
+  type ResidentImportId,
+  type ResidentImportRepository,
+  type ResidentImportSummary,
   type DigitalIdId,
   type DigitalIdRepository,
   type BalitaArticle,
@@ -419,6 +425,13 @@ import {
   type BarangayIndex,
 } from './mappers/resident.mapper';
 import { toResidentSummary } from './mappers/resident-summary.mapper';
+import {
+  toResidentImport,
+  toResidentImportSummary,
+  toWireImportMapping,
+  toWireImportResolve,
+  toWireImportUpload,
+} from './mappers/resident-import.mapper';
 import { toOffice } from './mappers/office.mapper';
 import {
   toDirectoryOffice,
@@ -5426,4 +5439,93 @@ function readEvents<T>(read: T | null): T {
     );
   }
   return read;
+}
+
+/**
+ * Imports of the office's own lists (`DL-214`, `resident.import`). Every act answers the import read
+ * again by the server, and that answer is what the screen shows; a candidate's barangay is joined to
+ * the console's by name, as the registry's are.
+ */
+@Injectable()
+export class HttpResidentImportRepository implements ResidentImportRepository {
+  private readonly api = inject(ApiClient);
+  private readonly barangayJoin = new BarangayJoin();
+
+  list(page: CursorRequest): Observable<CursorPage<ResidentImportSummary>> {
+    return this.api
+      .cursorPage(API_ENDPOINTS.officeImports, page)
+      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readImportSummary) })));
+  }
+
+  upload(file: File): Observable<ResidentImportSummary> {
+    return this.api
+      .postForm(API_ENDPOINTS.officeImports, toWireImportUpload(file))
+      .pipe(map(readImportSummary));
+  }
+
+  /** `null` for "not found **or** not yours" — the server answers both with a 404. */
+  get(id: ResidentImportId): Observable<ResidentImport | null> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .optionalItem(`${API_ENDPOINTS.officeImports}/${id}`)
+          .pipe(map((wire) => (wire === null ? null : readImport(wire, barangays)))),
+      ),
+    );
+  }
+
+  map(id: ResidentImportId, mapping: ImportMapping): Observable<ResidentImport> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .put(`${API_ENDPOINTS.officeImports}/${id}/mapping`, toWireImportMapping(mapping))
+          .pipe(map((wire) => readImport(wire, barangays))),
+      ),
+    );
+  }
+
+  resolve(
+    id: ResidentImportId,
+    row: number,
+    resolution: ImportResolution,
+  ): Observable<ResidentImport> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .post(
+            `${API_ENDPOINTS.officeImports}/${id}/rows/${row}/resolve`,
+            toWireImportResolve(resolution),
+          )
+          .pipe(map((wire) => readImport(wire, barangays))),
+      ),
+    );
+  }
+
+  commit(id: ResidentImportId): Observable<ResidentImportSummary> {
+    return this.api
+      .post(`${API_ENDPOINTS.officeImports}/${id}/commit`, {})
+      .pipe(map(readImportSummary));
+  }
+}
+
+function readImportSummary(wire: unknown): ResidentImportSummary {
+  const summary = toResidentImportSummary(wire);
+  if (summary === null) {
+    throw new Error(
+      'An import from the server could not be read, so none is shown rather than a guess about ' +
+        'what became of its rows.',
+    );
+  }
+  return summary;
+}
+
+function readImport(wire: unknown, barangays: BarangayIndex): ResidentImport {
+  const record = toResidentImport(wire, barangays);
+  if (record === null) {
+    throw new Error(
+      'The import from the server could not be read whole, so none of it is shown: a row left out ' +
+        'is a row nobody decides.',
+    );
+  }
+  return record;
 }

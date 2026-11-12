@@ -1,0 +1,7 @@
+// Import citizens: the steps, then one panel per step. Layout only; the shapes are `.tabs`,
+// `.form-panel`, `.simple-table`, `.record-grid`, `.choice-list`, `.tally-row` and `.effects`.
+
+:host {
+  display: grid;
+  gap: var(--space-4);
+}

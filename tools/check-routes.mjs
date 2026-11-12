@@ -166,6 +166,8 @@ const VERBS = {
   postBlob: 'POST',
   post: 'POST',
   patch: 'PATCH',
+  /** A whole replacement (`DL-214`). */
+  put: 'PUT',
   /** A body that carries a file (`DL-170`): judged at its verb exactly as a JSON body is. */
   postForm: 'POST',
   patchForm: 'PATCH',

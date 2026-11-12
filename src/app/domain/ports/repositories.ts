@@ -107,6 +107,12 @@ import type {
 } from '../residents/resident';
 import type { ResidentSummary, ResidentSummaryFilter } from '../residents/resident-summary';
 import type {
+  ImportMapping,
+  ImportResolution,
+  ResidentImport,
+  ResidentImportSummary,
+} from '../residents/resident-import';
+import type {
   HouseholdDraft,
   HouseholdFilter,
   MembershipChange,
@@ -124,6 +130,7 @@ import type {
   OfficeId,
   OfficeThreadId,
   QuickLinkId,
+  ResidentImportId,
   TulongServiceId,
   VerificationRequestId,
   IssuanceAttachmentId,
@@ -1994,3 +2001,38 @@ export interface IssuanceRepository {
 }
 
 export const ISSUANCE_REPOSITORY = new InjectionToken<IssuanceRepository>('IssuanceRepository');
+
+/* ── importing the office's own lists (`DL-214`) ─────────────────────────── */
+
+/**
+ * Lists the office keeps, imported into the registry (`resident.import`). Nothing reaches the
+ * registry until `commit`: an upload is held and read for checking, and every act answers the
+ * import read again by the server. Nothing is merged (`DL-74`): a match is resolved as a finding.
+ */
+export interface ResidentImportRepository {
+  /** One cursor page, newest first. No total. */
+  list(page: CursorRequest): Observable<CursorPage<ResidentImportSummary>>;
+
+  /** Holds a .csv or .xlsx for checking, under a mapping the server guesses from its header. */
+  upload(file: File): Observable<ResidentImportSummary>;
+
+  /** `null` for "not found or not yours", as the server answers both. */
+  get(id: ResidentImportId): Observable<ResidentImport | null>;
+
+  /** The whole mapping; refused once a row is resolved, because it would change what was decided. */
+  map(id: ResidentImportId, mapping: ImportMapping): Observable<ResidentImport>;
+
+  /** A finding on one row, with a reason kept with the reviewer's name; a later one is appended. */
+  resolve(
+    id: ResidentImportId,
+    row: number,
+    resolution: ImportResolution,
+  ): Observable<ResidentImport>;
+
+  /** Writes the rows to the registry, refused while a field is unmapped or a match undecided. */
+  commit(id: ResidentImportId): Observable<ResidentImportSummary>;
+}
+
+export const RESIDENT_IMPORT_REPOSITORY = new InjectionToken<ResidentImportRepository>(
+  'ResidentImportRepository',
+);

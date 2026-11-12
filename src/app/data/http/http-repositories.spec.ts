@@ -35,6 +35,7 @@ import {
   type RelationshipId,
   type ResidentDraft,
   type ResidentId,
+  type ResidentImportId,
   type SavedViewId,
   type BalitaArticleId,
   type DigitalIdId,
@@ -88,6 +89,7 @@ import APP_CONFIG from './fixtures/app-config.json';
 import DIGITAL_ID_CARD from './fixtures/digital-id-card.json';
 import DIGITAL_ID_LIST_PAGE from './fixtures/digital-id-list-page.json';
 import OFFICE_RESIDENTS_SUMMARY from './fixtures/office-residents-summary.json';
+import RESIDENT_IMPORT from './fixtures/resident-import.json';
 import DIGITAL_ID_HOLDER from './fixtures/digital-id-holder.json';
 import NEWS from './fixtures/news.json';
 import NEWS_PAGE from './fixtures/news-page.json';
@@ -127,6 +129,7 @@ import {
   HttpOfficeInboxRepository,
   HttpOfficeRepository,
   HttpPlatformAuditRepository,
+  HttpResidentImportRepository,
   HttpResidentRepository,
   HttpProgramRepository,
   HttpSavedViewRepository,
@@ -186,7 +189,8 @@ describe('the Node adapters', () => {
         HttpDigitalIdRepository,
         HttpBalitaRepository,
         HttpPlatformAuditRepository,
-        HttpResidentRepository,
+        HttpResidentImportRepository,
+  HttpResidentRepository,
         HttpHouseholdRepository,
         HttpFamilyRepository,
         HttpProgramRepository,
@@ -3058,6 +3062,56 @@ describe('the Node adapters', () => {
       expect(request.request.params.get('sex')).toBe('male');
       request.flush({ data: [], meta: { pagination: { has_more: false, next_cursor: null } } });
       expect((await page).items).toEqual([]);
+    });
+  });
+
+  describe('importing the office’s lists (DL-214)', () => {
+    beforeEach(() => tokens.hold('fixture-token', null));
+    const ID = asId<ResidentImportId>('8b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d01');
+    const BARANGAYS = {
+      data: [{ id: '6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04', code: 'san-juan', name: 'San Juan' }],
+      meta: {},
+    };
+
+    it('uploads the file as a form, and nothing else', async () => {
+      const imports = TestBed.inject(HttpResidentImportRepository);
+      const file = new File(['Surname\nReyes'], 'census.csv', { type: 'text/csv' });
+      const done = firstValueFrom(imports.upload(file));
+      const request = http.expectOne({ method: 'POST', url: `${BASE}/office/imports` });
+      expect(request.request.body).toBeInstanceOf(FormData);
+      expect([...(request.request.body as FormData).keys()]).toEqual(['file']);
+      request.flush({ data: { ...RESIDENT_IMPORT.data }, meta: {} });
+      expect((await done).fileName).toBe('census.csv');
+    });
+
+    it('sends the whole mapping by PUT and a finding by POST, and reads the import back', async () => {
+      const imports = TestBed.inject(HttpResidentImportRepository);
+      const mapped = firstValueFrom(imports.map(ID, { lastName: 0 }));
+      http.expectOne({ method: 'GET', url: `${BASE}/barangays` }).flush(BARANGAYS);
+      const put = http.expectOne({ method: 'PUT', url: `${BASE}/office/imports/${ID}/mapping` });
+      expect(put.request.body.mapping.last_name).toBe(0);
+      expect(put.request.body.mapping.email).toBeNull();
+      put.flush(RESIDENT_IMPORT);
+      expect((await mapped).missingFields).toEqual(['firstName']);
+
+      const resolved = firstValueFrom(
+        imports.resolve(ID, 1, {
+          action: 'same-person',
+          residentId: asId<ResidentId>('1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01'),
+          reason: ' Her ID was seen. ',
+        }),
+      );
+      const post = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/office/imports/${ID}/rows/1/resolve`,
+      });
+      expect(post.request.body).toEqual({
+        action: 'same-person',
+        reason: 'Her ID was seen.',
+        resident_id: '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01',
+      });
+      post.flush(RESIDENT_IMPORT);
+      expect((await resolved).groups.match).toHaveLength(1);
     });
   });
 

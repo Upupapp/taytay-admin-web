@@ -10282,3 +10282,52 @@ as it does for the sector pages: `/residents` is matched as a prefix (`app-nav.t
 
 Easiest to reverse: delete the `residents/overview` route, its menu entry and
 `citizens-overview-page.*`; the sex filter stands on its own.
+
+## DL-214 — importing a list is checked row by row, and a match is a finding, never a merge
+
+**Status:** Settled (12 November 2026). The citizen design pack, prompt A7; boards
+`docs/design/admin/screens/CitizenImport.dc.html` (step 1) and `CitizenImportCheck.dc.html`
+(step 3). Form pattern, from `households/household-form-page`; the findings in the beneficiaries'
+duplicate-review pattern. Backend B3, `office/imports` (`resident.import`), vendored from the
+backend's working tree while it was uncommitted there.
+
+**What the office can now do.** Bring a list it keeps — a barangay census, an OSCA, PDAO or solo
+parent list — into the registry in five steps: upload (`/residents/import`), match columns, check
+rows, confirm, done (`/residents/import/{id}?step=…`). Nothing reaches the registry before the
+confirmation. An import is resumable: recent imports are listed with Continue or View.
+
+**Decisions.**
+
+1. **There is no merge** (`DL-74`; the pack's `merge:<residentId>` is the clash `PROGRESS.md`
+   settles). A match or a repeat is resolved as a finding with a reason: a different person (a new
+   record), **the same person as** a named record (the row is attached; nothing on the record is
+   written over or deleted), or do not import. The server keeps each with the reviewer's name, and a
+   later finding on the same row is appended. A repeat within the file has no record to be, so it is
+   offered only the first and the last.
+2. **The grouping advises; it never decides** (`DL-60`): the screen says a match is a name and birth
+   date already on the registry, not a finding. No "treat all exact matches as the same person"
+   button: the API resolves one row at a time, each with its own reason, and a bulk act would put
+   one sentence against many people.
+3. **A candidate's birth date is not read** (`DL-73`): it is the row's own, which is how it
+   matched. The row's own cells are shown under the server's field names.
+4. **The step is in the URL** (`DL-62`); everything decided is on the server, so a reload loses
+   nothing. Every act answers the import read again, and that answer is what is shown.
+5. **The mapping is whole and read-only once a row is decided**, as the API holds it; a column
+   chosen for a second field is refused on the page with a sentence.
+6. **The confirmation states its effects before its button** and is held, with the reason, while a
+   required field is unmapped or a match undecided; refused rows write nothing.
+7. **The file's limits stand before the picker; choosing sends nothing.** A file the API would
+   refuse for its kind or size is refused first, and the page says nothing was sent. The picker is a
+   new shared field, `DataFileField` (`shared/media`), as `ImageFileField` is for a picture: no
+   feature carries a file input of its own (`check:directory`).
+8. New key **`resident.import`** (the API's), held by the intake officer, the MSWDO head and the
+   administrator, not by a caseload (`DL-183`); new port `ResidentImportRepository`
+   (`resident-import`), and `ApiClient.put` for the mapping, registered in every check that
+   enumerates the client. The registry gains an **Import citizens** button for the key.
+
+**Left out, for lack of an API field.** "Where is the list from?", "Barangay this list covers", the
+date-format and sector-column choices, the registry template download, and "updated" records: the
+API attaches, it never updates.
+
+Easiest to reverse: delete the two `residents/import` routes, the menu entry, the registry button
+and `features/resident-import/`.

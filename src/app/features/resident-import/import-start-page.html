@@ -1,0 +1,103 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions class="btn" routerLink="/residents">{{ copy.cancel }}</a>
+</app-page-header>
+
+<app-import-steps [current]="1" />
+
+<form
+  class="card card--panel card--padded form-panel"
+  novalidate
+  (submit)="$event.preventDefault(); upload()"
+>
+  <fieldset class="form-section">
+    <legend class="form-section__legend">{{ copy.upload.heading }}</legend>
+    <!-- The limits stand before the picker, because the picker is a button that acts. -->
+    <app-data-file-field
+      inputId="import-file"
+      [label]="copy.upload.label"
+      [limits]="copy.upload.limits"
+      [hint]="copy.upload.hint"
+      [extensions]="limits.extensions"
+      [maxBytes]="limits.maxBytes"
+      [wrongKind]="copy.upload.wrongKind"
+      [tooBig]="copy.upload.tooBig"
+      [disabled]="sending()"
+      (chosen)="chose($event)"
+    />
+    @if (file(); as chosen) {
+      <p class="status-line" role="status">{{ copy.upload.chosen(chosen.name, size(chosen)) }}</p>
+    }
+  </fieldset>
+
+  @if (problem(); as message) {
+    <div class="callout callout--danger" role="alert">
+      <p>{{ message }}</p>
+    </div>
+  }
+
+  <div class="effects" id="import-upload-effects">
+    <p class="effects__lead">{{ copy.upload.effectsLead }}</p>
+    <ul>
+      @for (effect of copy.upload.effects; track $index) {
+        <li>{{ effect }}</li>
+      }
+    </ul>
+  </div>
+
+  <div class="form-footer">
+    <a class="btn" routerLink="/residents">{{ copy.cancel }}</a>
+    <button
+      type="submit"
+      class="btn btn--primary"
+      aria-describedby="import-upload-effects"
+      [disabled]="sending()"
+    >
+      {{ sending() ? copy.upload.sending : copy.upload.submit }}
+    </button>
+  </div>
+</form>
+
+<section class="card card--panel card--padded stack" aria-labelledby="import-recent">
+  <h2 id="import-recent" class="section-title">{{ copy.recent.heading }}</h2>
+
+  @if (failure(); as message) {
+    <div class="callout callout--danger" role="alert">
+      <p>{{ message }}</p>
+      <button type="button" class="btn" (click)="retry()">{{ copy.retry }}</button>
+    </div>
+  }
+
+  <app-data-table
+    [caption]="copy.recent.caption"
+    [columns]="columns()"
+    [rows]="rows()"
+    [rowKey]="rowKey"
+    [loading]="state().kind === 'loading'"
+    [emptyHeading]="copy.recent.emptyHeading"
+    [emptyMessage]="copy.recent.emptyMessage"
+  />
+
+  @if (rows().length > 0) {
+    <div class="list-more">
+      <p class="status-line" role="status">
+        {{ copy.recent.shown(rows().length) }}
+        {{ hasMore() ? copy.recent.moreAvailable : copy.recent.noMore }}
+      </p>
+      @if (hasMore()) {
+        <button type="button" class="btn" [disabled]="loadingMore()" (click)="showMore()">
+          {{ copy.recent.showMore }}
+        </button>
+      }
+    </div>
+  }
+</section>
+
+<ng-template #actionCell let-row>
+  <a
+    class="btn btn--small"
+    [routerLink]="openLink(row)"
+    [queryParams]="openParams(row)"
+    [attr.aria-label]="copy.recent.openLabel(row.fileName)"
+    >{{ row.status === 'committed' ? copy.recent.view : copy.recent.continue }}</a
+  >
+</ng-template>

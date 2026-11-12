@@ -17,6 +17,9 @@ export const PERMISSIONS = [
   'resident.update',
   'resident.deactivate',
   'resident.export',
+  // Importing the office's own lists into the registry (`DL-214`): intake's work, with the head
+  // and the administrator; never a caseload's, whose scope is its own clients (`DL-183`).
+  'resident.import',
 
   // The longitudinal view: everything this office has done for one person,
   // across every programme and every year. Held apart from `resident.view`
@@ -383,6 +386,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       ...SOCIAL_WORKER_PERMISSIONS,
       'resident.deactivate',
       'resident.export',
+      'resident.import',
       'beneficiary.export',
       'case.close',
       'program.manage',
@@ -442,7 +446,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
     label: 'Intake officer',
     description: 'Receives applicants, records requests and validates requirements.',
     scope: 'all-barangays',
-    permissions: INTAKE_PERMISSIONS,
+    permissions: [...INTAKE_PERMISSIONS, 'resident.import'],
   },
   'release-officer': {
     role: 'release-officer',

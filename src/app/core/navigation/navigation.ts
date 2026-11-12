@@ -192,6 +192,16 @@ export const NAVIGATION: readonly NavSection[] = [
         permissions: ['digital-id.manage'],
         description: 'Every card issued, where the cards stand, and each card’s record.',
       },
+      {
+        // `DL-214`. A list the office keeps, checked row by row before the registry changes.
+        label: 'Import citizens',
+        route: '/residents/import',
+        reads: ['resident-import'],
+        glyph: 'IC',
+        permissions: ['resident.import'],
+        closedTo: ['assigned-cases'],
+        description: 'Bring in a list the office keeps, checking every row before the registry changes.',
+      },
     ],
   },
   {

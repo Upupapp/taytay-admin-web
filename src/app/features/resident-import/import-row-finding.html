@@ -1,0 +1,125 @@
+<article class="card card--padded stack" [attr.aria-label]="check.rowLabel(row().row, row().sourceLine)">
+  <h3 class="section-title">{{ check.rowLabel(row().row, row().sourceLine) }}</h3>
+
+  <div class="record-grid">
+    <section class="subpanel" [attr.aria-label]="check.rowLabel(row().row, row().sourceLine)">
+      @if (row().values === null) {
+        <p class="status-line">{{ check.noValues }}</p>
+      } @else {
+        <dl class="facts">
+          @for (cell of cells(); track cell.field) {
+            <div class="facts__row">
+              <dt>{{ cell.label }}</dt>
+              <dd>{{ cell.value }}</dd>
+            </div>
+          }
+        </dl>
+      }
+      @if (row().duplicateOf; as earlier) {
+        <p class="status-line">{{ check.repeats(earlier) }}</p>
+      }
+    </section>
+
+    @if (row().candidates.length > 0) {
+      <section class="subpanel subpanel--soft" [attr.aria-label]="check.candidatesHeading">
+        <h4 class="section-title">{{ check.candidatesHeading }}</h4>
+        <ul class="soft-list">
+          @for (candidate of row().candidates; track candidate.residentId) {
+            <li class="soft-row soft-row--stacked">
+              <a class="record-link" [routerLink]="['/residents', candidate.residentId]">{{
+                candidate.name
+              }}</a>
+              <span class="soft-row__meta">
+                {{ barangay(candidate.barangayId) }}
+                @if (!candidate.isActive) {
+                  · {{ check.inactive }}
+                }
+              </span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+
+  @if (row().resolution; as decided) {
+    <p class="status-line" role="status">
+      {{ check.decided(actionLabel(decided.action), decided.by ?? check.decidedBy, decided.reason) }}
+    </p>
+    @if (!editing()) {
+      <button type="button" class="btn btn--small" (click)="editing.set(true)">
+        {{ check.change }}
+      </button>
+    }
+  }
+
+  @if (open()) {
+    <form class="stack" novalidate (submit)="$event.preventDefault(); submit()">
+      <fieldset class="choice-list">
+        <legend class="field__label">{{ copy.legend }}</legend>
+
+        <label class="choice">
+          <input
+            type="radio"
+            [name]="'finding-' + row().row"
+            [checked]="action() === 'create'"
+            (change)="choose('create')"
+          />
+          <span class="choice__text">
+            {{ copy.actions.create }}
+            <span class="choice__hint">{{ copy.hints.create }}</span>
+          </span>
+        </label>
+
+        @for (candidate of row().candidates; track candidate.residentId) {
+          <label class="choice">
+            <input
+              type="radio"
+              [name]="'finding-' + row().row"
+              [checked]="action() === 'same-person' && residentId() === candidate.residentId"
+              (change)="choose('same-person', candidate.residentId)"
+            />
+            <span class="choice__text">
+              {{ copy.actions['same-person'] }} {{ candidate.name }}
+              <span class="choice__hint">{{ copy.hints['same-person'] }}</span>
+            </span>
+          </label>
+        }
+
+        <label class="choice">
+          <input
+            type="radio"
+            [name]="'finding-' + row().row"
+            [checked]="action() === 'skip'"
+            (change)="choose('skip')"
+          />
+          <span class="choice__text">
+            {{ copy.actions.skip }}
+            <span class="choice__hint">{{ copy.hints.skip }}</span>
+          </span>
+        </label>
+      </fieldset>
+
+      <label class="field">
+        <span class="field__label">{{ copy.reason }}</span>
+        <textarea
+          class="field__input"
+          rows="2"
+          [attr.maxlength]="maxLength"
+          [attr.aria-describedby]="'finding-hint-' + row().row"
+          [value]="reason()"
+          (input)="typed($event)"
+        ></textarea>
+        <span class="field__hint" [id]="'finding-hint-' + row().row">{{ copy.reasonHint }}</span>
+      </label>
+
+      @if (problem(); as message) {
+        <p class="callout callout--danger" role="alert">{{ message }}</p>
+      }
+
+      <div class="form-footer">
+        <button type="submit" class="btn btn--primary">{{ copy.submit }}</button>
+      </div>
+    </form>
+  }
+</article>

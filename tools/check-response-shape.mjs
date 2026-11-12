@@ -88,6 +88,15 @@ function envelopeOf(operation) {
 
   if (data === undefined) return 'undeclared';
 
+  // An `allOf` whose every part is an object is an object (`DL-214`: an import, a sector
+  // application's detail): one record extending another, not a list in disguise.
+  if (Array.isArray(data.allOf)) {
+    const parts = data.allOf.map(resolve);
+    const objectLike = (part) =>
+      part !== undefined && ([part.type].flat().includes('object') || part.properties !== undefined);
+    return parts.length > 0 && parts.every(objectLike) ? 'item' : 'undeclared';
+  }
+
   const types = [data.type].flat();
   if (types.includes('array')) return meta?.properties?.pagination !== undefined ? 'cursor-page' : 'list';
   if (types.includes('object') || data.properties !== undefined) return 'item';
@@ -162,7 +171,7 @@ const NEEDS = {
 /** The verb a read helper is judged at; anything not named here is a `GET`. */
 const VERB_OF = { postBlob: 'post' };
 
-const WRITES = new Set(['post', 'patch', 'postForm', 'patchForm', 'delete']);
+const WRITES = new Set(['post', 'patch', 'put', 'postForm', 'patchForm', 'delete']);
 
 const client = read(HTTP, 'api.client.ts');
 for (const [, helper] of client.matchAll(/^  ([a-zA-Z]\w*)\s*[<(]/gm)) {

@@ -1,0 +1,67 @@
+{
+  "data": {
+    "id": "8b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d01",
+    "file_name": "census.csv",
+    "kind": "csv",
+    "status": "open",
+    "row_count": 2,
+    "created_at": "2026-11-12T01:00:00.000Z",
+    "created_by": { "id": "0f1e2d3c-4b5a-4968-8776-655443322101", "name": "Fixture Officer" },
+    "committed_at": null,
+    "committed_by": null,
+    "result": null,
+    "columns": [
+      { "index": 0, "header": "Surname", "samples": ["Reyes"] },
+      { "index": 1, "header": "Birth date", "samples": ["1950-01-02"] }
+    ],
+    "fields": [
+      { "field": "last_name", "label": "Surname", "required": true },
+      { "field": "birth_date", "label": "Birth date", "required": true }
+    ],
+    "mapping": { "last_name": 0, "birth_date": 1, "email": null },
+    "missing_fields": ["first_name"],
+    "counts": { "new": 0, "match": 1, "duplicate": 0, "error": 1, "unresolved": 1 },
+    "groups": {
+      "new": [],
+      "match": [
+        {
+          "row": 1,
+          "source_line": 2,
+          "values": { "last_name": "Reyes", "birth_date": "1950-01-02" },
+          "problems": [],
+          "candidates": [
+            {
+              "resident_id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01",
+              "name": "Reyes, Ana",
+              "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04",
+              "birth_date": "1950-01-02",
+              "is_active": true
+            }
+          ],
+          "duplicate_of": null,
+          "resolution": {
+            "action": "same-person",
+            "resident_id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01",
+            "reason": "Same person: her ID was seen at the counter.",
+            "by": { "id": "0f1e2d3c-4b5a-4968-8776-655443322101", "name": "Fixture Officer" },
+            "at": "2026-11-12T02:00:00.000Z"
+          }
+        }
+      ],
+      "duplicate": [],
+      "error": [
+        {
+          "row": 2,
+          "source_line": 3,
+          "values": { "last_name": "" },
+          "problems": [{ "field": "birth_date", "message": "Birth date is empty." }],
+          "candidates": [],
+          "duplicate_of": null,
+          "resolution": null
+        }
+      ]
+    },
+    "outcomes": []
+  },
+  "meta": {}
+}

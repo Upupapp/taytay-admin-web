@@ -1,4 +1,7 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions *appHasPermission="'resident.import'" class="btn" routerLink="/residents/import">
+    {{ copy.importCitizens }}
+  </a>
   <a
     page-actions
     *appHasPermission="'resident.create'"

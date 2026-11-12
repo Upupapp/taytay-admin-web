@@ -46,6 +46,7 @@
       "resident.update",
       "resident.deactivate",
       "resident.export",
+      "resident.import",
       "beneficiary.view",
       "beneficiary.review-duplicates",
       "beneficiary.export",

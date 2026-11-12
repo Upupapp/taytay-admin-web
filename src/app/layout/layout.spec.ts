@@ -292,6 +292,7 @@ describe('navigation when the API cannot serve a module', () => {
       'balita',
       'platform-audit',
       'issuance',
+      'resident-import',
     ]);
     const fixture = TestBed.createComponent(AppNav);
     await fixture.whenStable();

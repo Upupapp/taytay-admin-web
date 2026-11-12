@@ -70,6 +70,8 @@ const HELPERS = [
   'postBlob',
   'post',
   'patch',
+  // A whole replacement (`DL-214`): its answer is an envelope like any write's.
+  'put',
   // Form bodies (`DL-170`): their answer is an envelope like any write's, so a generic on one
   // asserts a shape exactly as `post<Foo>` does.
   'postForm',

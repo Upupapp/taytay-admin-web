@@ -35,7 +35,7 @@ self-registration), `DL-33` (accessible authentication).
 
 ## Matrix
 
-75 permissions × 7 roles. `X` means the role holds the permission.
+76 permissions × 7 roles. `X` means the role holds the permission.
 
 | Permission                        | Admin | Head | SW  | Intake | Disb | Brgy | Audit |
 | --------------------------------- | ----- | ---- | --- | ------ | ---- | ---- | ----- |
@@ -46,6 +46,7 @@ self-registration), `DL-33` (accessible authentication).
 | `resident.update`                 | X     | X    | X   | X      |      |      |       |
 | `resident.deactivate`             | X     | X    |     |        |      |      |       |
 | `resident.export`                 | X     | X    |     |        |      |      |       |
+| `resident.import`                 | X     | X    |     | X      |      |      |       |
 | `beneficiary.view`                | X     | X    | X   | X      |      |      | X     |
 | `beneficiary.review-duplicates`   | X     | X    | X   |        |      |      |       |
 | `beneficiary.export`              | X     | X    |     |        |      |      |       |

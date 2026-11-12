@@ -213,6 +213,13 @@ export class ApiClient {
       .pipe(map((response) => response.data));
   }
 
+  /** A whole replacement, where the API takes one: an import's column mapping (`DL-214`). */
+  put<TItem, TBody = unknown>(path: string, body: TBody): Observable<TItem> {
+    return this.http
+      .put<ApiItemResponse<TItem>>(this.url(path), body)
+      .pipe(map((response) => response.data));
+  }
+
   /**
    * A `POST` whose body is a form — `multipart/form-data` — because it carries a file: an office's
    * banner, a Tulong page's picture (`DL-170`).

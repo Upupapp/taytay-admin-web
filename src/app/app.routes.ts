@@ -114,6 +114,31 @@ export const routes: Routes = [
           import('@features/residents/citizens-overview-page').then((m) => m.CitizensOverviewPage),
       },
       {
+        // `DL-214`. The API grants `resident.import` to intake, the head and the administrator, and
+        // refuses a caseload; this mirrors it and is not the protection (rule 4).
+        path: 'residents/import',
+        title: 'Import citizens — Taytay Social Welfare',
+        canActivate: [
+          servedGuard('resident-import'),
+          permissionGuard('resident.import'),
+          scopeGuard('assigned-cases'),
+        ],
+        loadComponent: () =>
+          import('@features/resident-import/import-start-page').then((m) => m.ImportStartPage),
+      },
+      {
+        // `DL-214`. One import, its step in the URL (`DL-62`).
+        path: 'residents/import/:importId',
+        title: 'Import citizens — Taytay Social Welfare',
+        canActivate: [
+          servedGuard('resident-import'),
+          permissionGuard('resident.import'),
+          scopeGuard('assigned-cases'),
+        ],
+        loadComponent: () =>
+          import('@features/resident-import/import-page').then((m) => m.ImportPage),
+      },
+      {
         path: 'residents',
         // `new` must precede `:id`, or "new" is read as a resident id and the
         // create screen becomes unreachable.

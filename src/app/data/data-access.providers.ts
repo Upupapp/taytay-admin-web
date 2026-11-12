@@ -37,6 +37,7 @@ import {
   HOTLINE_REPOSITORY,
   TULONG_SERVICE_REPOSITORY,
   ISSUANCE_REPOSITORY,
+  RESIDENT_IMPORT_REPOSITORY,
 } from '@domain/index';
 
 import {
@@ -68,6 +69,7 @@ import {
   HttpStaffRepository,
   HttpVerificationRepository,
   HttpIssuanceRepository,
+  HttpResidentImportRepository,
   HttpGovernanceRepository,
   HttpEventRepository,
   HttpReportRepository,
@@ -154,6 +156,7 @@ export function provideDataAccess(): EnvironmentProviders {
     { provide: BENEFICIARY_REPOSITORY, useClass: HttpBeneficiaryRepository },
     { provide: FIELD_VISIT_REPOSITORY, useClass: HttpFieldVisitRepository },
     { provide: ISSUANCE_REPOSITORY, useClass: HttpIssuanceRepository },
+    { provide: RESIDENT_IMPORT_REPOSITORY, useClass: HttpResidentImportRepository },
     // Which of the above make no request, said once for the navigation and the routes (`DL-167`):
     // a module that cannot be served leaves the menu, and its address explains why.
     { provide: UNSERVED_PORTS, useValue: UNSERVED_HTTP_PORTS },

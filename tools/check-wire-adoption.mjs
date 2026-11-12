@@ -61,6 +61,7 @@ const wireShaped = (key) => /^[a-z][a-z0-9]*(_[a-z0-9]+)*$/.test(key);
 const WRITE_HELPERS = {
   post: { verb: 'post', media: 'application/json' },
   patch: { verb: 'patch', media: 'application/json' },
+  put: { verb: 'put', media: 'application/json' },
   delete: { verb: 'delete', media: 'application/json' },
   postForm: { verb: 'post', media: 'multipart/form-data' },
   patchForm: { verb: 'patch', media: 'multipart/form-data' },
