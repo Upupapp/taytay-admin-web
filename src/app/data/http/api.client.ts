@@ -58,6 +58,23 @@ export class ApiClient {
   }
 
   /**
+   * One cursor page, and the rest of its `meta` beside the pagination — for a list whose route
+   * answers figures about the whole filter with each page (the Citizen IDs' counts, `DL-212`). The
+   * figures are handed over unread: the adapter's mapper decides what they mean.
+   */
+  cursorPageWithMeta<TItem>(
+    path: string,
+    request: CursorRequest,
+    filter: Record<string, unknown> = {},
+  ): Observable<{ readonly page: CursorPage<TItem>; readonly meta: unknown }> {
+    return this.http
+      .get<ApiCursorPageResponse<TItem>>(this.url(path), {
+        params: toQueryParams(request, filter),
+      })
+      .pipe(map((response) => ({ page: toCursorPage(response), meta: response.meta })));
+  }
+
+  /**
    * Every page of a cursor-paged route, or an error — **never a partial list**.
    *
    * ## Why this exists

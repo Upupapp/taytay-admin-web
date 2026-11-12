@@ -124,7 +124,7 @@ export const DIGITAL_ID_EFFECTS: Readonly<Record<DigitalIdAct, readonly string[]
   ],
   revoke: [
     'The resident’s card stops working in the app for good: the app shows no QR code.',
-    'The card is not shown here again: the administrator’s read returns only a current card, and the API keeps no list of revoked ones.',
+    'The card is not shown on the resident’s record again: the administrator’s read returns only a current card. The list of cards keeps it, as revoked.',
     'A new card can then be issued to the resident, with a new number.',
   ],
   reissue: [

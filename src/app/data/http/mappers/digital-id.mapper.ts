@@ -1,12 +1,15 @@
 import {
   DIGITAL_ID_STATUSES,
+  type AppAccountId,
   type DigitalIdCard,
+  type DigitalIdCounts,
   type DigitalIdHolder,
   type DigitalIdId,
+  type DigitalIdListing,
   type MediaId,
 } from '@domain/index';
 
-import { bool, dateTime, field, id, oneOf, str } from './wire';
+import { bool, dateTime, field, id, int, oneOf, str } from './wire';
 
 /**
  * `DigitalIdCard` → `DigitalIdCard` (`DL-171`).
@@ -92,4 +95,96 @@ export interface DigitalIdVerifyWire {
 
 export function toWireDigitalIdVerify(payload: string): DigitalIdVerifyWire {
   return { token: payload.trim() };
+}
+
+/**
+ * `DigitalIdListItem` → `DigitalIdListing` (`DL-212`).
+ *
+ * | wire                    | domain                 | if absent                 |
+ * | ----------------------- | ---------------------- | ------------------------- |
+ * | `id`                    | `id`                   | the row is not readable   |
+ * | `id_number`             | `number`               | the row is not readable   |
+ * | `status`                | `status`               | the row is not readable   |
+ * | `expired`               | `expired`              | the row is not readable   |
+ * | `issued_at`             | `issuedAt`             | the row is not readable   |
+ * | `expires_at`            | `expiresAt`            | the row is not readable   |
+ * | `holder.id`             | `holder.account`       | the row is not readable   |
+ * | `holder.name`           | `holder.name`          | no name shown             |
+ * | `holder.barangay.name`  | `holder.barangayName`  | no barangay given         |
+ *
+ * **Not read**: the barangay's id, which the list only filters by. The row carries no photo; the
+ * card record reads it with the card.
+ *
+ * @consumes GET admin/digital-ids
+ */
+export function toDigitalIdListing(wire: unknown): DigitalIdListing | null {
+  const cardId = id<DigitalIdId>(field(wire, 'id'));
+  const number = str(field(wire, 'id_number'));
+  const status = oneOf(field(wire, 'status'), DIGITAL_ID_STATUSES);
+  const expired = field(wire, 'expired');
+  const issuedAt = dateTime(field(wire, 'issued_at'));
+  const expiresAt = dateTime(field(wire, 'expires_at'));
+  const holder = field(wire, 'holder');
+  const account = id<AppAccountId>(field(holder, 'id'));
+
+  if (
+    cardId === null ||
+    number === null ||
+    status === null ||
+    typeof expired !== 'boolean' ||
+    issuedAt === null ||
+    expiresAt === null ||
+    account === null
+  ) {
+    return null;
+  }
+
+  return {
+    id: cardId,
+    number,
+    status,
+    expired,
+    issuedAt,
+    expiresAt,
+    holder: {
+      account,
+      name: str(field(holder, 'name')),
+      barangayName: str(field(field(holder, 'barangay'), 'name')),
+    },
+  };
+}
+
+/**
+ * `meta.counts` → `DigitalIdCounts` (`DL-212`). Every count is required: a lifecycle strip with a
+ * guessed figure in it is worse than none, so a missing one makes the whole answer unreadable.
+ *
+ * | wire           | domain      |
+ * | -------------- | ----------- |
+ * | `active`       | `active`    |
+ * | `expiring_30d` | `expiring`  |
+ * | `expired`      | `expired`   |
+ * | `suspended`    | `suspended` |
+ * | `revoked`      | `revoked`   |
+ *
+ * @consumes GET admin/digital-ids
+ */
+export function toDigitalIdCounts(meta: unknown): DigitalIdCounts | null {
+  const counts = field(meta, 'counts');
+  const active = int(field(counts, 'active'));
+  const expiring = int(field(counts, 'expiring_30d'));
+  const expired = int(field(counts, 'expired'));
+  const suspended = int(field(counts, 'suspended'));
+  const revoked = int(field(counts, 'revoked'));
+
+  if (
+    active === null ||
+    expiring === null ||
+    expired === null ||
+    suspended === null ||
+    revoked === null
+  ) {
+    return null;
+  }
+
+  return { active, expiring, expired, suspended, revoked };
 }

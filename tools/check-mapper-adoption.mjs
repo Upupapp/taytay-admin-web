@@ -59,6 +59,8 @@ const source = readFileSync(join(ROOT, ADAPTERS), 'utf8');
  */
 const HELPERS = [
   'cursorPage',
+  // A page and the figures beside its pagination (`DL-212`).
+  'cursorPageWithMeta',
   'everyPage',
   'list',
   'item',

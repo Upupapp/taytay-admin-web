@@ -155,6 +155,8 @@ for (const { name, path } of entries) {
 const VERBS = {
   cursorPage: 'GET',
   everyPage: 'GET',
+  /** A page and the figures beside its pagination (`DL-212`): a read like `cursorPage`. */
+  cursorPageWithMeta: 'GET',
   list: 'GET',
   item: 'GET',
   optionalItem: 'GET',

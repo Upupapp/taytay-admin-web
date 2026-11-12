@@ -1,0 +1,204 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  @if (canCheck()) {
+    <button page-actions type="button" class="btn" (click)="checking.set(true)">
+      {{ copy.check }}
+    </button>
+  }
+  @if (canManage()) {
+    <a page-actions class="btn btn--primary" routerLink="/digital-ids">
+      <app-icon name="plus" [stroke]="2.2" />
+      {{ copy.issue }}
+    </a>
+  }
+</app-page-header>
+
+@if (!canManage()) {
+  <p class="status-line citizen-ids__note">{{ copy.noManage }}</p>
+} @else {
+  <!-- Where the cards stand: the API's counts under the list's filter less its status (DL-212). -->
+  <section class="card card--padded stack" aria-labelledby="citizen-ids-lifecycle">
+    <h2 id="citizen-ids-lifecycle" class="section-title">{{ copy.lifecycle.heading }}</h2>
+    @if (counts(); as counts) {
+      <dl class="tally-row">
+        @for (status of statuses; track status) {
+          <div class="tally" [class.tally--primary]="filter().status === status">
+            <dt class="tally__label">{{ stageLabel(status) }}</dt>
+            <dd class="tally__value">{{ counts[status] }}</dd>
+            <dd class="tally__hint">{{ copy.stages[status].hint }}</dd>
+          </div>
+        }
+      </dl>
+      <p class="status-line">{{ copy.lifecycle.lead }} {{ copy.lifecycle.overlap }}</p>
+    } @else if (failure()) {
+      <p class="status-line">{{ copy.lifecycle.failed }}</p>
+    } @else {
+      <p class="status-line" aria-busy="true">…</p>
+    }
+  </section>
+
+  <nav class="citizen-ids__tabs" [attr.aria-label]="copy.tabsLabel">
+    <ul class="tabs tabs--scroll">
+      <li>
+        <a
+          class="tab"
+          [routerLink]="[]"
+          [queryParams]="{ status: null }"
+          queryParamsHandling="merge"
+          [replaceUrl]="true"
+          [class.tab--active]="!filter().status"
+          [attr.aria-current]="!filter().status ? 'true' : null"
+          >{{ copy.allTab }}</a
+        >
+      </li>
+      @for (status of statuses; track status) {
+        <li>
+          <a
+            class="tab"
+            [routerLink]="[]"
+            [queryParams]="{ status }"
+            queryParamsHandling="merge"
+            [replaceUrl]="true"
+            [class.tab--active]="filter().status === status"
+            [attr.aria-current]="filter().status === status ? 'true' : null"
+          >
+            {{ stageLabel(status) }}
+            @if (counts(); as counts) {
+              <span class="tab__count">{{ counts[status] }}</span>
+            }
+          </a>
+        </li>
+      }
+    </ul>
+  </nav>
+
+  <section class="card card--panel card--padded stack" [attr.aria-label]="copy.caption">
+    <div class="toolbar">
+      <label class="field citizen-ids__search">
+        <span class="field__label">{{ copy.search }}</span>
+        <span class="search-field">
+          <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+          <input
+            type="search"
+            class="field__input field__input--pill"
+            [placeholder]="copy.searchPlaceholder"
+            [value]="searchText()"
+            aria-describedby="citizen-ids-search-hint"
+            (input)="onSearch($event)"
+          />
+        </span>
+      </label>
+
+      <label class="field">
+        <span class="field__label">{{ copy.barangay }}</span>
+        <select class="field__input field__input--pill" (change)="onBarangay($event)">
+          <option value="" [selected]="!filter().barangayId">{{ copy.allBarangays }}</option>
+          @for (barangay of barangays; track barangay.id) {
+            <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
+              {{ barangay.name }}
+            </option>
+          }
+        </select>
+      </label>
+
+      @if (narrowed()) {
+        <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+      }
+    </div>
+
+    <div class="citizen-ids__meta">
+      <p class="status-line" id="citizen-ids-search-hint">{{ copy.searchHint }}</p>
+      <p class="status-line">{{ copy.order }}</p>
+    </div>
+
+    @if (failure(); as message) {
+      <div class="callout callout--danger" role="alert">
+        <p>{{ message }}</p>
+        <button type="button" class="btn" (click)="retry()">{{ copy.tryAgain }}</button>
+      </div>
+    }
+
+    <app-data-table
+      [caption]="copy.caption"
+      [columns]="columns()"
+      [rows]="rows()"
+      [rowKey]="rowKey"
+      [loading]="isLoading()"
+      [emptyVariant]="narrowed() ? 'no-results' : 'empty'"
+      [emptyHeading]="narrowed() ? copy.noResultsHeading : copy.emptyHeading"
+      [emptyMessage]="narrowed() ? copy.noResultsMessage : copy.emptyMessage"
+      [emptyActionLabel]="narrowed() ? copy.clear : null"
+      (emptyActionSelected)="clearFilters()"
+    />
+
+    @if (rows().length > 0) {
+      <div class="list-more">
+        <p class="status-line" role="status">
+          {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
+        </p>
+        @if (hasMore()) {
+          <button type="button" class="btn" [disabled]="loadingMore()" (click)="showMore()">
+            {{ loadingMore() ? copy.loadingMore : copy.showMore }}
+          </button>
+        }
+        @if (moreFailed()) {
+          <p class="callout callout--danger" role="alert">{{ copy.moreFailed }}</p>
+        }
+      </div>
+    }
+  </section>
+}
+
+<ng-template #holderCell let-row>
+  @if (row.holder.name; as name) {
+    <span class="citizen-ids__who">
+      <span class="avatar" aria-hidden="true">{{ name | initials }}</span>
+      {{ name }}
+    </span>
+  } @else {
+    <span class="citizen-ids__none">{{ copy.noName }}</span>
+  }
+</ng-template>
+
+<ng-template #statusCell let-row>
+  <app-status-badge [catalog]="catalog" [status]="row.status" />
+  @if (row.expired) {
+    <span class="chip chip--warning">{{ copy.pastDate }}</span>
+  }
+</ng-template>
+
+<ng-template #actionCell let-row>
+  <button
+    type="button"
+    class="btn btn--small"
+    [attr.aria-label]="copy.openLabel(nameOf(row))"
+    (click)="open(row)"
+  >
+    {{ copy.open }}
+  </button>
+</ng-template>
+
+@if (checking()) {
+  <app-modal
+    [open]="true"
+    [heading]="copy.checkHeading"
+    size="large"
+    (dismissed)="checking.set(false)"
+  >
+    <div modal-body>
+      <app-card-check />
+    </div>
+  </app-modal>
+}
+
+@if (selected(); as holder) {
+  <app-drawer
+    [open]="true"
+    size="record"
+    [heading]="copy.recordHeading(holder.name ?? copy.closedHolder)"
+    (dismissed)="closeRecord()"
+  >
+    <div drawer-body>
+      <app-card-panel class="stack" [account]="holder" />
+    </div>
+  </app-drawer>
+}

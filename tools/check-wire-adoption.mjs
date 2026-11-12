@@ -70,7 +70,7 @@ const WRITE_HELPERS = {
    */
   postBlob: { verb: 'post', media: 'application/json' },
 };
-const READ_HELPERS = new Set(['cursorPage', 'everyPage', 'list', 'item', 'optionalItem', 'blob']);
+const READ_HELPERS = new Set(['cursorPage', 'cursorPageWithMeta', 'everyPage', 'list', 'item', 'optionalItem', 'blob']);
 const WRITE_VERBS = Object.fromEntries(Object.values(WRITE_HELPERS).map(({ verb }) => [verb, verb]));
 
 /*

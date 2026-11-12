@@ -86,6 +86,7 @@ import LINKS from './fixtures/links.json';
 import MEDIA from './fixtures/media.json';
 import APP_CONFIG from './fixtures/app-config.json';
 import DIGITAL_ID_CARD from './fixtures/digital-id-card.json';
+import DIGITAL_ID_LIST_PAGE from './fixtures/digital-id-list-page.json';
 import DIGITAL_ID_HOLDER from './fixtures/digital-id-holder.json';
 import NEWS from './fixtures/news.json';
 import NEWS_PAGE from './fixtures/news-page.json';
@@ -2965,6 +2966,41 @@ describe('the Node adapters', () => {
         request.flush(DIGITAL_ID_CARD);
         expect((await done).id).toBe('5d1c2b3a-4e5f-4a6b-8c7d-9e0f1a2b3c01');
       }
+    });
+
+    it('lists the cards a page at a time with their counts, the barangay sent by the API’s id (DL-212)', async () => {
+      const cards = TestBed.inject(HttpDigitalIdRepository);
+      const page = firstValueFrom(
+        cards.list(
+          { limit: 20, cursor: null },
+          { status: 'expiring', term: ' Reyes ', barangayId: asId<BarangayId>('brgy-san-juan') },
+        ),
+      );
+      http.expectOne({ method: 'GET', url: `${BASE}/barangays` }).flush({
+        data: [{ id: '6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04', code: 'san-juan', name: 'San Juan' }],
+        meta: {},
+      });
+      const request = http.expectOne((candidate) => candidate.url === `${BASE}/admin/digital-ids`);
+      expect(request.request.params.get('status')).toBe('expiring');
+      expect(request.request.params.get('q')).toBe('Reyes');
+      expect(request.request.params.get('barangay_id')).toBe('6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04');
+      expect(request.request.params.get('limit')).toBe('20');
+      request.flush(DIGITAL_ID_LIST_PAGE);
+
+      const answer = await page;
+      expect(answer.counts).toEqual({ active: 12, expiring: 4, expired: 2, suspended: 1, revoked: 3 });
+      expect(answer.hasMore).toBe(true);
+      expect(answer.nextCursor).toBe('fixture-cursor');
+      expect(answer.items.map((item) => item.holder.name)).toEqual(['Fixture Resident', null]);
+      expect(answer.items[0]?.holder.barangayName).toBe('San Juan');
+    });
+
+    it('refuses a one-letter search before anything is sent (DL-212)', async () => {
+      const cards = TestBed.inject(HttpDigitalIdRepository);
+      await expect(
+        firstValueFrom(cards.list({ limit: 20, cursor: null }, { term: 'R' })),
+      ).rejects.toThrow(/two letters/);
+      http.expectNone(`${BASE}/admin/digital-ids`);
     });
 
     it('reads the photo as bytes with the token in a header, never in the address', async () => {

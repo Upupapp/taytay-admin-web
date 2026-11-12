@@ -57,7 +57,8 @@ export class CardPanel {
   private readonly repository = inject(DIGITAL_ID_REPOSITORY);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly account = input.required<AppAccount>();
+  /** As much of the account as the card needs: the list opens it from a card's holder (`DL-212`). */
+  readonly account = input.required<Pick<AppAccount, 'id' | 'name' | 'email'>>();
 
   protected readonly copy = DIGITAL_IDS_COPY.panel;
   protected readonly catalog = DIGITAL_ID_STATUS_CATALOG;

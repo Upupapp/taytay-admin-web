@@ -117,4 +117,25 @@ describe('MockDigitalIdRepository (DL-171)', () => {
     );
     expect((resident as Error).message).toBe('Only a verified resident can hold a digital ID.');
   });
+
+  it('lists every card with counts under the filter less its status (DL-212)', async () => {
+    const cards = signedInAs('system-administrator');
+    const all = await firstValueFrom(cards.list({ limit: 50, cursor: null }, {}));
+    const revoked = await firstValueFrom(
+      cards.list({ limit: 50, cursor: null }, { status: 'revoked' }),
+    );
+
+    expect(all.items.length).toBeGreaterThan(revoked.items.length);
+    expect(revoked.items.every((item) => item.status === 'revoked')).toBe(true);
+    expect(revoked.counts).toEqual(all.counts);
+    expect(all.counts.expiring).toBeLessThanOrEqual(all.counts.active);
+    expect(all.items.some((item) => item.expired)).toBe(true);
+  });
+
+  it('refuses the list without digital-id.manage (DL-212)', async () => {
+    const error = await refusal(
+      firstValueFrom(signedInAs('mswdo-head').list({ limit: 20, cursor: null }, {})),
+    );
+    expect(isPermissionDenied(error)).toBe(true);
+  });
 });

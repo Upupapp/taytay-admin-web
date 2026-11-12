@@ -22,6 +22,7 @@ import {
   type DigitalIdCard,
   type DigitalIdHolder,
   type DigitalIdId,
+  type DigitalIdListPage,
   type DigitalIdRepository,
   type MediaId,
   type Permission,
@@ -59,6 +60,16 @@ class RecordingCards implements DigitalIdRepository {
   readonly calls: string[] = [];
   current: DigitalIdCard | null = card('active');
   refuseWith: string | null = null;
+
+  list(): Observable<DigitalIdListPage> {
+    this.calls.push('list');
+    return of({
+      items: [],
+      hasMore: false,
+      nextCursor: null,
+      counts: { active: 0, expiring: 0, expired: 0, suspended: 0, revoked: 0 },
+    });
+  }
 
   check(payload: string): Observable<DigitalIdHolder> {
     this.calls.push(`check:${payload}`);

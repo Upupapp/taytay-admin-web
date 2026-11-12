@@ -35,6 +35,7 @@ export const NAV_ICONS: Readonly<Record<string, IconName>> = {
   '/home-screen': 'phone',
   '/app-settings': 'sliders',
   '/digital-ids': 'idCard',
+  '/citizen-ids': 'idCard',
   '/balita': 'news',
   '/app-audit': 'history',
   '/administration/staff': 'staff',

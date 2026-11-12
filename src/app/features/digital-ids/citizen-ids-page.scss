@@ -1,0 +1,40 @@
+// CitizenIDs mock-up: the strip of where the cards stand, the status tabs, then the list panel.
+// Layout only; the shapes are `.tally-row`, `.tabs`, `.toolbar`, `.avatar` and `.list-more`.
+
+:host {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.citizen-ids__search {
+  flex: 1 1 260px;
+}
+
+.toolbar select.field__input {
+  min-inline-size: 170px;
+}
+
+.citizen-ids__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+
+  p {
+    margin: 0;
+  }
+}
+
+.citizen-ids__who {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.citizen-ids__none {
+  color: var(--muted);
+}
+
+.citizen-ids__note {
+  margin: 0;
+}

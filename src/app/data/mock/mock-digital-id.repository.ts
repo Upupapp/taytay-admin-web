@@ -6,12 +6,22 @@ import {
   actsOn,
   asId,
   asIsoDateTime,
+  barangayName,
   CARD_VALIDITY_DAYS,
+  DIGITAL_ID_EXPIRING_DAYS,
+  DIGITAL_ID_SEARCH_MIN_LENGTH,
   isPastExpiry,
   type AppAccountId,
+  type BarangayId,
+  type CursorRequest,
   type DigitalIdCard,
+  type DigitalIdCounts,
   type DigitalIdHolder,
   type DigitalIdId,
+  type DigitalIdListFilter,
+  type DigitalIdListing,
+  type DigitalIdListPage,
+  type DigitalIdListStatus,
   type DigitalIdRepository,
   type MediaId,
 } from '@domain/index';
@@ -30,6 +40,8 @@ export const SAMPLE_QR_PREFIX = 'SAMPLE-QR.';
 interface HeldCard {
   readonly account: AppAccountId;
   readonly card: DigitalIdCard;
+  /** Sample only: where the holder's account says they live, for the list's barangay filter. */
+  readonly barangay: BarangayId;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -47,14 +59,36 @@ function sampleCard(n: number, status: DigitalIdCard['status'], issued: string):
 }
 
 /** Fictional cards for two of the seed's verified residents; the rest have none. */
+/** Sample dates counted back from today, so the expiring and expired tabs stay populated. */
+function daysAgo(days: number): string {
+  return new Date(Date.now() - days * DAY_MS).toISOString();
+}
+
 const SEED: readonly HeldCard[] = [
   {
     account: asId<AppAccountId>('app-account-0004'),
     card: sampleCard(1, 'active', '2026-09-01T02:00:00.000Z'),
+    barangay: asId<BarangayId>('brgy-san-isidro'),
   },
   {
     account: asId<AppAccountId>('app-account-0007'),
     card: sampleCard(2, 'suspended', '2026-03-15T02:00:00.000Z'),
+    barangay: asId<BarangayId>('brgy-dolores'),
+  },
+  {
+    account: asId<AppAccountId>('app-account-0008'),
+    card: sampleCard(3, 'active', daysAgo(CARD_VALIDITY_DAYS - 12)),
+    barangay: asId<BarangayId>('brgy-muzon'),
+  },
+  {
+    account: asId<AppAccountId>('app-account-0011'),
+    card: sampleCard(4, 'active', daysAgo(CARD_VALIDITY_DAYS + 20)),
+    barangay: asId<BarangayId>('brgy-san-juan'),
+  },
+  {
+    account: asId<AppAccountId>('app-account-0014'),
+    card: sampleCard(5, 'revoked', daysAgo(200)),
+    barangay: asId<BarangayId>('brgy-santa-ana'),
   },
 ];
 
@@ -73,6 +107,50 @@ export class MockDigitalIdRepository implements DigitalIdRepository {
   private readonly access = inject(ACCESS_CONTEXT);
   private cards: readonly HeldCard[] = SEED;
   private issued = SEED.length;
+
+  list(page: CursorRequest, filter: DigitalIdListFilter): Observable<DigitalIdListPage> {
+    const denied = denyUnless<DigitalIdListPage>(this.access.currentUser(), 'digital-id.manage');
+    if (denied) return denied;
+
+    const words = (filter.term ?? '').trim().toLowerCase();
+    if (words.length > 0 && words.length < DIGITAL_ID_SEARCH_MIN_LENGTH) {
+      return throwError(() => new Error('Type at least two letters to search the cards.'));
+    }
+    const now = Date.now();
+    const terms = words.split(/\s+/).filter((word) => word !== '');
+    const narrowed = this.cards
+      .filter((held) => filter.barangayId === undefined || held.barangay === filter.barangayId)
+      .filter((held) =>
+        terms.every(
+          (word) =>
+            (this.holderName(held) ?? '').toLowerCase().includes(word) ||
+            held.card.number.toLowerCase().includes(word),
+        ),
+      )
+      // Newest first, as the server orders them.
+      .sort((a, b) => b.card.issuedAt.localeCompare(a.card.issuedAt));
+
+    const counts: DigitalIdCounts = {
+      active: narrowed.filter((held) => standsAt(held.card, 'active', now)).length,
+      expiring: narrowed.filter((held) => standsAt(held.card, 'expiring', now)).length,
+      expired: narrowed.filter((held) => standsAt(held.card, 'expired', now)).length,
+      suspended: narrowed.filter((held) => standsAt(held.card, 'suspended', now)).length,
+      revoked: narrowed.filter((held) => standsAt(held.card, 'revoked', now)).length,
+    };
+    const status = filter.status;
+    const matching =
+      status === undefined ? narrowed : narrowed.filter((held) => standsAt(held.card, status, now));
+    const start = page.cursor ? Number(page.cursor) : 0;
+    const end = start + page.limit;
+    const hasMore = end < matching.length;
+
+    return this.latency.respond({
+      items: matching.slice(start, end).map((held) => this.listing(held, now)),
+      hasMore,
+      nextCursor: hasMore ? String(end) : null,
+      counts,
+    });
+  }
 
   check(payload: string): Observable<DigitalIdHolder> {
     const denied = denyUnless<DigitalIdHolder>(this.access.currentUser(), 'digital-id.verify');
@@ -115,7 +193,10 @@ export class MockDigitalIdRepository implements DigitalIdRepository {
       return throwError(() => new Error('That resident already has a digital ID.'));
     }
     const card = sampleCard(++this.issued, 'active', new Date().toISOString());
-    this.cards = [...this.cards, { account, card }];
+    const barangay =
+      this.cards.find((entry) => entry.account === account)?.barangay ??
+      asId<BarangayId>('brgy-san-juan');
+    this.cards = [...this.cards, { account, card, barangay }];
     return this.latency.respond(card);
   }
 
@@ -149,7 +230,7 @@ export class MockDigitalIdRepository implements DigitalIdRepository {
     const revoked: DigitalIdCard = { ...held.card, status: 'revoked' };
     this.cards = [
       ...this.cards.map((entry) => (entry.card.id === card ? { ...entry, card: revoked } : entry)),
-      { account: held.account, card: replacement },
+      { account: held.account, card: replacement, barangay: held.barangay },
     ];
     return this.latency.respond(replacement);
   }
@@ -164,6 +245,26 @@ export class MockDigitalIdRepository implements DigitalIdRepository {
       return throwError(() => new Error('That photo was not found.'));
     }
     return this.latency.respond(samplePlaceholder('selfie'));
+  }
+
+  private holderName(held: HeldCard): string | null {
+    return MOCK_APP_ACCOUNTS.find((candidate) => candidate.id === held.account)?.name ?? null;
+  }
+
+  private listing(held: HeldCard, now: number): DigitalIdListing {
+    return {
+      id: held.card.id,
+      number: held.card.number,
+      status: held.card.status,
+      expired: held.card.status === 'active' && new Date(held.card.expiresAt).getTime() <= now,
+      issuedAt: held.card.issuedAt,
+      expiresAt: held.card.expiresAt,
+      holder: {
+        account: held.account,
+        name: this.holderName(held),
+        barangayName: barangayName(held.barangay),
+      },
+    };
   }
 
   private current(account: AppAccountId): HeldCard | null {
@@ -191,5 +292,22 @@ export class MockDigitalIdRepository implements DigitalIdRepository {
       entry.card.id === card ? { ...entry, card: moved } : entry,
     );
     return this.latency.respond(moved);
+  }
+}
+
+/** The backend's `statusWhere`: `active`, `expiring` and `expired` are all stored as active. */
+function standsAt(card: DigitalIdCard, status: DigitalIdListStatus, now: number): boolean {
+  const expires = new Date(card.expiresAt).getTime();
+  const soon = now + DIGITAL_ID_EXPIRING_DAYS * DAY_MS;
+  switch (status) {
+    case 'active':
+      return card.status === 'active' && expires > now;
+    case 'expiring':
+      return card.status === 'active' && expires > now && expires <= soon;
+    case 'expired':
+      return card.status === 'active' && expires <= now;
+    case 'suspended':
+    case 'revoked':
+      return card.status === status;
   }
 }

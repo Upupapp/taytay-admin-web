@@ -150,6 +150,8 @@ const NEEDS = {
   cursorPage: 'cursor-page',
   /** Follows `next_cursor`, so it needs the same envelope `cursorPage` does. */
   everyPage: 'cursor-page',
+  /** One page plus the figures its route answers beside the pagination (`DL-212`). */
+  cursorPageWithMeta: 'cursor-page',
   list: 'list',
   /** Bytes, not an envelope: only a route whose every answer is a binary media type. */
   blob: 'binary',

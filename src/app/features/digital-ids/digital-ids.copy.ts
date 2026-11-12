@@ -57,7 +57,7 @@ export const DIGITAL_IDS_COPY = {
 
   manage: {
     heading: 'Residents’ cards',
-    lead: 'Only a verified resident can hold a card. The API keeps no list of cards, so a card is found through the resident’s account.',
+    lead: 'Only a verified resident can hold a card. A card is issued and kept through the resident’s account; every card issued is on the Citizen ID list.',
     order:
       'Accounts are read a page at a time, newest first, and only the verified residents among them are shown.',
     caption: 'Verified residents',
@@ -100,7 +100,7 @@ export const DIGITAL_IDS_COPY = {
     retry: 'Try again',
     none: 'This resident holds no current card.',
     noneWhy:
-      'The API returns only an active or suspended card. A revoked card is not shown, and no list of past cards exists.',
+      'The API returns only an active or suspended card. A revoked card is not shown here; the Citizen ID list keeps it, as revoked.',
     number: 'Card number',
     numberNote: 'The municipality’s own number — not a national government identifier.',
     status: 'Status',

@@ -56,6 +56,8 @@ const wireShaped = (key) => /^[a-z][a-z0-9_]*$/.test(key);
 const READ_HELPERS = {
   cursorPage: { filterAt: 2, cursorKeys: true },
   everyPage: { filterAt: 1, cursorKeys: true },
+  /* Takes what `cursorPage` takes (`DL-212`). */
+  cursorPageWithMeta: { filterAt: 2, cursorKeys: true },
   list: { filterAt: 1, cursorKeys: false },
   item: { filterAt: 1, cursorKeys: false },
   optionalItem: { filterAt: null, cursorKeys: false },

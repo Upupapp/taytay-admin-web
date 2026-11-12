@@ -394,7 +394,8 @@ export const API_ENDPOINTS = {
   digitalIdVerify: 'digital-id/verify',
   /**
    * A card by its own id: `POST {id}/suspend`, `{id}/revoke`, `{id}/reissue` (`digital-id.manage`).
-   * An account’s card is read and issued at `admin/users/{id}/digital-id`.
+   * An account’s card is read and issued at `admin/users/{id}/digital-id`. `GET` lists every card
+   * issued, cursor-paged, with the lifecycle counts in `meta.counts` (`DL-212`).
    */
   adminDigitalIds: 'admin/digital-ids',
   /**

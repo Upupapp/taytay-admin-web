@@ -10195,3 +10195,46 @@ it does not understand, because that is a newer server saying something the cons
 an unknown kind unreadable, "Type not set" in the list and the count beside it, the form's not-set
 option and no kind sent for it, and no `?? 'other'` in the form. Validated against 9 planted
 regressions.
+
+## DL-212 — a list of every Citizen ID issued, with where the cards stand, beside the card record
+
+**Status:** Settled (12 November 2026). The citizen design pack, prompt A5; board
+`docs/design/admin/screens/CitizenIDs.dc.html`. List pattern, from `residents/resident-list-page`.
+Backend B1, `GET admin/digital-ids` (`digital-id.manage`), vendored from the backend's working tree
+while it was uncommitted there.
+
+**What the office can now do.** See every card the municipality has issued — revoked ones too —
+newest first, a page at a time, filtered by status, by a holder's name or a card number, and by
+barangay; see above the list how many cards stand at each status; and open any card's record.
+
+**Decisions.**
+
+1. **The list is its own page, `/citizen-ids`** (`CitizenIdsPage`), a menu entry "Citizen ID list"
+   under Citizen IDs. `/digital-ids` stays as it is — the check, the verified accounts a card is
+   issued from, and a card's record in a drawer (`DL-211`) — reached from the list by **Issue a
+   card**. The list asks for `digital-id.manage`, the key its route needs on the server, and guards
+   only the `digital-id` port, which is all it reads (`check:unserved`). Putting the list at
+   `/digital-ids` itself, as the board's menu does, is a one-route change once both pages settle.
+2. **The strip counts nothing here.** `meta.counts` comes with every page, under the list's filter
+   **less its status**, so opening a tab never empties the strip. `active` is a card still in date,
+   `expired` an active card past it, `expiring` an active card within 30 days — counted in `active`
+   too, and the strip says so. A page whose counts are missing or malformed is refused whole
+   (`toDigitalIdCounts`): a strip with a guessed figure is worse than none.
+3. **A row opens the card's record**: the same `CardPanel` the accounts page opens, keyed on the
+   holder's account and read again from the server (`GET admin/users/{id}/digital-id`), never built
+   from the row. `CardPanel` now takes only the account's id, name and email — what it used.
+4. **A closed account's name is not shown** (the API sends `null`), and the row says so rather than
+   leaving a blank. A one-letter search is refused before it is sent, as the API refuses it.
+5. **`ApiClient.cursorPageWithMeta`** answers a page and the rest of its `meta`, unread; the adapter's
+   mapper decides what the figures mean. It is registered in every check that enumerates the client
+   (`check:response-shape`, `check:routes`, `check:query-params`, `check:wire-adoption`,
+   `check:mapper-adoption`) as the cursor-page read it is.
+6. Three sentences that said "the API keeps no list of cards" (a revoke's effects, the accounts
+   lead, the record's "no current card" note) now point at the list instead.
+
+**Left out, for lack of an API field.** The board's "Verified, no card" tab and the strip's app
+stages (signed up, sent an ID for review, verified, card shown with a QR code) need account counts
+the cards route does not send; issuing stays on the accounts page. The check stays a modal over the
+list, using `CardCheck` as it is.
+
+Easiest to reverse: delete the `citizen-ids` route, its menu entry and `citizen-ids-page.*`.

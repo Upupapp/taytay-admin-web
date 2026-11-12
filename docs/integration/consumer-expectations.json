@@ -38,6 +38,29 @@
       ]
     },
     {
+      "method": "GET",
+      "path": "admin/digital-ids",
+      "consumer": "digital-id.mapper.ts#toDigitalIdListing",
+      "required": [
+        "expires_at",
+        "id",
+        "id_number",
+        "issued_at",
+        "status"
+      ],
+      "optional": [
+        "expired",
+        "holder"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "admin/digital-ids",
+      "consumer": "digital-id.mapper.ts#toDigitalIdCounts",
+      "required": [],
+      "optional": []
+    },
+    {
       "method": "POST",
       "path": "admin/digital-ids/{id}/reissue",
       "consumer": "digital-id.mapper.ts#toDigitalIdCard",

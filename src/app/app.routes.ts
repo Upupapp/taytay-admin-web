@@ -89,6 +89,17 @@ export const routes: Routes = [
         loadComponent: () =>
           import('@features/dashboard/dashboard-page').then((m) => m.DashboardPage),
       },
+      // ── The citizen pack's pages (DL-212 to DL-215), in one place and ahead of `residents`, whose
+      // `:id` would otherwise read "overview" or "import" as a resident's id. ─────────────────────
+      {
+        // `DL-212`. Every card issued, for whoever keeps the cards (`digital-id.manage`); a row opens
+        // the card's record, the panel the Citizen IDs page opens. Not the protection (rule 4).
+        path: 'citizen-ids',
+        title: 'Citizen ID list — Taytay Social Welfare',
+        canActivate: [servedGuard('digital-id'), permissionGuard('digital-id.manage')],
+        loadComponent: () =>
+          import('@features/digital-ids/citizen-ids-page').then((m) => m.CitizenIdsPage),
+      },
       {
         path: 'residents',
         // `new` must precede `:id`, or "new" is read as a resident id and the

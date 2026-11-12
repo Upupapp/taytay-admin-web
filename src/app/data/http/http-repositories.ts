@@ -19,6 +19,7 @@ import type { SessionRefresher } from '@core/auth/session-refresher';
 import { isApiFailure, isNotFound, readApiError } from '@core/http/api-failure';
 import {
   AppConfigRefusedError,
+  DIGITAL_ID_SEARCH_MIN_LENGTH,
   fromServerIdentity,
   mediaFor,
   selfieErased,
@@ -91,6 +92,8 @@ import {
   type AppConfigRepository,
   type DigitalIdCard,
   type DigitalIdHolder,
+  type DigitalIdListFilter,
+  type DigitalIdListPage,
   type DigitalIdId,
   type DigitalIdRepository,
   type BalitaArticle,
@@ -392,7 +395,9 @@ import {
 } from './mappers/app-account.mapper';
 import {
   toDigitalIdCard,
+  toDigitalIdCounts,
   toDigitalIdHolder,
+  toDigitalIdListing,
   toWireDigitalIdVerify,
 } from './mappers/digital-id.mapper';
 import {
@@ -1545,6 +1550,37 @@ function readAppConfig(wire: unknown): AppConfig {
 @Injectable()
 export class HttpDigitalIdRepository implements DigitalIdRepository {
   private readonly api = inject(ApiClient);
+  private readonly barangayJoin = new BarangayJoin();
+
+  /**
+   * The office's cards, a page at a time, with the lifecycle counts its route answers beside them
+   * (`DL-212`). A one-letter search is refused here, as the API would; a barangay the API does not
+   * know by the same name sends nothing.
+   */
+  list(page: CursorRequest, filter: DigitalIdListFilter): Observable<DigitalIdListPage> {
+    const term = filter.term?.trim() ?? '';
+    if (term.length > 0 && term.length < DIGITAL_ID_SEARCH_MIN_LENGTH) {
+      return throwError(
+        () => new Error('Type at least two letters of a name or a card number to search the cards.'),
+      );
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) => {
+        const barangayId =
+          filter.barangayId === undefined ? undefined : barangays.toApi(filter.barangayId);
+        if (barangayId === null) {
+          return throwError(() => unknownBarangay());
+        }
+        return this.api
+          .cursorPageWithMeta(API_ENDPOINTS.adminDigitalIds, page, {
+            status: filter.status,
+            q: term === '' ? undefined : term,
+            barangay_id: barangayId,
+          })
+          .pipe(map(({ page: answer, meta }) => readDigitalIdListPage(answer, meta)));
+      }),
+    );
+  }
 
   check(payload: string): Observable<DigitalIdHolder> {
     return this.api
@@ -1585,6 +1621,28 @@ export class HttpDigitalIdRepository implements DigitalIdRepository {
   openPhoto(photo: MediaId): Observable<Blob> {
     return this.api.blob(`${API_ENDPOINTS.media}/${photo}/content`);
   }
+}
+
+function readDigitalIdListPage(
+  answer: CursorPage<unknown>,
+  meta: unknown,
+): DigitalIdListPage {
+  const counts = toDigitalIdCounts(meta);
+  const items = answer.items.map(toDigitalIdListing);
+
+  if (counts === null || items.some((item) => item === null)) {
+    throw new Error(
+      'The cards from the server could not be read, so none is shown rather than some: a card left ' +
+        'out of the list is one an officer concludes was never issued.',
+    );
+  }
+
+  return {
+    items: items.filter((item): item is NonNullable<typeof item> => item !== null),
+    hasMore: answer.hasMore,
+    nextCursor: answer.nextCursor,
+    counts,
+  };
 }
 
 function readCard(wire: unknown): DigitalIdCard {

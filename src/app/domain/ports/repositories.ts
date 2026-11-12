@@ -169,6 +169,7 @@ import type {
 } from '../home/home-screen';
 import type { AppConfig, AppConfigChanges } from '../app-config/app-config';
 import type { DigitalIdCard, DigitalIdHolder } from '../digital-ids/digital-id';
+import type { DigitalIdListFilter, DigitalIdListPage } from '../digital-ids/digital-id-list';
 import type { PlatformAuditEntry } from '../platform-audit/platform-audit';
 import type {
   BalitaArticle,
@@ -280,6 +281,7 @@ export interface ResidentRepository {
    * are available" and never "page 2 of 9" (`DL-161`).
    */
   list(filter: ResidentFilter, page: CursorRequest): Observable<CursorPage<ResidentView>>;
+
   getById(id: ResidentId): Observable<ResidentView | null>;
   /**
    * Resident, household, family and assistance history in one call — the
@@ -1840,10 +1842,16 @@ export const APP_CONFIG_REPOSITORY = new InjectionToken<AppConfigRepository>('Ap
 
 /**
  * Residents' digital IDs: checked by staff (`digital-id.verify`) and kept by an administrator
- * (`digital-id.manage`). There is no list of cards — the API reads one account's current card — so a
- * card is reached through the account that holds it.
+ * (`digital-id.manage`). A card is acted on through the account that holds it; the office's list of
+ * every card it has issued is read a page at a time (`DL-212`).
  */
 export interface DigitalIdRepository {
+  /**
+   * One cursor page of the cards the municipality has issued, revoked ones included, newest first,
+   * with how many stand at each status under the same filter less its status (`DL-212`). No total.
+   */
+  list(page: CursorRequest, filter: DigitalIdListFilter): Observable<DigitalIdListPage>;
+
   /** What the API says about the card a QR code names. Recorded by the server under the checker. */
   check(payload: string): Observable<DigitalIdHolder>;
 

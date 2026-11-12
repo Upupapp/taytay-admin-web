@@ -172,6 +172,16 @@ export const NAVIGATION: readonly NavSection[] = [
         permissions: ['digital-id.verify', 'digital-id.manage'],
         description: 'Check the digital ID a resident shows, and issue, suspend or revoke cards.',
       },
+      // ── The citizen pack's further pages (DL-212 to DL-215). ──────────────────────────────────
+      {
+        // `DL-212`. Every card the municipality has issued, for whoever keeps the cards.
+        label: 'Citizen ID list',
+        route: '/citizen-ids',
+        reads: ['digital-id'],
+        glyph: 'CL',
+        permissions: ['digital-id.manage'],
+        description: 'Every card issued, where the cards stand, and each card’s record.',
+      },
     ],
   },
   {
