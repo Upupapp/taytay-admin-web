@@ -108,6 +108,45 @@ export const routes: Routes = [
             loadComponent: () =>
               import('@features/residents/resident-list-page').then((m) => m.ResidentListPage),
           },
+          // `DL-210`. One literal route per sector page, its sector in `data`: an unknown sector is
+          // the not-found page, never a list read with a value nobody checked. Guarded as the
+          // registry is, whose list each one narrows.
+          {
+            path: 'sectors/senior-citizen',
+            title: 'Senior citizens — Taytay Social Welfare',
+            data: { sector: 'senior-citizen' },
+            canActivate: [
+              servedGuard('resident'),
+              permissionGuard('resident.view'),
+              scopeGuard('assigned-cases'),
+            ],
+            loadComponent: () =>
+              import('@features/residents/sector-page').then((m) => m.SectorPage),
+          },
+          {
+            path: 'sectors/pwd',
+            title: 'Persons with disability — Taytay Social Welfare',
+            data: { sector: 'pwd' },
+            canActivate: [
+              servedGuard('resident'),
+              permissionGuard('resident.view'),
+              scopeGuard('assigned-cases'),
+            ],
+            loadComponent: () =>
+              import('@features/residents/sector-page').then((m) => m.SectorPage),
+          },
+          {
+            path: 'sectors/solo-parent',
+            title: 'Solo parents — Taytay Social Welfare',
+            data: { sector: 'solo-parent' },
+            canActivate: [
+              servedGuard('resident'),
+              permissionGuard('resident.view'),
+              scopeGuard('assigned-cases'),
+            ],
+            loadComponent: () =>
+              import('@features/residents/sector-page').then((m) => m.SectorPage),
+          },
           {
             path: 'new',
             title: 'Register a resident — Taytay Social Welfare',

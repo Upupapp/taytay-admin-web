@@ -17,8 +17,6 @@ import { NotConnected } from '@core/access/not-connected';
 import { ServedPorts } from '@core/access/served-ports';
 import { SessionStore } from '@core/auth/session.store';
 import {
-  ageInYears,
-  barangayName,
   isResidentFilterActive,
   isSensitiveSector,
   RESIDENT_AGE_GROUP_LABELS,
@@ -42,6 +40,7 @@ import { PageHeader } from '@shared/ui/page-header/page-header';
 import { SavedViewsBar } from '@shared/ui/saved-views/saved-views-bar';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 
+import { residentColumns } from './resident-columns';
 import { RESIDENTS_COPY } from './residents.copy';
 import { readResidentQuery, residentFilterParams } from './resident-query';
 
@@ -179,29 +178,13 @@ export class ResidentListPage {
 
   protected readonly rowKey = (view: ResidentView): string => view.resident.id;
 
-  protected readonly columns = computed<readonly TableColumn<ResidentView>[]>(() => [
-    { key: 'name', header: this.copy.columnResident, cell: this.nameCell() },
-    {
-      key: 'barangay',
-      header: this.copy.columnBarangay,
-      value: (view) => barangayName(view.resident.address.barangayId),
-    },
-    {
-      key: 'age',
-      header: this.copy.columnAge,
-      align: 'end',
-      width: '80px',
-      value: (view) => `${ageInYears(view.resident.birthDate)}`,
-    },
-    { key: 'sectors', header: this.copy.columnSectors, cell: this.sectorsCell() },
-    {
-      key: 'status',
-      header: this.copy.columnStatus,
-      width: '110px',
-      value: (view) => (view.resident.isActive ? this.copy.active : this.copy.retired),
-      cell: this.statusCell(),
-    },
-  ]);
+  protected readonly columns = computed<readonly TableColumn<ResidentView>[]>(() =>
+    residentColumns(this.copy, {
+      name: this.nameCell(),
+      sectors: this.sectorsCell(),
+      status: this.statusCell(),
+    }),
+  );
 
   protected detailLink(view: ResidentView): string {
     return `/residents/${view.resident.id}`;

@@ -107,6 +107,31 @@ export function notConnectedSentence(port: DataPort): string {
 }
 
 /**
+ * Figures a **served** port's API does not send yet (`DL-210`): a panel the console draws for a
+ * mock-up whose numbers or fields `GET /office/residents` and its neighbours do not carry.
+ *
+ * Not a port. Nothing is bound to an unserved adapter for these, so the gate's count of unserved
+ * ports is untouched; the panel simply says, in the words a port gap uses, that the console never
+ * asked — never that the office has none (`DL-112`).
+ */
+export const UNSERVED_FIGURES = {
+  'sector-counts': 'counts of a sector’s members (by barangay, age band, benefit or ID)',
+  'sector-attention':
+    'which of a sector’s members need attention (an ID or a renewal due, a milestone birthday)',
+  'sector-fields': 'a sector’s own fields (ID number, validity, social pension, disability type)',
+} as const satisfies Readonly<Record<string, string>>;
+
+export type UnservedFigure = keyof typeof UNSERVED_FIGURES;
+
+/** What a panel says in place of a figure the API does not send yet; the port gap's sentence. */
+export function notSentSentence(figure: UnservedFigure): string {
+  return (
+    `Not connected yet: the office’s API does not send ${UNSERVED_FIGURES[figure]}, so nothing ` +
+    `is read or shown here. This is not a statement that there are none.`
+  );
+}
+
+/**
  * The ports the bound adapter set cannot serve — an empty list when it serves them all.
  *
  * **No default.** Both adapter sets bind it explicitly (`data-access.providers*.ts`): a set that

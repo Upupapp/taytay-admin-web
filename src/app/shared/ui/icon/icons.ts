@@ -27,6 +27,12 @@ const DEFINITIONS = {
   user: { d: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0' },
   heart: { d: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z' },
   home: { d: 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-5h4v5' },
+  // The three sector pages (CitizensOverview mock-up, `DL-210`).
+  senior: { d: 'M12 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM9 22l1-7-2-2 1-4h6l1 4M17 13l2 9M14 22l-1-5' },
+  accessible: { d: 'M12 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM10 8h4l-1 5h4l2 6M9 11a6 6 0 1 0 6 7' },
+  soloParent: {
+    d: 'M9 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM5 22v-6l-1-5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2l-1 5v6M18 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM16 22v-4h4v4',
+  },
   users: {
     d: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-4-6.3',
   },

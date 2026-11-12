@@ -1,6 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 
-import { DATA_PORT_HOLDINGS, notConnectedSentence } from '@domain/index';
+import {
+  DATA_PORT_HOLDINGS,
+  notConnectedSentence,
+  notSentSentence,
+  UNSERVED_FIGURES,
+} from '@domain/index';
 
 import { NotConnected } from './not-connected';
 
@@ -38,5 +43,22 @@ describe('NotConnected', () => {
     const element = await render('saved-view');
     expect(element.querySelector('p')?.getAttribute('role')).toBe('note');
     expect(element.querySelector('[role="alert"]')).toBeNull();
+  });
+});
+
+describe('NotConnected for a figure a served port does not send (DL-210)', () => {
+  it('says the same sentence about the figure, never that there are none', async () => {
+    TestBed.resetTestingModule();
+    const fixture = TestBed.createComponent(NotConnected);
+    fixture.componentRef.setInput('figure', 'sector-counts');
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.textContent?.trim()).toBe(notSentSentence('sector-counts'));
+    expect(notSentSentence('sector-counts')).toMatch(/^Not connected yet: /);
+    expect(notSentSentence('sector-counts')).toContain(UNSERVED_FIGURES['sector-counts']);
+    expect(notSentSentence('sector-counts')).toContain(
+      'This is not a statement that there are none.',
+    );
+    expect(element.querySelector('p')?.getAttribute('role')).toBe('note');
   });
 });

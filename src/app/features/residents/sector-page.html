@@ -1,0 +1,236 @@
+<app-page-header [title]="page().title" [subtitle]="page().subtitle">
+  <button
+    page-actions
+    type="button"
+    *appHasPermission="'resident.update'"
+    class="btn btn--primary"
+    (click)="openAdd()"
+  >
+    <app-icon name="plus" class="residents__cta-icon" [stroke]="2.2" />
+    {{ page().add }}
+  </button>
+</app-page-header>
+
+<!-- The three sector pages, one link each: the current one is marked in words as well as fill. -->
+<nav class="residents__sectors" [attr.aria-label]="copy.pagesLabel">
+  <ul class="tabs tabs--scroll">
+    @for (key of order; track key) {
+      <li>
+        <a
+          class="tab"
+          [routerLink]="['/residents/sectors', key]"
+          [class.tab--active]="key === sector()"
+          [attr.aria-current]="key === sector() ? 'page' : null"
+          >{{ pages[key].tab }}</a
+        >
+      </li>
+    }
+  </ul>
+</nav>
+
+<div class="sector">
+  <section class="card card--padded stack" aria-labelledby="sector-figures-heading">
+    <h2 class="section-title" id="sector-figures-heading">{{ copy.figuresHeading }}</h2>
+    <app-not-connected figure="sector-counts" />
+  </section>
+
+  <section class="card card--padded stack" aria-labelledby="sector-attention-heading">
+    <h2 class="section-title" id="sector-attention-heading">{{ copy.attentionHeading }}</h2>
+    <app-not-connected figure="sector-attention" />
+  </section>
+
+  <section
+    class="card card--panel card--padded stack residents sector__list"
+    aria-labelledby="sector-list-heading"
+  >
+    <h2 class="section-title" id="sector-list-heading">{{ page().listHeading }}</h2>
+
+    <div class="toolbar">
+      <label class="field residents__search">
+        <span class="field__label">{{ listCopy.search }}</span>
+        <span class="search-field">
+          <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+          <input
+            type="search"
+            class="field__input field__input--pill"
+            [placeholder]="listCopy.searchPlaceholder"
+            [value]="searchText()"
+            aria-describedby="sector-search-hint"
+            (input)="onSearch($event)"
+          />
+        </span>
+      </label>
+
+      <label class="field">
+        <span class="field__label">{{ listCopy.barangay }}</span>
+        <select class="field__input field__input--pill" (change)="onBarangay($event)">
+          <option value="" [selected]="!filter().barangayId">{{ listCopy.allBarangays }}</option>
+          @for (barangay of barangays; track barangay.id) {
+            <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
+              {{ barangay.name }}
+            </option>
+          }
+        </select>
+      </label>
+
+      @if (hasFilters()) {
+        <button type="button" class="btn residents__clear" (click)="clearFilters()">
+          {{ listCopy.clear }}
+        </button>
+      }
+    </div>
+
+    <div class="residents__meta">
+      <p class="status-line" id="sector-search-hint">{{ listCopy.searchHint }}</p>
+      <p class="status-line">{{ listCopy.order }}</p>
+    </div>
+
+    <app-not-connected figure="sector-fields" />
+
+    @if (failure(); as message) {
+      <div class="callout callout--danger residents__problem" role="alert">
+        <p>{{ message }}</p>
+        <button type="button" class="btn" (click)="retry()">{{ listCopy.tryAgain }}</button>
+      </div>
+    }
+
+    <app-data-table
+      [caption]="page().listHeading"
+      [columns]="columns()"
+      [rows]="rows()"
+      [rowKey]="rowKey"
+      [loading]="isLoading()"
+      [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
+      [emptyHeading]="hasFilters() ? listCopy.noResultsHeading : page().emptyHeading"
+      [emptyMessage]="hasFilters() ? listCopy.noResultsMessage : copy.emptyMessage"
+      [emptyActionLabel]="hasFilters() ? listCopy.clear : null"
+      (emptyActionSelected)="clearFilters()"
+    />
+
+    @if (rows().length > 0) {
+      <div class="list-more">
+        <p class="status-line" role="status">
+          {{ listCopy.shown(rows().length) }}
+          {{ hasMore() ? listCopy.moreAvailable : copy.noMore }}
+        </p>
+        @if (hasMore()) {
+          <button
+            type="button"
+            class="btn btn--secondary"
+            [disabled]="loadingMore()"
+            (click)="showMore()"
+          >
+            {{ loadingMore() ? listCopy.loadingMore : listCopy.showMore }}
+          </button>
+        }
+        @if (moreFailed()) {
+          <p class="callout callout--danger residents__problem" role="alert">
+            {{ listCopy.moreFailed }}
+          </p>
+        }
+      </div>
+    }
+  </section>
+</div>
+
+<ng-template #nameCell let-view>
+  <span class="residents__who">
+    <span class="avatar" aria-hidden="true">{{ view.listedName | initials }}</span>
+    <a class="record-link residents__name" [routerLink]="detailLink(view)">{{ view.listedName }}</a>
+    @if (view.isProtected) {
+      <span class="chip chip--danger residents__protected">{{ listCopy.restricted }}</span>
+    }
+  </span>
+</ng-template>
+
+<ng-template #sectorsCell let-view>
+  <span class="chip-list">
+    @for (sector of view.resident.sectors; track sector) {
+      <span class="chip">{{ sectorLabel(sector) }}</span>
+    } @empty {
+      <span class="residents__none">{{ listCopy.none }}</span>
+    }
+  </span>
+</ng-template>
+
+<ng-template #statusCell let-view>
+  <span class="residents__status" [class.residents__status--retired]="!view.resident.isActive">
+    <span class="residents__dot" aria-hidden="true"></span>
+    {{ view.resident.isActive ? listCopy.active : listCopy.retired }}
+  </span>
+</ng-template>
+
+<ng-template #endCell let-view>
+  <button
+    type="button"
+    class="btn btn--small btn--danger-outline"
+    [attr.aria-label]="copy.endLabel(view.listedName, page().phrase)"
+    (click)="openEnd(view)"
+  >
+    {{ copy.end }}
+  </button>
+</ng-template>
+
+@if (act(); as current) {
+  <app-modal [open]="true" [heading]="dialogHeading()" (dismissed)="cancel()">
+    <div modal-body class="stack">
+      @if (current.kind === 'add') {
+        <app-person-picker
+          [label]="copy.whoLabel"
+          [placeholder]="listCopy.searchPlaceholder"
+          [disabled]="busy()"
+          [(selected)]="chosen"
+        />
+      }
+
+      <label class="field">
+        <span class="field__label">{{
+          current.kind === 'add' ? copy.addReason : copy.endReason
+        }}</span>
+        <textarea
+          class="field__input"
+          rows="3"
+          maxlength="500"
+          aria-describedby="sector-reason-hint"
+          [value]="reason()"
+          [disabled]="busy()"
+          (input)="onReason($event)"
+        ></textarea>
+        <span class="field__hint" id="sector-reason-hint">{{
+          current.kind === 'add' ? page().evidenceHint : copy.endHint
+        }}</span>
+      </label>
+
+      <!-- What the API does, between the choice and the button that does it. -->
+      <div class="effects">
+        <p class="effects__lead">{{ copy.effectsLead }}</p>
+        <ul>
+          @for (
+            effect of current.kind === 'add' ? copy.addEffects : copy.endEffects;
+            track $index
+          ) {
+            <li>{{ effect }}</li>
+          }
+        </ul>
+      </div>
+
+      @if (problem(); as message) {
+        <p class="callout callout--danger" role="alert">{{ message }}</p>
+      }
+    </div>
+    <button type="button" modal-actions class="btn" [disabled]="busy()" (click)="cancel()">
+      {{ copy.cancel }}
+    </button>
+    <button
+      type="button"
+      modal-actions
+      class="btn"
+      [class.btn--primary]="current.kind === 'add'"
+      [class.btn--danger]="current.kind === 'end'"
+      [disabled]="busy()"
+      (click)="commit()"
+    >
+      {{ busy() ? copy.working : current.kind === 'add' ? copy.confirmAdd : copy.confirmEnd }}
+    </button>
+  </app-modal>
+}

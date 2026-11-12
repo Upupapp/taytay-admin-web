@@ -1,0 +1,14 @@
+// The sector mock-ups (SectorSeniors, SectorPWD, SectorSoloParents): the figures and the needs
+// attention panels side by side, then the list across the page. Layout only; the registry's own
+// rules come from resident-list-page.scss.
+
+.sector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr));
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.sector__list {
+  grid-column: 1 / -1;
+}

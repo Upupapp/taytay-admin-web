@@ -9876,6 +9876,56 @@ reverse: move the two entries back to their sections.
 **Checks.** The residents spec reads the tabs instead of the select's options for the protected-sector
 rule, and holds the chosen tab's `aria-current`. Easiest to reverse: restore the select.
 
+## DL-210 — Senior citizens, PWD and Solo parents each have a page: the registry narrowed to the sector
+
+**Status:** Settled (12 November 2026). The citizen design pack, prompt A3; boards
+`SectorSeniors.dc.html`, `SectorPWD.dc.html`, `SectorSoloParents.dc.html`. List pattern, from
+`residents/resident-list-page`.
+
+**What the office can do.** Open the members of one sector — `residents/sectors/senior-citizen`,
+`…/pwd`, `…/solo-parent` — search them by name and narrow by barangay, add somebody to the sector and
+end somebody's membership.
+
+**How.**
+
+1. **Three literal routes, not a `:sector` parameter.** Each child route carries its sector in its
+   `data`, bound to the page's `sector` input. An unknown sector is the not-found page rather than a
+   list read with a value nobody checked, and `check:unserved` can match each menu entry to its route.
+   Guarded like the registry: `servedGuard('resident')`, `resident.view`, closed to `assigned-cases`.
+2. **The list is the registry's**: `RESIDENT_REPOSITORY.list` with the page's sector fixed, a cursor
+   page at a time in the server's order, with the registry's own columns — now defined once in
+   `resident-columns.ts` for both screens. Search and barangay live in the URL like the registry's;
+   a `sector` parameter in the URL is ignored, so no address can turn the page into another sector's.
+3. **Add and End are the existing recorded acts** — `recordSector` (`POST residents/{id}/sectors`) and
+   `endSector` (`…/sectors/{sector}/end`) — each from a centred dialog that asks for the reason the
+   API requires (what was checked; why it ends), says what the act does before its button, and
+   refuses without a person or a reason. The person is found with `PersonPicker`. Both need
+   `resident.update`, and are hidden from a reader without it. After either, the list is read again
+   from the server.
+4. **Under Citizens, three entries**: Senior citizens, Persons with disability, Solo parents, with the
+   boards' icons (`senior`, `accessible`, `soloParent`, copied from the mock-ups' paths). Their tabs
+   at the top of each page move between the three.
+
+**What the API does not send is named in its place.** The count tiles, the by-barangay, age-band and
+benefit breakdowns, the "Needs attention" cards and the sector's own fields (ID number, validity,
+social pension, disability type) need data `GET /office/residents` does not have. Each panel shows
+`<app-not-connected>`, which now takes either a port or a `figure`: `UNSERVED_FIGURES` in
+`domain/ports/data-ports.ts` names what a *served* port's API does not send yet, in the sentence the
+port gaps use ("Not connected yet: … This is not a statement that there are none."). A figure is not a
+port: nothing is bound to an unserved adapter, and `check:routes`' count stays at zero.
+
+**For whoever serves them.** Counts by barangay or age are people counts, so `DL-105`'s small-cell
+suppression applies — withheld below `SMALL_CELL_THRESHOLD`, never a zero, the total taken before.
+A Senior Citizen or PWD ID number is a document number, held and shown as its last four characters
+only (`DL-183`).
+
+**Checks.** `sector-page.spec.ts`: the list reads only its own sector, even with `?sector=` in the URL;
+the registry's columns; the current page marked among the three; the three not-connected panels; the
+empty and error states, Try again reading again; Add and End hidden without `resident.update`; End sent
+only from its dialog with a reason; Add refusing without a person. `not-connected.spec.ts` holds the
+figure's sentence. `ResidentRepository.endSector` is now reached from a screen, so `check:port-adoption`'s
+floor drops from six unreached methods to five. Easiest to reverse: remove the three routes and entries.
+
 ## DL-216 — App settings publishes the biometric (selfie) consent; until it does, the page says the app cannot take selfies
 
 **Status:** Settled (12 November 2026). Extends `DL-186` (the texts residents accept) to a third

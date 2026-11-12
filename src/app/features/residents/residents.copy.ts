@@ -72,6 +72,46 @@ export const RESIDENTS_COPY = {
       'The next residents could not be loaded. The ones above are still correct; try again.',
   },
 
+  /** The sector pages (`DL-210`): what each says around the registry's list narrowed to it. */
+  sector: {
+    pagesLabel: 'Sector pages',
+    figuresHeading: 'In numbers',
+    attentionHeading: 'Needs attention',
+    columnEnd: 'End membership',
+    end: 'End',
+    endLabel: (name: string, sector: string) => `End ${name}’s membership of ${sector}`,
+    emptyMessage:
+      'A person appears here once this sector is recorded on their registry record, with what was checked.',
+    noMore: 'That is everybody in this sector matching these filters.',
+    addHeading: (sector: string) => `Add somebody to ${sector}`,
+    endHeading: (name: string, sector: string) => `End ${name}’s membership of ${sector}`,
+    whoLabel: 'Who is this for?',
+    addReason: 'What was checked',
+    endReason: 'Why it ends',
+    endHint:
+      'Say why, for example the ID was not renewed or the child turned 18. It is kept with the change.',
+    effectsLead: 'What this does:',
+    addEffects: [
+      'The sector is recorded on the person’s registry record, and they are listed on this page.',
+      'What you checked is kept in the sector’s history, with your name.',
+      'This console sends nothing to the resident.',
+    ],
+    endEffects: [
+      'The person is no longer listed in this sector. Their registry record stays as it is.',
+      'The membership stays in the sector’s history, with your reason and your name: nothing is deleted.',
+      'This console sends nothing to the resident.',
+    ],
+    needPerson: 'Choose the person first.',
+    needReason: 'Say what was checked, or why it ends, before you confirm.',
+    confirmAdd: 'Add to the sector',
+    confirmEnd: 'End membership',
+    cancel: 'Cancel',
+    working: 'Saving…',
+    added: (name: string, sector: string) => `${name} was added to ${sector}.`,
+    ended: (name: string, sector: string) => `${name}’s membership of ${sector} was ended.`,
+    failed: 'The change was not saved, and nothing was recorded. Try again.',
+  },
+
   detail: {
     visitsHeading: 'Home visits',
     noVisits: 'No home visit has been recorded for this person.',
@@ -257,3 +297,68 @@ export const RESIDENTS_COPY = {
     'not-an-email': 'does not look like an email address.',
   } satisfies Record<ResidentDraftRule, string>,
 } as const;
+
+/**
+ * The three sectors that have a page of their own (`DL-210`), in the order the tabs list them. Each
+ * is a literal route, `residents/sectors/<sector>`, so an unknown sector is the not-found page
+ * rather than a list read with a parameter nobody checked.
+ */
+export const SECTOR_PAGE_SECTORS = [
+  'senior-citizen',
+  'pwd',
+  'solo-parent',
+] as const satisfies readonly VulnerabilitySector[];
+
+export type SectorPageSector = (typeof SECTOR_PAGE_SECTORS)[number];
+
+export interface SectorPageCopy {
+  readonly title: string;
+  readonly tab: string;
+  /** The sector as the object of a sentence: "added to the senior citizen sector". */
+  readonly phrase: string;
+  readonly subtitle: string;
+  readonly add: string;
+  readonly listHeading: string;
+  readonly emptyHeading: string;
+  readonly evidenceHint: string;
+}
+
+// Membership is what the office recorded, with what it checked; a page never derives it from an
+// age or a field, so none of these says "everyone aged 60".
+export const SECTOR_PAGES: Readonly<Record<SectorPageSector, SectorPageCopy>> = {
+  'senior-citizen': {
+    title: 'Senior citizens',
+    tab: 'Senior citizens',
+    phrase: 'the senior citizen sector',
+    subtitle:
+      'Residents recorded in the senior citizen sector (RA 9994, the Expanded Senior Citizens Act).',
+    add: 'Add a senior citizen',
+    listHeading: 'Senior citizens on the registry',
+    emptyHeading: 'No senior citizen is recorded yet',
+    evidenceHint:
+      'Say what you checked, for example a Senior Citizen ID or a birth certificate. It is kept in the sector’s history.',
+  },
+  pwd: {
+    title: 'Persons with disability',
+    tab: 'PWD',
+    phrase: 'the PWD sector',
+    subtitle:
+      'Residents recorded in the persons with disability sector (RA 7277 as amended by RA 10754).',
+    add: 'Add a person with disability',
+    listHeading: 'Persons with disability on the registry',
+    emptyHeading: 'No person with disability is recorded yet',
+    evidenceHint:
+      'Say what you checked, for example a PWD ID or a medical certificate. It is kept in the sector’s history.',
+  },
+  'solo-parent': {
+    title: 'Solo parents',
+    tab: 'Solo parents',
+    phrase: 'the solo parent sector',
+    subtitle: 'Residents recorded in the solo parent sector (RA 8972 as amended by RA 11861).',
+    add: 'Add a solo parent',
+    listHeading: 'Solo parents on the registry',
+    emptyHeading: 'No solo parent is recorded yet',
+    evidenceHint:
+      'Say what you checked, for example a Solo Parent ID. It is kept in the sector’s history.',
+  },
+};

@@ -134,6 +134,34 @@ export const NAVIGATION: readonly NavSection[] = [
         // questions, and one label covering both is how a caseworker ends up on the wrong one.
         description: 'The registry: who is on file, and their details.',
       },
+      // `DL-210`. The registry narrowed to one sector each: a page per sector, guarded as the registry.
+      {
+        label: 'Senior citizens',
+        route: '/residents/sectors/senior-citizen',
+        reads: ['resident'],
+        glyph: 'SC',
+        permissions: ['resident.view'],
+        closedTo: ['assigned-cases'],
+        description: 'Residents recorded in the senior citizen sector.',
+      },
+      {
+        label: 'Persons with disability',
+        route: '/residents/sectors/pwd',
+        reads: ['resident'],
+        glyph: 'PW',
+        permissions: ['resident.view'],
+        closedTo: ['assigned-cases'],
+        description: 'Residents recorded in the PWD sector.',
+      },
+      {
+        label: 'Solo parents',
+        route: '/residents/sectors/solo-parent',
+        reads: ['resident'],
+        glyph: 'SP',
+        permissions: ['resident.view'],
+        closedTo: ['assigned-cases'],
+        description: 'Residents recorded in the solo parent sector.',
+      },
       {
         // `DL-171`. A resident's card in the app: checked by staff, kept by an administrator.
         // "Digital IDs" under Residents' app before `DL-208`; the route stays for bookmarks.
